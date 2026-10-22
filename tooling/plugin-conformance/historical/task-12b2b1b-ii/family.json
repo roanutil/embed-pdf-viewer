@@ -102,7 +102,7 @@
   "preserved": {
     "src/scenario.ts": "3571a7f6654a010fca10b2f764394db557cc16042ee9b7787f4cde841057d354",
     "src/suites/annotation-current-fixtures.ts": "1ed181373f993f80acfde740c3e0de3ca8fe2308b5d0827b77b63454887fd0ce",
-    "src/suites/annotation-live-fixtures.ts": "6eb969e370e06faf61169faae30612b79dd2b16697ba89d88e2a00db75a96010",
+    "src/suites/annotation-live-fixtures.ts": "98a0973fbac20a4aacc3425757c98b2a7197d1b83e458c03ffd205d918f3a270",
     "src/suites/annotation-reconciliation.ts": "73ce7e5ca034fad9f14057c1870893ff2b7ea30fe3ae315060c3d64349e72240",
     "src/suites/annotation-fixtures.ts": "eb2d1b1d94a47b56716e2dd8c2184434a883a8d045c82ed95bbc276c97f19939",
     "test/annotation-live.test.ts": "7e19c3972369b4d78c53a0b87c2ba0d2f32c29b3fe0acc8d8e65f9e5edbba2e1",

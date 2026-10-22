@@ -478,3 +478,28 @@ update is aborted. This special reentry can leave an internal selected ID for a 
 record; public selection/get/anchor/chrome/render reads are empty or disabled, and the
 draft is null. Preserve that exact current ordering/observation in Task13; it is separate
 from the ordinary H3 cleanup assertions and is not evidence of a public H3 crash.
+
+### Current form core and shared UUID host input
+
+`form-core.ts` calls the current shipping index, prediction, projection and selection
+functions. Its 101 original cases map to 99 current pure cases and two actual-kernel
+status cases in `form-core-lifecycle.ts`; a third lifecycle case independently checks
+pending values, successful confirmation, rollback and field permission refusal without
+an annotation plugin. Complete archived inputs, exact mappings, intentional malformed
+inputs and reconstruction details are in [the form history](historical/task-12b2b2-i/README.md).
+
+`form-current` is an isolated registration of the actual form plugin, with its real id,
+token and settings/create/state/connect. It takes complete current records from
+`form-current-fixtures.ts`, with explicit `FormSnapshot.widgets`, flat field properties
+and current refs. Its typed static value-set answers carry a full ChangeResult,
+FormMutationMeta and `forms.valueSet` event before settlement. It adds no old method
+aliases or console wrapper. The original `form-fixtures.ts` remains for the 119 deferred
+live form cases and the stamp/signature consumers; it is not the current replay API.
+
+`case-entropy.ts` now owns the existing annotation fixture's UUID host input. Annotation
+and form factories join one sequence per case, across both factory orders and every
+document. The byte algorithm, delegation and exact descriptor/absence cleanup are
+unchanged. Annotation keeps its scoped console owner; form installs no console hook.
+Run `node --import=tsx --conditions=development --test test/form-current.test.ts` for
+current form semantics, shared entropy, exact diagnostic expectations and archival
+accounting. No vectors or Rust replay code are updated by these input migrations.

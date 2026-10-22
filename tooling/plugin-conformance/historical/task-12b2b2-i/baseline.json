@@ -1,0 +1,2092 @@
+{
+  "base": "056b91b732957e4bbdcddcdf7649936f9f3d0a39",
+  "status": "BASELINE_ONLY_NO_SOURCE_EDITS",
+  "task11Source": "task-11-cases.out:43-47",
+  "sources": [
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-core.ts",
+      "sha256": "aca8eb283d96b862322ee6f9633e32861fdbfe455411532bb2039be376a37d7d",
+      "lines": 354
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-fill.ts",
+      "sha256": "29dcfacbb47e5752378063513b0bfff19b2058ca6e78287238097ff2accd5993",
+      "lines": 749
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-design.ts",
+      "sha256": "750fae31cd54b7cfb81dd8ca712212dc6fc66174a1ecade23da4d65d6389af56",
+      "lines": 651
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-scripting.ts",
+      "sha256": "44bc696e7702d9fa8e42d3d289cfb545c0c08ed8c1010f72d5cdf632a84262ca",
+      "lines": 1081
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-actions.ts",
+      "sha256": "6a985195f3a8302c7c279127cdf41ca938e250d854b33336caa02a4137baad48",
+      "lines": 399
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-fixtures.ts",
+      "sha256": "1960ed040765711b256af7d9d1117471a05234f8441102eebfa73883c16c1b6a",
+      "lines": 445
+    }
+  ],
+  "suites": [
+    {
+      "file": "plugins/form-core.json",
+      "baselineCases": 101,
+      "frozenCases": 101,
+      "task11InputDiff": 0,
+      "lost": [],
+      "added": [],
+      "duplicateNames": [],
+      "inputDiff": []
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "baselineCases": 31,
+      "frozenCases": 31,
+      "task11InputDiff": 0,
+      "lost": [],
+      "added": [],
+      "duplicateNames": [],
+      "inputDiff": []
+    },
+    {
+      "file": "plugins/form-design.json",
+      "baselineCases": 29,
+      "frozenCases": 29,
+      "task11InputDiff": 0,
+      "lost": [],
+      "added": [],
+      "duplicateNames": [],
+      "inputDiff": []
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "baselineCases": 46,
+      "frozenCases": 46,
+      "task11InputDiff": 0,
+      "lost": [],
+      "added": [],
+      "duplicateNames": [],
+      "inputDiff": []
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "baselineCases": 13,
+      "frozenCases": 13,
+      "task11InputDiff": 0,
+      "lost": [],
+      "added": [],
+      "duplicateNames": [],
+      "inputDiff": []
+    }
+  ],
+  "cases": [
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldKeyOf/object-number",
+      "fn": "fieldKeyOf",
+      "originalSha256": "64e911aee0603c57642142c72cc2a96bbc933d712f9c6f83fb162231b6bcc291",
+      "currentSha256": "be1da7ecdf95512ae8a7d8819c375d0f7e1aa6b42b050e824ddb52552d259c52",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldKeyOf/fqn-when-direct",
+      "fn": "fieldKeyOf",
+      "originalSha256": "0ed91da06816020eb6dca526884486428391b5075a9fab285980e568b3091875",
+      "currentSha256": "d2d7bdda938c4ebf485a39dba218af178eb7618ee91cdb3f2b311b103f280fc3",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldKeyOf/negative-object-number",
+      "fn": "fieldKeyOf",
+      "originalSha256": "740158a0a69a833c26b97a26660112cfc5e39d8c4f71a1d1e91733849f502758",
+      "currentSha256": "a68c1b8ddbb26c560c9d54402cf34d7fa34f0499329b2ec8d84056c36479541e",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "initialModel/empty",
+      "fn": "initialModel",
+      "originalSha256": "376ad3499b368bf8b6c087de1cee7a76a32320c8cd2e701735333a58e2532a88",
+      "currentSha256": "355ba6d78dc889f983a38f21b727c8c776f45c2c77794268cac80fe40dd8edf1",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/snapshot-indexes-keys-and-widgets",
+      "fn": "update",
+      "originalSha256": "7a02dbe7a0e7723b1dc9e557b2fd11f15223eeabe1955adafb7684bb5525c5fc",
+      "currentSha256": "778d977747ea9cf0d735ef150860f30f4055a66b413d2611a7b2b88396410784",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/snapshot-clears-writing-keeps-geom",
+      "fn": "update",
+      "originalSha256": "9193b045dcb092459bc4b252b0bb2a600de914348ec55e92c01719d628b834e5",
+      "currentSha256": "089eb2349bfb3f164894dab1893329405149f08554a4cbab7488ba57051955f3",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/snapshot-later-field-wins-a-shared-widget",
+      "fn": "update",
+      "originalSha256": "39d08118b9f0d6fbbbbb6167fe06edd34e03522f85030630c1afd114705e83ce",
+      "currentSha256": "9a9361fcafd26a5a2364360efeb491de2ce108b4d6d16e067ebec8254ccfab1c",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-start",
+      "fn": "update",
+      "originalSha256": "47dcc909d936ba6b309f5550d73d95075519b2f098b4c74246f316168bc2eadf",
+      "currentSha256": "59fdc2c5c12c217145fee62f4833ab5bdc97ea8bcb7d227eb5afb254687e094f",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-start-twice",
+      "fn": "update",
+      "originalSha256": "66877ae3f7f6c01d68f71e13f6383c4119bc0cb911eb07f72ccf89e38976e5dc",
+      "currentSha256": "76a8fe30208ff2a77f843b41b70bacad9d14829101e9170e9a6dacded44fb101",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-done-patches-and-reindexes",
+      "fn": "update",
+      "originalSha256": "33defc63188231c235efa91c43c1e38747dcc90c1345178c33d2e7a788052070",
+      "currentSha256": "c5e1098bd161a07ddc0a60c0ef3d0ba854daca6b543239923bcf6e7b5683d1ae",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-done-without-snapshot",
+      "fn": "update",
+      "originalSha256": "266c65eaddb922e1d98aa66eaaa909c59a4025049aecbd4f4e355e05610bc224",
+      "currentSha256": "cc3afe41351f39f0939accd247632f479eae7fee790326cdad522012fd5a2779",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-done-unknown-key",
+      "fn": "update",
+      "originalSha256": "2a141d61d301052050e69c73cf2654923173ed72d3599f4affd8fa8210c6e694",
+      "currentSha256": "28ff3555a7c0edf97a3c62936ff19a9fba7cf40fbdc4b5b5bf2862907366ecaa",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-done-past-the-end-pads-with-holes",
+      "fn": "update",
+      "originalSha256": "a86f5296f3eec7a4cde13f93e30c67e97a41f7275184538dc61c7f4eaf5248bd",
+      "currentSha256": "68c1493c85bf6789572990b0252d9225b1102909d6ed15716e2754e602ed2141",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-failed",
+      "fn": "update",
+      "originalSha256": "dc081fc63a16138ccd2b23da8c1e6e0247751ae3cc717f015046084ec012a2b1",
+      "currentSha256": "33aa5249dc59c6546c2bc40aa84fba6d590b2e3ac4ba1b13327b0a65a4b69d24",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/write-failed-not-writing",
+      "fn": "update",
+      "originalSha256": "db8893f6b1bd5ed8576d87985a711fa40729c4295cc5a51bbcda677abc27846d",
+      "currentSha256": "22466646e35688f58098f0adbe85b91dc963355434b253e0f6559517898c71cb",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/page-geom",
+      "fn": "update",
+      "originalSha256": "73c90fc42aaf375dfb6a5386290b1376ae42712e0504dddb6fa9280d899dc6d8",
+      "currentSha256": "c3bd641195a269bb0d827a9ad5335c3a4b02a63b4d7507d38cd23db8e0f19b3c",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/page-geom-replaces-a-page",
+      "fn": "update",
+      "originalSha256": "78114c10049acad860f9db7d8531c862b6994fafca971b49c6c66ad66e341d27",
+      "currentSha256": "30d61b528c3805537c59619f65c866bee816c5090a38fdc4097f91addd88dcf8",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/clear-geom-all",
+      "fn": "update",
+      "originalSha256": "fbce918c371bb71707408d3621a513653432e6792bf881f04f8785d47b25b7b6",
+      "currentSha256": "c2db5ebe0d2c847a8ee24d5d10bdffa80830c7f80ee0c327bfe9d32069ef1086",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/clear-geom-one-page",
+      "fn": "update",
+      "originalSha256": "90d6775ae65547ffed29d9b5955f78a7047a5f85640bdb9c025b76fcd9f79954",
+      "currentSha256": "306243f9251dd56d13f2e2f73796efad77cbd037eb1409856c2a315a83b0e221",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "update/clear-geom-absent-page",
+      "fn": "update",
+      "originalSha256": "fcc890ff71a1ecc597ef111ee8e63ff212d26c2fb6e12f3dd031a9597b39ac3c",
+      "currentSha256": "81ab28d6a2936099d9a4f85f4f060e42538fd0bab9fa7c1875b55eda62270692",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldByKey/found",
+      "fn": "fieldByKey",
+      "originalSha256": "2355a237ce84593b9afe339198740d007f70f3adbe1b370385a916983415a5e8",
+      "currentSha256": "1508cfeb616928a222b7223bc89e09273cf650ddeae7be17b5d35b85307e82cc",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldByKey/fqn",
+      "fn": "fieldByKey",
+      "originalSha256": "ec300597de9ee9228ce879619ac2ebe55f79a88af7fd27af7486b6871d4cca46",
+      "currentSha256": "8fa63f1c401f1c08c1e60881686178f1392ea0e358db108133ac94c711debcc8",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldByKey/unknown",
+      "fn": "fieldByKey",
+      "originalSha256": "60f6abe5d3d2eed3ee0d89cc884fce5e204e8688264e1b425314f691aee6beb7",
+      "currentSha256": "8458e5c969d1e0bfe47da5d651d1bb36b21ae4ba3009493af097d40d44e9ddaf",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldByKey/no-snapshot",
+      "fn": "fieldByKey",
+      "originalSha256": "1e566987357004413f40c0b0c3b7a92390beb657e64c2549e55a09c84c3bda38",
+      "currentSha256": "07d2050f6092845d7c594e8bb700eb7f71b4ab34d4ddfae4ea7f7a992dd3b831",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldByKey/index-past-the-end",
+      "fn": "fieldByKey",
+      "originalSha256": "0bc6bae60ab18abd1fd62ea59dee838fdf2854fb1b3e84777246d838bbb4a91b",
+      "currentSha256": "2e874e186ff959351844b2ded671bc04a12e0c2a4b1f683e572d6041693b0c47",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldForWidget/found",
+      "fn": "fieldForWidget",
+      "originalSha256": "42cd80e0d1eec1545c6a0fb044309ff63ccf2521a4657d0e425f961ea8a22646",
+      "currentSha256": "c089a9d9308fae18f7c022dbfc8827807b9037fd12cef9d200ec026cccdb3197",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldForWidget/direct-widget-is-not-indexed",
+      "fn": "fieldForWidget",
+      "originalSha256": "d07e6e088c53f0546269a31d61f78db77b32ad302e555978f417cb722f9ab0c3",
+      "currentSha256": "c3d939198055075619cdca64ad59908badd27331fa4db888ca4654131088cf45",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldForWidget/unknown",
+      "fn": "fieldForWidget",
+      "originalSha256": "176355646a57848b57dd629826470289785851eae51141a727494344ee764627",
+      "currentSha256": "c87335530817a09ac057fc28dcd0ab83310916d9076b1387a8b1b2a82be55432",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldForWidget/index-past-the-end",
+      "fn": "fieldForWidget",
+      "originalSha256": "060055dc6e8073617ed6f2340fe5aa27d95bad0c6258e69218a11c4b1b72701b",
+      "currentSha256": "dd0f7b0e723c18a3ba4bb9827d53b88345756b0e51e7b739960f8cb4963e9025",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/text",
+      "fn": "projectWidget",
+      "originalSha256": "5a9eda6577cba96dc3e66ca1cff42297c22eb34508b780c9317559aa42429c7f",
+      "currentSha256": "a1eb6187cd0031f31141f14a9886107bc0c95dc51fb060d9becc6600b9876acf",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/text-default-box",
+      "fn": "projectWidget",
+      "originalSha256": "87eaad923a6331b6b7c26c82b186990bf1871a4b68979de55d649d776f78b5f3",
+      "currentSha256": "dae0717589b0b6bfa3320691ef0683042cc1d4e9bbc68a3743ab49b2723c1322",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/text-flags",
+      "fn": "projectWidget",
+      "originalSha256": "8fdbaffaf3ffc279e14af80efe5d1c910db4b325048472de53c14cbd8530c7e9",
+      "currentSha256": "93737f0e14bea09d743e1032382c989a1b715aba9c791e9142f8d13f679fa87b",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/read-only-is-disabled",
+      "fn": "projectWidget",
+      "originalSha256": "d8db4a5420f5d2f105e68d3778caa15cdf4b9ff7a93222dfb0464649626f1485",
+      "currentSha256": "ad7161fa12eabada9ec9579822a3634717c1b87d70ddbc517665d5bfd4c01506",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/writing-is-disabled",
+      "fn": "projectWidget",
+      "originalSha256": "7e0d474b174790964b2ef242531826ae4e152434c9cf21ac9b0e398f82bdb26b",
+      "currentSha256": "314b1824aab41cce0a46c5dba56a427b88554f0694049fb01e1b62153f59539c",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/checkbox-on-state",
+      "fn": "projectWidget",
+      "originalSha256": "ee64bf09f87df4d56383c2c7fb7f8ec272f9bed4c7ae26d9b6923d1baeb5c635",
+      "currentSha256": "6d43a209f1ce12fbda1d1e515c37682916de78a86c540cc0adc0b0fe19e2f9e5",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/checkbox-default-on-state",
+      "fn": "projectWidget",
+      "originalSha256": "a4f1494da5eaa3d997e87c17ccc2d378697136587709a6b47a51a30297386efd",
+      "currentSha256": "f97ef9fa67a0593fa78f0bc7d3ed7bcb00d4fe1a4a786e5784478532d6a174dc",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/checkbox-unknown-widget",
+      "fn": "projectWidget",
+      "originalSha256": "a7be70123b31028eb4fb874847085097d76b384043b4359821b39214dcc6f25d",
+      "currentSha256": "c9d26c4ea4745c5bfc42aa24b09e1c5cb15ebf0720e78581dc386c1b15490117",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/radio-checked",
+      "fn": "projectWidget",
+      "originalSha256": "83ed6db161189f6d8401b9a4c8b19e52c6bb7666ccef15cee348ac12db0edc33",
+      "currentSha256": "1054b266c3dcce68bcd6915e4881d239102b8ce1366f458ddb124e7761cc5b51",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/radio-unchecked",
+      "fn": "projectWidget",
+      "originalSha256": "c1a6bc43cc4f7d9e63814c0fd8326c5735470054b824e336a3f248e0a54b2dd3",
+      "currentSha256": "bf46b009e52e18639c4ac5f38f0d45fde20741dac25c65918fcb1b7afea0a66d",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/radio-bare-widget",
+      "fn": "projectWidget",
+      "originalSha256": "caa06ccd4c9d82288757ba11d506e582977412159defe41102875e7966f126b4",
+      "currentSha256": "9fbdccee167f83ca226f2244796956f5fad7e59d76fcfb33517ed95aa88d3c15",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/radio-unknown-widget",
+      "fn": "projectWidget",
+      "originalSha256": "6fe2204083ba11170fa7f749621abb7c9f8667c14e6e80a288f3db048a8b6f81",
+      "currentSha256": "d9c577b90e473881af73d4b4c46bd0e8c901fa2724cfa0bf8441d47a74d3f9a1",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/combobox",
+      "fn": "projectWidget",
+      "originalSha256": "42d75c7090dd29f2d7e21886c01db5c5bcde0c4def57e41e469d3335e9b28505",
+      "currentSha256": "10e36babb6737addb8156c06e39e4b0d14cc93fa8edc18354ecaacf97b3e8729",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/combobox-empty",
+      "fn": "projectWidget",
+      "originalSha256": "4d23555f598ae2bba665dba179262e663a9f423fd82d9a5c961ac9da372c84d3",
+      "currentSha256": "2495bf6f1c1e0f709ad5d440bfc0a575da303aa7abccd644b7c75ffdcae790c5",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/listbox",
+      "fn": "projectWidget",
+      "originalSha256": "f97c192658f59e24e02425d53ad349b0d49db9b0d5f9cb0774f3161410ae972c",
+      "currentSha256": "d50e78cdba0c3f8201183c42b22b6bd87d217a59733ebca9900604990debc945",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/listbox-single",
+      "fn": "projectWidget",
+      "originalSha256": "f7e7807ff4464fa31ae12a9db4dad9ebd101853631f4bee6ecb1594a6fa9ed87",
+      "currentSha256": "ef27a63278caccee9712710905afbe43f2dd35079b60c7be96b9dc06587033aa",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/pushbutton",
+      "fn": "projectWidget",
+      "originalSha256": "e9568c9406c39b46fe1479ff7aa0950ea196ddaf3ab510c5662faf14be061e93",
+      "currentSha256": "29f02f3cf391adf2013c3aaf96159d2230d80660b0a1a3e69c3d6e9696d30895",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/signature-has-no-control",
+      "fn": "projectWidget",
+      "originalSha256": "d3563b0fde3e82c2e84b9aeadbd6e393a904001ee37a31bb5a4f4e2177ab3e34",
+      "currentSha256": "eb972020ceb9fa8fa1ce9abac43790128bae809cf42c994f199941ae8fc1a2a3",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/unknown-has-no-control",
+      "fn": "projectWidget",
+      "originalSha256": "310c01134391937c77f08a87197db06f67c2e81facb917fc0fd34d7b27344ce7",
+      "currentSha256": "6ce05b2c48be449317da8c26a8de16d0e53a50e0d6470311366fc706900989ba",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/fqn-key",
+      "fn": "projectWidget",
+      "originalSha256": "e124deee8074fbbf1abe1c26dee542013c6f1c031b4e342f9bf18171088ec937",
+      "currentSha256": "b0121a8dbf13ca5f3d38c5a24665c1ac1f2d109dd82727ca7564261a5c4a220c",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItems/page-with-geometry",
+      "fn": "fillItems",
+      "originalSha256": "b29d07b6dc8b5cdfed0ade056303ba87a084a3b578e5acf7cc018646fffeec04",
+      "currentSha256": "14b196c2d0f020c36aa5b915c55ae4f8250448dfcfbfe638e9439665235c6edc",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItems/writing",
+      "fn": "fillItems",
+      "originalSha256": "7831b8b74b9325dfbbe40fbe6b044b9ddfb4c92623f3a04659415a3917f89f7c",
+      "currentSha256": "dec513035c0b063f59275c1e42c75bcb068d227c5f4c138e5a87a26cf3681037",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItems/page-without-geometry",
+      "fn": "fillItems",
+      "originalSha256": "ed93f2d41b52fb380d8739853c4cbc978c0cae7287a4359a4a116b77ddbb256e",
+      "currentSha256": "fdd7eb4ff92adc254b7b8e8101dc43cea51b1c4783502442d623d4d4b90862a1",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItems/no-snapshot",
+      "fn": "fillItems",
+      "originalSha256": "aae96a108521f4f766265e03b2a1a03be9583dd919d06be9cc413c12480344bc",
+      "currentSha256": "5a80abbd7d2a42c2bf3251a6364fab98cd2c76df14892119f52c881e4764cd0c",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItems/partial-geometry",
+      "fn": "fillItems",
+      "originalSha256": "110e7254d70538968b396bcfa545488def6bd6f1f9779db15e22626cb9758dca",
+      "currentSha256": "a266406d46cc9f915ead84e4fa288a09b0eb2bfba90b2d9c1f88eb590a3a2f89",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/with-geometry",
+      "fn": "fillItemForWidget",
+      "originalSha256": "df2c96a01b234867d5d1257876eaa7ec32068011457439b541091fa30ae038d7",
+      "currentSha256": "31ba2307ee04e1bc74d7ecba50c25770395b2f7e1887765005431a4bff01c327",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/without-geometry",
+      "fn": "fillItemForWidget",
+      "originalSha256": "03997fa2f0a9e0f4e9f3b87e5f151bcaf6744daf6138dc050db1547d1ff60086",
+      "currentSha256": "b8fdc6fee7be87c1454c7c35a7cd8c2cdf0da8b0eb89c7fe11ad1d0de1eacaa0",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/other-page-geometry",
+      "fn": "fillItemForWidget",
+      "originalSha256": "bc739692bc8ec137f21e7c245a191207b5be2dedbc5ca7e33f4af064bb3f247a",
+      "currentSha256": "66a3ae36de98c53d5ea69c03510873c6345947288e47c4b61bf2ccbca9fbd980",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/unknown",
+      "fn": "fillItemForWidget",
+      "originalSha256": "fefc56b405059a0b0493ac425faf31d8a0a7dedaa8c95d2ee87c529ebe263f98",
+      "currentSha256": "9ce8c046159f17deefd8fc0b2f8ebb62f3ce582e4a080131a8e463b60ac0209b",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/no-control",
+      "fn": "fillItemForWidget",
+      "originalSha256": "b585e20970dcbf9dc65cdfc96bb1e769ca3fa600bd7afc5ed1ab3b7ca3ad1214",
+      "currentSha256": "fdd6a46a2a4dfe2eac868e493021d4ff7beccb563f82fe5e805e08f4ab9b4f79",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/index-without-the-widget",
+      "fn": "fillItemForWidget",
+      "originalSha256": "aabddea0df4bef4fbf08bfb550cfa42c7c5f2dad8080680e2bce8028c5b8e2b9",
+      "currentSha256": "c17210cc9df7974a37629b8a459654059a44c1b2a511ddb626cf7adf97303ff1",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fillItemForWidget/an-unplaced-widget-has-no-box",
+      "fn": "fillItemForWidget",
+      "originalSha256": "82e5a40a6fc5f0119ba9e7a5ed642d59b253998c4f5c0c8ff3e14a0f25c223d6",
+      "currentSha256": "ad5b8508d84cccda88b4015d47f43d9769491c45f823ea07123455fa2f077d04",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/signature-unsigned",
+      "fn": "projectWidget",
+      "originalSha256": "bbaaec26291a529791937ebd814d19d862e78dbeab2f9a5122fe974d43cd1c93",
+      "currentSha256": "dc98ac271f9935cda0b256ae205d91823621ae40550ecaf4e00ce0fa21bed2dd",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "projectWidget/signature-signed",
+      "fn": "projectWidget",
+      "originalSha256": "5794b23b11340c79f70dde8356e7129ac591abdaed74c4e6a763636feb126544",
+      "currentSha256": "cb056064f8e7f5c60b0fe19b5e6176bce81730dd82ba483aa614ae2a8d4345ad",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/no-geometry-for-the-page",
+      "fn": "widgetAt",
+      "originalSha256": "f94f701d3abfcf49eb28ec24df9ce65947dce88e53ff3139cf1af13163eb9824",
+      "currentSha256": "ea10a9e02728b1ac492cc8f0d1add2ebd0ed9631983e7f83436e0fe413d08e2e",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/nothing-under-the-point",
+      "fn": "widgetAt",
+      "originalSha256": "160c449373c125a0f0ee6008095e687edb597899cdc178b7f4e2b53f8e120bc5",
+      "currentSha256": "854316df32a04908a9c2eed04a4a9147a39f0bfdd8e12559004a20d46e3ae7db",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/the-smallest-containing-box-wins",
+      "fn": "widgetAt",
+      "originalSha256": "a503e114042c4d715bd5c6bf502c9be17a4d8fa809112e940d77b6d5997c3a0b",
+      "currentSha256": "58e1b196bfb101a67b2192cd624d2257df08606f9c50dd009fb60ec3200ffd7e",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/edges-are-inside",
+      "fn": "widgetAt",
+      "originalSha256": "932961692b52be8cf35c51861631182ab7c88075d099e94ff21d6ebf304351b7",
+      "currentSha256": "84eb9af807587d7ac7f699937bce52051a4b65718e39a9bd753304beb91a6f48",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/a-box-without-a-field-is-skipped",
+      "fn": "widgetAt",
+      "originalSha256": "4ad6f85e6a206d0fb604b7a38e39f71119bb71943fd42275ba23e005954743e9",
+      "currentSha256": "ec8ce826589e54dade81d67a01d6e0d050eabcc9c2cff0ecc5bb80d5a72d84ca",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/equal-areas-keep-the-lower-object-number",
+      "fn": "widgetAt",
+      "originalSha256": "3a01bc9df07b22c0d1448bbdc21bdabb5e2192e5582c9223db7aa0da718a1512",
+      "currentSha256": "f88eba57a1b0c1a99a1464b231401ff6eac17811dbb8bbe1f7bf5ad79fd73c2d",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "widgetAt/a-larger-box-later-loses",
+      "fn": "widgetAt",
+      "originalSha256": "7fb1f013e2770536c34902ee96d60df5b686089553f04a4e04181d09b9d3446b",
+      "currentSha256": "78167dc5473d3baa2803d2b6edbe87a5c9d2d95e73de27e70d66226477cae0b7",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "initialFormState/empty",
+      "fn": "initialFormState",
+      "originalSha256": "45faf5fe8541c97808d63420d0a84a76445be61b33d1632000fce6beb0e02f2c",
+      "currentSha256": "412ba9b59f9f71af9ed57682245287c2183eafbe48f07691ce4c85d34f2c2b41",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formReducer/set-model",
+      "fn": "formReducer",
+      "originalSha256": "631e31b6160279cc67c993986d39ec7e513668e4b5dd59c1331253b01ed82b87",
+      "currentSha256": "276e88ac85b62ccc7bdb61d7f6dda18d8f86aba3ed0411ed8bda8d306860fb93",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formReducer/other-action-is-no-change",
+      "fn": "formReducer",
+      "originalSha256": "52e0f8c6018a3c405793da4ea34b5e062fa11441492fdf6fbd7b6b4451356cd8",
+      "currentSha256": "2a635ec4f5f3c82e261120ccb0c2a75c8e99af7692fc4eded9994c8b70313112",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formReducer/set-status",
+      "fn": "formReducer",
+      "originalSha256": "59e387237307f03b6efd3cb7572c80b17cf9c286d07caa59ce10f281266dd73b",
+      "currentSha256": "c2738a3856cdcb3f9f8e6da0468287290ae3dc2179caf500a26e1480a01774be",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formReducer/set-status-unchanged-is-no-change",
+      "fn": "formReducer",
+      "originalSha256": "9e78ede2eae30d87ad984556d68455036acfa317f34df8d98f98c3dbca36d317",
+      "currentSha256": "91e60cdb4930fba446bda8d558894e8ea6cd366294ab6af302f966a82855cf4c",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldRefByName/fqn",
+      "fn": "fieldRefByName",
+      "originalSha256": "487ad46e4b9342c424f8c155b21d313f9b9ca0c43c59cc62c1cf909e6827da74",
+      "currentSha256": "0b9103536411cb23ba04db59c3b6c1b2da016bea28e31f03dde560398693bd3b",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "fieldRefByObjectNumber/object-number",
+      "fn": "fieldRefByObjectNumber",
+      "originalSha256": "c0da86c01f5d3870eacbda7d89cbbbe00f55ecb43824477dd8f569b71b84acda",
+      "currentSha256": "5b574c3bccbc56a0e4c8ce9184968ab94c28cbbe0f0aac7e6bec69987e50a857",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formTools/the-palette",
+      "fn": "formTools",
+      "originalSha256": "02bdfea493bdcff709e55c27cfdf015ec1b995ba7050cca37687d2cef4148b61",
+      "currentSha256": "61abee26a9d7726cb09c3ae357acee01f0e7729c69aab6568560d67406f59a5a",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formToolById/text",
+      "fn": "formToolById",
+      "originalSha256": "1f68ddf0fc384afb5b7630c3ea72b50cacf88d7c8b4a6f7c5616822bbae81e9f",
+      "currentSha256": "ad33e17310b817c52cdc1fbf5bda0ba2916f2020f919b34109e736d6c38a1111",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formToolById/listbox",
+      "fn": "formToolById",
+      "originalSha256": "24aa7dc1b4d498f94c1ef2a2508d2e5f6d41eb41196fe32f6fc81cefec00eb71",
+      "currentSha256": "9e5489c57217064f5c15c100d2163049b6eef9d03738f406056eaabf6557872a",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "formToolById/unknown",
+      "fn": "formToolById",
+      "originalSha256": "ed5ade68273e96c5e1506bc3660b86ca4041229d84985f865dfbb4168181f1e7",
+      "currentSha256": "339db5ef6637fed6f14fe4a914bf3012f00db9f7c7fc04793bb36c0478b29ba5",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/null-selects-all",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "719073eb08ab8bd75617aeecf6002b54b99ac415db8d2d659b5d2f67754e05d5",
+      "currentSha256": "ab10cfa31f14d803f7405d44382f50cb2e98da024197ddf2ae11624f5559ed59",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/null-ignores-exclude",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "c7a4d8c37dbecd5bb3cfbf2dab03ee1302a9cd6822e10c262b7031545169db96",
+      "currentSha256": "5c7f2bff9e1498cc26c7f0cfa67852233d2dfb55f7b61f37140ae2d9ae630002",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/empty-include-selects-nothing",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "8b4e171b02c2f9b508d351f78be2e7f4f18dee9f1035e1a469717c15a221524f",
+      "currentSha256": "5b7b6a5c798592572041d8c5d0d65f67de9b4faf77944300153b640a796d74f1",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/empty-exclude-selects-all",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "6a59b3934cee9fbe1065846668d6ad6e30ec0c9df57fec3bb5744dd9e85ccbfc",
+      "currentSha256": "fddf2f27353a986b7183322d42a09270cee296b6c7075eca68155f025cc3fd21",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/a-parent-name-selects-descendants",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "9a509411fd2fe4335082bf4127b3bc4837b8ec532c084105d8de7b1bc687cb81",
+      "currentSha256": "f90fb091cae8b2d3cc3e7b1d13a4ac689613be3a35d109c532aa1308cb3cf5bf",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/exact-name",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "4bb712bfa30390d07eeba78d101f5f8c3a93d491432daa729d689a3edbd12160",
+      "currentSha256": "9744576f211cb681c7134ff62c2c025b26a30695d9e6fa00c3535b7925afefd9",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/exclude-a-subtree",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "2b6e4fa666323af96cf05d61d44b36f38dda9699694686fc6a401531864ae2dd",
+      "currentSha256": "f30c400457ead4155e79e75357e73792bf24783f880959bccc911ac5d4857c8f",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/object-number",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "6bb8c2f308153965dadb2c262e553339661418875ada802938442c3c41e4b14e",
+      "currentSha256": "4f48f5dd17bf2fab26bee4f364a3704be3052b77eaccabd9f8612ed69cf46431",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/object-number-never-matches-an-fqn-ref",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "6e5d2187a42cbea765e2af0ab461c4b35ebfbbb8b91a26f50e2db71ebcae65bb",
+      "currentSha256": "5e39f2935a6eb02838632909d667a67721f07e5bc461e652336d42a980797c34",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/a-numberless-target-finds-a-numberless-ref",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "7461c840bb990a463241694fdcbbd330adb6f8c1ca8670964cf62483f4db9c4b",
+      "currentSha256": "334409d281a366f244e43f317f2e36603da2206b9a9a3f03c44bdad1b0cc4004",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "resolveFieldSelection/mixed-targets",
+      "fn": "resolveFieldSelection",
+      "originalSha256": "d66828ee6e1727fe0db463a31c66986152f3c0446c3036f643aa4c6e2aa55f06",
+      "currentSha256": "c47152ee2652970e5870b291199b7c614b729a65f843cdc3164cebd88c3c298d",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/fields-absent-silently-drops-ineligible",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "7c1b170c82444b92d90ad8e5898f83ca4ba233504ca5d7a9bfdacfbe2504f12f",
+      "currentSha256": "60e6f7bb0adfc564e87ac20ecfd1b1d88a030ee19b09ac846269b649b42b6ed0",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/explicit-no-export-is-diagnosed",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "cc2d7fcb89b82d3443352dd3916518aa3d98c10465c00aa86031bc2497185649",
+      "currentSha256": "5184d0bc46e3e40ac73ecc502feaa16aaf87022487e05461fba2f6afaa2032b6",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/explicit-button-and-signature-are-diagnosed",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "044e4c808d5bd5874a57dc6d2f171fd8046d5eaebe7850ea2d32bef2ef12e53b",
+      "currentSha256": "51673c61f17cc2e3e57bf73d61f4b6c73d71923cf4eb7f3f2724212868a97a78",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/exclude-mode-is-never-explicit",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "c2328cdfc9e7dcc41ee983066633ff94cbd4b09a015854d055211a5483660d9c",
+      "currentSha256": "772e3b8d58aa3aeea681ddda915cf1e67b73412fa8bb5822d111fcf617ce9d92",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/unsupported-value-shape-is-always-diagnosed",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "53651cc756eae2f73c42fe252d2075f095bc6e31a4122947e747773eef7883b2",
+      "currentSha256": "012bf719150f21561d07e896582cfb6bcaa58bd5e173f9106c4a5244722f6836",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/unknown-value-kind-is-diagnosed",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "9cbce68b0ef7900c8a28fd34450996341bd0e3b16eb2868492bede47820633a4",
+      "currentSha256": "f1e44b88444a3f3860a2759f39e98c388191525cca0fcd5d3a058882f59014b4",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/valueless-skipped-by-default",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "1ca1dc74eb48474fec684231a713d5e451cec9757fc1c555814700c4dd1b9a0d",
+      "currentSha256": "cb682fabb89c570b075f1f9727e537e80131e3cbd86d05fb91b556afec8c7827",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/valueless-name-only-when-included",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "cc0dea1ad2be340c756b5dbd5ea124e65fb01d5f202dd6c559a9a84bba83cde2",
+      "currentSha256": "939bbff8dee6723d9ba9ada50a253ce6d1ef2b2ca23ea4f123743a75812b3e72",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-core.json",
+      "name": "buildSubmitEntries/descendants-and-arrays",
+      "fn": "buildSubmitEntries",
+      "originalSha256": "bf8f89ba6e3ce1593001ba4bfb9666591385272874160826c5d2c73efb9c712b",
+      "currentSha256": "7cfc3643e84d7d36331acd9ad6db5cd611ce7b664f7a1b20998aa84fcfc10b4a",
+      "disposition": "unchanged: baseline only",
+      "slice": "i"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "hydrates-on-open",
+      "fn": null,
+      "originalSha256": "902560dac1bc3b943087528acb29a6ffb7caaaff83b150bb369eb58f61454ce1",
+      "currentSha256": "902560dac1bc3b943087528acb29a6ffb7caaaff83b150bb369eb58f61454ce1",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "no-read-grant-never-lists",
+      "fn": null,
+      "originalSha256": "c20e5c86af8c0bf969982ca154932f3c2c7058681cd59e391df1283a6b0be356",
+      "currentSha256": "c20e5c86af8c0bf969982ca154932f3c2c7058681cd59e391df1283a6b0be356",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "refresh-coalesces-and-forces",
+      "fn": null,
+      "originalSha256": "be0ebec2b35faca3d496d1089ba20371a788e2e87fdaa2c93a84c21b081a4d5b",
+      "currentSha256": "be0ebec2b35faca3d496d1089ba20371a788e2e87fdaa2c93a84c21b081a4d5b",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-load-warns",
+      "fn": null,
+      "originalSha256": "cc036ae714d507d9f6392d76a6fad502c8ade9301f33173716ac44fa9d73a05d",
+      "currentSha256": "cc036ae714d507d9f6392d76a6fad502c8ade9301f33173716ac44fa9d73a05d",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "widget-geometry-loads-once-per-page",
+      "fn": null,
+      "originalSha256": "9b39564647a38205cfaf14ce86d2d76e2ec78fa923304b4fa43069709a9996ae",
+      "currentSha256": "9b39564647a38205cfaf14ce86d2d76e2ec78fa923304b4fa43069709a9996ae",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-geometry-read-can-retry",
+      "fn": null,
+      "originalSha256": "447b45f97a1485784eb69d3b64fc3ec836f414c31fea3b995ce3016c8c654ea2",
+      "currentSha256": "447b45f97a1485784eb69d3b64fc3ec836f414c31fea3b995ce3016c8c654ea2",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "fill-authority-fuses-into-disabled",
+      "fn": null,
+      "originalSha256": "cb0afcbe471d775e5507808a5d0eca0c8344dc7ad07ba46096332e17e3d0b833",
+      "currentSha256": "cb0afcbe471d775e5507808a5d0eca0c8344dc7ad07ba46096332e17e3d0b833",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "typed-writes",
+      "fn": null,
+      "originalSha256": "4856539117321686e8cf762b9a3de22e8f27fe038ed849a54129d16122bff33f",
+      "currentSha256": "4856539117321686e8cf762b9a3de22e8f27fe038ed849a54129d16122bff33f",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "writes-serialize",
+      "fn": null,
+      "originalSha256": "3d7026e2aa21ba1ddfffde50bf6f9994f7ab4c94daf14ec98fa4b9f748fe7ebc",
+      "currentSha256": "3d7026e2aa21ba1ddfffde50bf6f9994f7ab4c94daf14ec98fa4b9f748fe7ebc",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-write-reverts",
+      "fn": null,
+      "originalSha256": "86cde25f832c5194a1e072837714fce91f8038f9514a56dd8bf44bffff8cfcb7",
+      "currentSha256": "86cde25f832c5194a1e072837714fce91f8038f9514a56dd8bf44bffff8cfcb7",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-write-gate",
+      "fn": null,
+      "originalSha256": "2676a35347348da82ee0fbe45d955c1de7407aa598e5980392c4c08cd1f7b28e",
+      "currentSha256": "2676a35347348da82ee0fbe45d955c1de7407aa598e5980392c4c08cd1f7b28e",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "commit-value-without-scripting",
+      "fn": null,
+      "originalSha256": "2fa22b819da0d3a49cd19895d911cdd47742b6137ab030675a348191c522b2d2",
+      "currentSha256": "2fa22b819da0d3a49cd19895d911cdd47742b6137ab030675a348191c522b2d2",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-rides-the-batch",
+      "fn": null,
+      "originalSha256": "bd85891add9caf7b3d98b76106436fc33426626d637e5cc2319a6ef3112fa54b",
+      "currentSha256": "bd85891add9caf7b3d98b76106436fc33426626d637e5cc2319a6ef3112fa54b",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-reset-batch-rejects",
+      "fn": null,
+      "originalSha256": "4c0abb29235f4e493d91aae96e544301100df7260194efbed58fec3f30abe3b3",
+      "currentSha256": "4c0abb29235f4e493d91aae96e544301100df7260194efbed58fec3f30abe3b3",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-without-the-batch",
+      "fn": null,
+      "originalSha256": "ea2f6ab7a899e6edbc40b8d3b9b82608782d1c0171bd7a62f0ce854e8c7f8eed",
+      "currentSha256": "ea2f6ab7a899e6edbc40b8d3b9b82608782d1c0171bd7a62f0ce854e8c7f8eed",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "set-value-passthrough",
+      "fn": null,
+      "originalSha256": "730b7fd9daf5c22711e5a2f90adc6cbf29230e73257d1716ccba20dd449d4901",
+      "currentSha256": "730b7fd9daf5c22711e5a2f90adc6cbf29230e73257d1716ccba20dd449d4901",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "interchange",
+      "fn": null,
+      "originalSha256": "7c9de57f393c450b99e1300e8f45b667d94ce3f3e5456b6ee0649be064ab1244",
+      "currentSha256": "7c9de57f393c450b99e1300e8f45b667d94ce3f3e5456b6ee0649be064ab1244",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-twins",
+      "fn": null,
+      "originalSha256": "1c3e69acb2bc0c0c6a5b9673ddf7c4c7be4b71fd2f480327f4ea010eedf3c0e2",
+      "currentSha256": "1c3e69acb2bc0c0c6a5b9673ddf7c4c7be4b71fd2f480327f4ea010eedf3c0e2",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-effect-folds-foreign-events",
+      "fn": null,
+      "originalSha256": "87a533d2bc9024d74c39f00c4101d85bee3645d4124b2cc18e7ea26748a4b909",
+      "currentSha256": "87a533d2bc9024d74c39f00c4101d85bee3645d4124b2cc18e7ea26748a4b909",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-effect-refresh-is-latched",
+      "fn": null,
+      "originalSha256": "8e1626b10afd45fba51747619d49f2ee920a710b78d13f61dd34d8adc54d8351",
+      "currentSha256": "8e1626b10afd45fba51747619d49f2ee920a710b78d13f61dd34d8adc54d8351",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-reset-action-without-a-batch-door",
+      "fn": null,
+      "originalSha256": "94ca2bd9df1c68a161b3cf3022fc651b2e90290f160c1153eb03b1639fc42ad5",
+      "currentSha256": "94ca2bd9df1c68a161b3cf3022fc651b2e90290f160c1153eb03b1639fc42ad5",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "close-unsubscribes",
+      "fn": null,
+      "originalSha256": "e621f7b0e2f452dd3ce1edc7f17712c3c396b53fcbee8b20d4525f1c6f94704b",
+      "currentSha256": "e621f7b0e2f452dd3ce1edc7f17712c3c396b53fcbee8b20d4525f1c6f94704b",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "geometry-on-an-offset-crop",
+      "fn": null,
+      "originalSha256": "31f3f2e84d35b775f4770544bf3a5894fbc0aec7e42f35eb71237d3cbb5779bb",
+      "currentSha256": "31f3f2e84d35b775f4770544bf3a5894fbc0aec7e42f35eb71237d3cbb5779bb",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reads-over-the-snapshot",
+      "fn": null,
+      "originalSha256": "8262520b10a2987bc7df01d03e6193b5723cd6c0b786e1e30a32252c59fd8171",
+      "currentSha256": "8262520b10a2987bc7df01d03e6193b5723cd6c0b786e1e30a32252c59fd8171",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "status-without-read-and-after-a-failed-load",
+      "fn": null,
+      "originalSha256": "2bb5c54f8b68147a612842f8efc15ed172af94fdcb2ba15f69dfc5c3945af66c",
+      "currentSha256": "2bb5c54f8b68147a612842f8efc15ed172af94fdcb2ba15f69dfc5c3945af66c",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "batch-writes",
+      "fn": null,
+      "originalSha256": "9b6bf30e7dec34b0996d5539f3359129133886d2325e6b6c7571590a6695a85f",
+      "currentSha256": "9b6bf30e7dec34b0996d5539f3359129133886d2325e6b6c7571590a6695a85f",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "values-keyed-by-integer-like-names",
+      "fn": null,
+      "originalSha256": "bc253f1d523a42fda483163284adca7795f77eb2fb5db82a581e1ed5e7e3d1f8",
+      "currentSha256": "bc253f1d523a42fda483163284adca7795f77eb2fb5db82a581e1ed5e7e3d1f8",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-all",
+      "fn": null,
+      "originalSha256": "6dc082d0ac6885a18e70b0c50827c3878a0be384f6de41a0036ff8f11a88643e",
+      "currentSha256": "6dc082d0ac6885a18e70b0c50827c3878a0be384f6de41a0036ff8f11a88643e",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-all-failures",
+      "fn": null,
+      "originalSha256": "489612423f9c5449db5918067b08c357ef3385bf96fd4811bfa291204d6b9b40",
+      "currentSha256": "489612423f9c5449db5918067b08c357ef3385bf96fd4811bfa291204d6b9b40",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "confirmed-change-events",
+      "fn": null,
+      "originalSha256": "9bc9339e1e973d992fcd67622171acf151c1b6558a92829d845ad92ea2d862a2",
+      "currentSha256": "9bc9339e1e973d992fcd67622171acf151c1b6558a92829d845ad92ea2d862a2",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "an-unsubscribed-listener-hears-nothing",
+      "fn": null,
+      "originalSha256": "daea068fab9db34c11aa07738b108112cee4737bbe22945f4980c79576f1f6ab",
+      "currentSha256": "daea068fab9db34c11aa07738b108112cee4737bbe22945f4980c79576f1f6ab",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "init-without-annotation",
+      "fn": null,
+      "originalSha256": "012dfe1f83f3f7b2c1c6c9b07fabba55576b2312bed9be1ba750e07f758b6440",
+      "currentSha256": "012dfe1f83f3f7b2c1c6c9b07fabba55576b2312bed9be1ba750e07f758b6440",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "init-with-annotation",
+      "fn": null,
+      "originalSha256": "4e0df1205aaf8f2d77ceb8965eed8c413004cea5e42a4dd8a6ef82beebd306d3",
+      "currentSha256": "4e0df1205aaf8f2d77ceb8965eed8c413004cea5e42a4dd8a6ef82beebd306d3",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "place-a-text-field",
+      "fn": null,
+      "originalSha256": "879b7925eab730415fbf0f95ded85cfae36db0883b7f9d7f31b74579fd8eea5c",
+      "currentSha256": "879b7925eab730415fbf0f95ded85cfae36db0883b7f9d7f31b74579fd8eea5c",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "place-each-family",
+      "fn": null,
+      "originalSha256": "e58f5f76797b470d838404853d678e6eb4a03dd6896e86f5c7568ec1bbcee570",
+      "currentSha256": "e58f5f76797b470d838404853d678e6eb4a03dd6896e86f5c7568ec1bbcee570",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-before-the-snapshot",
+      "fn": null,
+      "originalSha256": "aa8d19829ad548d6579b98cca2b451265d65402f74f84cae769145619e3f16c5",
+      "currentSha256": "aa8d19829ad548d6579b98cca2b451265d65402f74f84cae769145619e3f16c5",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-is-page-bound",
+      "fn": null,
+      "originalSha256": "a1b7f31cad11479e16bdfd9c26d7adc06903ae1b182acf89031bb353d62ae428",
+      "currentSha256": "a1b7f31cad11479e16bdfd9c26d7adc06903ae1b182acf89031bb353d62ae428",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-refused-by-the-engine",
+      "fn": null,
+      "originalSha256": "c61f51682b9e137a94ee105f36882d25d2145ff4a61a94648560e9f5f9bff9e5",
+      "currentSha256": "c61f51682b9e137a94ee105f36882d25d2145ff4a61a94648560e9f5f9bff9e5",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-reloads-the-annotation-page",
+      "fn": null,
+      "originalSha256": "85b915b20644d7133ff9b8e630387478358374bfb382042638c3d9f7b6fc5bd8",
+      "currentSha256": "85b915b20644d7133ff9b8e630387478358374bfb382042638c3d9f7b6fc5bd8",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "page-box",
+      "fn": null,
+      "originalSha256": "e63f866c3a70fe53b6b63f164c66c6d1f9722b0cedca8bebfcc71b6466768473",
+      "currentSha256": "e63f866c3a70fe53b6b63f164c66c6d1f9722b0cedca8bebfcc71b6466768473",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "update-field",
+      "fn": null,
+      "originalSha256": "6938a8f84f093f51adc399dd43651e420c3585a7abd785d1aacbc0931d6c2346",
+      "currentSha256": "6938a8f84f093f51adc399dd43651e420c3585a7abd785d1aacbc0931d6c2346",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "delete-field",
+      "fn": null,
+      "originalSha256": "3b7014da92ab455374d826502b97135b618f0604e08ad1253fa66b17ce1b9158",
+      "currentSha256": "3b7014da92ab455374d826502b97135b618f0604e08ad1253fa66b17ce1b9158",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "queued-verbs-interleave-with-page-reloads",
+      "fn": null,
+      "originalSha256": "954eccb8c7bf7befbdd9b37306fbd7bd12ca167c086ab9c23880e6ff95296980",
+      "currentSha256": "954eccb8c7bf7befbdd9b37306fbd7bd12ca167c086ab9c23880e6ff95296980",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "delete-field-without-annotation",
+      "fn": null,
+      "originalSha256": "4632f882242db5872a05d0fecaae190f1a926580ce76cb3ca1262010bf7d2270",
+      "currentSha256": "4632f882242db5872a05d0fecaae190f1a926580ce76cb3ca1262010bf7d2270",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "detach-widget",
+      "fn": null,
+      "originalSha256": "6d14202b3853f1d003d59ec91e034b6dedf71aef55a5c35910916597cf0e8832",
+      "currentSha256": "6d14202b3853f1d003d59ec91e034b6dedf71aef55a5c35910916597cf0e8832",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "widget-hit-test",
+      "fn": null,
+      "originalSha256": "4aeb301f658d683a0eb49671cffd4399d6a574174dee06f054d7cfbe1c97d609",
+      "currentSha256": "4aeb301f658d683a0eb49671cffd4399d6a574174dee06f054d7cfbe1c97d609",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "widget-hit-test-live-boxes-compare-areas",
+      "fn": null,
+      "originalSha256": "b28d2c5ca79c37618904e26cdaced8e4d323f995c08c9adbd7d2d43cc8d98442",
+      "currentSha256": "b28d2c5ca79c37618904e26cdaced8e4d323f995c08c9adbd7d2d43cc8d98442",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "widget-hit-test-without-annotation",
+      "fn": null,
+      "originalSha256": "b57ef69bafb7fc5bd0cd84fa62eddf6e475b62b95710cd824eb209c7ed8b65b0",
+      "currentSha256": "b57ef69bafb7fc5bd0cd84fa62eddf6e475b62b95710cd824eb209c7ed8b65b0",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "attach-widget",
+      "fn": null,
+      "originalSha256": "4d33f052fff9f0f53a0cf912e40aee9e564edec4353a1ce884744bd39b577be5",
+      "currentSha256": "4d33f052fff9f0f53a0cf912e40aee9e564edec4353a1ce884744bd39b577be5",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "place-with-a-name-and-options",
+      "fn": null,
+      "originalSha256": "286df9450a344f067b5edd14bb90929ef7631e394d3b7c3905a2e48fc43f5380",
+      "currentSha256": "286df9450a344f067b5edd14bb90929ef7631e394d3b7c3905a2e48fc43f5380",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-click-places-the-tool-default",
+      "fn": null,
+      "originalSha256": "d322afbf77c947d175014f6b156cbc2755302dd7b0b8d67c3e729511af351720",
+      "currentSha256": "d322afbf77c947d175014f6b156cbc2755302dd7b0b8d67c3e729511af351720",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-click-near-the-edge-is-clamped",
+      "fn": null,
+      "originalSha256": "a51116958daae260c996a5fd42b4c16cecb44c3673ab4bb4e588ff19f7dff0e9",
+      "currentSha256": "a51116958daae260c996a5fd42b4c16cecb44c3673ab4bb4e588ff19f7dff0e9",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-thin-drag-is-a-drag",
+      "fn": null,
+      "originalSha256": "3585231767b48610cf2540467b2d04b69a789dc795b72e5fa43ca9e1e1976681",
+      "currentSha256": "3585231767b48610cf2540467b2d04b69a789dc795b72e5fa43ca9e1e1976681",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-home-page-tracks-through-the-projection",
+      "fn": null,
+      "originalSha256": "1d33b1398cf6e2c1794156bc1a79d34ec132f4fcc491f1d4eb25663e47a17f46",
+      "currentSha256": "1d33b1398cf6e2c1794156bc1a79d34ec132f4fcc491f1d4eb25663e47a17f46",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-live-preview",
+      "fn": null,
+      "originalSha256": "a39e94a558c3cc2600eff6d086f3a4f5c7bdf582ffa1ae14349b5ff3c9ecb436",
+      "currentSha256": "a39e94a558c3cc2600eff6d086f3a4f5c7bdf582ffa1ae14349b5ff3c9ecb436",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-click-threshold-is-strict",
+      "fn": null,
+      "originalSha256": "fc3463124d2529593eb2ae5912b8c1ccb89e2ee41aacea1416fb92795d20134a",
+      "currentSha256": "fc3463124d2529593eb2ae5912b8c1ccb89e2ee41aacea1416fb92795d20134a",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-handler-outranks-lower-priorities",
+      "fn": null,
+      "originalSha256": "fd1f3cfefd3a43bcc4bde091fa558dc9b3a221cb05cfadb16d1d1ce7d2070aee",
+      "currentSha256": "fd1f3cfefd3a43bcc4bde091fa558dc9b3a221cb05cfadb16d1d1ce7d2070aee",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-handler-declines",
+      "fn": null,
+      "originalSha256": "384f80d7d735034799fc142565e77dac00b8329f5817562a18f0304666f9340c",
+      "currentSha256": "384f80d7d735034799fc142565e77dac00b8329f5817562a18f0304666f9340c",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "auto-select-waits-for-a-stable-world",
+      "fn": null,
+      "originalSha256": "f2eb0ba760c43de160d47fb402b2e6512e71c0ea243e7e0568da6add05fdfa8d",
+      "currentSha256": "f2eb0ba760c43de160d47fb402b2e6512e71c0ea243e7e0568da6add05fdfa8d",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-failed-placement-is-logged",
+      "fn": null,
+      "originalSha256": "d5b89e0cecaa0ad13ee7d1a9154710d1e301101169f21917090bf049b21b0117",
+      "currentSha256": "d5b89e0cecaa0ad13ee7d1a9154710d1e301101169f21917090bf049b21b0117",
+      "disposition": "unchanged: baseline only",
+      "slice": "ii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "standalone-configured-environment",
+      "fn": null,
+      "originalSha256": "870bd780f352dafad8444ef28f38722a8ed03e357c7c966ce6751bc51e931923",
+      "currentSha256": "870bd780f352dafad8444ef28f38722a8ed03e357c7c966ce6751bc51e931923",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "standalone-default-environment",
+      "fn": null,
+      "originalSha256": "56c0aa157ead16bb472a863e09f7c76f7a02debd3ed3d79ce8a07523365b0340",
+      "currentSha256": "56c0aa157ead16bb472a863e09f7c76f7a02debd3ed3d79ce8a07523365b0340",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "standalone-identity-callback",
+      "fn": null,
+      "originalSha256": "b49043205a816f1840eda31cfed47354c3fc3e417c8cb9d3bfecf4135962ceb0",
+      "currentSha256": "b49043205a816f1840eda31cfed47354c3fc3e417c8cb9d3bfecf4135962ceb0",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "standalone-dispose",
+      "fn": null,
+      "originalSha256": "f32608e8795783c722929a00677471cf8117d06e07504dcb77bf6405f864396c",
+      "currentSha256": "f32608e8795783c722929a00677471cf8117d06e07504dcb77bf6405f864396c",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "form-values-cross-into-the-overlay",
+      "fn": null,
+      "originalSha256": "f52849b5a18516266a7f0ef42a699e8a9ab681868dfc8e71c27dca6181d21e54",
+      "currentSha256": "f52849b5a18516266a7f0ef42a699e8a9ab681868dfc8e71c27dca6181d21e54",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "a-cleared-toggle-proposes-off",
+      "fn": null,
+      "originalSha256": "f9b97e56124f0260cd14146a01a8181e7e2e7497ebce3e918ea3c850872f1ea9",
+      "currentSha256": "f9b97e56124f0260cd14146a01a8181e7e2e7497ebce3e918ea3c850872f1ea9",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "validated-values-cross-back",
+      "fn": null,
+      "originalSha256": "d7c32d77e1505eeb6f53314cf1d1c5d5d616402af9e23e59759d66dc64205efc",
+      "currentSha256": "d7c32d77e1505eeb6f53314cf1d1c5d5d616402af9e23e59759d66dc64205efc",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "boot-effects-land-with-the-commit",
+      "fn": null,
+      "originalSha256": "bb32b23d58ea0ae04e8891bad9103658ff4096fad731d43aff4d38e5521492cb",
+      "currentSha256": "bb32b23d58ea0ae04e8891bad9103658ff4096fad731d43aff4d38e5521492cb",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "a-failed-boot-degrades",
+      "fn": null,
+      "originalSha256": "3fb045d2e542b7b5ea0dbed98f235750f59e9852921bf742b72c8dc0b63ff485",
+      "currentSha256": "3fb045d2e542b7b5ea0dbed98f235750f59e9852921bf742b72c8dc0b63ff485",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "a-boot-error-output-degrades",
+      "fn": null,
+      "originalSha256": "f4873a2f2f0e636c1642b0cd02448d2ad7f4fff93d3b9561ee4ceff29e4bcbf5",
+      "currentSha256": "f4873a2f2f0e636c1642b0cd02448d2ad7f4fff93d3b9561ee4ceff29e4bcbf5",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "a-failed-catalog-read-degrades",
+      "fn": null,
+      "originalSha256": "9457c2f26a50d77bba113e681dfa2eedf084dd3749c0dfd123268c49114b4a0b",
+      "currentSha256": "9457c2f26a50d77bba113e681dfa2eedf084dd3749c0dfd123268c49114b4a0b",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "rejection-keeps-boot-effects",
+      "fn": null,
+      "originalSha256": "b6b95d425bf34c190d54791661511db4503e8a4cfd7258e1fc3c2a698881da16",
+      "currentSha256": "b6b95d425bf34c190d54791661511db4503e8a4cfd7258e1fc3c2a698881da16",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "activation-runs-in-the-transaction",
+      "fn": null,
+      "originalSha256": "1f4ce2fffc3b69c6703f50adf09b2adc96d0cb3b6a63c25e0ca33402e0e6e8b8",
+      "currentSha256": "1f4ce2fffc3b69c6703f50adf09b2adc96d0cb3b6a63c25e0ca33402e0e6e8b8",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "activation-edits-its-own-field",
+      "fn": null,
+      "originalSha256": "c90b5bbb681815f0b130b814f7ab0b350c12fd8c5174631b9bf1091c41158605",
+      "currentSha256": "c90b5bbb681815f0b130b814f7ab0b350c12fd8c5174631b9bf1091c41158605",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "recalculate-keeps-a-boot-reset",
+      "fn": null,
+      "originalSha256": "41c7eacd2853bc27d47063a9c76be0d941c1380dd716f179acd8a36cbf908930",
+      "currentSha256": "41c7eacd2853bc27d47063a9c76be0d941c1380dd716f179acd8a36cbf908930",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "activation-refusals",
+      "fn": null,
+      "originalSha256": "f9d6db7e62473f83d71542d15e10a9f22fd68c1f569a552c98109d6edf45f86a",
+      "currentSha256": "f9d6db7e62473f83d71542d15e10a9f22fd68c1f569a552c98109d6edf45f86a",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "keystroke-two-passes",
+      "fn": null,
+      "originalSha256": "77fe08e45a8e4874e47b71a21caaefd606c590eff24ace6f42c0a02eb9430e18",
+      "currentSha256": "77fe08e45a8e4874e47b71a21caaefd606c590eff24ace6f42c0a02eb9430e18",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "keystroke-splices-in-utf-16",
+      "fn": null,
+      "originalSha256": "05e1c747c76019299d0545a6e7cc2f592fa996b35664a9f9e8f2f1d184264a30",
+      "currentSha256": "05e1c747c76019299d0545a6e7cc2f592fa996b35664a9f9e8f2f1d184264a30",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "keystroke-empty-values",
+      "fn": null,
+      "originalSha256": "fa0f85811db26ddfb11648be02bf633855cbbed78945d58678172dde7f734efa",
+      "currentSha256": "fa0f85811db26ddfb11648be02bf633855cbbed78945d58678172dde7f734efa",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "keystroke-fault-ladder",
+      "fn": null,
+      "originalSha256": "12ce72e208703513c5b43014691f5fb28dacc2b48bda2bd426c9c57ec6163efc",
+      "currentSha256": "12ce72e208703513c5b43014691f5fb28dacc2b48bda2bd426c9c57ec6163efc",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "keystroke-trees",
+      "fn": null,
+      "originalSha256": "32331173f617642b397040e71fb7a0e02e3667a951a49c38c9fcca9f0e4f8810",
+      "currentSha256": "32331173f617642b397040e71fb7a0e02e3667a951a49c38c9fcca9f0e4f8810",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "validate-fault-ladder",
+      "fn": null,
+      "originalSha256": "5dcc364a77929cb0322c4c85ec3c1c1e47c42fada597bb529795361a048240c4",
+      "currentSha256": "5dcc364a77929cb0322c4c85ec3c1c1e47c42fada597bb529795361a048240c4",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "validate-trees",
+      "fn": null,
+      "originalSha256": "30fe5a9e9ae9999b2d36b462d884eff5c3809ccf2fe7c95c4eb72e016f99a56a",
+      "currentSha256": "30fe5a9e9ae9999b2d36b462d884eff5c3809ccf2fe7c95c4eb72e016f99a56a",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "calculation-order",
+      "fn": null,
+      "originalSha256": "2aab37583b70b928445c80ab2575f927cb2adfc016e78816a98e04ba2219e4c6",
+      "currentSha256": "2aab37583b70b928445c80ab2575f927cb2adfc016e78816a98e04ba2219e4c6",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "calculation-refusals",
+      "fn": null,
+      "originalSha256": "f35becb821c3bbed5f5d01be757dd3c799fd69f5a073d29092616fccc378f686",
+      "currentSha256": "f35becb821c3bbed5f5d01be757dd3c799fd69f5a073d29092616fccc378f686",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "recalculate-anchors",
+      "fn": null,
+      "originalSha256": "192bc158802d34b547114aaa8b4e008276d582805ad6579abbd016eba65fdc90",
+      "currentSha256": "192bc158802d34b547114aaa8b4e008276d582805ad6579abbd016eba65fdc90",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "format-fault-ladder",
+      "fn": null,
+      "originalSha256": "174194f255295b233ecfb97ee0c984ba0e37a7969ad5fa66291dbf565bfb7f8e",
+      "currentSha256": "174194f255295b233ecfb97ee0c984ba0e37a7969ad5fa66291dbf565bfb7f8e",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "effects-canonicalise",
+      "fn": null,
+      "originalSha256": "c1995662dec322560be228e7c3f3be8e0ecac90ff37658ab297f5f924a4f5239",
+      "currentSha256": "c1995662dec322560be228e7c3f3be8e0ecac90ff37658ab297f5f924a4f5239",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "native-effect-statuses",
+      "fn": null,
+      "originalSha256": "57464cd60808fb3e08dc813f3df973ca139f49cfc7c5928d933bfb85caf955d5",
+      "currentSha256": "57464cd60808fb3e08dc813f3df973ca139f49cfc7c5928d933bfb85caf955d5",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "no-change-is-unchanged",
+      "fn": null,
+      "originalSha256": "048467ddf883635f72f80f673283bed94bb975c827e06faf208941bdc149b527",
+      "currentSha256": "048467ddf883635f72f80f673283bed94bb975c827e06faf208941bdc149b527",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "a-throwing-run-fails",
+      "fn": null,
+      "originalSha256": "73eef5a669c1a601dd4ff97ff60ac686d7cc0d2c922054358340dd2e091a2f4a",
+      "currentSha256": "73eef5a669c1a601dd4ff97ff60ac686d7cc0d2c922054358340dd2e091a2f4a",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "the-effects-budget",
+      "fn": null,
+      "originalSha256": "394a00220a7f06e8e000137d9778d4f09cbcb4467dfa4971d0f378c3d31537a8",
+      "currentSha256": "394a00220a7f06e8e000137d9778d4f09cbcb4467dfa4971d0f378c3d31537a8",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "the-output-budget-at-the-boundary",
+      "fn": null,
+      "originalSha256": "c21c7944ac4f9c179323e97c9fed5e26dcaabeac066cad1a511b23d486bfff8e",
+      "currentSha256": "c21c7944ac4f9c179323e97c9fed5e26dcaabeac066cad1a511b23d486bfff8e",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "the-output-budget-exceeded",
+      "fn": null,
+      "originalSha256": "5ae926d8dbd876b9609e7e9ad8340e6b7e3dee086c16167391898ea10c225cda",
+      "currentSha256": "5ae926d8dbd876b9609e7e9ad8340e6b7e3dee086c16167391898ea10c225cda",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "the-time-budget",
+      "fn": null,
+      "originalSha256": "715355fd77617123d3832a3b543789decef417bcef760798059a6b0c5225ff5a",
+      "currentSha256": "715355fd77617123d3832a3b543789decef417bcef760798059a6b0c5225ff5a",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "the-time-budget-shrinks",
+      "fn": null,
+      "originalSha256": "bd185932f6c4a9c0c08da8fc8e72403fbfc8eaa574fa04922496db4cd2094d34",
+      "currentSha256": "bd185932f6c4a9c0c08da8fc8e72403fbfc8eaa574fa04922496db4cd2094d34",
+      "disposition": "unchanged: baseline only",
+      "slice": "iii"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "commit-through-the-shared-realm",
+      "fn": null,
+      "originalSha256": "19b02081e78d861bd4fc51d02309e51668fd104fec29c011283f8280f3a14e71",
+      "currentSha256": "19b02081e78d861bd4fc51d02309e51668fd104fec29c011283f8280f3a14e71",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "scripted-writes-clear-the-spinner",
+      "fn": null,
+      "originalSha256": "2edfe324c021ed05ec4137cccf432168e3bd3548e351d0da7af150ee98073d8f",
+      "currentSha256": "2edfe324c021ed05ec4137cccf432168e3bd3548e351d0da7af150ee98073d8f",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "batch-writes-count-rejections",
+      "fn": null,
+      "originalSha256": "b89d68f471d5c86c7e1c132d7a48b790d0de97bd3aa124572ec3fdfa9c6a4a6d",
+      "currentSha256": "b89d68f471d5c86c7e1c132d7a48b790d0de97bd3aa124572ec3fdfa9c6a4a6d",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "reset-recalculates",
+      "fn": null,
+      "originalSha256": "9432f63cd0c899cc09938fd69bc9bb10a3125ad42fe6a28c40208ce84a78430a",
+      "currentSha256": "9432f63cd0c899cc09938fd69bc9bb10a3125ad42fe6a28c40208ce84a78430a",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "scripted-activation",
+      "fn": null,
+      "originalSha256": "83793a2a1f573b836ccebbb3ee3749a3c963762fb51790712d5c3390e62d9310",
+      "currentSha256": "83793a2a1f573b836ccebbb3ee3749a3c963762fb51790712d5c3390e62d9310",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "scripted-activation-matches-refs",
+      "fn": null,
+      "originalSha256": "6babf5e8d7a46b24a6ce4487be75bcab23f06cf38d30d9962e8fc35ca7da3712",
+      "currentSha256": "6babf5e8d7a46b24a6ce4487be75bcab23f06cf38d30d9962e8fc35ca7da3712",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "a-kindless-address-matches-no-candidate",
+      "fn": null,
+      "originalSha256": "344ab5892818bb6fd56cc35ac5604caea844c95df159339c1ebd706d25c71439",
+      "currentSha256": "344ab5892818bb6fd56cc35ac5604caea844c95df159339c1ebd706d25c71439",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "scripted-activation-reads-the-folded-annotation",
+      "fn": null,
+      "originalSha256": "28a0a4d6159d32890cb103fca7b1f7794f28f85cf70e9c2d6aee53d992ac4ad2",
+      "currentSha256": "28a0a4d6159d32890cb103fca7b1f7794f28f85cf70e9c2d6aee53d992ac4ad2",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "script-nodes-commit-through-the-form",
+      "fn": null,
+      "originalSha256": "a12d5d35258cb65aaf16e09987b54367f7c0a34556f3c5bee9de40da850dd1d1",
+      "currentSha256": "a12d5d35258cb65aaf16e09987b54367f7c0a34556f3c5bee9de40da850dd1d1",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-scripting.json",
+      "name": "no-sandbox-host",
+      "fn": null,
+      "originalSha256": "4b8a76e2fa2544126c3823dbc4610520b737cf7afad9e3cc7405c6de2b474211",
+      "currentSha256": "4b8a76e2fa2544126c3823dbc4610520b737cf7afad9e3cc7405c6de2b474211",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "the-reset-form-executor",
+      "fn": null,
+      "originalSha256": "2ab24afd51ac0fba14aad993e04b9c1b7e16bc095fe4e526fdab126d3305f127",
+      "currentSha256": "2ab24afd51ac0fba14aad993e04b9c1b7e16bc095fe4e526fdab126d3305f127",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "an-inert-reset",
+      "fn": null,
+      "originalSha256": "56644940ca4d363c9314f9f929a23853aac6ecc7f6a581cfcbcb64265c3d1e4d",
+      "currentSha256": "56644940ca4d363c9314f9f929a23853aac6ecc7f6a581cfcbcb64265c3d1e4d",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "a-failed-reset-fails-the-node",
+      "fn": null,
+      "originalSha256": "88a24626e6cd62d2cd0acfc6f2fcc41af93e8d393824ab55ea356f576fac9173",
+      "currentSha256": "88a24626e6cd62d2cd0acfc6f2fcc41af93e8d393824ab55ea356f576fac9173",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "reset-form-action-door",
+      "fn": null,
+      "originalSha256": "5f5817d49b2756c60d432d0c8f503f0f0524897f5b39a9c10a65cfc532c47229",
+      "currentSha256": "5f5817d49b2756c60d432d0c8f503f0f0524897f5b39a9c10a65cfc532c47229",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "the-submit-resolver",
+      "fn": null,
+      "originalSha256": "4e63bcfc9a4c0debe56fc51db5a0601e456b029d23dc4a13d80455a8f51d6665",
+      "currentSha256": "4e63bcfc9a4c0debe56fc51db5a0601e456b029d23dc4a13d80455a8f51d6665",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "resolve-submit-dataset-door",
+      "fn": null,
+      "originalSha256": "68869fb05977547d415cca5f12cefdcb6505e72e2d1c4048a611a29c44300d8b",
+      "currentSha256": "68869fb05977547d415cca5f12cefdcb6505e72e2d1c4048a611a29c44300d8b",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "commit-script-form-effects",
+      "fn": null,
+      "originalSha256": "91c45866f014d37cedbb4cc4d0d2b05674ae08bceb45163c2a833f7673526040",
+      "currentSha256": "91c45866f014d37cedbb4cc4d0d2b05674ae08bceb45163c2a833f7673526040",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "commit-sink-without-annotation",
+      "fn": null,
+      "originalSha256": "20b3a71156a7a3f8f837f95a23ac369bf1c733c677b97d8b70bec9bfc1ea87fc",
+      "currentSha256": "20b3a71156a7a3f8f837f95a23ac369bf1c733c677b97d8b70bec9bfc1ea87fc",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "activation-without-actions",
+      "fn": null,
+      "originalSha256": "98f9dc3dd5f25b3fdef567ce063a6368cda7864e5d2de2165187155a0016af99",
+      "currentSha256": "98f9dc3dd5f25b3fdef567ce063a6368cda7864e5d2de2165187155a0016af99",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "activation-is-delegated",
+      "fn": null,
+      "originalSha256": "bf8900915cd858781b11416f912f59b9099c542cb78d29b12211f6ee90895ef7",
+      "currentSha256": "bf8900915cd858781b11416f912f59b9099c542cb78d29b12211f6ee90895ef7",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "a-refused-activation-is-dispatched",
+      "fn": null,
+      "originalSha256": "66dd64ad6a919fec1eea252464358cbda42967ac58844b97c739d5dd73d30d41",
+      "currentSha256": "66dd64ad6a919fec1eea252464358cbda42967ac58844b97c739d5dd73d30d41",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "the-widget-event-feed",
+      "fn": null,
+      "originalSha256": "0cda1868707c0d85421833155d633eca8bac75df0e429929705476b9d9fec4f8",
+      "currentSha256": "0cda1868707c0d85421833155d633eca8bac75df0e429929705476b9d9fec4f8",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    },
+    {
+      "file": "plugins/form-actions.json",
+      "name": "hover-pre-checks-the-folded-annotation",
+      "fn": null,
+      "originalSha256": "af6e9b4585cd08b7f41a44a94381064bafde5776c535c7c69af36000157cab29",
+      "currentSha256": "af6e9b4585cd08b7f41a44a94381064bafde5776c535c7c69af36000157cab29",
+      "disposition": "unchanged: baseline only",
+      "slice": "iv"
+    }
+  ],
+  "compiler": {
+    "total": 68,
+    "files": {
+      "src/suites/acrojs.ts": 1,
+      "src/suites/actions.ts": 4,
+      "src/suites/annotation-fixtures.ts": 3,
+      "src/suites/commands.ts": 1,
+      "src/suites/form-fixtures.ts": 12,
+      "src/suites/i18n.ts": 12,
+      "src/suites/link.ts": 1,
+      "src/suites/measurement.ts": 1,
+      "src/suites/redaction.ts": 3,
+      "src/suites/render-pure.ts": 2,
+      "src/suites/render.ts": 2,
+      "src/suites/shell.ts": 6,
+      "src/suites/signature-core.ts": 2,
+      "src/suites/signature-plugin.ts": 1,
+      "src/suites/stamp-fixtures.ts": 10,
+      "src/suites/stamp-functions.ts": 7
+    }
+  }
+}

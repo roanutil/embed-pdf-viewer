@@ -17,22 +17,18 @@ import {
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
+import { installCaseEntropy, restoreCaseEntropy } from '../case-entropy';
 import './interaction';
 import { objRef, pr } from './annotation-current-fixtures';
 export * from './annotation-current-fixtures';
 export const suites: Suite[] = [];
-let previousEntropy: PropertyDescriptor | undefined;
-let originalEntropy = globalThis.crypto.getRandomValues;
 let active = false;
-let entropy = 0;
 let previousError = console.error;
 let previousWarn = console.warn;
 const restoreGlobals = (): void => {
   if (!active) return;
   try {
-    if (previousEntropy)
-      Object.defineProperty(globalThis.crypto, 'getRandomValues', previousEntropy);
-    else delete (globalThis.crypto as unknown as Record<string, unknown>).getRandomValues;
+    restoreCaseEntropy();
   } finally {
     console.error = previousError;
     console.warn = previousWarn;
@@ -45,16 +41,12 @@ registerPlugin('annotation-live', {
     if (active) throw new Error('[annotation-live] install once per scenario');
     // Resolve fallible host getters before changing any global hook.
     const prior = {
-      descriptor: Object.getOwnPropertyDescriptor(globalThis.crypto, 'getRandomValues'),
-      entropy: globalThis.crypto.getRandomValues,
       error: console.error,
       warn: console.warn,
     };
-    previousEntropy = prior.descriptor;
-    originalEntropy = prior.entropy;
+    installCaseEntropy();
     previousError = prior.error;
     previousWarn = prior.warn;
-    entropy = 0;
     active = true;
     try {
       console.error = (...args: unknown[]) => {
@@ -63,23 +55,6 @@ registerPlugin('annotation-live', {
         else previousError(...args);
       };
       console.warn = (...args: unknown[]) => env.log('console.warn', args);
-      // Host input, scoped to this scenario: the queue's UUIDv7 entropy. Never used for engine reads.
-      const deterministic = <T extends ArrayBufferView | null>(array: T): T => {
-        if (!(array instanceof Uint8Array) || array.byteLength !== 16)
-          return Reflect.apply(originalEntropy, globalThis.crypto, [array]) as T;
-        const bytes = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-        bytes.fill(0);
-        new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).setUint32(
-          bytes.length - 4,
-          ++entropy,
-        );
-        return array;
-      };
-      Object.defineProperty(globalThis.crypto, 'getRandomValues', {
-        configurable: true,
-        writable: true,
-        value: deterministic,
-      });
       return annotationPlugin(config as AnnotationConfig | undefined);
     } catch (error) {
       restoreGlobals();
