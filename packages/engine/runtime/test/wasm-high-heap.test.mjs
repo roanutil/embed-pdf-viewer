@@ -63,11 +63,19 @@ async function readDocuments(runtime, { highHeap }) {
       rust.geometry = JSON.parse(rt.rust.pageGeometry(page));
     }
     if (host) {
-      // Whatever the dispatcher answers, the framing must decode to the same
-      // envelope, and the document's bytes cross as a payload either way.
-      const opened = host.call(JSON.stringify({ kind: 'open.fatMem', docId: file }), [bytes]);
-      rust.open = { json: JSON.parse(opened.json), payloads: opened.payloads.length };
-      host.call(JSON.stringify({ kind: 'close', docId: file }), []);
+      // The document's bytes cross as a request payload, and the metadata
+      // comes back in a response frame the dispatcher allocated.
+      const send = (request, payloads = []) => {
+        const response = host.call(JSON.stringify(request), payloads);
+        // The probe's timestamp is the one field that differs between runs.
+        const json = JSON.parse(response.json, (key, value) =>
+          key === 'securityProbedAt' ? undefined : value,
+        );
+        return { json, payloads: response.payloads.length };
+      };
+      rust.open = send({ kind: 'open.fatMem', effect: 'open', jobId: 1, docId: file }, [bytes]);
+      rust.metadata = send({ kind: 'metadata.read', effect: 'read', jobId: 2, docId: file });
+      send({ kind: 'close', docId: file });
     }
 
     results.push({
@@ -99,7 +107,10 @@ test('wasm runtime reads, renders and writes above 2 GiB as it does below', asyn
     assert.ok(low.results.every((result) => result.rust.geometry !== undefined));
   }
   if (low.host) {
-    assert.ok(low.results.every((result) => result.rust.open !== undefined));
+    for (const { rust } of low.results) {
+      assert.equal(rust.open.json.error, undefined, JSON.stringify(rust.open.json));
+      assert.ok(rust.metadata.json.result, JSON.stringify(rust.metadata.json));
+    }
   }
   assert.deepEqual(high, low);
 });
