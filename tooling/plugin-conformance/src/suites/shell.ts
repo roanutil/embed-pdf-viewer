@@ -7,8 +7,8 @@
  * opens or after it closes.
  */
 import { shellPlugin, ShellToken } from '../../../../packages/plugin/shell/src/index';
-import { initialShellState, shellReducer } from '../../../../packages/plugin/shell/src/model';
-import type { ShellAction, ShellState } from '../../../../packages/plugin/shell/src/model';
+import * as model from '../../../../packages/plugin/shell/src/model';
+import type { ShellState } from '../../../../packages/plugin/shell/src/model';
 
 import type { FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
@@ -18,11 +18,45 @@ registerPlugin('shell', { factory: () => shellPlugin(), tokens: [ShellToken] });
 
 // ── function cases: the reducer ───────────────────────────────────────────────
 
+/** The old `ShellAction`: its `type` and fields. */
+type ShellAction = { type: string; id?: string; exclusive?: string; props?: Record<string, unknown>; snapshot?: unknown };
+
+/**
+ * 4fc1a32af replaced `shellReducer` with one transition per action; each
+ * action reaches its transition, with the same fields.
+ */
+function shellReducer(state: ShellState, action: ShellAction): ShellState {
+  const id = action.id as string;
+  const options = { exclusive: action.exclusive, props: action.props };
+  switch (action.type) {
+    case 'SHELL/OPEN_SURFACE':
+      return model.openSurface(state, id, options);
+    case 'SHELL/CLOSE_SURFACE':
+      return model.closeSurface(state, id);
+    case 'SHELL/TOGGLE_SURFACE':
+      return model.toggleSurface(state, id, options);
+    case 'SHELL/SET_SURFACE_PROPS':
+      return model.setSurfaceProps(state, id, action.props as never);
+    case 'SHELL/CLOSE_ALL_SURFACES':
+      return model.closeAllSurfaces(state);
+    case 'SHELL/OPEN_MENU':
+      return model.openMenu(state, id);
+    case 'SHELL/CLOSE_MENU':
+      return model.closeMenu(state, id);
+    case 'SHELL/CLOSE_ALL_MENUS':
+      return model.closeAllMenus(state);
+    case 'SHELL/APPLY_SNAPSHOT':
+      return model.applySnapshot(state, action.snapshot as never);
+    default:
+      return state;
+  }
+}
+
 const reduce = (state: ShellState, action: ShellAction) => {
   const next = shellReducer(state, action);
   return { same: next === state, next };
 };
-const initial = () => initialShellState();
+const initial = () => model.initialShellState();
 
 const s = (over: Partial<ShellState> = {}): ShellState => ({ surfaces: {}, openMenus: [], ...over });
 const two: ShellState = s({

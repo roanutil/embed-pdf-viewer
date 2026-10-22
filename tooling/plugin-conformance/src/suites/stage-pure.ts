@@ -13,7 +13,7 @@
  *     the reference identity the store keys its notification on.
  *   - `constants` reports the registry tables and the motion constants.
  */
-import { destinationToReveal } from '../../../../packages/plugin/stage/src/destination';
+import { revealOfDestination } from '../../../../packages/plugin/stage/src/destination';
 import {
   FLING_DECAY,
   FLING_STOP,
@@ -26,7 +26,8 @@ import {
   springStep,
   zoomLerp,
 } from '../../../../packages/plugin/stage/src/motion';
-import { initialStageState, stageReducer } from '../../../../packages/plugin/stage/src/model';
+import * as model from '../../../../packages/plugin/stage/src/model';
+import { initialStageState } from '../../../../packages/plugin/stage/src/model';
 import {
   boxOf,
   eqSetting,
@@ -47,11 +48,52 @@ import type {
   StageConfig,
   StageSettings,
 } from '../../../../packages/plugin/stage/src/contract';
-import type { StageAction, StageState } from '../../../../packages/plugin/stage/src/model';
+import type { StageState } from '../../../../packages/plugin/stage/src/model';
 
 import type { FunctionCase, Suite } from '../vectors';
 
 type Fn = (...args: never[]) => unknown;
+
+/**
+ * f5d70b67e moved destinations into page space: `destinationToReveal(dest,
+ * layout, bbox?)` became `revealOfDestination(dest, size)`, which takes the
+ * page's size and no bounding box, and answers the reveal options alone.
+ */
+const destinationToReveal = (dest: unknown, layout: { size: unknown }, _bbox?: unknown) =>
+  revealOfDestination(dest as never, layout.size as never);
+
+/** The old `StageAction`: its `type` and fields. */
+type StageAction = { type: string; [field: string]: unknown };
+
+/**
+ * 4fc1a32af replaced `stageReducer` with one transition per action, and
+ * renamed the state's `vp` to `viewport`.
+ */
+function stageReducer(state: StageState, action: StageAction): StageState {
+  const a = action as Record<string, never>;
+  switch (action.type) {
+    case 'CAMERA':
+      return model.setCamera(state, a.camera);
+    case 'CAMERA_REST':
+      return model.setCameraResting(state, a.resting);
+    case 'PLACED':
+      return model.markPlaced(state);
+    case 'VP':
+      return model.setViewport(state, a.vp);
+    case 'DPR':
+      return model.setDpr(state, a.dpr);
+    case 'CURSOR':
+      return model.setCursor(state, a.cursor);
+    case 'MOTION_CAUSE':
+      return model.setMotionCause(state, a.cause);
+    case 'PATCH':
+      return model.patchSettings(state, a.patch);
+    case 'RESPONSIVE':
+      return model.setActiveRules(state, a.active);
+    default:
+      return state;
+  }
+}
 const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
 
 // ── destinations ──────────────────────────────────────────────────────────────

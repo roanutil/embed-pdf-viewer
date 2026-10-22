@@ -5,11 +5,42 @@
  * `reduceSearch` reports `{changed, state}`: `changed` is `next !== state`,
  * the identity the store's change notification keys on.
  */
-import { initialSearchState, reduceSearch } from '../../../../packages/plugin/search/src/model';
-import type { SearchAction, SearchState } from '../../../../packages/plugin/search/src/model';
+import * as model from '../../../../packages/plugin/search/src/model';
+import { initialSearchState } from '../../../../packages/plugin/search/src/model';
+import type { SearchState } from '../../../../packages/plugin/search/src/model';
 import type { SearchHit } from '../../../../packages/plugin/search/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';
+
+/** The old `SearchAction`: its `type` and fields. */
+type SearchAction = { type: string; [field: string]: unknown };
+
+/**
+ * 4fc1a32af replaced `reduceSearch` with one transition per action. An
+ * `APPEND`'s `scanned` and `total` are the slice's progress, which upstream
+ * names `pagesSearched` and `pageCount`.
+ */
+function reduceSearch(state: SearchState, action: SearchAction): SearchState {
+  const a = action as Record<string, never>;
+  switch (action.type) {
+    case 'START':
+      return model.startSession(state, a.query, a.operationId);
+    case 'APPEND':
+      return model.appendHits(state, a.hits, { pagesSearched: a.scanned, pageCount: a.total });
+    case 'COMPLETE':
+      return model.completeSession(state);
+    case 'CANCELLED':
+      return model.cancelSession(state);
+    case 'ERROR':
+      return model.failSession(state, a.error);
+    case 'SET_ACTIVE':
+      return model.setActiveHit(state, a.index);
+    case 'CLEAR':
+      return model.clearSession(state);
+    default:
+      return state;
+  }
+}
 
 const functions = {
   initialSearchState,

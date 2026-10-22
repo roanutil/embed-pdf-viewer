@@ -7,10 +7,11 @@
  * reconciles panes with the kernel's open-document order.
  */
 import { viewManagerPlugin, ViewManagerToken } from '../../../../packages/plugin/view-manager/src/index';
-import { initialViewManagerState, viewManagerReducer } from '../../../../packages/plugin/view-manager/src/model';
-import type { ViewManagerAction, ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
+import * as model from '../../../../packages/plugin/view-manager/src/model';
+import type { ViewManagerState } from '../../../../packages/plugin/view-manager/src/model';
 
 import type { FakeDocumentSpec } from '../fake-engine';
+import { removedUpstream } from '../removed';
 import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
@@ -47,11 +48,48 @@ registerPlugin('view-manager-as-shipped', { factory: () => viewManagerPlugin(), 
 
 // ── function cases: the reducer ───────────────────────────────────────────────
 
+/** The old `ViewManagerAction`: its `type` and fields. */
+type ViewManagerAction = { type: string; [field: string]: unknown };
+
+/**
+ * 4fc1a32af replaced `viewManagerReducer` with one transition per action.
+ * `CREATE_PANE` and `REORDER_PANES` have none that takes their fields:
+ * `createPane` makes an empty pane with the next id, and `movePane` moves one
+ * pane, where the actions carried a whole pane and a whole order.
+ */
+function viewManagerReducer(state: ViewManagerState, action: ViewManagerAction): ViewManagerState {
+  const a = action as Record<string, never>;
+  switch (action.type) {
+    case 'CREATE_PANE':
+      return removedUpstream("viewManagerReducer 'CREATE_PANE' (a given pane)", '4fc1a32af')();
+    case 'REMOVE_PANE':
+      return model.removePane(state, a.id);
+    case 'REORDER_PANES':
+      return removedUpstream("viewManagerReducer 'REORDER_PANES' (a whole order)", '4fc1a32af')();
+    case 'SET_FOCUSED':
+      return model.setFocusedPane(state, a.id);
+    case 'SET_ACTIVE_DOC':
+      return model.setActiveDocument(state, a.paneId, a.documentId);
+    case 'ADD_DOC':
+      return model.addDocument(state, a.paneId, a.documentId, a.index);
+    case 'REMOVE_DOC':
+      return model.removeDocument(state, a.paneId, a.documentId);
+    case 'MOVE_DOC_WITHIN':
+      return model.moveDocumentWithin(state, a.paneId, a.documentId, a.toIndex);
+    case 'MOVE_DOC_BETWEEN':
+      return model.moveDocumentBetween(state, a.fromPaneId, a.toPaneId, a.documentId, a.toIndex);
+    case 'RECONCILE':
+      return model.reconcile(state, a.open, a.preferPaneId);
+    default:
+      return state;
+  }
+}
+
 const reduce = (state: ViewManagerState, action: ViewManagerAction) => {
   const next = viewManagerReducer(state, action);
   return { same: next === state, next };
 };
-const initial = () => initialViewManagerState();
+const initial = () => model.initialViewManagerState();
 
 const view = (id: string, documentIds: string[], activeDocumentId: string | null = documentIds[0] ?? null) => ({ id, documentIds, activeDocumentId });
 const st = (views: ReturnType<typeof view>[], over: Partial<ViewManagerState> = {}): ViewManagerState => ({

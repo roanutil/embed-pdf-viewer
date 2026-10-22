@@ -22,13 +22,13 @@ import {
   type EngineRenderPolicy,
 } from '@embedpdf/engine-core/runtime';
 
-import { annotatedPons } from '../../../../packages/plugin/render/src/invalidation';
+import { pixelChangeOf } from '../../../../packages/plugin/render/src/invalidation';
 import {
   DEFAULT_TILE_PYRAMID,
   EMPTY_TILE_PLAN,
   resolveRenderOptions,
 } from '../../../../packages/plugin/render/src/paint-plan';
-import { initialRenderState, reduceRender } from '../../../../packages/plugin/render/src/model';
+import { initialRenderState, invalidatePages } from '../../../../packages/plugin/render/src/model';
 import { baseAskWidth, resolveStrategy } from '../../../../packages/plugin/render/src/strategy';
 import {
   bleedRect,
@@ -44,8 +44,9 @@ import {
   type TileGrid,
 } from '../../../../packages/plugin/render/src/tiles';
 import type { RenderConfig as RenderPluginOptions } from '../../../../packages/plugin/render/src/contract';
-import type { RenderAction, RenderState } from '../../../../packages/plugin/render/src/model';
+import type { RenderState } from '../../../../packages/plugin/render/src/model';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 
 type Fn = (...args: never[]) => unknown;
@@ -384,13 +385,33 @@ for (const [pName, p] of [
 
 // ── model.ts and invalidation.ts ────────────────────────────────────────────
 
+/** The old `RenderAction`: its `type` and fields. */
+type RenderAction = { type: string; [field: string]: unknown };
+
+/**
+ * 4fc1a32af replaced `reduceRender` with `invalidatePages`, and dropped the
+ * paint versions `paintAdvanced` bumped.
+ */
+function reduceRender(state: RenderState, action: RenderAction): RenderState {
+  const a = action as Record<string, never>;
+  switch (action.type) {
+    case 'invalidate':
+      return invalidatePages(state, a.pages, a.scope);
+    case 'paintAdvanced':
+      return removedUpstream("reduceRender 'paintAdvanced'", '4fc1a32af')();
+    default:
+      return state;
+  }
+}
+
 const ledgerFns: Record<string, Fn> = {
   initialRenderState,
   reduceRender: (state: RenderState, action: RenderAction) => {
     const next = reduceRender(state, action);
     return { changed: next !== state, state: next };
   },
-  annotatedPons: (event: never, pons: number[]) => annotatedPons(event, () => pons),
+  // `annotatedPons` is `pixelChangeOf` since 4fc1a32af: the pages and the scope they change in.
+  annotatedPons: (event: never, pons: number[]) => pixelChangeOf(event, () => pons),
 };
 
 const seeded: RenderState = {

@@ -4,11 +4,36 @@
  * the Rust reducer answers with `None`. Replayed by
  * `crates/plugins/stamp/tests/conformance.rs`.
  */
-import { initialStampState, stampReducer } from '../../../../packages/plugin/stamp/src/model';
-import type { StampAction, StampState } from '../../../../packages/plugin/stamp/src/model';
+import * as model from '../../../../packages/plugin/stamp/src/model';
+import { initialStampState } from '../../../../packages/plugin/stamp/src/model';
+import type { StampState } from '../../../../packages/plugin/stamp/src/model';
 import type { StampAsset, StampLibrary } from '../../../../packages/plugin/stamp/src/contract';
 
 import type { FunctionCase, Suite } from '../vectors';
+
+/** The old `StampAction`: its `type` and fields. */
+type StampAction = { type: string; [field: string]: unknown };
+
+/** 4fc1a32af replaced `stampReducer` with one transition per action. */
+function stampReducer(state: StampState, action: StampAction): StampState {
+  const a = action as Record<string, never>;
+  switch (action.type) {
+    case 'LIBRARY_ADDED':
+      return model.addLibrary(state, a.library);
+    case 'LIBRARY_UPDATED':
+      return model.setLibrary(state, a.library);
+    case 'LIBRARY_REMOVED':
+      return model.removeLibrary(state, a.libraryId);
+    case 'ASSET_ADDED':
+      return model.addAsset(state, a.asset);
+    case 'ASSET_UPDATED':
+      return model.setAsset(state, a.asset);
+    case 'ASSET_REMOVED':
+      return model.removeAsset(state, a.assetId);
+    default:
+      return state;
+  }
+}
 
 const functions = {
   initialStampState,
