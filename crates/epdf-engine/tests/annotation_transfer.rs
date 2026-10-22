@@ -167,7 +167,7 @@ impl Engine {
     ) -> Result<(Value, Vec<Vec<u8>>), Value> {
         self.next += 1;
         request["jobId"] = json!(self.next);
-        let response = self.host.call(&request.to_string(), payloads);
+        let response = self.host.call_filled(&request.to_string(), payloads);
         let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
         match envelope.get_mut("error") {
             Some(error) => Err(error.take()),
@@ -986,7 +986,8 @@ fn a_final_write_ends_undo_for_an_import_before_it() {
     let imported =
         engine.import("target", &bundle, json!({ "attribution": "stamp" })).unwrap()["result"]
             .clone();
-    engine.call(json!({ "kind": "annotations.flatten", "effect": "write", "docId": "target",
+    engine
+        .call(json!({ "kind": "annotations.flatten", "effect": "contentWrite", "docId": "target",
         "page": page_ref(page), "refs": [imported["annotations"][0]["ref"]], "usage": "display" }));
     let refused =
         engine.apply("target", json!({ "undoOf": imported["meta"]["opId"] })).unwrap_err();
@@ -1065,6 +1066,7 @@ fn a_server_change_runs_an_import() {
         .send(
             json!({ "kind": "document.applyChanges", "effect": "write", "docId": "target",
                 "changes": [{ "opId": "server-import-1",
+                    "authority": { "identity": {}, "grants": null },
                     "change": { "ops": [{ "type": "annotations.import", "bundle": bundle.bundle,
                         "attribution": "stamp" }] } }] }),
             bundle.payloads.clone(),

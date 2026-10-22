@@ -77,7 +77,7 @@ fn set_scale_keeps_a_foreign_viewport() {
     let (doc, pon) = open_fixture(&mut host, FOREIGN);
     let request = json!({ "kind": "measure.setScale", "jobId": 5, "docId": doc,
         "page": page_ref(pon), "opId": "scale-1", "measure": rl_measure() });
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let written: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(
         written["result"]["result"],
@@ -176,7 +176,7 @@ fn set_scale_refuses_an_unwritable_measure() {
 }
 
 fn save(host: &mut Host, doc: &str) -> Vec<u8> {
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "document.saveBuffer", "jobId": 9, "docId": doc, "mode": "rewrite" })
             .to_string(),
         Vec::new(),
@@ -185,8 +185,10 @@ fn save(host: &mut Host, doc: &str) -> Vec<u8> {
 }
 
 fn open_bytes(host: &mut Host, doc: &str, bytes: Vec<u8>) {
-    let open = host
-        .call(&json!({ "kind": "open.fatMem", "jobId": 1, "docId": doc }).to_string(), vec![bytes]);
+    let open = host.call_filled(
+        &json!({ "kind": "open.fatMem", "jobId": 1, "docId": doc }).to_string(),
+        vec![bytes],
+    );
     assert!(!open.json.contains("\"error\""), "{}", open.json);
 }
 
@@ -695,7 +697,7 @@ fn a_calibration_changes_only_the_viewports_and_publishes_once_per_write() {
         let request = json!({ "kind": "measure.setScale", "jobId": 7, "docId": DOC,
             "page": page_ref(PAGE), "measure": measure });
         let answer: Value =
-            serde_json::from_str(&host.call(&request.to_string(), Vec::new()).json).unwrap();
+            serde_json::from_str(&host.call_filled(&request.to_string(), Vec::new()).json).unwrap();
         assert_eq!(answer["result"]["result"]["page"], page_ref(PAGE), "{answer}");
         events.push(answer["result"]["event"].clone());
         if !measure.is_null() {

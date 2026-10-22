@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 /// Open a repo-relative fixture as `docId` `"d"` and answer the doc id and
 /// its first page's object number.
 pub fn open_fixture(host: &mut Host, relative: &str) -> (String, u64) {
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![test_support::fixture(relative)],
     );
@@ -33,7 +33,7 @@ pub fn page_ref(pon: impl Into<u64>) -> Value {
 /// the `result`.
 pub fn call(host: &mut Host, mut request: Value) -> Value {
     request["jobId"] = json!(2);
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
     envelope["result"].take()
@@ -42,7 +42,7 @@ pub fn call(host: &mut Host, mut request: Value) -> Value {
 /// Send `request` and answer the `error` envelope it must produce.
 pub fn call_err(host: &mut Host, mut request: Value) -> Value {
     request["jobId"] = json!(3);
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_some(), "{request} did not fail: {envelope}");
     envelope["error"].take()
@@ -59,7 +59,7 @@ fn sig_send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> (Val
     if request.get("jobId").is_none() {
         request["jobId"] = json!(1);
     }
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     let envelope: Value = serde_json::from_str(&response.json).expect("every response is JSON");
     assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
     (envelope["result"].clone(), response.payloads)

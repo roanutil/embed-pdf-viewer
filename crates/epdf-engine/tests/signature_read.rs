@@ -95,7 +95,7 @@ fn the_contents_of_an_unsigned_field_are_not_found() {
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
     let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let field = snapshot["signatures"][0]["field"].clone();
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "signatures.contents", "jobId": 1, "docId": doc, "ref": field })
             .to_string(),
         Vec::new(),

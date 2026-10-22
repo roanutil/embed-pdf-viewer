@@ -187,7 +187,8 @@ fn a_search_answer_reaches_the_kernel_in_the_files_coordinates_and_its_spelling(
     let request = json!({ "query": { "text": "Report" }, "mode": "full" });
     let call = translate("d1", "search.query", None, &[request], 2).unwrap();
     let wire: Value =
-        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&call.request.to_string(), Vec::new()).json)
+            .unwrap();
     let hit = &wire["result"]["matches"][0];
     assert_eq!((&hit["start"], &hit["count"]), (&json!(6156), &json!(6)), "{wire}");
     assert_eq!(hit["snippet"]["match"], "report");
@@ -217,7 +218,8 @@ fn a_form_reaches_the_kernel_in_the_files_coordinates_and_its_spelling() {
 
     let call = translate("d1", "forms.list", None, &[], 2).unwrap();
     let wire: Value =
-        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&call.request.to_string(), Vec::new()).json)
+            .unwrap();
     let row = &wire["result"]["widgets"][0];
     assert_eq!(row["rect"], json!({ "x": 72.0, "y": 62.0, "width": 228.0, "height": 30.0 }));
 
@@ -279,7 +281,8 @@ fn a_fields_raw_flags_reach_the_kernel_whole() {
 
     let call = translate("d1", "forms.list", None, &[], 2).unwrap();
     let wire: Value =
-        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&call.request.to_string(), Vec::new()).json)
+            .unwrap();
     assert!(wire["result"]["fields"][0].get("flags").is_none(), "{wire}");
     assert_eq!(wire["result"]["fields"][0]["required"], true);
 
@@ -1561,7 +1564,10 @@ fn a_scale_and_its_viewports_reach_the_kernel_in_the_files_coordinates_and_its_s
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     let pages: Value = serde_json::from_str(
         &host
-            .call(&json!({ "kind": "pages.list", "jobId": 2, "docId": "d1" }).to_string(), vec![])
+            .call_filled(
+                &json!({ "kind": "pages.list", "jobId": 2, "docId": "d1" }).to_string(),
+                vec![],
+            )
             .json,
     )
     .unwrap();
@@ -1576,7 +1582,8 @@ fn a_scale_and_its_viewports_reach_the_kernel_in_the_files_coordinates_and_its_s
 
     let read = translate("d1", "page.measure.viewports", Some(pon), &[], 4).unwrap();
     let wire: Value =
-        serde_json::from_str(&host.call(&read.request.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&read.request.to_string(), Vec::new()).json)
+            .unwrap();
     let ours = &wire["result"]["viewports"][1];
     assert_eq!(ours["measure"]["subtype"], "rectilinear", "{wire}");
     assert_eq!(ours["measure"]["origin"], json!({ "x": 10.0, "y": 772.0 }), "page space: {wire}");
@@ -1990,7 +1997,7 @@ fn call_host_json(host: &mut epdf_engine::host::Host, request: Value) -> Value {
 fn opened_host() -> epdf_engine::host::Host {
     let mut host = epdf_engine::host::Host::new();
     let bytes = test_support::fixture("tooling/engine-conformance/fixtures/annotation_kinds.pdf");
-    let opened = host.call(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
+    let opened = host.call_filled(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     host
 }
@@ -2003,7 +2010,7 @@ fn a_kernel_abort_is_a_cancel_on_the_wire() {
     let abort = json!({ "kind": "signatures.abort", "jobId": 3, "docId": "d",
         "signingId": "nothing-parked" });
     let wire: Value =
-        serde_json::from_str(&host.call(&abort.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&abort.to_string(), Vec::new()).json).unwrap();
     assert_eq!(wire["error"]["message"], "unknown request kind: signatures.abort", "{wire}");
     let call = translate("d", "signatures.abort", None, &[json!("nothing-parked")], 3).unwrap();
     let response =
@@ -2019,7 +2026,7 @@ fn a_kernel_visual_fill_answers_a_field_edit() {
     let mut host = epdf_engine::host::Host::new();
     let fixtures = "packages/engine/main/test/fixtures";
     let bytes = test_support::fixture(&format!("{fixtures}/unsigned_sigfield.pdf"));
-    let opened = host.call(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
+    let opened = host.call_filled(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     let artwork = test_support::fixture(&format!("{fixtures}/signature_artwork.pdf"));
     let pdf = epdf_kernel::bytes::Bytes(artwork).to_json();
@@ -2050,7 +2057,7 @@ fn a_kernel_form_export_is_a_bundle_file_and_its_import_fills_a_copy() {
     for doc in ["a", "b"] {
         let bytes = test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf");
         let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": doc });
-        let opened = host.call(&open.to_string(), vec![bytes]);
+        let opened = host.call_filled(&open.to_string(), vec![bytes]);
         assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     }
     let form = call_host_json(&mut host, json!({ "kind": "forms.list", "jobId": 2, "docId": "a" }));
@@ -2135,7 +2142,7 @@ fn kernel_order(host: &mut epdf_engine::host::Host) -> Vec<u64> {
 fn rotated_host() -> epdf_engine::host::Host {
     let mut host = epdf_engine::host::Host::new();
     let bytes = test_support::fixture("tooling/engine-conformance/fixtures/rotated_pages.pdf");
-    let opened = host.call(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
+    let opened = host.call_filled(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     host
 }
@@ -2250,7 +2257,7 @@ fn an_nm_ref_reaches_the_host_as_its_base_index() {
     let update = json!({ "kind": "annotations.update", "jobId": 4, "docId": "d",
         "ref": named["ref"], "patch": { "subtype": named["subtype"], "contents": "edited" } });
     let wire: Value =
-        serde_json::from_str(&host.call(&update.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&update.to_string(), Vec::new()).json).unwrap();
     assert_eq!(wire["error"]["code"], "WireFormat", "the wire still took an nm ref: {wire}");
     let answer = call_host_json(&mut host, update);
     assert!(answer.get("error").is_none(), "{answer}");
@@ -2275,7 +2282,8 @@ fn the_kernels_listing_keeps_its_shape_while_the_wire_answers_upstreams() {
     assert!(first["index"].is_u64() && first["flags"].is_object(), "{first}");
 
     let wire: Value =
-        serde_json::from_str(&host.call(&call.request.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&call.request.to_string(), Vec::new()).json)
+            .unwrap();
     let record = &wire["result"]["annotations"][0];
     assert!(record.get("index").is_none() && record["print"].is_boolean(), "{record}");
     assert!(record["rect"]["width"].is_number(), "the wire answers page space: {record}");
@@ -2346,7 +2354,7 @@ fn the_kernels_distance_reaches_the_wire_as_upstreams_measurement_fields() {
 
     let listed: Value = serde_json::from_str(
         &host
-            .call(
+            .call_filled(
                 &json!({ "kind": "annotations.list", "jobId": 4, "docId": "d" }).to_string(),
                 vec![],
             )
@@ -2525,7 +2533,7 @@ fn pdf_of(objects: &[&str]) -> Vec<u8> {
 
 fn shifted_host() -> epdf_engine::host::Host {
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![shifted_pdf()],
     );
@@ -2572,8 +2580,10 @@ fn the_catalog_actions_reach_the_kernel_in_the_files_coordinates() {
             "left": -250.0, "top": 350.0, "zoom": null })
     );
     // And the wire itself answers page space.
-    let wire = host
-        .call(&json!({ "kind": "actions.read", "jobId": 3, "docId": "d" }).to_string(), Vec::new());
+    let wire = host.call_filled(
+        &json!({ "kind": "actions.read", "jobId": 3, "docId": "d" }).to_string(),
+        Vec::new(),
+    );
     let wire: Value = serde_json::from_str(&wire.json).unwrap();
     assert_eq!(wire["result"]["snapshot"]["openDestination"]["x"], json!(50.0));
     assert_eq!(wire["result"]["snapshot"]["openDestination"]["y"], json!(40.0));
@@ -2657,7 +2667,7 @@ fn a_pages_text_geometry_reaches_the_kernel_in_the_files_coordinates_and_its_spe
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     let list = json!({ "kind": "pages.list", "jobId": 2, "docId": "d1" });
     let pages: Value =
-        serde_json::from_str(&host.call(&list.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&list.to_string(), Vec::new()).json).unwrap();
     let first = &pages["result"]["pages"][0];
     let pon = first["ref"]["objectNumber"].as_u64().expect("a first page") as u32;
     let visible_top = first["pdfCropBox"]["top"].as_f64().expect("a crop box");
@@ -2665,7 +2675,7 @@ fn a_pages_text_geometry_reaches_the_kernel_in_the_files_coordinates_and_its_spe
     let wire = json!({ "kind": "pages.geometry", "jobId": 3, "docId": "d1",
         "page": { "kind": "objectNumber", "objectNumber": pon } });
     let in_page: Value =
-        serde_json::from_str(&host.call(&wire.to_string(), Vec::new()).json).unwrap();
+        serde_json::from_str(&host.call_filled(&wire.to_string(), Vec::new()).json).unwrap();
     let in_page = &in_page["result"];
 
     let call = translate("d1", "page.geometry.read", Some(pon), &[], 4).unwrap();

@@ -77,7 +77,7 @@ fn open(case: &Case) -> Document {
 fn read_through_host(case: &Case) -> serde_json::Value {
     let mut host = Host::new();
     let call = |host: &mut Host, request: serde_json::Value, payloads: Vec<Vec<u8>>| {
-        let response = host.call(&request.to_string(), payloads);
+        let response = host.call_filled(&request.to_string(), payloads);
         let mut envelope: serde_json::Value = serde_json::from_str(&response.json).unwrap();
         assert!(envelope.get("error").is_none(), "{}: {request} failed: {envelope}", case.name);
         envelope["result"].take()

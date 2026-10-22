@@ -256,7 +256,7 @@ fn a_decode_budget_refuses_rather_than_truncating() {
 
     let refused = read_attachment_file(&document, "aaa-first", Some(4), &CancelToken::never())
         .expect_err("a ten-byte file under a four-byte ceiling");
-    assert!(refused.is(EngineErrorCode::InvalidArg));
+    assert!(refused.is(EngineErrorCode::PayloadTooLarge), "{refused}");
 
     // At the exact size it decodes, so the ceiling is inclusive.
     let allowed = read_attachment_file(&document, "aaa-first", Some(10), &CancelToken::never())

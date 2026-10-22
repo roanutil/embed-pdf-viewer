@@ -64,7 +64,7 @@ impl Replay {
     /// [`Replay::open`] in a host the caller built (a fixed clock, an
     /// encoder).
     pub fn open_in(mut host: Host, fixture: &str, doc_id: &str) -> Self {
-        let response = host.call(
+        let response = host.call_filled(
             &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc_id,
                 "password": null })
             .to_string(),
@@ -87,7 +87,7 @@ impl Replay {
         let job_id = self.next_job;
         self.next_job += 1;
         let request = substitute(recorded, &self.doc_id, job_id, &format!("op-{job_id}"));
-        let response = self.host.call(&request.to_string(), payloads);
+        let response = self.host.call_filled(&request.to_string(), payloads);
         let mut envelope: Value =
             serde_json::from_str(&response.json).expect("every response is JSON");
         let event = envelope.get_mut("event").map(Value::take);

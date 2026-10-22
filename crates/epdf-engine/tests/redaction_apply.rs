@@ -333,7 +333,7 @@ fn page_text(replay: &mut Replay, page: &Value) -> String {
 /// A fresh host with `bytes` open as `doc_id`, as `openBarePage` opens one.
 fn open_bytes(bytes: Vec<u8>, doc_id: &str) -> Replay {
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc_id,
             "password": null })
         .to_string(),

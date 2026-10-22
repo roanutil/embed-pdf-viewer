@@ -27,7 +27,7 @@ struct Doc {
 impl Doc {
     fn open(bytes: Vec<u8>) -> Self {
         let mut host = Host::new();
-        let response = host.call(
+        let response = host.call_filled(
             &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "d" })
                 .to_string(),
             vec![bytes],
@@ -50,7 +50,7 @@ impl Doc {
         if request.get("opId").is_none() {
             request["opId"] = json!(format!("op-{job}"));
         }
-        let response = self.host.call(&request.to_string(), Vec::new());
+        let response = self.host.call_filled(&request.to_string(), Vec::new());
         let mut envelope: Value = serde_json::from_str(&response.json).expect("JSON");
         match envelope.get_mut("error") {
             Some(error) => Err(error.take()),
@@ -882,7 +882,7 @@ fn a_turned_field_fills_and_saves_with_its_turn() {
     doc.write(
         json!({ "kind": "forms.setValue", "ref": field["ref"], "value": { "value": "Turned" } }),
     );
-    let response = doc.host.call(
+    let response = doc.host.call_filled(
         &json!({ "kind": "document.saveBuffer", "jobId": 90, "docId": "d", "mode": "rewrite" })
             .to_string(),
         Vec::new(),

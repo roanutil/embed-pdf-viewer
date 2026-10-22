@@ -43,7 +43,7 @@ fn fixture(name: &str) -> Vec<u8> {
 fn envelope(host: &mut Host, request: Value, payloads: Vec<Vec<u8>>) -> Value {
     let mut request = request;
     request["jobId"] = json!(7);
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     serde_json::from_str(&response.json).unwrap()
 }
 
@@ -175,7 +175,7 @@ fn a_signed_fat_memory_session_stays_a_layer_that_persists_no_artifact() {
     let session = host.sessions().session(&SessionKey::document(&doc)).expect("the session");
     assert_eq!(session.kind(), Some(OpenKind::Layer));
     assert!(!session.persists_layer_artifact());
-    let written = host.call(
+    let written = host.call_filled(
         &json!({ "kind": "metadata.update", "jobId": 8, "docId": doc, "opId": "after-sign",
             "patch": { "title": "Signed" } })
         .to_string(),
@@ -580,7 +580,7 @@ fn field_groups_pdf() -> Vec<u8> {
 /// A host with `FIELD_GROUPS_PDF` open as `"groups"` under `scope`.
 fn open_groups(scope: Value, identity: Value) -> Host {
     let mut host = Host::new();
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "groups", "scope": scope,
             "identity": identity })
         .to_string(),

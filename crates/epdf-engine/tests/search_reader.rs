@@ -594,12 +594,12 @@ fn each_segments_page_space_rect_bounds_its_quad_on_a_host_answer() {
     use epdf_engine::host::Host;
 
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" }).to_string(),
         vec![test_support::fixture(test_support::REPORT)],
     );
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
-    let response = host.call(
+    let response = host.call_filled(
         &serde_json::json!({ "kind": "search.query", "jobId": 2, "docId": "d1",
             "request": { "text": "report" } })
         .to_string(),

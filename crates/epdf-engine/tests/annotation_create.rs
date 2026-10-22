@@ -118,7 +118,7 @@ struct Created {
 /// past the base file's, with the pool its main thread names reserved.
 fn open(file: &VectorFile) -> Replay {
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
             "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
         .to_string(),
@@ -543,7 +543,7 @@ fn a_created_annotation_survives_a_save_and_reopen() {
     let bytes = saved.payloads.into_iter().next().expect("the saved bytes");
 
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
             "password": null })
         .to_string(),

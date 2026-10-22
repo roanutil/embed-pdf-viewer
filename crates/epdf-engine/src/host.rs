@@ -180,22 +180,127 @@ pub enum RequestEffect {
     Close,
 }
 
-/// `WorkerJobId`, a number upstream. A string is read too, for the callers
-/// that named their jobs before the catch-up; Task 8.27 decides whether it
-/// stays.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(untagged)]
-pub enum JobId {
-    Number(u64),
-    Text(String),
+impl RequestEffect {
+    /// The effect a `kind` request states (`effect: '…'` in its
+    /// `worker-protocol.ts` interface); `None` for the control frames
+    /// (`abort`, `shutdown`, `pages.workingSet`) and a kind the wire does not
+    /// have.
+    pub fn of(kind: &str) -> Option<Self> {
+        use RequestEffect::*;
+        Some(match kind {
+            "actions.read" => Read,
+            "annotations.create" => Write,
+            "annotations.delete" => Write,
+            "annotations.export" => Snapshot,
+            "annotations.exportAppearance" => Snapshot,
+            "annotations.flatten" => ContentWrite,
+            "annotations.import" => Write,
+            "annotations.list" => Read,
+            "annotations.readAppearance" => Read,
+            "annotations.readFile" => Read,
+            "annotations.renderAppearances" => Read,
+            "annotations.renderAppearancesEncoded" => Read,
+            "annotations.reorder" => Write,
+            "annotations.update" => Write,
+            "attachments.list" => Read,
+            "attachments.readFile" => Read,
+            "close" => Close,
+            "document.apply" => Write,
+            "document.applyChanges" => Write,
+            "document.checkPasswordPermissions" => Open,
+            "document.probeSecurityFile" => Read,
+            "document.renderPageFile" => Read,
+            "document.renderPageFileEncoded" => Read,
+            "document.saveBuffer" => Snapshot,
+            "document.saveFile" => Snapshot,
+            "document.saveLayerBuffer" => Snapshot,
+            "document.setFontSettings" => Session,
+            "document.version" => Read,
+            "fonts.addFallback" => RuntimeWrite,
+            "fonts.authorizeEditing" => RuntimeWrite,
+            "fonts.clear" => RuntimeWrite,
+            "fonts.clearFallbacks" => RuntimeWrite,
+            "fonts.register" => RuntimeWrite,
+            "forms.addWidget" => Write,
+            "forms.createField" => Write,
+            "forms.deleteField" => Write,
+            "forms.deleteWidget" => Write,
+            "forms.detachWidget" => Write,
+            "forms.export" => Snapshot,
+            "forms.import" => Write,
+            "forms.importValues" => Write,
+            "forms.list" => Read,
+            "forms.reorderCalculations" => Write,
+            "forms.reorderWidgets" => Write,
+            "forms.repair" => Write,
+            "forms.reset" => Write,
+            "forms.setSignatureAppearance" => Write,
+            "forms.setValue" => Write,
+            "forms.updateField" => Write,
+            "forms.updateWidget" => Write,
+            "layer.close" => Close,
+            "measure.setScale" => Write,
+            "measure.viewports" => Read,
+            "metadata.read" => Read,
+            "metadata.readCustom" => Read,
+            "metadata.update" => Write,
+            "metadata.updateCustom" => Write,
+            "objectNumbers.reserve" => Session,
+            "open.fatMem" => Open,
+            "open.layerFileBase" => Open,
+            "open.layerMemBase" => Open,
+            "outline.read" => Read,
+            "pages.extract" => Snapshot,
+            "pages.flatten" => ContentWrite,
+            "pages.geometry" => Read,
+            "pages.list" => Read,
+            "pages.removeName" => Write,
+            "pages.render" => Read,
+            "pages.renderEncoded" => Read,
+            "pages.setName" => Write,
+            "pages.text" => Read,
+            "pieceInfo.applications" => Read,
+            "pieceInfo.delete" => Write,
+            "pieceInfo.read" => Read,
+            "pieceInfo.update" => Write,
+            "redaction.apply" => ContentWrite,
+            "search.query" => Read,
+            "signatures.analyze" => Read,
+            "signatures.cancel" => Session,
+            "signatures.complete" => ContentWrite,
+            "signatures.contents" => Read,
+            "signatures.digest" => Read,
+            "signatures.finalizeCandidate" => Read,
+            "signatures.list" => Read,
+            "signatures.prepare" => Snapshot,
+            "signatures.revisionBytes" => Read,
+            _ => return None,
+        })
+    }
+
+    /// The wire's spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Read => "read",
+            Self::Snapshot => "snapshot",
+            Self::Session => "session",
+            Self::Write => "write",
+            Self::ContentWrite => "contentWrite",
+            Self::RuntimeWrite => "runtimeWrite",
+            Self::Open => "open",
+            Self::Close => "close",
+        }
+    }
 }
+
+/// `WorkerJobId`: a number.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
+#[serde(transparent)]
+pub struct JobId(pub u64);
 
 impl std::fmt::Display for JobId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Number(n) => write!(f, "{n}"),
-            Self::Text(s) => f.write_str(s),
-        }
+        write!(f, "{}", self.0)
     }
 }
 
@@ -206,6 +311,9 @@ impl std::fmt::Display for JobId {
 pub struct WireAuthority {
     pub identity: WireAuthorityIdentity,
     /// `null` when nothing is checked (a tenant writing its own document).
+    /// Required, as upstream's `grants: … | null` is: an authority that
+    /// leaves it out is not one.
+    #[serde(deserialize_with = "nullable")]
     pub grants: Option<WireGrants>,
     /// What the document's signatures forbid; absent on an
     /// `AnnotationAuthority`, `null` when nothing is enforced.
@@ -262,21 +370,29 @@ impl From<WirePdfBits> for crate::auth::scope::types::PdfBits {
     }
 }
 
-/// The fields a job request carries beside its kind's own arguments.
-///
-/// Every field is optional until Task 8.27, so the kernel's calls through
-/// `translate.rs` and the tests that predate the envelope keep working. An
-/// absent `authority` means the session's own, as `WorkerHost` treats a
-/// write whose handle was checked before the job.
+/// `grants`: present, and `null` or the grants.
+fn nullable<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    T: Deserialize<'de>,
+{
+    Option::<T>::deserialize(deserializer)
+}
+
+/// The fields a job request carries beside its kind's own arguments, as
+/// `worker-protocol.ts` requires them: every job names its `jobId` and
+/// states its kind's `effect` (the control frames state none); a write
+/// names its `opId`, and a kind that takes an `authority` carries one.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct JobEnvelope {
+    /// `None` for a control frame only.
     pub effect: Option<RequestEffect>,
     pub job_id: Option<JobId>,
-    /// Read for [`WRITE_KINDS`] only.
+    /// Read for [`WRITE_KINDS`] only, where it is required.
     pub op_id: Option<String>,
     /// Read for [`WRITE_KINDS`] and [`FLOOR_ONLY_KINDS`] only.
     pub object_number_floor: Option<u32>,
-    /// Read for [`AUTHORITY_KINDS`] only.
+    /// Read for [`AUTHORITY_KINDS`] only, where it is required.
     pub authority: Option<WireAuthority>,
 }
 
@@ -284,21 +400,60 @@ impl JobEnvelope {
     /// The envelope of a `kind` request whose JSON is `body`.
     ///
     /// A field the kind does not take is ignored, as `WorkerHost` ignores
-    /// it. A field it takes in the wrong shape is `WireFormat`, as any
-    /// malformed argument is.
+    /// it. A field it takes that is missing, or in the wrong shape, is
+    /// `WireFormat`, as any malformed argument is; so is an `effect` other
+    /// than the one the kind states. A kind the wire does not have has no
+    /// envelope to read: its arm refuses it.
     pub fn parse(kind: &str, body: &serde_json::Value) -> Result<Self, EngineError> {
+        if crate::page_space::boundary::WireKind::of(kind).is_none() {
+            return Ok(Self::default());
+        }
         let writes = WRITE_KINDS.contains(&kind);
         let floor = writes || FLOOR_ONLY_KINDS.contains(&kind);
-        Ok(Self {
-            effect: optional(body, "effect")?,
-            job_id: optional(body, "jobId")?,
-            op_id: if writes { optional(body, "opId")? } else { None },
-            object_number_floor: if floor { optional(body, "objectNumberFloor")? } else { None },
-            authority: if AUTHORITY_KINDS.contains(&kind) {
-                optional(body, "authority")?
+        let required = |name: &str| {
+            if body.get(name).is_some_and(|v| !v.is_null()) {
+                Ok(())
             } else {
-                None
-            },
+                Err(EngineError::with_message(
+                    EngineErrorCode::WireFormat,
+                    format!("the '{kind}' request has no '{name}'"),
+                ))
+            }
+        };
+        required("jobId")?;
+        let effect = match RequestEffect::of(kind) {
+            None => None,
+            Some(stated) => {
+                required("effect")?;
+                let effect: RequestEffect = field(body, "effect")?;
+                if effect != stated {
+                    return Err(EngineError::with_message(
+                        EngineErrorCode::WireFormat,
+                        format!(
+                            "the '{kind}' request's effect is '{}', not '{}'",
+                            stated.as_str(),
+                            effect.as_str()
+                        ),
+                    ));
+                }
+                Some(effect)
+            }
+        };
+        if writes {
+            required("opId")?;
+        }
+        let authority = if AUTHORITY_KINDS.contains(&kind) {
+            required("authority")?;
+            Some(field(body, "authority")?)
+        } else {
+            None
+        };
+        Ok(Self {
+            effect,
+            job_id: Some(field(body, "jobId")?),
+            op_id: if writes { Some(field(body, "opId")?) } else { None },
+            object_number_floor: if floor { optional(body, "objectNumberFloor")? } else { None },
+            authority,
         })
     }
 }
@@ -427,6 +582,59 @@ impl Host {
         &mut self.sessions
     }
 
+    /// The envelope a client gives each job, filled in where `request`
+    /// leaves it out: the kind's `effect`, a `jobId`, a fresh `opId` for a
+    /// write, and, for a kind that takes one, the authority of the session
+    /// it names, which is what the client that opened that session with its
+    /// scope sends (`LocalEngine`'s queue, `DocumentGuard.changeAuthority`).
+    /// A request naming no open session gets an unchecked authority, and
+    /// [`Host::call`] refuses it for the session it lacks. Fields `request`
+    /// has are kept.
+    ///
+    /// For a native host that stands in for upstream's client, as
+    /// `epdf-viewer-host` does for the kernel. A wire client sends the
+    /// envelope itself.
+    pub fn fill_envelope(&self, request: &mut serde_json::Value) {
+        use std::sync::atomic::{AtomicU64, Ordering};
+        static NEXT: AtomicU64 = AtomicU64::new(1);
+        let Some(fields) = request.as_object_mut() else { return };
+        let kind = fields.get("kind").and_then(|k| k.as_str()).unwrap_or_default().to_owned();
+        if let Some(effect) = RequestEffect::of(&kind) {
+            fields.entry("effect").or_insert_with(|| effect.as_str().into());
+        }
+        if !fields.contains_key("jobId") {
+            fields.insert("jobId".into(), NEXT.fetch_add(1, Ordering::Relaxed).into());
+        }
+        if WRITE_KINDS.contains(&kind.as_str()) && !fields.contains_key("opId") {
+            let op_id = format!("client-op-{}", NEXT.fetch_add(1, Ordering::Relaxed));
+            fields.insert("opId".into(), op_id.into());
+        }
+        if AUTHORITY_KINDS.contains(&kind.as_str()) && !fields.contains_key("authority") {
+            let doc = fields.get("docId").and_then(|d| d.as_str());
+            let key = doc.map(|doc| match fields.get("layerName").and_then(|l| l.as_str()) {
+                Some(layer) => SessionKey::layer(doc, layer),
+                None => SessionKey::document(doc),
+            });
+            let authority = key
+                .and_then(|key| self.sessions.session(&key).ok().map(|s| s.authority().to_wire()))
+                .unwrap_or_else(|| serde_json::json!({ "identity": {}, "grants": null }));
+            fields.insert("authority".into(), authority);
+        }
+    }
+
+    /// [`Host::call`] with the envelope filled in ([`Host::fill_envelope`]).
+    /// A request that is not JSON goes as it came, for [`Host::call`] to
+    /// refuse.
+    pub fn call_filled(&mut self, request: &str, payloads: Payloads) -> HostResponse {
+        match serde_json::from_str::<serde_json::Value>(request) {
+            Ok(mut parsed) => {
+                self.fill_envelope(&mut parsed);
+                self.call(&parsed.to_string(), payloads)
+            }
+            Err(_) => self.call(request, payloads),
+        }
+    }
+
     /// Handle one request.
     ///
     /// Never returns an `Err`: a failure is a response with an `error`
@@ -505,7 +713,7 @@ impl Host {
             crate::page_space::boundary::request_in_file_space(kind, &mut body, &mut box_of)?;
         }
         self.artifact_path = optional(&body, "artifactPath")?;
-        let written = self.begin_write(header, &mut body, &job);
+        let written = self.begin_write(header, &job);
         let routed = written.and_then(|transacted| {
             let routed = self.route_wire(header, &body, payloads, cancel);
             self.end_write(transacted.as_ref(), routed)
@@ -546,8 +754,7 @@ impl Host {
     }
 
     /// `WorkerHost.run`, before the arm: a write to an open session runs as
-    /// one layer transaction under its `opId` (the request's, or one minted
-    /// for it and written into the request so the arm reads the same). A
+    /// one layer transaction under its request's `opId`. A
     /// parked signing refuses the write before anything else; then the
     /// transaction opens, and the write's own objects go at or above the
     /// floor its caller set, so the layer's last object number is raised to
@@ -556,7 +763,6 @@ impl Host {
     fn begin_write(
         &mut self,
         header: &RequestHeader,
-        body: &mut serde_json::Value,
         job: &JobEnvelope,
     ) -> Result<Option<SessionKey>, EngineError> {
         if !TRANSACTED_KINDS.contains(&header.kind.as_str()) {
@@ -570,11 +776,6 @@ impl Host {
             self.sessions.session(&key)?,
         )?;
         let op_id = self.op_id_of(job)?;
-        if job.op_id.is_none()
-            && let Some(fields) = body.as_object_mut()
-        {
-            fields.insert("opId".into(), serde_json::Value::String(op_id.clone()));
-        }
         let session = self.sessions.session_mut(&key)?;
         session.begin_transaction(op_id)?;
         if let Some(floor) = job.object_number_floor
@@ -1395,7 +1596,7 @@ impl Host {
                 let entries: Vec<serde_json::Value> = field(body, "changes")?;
                 let mut changes = Vec::with_capacity(entries.len());
                 for entry in &entries {
-                    changes.push(self.server_change(&key, entry, &payloads)?);
+                    changes.push(server_change(entry, &payloads)?);
                 }
                 let outcomes = f::changes::transaction::run_server_changes(
                     self.sessions.session_mut(&key)?,
@@ -2150,17 +2351,15 @@ impl Host {
         Ok(stamped)
     }
 
-    /// The `opId` a write runs under (`opIdOf`): the request's, or a fresh
-    /// one. The request's must be 1 to 255 visible ASCII characters, or the
-    /// write is refused with `InvalidArg`.
+    /// The `opId` a write runs under: the request's, which
+    /// [`JobEnvelope::parse`] required. It must be 1 to 255 visible ASCII
+    /// characters, or the write is refused with `InvalidArg` (`opIdOf`).
     fn op_id_of(&self, job: &JobEnvelope) -> Result<String, EngineError> {
-        match &job.op_id {
-            None => Ok(self.ids.next_uuid_v4()),
-            Some(op_id) => {
-                check_op_id(op_id)?;
-                Ok(op_id.clone())
-            }
-        }
+        let op_id = job.op_id.as_ref().ok_or_else(|| {
+            EngineError::with_message(EngineErrorCode::WireFormat, "the write names no 'opId'")
+        })?;
+        check_op_id(op_id)?;
+        Ok(op_id.clone())
     }
 
     /// A form value verb as a one-op change under the request's
@@ -2408,35 +2607,6 @@ impl Host {
                 Ok(event)
             })
             .collect()
-    }
-
-    /// One change of a `document.applyChanges` request (`ServerChange`).
-    fn server_change(
-        &self,
-        key: &SessionKey,
-        entry: &serde_json::Value,
-        payloads: &[Vec<u8>],
-    ) -> Result<crate::features::changes::transaction::ServerChange, EngineError> {
-        use crate::features::changes::{applier, op, record, transaction};
-
-        let op_id: String = field(entry, "opId")?;
-        check_op_id(&op_id)?;
-        let mut change = op::parse_change(entry.get("change").ok_or_else(|| {
-            EngineError::with_message(EngineErrorCode::WireFormat, "a change has no 'change'")
-        })?)?;
-        // A resource names a payload of the request, whichever change it
-        // is in.
-        op::resolve_payloads(&mut change, payloads)?;
-        let authority = match optional::<WireAuthority>(entry, "authority")? {
-            Some(wire) => change_authority(&wire)?,
-            None => applier::ChangeAuthority::of_session(self.sessions.session(key)?),
-        };
-        let record = match entry.get("record") {
-            None => None,
-            Some(serde_json::Value::Null) => Some(None),
-            Some(_) => Some(Some(field::<record::ChangeRecord>(entry, "record")?)),
-        };
-        Ok(transaction::ServerChange { op_id, change, authority, record })
     }
 
     /// Answer `result` with a notice beside it in the envelope: the
@@ -2983,6 +3153,31 @@ fn check_op_id(op_id: &str) -> Result<(), EngineError> {
         "opId must be 1 to 255 visible ASCII characters",
     )
     .with_details(serde_json::json!({ "field": "opId" })))
+}
+
+/// One change of a `document.applyChanges` request (`ServerChange`).
+fn server_change(
+    entry: &serde_json::Value,
+    payloads: &[Vec<u8>],
+) -> Result<crate::features::changes::transaction::ServerChange, EngineError> {
+    use crate::features::changes::{op, record, transaction};
+
+    let op_id: String = field(entry, "opId")?;
+    check_op_id(&op_id)?;
+    let mut change = op::parse_change(entry.get("change").ok_or_else(|| {
+        EngineError::with_message(EngineErrorCode::WireFormat, "a change has no 'change'")
+    })?)?;
+    // A resource names a payload of the request, whichever change it
+    // is in.
+    op::resolve_payloads(&mut change, payloads)?;
+    // Each change names who it acts for (`ServerChange.authority`).
+    let authority = change_authority(&field::<WireAuthority>(entry, "authority")?)?;
+    let record = match entry.get("record") {
+        None => None,
+        Some(serde_json::Value::Null) => Some(None),
+        Some(_) => Some(Some(field::<record::ChangeRecord>(entry, "record")?)),
+    };
+    Ok(transaction::ServerChange { op_id, change, authority, record })
 }
 
 /// A request's `ChangeAuthority`: who the change acts for, and the grants

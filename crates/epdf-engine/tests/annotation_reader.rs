@@ -379,7 +379,7 @@ fn a_promoted_inline_annotation_keeps_its_birth_name() {
     use epdf_engine::session::registry::SessionKey;
 
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.layerMemBase", "effect": "open", "jobId": 1, "docId": "layer",
             "baseKey": "base-layer", "layer": { "kind": "fresh" }, "password": null })
         .to_string(),
@@ -589,7 +589,7 @@ fn a_gray_or_cmyk_color_reads_as_its_srgb_value_lowercase() {
          /NM (colored) >>",
     ]);
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "color",
             "password": null })
         .to_string(),

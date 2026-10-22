@@ -145,7 +145,7 @@ impl Engine {
     ) -> Result<(Value, Vec<Vec<u8>>), Value> {
         self.next += 1;
         request["jobId"] = json!(self.next);
-        let response = self.host.call(&request.to_string(), payloads);
+        let response = self.host.call_filled(&request.to_string(), payloads);
         let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
         match envelope.get_mut("error") {
             Some(error) => Err(error.take()),

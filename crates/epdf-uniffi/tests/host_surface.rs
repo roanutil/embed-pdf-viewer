@@ -48,7 +48,7 @@ fn call_full(
 fn open(engine: &PdfEngine) {
     let json = call(
         engine,
-        serde_json::json!({ "kind": "open.fatMem", "docId": "d" }),
+        serde_json::json!({ "kind": "open.fatMem", "effect": "open", "jobId": 901, "docId": "d" }),
         vec![test_support::fixture(FIXTURE)],
     );
     assert!(json.get("error").is_none(), "the fixture would not open: {json}");
@@ -59,16 +59,28 @@ fn a_document_opens_reads_and_closes_through_one_call() {
     let engine = engine();
     open(&engine);
 
-    let json = call(&engine, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
+    let json = call(
+        &engine,
+        serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 902, "docId": "d" }),
+        Vec::new(),
+    );
     assert!(
         !json["result"]["pages"].as_array().expect("a page list").is_empty(),
         "the fixture has pages",
     );
 
-    let json = call(&engine, serde_json::json!({ "kind": "close", "docId": "d" }), Vec::new());
+    let json = call(
+        &engine,
+        serde_json::json!({ "kind": "close", "effect": "close", "jobId": 903, "docId": "d" }),
+        Vec::new(),
+    );
     // `{ tag: 'close' }`: the tag alone, a null result.
     assert_eq!(json, serde_json::json!({ "result": null }));
-    let json = call(&engine, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
+    let json = call(
+        &engine,
+        serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 904, "docId": "d" }),
+        Vec::new(),
+    );
     assert_eq!(json["error"]["code"], "DocNotOpen", "the close left the session open: {json}");
     engine.shutdown();
 }
@@ -83,7 +95,7 @@ fn a_binary_result_travels_beside_the_json_rather_than_inside_it() {
 
     let (json, payloads) = call_full(
         &engine,
-        serde_json::json!({ "kind": "document.saveBuffer", "docId": "d", "mode": "incremental" }),
+        serde_json::json!({ "kind": "document.saveBuffer", "effect": "snapshot", "jobId": 905, "docId": "d", "mode": "incremental" }),
         Vec::new(),
     );
     assert_eq!(payloads.len(), 1, "the saved document did not arrive as a payload");
@@ -101,7 +113,7 @@ fn a_refused_operation_answers_rather_than_raising() {
     open(&engine);
     let json = call(
         &engine,
-        serde_json::json!({ "kind": "pages.text", "docId": "d", "page": { "kind": "objectNumber", "pageObjectNumber": 99_999 } }),
+        serde_json::json!({ "kind": "pages.text", "effect": "read", "jobId": 906, "docId": "d", "page": { "kind": "objectNumber", "pageObjectNumber": 99_999 } }),
         Vec::new(),
     );
     assert!(json["error"]["code"].is_string(), "a refusal carried no code: {json}");
@@ -119,7 +131,11 @@ fn the_wire_and_the_typed_methods_see_the_same_documents() {
     let typed = document.pages().expect("the typed page list");
 
     open(&engine);
-    let json = call(&engine, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
+    let json = call(
+        &engine,
+        serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 907, "docId": "d" }),
+        Vec::new(),
+    );
     let wired = json["result"]["pages"].as_array().expect("the wire page list");
 
     assert_eq!(
@@ -146,7 +162,7 @@ fn a_shut_down_engine_refuses_at_the_boundary_rather_than_in_an_envelope() {
 
     let refused = engine
         .call(PdfRequest {
-            json: serde_json::json!({ "kind": "pages.list", "docId": "d" }).to_string(),
+            json: serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 908, "docId": "d" }).to_string(),
             payloads: Vec::new(),
         })
         .expect_err("a shut-down engine served a read");

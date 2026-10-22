@@ -111,7 +111,7 @@ const FIELD_SPOTS: [&str; 2] = ["fieldScreenOnly", "fieldPrintOnly"];
 
 fn open() -> Host {
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![print_rules_pdf()],
     );
@@ -122,7 +122,7 @@ fn open() -> Host {
 /// `pages.render` of `page` with `options`: the answer's envelope and its
 /// payloads.
 fn render(host: &mut Host, page: u32, options: Value) -> (Value, Vec<Vec<u8>>) {
-    let response = host.call(
+    let response = host.call_filled(
         &json!({
             "kind": "pages.render", "jobId": 2, "docId": "d",
             "page": { "kind": "objectNumber", "objectNumber": page },
@@ -314,7 +314,7 @@ impl ImageEncoder for Stub {
 #[test]
 fn options_that_do_not_fit_a_print_picture_are_refused_on_every_render_kind() {
     let mut host = Host::new().with_encoder(Box::new(Stub));
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![print_rules_pdf()],
     );
@@ -347,7 +347,7 @@ fn options_that_do_not_fit_a_print_picture_are_refused_on_every_render_kind() {
             if request["kind"].as_str().unwrap().starts_with("document.") {
                 request.as_object_mut().unwrap().remove("docId");
             }
-            let response = host.call(&request.to_string(), Vec::new());
+            let response = host.call_filled(&request.to_string(), Vec::new());
             let envelope: Value = serde_json::from_str(&response.json).expect("JSON");
             assert_refused(&envelope, field, &request);
         }
@@ -361,7 +361,7 @@ fn options_that_do_not_fit_a_print_picture_are_refused_on_every_render_kind() {
             "pageIndex": 0, "encode": encode }),
     ] {
         let request = with(request, json!({ "jobId": 3, "options": print(150) }));
-        let response = host.call(&request.to_string(), Vec::new());
+        let response = host.call_filled(&request.to_string(), Vec::new());
         let envelope: Value = serde_json::from_str(&response.json).expect("JSON");
         let image = &envelope["result"]["image"];
         assert_eq!(
@@ -371,7 +371,7 @@ fn options_that_do_not_fit_a_print_picture_are_refused_on_every_render_kind() {
         );
         assert_eq!(response.payloads, vec![vec![1, 2, 3]]);
     }
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "document.renderPageFile", "jobId": 4, "path": path, "password": null,
             "pageIndex": 1, "options": print(150) })
         .to_string(),

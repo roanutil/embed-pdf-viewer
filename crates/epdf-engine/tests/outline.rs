@@ -133,7 +133,7 @@ fn open_with(bytes: Vec<u8>, scope: Option<Value>) -> Host {
     if let Some(scope) = scope {
         request["scope"] = scope;
     }
-    let response = host.call(&request.to_string(), vec![bytes]);
+    let response = host.call_filled(&request.to_string(), vec![bytes]);
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "open failed: {envelope}");
     host
@@ -147,7 +147,7 @@ fn open(bytes: Vec<u8>) -> Host {
 fn send(host: &mut Host, mut request: Value) -> Result<Value, Value> {
     request["jobId"] = json!(7);
     request["docId"] = json!(DOC);
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let mut envelope: Value = serde_json::from_str(&response.json).expect("JSON");
     match envelope.get_mut("error") {
         Some(error) => Err(error.take()),

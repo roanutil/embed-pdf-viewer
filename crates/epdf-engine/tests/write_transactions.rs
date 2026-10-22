@@ -29,7 +29,7 @@ const DOC: &str = "tx";
 fn send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Result<Value, Value> {
     request["jobId"] = json!(1);
     request["docId"] = json!(DOC);
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     let mut envelope: Value = serde_json::from_str(&response.json).expect("JSON");
     match envelope.get_mut("error") {
         Some(error) => Err(error.take()),
@@ -91,7 +91,7 @@ struct State {
 }
 
 fn state(host: &mut Host, page: &Value) -> State {
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "document.saveBuffer", "jobId": 1, "docId": DOC, "mode": "incremental" })
             .to_string(),
         Vec::new(),
@@ -623,7 +623,7 @@ fn a_write_names_its_layer_artifact_with_the_layers_last_object_number() {
     let first = pages["pages"][0]["ref"].clone();
     let request = json!({ "kind": "annotations.create", "jobId": 1, "docId": DOC, "page": first,
         "draft": { "subtype": "square", "box": rect(20.0) } });
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     let artifact = &envelope["result"]["artifact"];
     assert_eq!(artifact["payload"], json!(0), "{envelope}");
@@ -640,7 +640,7 @@ fn a_write_names_its_layer_artifact_with_the_layers_last_object_number() {
     let path = std::env::temp_dir().join(format!("write-tx-{}.layer", std::process::id()));
     let mut request = request.clone();
     request["artifactPath"] = json!(path.to_string_lossy());
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(response.payloads.is_empty(), "{envelope}");
     assert_eq!(
@@ -655,7 +655,7 @@ fn a_write_names_its_layer_artifact_with_the_layers_last_object_number() {
     // A session opened from bytes persists no artifact: its caller holds
     // the document.
     let (mut bytes_host, first) = open();
-    let response = bytes_host.call(
+    let response = bytes_host.call_filled(
         &json!({ "kind": "annotations.create", "jobId": 1, "docId": DOC, "page": first,
             "draft": { "subtype": "square", "box": rect(20.0) } })
         .to_string(),
@@ -705,7 +705,7 @@ fn a_parked_signing_refuses_a_write_before_its_floor_is_raised() {
     let before = last(&host);
     let request = json!({ "kind": "metadata.update", "jobId": 1, "docId": doc,
         "objectNumberFloor": before + 1000, "patch": { "title": "frozen" } });
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(envelope["error"]["code"], "SigningPending", "{envelope}");
     assert_eq!(last(&host), before, "the floor moved for a refused write");
@@ -715,17 +715,19 @@ fn a_parked_signing_refuses_a_write_before_its_floor_is_raised() {
 fn common_open_signing(host: &mut Host) -> String {
     let doc = "signing".to_string();
     let bytes = test_support::fixture("packages/engine/main/test/fixtures/unsigned_sigfield.pdf");
-    let response = host
-        .call(&json!({ "kind": "open.fatMem", "jobId": 1, "docId": doc }).to_string(), vec![bytes]);
+    let response = host.call_filled(
+        &json!({ "kind": "open.fatMem", "jobId": 1, "docId": doc }).to_string(),
+        vec![bytes],
+    );
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "{envelope}");
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "signatures.list", "jobId": 2, "docId": doc }).to_string(),
         Vec::new(),
     );
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     let field = envelope["result"]["snapshot"]["signatures"][0]["field"].clone();
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "signatures.prepare", "jobId": 3, "docId": doc,
             "input": { "field": field, "signer": { "name": "Test Signer" } } })
         .to_string(),

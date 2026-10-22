@@ -32,7 +32,7 @@ const DOC_ID: &str = "corpus";
 /// A host with the case's fixture open as [`DOC_ID`].
 fn open(case: &corpus::VectorFile) -> Host {
     let mut host = Host::new();
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC_ID,
             "password": case.password })
         .to_string(),
@@ -58,7 +58,7 @@ fn geometry(host: &mut Host, job_id: u64, page_object_number: u32) -> Result<Val
         "page": { "kind": "objectNumber", "objectNumber": page_object_number },
     });
     let mut envelope: Value =
-        serde_json::from_str(&host.call(&request.to_string(), Vec::new()).json)
+        serde_json::from_str(&host.call_filled(&request.to_string(), Vec::new()).json)
             .expect("every response is JSON");
     match envelope.get_mut("error") {
         Some(error) => Err(error.take()),

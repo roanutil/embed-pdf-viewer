@@ -23,7 +23,7 @@ fn bytes(fixture: &str) -> Vec<u8> {
 }
 
 fn call(host: &mut Host, request: serde_json::Value, payloads: Vec<Vec<u8>>) -> serde_json::Value {
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     serde_json::from_str(&response.json).expect("every response is JSON")
 }
 
@@ -488,10 +488,10 @@ fn a_fat_memory_write_honours_its_floor_and_answers_no_artifact() {
             "objectNumberFloor": 5000, "patch": { "title": "Floored" } })
         .to_string()
     };
-    let written = host.call(&write("d"), vec![]);
+    let written = host.call_filled(&write("d"), vec![]);
     assert!(!written.json.contains("\"error\""), "{}", written.json);
     assert!(written.payloads.is_empty(), "a fat-memory write answered an artifact");
-    let layered = host.call(&write("l"), vec![]);
+    let layered = host.call_filled(&write("l"), vec![]);
     assert!(!layered.json.contains("\"error\""), "{}", layered.json);
     assert_eq!(layered.payloads.len(), 1, "a layer's write answers its artifact");
 
@@ -624,7 +624,7 @@ fn a_layer_reopens_from_the_artifact_its_save_answered() {
             "patch": { "title": "Layered" } }),
         vec![],
     );
-    let response = host.call(
+    let response = host.call_filled(
         &serde_json::json!({ "kind": "document.saveLayerBuffer", "docId": "d" }).to_string(),
         vec![],
     );

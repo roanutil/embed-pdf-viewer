@@ -38,6 +38,9 @@ pub struct SessionAuthority {
     /// the life of a session, and re-parsing it on every read would put a
     /// string parse on the hot path for an answer that cannot change.
     scope: Vec<ParsedScope>,
+    /// The scope as it was given, so the authority can be named on the wire
+    /// again ([`SessionAuthority::to_wire`]).
+    granted: Vec<String>,
     identity: IdentityClaims,
     /// The document's permission word, as the security probe read it.
     ///
@@ -64,7 +67,13 @@ impl SessionAuthority {
         identity: IdentityClaims,
         pdf_bits: PdfBits,
     ) -> Result<Self, InvalidScope> {
-        Ok(Self { scope: parse_all(scope)?, identity, pdf_bits, protection: None })
+        Ok(Self {
+            scope: parse_all(scope)?,
+            granted: scope.to_vec(),
+            identity,
+            pdf_bits,
+            protection: None,
+        })
     }
 
     /// Full authority, for a host with no notion of scopes.
@@ -76,6 +85,7 @@ impl SessionAuthority {
     pub fn unrestricted() -> Self {
         Self {
             scope: vec![ParsedScope::Wildcard],
+            granted: vec!["*".to_owned()],
             identity: IdentityClaims::default(),
             pdf_bits: PdfBits::default(),
             protection: None,
@@ -117,6 +127,30 @@ impl SessionAuthority {
 
     pub fn scope(&self) -> &[ParsedScope] {
         &self.scope
+    }
+
+    /// This authority as a request names it (`ChangeAuthority`): who it is,
+    /// its scope and permission bits as `grants`, and what the document's
+    /// signatures forbid. What a client that opened the session with this
+    /// scope sends with each write (`DocumentGuard.changeAuthority`).
+    pub fn to_wire(&self) -> serde_json::Value {
+        let bits = self.pdf_bits;
+        serde_json::json!({
+            "identity": {
+                "userId": self.identity.user_id,
+                "displayName": self.identity.display_name,
+                "groupId": self.identity.group_id,
+            },
+            "grants": {
+                "scope": self.granted,
+                "pdfBits": {
+                    "bit3": bits.bit3, "bit4": bits.bit4, "bit5": bits.bit5, "bit6": bits.bit6,
+                    "bit9": bits.bit9, "bit10": bits.bit10, "bit11": bits.bit11,
+                    "bit12": bits.bit12,
+                },
+            },
+            "protection": self.protection,
+        })
     }
 
     pub fn allows(&self, capability: DocCapability) -> bool {
@@ -232,6 +266,7 @@ impl Default for SessionAuthority {
     fn default() -> Self {
         Self {
             scope: Vec::new(),
+            granted: Vec::new(),
             identity: IdentityClaims::default(),
             pdf_bits: PdfBits::default(),
             protection: None,

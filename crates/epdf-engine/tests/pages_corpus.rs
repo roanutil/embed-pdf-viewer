@@ -212,12 +212,12 @@ fn the_wire_answers_the_listing_the_typescript_engine_did() {
     let file = load();
     for case in file.cases.iter().filter(|c| c.password.is_none()) {
         let mut host = Host::new();
-        let opened = host.call(
+        let opened = host.call_filled(
             &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
             vec![bytes(case)],
         );
         assert!(!opened.json.contains("\"error\""), "{}: {}", case.name, opened.json);
-        let answer = host.call(
+        let answer = host.call_filled(
             &serde_json::json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }).to_string(),
             Vec::new(),
         );

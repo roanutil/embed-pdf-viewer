@@ -510,7 +510,7 @@ mod host {
     fn send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> (Value, Vec<Vec<u8>>) {
         request["jobId"] = json!(1);
         request["docId"] = json!("doc");
-        let response = host.call(&request.to_string(), payloads);
+        let response = host.call_filled(&request.to_string(), payloads);
         let envelope: Value = serde_json::from_str(&response.json).unwrap();
         assert!(envelope.get("error").is_none(), "{request}: {envelope}");
         (envelope["result"].clone(), response.payloads)

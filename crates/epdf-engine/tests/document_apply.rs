@@ -26,7 +26,7 @@ fn open() -> Host {
 fn send(host: &mut Host, mut request: Value) -> Result<Value, Value> {
     request["jobId"] = json!(7);
     request["docId"] = json!(DOC);
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let mut envelope: Value = serde_json::from_str(&response.json).expect("JSON");
     match envelope.get_mut("error") {
         Some(error) => Err(error.take()),

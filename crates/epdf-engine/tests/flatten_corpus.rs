@@ -189,7 +189,7 @@ fn every_flatten_and_export_case_answers_what_the_typescript_engine_answered() {
         let expected = case.exported.as_ref().unwrap_or_else(|| panic!("{}: nothing", case.name));
         assert_eq!(answer.payloads.len(), 1, "{}", case.name);
         let mut host = epdf_engine::host::Host::new();
-        let opened = host.call(
+        let opened = host.call_filled(
             &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "exported",
                 "password": null })
             .to_string(),

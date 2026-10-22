@@ -108,7 +108,7 @@ fn a_field_mdp_lock_is_listed() {
 fn an_unsigned_field_has_nothing_to_analyze_from() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "signatures.analyze", "jobId": 1, "docId": doc,
                  "input": { "since": { "signatureIndex": 0 } } })
         .to_string(),

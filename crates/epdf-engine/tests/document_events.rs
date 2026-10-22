@@ -19,7 +19,7 @@ const FORMS: &str = "tooling/engine-conformance/fixtures/form_fields.pdf";
 /// event rides beside the result rather than inside it.
 fn envelope(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Value {
     request["jobId"] = json!(5);
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
     envelope

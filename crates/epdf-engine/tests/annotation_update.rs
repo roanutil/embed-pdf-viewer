@@ -121,7 +121,7 @@ fn host() -> Host {
 /// objects are numbered past the base file's (`annotation_create`'s `open`).
 fn open_bytes(bytes: Vec<u8>) -> Replay {
     let mut host = host();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
             "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
         .to_string(),
@@ -631,7 +631,7 @@ fn pdf_of(objects: &[&str]) -> Vec<u8> {
 /// (`/C [0.5]`) and whose fill as CMYK (`/IC [0 0 0 1]`).
 fn color_fixture() -> Replay {
     let mut host = host();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": DOC,
             "password": null })
         .to_string(),

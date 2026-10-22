@@ -246,7 +246,7 @@ fn an_export_is_one_page_the_size_of_the_union_and_leaves_the_source_alone() {
     assert_eq!(listed(&mut replay, pon), before, "an export is a read");
 
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "exported",
             "password": null })
         .to_string(),

@@ -23,7 +23,8 @@ use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::features::render::raster::PageRaster;
 use epdf_engine::features::server::{EncodedImage, ImageEncoder, RenderEncode};
 use epdf_engine::host::{
-    AUTHORITY_KINDS, FLOOR_ONLY_KINDS, Host, JobEnvelope, Payloads, RequestEffect, WRITE_KINDS,
+    AUTHORITY_KINDS, FLOOR_ONLY_KINDS, Host, JobEnvelope, JobId, Payloads, RequestEffect,
+    WRITE_KINDS,
 };
 
 const VECTOR: &str = "tooling/engine-conformance/vectors/wire/requests.json";
@@ -122,7 +123,9 @@ fn open() -> Host {
     let bytes = std::fs::read(test_support::workspace_root().join(FIXTURE))
         .unwrap_or_else(|e| panic!("read {FIXTURE}: {e}"));
     let response = host.call(
-        &serde_json::json!({ "kind": "open.fatMem", "docId": DOC_ID }).to_string(),
+        &serde_json::json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1,
+            "docId": DOC_ID })
+        .to_string(),
         vec![bytes],
     );
     let body: serde_json::Value = serde_json::from_str(&response.json).expect("the response");
@@ -141,12 +144,13 @@ fn annotation_ref(page: u64, object_number: u64) -> serde_json::Value {
         "objectNumber": object_number })
 }
 
-/// Send one request to `host` and answer the whole envelope.
+/// Send one request to `host` and answer the whole envelope, filled in as
+/// a client fills it ([`Host::call_filled`]).
 fn send(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
     let mut request = request;
     request["jobId"] = 2.into();
     request["docId"] = DOC_ID.into();
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     serde_json::from_str(&response.json).expect("every response is JSON")
 }
 
@@ -188,18 +192,22 @@ fn placeholder(name: &str) -> serde_json::Value {
 }
 
 /// The body for one kind: the envelope, plus every required argument. The
-/// `effect` is left out, which the host takes until Task 8.27: the vector
-/// names the field and not its value.
+/// vector names the `effect` field and not its value, which is the kind's
+/// own ([`RequestEffect::of`]).
 fn request(case: &Case) -> String {
     let mut body = serde_json::Map::new();
     body.insert("kind".into(), case.kind.as_str().into());
     body.insert("jobId".into(), 1.into());
     body.insert("docId".into(), DOC_ID.into());
     for (name, optional) in &case.fields {
-        if *optional || name == "effect" {
+        if *optional {
             continue;
         }
-        body.insert(name.clone(), placeholder(name));
+        let value = match name.as_str() {
+            "effect" => RequestEffect::of(&case.kind).expect("a stated effect").as_str().into(),
+            _ => placeholder(name),
+        };
+        body.insert(name.clone(), value);
     }
     serde_json::Value::Object(body).to_string()
 }
@@ -318,7 +326,7 @@ fn a_file_render_takes_its_target_in_page_space() {
     let mut host = Host::new();
     let path = test_support::workspace_root().join(FIXTURE);
     let render = |host: &mut Host, rect: serde_json::Value| {
-        let response = host.call(
+        let response = host.call_filled(
             &serde_json::json!({ "kind": "document.renderPageFile", "jobId": 3,
                 "path": path, "password": "", "pageIndex": 0,
                 "options": { "target": { "kind": "rect", "rect": rect },
@@ -340,6 +348,45 @@ fn a_file_render_takes_its_target_in_page_space() {
 }
 
 #[test]
+fn every_kind_states_the_effect_its_interface_does() {
+    // `effect: '…'` beside each `kind: '…'` in `worker-protocol.ts`: the
+    // host's table is that file's, and only the control frames state none.
+    let source = std::fs::read_to_string(
+        test_support::workspace_root().join("packages/engine/core/src/wire/worker-protocol.ts"),
+    )
+    .expect("the protocol");
+    let mut stated = std::collections::BTreeMap::new();
+    let mut lines = source.lines().map(str::trim).peekable();
+    while let Some(line) = lines.next() {
+        let (Some(kind), Some(next)) = (quoted(line, "kind: '"), lines.peek()) else { continue };
+        if let Some(effect) = quoted(next, "effect: '") {
+            stated.insert(kind.to_owned(), effect.to_owned());
+        }
+    }
+    let mut controls = Vec::new();
+    for case in cases() {
+        match RequestEffect::of(&case.kind) {
+            Some(effect) => assert_eq!(
+                Some(effect.as_str()),
+                stated.get(&case.kind).map(String::as_str),
+                "{}",
+                case.kind
+            ),
+            None => controls.push(case.kind),
+        }
+    }
+    controls.sort();
+    assert_eq!(controls, ["abort", "pages.workingSet", "shutdown"]);
+    assert_eq!(stated.len(), 86, "the protocol states an effect for a kind the vector lacks");
+}
+
+/// The text between `prefix` and the next `'` of `line`.
+fn quoted<'a>(line: &'a str, prefix: &str) -> Option<&'a str> {
+    let rest = line.strip_prefix(prefix)?;
+    rest.split_once('\'').map(|(value, _)| value)
+}
+
+#[test]
 fn a_write_envelope_is_read_whole() {
     let body = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
         "jobId": 7, "opId": "op-7", "objectNumberFloor": 900,
@@ -358,40 +405,91 @@ fn a_write_envelope_is_read_whole() {
 }
 
 #[test]
-fn an_absent_envelope_is_the_default() {
-    // Until Task 8.27: the kernel's calls and the older tests send none.
-    let body = serde_json::json!({ "kind": "annotations.delete" });
-    assert_eq!(JobEnvelope::parse("annotations.delete", &body).unwrap(), JobEnvelope::default());
+fn an_envelope_upstream_requires_is_required() {
+    // `worker-protocol.ts`: every job a `jobId` and its kind's `effect`, a
+    // write its `opId`, and a kind that takes an `authority` one, whose
+    // `grants` may be `null` but not left out.
+    let delete = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
+        "jobId": 7, "opId": "op-7", "authority": { "identity": {}, "grants": null } });
+    assert!(JobEnvelope::parse("annotations.delete", &delete).is_ok());
+    for missing in ["jobId", "effect", "opId", "authority"] {
+        let mut body = delete.clone();
+        body.as_object_mut().unwrap().remove(missing);
+        let refused = JobEnvelope::parse("annotations.delete", &body).expect_err(missing);
+        assert_eq!(refused.code, EngineErrorCode::WireFormat, "{missing}");
+        assert_eq!(
+            refused.message,
+            format!("the 'annotations.delete' request has no '{missing}'"),
+            "{missing}"
+        );
+    }
+    let mut no_grants = delete.clone();
+    no_grants["authority"] = serde_json::json!({ "identity": {} });
+    assert_eq!(
+        JobEnvelope::parse("annotations.delete", &no_grants).unwrap_err().code,
+        EngineErrorCode::WireFormat
+    );
+    // A control frame states no effect, and a kind the wire does not have
+    // has no envelope: its arm refuses it.
+    let abort = serde_json::json!({ "kind": "abort", "jobId": 3 });
+    assert_eq!(JobEnvelope::parse("abort", &abort).unwrap().job_id, Some(JobId(3)));
+    assert_eq!(
+        JobEnvelope::parse("pages.teleport", &serde_json::json!({})).unwrap(),
+        JobEnvelope::default()
+    );
 }
 
 #[test]
 fn a_field_the_kind_does_not_take_is_ignored() {
     // As `WorkerHost` ignores it: a read carries no op and no authority.
-    let body = serde_json::json!({ "kind": "pages.list", "opId": 3, "authority": 4,
-        "objectNumberFloor": "x" });
-    assert_eq!(JobEnvelope::parse("pages.list", &body).unwrap(), JobEnvelope::default());
+    let body = serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 2,
+        "opId": 3, "authority": 4, "objectNumberFloor": "x" });
+    assert_eq!(
+        JobEnvelope::parse("pages.list", &body).unwrap(),
+        JobEnvelope {
+            effect: Some(RequestEffect::Read),
+            job_id: Some(JobId(2)),
+            ..JobEnvelope::default()
+        }
+    );
 }
 
 #[test]
 fn a_malformed_envelope_is_a_wire_error() {
     let mut host = open();
+    let unchecked = serde_json::json!({ "identity": {}, "grants": null });
     for bad in [
         serde_json::json!({ "kind": "pages.list", "effect": "sometimes" }),
-        serde_json::json!({ "kind": "metadata.update", "patch": {}, "opId": 3 }),
-        serde_json::json!({ "kind": "metadata.update", "patch": {}, "objectNumberFloor": -1 }),
-        serde_json::json!({ "kind": "forms.setValue", "authority": { "grants": null } }),
+        // The kind states its effect: another one is not this kind's.
+        serde_json::json!({ "kind": "pages.list", "effect": "write" }),
+        serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
+            "opId": 3 }),
+        serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
+            "opId": "o", "objectNumberFloor": -1 }),
+        serde_json::json!({ "kind": "forms.setValue", "effect": "write", "opId": "o",
+            "authority": { "grants": null } }),
+        serde_json::json!({ "kind": "document.apply", "effect": "write", "opId": "o",
+            "change": { "ops": [] } }),
+        serde_json::json!({ "kind": "document.apply", "effect": "write", "opId": "o",
+            "authority": { "identity": {} }, "change": { "ops": [] } }),
+        serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
+            "authority": unchecked }),
     ] {
         let mut request = bad.clone();
         request["docId"] = DOC_ID.into();
+        request["jobId"] = 4.into();
         let answer: serde_json::Value =
             serde_json::from_str(&host.call(&request.to_string(), Vec::new()).json).unwrap();
         assert_eq!(answer["error"]["code"], "WireFormat", "{bad}: {answer}");
     }
-    let job: serde_json::Value = serde_json::from_str(
-        &host.call(r#"{"kind":"pages.list","docId":"doc-1","jobId":true}"#, Vec::new()).json,
-    )
-    .unwrap();
-    assert_eq!(job["error"]["code"], "WireFormat", "{job}");
+    // `WorkerJobId` is a number: not a flag, and not a name.
+    for job in [r#"true"#, r#""job-1""#] {
+        let request =
+            format!(r#"{{"kind":"pages.list","effect":"read","docId":"doc-1","jobId":{job}}}"#);
+        let answer: serde_json::Value =
+            serde_json::from_str(&host.call(&request, Vec::new()).json).unwrap();
+        assert_eq!(answer["error"]["code"], "WireFormat", "{job}: {answer}");
+    }
 }
 
 #[test]
@@ -402,6 +500,10 @@ fn an_abort_names_its_job_by_number() {
         serde_json::from_str(&host.call(r#"{"kind":"abort","jobId":41}"#, Vec::new()).json)
             .unwrap();
     assert_eq!(answer["result"]["aborted"], false, "{answer}");
+    let named: serde_json::Value =
+        serde_json::from_str(&host.call(r#"{"kind":"abort","jobId":"41"}"#, Vec::new()).json)
+            .unwrap();
+    assert_eq!(named["error"]["code"], "WireFormat", "{named}");
 }
 
 #[test]
@@ -571,7 +673,7 @@ fn a_widget_link_names_its_widget_by_annotation_ref() {
     // `baseIndex` cannot join a field, as `FormMutator` refuses it once the
     // field resolves: the field tree holds widgets by reference.
     let mut host = Host::new();
-    let response = host.call(
+    let response = host.call_filled(
         &serde_json::json!({ "kind": "open.fatMem", "docId": DOC_ID }).to_string(),
         vec![test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf")],
     );
@@ -607,7 +709,7 @@ fn a_file_render_names_the_page_it_rendered() {
     // index turned out to be, beside the file's page count.
     let mut host = Host::new();
     let path = test_support::workspace_root().join(FIXTURE);
-    let response = host.call(
+    let response = host.call_filled(
         &serde_json::json!({ "kind": "document.renderPageFile", "jobId": 3,
             "path": path, "password": "", "pageIndex": 0,
             "options": { "scale": 0.1 } })

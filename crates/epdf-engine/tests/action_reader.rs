@@ -395,12 +395,12 @@ fn the_open_destination_form_is_read_and_answered_in_page_space() {
 
     // Through the wire: measured from the crop box's top-left, y down.
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![bytes],
     );
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
-    let answer = host.call(
+    let answer = host.call_filled(
         &serde_json::json!({ "kind": "actions.read", "jobId": 2, "docId": "d" }).to_string(),
         Vec::new(),
     );

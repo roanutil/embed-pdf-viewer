@@ -85,7 +85,7 @@ impl Case {
 fn open(file: &VectorFile, case: &Case) -> Replay {
     let doc = format!("pages-mutate:{}", case.name);
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc,
             "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
         .to_string(),

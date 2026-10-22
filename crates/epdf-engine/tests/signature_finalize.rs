@@ -83,7 +83,7 @@ fn request(sealed: &Sealed, path: &str) -> Value {
 
 fn finalize(request: &Value, cms: &[u8]) -> Value {
     let mut host = Host::new();
-    let response = host.call(&request.to_string(), vec![cms.to_vec()]);
+    let response = host.call_filled(&request.to_string(), vec![cms.to_vec()]);
     serde_json::from_str(&response.json).unwrap()
 }
 
@@ -109,7 +109,7 @@ fn a_rebuilt_candidate_finalizes_to_the_sealed_file() {
     let mut reader = Host::new();
     let opened: Value = serde_json::from_str(
         &reader
-            .call(
+            .call_filled(
                 &json!({ "kind": "open.layerMemBase", "jobId": 2, "docId": "sealed",
                     "baseKey": "sealed", "layer": { "kind": "fresh" }, "password": null })
                 .to_string(),

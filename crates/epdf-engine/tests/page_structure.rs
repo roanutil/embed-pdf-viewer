@@ -23,8 +23,10 @@ fn open() -> Host {
 
 fn open_bytes(bytes: Vec<u8>) -> Host {
     let mut host = Host::new();
-    let response = host
-        .call(&json!({ "kind": "open.fatMem", "jobId": 1, "docId": DOC }).to_string(), vec![bytes]);
+    let response = host.call_filled(
+        &json!({ "kind": "open.fatMem", "jobId": 1, "docId": DOC }).to_string(),
+        vec![bytes],
+    );
     assert!(!response.json.contains("\"error\""), "{}", response.json);
     host
 }
@@ -33,7 +35,7 @@ fn open_bytes(bytes: Vec<u8>) -> Host {
 fn send(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Result<Value, Value> {
     request["jobId"] = json!(7);
     request["docId"] = json!(DOC);
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     let mut envelope: Value = serde_json::from_str(&response.json).expect("JSON");
     match envelope.get_mut("error") {
         Some(error) => Err(error.take()),
@@ -546,7 +548,7 @@ fn a_blank_page_takes_the_object_number_the_op_names() {
 
 /// The first `count` pages of the document, as a PDF of their own.
 fn extracted(host: &mut Host, pages: &[Value]) -> Vec<u8> {
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "pages.extract", "jobId": 7, "docId": DOC, "pages": pages }).to_string(),
         Vec::new(),
     );
@@ -555,7 +557,7 @@ fn extracted(host: &mut Host, pages: &[Value]) -> Vec<u8> {
 }
 
 fn saved_bytes(host: &mut Host) -> Vec<u8> {
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "document.saveBuffer", "jobId": 7, "docId": DOC, "mode": "rewrite" })
             .to_string(),
         Vec::new(),

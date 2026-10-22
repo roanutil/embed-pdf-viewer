@@ -10,7 +10,7 @@ use common::{call, open_fixture, page_ref};
 const REPORT: &str = "pdfium-multiplatform-prototype/fixtures/report.pdf";
 
 fn error_code(host: &mut Host, request: Value) -> Value {
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     envelope["error"]["code"].clone()
 }
@@ -41,7 +41,7 @@ fn a_set_name_is_in_the_next_page_list() {
 fn a_name_change_publishes_pages_named() {
     let mut host = Host::new();
     let (doc, pon) = open_fixture(&mut host, REPORT);
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "opId": "name-1", "name": "a=A",
             "page": page_ref(pon) })
             .to_string(),
@@ -56,7 +56,7 @@ fn a_name_change_publishes_pages_named() {
         envelope["result"]["event"]["origin"]["tx"],
         json!({ "id": "name-1", "index": 0, "count": 1 })
     );
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "pages.removeName", "jobId": 2, "docId": doc, "opId": "name-2",
             "name": "a=A" })
         .to_string(),

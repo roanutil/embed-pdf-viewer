@@ -74,7 +74,7 @@ const OBJECT_NUMBER_POOL_SIZE: u32 = 64;
 /// file's, with the pool its main thread names reserved.
 fn open(file: &VectorFile, doc_id: &str) -> Replay {
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": doc_id,
             "password": null, "reserveObjectNumbers": OBJECT_NUMBER_POOL_SIZE })
         .to_string(),

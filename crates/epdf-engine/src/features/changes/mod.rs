@@ -36,20 +36,17 @@
 //! result as an `events` array (`{result, replayed, mutationSequence,
 //! events}`), each stamped with `origin.tx` and, for an undo, `undoOf`. One
 //! envelope `event` could not carry them: a change publishes one fact per
-//! op. That is this host's own decision; Task 8.27, which closes the wire
-//! contract, confirms or replaces it. `document.applyChanges` publishes
+//! op. That is this host's own decision, kept when the wire contract closed
+//! (8.27): the forms verbs answer the same way. `document.applyChanges` publishes
 //! nothing, as upstream's doesn't: the server relays a request's changes
 //! from its audit log.
 //!
 //! # Authority
 //!
 //! Upstream's `document.apply` and each change of `document.applyChanges`
-//! require an `authority`. This host takes one when it is sent and
-//! otherwise acts for the session's own ([`applier::ChangeAuthority::
-//! of_session`]), as `JobEnvelope` reads an absent authority for every kind
-//! until Task 8.27: the kernel's calls through `epdf-viewer-host`'s
-//! `translate.rs` carry none (the kernel's metadata patch runs as a
-//! `document.apply`), and neither do most of `tests/document_apply.rs`'s.
+//! require an `authority`, and so does this host (`JobEnvelope`). A native
+//! host that stands in for upstream's client, as `epdf-viewer-host` does for
+//! the kernel, sends the session's own ([`crate::host::Host::fill_envelope`]).
 
 pub mod annotations;
 pub mod applier;

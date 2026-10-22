@@ -66,7 +66,7 @@ function check(name, run) {
 
 check('a document opens from a Buffer payload', () => {
   const engine = new Engine();
-  const response = engine.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
+  const response = engine.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 901, docId: 'd' }), [bytes]);
   assert.equal(JSON.parse(response.json).error, undefined, response.json);
   assert.equal(engine.sessionCount(), 1);
   engine.shutdown();
@@ -74,8 +74,8 @@ check('a document opens from a Buffer payload', () => {
 
 check('a read comes back as JSON with no payloads', () => {
   const engine = new Engine();
-  engine.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
-  const response = engine.call(JSON.stringify({ kind: 'pages.list', docId: 'd' }), []);
+  engine.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 902, docId: 'd' }), [bytes]);
+  const response = engine.call(JSON.stringify({ kind: 'pages.list', effect: 'read', jobId: 903, docId: 'd' }), []);
   assert.ok(JSON.parse(response.json).result.pages.length > 0);
   assert.equal(response.payloads.length, 0);
   engine.shutdown();
@@ -86,9 +86,9 @@ check('a saved document comes back as a Buffer beside the JSON', () => {
   // base64 and half again as large, and the worker hands this straight to a
   // stream.
   const engine = new Engine();
-  engine.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
+  engine.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 904, docId: 'd' }), [bytes]);
   const response = engine.call(
-    JSON.stringify({ kind: 'document.saveBuffer', docId: 'd', mode: 'incremental' }),
+    JSON.stringify({ kind: 'document.saveBuffer', effect: 'snapshot', jobId: 905, docId: 'd', mode: 'incremental' }),
     [],
   );
   assert.equal(response.payloads.length, 1);
@@ -103,7 +103,7 @@ check('a refused operation returns rather than throwing', () => {
   // One error path, not two. A thrown exception for a document problem and a
   // returned envelope for everything else would make the worker handle both.
   const engine = new Engine();
-  engine.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
+  engine.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 906, docId: 'd' }), [bytes]);
   const response = engine.call(
     JSON.stringify({
       kind: 'pages.text',
@@ -122,18 +122,18 @@ check('shutdown is terminal and closing a document is not', () => {
   // an engine that came back to life after one would let a supervisor keep
   // using something it had decided to throw away.
   const reused = new Engine();
-  reused.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
-  reused.call(JSON.stringify({ kind: 'close', docId: 'd' }), []);
+  reused.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 907, docId: 'd' }), [bytes]);
+  reused.call(JSON.stringify({ kind: 'close', effect: 'close', jobId: 908, docId: 'd' }), []);
   assert.equal(reused.sessionCount(), 0);
-  const reopened = reused.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
+  const reopened = reused.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 909, docId: 'd' }), [bytes]);
   assert.equal(JSON.parse(reopened.json).error, undefined, reopened.json);
   reused.shutdown();
 
   const discarded = new Engine();
-  discarded.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
+  discarded.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 910, docId: 'd' }), [bytes]);
   discarded.shutdown();
   assert.equal(discarded.sessionCount(), 0);
-  const refused = discarded.call(JSON.stringify({ kind: 'open.fatMem', docId: 'again' }), [bytes]);
+  const refused = discarded.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 911, docId: 'again' }), [bytes]);
   assert.equal(JSON.parse(refused.json).error.code, 'RuntimeUnavailable', refused.json);
 });
 
@@ -143,10 +143,10 @@ check('two engines hold separate sessions', () => {
   // checked out at once.
   const first = new Engine();
   const second = new Engine();
-  first.call(JSON.stringify({ kind: 'open.fatMem', docId: 'd' }), [bytes]);
+  first.call(JSON.stringify({ kind: 'open.fatMem', effect: 'open', jobId: 912, docId: 'd' }), [bytes]);
   assert.equal(first.sessionCount(), 1);
   assert.equal(second.sessionCount(), 0);
-  const response = second.call(JSON.stringify({ kind: 'pages.list', docId: 'd' }), []);
+  const response = second.call(JSON.stringify({ kind: 'pages.list', effect: 'read', jobId: 913, docId: 'd' }), []);
   assert.ok(JSON.parse(response.json).error, 'the second engine saw the first engine\'s document');
   first.shutdown();
   second.shutdown();

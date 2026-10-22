@@ -281,7 +281,7 @@ fn render_on_the_wire(
     page: u32,
     options: serde_json::Value,
 ) -> (serde_json::Value, Vec<u8>) {
-    let response = host.call(
+    let response = host.call_filled(
         &serde_json::json!({
             "kind": "pages.render", "jobId": 2, "docId": "d",
             "page": { "kind": "objectNumber", "objectNumber": page },
@@ -335,7 +335,7 @@ fn a_page_space_target_is_measured_from_the_visible_boxs_top_left() {
     // the area it drew in page space. On a page whose box is centred on the
     // origin, page space's top-left quarter is the red one.
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![shifted_page_pdf()],
     );
@@ -400,7 +400,7 @@ fn a_scale_viewport_that_names_no_scale_is_scale_one() {
     // `PageScreenViewport`'s `scale` is optional, and `viewport.scale ?? 1`
     // (`renderSize.ts`): `{kind: "scale"}` is the page at its own size.
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &serde_json::json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d" }).to_string(),
         vec![shifted_page_pdf()],
     );

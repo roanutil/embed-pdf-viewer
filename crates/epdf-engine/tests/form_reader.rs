@@ -81,7 +81,7 @@ fn read(case: &Case) -> Value {
 /// The form of `bytes`, through `Host::call`.
 fn list_bytes(bytes: Vec<u8>) -> Value {
     let mut host = Host::new();
-    let open = host.call(
+    let open = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "d",
             "password": null })
         .to_string(),
@@ -89,7 +89,7 @@ fn list_bytes(bytes: Vec<u8>) -> Value {
     );
     let envelope: Value = serde_json::from_str(&open.json).expect("JSON");
     assert!(envelope.get("error").is_none(), "would not open: {envelope}");
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "forms.list", "effect": "read", "jobId": 2, "docId": "d" }).to_string(),
         Vec::new(),
     );

@@ -27,7 +27,7 @@ fn an_open_with_a_narrow_scope_refuses_a_metadata_write() {
         "pdfium-multiplatform-prototype/fixtures/report.pdf",
         json!({ "scope": ["doc.open", "doc.render"] }),
     );
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "metadata.update", "jobId": 9, "docId": doc, "patch": { "title": "x" } })
             .to_string(),
         Vec::new(),
@@ -43,7 +43,7 @@ fn an_invalid_scope_fails_the_open() {
         test_support::workspace_root().join("pdfium-multiplatform-prototype/fixtures/report.pdf"),
     )
     .unwrap();
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d", "scope": ["doc.nope"] })
             .to_string(),
         vec![bytes],
@@ -61,7 +61,7 @@ fn a_parked_open_unlocks_through_a_password_check_under_its_scope() {
         json!({ "scope": ["doc.open", "doc.render"] }),
     );
     let check = |host: &mut Host, password: &str| -> serde_json::Value {
-        let response = host.call(
+        let response = host.call_filled(
             &json!({ "kind": "document.checkPasswordPermissions", "jobId": 2, "docId": doc,
                      "password": password })
             .to_string(),
@@ -79,7 +79,7 @@ fn a_parked_open_unlocks_through_a_password_check_under_its_scope() {
     assert!(right["result"].get("encryptionState").is_none(), "{right}");
     let pages = common::sig_call(&mut host, json!({ "kind": "pages.list", "docId": doc }));
     assert!(!pages.is_null());
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "metadata.update", "jobId": 3, "docId": doc, "patch": { "title": "x" } })
             .to_string(),
         Vec::new(),
@@ -212,7 +212,7 @@ fn a_file_probe_answers_its_security_under_a_key() {
     let mut host = Host::new();
     let path = test_support::workspace_root()
         .join("pdfium-multiplatform-prototype/fixtures/encrypted-hello.pdf");
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "document.probeSecurityFile", "jobId": 1,
                  "path": path.to_string_lossy() })
         .to_string(),

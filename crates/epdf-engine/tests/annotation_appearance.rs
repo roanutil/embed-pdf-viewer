@@ -96,7 +96,7 @@ fn read_fixture(path: &str) -> Vec<u8> {
 /// Open `bytes` in a host as `docId` `doc`.
 fn host_with(bytes: Vec<u8>) -> Host {
     let mut host = Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "doc",
             "password": null })
         .to_string(),
@@ -121,7 +121,7 @@ fn host_render(
     if let Some(options) = options {
         request["options"] = options;
     }
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     let answer: Value = serde_json::from_str(&response.json).expect("JSON");
     (answer, response.payloads)
 }
@@ -886,7 +886,7 @@ fn a_stamps_appearance_reads_as_a_one_page_drawing_and_other_kinds_have_none() {
     ]);
     let mut host = host_with(bytes);
     let read_appearance = |host: &mut Host, annot: u32| {
-        let response = host.call(
+        let response = host.call_filled(
             &json!({ "kind": "annotations.readAppearance", "effect": "read", "jobId": 3,
                 "docId": "doc", "page": { "kind": "objectNumber", "objectNumber": 3 },
                 "ref": { "kind": "objectNumber",
@@ -923,7 +923,7 @@ fn a_turned_stamps_appearance_reads_without_its_turn() {
     // upright box around it turned (116.6 by 102). A copy made from these
     // bytes and the record turns it again.
     let mut host = host_with(turned_pdf("Stamp"));
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "annotations.readAppearance", "effect": "read", "jobId": 3,
             "docId": "doc", "page": { "kind": "objectNumber", "objectNumber": 3 },
             "ref": { "kind": "objectNumber",
@@ -999,14 +999,14 @@ fn each_appearance_answers_its_picture_in_upstreams_shape() {
     }
 
     let mut host = Host::new().with_encoder(Box::new(RowsEncoder));
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1, "docId": "doc",
             "password": null })
         .to_string(),
         vec![states_pdf()],
     );
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
-    let response = host.call(
+    let response = host.call_filled(
         &json!({ "kind": "annotations.renderAppearancesEncoded", "effect": "read", "jobId": 2,
             "docId": "doc", "page": { "kind": "objectNumber", "objectNumber": 3 },
             "family": "widgets", "encode": { "format": "png" } })

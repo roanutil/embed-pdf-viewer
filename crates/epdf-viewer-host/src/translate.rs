@@ -488,6 +488,16 @@ const FORM_RECORD_KINDS: &[&str] = &[
     "forms.setSignatureAppearance",
 ];
 
+/// [`Host::call`] for a request this module built or passed on, with the
+/// envelope upstream's client gives every job filled in where the kernel
+/// left it out ([`Host::fill_envelope`]). Dead once Task 13 gives the kernel
+/// its own envelope.
+fn wire_call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
+    let mut request = request.clone();
+    host.fill_envelope(&mut request);
+    host.call(&request.to_string(), payloads)
+}
+
 /// Send one translated request to `host` through [`Host::call`], answered
 /// in the kernel's shape where it differs.
 pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostResponse {
@@ -511,7 +521,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if kind == "annotations.list" {
         return kernel_annotations::listing(host, &request);
     }
-    let respelled = base_index_refs(host, &mut request);
+    // Both rewrite the request in place; it is sent re-serialized either
+    // way, with its envelope filled in.
+    base_index_refs(host, &mut request);
     if kind == "annotations.create" {
         return kernel_create::call(host, &request, payloads);
     }
@@ -521,13 +533,9 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if kind == "annotations.delete" {
         return kernel_delete::call(host, &request, payloads);
     }
-    let moved = page_space::render_target_to_page_space(host, &mut request)
-        | page_space::scale_to_page_space(host, &mut request);
-    let response = if respelled || moved {
-        host.call(&request.to_string(), payloads)
-    } else {
-        host.call(json, payloads)
-    };
+    page_space::render_target_to_page_space(host, &mut request);
+    page_space::scale_to_page_space(host, &mut request);
+    let response = wire_call(host, &request, payloads);
     let response = page_space::answer_to_file_space(host, &kind, &request, response);
     if FORM_RECORD_KINDS.contains(&kind.as_str()) {
         page_space::with_raw_field_flags(host, &request, response)
@@ -584,7 +592,7 @@ mod metadata {
     /// One call, answering its `result`, or the whole response when it is
     /// an error.
     fn send(host: &mut Host, call: &Value) -> Result<(Value, HostResponse), HostResponse> {
-        let response = host.call(&call.to_string(), Vec::new());
+        let response = super::wire_call(host, call, Vec::new());
         let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
         match envelope.get("result") {
             Some(result) if envelope.get("error").is_none() => Ok((result.clone(), response)),
@@ -720,7 +728,7 @@ mod kernel_forms {
     /// One call, answering the envelope's `result` and the response, or the
     /// whole response when it is an error.
     fn send(host: &mut Host, call: &Value) -> Result<(Value, HostResponse), HostResponse> {
-        let response = host.call(&call.to_string(), Vec::new());
+        let response = super::wire_call(host, call, Vec::new());
         let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
         if envelope.get("error").is_some() {
             return Err(response);
@@ -887,7 +895,7 @@ mod kernel_forms {
         let mut call = on_document(request, "forms.export");
         call["effect"] = json!("snapshot");
         call["selection"] = json!({});
-        let response = host.call(&call.to_string(), Vec::new());
+        let response = super::wire_call(host, &call, Vec::new());
         let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
         let Some(Value::Object(manifest)) = envelope.pointer("/result/bundle").cloned() else {
             return Err(response);
@@ -950,7 +958,7 @@ mod kernel_forms {
         call["effect"] = json!("write");
         call["bundle"] = Value::Object(manifest);
         call["attribution"] = json!("stamp");
-        let response = host.call(&call.to_string(), bytes);
+        let response = super::wire_call(host, &call, bytes);
         let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
         if envelope.get("error").is_some() {
             return Err(response);
@@ -1154,7 +1162,7 @@ mod kernel_forms {
     fn signature_appearance(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
         let mut call = request.clone();
         call["effect"] = json!("write");
-        let response = host.call(&call.to_string(), payloads);
+        let response = super::wire_call(host, &call, payloads);
         let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
         if envelope.get("error").is_some() {
             return Err(response);
@@ -1196,7 +1204,7 @@ mod kernel_forms {
     }
 
     fn repair(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
-        let response = host.call(&request.to_string(), payloads);
+        let response = super::wire_call(host, request, payloads);
         let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
         if envelope.get("error").is_some() {
             return Err(response);
@@ -1312,7 +1320,7 @@ mod kernel_pages {
             let op = &mut request["change"]["ops"][0];
             op["position"] = position_at(op, &order, at)?;
         }
-        let response = host.call(&request.to_string(), payloads);
+        let response = super::wire_call(host, &request, payloads);
         let mut envelope: Value =
             serde_json::from_str(&response.json).map_err(|e| malformed(e.to_string()))?;
         if envelope.get("error").is_some() {
@@ -1520,7 +1528,7 @@ mod kernel_create {
             Ok(respelled) => respelled,
             Err(error) => return refused(error),
         };
-        let response = host.call(&wire.to_string(), payloads);
+        let response = super::wire_call(host, &wire, payloads);
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
             return response;
         };
@@ -1893,7 +1901,7 @@ mod kernel_update {
         // inline by its object number afterwards. The kernel keys it by the
         // ref the reader gave it before, so the answer keeps that one.
         let before = kernel_ref_at(host, request, index);
-        let response = host.call(&wire.to_string(), payloads);
+        let response = super::wire_call(host, &wire, payloads);
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
             return response;
         };
@@ -2054,7 +2062,7 @@ mod kernel_delete {
             Ok(id) => id,
             Err(error) => return refused(error),
         };
-        let response = host.call(&request.to_string(), payloads);
+        let response = super::wire_call(host, request, payloads);
         let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
             return response;
         };

@@ -179,14 +179,14 @@ fn extract_through_host(
 ) -> epdf_engine::host::Host {
     use serde_json::json;
     let mut host = epdf_engine::host::Host::new();
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 1, "docId": "src" }).to_string(),
         vec![std::fs::read(test_support::workspace_root().join(fixture)).expect("fixture")],
     );
     assert!(!opened.json.contains("\"error\""), "{}", opened.json);
     let listed: serde_json::Value = serde_json::from_str(
         &host
-            .call(
+            .call_filled(
                 &json!({ "kind": "pages.list", "jobId": 2, "docId": "src" }).to_string(),
                 Vec::new(),
             )
@@ -199,10 +199,10 @@ fn extract_through_host(
     if let Some(flatten) = flatten {
         request["flatten"] = flatten;
     }
-    let extracted = host.call(&request.to_string(), Vec::new());
+    let extracted = host.call_filled(&request.to_string(), Vec::new());
     assert!(!extracted.json.contains("\"error\""), "{}", extracted.json);
     let bytes = extracted.payloads.into_iter().next().expect("the extracted bytes");
-    let opened = host.call(
+    let opened = host.call_filled(
         &json!({ "kind": "open.fatMem", "jobId": 4, "docId": "out" }).to_string(),
         vec![bytes],
     );
@@ -213,7 +213,7 @@ fn extract_through_host(
 fn annotation_count(host: &mut epdf_engine::host::Host) -> usize {
     let listed: serde_json::Value = serde_json::from_str(
         &host
-            .call(
+            .call_filled(
                 &serde_json::json!({ "kind": "annotations.list", "jobId": 5, "docId": "out" })
                     .to_string(),
                 Vec::new(),
@@ -244,7 +244,7 @@ fn an_extract_keeps_the_documents_title() {
     let read = |host: &mut epdf_engine::host::Host, doc: &str| -> serde_json::Value {
         let answer: serde_json::Value = serde_json::from_str(
             &host
-                .call(
+                .call_filled(
                     &serde_json::json!({ "kind": "metadata.read", "jobId": 6, "docId": doc })
                         .to_string(),
                     Vec::new(),
