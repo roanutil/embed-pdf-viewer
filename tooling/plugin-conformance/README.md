@@ -422,7 +422,7 @@ and the independently reproduced shipping paged-empty camera refusal
 (`stage/src/services/scene.ts:itemRect`); Task13 must preserve the observation
 without an accidental Rust panic, and Task14 owns any upstream follow-up.
 
-### Current live annotation fixture port (Task12b2b1b-i)
+### Current live annotation fixture port
 
 `annotation-live` registers the shipping annotation plugin under its real `annotation`
 id/token. It is a distinct fixture factory from the legacy `annotation` factory while
@@ -452,11 +452,23 @@ at invocation time, once per segment; retain ordinary getter errors and the rule
 function refs accept no method. Keep the schema 2 trace envelope: this addition changes
 method paths, records, session state, pending/confirmed sequencing and result payloads,
 not the envelope version. `plugins/annotation-reconciliation.json` is a new suite target
-for the later vector/replay task; no vector is written by this migration. Historical 49
-live definitions, exact name mapping and all 25+2 retired reconciliation mappings are in
-`historical/task-12b2b1b-i/`. Legacy annotation helpers/UUID shims remain solely for the
-66 deferred live cases and other unmigrated families; remove their stopgaps after those
-owners migrate, rather than exposing them in the current replay API.
+for the later vector/replay task; no vector is written by this migration. All 115 original
+live definitions map to 149 current cases: nine renames, no retirements and 34 additions.
+The first 49 definitions and all 25+2 historical reconciliation mappings are in
+`historical/task-12b2b1b-i/`; the remaining 66 definitions and whole-family accounting are
+in `historical/task-12b2b1b-ii/`. Current comments/grouping/hover/markup/tools use direct
+nouns and explicit typed answers; the hover fixture lends widgets through `lend`, never
+through an annotation engine list. `born` uses the shipping drawing bounds for confirmed
+creates. Named malformed BinarySource cases preserve exact errors plus valid recovery;
+ordinary cases never accept accidental missing methods, stale refs or callback failures.
+
+Run `node --import=tsx --conditions=development --test test/annotation-live.test.ts
+test/annotation-live-ii.test.ts` from this package for the current live boundary. The tests
+assert actual successful state, current ops/results/events, complete per-kind read schemas,
+exact intended refusals/diagnostics and global cleanup. Legacy annotation helpers/UUID
+shims remain solely for the eight B2/B3/C consumer files listed in `family.json`; those
+owners migrate them, then global closure removes the bridge. Its three compiler diagnostics
+remain deferred and its obsolete surface is never a current replay target.
 
 The direct live tests additionally pin a narrow failure-callback reentry edge. A refused
 create first emits its write-failed occurrence, then processes dependent refusals and

@@ -1,0 +1,148 @@
+{
+  "base": "bbbdb2678",
+  "original": 115,
+  "current": 149,
+  "mapped": 115,
+  "retired": 0,
+  "renamed": 9,
+  "added": 34,
+  "originalSuites": [
+    {
+      "file": "plugins/annotation-api.json",
+      "before": 19,
+      "after": 19,
+      "accounting": "../task-12b2b1b-i/accounting.json"
+    },
+    {
+      "file": "plugins/annotation-crud.json",
+      "before": 13,
+      "after": 13,
+      "accounting": "../task-12b2b1b-i/accounting.json"
+    },
+    {
+      "file": "plugins/annotation-hydration.json",
+      "before": 17,
+      "after": 18,
+      "accounting": "../task-12b2b1b-i/accounting.json"
+    },
+    {
+      "file": "plugins/annotation-comments.json",
+      "before": 16,
+      "after": 16,
+      "accounting": "accounting.json"
+    },
+    {
+      "file": "plugins/annotation-grouping.json",
+      "before": 5,
+      "after": 5,
+      "accounting": "accounting.json"
+    },
+    {
+      "file": "plugins/annotation-hover.json",
+      "before": 3,
+      "after": 3,
+      "accounting": "accounting.json"
+    },
+    {
+      "file": "plugins/annotation-markup.json",
+      "before": 9,
+      "after": 9,
+      "accounting": "accounting.json"
+    },
+    {
+      "file": "plugins/annotation-tools.json",
+      "before": 33,
+      "after": 34,
+      "accounting": "accounting.json"
+    }
+  ],
+  "additionalReconciliation": {
+    "file": "plugins/annotation-reconciliation.json",
+    "current": 32,
+    "historicalMappings": 27,
+    "mapping": "../task-12b2b1b-i/reconciliation.json"
+  },
+  "task11": {
+    "api": {
+      "count": 2,
+      "names": ["measurement-distance-drafts", "dimension-drafts-continue-without-viewports"],
+      "disposition": "Reviewed i current complete scales/viewport/draft coverage; see original49 manifest."
+    },
+    "tools": {
+      "count": 1,
+      "names": ["touch-consent"],
+      "oldInputDifference": [
+        {
+          "path": "steps[11].args[3]",
+          "frozen": null,
+          "baseline": {
+            "$undefined": true
+          }
+        },
+        {
+          "path": "steps[11].args[4]",
+          "frozen": null,
+          "baseline": {
+            "$undefined": true
+          }
+        }
+      ],
+      "disposition": "Current input explicitly states both optional slots, actual PageRef/method signature and successful six-result touch assertions."
+    },
+    "priorPure": {
+      "count": 23,
+      "disposition": "Reviewed task-12b2b1a accounting, all original names/inputs adjudicated."
+    },
+    "priorRepository": {
+      "count": 573,
+      "disposition": "Reviewed task-12b2b1a accounting/Fixround1, all original names/inputs adjudicated."
+    },
+    "legacyFixture": "Byte-identical to BASE; no additional input drifts induced in deferred consumers. The three compiler diagnostics and all obsolete adapters remain owned by B2/B3/C then D removal."
+  },
+  "preserved": {
+    "src/scenario.ts": "3571a7f6654a010fca10b2f764394db557cc16042ee9b7787f4cde841057d354",
+    "src/suites/annotation-current-fixtures.ts": "1ed181373f993f80acfde740c3e0de3ca8fe2308b5d0827b77b63454887fd0ce",
+    "src/suites/annotation-live-fixtures.ts": "6eb969e370e06faf61169faae30612b79dd2b16697ba89d88e2a00db75a96010",
+    "src/suites/annotation-reconciliation.ts": "73ce7e5ca034fad9f14057c1870893ff2b7ea30fe3ae315060c3d64349e72240",
+    "src/suites/annotation-fixtures.ts": "eb2d1b1d94a47b56716e2dd8c2184434a883a8d045c82ed95bbc276c97f19939",
+    "test/annotation-live.test.ts": "7e19c3972369b4d78c53a0b87c2ba0d2f32c29b3fe0acc8d8e65f9e5edbba2e1",
+    "test/annotation-live-refusals.ts": "8532b8b8e2885426fc3c66555f6fb11cc0008ae4f4b27596aeb20fb2e05ff3a5",
+    "historical/task-12b2b1b-i/reconciliation.json": "51e72ed0a4723edf69341ab9240ca23803c25144ab5a1d06832d060ac619cdc5"
+  },
+  "legacyConsumers": [
+    {
+      "file": "src/suites/form-fixtures.ts",
+      "owner": "B2",
+      "consumed": ["form-actions", "form-design", "form-fill", "form-scripting"]
+    },
+    {
+      "file": "src/suites/measurement.ts",
+      "owner": "B3"
+    },
+    {
+      "file": "src/suites/redaction.ts",
+      "owner": "B3"
+    },
+    {
+      "file": "src/suites/stamp-placement.ts",
+      "owner": "B3"
+    },
+    {
+      "file": "src/suites/stamp-api.ts",
+      "owner": "B3"
+    },
+    {
+      "file": "src/suites/stamp-fixtures.ts",
+      "owner": "B3",
+      "consumed": ["stamp-assets", "stamp-library", "stamp-placement", "stamp-api"]
+    },
+    {
+      "file": "src/suites/signature-plugin.ts",
+      "owner": "C"
+    },
+    {
+      "file": "src/suites/link.ts",
+      "owner": "C"
+    }
+  ]
+}
