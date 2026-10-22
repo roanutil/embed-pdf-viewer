@@ -37,15 +37,14 @@ import { fileURLToPath } from 'node:url';
 import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 
 import { signaturePlugin } from '../../../../packages/plugin/signature/src/signature.plugin';
-import { SignatureToken } from '../../../../packages/plugin/signature/src/host-contract';
-import type { SignatureConfig, SignatureHostCapability } from '../../../../packages/plugin/signature/src/host-contract';
-import { createSignatureCapability, createSignatureController } from '../../../../packages/plugin/signature/src/controller';
-import { initialSignatureState, signatureReducer } from '../../../../packages/plugin/signature/src/model';
-import type { SignatureAction, SignatureState } from '../../../../packages/plugin/signature/src/model';
+import { SIGNATURE_DEFAULTS, SignatureToken } from '../../../../packages/plugin/signature/src/contract';
+import type { SignatureConfig } from '../../../../packages/plugin/signature/src/contract';
+import { createSignatureController } from '../../../../packages/plugin/signature/src/controller';
+import * as model from '../../../../packages/plugin/signature/src/model';
+import { initialSignatureState, sameFieldRef } from '../../../../packages/plugin/signature/src/model';
+import type { SignatureState } from '../../../../packages/plugin/signature/src/model';
 import { blankPagePdf } from '../../../../packages/plugin/signature/src/blank-page';
 import { markRoleOf } from '../../../../packages/plugin/signature/src/contract';
-import { isTarget } from '../../../../packages/plugin/signature/src/write/sign';
-import { sameRef } from '../../../../packages/plugin/signature/src/services/store';
 import { FormToken } from '../../../../packages/plugin/form/src/contract';
 import { AnnotationToken } from '../../../../packages/plugin/annotation/src/contract';
 import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
@@ -53,7 +52,35 @@ import { StampToken } from '../../../../packages/plugin/stamp/src/contract';
 
 import { makeError, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
+
+// 4fc1a32af: the host contract went (the token and config are in
+// `contract.ts`), `createSignatureCapability` and `isTarget` went, `sameRef`
+// is `model.ts`'s `sameFieldRef`, and the reducer became one transition per
+// action. The snapshot, status and pending signing moved out of the state
+// (a mirror holds them), so SNAPSHOT, STATUS and PENDING have no transition.
+type SignatureAction = { type: string; [field: string]: unknown };
+const createSignatureCapability = removedUpstream('createSignatureCapability', '4fc1a32af');
+const isTarget = removedUpstream('isTarget', '4fc1a32af');
+const sameRef = sameFieldRef;
+function signatureReducer(state: SignatureState, action: SignatureAction): SignatureState {
+  const a = action as unknown as Record<string, never>;
+  switch (action.type) {
+    case 'SNAPSHOT':
+    case 'STATUS':
+    case 'PENDING':
+      return removedUpstream(`signatureReducer '${action.type}'`, '4fc1a32af')();
+    case 'VERDICTS':
+      return model.setVerdicts(state, a.verdicts);
+    case 'TARGET':
+      return model.setTarget(state, a.field);
+    case 'BUSY':
+      return model.setBusy(state, a.busy);
+    default:
+      return state;
+  }
+}
 import type { AnswerSpec } from './acrojs';
 import { created, hydrate, stamp as stampDto } from './annotation-fixtures';
 import { annotations, list, ref, fqn, signature as sigField, text, widgetAnnot, PAGES, sample } from './form-fixtures';
@@ -166,17 +193,19 @@ registerPlugin('signature', {
     if (config === undefined) return signaturePlugin() as AnyPlugin;
     if (spec.shape === undefined) return signaturePlugin(configOf(spec, env)) as AnyPlugin;
     // `signature.plugin.ts`'s definition over the unit-test shapes.
-    return definePlugin<SignatureState, SignatureAction, SignatureHostCapability>({
+    // A definition's initial state is `state` since 4fc1a32af, and transitions
+    // replace `reduce`; settings come from the definition, as in the plugin.
+    return definePlugin({
       id: 'signature',
       token: SignatureToken,
       scope: 'document',
       requires: [FormToken],
       optional: [InteractionToken, StampToken, AnnotationToken],
-      initialState: initialSignatureState,
-      reduce: signatureReducer,
+      state: initialSignatureState,
+      settings: { defaults: SIGNATURE_DEFAULTS, whole: ['key', 'trust'] },
       create: (ctx) =>
-        spec.shape === 'capability' ? { api: createSignatureCapability(ctx) } : createSignatureController(ctx),
-    }) as AnyPlugin;
+        spec.shape === 'capability' ? { api: createSignatureCapability(ctx) as never } : createSignatureController(ctx as never),
+    }) as unknown as AnyPlugin;
   },
   tokens: [SignatureToken],
 });

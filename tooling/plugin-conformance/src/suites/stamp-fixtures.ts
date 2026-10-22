@@ -46,8 +46,8 @@ import {
   restoreStampLibraries,
 } from '../../../../packages/plugin/stamp/src/persistence';
 import { stampPlugin } from '../../../../packages/plugin/stamp/src/stamp.plugin';
-import { StampToken } from '../../../../packages/plugin/stamp/src/host-contract';
-import type { StampConfig } from '../../../../packages/plugin/stamp/src/host-contract';
+import { StampToken } from '../../../../packages/plugin/stamp/src/contract';
+import type { StampConfig } from '../../../../packages/plugin/stamp/src/contract';
 import { ActionsToken as ActionsHostToken } from '../../../../packages/plugin/actions/src/host-contract';
 
 import { makeError, type ErrorSpec, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
