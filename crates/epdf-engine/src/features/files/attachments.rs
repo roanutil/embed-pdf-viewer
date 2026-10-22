@@ -170,7 +170,9 @@ pub fn read_attachment_file(
     cancel.check()?;
     // Cancellation is cooperative up to the decode and not inside it:
     // `EPDFAttachment_ExtractFileToOwnedBuffer` is one synchronous call.
-    let bytes = attachment.extract(max_decoded_bytes.unwrap_or(0)).map_err(extract_error)?;
+    let bytes = attachment
+        .extract(max_decoded_bytes.unwrap_or(0))
+        .map_err(|e| extract_error(e, max_decoded_bytes))?;
     cancel.check()?;
 
     Ok(AttachmentContent {
@@ -201,7 +203,9 @@ pub fn read_annotation_file(
 
     let info = read_attachment_info(&attachment)?;
     cancel.check()?;
-    let bytes = attachment.extract(max_decoded_bytes.unwrap_or(0)).map_err(extract_error)?;
+    let bytes = attachment
+        .extract(max_decoded_bytes.unwrap_or(0))
+        .map_err(|e| extract_error(e, max_decoded_bytes))?;
     cancel.check()?;
 
     Ok(AttachmentContent {
@@ -223,15 +227,25 @@ fn attachment_key(document: &Document, index: u32) -> Result<Option<String>, Eng
 
 /// Each extraction failure means something different about the document, so
 /// each gets the code that says what a caller can do about it.
-pub(crate) fn extract_error(error: AttachmentExtractError) -> EngineError {
+pub(crate) fn extract_error(error: AttachmentExtractError, max: Option<u64>) -> EngineError {
     let code = match error {
         // The filespec names a file the document does not embed. A caller
         // asked for bytes that were never there, which is their argument
         // being wrong rather than the file being broken.
         AttachmentExtractError::NoFileStream => EngineErrorCode::InvalidArg,
         AttachmentExtractError::DecodeFailed => EngineErrorCode::MalformedPdf,
-        // The caller's own ceiling. Raising it is a thing they can do.
-        AttachmentExtractError::SizeLimitExceeded => EngineErrorCode::InvalidArg,
+        // The caller's own ceiling (`extractStatusError`, status 3).
+        AttachmentExtractError::SizeLimitExceeded => {
+            let shown = max.map_or_else(|| "undefined".to_owned(), |max| max.to_string());
+            let error = EngineError::with_message(
+                EngineErrorCode::PayloadTooLarge,
+                format!("the embedded file decodes to more than {shown} bytes, the limit"),
+            );
+            return match max {
+                Some(max) => error.with_details(serde_json::json!({ "limit": max })),
+                None => error.with_details(serde_json::json!({})),
+            };
+        }
         AttachmentExtractError::WriteFailed | AttachmentExtractError::Unknown(_) => {
             EngineErrorCode::Unknown
         }

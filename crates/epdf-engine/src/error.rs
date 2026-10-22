@@ -10,8 +10,8 @@ use serde::{Deserialize, Serialize};
 /// The one error vocabulary every platform speaks.
 ///
 /// Ported from `packages/engine/core/src/errors/EngineErrorCode.ts`. The
-/// variant names and their serialized strings are the same 19 values in the
-/// same spelling; a rename here is a wire break.
+/// variant names and their serialized strings are the same values in the
+/// same spelling and order; a rename here is a wire break.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum EngineErrorCode {
     Unknown,
@@ -32,15 +32,6 @@ pub enum EngineErrorCode {
     NotFound,
     WireFormat,
     RuntimeUnavailable,
-    /// An annotation or page reference did not resolve: no annotation with
-    /// that object number or `/NM` on the addressed page, a `RevisionToken`
-    /// that does not match the page's current generation, or an index past the
-    /// page's annotation count.
-    InvalidReference,
-    /// A weak-annotation structural edit was attempted without sole active
-    /// edit presence for the page. A collaboration guard for index-addressed
-    /// annotations only.
-    WeakAnnotationSessionConflict,
     /// A layer write lost its optimistic-concurrency check and the server
     /// exhausted its rebase-and-retry budget. Retryable: the operation was NOT
     /// applied.
@@ -69,6 +60,16 @@ pub enum EngineErrorCode {
     ProtectedDocument,
     /// The base the caller named is not the one the session is on.
     StaleBase,
+    /// A payload passed one of its limits: an annotation or form bundle's
+    /// bytes, counts or image pixels. Nothing was read past the limit and
+    /// nothing was written. `details` has the `limit`, its `max` and the
+    /// `value` found.
+    PayloadTooLarge,
+    /// A create named an object number it can't use. `details.objectNumber`
+    /// is the number; `details.reason` is `not-held` when the session doesn't
+    /// hold it and `taken` when an object is already at it. Nothing was
+    /// written.
+    ObjectNumberUnavailable,
     /// The document would pass the highest object number a file should have
     /// (`OBJECT_NUMBER_CEILING`), or a session asked for numbers past
     /// `OBJECT_NUMBER_ISSUE_LIMIT`. `details.lastObjectNumber` is the
@@ -82,8 +83,6 @@ pub enum EngineErrorCode {
     /// `details.reason` is `final-change` or `expired`.
     UndoUnavailable,
     /// An `opId` that already answered one change was sent with another.
-    /// Upstream's other new codes (`PayloadTooLarge`,
-    /// `ObjectNumberUnavailable`) come with Task 8.27.
     IdempotencyKeyReused,
 }
 
@@ -104,8 +103,6 @@ impl EngineErrorCode {
         Self::NotFound,
         Self::WireFormat,
         Self::RuntimeUnavailable,
-        Self::InvalidReference,
-        Self::WeakAnnotationSessionConflict,
         Self::LayerVersionConflict,
         Self::NotImplemented,
         Self::MalformedPdf,
@@ -115,6 +112,8 @@ impl EngineErrorCode {
         Self::SignatureRefused,
         Self::ProtectedDocument,
         Self::StaleBase,
+        Self::PayloadTooLarge,
+        Self::ObjectNumberUnavailable,
         Self::LayerFull,
         Self::ChangeConflict,
         Self::UndoUnavailable,
@@ -137,8 +136,6 @@ impl EngineErrorCode {
             Self::NotFound => "NotFound",
             Self::WireFormat => "WireFormat",
             Self::RuntimeUnavailable => "RuntimeUnavailable",
-            Self::InvalidReference => "InvalidReference",
-            Self::WeakAnnotationSessionConflict => "WeakAnnotationSessionConflict",
             Self::LayerVersionConflict => "LayerVersionConflict",
             Self::NotImplemented => "NotImplemented",
             Self::MalformedPdf => "MalformedPdf",
@@ -148,6 +145,8 @@ impl EngineErrorCode {
             Self::SignatureRefused => "SignatureRefused",
             Self::ProtectedDocument => "ProtectedDocument",
             Self::StaleBase => "StaleBase",
+            Self::PayloadTooLarge => "PayloadTooLarge",
+            Self::ObjectNumberUnavailable => "ObjectNumberUnavailable",
             Self::LayerFull => "LayerFull",
             Self::ChangeConflict => "ChangeConflict",
             Self::UndoUnavailable => "UndoUnavailable",
@@ -270,51 +269,33 @@ impl std::error::Error for EngineError {}
 mod tests {
     use super::*;
 
-    /// The literal list from `packages/engine/core/src/errors/EngineErrorCode.ts`.
-    /// A value that changes on either side has to change in both, and this is
-    /// where the two are compared until the generated-DTO parity harness
-    /// covers it.
-    const TYPESCRIPT_CODES: [&str; 29] = [
-        "Unknown",
-        "InvalidArg",
-        "DocNotOpen",
-        "DocOpenFailed",
-        "DocPasswordRequired",
-        "DocPasswordIncorrect",
-        "SharePasswordRequired",
-        "Aborted",
-        "Network",
-        "Unauthenticated",
-        "Forbidden",
-        "NotFound",
-        "WireFormat",
-        "RuntimeUnavailable",
-        "InvalidReference",
-        "WeakAnnotationSessionConflict",
-        "LayerVersionConflict",
-        "NotImplemented",
-        "MalformedPdf",
-        "SigningPending",
-        "SigningExpired",
-        "SigningVersionMismatch",
-        "SignatureRefused",
-        "ProtectedDocument",
-        "StaleBase",
-        "LayerFull",
-        "ChangeConflict",
-        "UndoUnavailable",
-        "IdempotencyKeyReused",
-    ];
+    /// The codes `packages/engine/core/src/errors/EngineErrorCode.ts`
+    /// declares, in order, read from the file itself so the two cannot
+    /// drift apart unnoticed.
+    fn typescript_codes() -> Vec<String> {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../packages/engine/core/src/errors/EngineErrorCode.ts");
+        let source = std::fs::read_to_string(&path)
+            .unwrap_or_else(|e| panic!("read {}: {e}", path.display()));
+        source
+            .lines()
+            .filter_map(|line| {
+                let (key, value) = line.strip_prefix("  ")?.split_once(": '")?;
+                let value = value.strip_suffix("',")?;
+                (key.chars().all(char::is_alphanumeric) && key == value).then(|| value.to_owned())
+            })
+            .collect()
+    }
 
     #[test]
     fn codes_are_byte_identical_to_the_typescript_enum() {
         let ours: Vec<&str> = EngineErrorCode::ALL.iter().map(|c| c.as_str()).collect();
-        assert_eq!(ours, TYPESCRIPT_CODES);
+        assert_eq!(ours, typescript_codes());
     }
 
     #[test]
     fn codes_serialize_as_their_own_names() {
-        for (code, name) in EngineErrorCode::ALL.iter().zip(TYPESCRIPT_CODES) {
+        for (code, name) in EngineErrorCode::ALL.iter().zip(typescript_codes()) {
             assert_eq!(serde_json::to_value(code).unwrap(), serde_json::json!(name));
             let back: EngineErrorCode = serde_json::from_value(serde_json::json!(name)).unwrap();
             assert_eq!(back, *code);

@@ -28,26 +28,18 @@ pub fn resolve_annotation<'page>(
     annotation_ref: &AnnotationRef,
 ) -> Result<Annotation<'page>, EngineError> {
     match annotation_ref {
-        AnnotationRef::ObjectNumber { annot, .. } => {
+        AnnotationRef::ObjectNumber { annot, page: on, .. } => {
             page.annotation_by_object_number(*annot).ok_or_else(|| {
                 EngineError::with_message(
-                    EngineErrorCode::InvalidReference,
-                    format!("no annotation with object number {annot} on this page"),
+                    EngineErrorCode::NotFound,
+                    format!("no annotation with object number {annot} on page {}", on.get()),
                 )
             })
         }
-        AnnotationRef::Nm { nm, .. } => page.annotation_by_name(nm).ok_or_else(|| {
-            EngineError::with_message(
-                EngineErrorCode::InvalidReference,
-                format!("no annotation with /NM '{nm}' on this page"),
-            )
-        }),
-        AnnotationRef::Index { index, .. } => page.annotation(*index).ok_or_else(|| {
-            EngineError::with_message(
-                EngineErrorCode::InvalidReference,
-                format!("index {index} is past the end of this page's annotations"),
-            )
-        }),
+        AnnotationRef::Nm { .. } | AnnotationRef::Index { .. } => Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "an annotation is named by object number or base index",
+        )),
         AnnotationRef::BaseIndex { base_index, .. } => {
             let index = base_index_position(document, page, *base_index)?;
             page.annotation(index).ok_or_else(|| base_index_not_found(*base_index))

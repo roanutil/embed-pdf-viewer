@@ -1038,8 +1038,12 @@ fn a_create_names_an_object_number_once_per_change() {
     session.begin_transaction("claims").expect("a transaction");
     session.claim_object_number(6).expect("a held number");
     let taken = session.claim_object_number(6).expect_err("claimed twice");
+    assert_eq!(taken.code.as_str(), "ObjectNumberUnavailable", "{taken}");
+    assert_eq!(taken.message, "an object already has object number 6");
     assert_eq!(taken.details.as_ref().unwrap()["reason"], "taken", "{taken}");
     let not_held = session.claim_object_number(70).expect_err("past the reserve");
+    assert_eq!(not_held.code.as_str(), "ObjectNumberUnavailable", "{not_held}");
+    assert_eq!(not_held.message, "object number 70 isn't one this session holds");
     assert_eq!(not_held.details.as_ref().unwrap()["reason"], "not-held", "{not_held}");
     session.abort_transaction();
     session.begin_transaction("again").expect("a transaction");

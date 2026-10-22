@@ -205,7 +205,7 @@ fn a_token_does_not_validate_against_another_session() {
     let second = opened();
     assert_eq!(
         second.validate_revision(&token).expect_err("foreign token").code,
-        EngineErrorCode::InvalidReference,
+        EngineErrorCode::InvalidArg,
     );
     // And it still validates against the session that minted it.
     first.validate_revision(&token).expect("own token");

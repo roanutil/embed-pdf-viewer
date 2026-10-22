@@ -198,7 +198,7 @@ impl ResourceCollector {
                 ),
                 json!({ "limit": "resourceBytes", "max": max }),
             ),
-            other => crate::features::files::attachments::extract_error(other),
+            other => crate::features::files::attachments::extract_error(other, Some(max)),
         })?;
         self.resources.keep(bytes).map(Some)
     }

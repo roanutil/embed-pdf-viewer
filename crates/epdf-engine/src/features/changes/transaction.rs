@@ -46,8 +46,7 @@ pub fn in_transaction<T>(
 /// The refusals a change keeps under its `opId`, like a success
 /// (`KEPT_REFUSALS`): the document or the caller refused it, so asking again
 /// gets the same answer. Anything else applied nothing, is not kept, and may
-/// run again. Upstream also keeps `PayloadTooLarge` and
-/// `ObjectNumberUnavailable`, which this engine does not have yet (8.27).
+/// run again.
 pub fn is_kept_refusal(code: EngineErrorCode) -> bool {
     matches!(
         code,
@@ -56,6 +55,8 @@ pub fn is_kept_refusal(code: EngineErrorCode) -> bool {
             | EngineErrorCode::Forbidden
             | EngineErrorCode::ProtectedDocument
             | EngineErrorCode::MalformedPdf
+            | EngineErrorCode::PayloadTooLarge
+            | EngineErrorCode::ObjectNumberUnavailable
             | EngineErrorCode::LayerFull
             | EngineErrorCode::ChangeConflict
             | EngineErrorCode::UndoUnavailable

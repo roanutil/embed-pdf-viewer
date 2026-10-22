@@ -112,11 +112,10 @@ pub fn assert_within_limit(
     ))
 }
 
-/// A bundle past a limit. Upstream answers `PayloadTooLarge`, which this
-/// engine gains with Task 8.27; until then `InvalidArg`, with upstream's
-/// message and `details`.
+/// A bundle past a limit: `PayloadTooLarge`, with upstream's message and
+/// `details`.
 pub fn past_limit(message: String, details: Value) -> EngineError {
-    EngineError::with_message(EngineErrorCode::InvalidArg, message).with_details(details)
+    EngineError::with_message(EngineErrorCode::PayloadTooLarge, message).with_details(details)
 }
 
 #[cfg(test)]

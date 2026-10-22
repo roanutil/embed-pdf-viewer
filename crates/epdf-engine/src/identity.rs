@@ -331,7 +331,7 @@ pub enum AnnotationIdentityQuality {
 /// still resolves them (Task 8.16). Neither can arrive in a request. An
 /// `Index` must carry a fresh [`RevisionToken`], checked against the page's
 /// generation counter on every dereference; a stale token fails with
-/// [`EngineErrorCode::InvalidReference`].
+/// `InvalidArg` (upstream retired `InvalidReference` with page revisions).
 #[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum AnnotationRef {

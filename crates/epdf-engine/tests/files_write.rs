@@ -422,6 +422,21 @@ fn an_undone_delete_brings_back_the_file_as_it_read() {
     assert_eq!(bytes_after, bytes_before);
 }
 
+/// `extractStatusError`: a file that decodes past the read's
+/// `maxDecodedBytes` is `PayloadTooLarge`, naming the limit.
+#[test]
+fn a_read_past_its_decode_limit_is_payload_too_large() {
+    let mut replay = Replay::open(ATTACHMENT_FIXTURE, "files-limit");
+    let refused = replay
+        .replay(&serde_json::json!({ "kind": "attachments.readFile", "effect": "read",
+            "jobId": "<job>", "ref": { "kind": "key", "key": "aaa-first" },
+            "maxDecodedBytes": 3 }))
+        .expect_err("past the limit");
+    assert_eq!(refused["code"], "PayloadTooLarge", "{refused}");
+    assert_eq!(refused["message"], "the embedded file decodes to more than 3 bytes, the limit");
+    assert_eq!(refused["details"], serde_json::json!({ "limit": 3 }), "{refused}");
+}
+
 /// The file under `key` as the fork's guard reads it
 /// (`EPDFAttachment_ExportCanonicalToOwnedBuffer`): its key, the object
 /// number of its file specification, the specification, and every stream it

@@ -225,16 +225,15 @@ struct OpenTransaction {
 
 /// `objectNumberUnavailable`: a create named a number it can't have,
 /// because the session doesn't hold it (`not-held`) or something has it
-/// (`taken`). Upstream answers `ObjectNumberUnavailable`, a code this engine
-/// gains with the rest of the drift in Task 8.27; until then the refusal is
-/// `InvalidArg` with the same details.
+/// (`taken`).
 pub fn object_number_unavailable(number: u32, reason: &str) -> EngineError {
-    EngineError::with_message(
-        EngineErrorCode::InvalidArg,
-        format!("object number {number} is not available ({reason})"),
-    )
-    .with_details(serde_json::json!({ "field": "objectNumber", "objectNumber": number,
-        "reason": reason }))
+    let message = if reason == "not-held" {
+        format!("object number {number} isn't one this session holds")
+    } else {
+        format!("an object already has object number {number}")
+    };
+    EngineError::with_message(EngineErrorCode::ObjectNumberUnavailable, message)
+        .with_details(serde_json::json!({ "objectNumber": number, "reason": reason }))
 }
 
 /// `bytes` as a fresh layer over a private memory base

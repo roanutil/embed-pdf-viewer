@@ -19,11 +19,8 @@
 //! a read serializes, as upstream's stay objects: the checks here read
 //! them the way upstream's do, field by field.
 //!
-//! Upstream refuses a bundle past a limit with `PayloadTooLarge`, a code
-//! this engine does not have until Task 8.27 closes the error vocabulary
-//! (ruling, progress.md line 120). Until then the refusal is `InvalidArg`
-//! with upstream's message and `details` ([`limits::past_limit`]), as an
-//! unavailable object number is answered before 8.27.
+//! A bundle past a limit is refused `PayloadTooLarge`, with upstream's
+//! message and `details` ([`limits::past_limit`]).
 
 pub mod annotation_bundle;
 pub mod bundle;

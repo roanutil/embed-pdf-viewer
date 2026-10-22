@@ -852,8 +852,7 @@ fn refuses_before_writing_anything_an_unmapped_page_a_tampered_or_oversized_reso
     let refused = engine
         .import("target", &stamp_only(huge, id), json!({ "attribution": "stamp" }))
         .unwrap_err();
-    // `PayloadTooLarge` upstream, which this engine gains with 8.27.
-    assert_eq!(refused["code"], "InvalidArg", "{refused}");
+    assert_eq!(refused["code"], "PayloadTooLarge", "{refused}");
     assert_eq!(refused["details"]["limit"], "imagePixels");
 
     assert!(engine.list("target", page).is_empty());
