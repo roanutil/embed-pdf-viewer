@@ -9,22 +9,13 @@
  * (a widget index that points past its field).
  */
 import type { ActionDiagnostic, SubmitIntent } from '../../../../packages/plugin/actions/src/contract';
-import { fillItemForWidget, fillItems, projectWidget } from '../../../../packages/plugin/form/src/core/fill-items';
-import {
-  fieldByKey,
-  fieldForWidget,
-  fieldKeyOf,
-  initialModel,
-  update,
-  widgetAt,
-  type Model,
-  type Msg,
-} from '../../../../packages/plugin/form/src/core/model';
+import { fillItems, projectWidget } from '../../../../packages/plugin/form/src/read/fill-items';
+import { fieldByKey, fieldForWidget, fieldKeyOf, widgetAt } from '../../../../packages/plugin/form/src/model';
 import { buildSubmitEntries, resolveFieldSelection } from '../../../../packages/plugin/form/src/field-selection';
-import { fieldRef } from '../../../../packages/plugin/form/src/contract';
-import { formReducer, initialFormState } from '../../../../packages/plugin/form/src/model';
+import { toFieldRef } from '../../../../packages/plugin/form/src/contract';
 import { FORM_TOOL_BY_ID, FORM_TOOLS, PLACE_TAGS } from '../../../../packages/plugin/form/src/tools/definitions';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   checkbox,
@@ -39,22 +30,101 @@ import {
   v3Widget,
 } from './form-fixtures';
 
+// ── the old form core ─────────────────────────────────────────────────────────
+//
+// 4fc1a32af removed `core/model.ts` (the message-driven `Model`, `update`,
+// `initialModel`) and `core/fill-items.ts` (`fillItemForWidget`), and the
+// plugin state with `formReducer` and `initialFormState`: the form plugin
+// keeps a `FieldIndex` (`model.ts`) and reads widgets from a page mirror.
+// `fieldByKey`, `fieldForWidget` and `widgetAt` moved to `model.ts`, and
+// `projectWidget` and `fillItems` to `read/fill-items.ts`, each taking the
+// index. cdf4586c7 made `fieldRef.byName` `toFieldRef` and dropped
+// `byObjectNumber`. The cases' models are built with the old `update`,
+// copied here as it was, so every case keeps its inputs.
+
+type FieldKey = string;
+type Box = { x: number; y: number; width: number; height: number };
+type Field = { fieldObjectNumber: number; name: string; widgets: { annotObjectNumber: number }[] };
+type Snapshot = { fields: Field[] };
+type Model = {
+  snapshot: Snapshot | null;
+  byKey: Record<FieldKey, number>;
+  byWidget: Record<number, number>;
+  writing: Record<FieldKey, true>;
+  geom: Record<number, Record<number, Box> | undefined>;
+  seq: number;
+};
+type Msg =
+  | { t: 'snapshot'; snapshot: Snapshot }
+  | { t: 'writeStart'; key: FieldKey }
+  | { t: 'writeDone'; key: FieldKey; field: Field }
+  | { t: 'writeFailed'; key: FieldKey }
+  | { t: 'pageGeom'; pageObjectNumber: number; boxes: Record<number, Box> }
+  | { t: 'clearGeom'; pageObjectNumber?: number };
+
+const oldFieldKeyOf = (field: { fieldObjectNumber: number; name: string }): FieldKey =>
+  field.fieldObjectNumber > 0 ? `obj:${field.fieldObjectNumber}` : `fqn:${field.name}`;
+const initialModel = (): Model => ({ snapshot: null, byKey: {}, byWidget: {}, writing: {}, geom: {}, seq: 0 });
+function index(snapshot: Snapshot): Pick<Model, 'byKey' | 'byWidget'> {
+  const byKey: Record<FieldKey, number> = {};
+  const byWidget: Record<number, number> = {};
+  snapshot.fields.forEach((field, i) => {
+    byKey[oldFieldKeyOf(field)] = i;
+    for (const w of field.widgets) {
+      if (w.annotObjectNumber > 0) byWidget[w.annotObjectNumber] = i;
+    }
+  });
+  return { byKey, byWidget };
+}
+function update(model: Model, msg: Msg): Model {
+  switch (msg.t) {
+    case 'snapshot':
+      return { ...model, snapshot: msg.snapshot, ...index(msg.snapshot), writing: {}, seq: model.seq + 1 };
+    case 'writeStart':
+      return { ...model, writing: { ...model.writing, [msg.key]: true }, seq: model.seq + 1 };
+    case 'writeDone': {
+      if (!model.snapshot) return model;
+      const i = model.byKey[msg.key];
+      if (i === undefined) return model;
+      const fields = model.snapshot.fields.slice();
+      fields[i] = msg.field;
+      const { [msg.key]: _done, ...writing } = model.writing;
+      const snapshot = { ...model.snapshot, fields };
+      return { ...model, snapshot, ...index(snapshot), writing, seq: model.seq + 1 };
+    }
+    case 'writeFailed': {
+      const { [msg.key]: _failed, ...writing } = model.writing;
+      return { ...model, writing, seq: model.seq + 1 };
+    }
+    case 'pageGeom':
+      return { ...model, geom: { ...model.geom, [msg.pageObjectNumber]: msg.boxes }, seq: model.seq + 1 };
+    case 'clearGeom': {
+      if (msg.pageObjectNumber === undefined) return { ...model, geom: {}, seq: model.seq + 1 };
+      const geom = { ...model.geom };
+      delete geom[msg.pageObjectNumber];
+      return { ...model, geom, seq: model.seq + 1 };
+    }
+  }
+}
+
 const run = (msgs: Msg[]): Model => msgs.reduce(update, initialModel());
+/** The old `initialFormState()`, as the reducer cases' input. */
+const initialFormState = () => ({ model: initialModel(), status: 'idle' });
 
 const functions = {
   fieldKeyOf,
-  initialModel,
-  update,
+  initialModel: removedUpstream('initialModel', '4fc1a32af'),
+  update: removedUpstream('update', '4fc1a32af'),
   fieldByKey,
   fieldForWidget,
   projectWidget,
   fillItems,
-  fillItemForWidget,
+  fillItemForWidget: removedUpstream('fillItemForWidget', '4fc1a32af'),
   widgetAt,
-  fieldRefByName: fieldRef.byName,
-  fieldRefByObjectNumber: fieldRef.byObjectNumber,
-  initialFormState,
-  formReducer,
+  fieldRefByName: toFieldRef,
+  fieldRefByObjectNumber: removedUpstream('fieldRef.byObjectNumber', 'cdf4586c7'),
+  initialFormState: removedUpstream('initialFormState', '4fc1a32af'),
+  formReducer: removedUpstream('formReducer', '4fc1a32af'),
   formTools: () => ({ tools: FORM_TOOLS, placeTags: PLACE_TAGS }),
   formToolById: (id: string) => FORM_TOOL_BY_ID.get(id) ?? null,
   /** `listed` is a predicate; the case records it applied to every field. */

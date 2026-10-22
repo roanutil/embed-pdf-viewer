@@ -27,25 +27,28 @@
  */
 import '../probe';
 import { commandsPlugin, resolvedCommandsEqual } from '../../../../packages/plugin/commands/src/index';
-import {
-  CommandsToken,
-  commandsReducer,
-  initialCommandsState,
-  registerCommand,
-  type CommandRegistry,
-} from '../../../../packages/plugin/commands/src/internal';
+import { CommandsToken } from '../../../../packages/plugin/commands/src/host-contract';
 import type {
   CommandContext as CommandCtx,
   CommandDef,
-  CommandsAction,
   CommandsConfig,
-  CommandsState,
   ResolvedCommand,
 } from '../../../../packages/plugin/commands/src/host-contract';
 
 import { makeError, type FakeDocumentSpec } from '../fake-engine';
 import { registerPlugin, tokenNamed, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
+
+// 4fc1a32af and cdf4586c7 removed the commands state (`model.ts`: its
+// reducer and initial state; disabled categories are a setting now) and the
+// mutable registry `registerCommand` filled. The cases keep their inputs.
+type CommandsState = { disabledCategories: string[] };
+type CommandsAction = { type: string; [field: string]: unknown };
+type CommandRegistry = Map<string, { shortcuts: unknown; parsed: unknown }>;
+const commandsReducer = removedUpstream('commandsReducer', '4fc1a32af') as (state: CommandsState, action: CommandsAction) => CommandsState;
+const initialCommandsState = removedUpstream('initialCommandsState', 'cdf4586c7');
+const registerCommand = removedUpstream('registerCommand', '4fc1a32af');
 
 // ── the factory ───────────────────────────────────────────────────────────────
 
@@ -162,7 +165,8 @@ const register = (defs: CommandDef[]) => {
  *  The definitions are registered when the controller is created, not here. */
 const plugin = (config?: CommandsConfig) => {
   const def = commandsPlugin(config);
-  const initial = def.initialState;
+  // A plugin's initial state is its definition's `state` since 4fc1a32af.
+  const initial = (def as { state?: unknown }).state;
   return { id: def.id, scope: def.scope, initialState: typeof initial === 'function' ? initial() : initial };
 };
 
