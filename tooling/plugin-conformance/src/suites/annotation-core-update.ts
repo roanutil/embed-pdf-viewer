@@ -10,10 +10,13 @@
  * `annotsInBox`) are called directly.
  */
 import * as up from '../../../../packages/core/annotation/src/update';
+import { MIN_DRAG } from '../../../../packages/core/annotation/src/placement';
 import type { ViewEnv } from '../../../../packages/core/annotation/src/anchor';
-import type { Annot, Draft, Id, Model, Msg, PointerInput, Vec } from '../../../../packages/core/annotation/src/types';
+import type { Draft, Id, Model, PointerInput } from '../../../../packages/core/annotation/src/types';
+import { step } from '../../../../packages/core/annotation/test/support';
 
 import { canonical } from '../canonical';
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   DASHED,
@@ -41,6 +44,10 @@ import {
   v,
   type Fn,
   pageRef,
+  toMessage,
+  type Annot,
+  type Msg,
+  type Vec,
 } from './annotation-core-fixtures';
 
 /** Value equality in canonical JSON: member order ignored, `-0` is `0`. */
@@ -54,8 +61,8 @@ const sameValue = (a: unknown, b: unknown): boolean =>
   JSON.stringify(sorted(canonical(a))) === JSON.stringify(sorted(canonical(b)));
 
 export const updateFns: Record<string, Fn> = {
-  MIN_DRAG: () => up.MIN_DRAG,
-  initialStyle: () => up.initialStyle,
+  MIN_DRAG: () => MIN_DRAG,
+  initialStyle: removedUpstream('initialStyle', '67180c5d8'),
   initialModel: () => up.initialModel,
   run: (s: Partial<Model>, msgs: Msg[]) => runOne(s, msgs),
   /** Many runs on one page: each run's start is `page` with `over` on top. */
@@ -86,7 +93,9 @@ function runOne(s: Partial<Model>, msgs: Msg[]) {
   const first = modelOf(s);
   let m = first;
   const steps = msgs.map((msg) => {
-    const [next, effects] = up.update(m, msg);
+    // Upstream's `update` returns the session and a change set (67180c5d8);
+    // its own test support lays one on the model as the plugin does.
+    const [next, effects] = step(m, toMessage(msg));
     const same = next === m;
     m = next;
     return { same, effects, draft: m.draft, selected: m.selected };

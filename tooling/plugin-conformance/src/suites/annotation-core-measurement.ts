@@ -12,19 +12,26 @@
  * take data (`transformMeasurementCaption` a translation, `rangeHasStyle` a
  * `{key, value}` probe compared as JSON).
  */
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import * as ms from '../../../../packages/core/annotation/src/measurement';
 import * as mf from '../../../../packages/core/annotation/src/measurement-font';
 import * as msh from '../../../../packages/core/annotation/src/measurement-shape';
 import * as rt from '../../../../packages/core/annotation/src/richtext';
 import * as g from '../../../../packages/core/annotation/src/geometry';
+import { pointInPoly } from '../../../../packages/core/annotation/src/rect';
+import { textPlateInset } from '../../../../packages/core/annotation/src/shapes/text-box';
 import { annotationSelectionFrame } from '../../../../packages/core/annotation/src/selection';
 import { pageItems } from '../../../../packages/core/annotation/src/view';
 import { initialModel } from '../../../../packages/core/annotation/src/update';
 import type { ViewEnv } from '../../../../packages/core/annotation/src/anchor';
 import type { DistanceAppearance, MeasurementAppearance } from '../../../../packages/core/annotation/src/measurement';
 import type { ShapeMeasurementAppearance } from '../../../../packages/core/annotation/src/measurement-shape';
-import type { Annot, Geom, Model, Msg, PointerInput, Style, Vec } from '../../../../packages/core/annotation/src/types';
+import type { Model, PointerInput, RenderItem } from '../../../../packages/core/annotation/src/types';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   DASHED,
@@ -46,7 +53,12 @@ import {
   style,
   tq,
   v,
+  type Annot,
   type Fn,
+  type Geom,
+  type Msg,
+  type Style,
+  type Vec,
 } from './annotation-core-fixtures';
 import { hitFns, propFns, sceneFns } from './annotation-core-model';
 import { updateFns } from './annotation-core-update';
@@ -203,7 +215,7 @@ const measurementFns: Record<string, Fn> = {
     return points.map((p) => [
       ms.distanceCaptionHit(l ?? { caption: null }, p, margin),
       ms.distanceCaptionHit(l ?? { caption: null }, p),
-      l ? ms.distanceHit(l, p, sw, margin) : null,
+      l ? removedUpstream('distanceHit', 'c71ab9281')(l, p, sw, margin) : null,
     ]);
   },
   distanceCaptionAt: ms.distanceCaptionAt,
@@ -213,11 +225,10 @@ const measurementFns: Record<string, Fn> = {
   /** The caption scene of a measurement's own layout. */
   measurementCaptionScene: (geom: Geom, a: MeasurementAppearance, s: Style) =>
     ms.measurementCaptionScene(msh.measurementLayout(geom, a, s)?.caption ?? null, s),
-  shapeCaptionPoint: msh.shapeCaptionPoint,
-  withShapeCaptionPoint: msh.withShapeCaptionPoint,
+  shapeCaptionPoint: removedUpstream('shapeCaptionPoint', '8d0791dfc'),
+  withShapeCaptionPoint: removedUpstream('withShapeCaptionPoint', '8d0791dfc'),
   /** `transformMeasurementCaption` with a translation. */
-  transformMeasurementCaption: (a: MeasurementAppearance | undefined, dx: number, dy: number) =>
-    msh.transformMeasurementCaption(a, (p) => ({ x: p.x + dx, y: p.y + dy })),
+  transformMeasurementCaption: removedUpstream('transformMeasurementCaption', '8d0791dfc'),
   shapeMeasurementReadout: msh.shapeMeasurementReadout,
   shapeMeasurementLabel: msh.shapeMeasurementLabel,
   automaticShapeCaptionCenter: msh.automaticShapeCaptionCenter,
@@ -226,8 +237,8 @@ const measurementFns: Record<string, Fn> = {
   measurementSelectionQuad: msh.measurementSelectionQuad,
   moveMeasurementCaption: msh.moveMeasurementCaption,
   annotationSelectionFrame,
-  textPlateInset: g.textPlateInset,
-  pointInPoly: g.pointInPoly,
+  textPlateInset,
+  pointInPoly,
   geomResetRotation: g.geomResetRotation,
 };
 
@@ -543,10 +554,16 @@ const cr = (subtype: string, phase: Phase, x: number, y: number, over: Partial<P
   ({ t: 'createPointer', phase, subtype, in: inp(x, y, over), ...msg }) as Msg;
 const DIST_MSG = { measure: dist() };
 
-/** The caption centre of the `dist` annotation, where a click grabs it. */
-const DIST_CAPTION = ms.distanceCaptionAt(LINE, dist({ leader: { length: -20 } }), 2)!;
+/**
+ * The caption centres of the `dist` and `area` annotations, where a click
+ * grabs them. The old core worked them out from the old `Geom` inputs
+ * (`distanceCaptionAt`, `shapeMeasurementLayout`); upstream's take its
+ * records (8d0791dfc), so these are the points the old core gave, as the
+ * vectors recorded them.
+ */
+const DIST_CAPTION = { x: 172, y: 120 };
 const PERIM_CAPTION = { x: 450, y: 792 - 412 };
-const AREA_CAPTION = msh.shapeMeasurementLayout(gPoly(AREA_POINTS, true), area(), initialModel.style)!.caption!.center;
+const AREA_CAPTION = { x: 172, y: 336 };
 
 const ROTATED_SQ = sq('rot', rc(100, 100, 80, 60), { geom: gRect(rc(100, 100, 80, 60), false, 30) });
 const BAKED_DIST = annot('dist', 'line', LINE, { source: 'baked', measure: dist({ leader: { length: -20 } }) });
@@ -769,7 +786,14 @@ modelCases.push(
   ]),
 );
 
-const MEASURED_ITEMS = pageItems(modelOf(MS({ selected: ['dist'] })), pageRef(PON));
+/**
+ * The render items the old core's `pageItems` gave for `MS({selected: ['dist']})`,
+ * frozen from the vectors: upstream's `pageItems` reads engine records
+ * (66b64a1f7), not the old `Annot`s these cases are written with.
+ */
+const MEASURED_ITEMS = JSON.parse(
+  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../fixtures/annotation-core/measured-items.json'), 'utf8'),
+) as RenderItem[];
 for (const item of MEASURED_ITEMS) modelCases.push(c('scene', `item-${item.id}`, item));
 modelCases.push(
   c('scene', 'shape-caption-disabled', { ...MEASURED_ITEMS.find((i) => i.id === 'area')!, measure: area({ caption: { enabled: false } }) }),

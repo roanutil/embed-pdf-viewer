@@ -5,19 +5,12 @@
  * empty list.
  */
 import { DRAWN_FLAGS, NO_ANNOTATION_FLAGS } from '../../../../packages/core/annotation/src/flags';
-import { initialModel, initialStyle } from '../../../../packages/core/annotation/src/update';
+import { initialModel } from '../../../../packages/core/annotation/src/update';
 import type {
-  Annot,
-  Border,
-  Callout,
-  Geom,
   LineEnding,
   LineEndings,
   Model,
   Rect,
-  Style,
-  TextQuad,
-  Vec,
 } from '../../../../packages/core/annotation/src/types';
 import type { AnnotationFlags } from '../../../../packages/core/annotation/src/flags';
 
@@ -26,6 +19,58 @@ import type { FunctionCase, Suite } from '../vectors';
 export const suites: Suite[] = [];
 
 export type Fn = (...args: never[]) => unknown;
+
+// ── the old core's input shapes ──────────────────────────────────────────────
+//
+// Upstream re-modelled the core on the engine's records (b979f2aef, a5b58d107,
+// 67180c5d8): `Geom` became `Shape`, `Annot` became `ModelAnnotation`, `Style`
+// took the engine's field names, and `Vec`, `TextQuad`, `Border`, `Callout` and
+// `initialStyle` left `types.ts`/`update.ts`. The cases keep the inputs they
+// were written with, so these are the old shapes, declared here.
+
+export type Vec = { x: number; y: number };
+export type TextQuad = { upperStart: Vec; upperEnd: Vec; lowerStart: Vec; lowerEnd: Vec };
+export type Border =
+  | { kind: 'solid' }
+  | { kind: 'dashed'; dash: number[] }
+  | { kind: 'cloudy'; intensity: number };
+export interface Callout {
+  tip: Vec;
+  knee?: Vec;
+  ending: LineEnding;
+}
+export type Geom = { t: string; rot?: number; ends?: LineEndings; [field: string]: unknown };
+export interface Style {
+  color: string;
+  interiorColor: string | null;
+  strokeWidth: number;
+  opacity: number;
+  blendMode: string;
+  border: Border;
+}
+export interface Annot {
+  id: string;
+  subtype: string;
+  geom: Geom;
+  style: Style;
+  flags: AnnotationFlags;
+  [field: string]: unknown;
+}
+/** The old core's message: its kind in `t`, and its fields. */
+export type Msg = { t: string; [field: string]: unknown };
+
+/** Upstream's `Message` names its kind `type` where the old `Msg` said `t`. */
+export const toMessage = ({ t, ...fields }: Msg) => ({ type: t, ...fields }) as never;
+
+/** The old core's `initialStyle` (`update.ts`, removed in 67180c5d8). */
+export const initialStyle: Style = {
+  color: '#e5484d',
+  interiorColor: null,
+  strokeWidth: 2,
+  opacity: 1,
+  blendMode: 'normal',
+  border: { kind: 'solid' },
+};
 
 /** A case whose name is `<fn>/<label>`. */
 export const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({
@@ -215,11 +260,12 @@ export const sq = (id: string, r: Rect = rc(100, 100, 80, 60), over: Partial<Ann
 
 /** A model start: fields of `Model` layered over `initialModel` by the suite
  *  wrappers, with `byId`/`order` built from `annots`. */
-export const start = (annots: Annot[], over: Partial<Model> = {}): Partial<Model> => ({
-  byId: Object.fromEntries(annots.map((a) => [a.id, a])),
-  order: annots.map((a) => a.id),
-  ...over,
-});
+export const start = (annots: Annot[], over: Record<string, unknown> = {}): Partial<Model> =>
+  ({
+    byId: Object.fromEntries(annots.map((a) => [a.id, a])),
+    order: annots.map((a) => a.id),
+    ...over,
+  }) as unknown as Partial<Model>;
 
 /** The full model a start describes. */
-export const modelOf = (s: Partial<Model> | undefined): Model => ({ ...initialModel, ...s });
+export const modelOf = (s: Partial<Model> | undefined): Model => ({ ...initialModel, ...s }) as Model;

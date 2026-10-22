@@ -11,9 +11,9 @@
  * keyed by page object number (a missing key is `undefined`).
  */
 import * as vw from '../../../../packages/core/annotation/src/view';
-import { update } from '../../../../packages/core/annotation/src/update';
 import type { ViewEnv } from '../../../../packages/core/annotation/src/anchor';
-import type { Annot, Model, Msg, Rect, Vec } from '../../../../packages/core/annotation/src/types';
+import type { Model, Rect } from '../../../../packages/core/annotation/src/types';
+import { step } from '../../../../packages/core/annotation/test/support';
 
 import type { FunctionCase, Suite } from '../vectors';
 import {
@@ -39,6 +39,10 @@ import {
   v,
   type Fn,
   pageRef,
+  toMessage,
+  type Annot,
+  type Msg,
+  type Vec,
 } from './annotation-core-fixtures';
 
 type Table<T> = Record<string, T>;
@@ -98,9 +102,20 @@ export const viewFns: Record<string, Fn> = {
   },
 };
 
-/** Run messages from a start; the model reached (a full `Model`). */
-export const drive = (s: Partial<Model>, msgs: Msg[]): Model =>
-  msgs.reduce<Model>((m, msg) => update(m, msg)[0], modelOf(s));
+/**
+ * Run messages from a start; the model reached (a full `Model`). Upstream's
+ * `update` returns the session and a change set (67180c5d8); its own test
+ * support lays one on the model as the plugin does. These states are built
+ * while the module loads, so a message upstream's core can't run on the old
+ * records leaves the start model, with `driveThrew` saying why.
+ */
+export const drive = (s: Partial<Model>, msgs: Msg[]): Model => {
+  try {
+    return msgs.reduce<Model>((m, msg) => step(m, toMessage(msg))[0], modelOf(s));
+  } catch (error) {
+    return { ...modelOf(s), driveThrew: (error as Error).message } as Model;
+  }
+};
 
 const PAGE = rc(0, 0, 600, 800);
 const ptr = (phase: 'down' | 'move' | 'up', x: number, y: number, over: object = {}): Msg => ({

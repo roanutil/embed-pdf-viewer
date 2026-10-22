@@ -14,6 +14,7 @@ import * as gr from '../../../../packages/core/annotation/src/group';
 import * as ht from '../../../../packages/core/annotation/src/hit';
 import * as ik from '../../../../packages/core/annotation/src/ink';
 import * as kd from '../../../../packages/core/annotation/src/kinds';
+import { blendFor } from '../../../../packages/core/annotation/src/kinds/styles';
 import * as lk from '../../../../packages/core/annotation/src/links';
 import * as pl from '../../../../packages/core/annotation/src/placement';
 import * as pn from '../../../../packages/core/annotation/src/plane';
@@ -22,17 +23,14 @@ import * as sc from '../../../../packages/core/annotation/src/scene';
 import * as sn from '../../../../packages/core/annotation/src/snap';
 import { defaultsFor, initialModel } from '../../../../packages/core/annotation/src/update';
 import type {
-  Annot,
-  AnnotationPropsPatch,
-  ChromeGeom,
-  Geom,
+  ChromeGeometry as ChromeGeom,
   Id,
   Model,
   Rect,
   RenderItem,
-  Vec,
 } from '../../../../packages/core/annotation/src/types';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   DASHED,
@@ -61,9 +59,15 @@ import {
   tq,
   tqRot,
   v,
+  type Annot,
   type Fn,
+  type Geom,
+  type Vec,
   pageRef,
 } from './annotation-core-fixtures';
+
+/** The old core's props patch (`types.ts`), removed in 17191ea39. */
+type AnnotationPropsPatch = Record<string, unknown>;
 
 /** Every subtype the kind table names, plus unknown and prototype keys. */
 export const SUBTYPES = [
@@ -85,11 +89,11 @@ const FLAG_NAMES = fl.FLAG_KEYS;
 
 const kindFns: Record<string, Fn> = {
   KINDS: () => kd.KINDS,
-  capsFor: kd.capsFor,
-  propsFor: kd.propsFor,
-  isMarkup: kd.isMarkup,
+  capsFor: removedUpstream('capsFor', 'cf716b3b6'),
+  propsFor: removedUpstream('propsFor', '17191ea39'),
+  isMarkup: removedUpstream('isMarkup', 'cf716b3b6'),
   kindTakesLink: pr.kindTakesLink,
-  sharedProps: pr.sharedProps,
+  sharedProps: removedUpstream('sharedProps', '17191ea39'),
 };
 const kinds: FunctionCase[] = [
   c('KINDS', 'table'),
@@ -243,12 +247,12 @@ const groupCases: FunctionCase[] = [
 
 export const propFns: Record<string, Fn> = {
   initialTextStyle: () => pr.initialTextStyle,
-  styleFromProps: pr.styleFromProps,
-  textStyleFromProps: pr.textStyleFromProps,
-  readProp: pr.readProp,
+  styleFromProps: removedUpstream('styleFromProps', '17191ea39'),
+  textStyleFromProps: removedUpstream('textStyleFromProps', '17191ea39'),
+  readProp: removedUpstream('readProp', '17191ea39'),
   /** Every key through `readProp`, as `[key, value]` pairs. */
-  readProps: (a: Annot, keys: string[]) => keys.map((k) => [k, pr.readProp(a, k as never)]),
-  applyProps: pr.applyProps,
+  readProps: removedUpstream('readProp', '17191ea39'),
+  applyProps: removedUpstream('applyProps', '17191ea39'),
   defaultsFor: (s: Partial<Model>, subtype: string) => defaultsFor(modelOf(s), subtype),
 };
 const PROP_KEYS = ['color', 'interiorColor', 'strokeWidth', 'opacity', 'blendMode', 'border', 'lineEndings', 'fontFamily', 'fontSize', 'fontColor', 'textAlign', 'icon', 'link'] as const;
@@ -617,7 +621,7 @@ hitCases.push(c('hitCalls', 'page', HIT(), hitCalls));
 
 export const sceneFns: Record<string, Fn> = {
   scene: sc.scene,
-  blendFor: sc.blendFor,
+  blendFor,
   layoutRedactLabel: sc.layoutRedactLabel,
 };
 const item = (subtype: string, gm: Geom, over: Partial<RenderItem> = {}): RenderItem => ({
@@ -706,7 +710,7 @@ sceneCases.push(c('layoutRedactLabel', 'font-equals-height', rc(0, 0, 200, 50), 
 const placeFns: Record<string, Fn> = {
   clampRectToBox: pl.clampRectToBox,
   resolveClickPlacement: pl.resolveClickPlacement,
-  clickCreateGeom: pl.clickCreateGeom,
+  clickCreateGeom: removedUpstream('clickCreateGeom', '23a0181b3'),
   straightenInkStroke: ik.straightenInkStroke,
 };
 const placeCases: FunctionCase[] = [

@@ -11,8 +11,12 @@
 import * as cl from '../../../../packages/core/annotation/src/cloudy';
 import * as en from '../../../../packages/core/annotation/src/endings';
 import * as g from '../../../../packages/core/annotation/src/geometry';
-import type { Border, Geom, Rect, Vec } from '../../../../packages/core/annotation/src/types';
+import * as rt from '../../../../packages/core/annotation/src/rect';
+import { caretRectFromAnchor } from '../../../../packages/core/annotation/src/shapes/caret';
+import { MITER_LIMIT } from '../../../../packages/core/annotation/src/shapes/points';
+import type { Rect } from '../../../../packages/core/annotation/src/types';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   DASHED,
@@ -34,7 +38,10 @@ import {
   tq,
   tqRot,
   v,
+  type Border,
   type Fn,
+  type Geom,
+  type Vec,
 } from './annotation-core-fixtures';
 
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const;
@@ -44,20 +51,20 @@ const ODD_ROTS = [30, 45, -90, -45, 360, 405, 179.5, 1e-9];
 // ── basics: constants, small math, rotation helpers, placement helpers ───────
 
 const basicsFns: Record<string, Fn> = {
-  RECT_HANDLES: () => g.RECT_HANDLES,
+  RECT_HANDLES: () => rt.RECT_HANDLES,
   ROTATE_KNOB_OFFSET: () => g.ROTATE_KNOB_OFFSET,
-  DEFAULT_CHROME_GEOM: () => g.DEFAULT_CHROME_GEOM,
-  MITER_LIMIT: () => g.MITER_LIMIT,
-  rotatedHandleCursor: g.rotatedHandleCursor,
-  rectFromPoints: g.rectFromPoints,
-  rectsIntersect: g.rectsIntersect,
-  unionRect: g.unionRect,
-  normalizeDeg: g.normalizeDeg,
-  rotatePoint: g.rotatePoint,
-  apSizeChanged: g.apSizeChanged,
-  rotatedAabb: g.rotatedAabb,
+  DEFAULT_CHROME_GEOM: () => g.DEFAULT_CHROME_GEOMETRY,
+  MITER_LIMIT: () => MITER_LIMIT,
+  rotatedHandleCursor: rt.rotatedHandleCursor,
+  rectFromPoints: rt.rectFromPoints,
+  rectsIntersect: rt.rectsIntersect,
+  unionRect: rt.unionRect,
+  normalizeDeg: rt.normalizeDeg,
+  rotatePoint: rt.rotatePoint,
+  apSizeChanged: removedUpstream('apSizeChanged', 'a5b58d107'),
+  rotatedAabb: rt.rotatedAabb,
   uprightRotation: g.uprightRotation,
-  transposedAboutCenter: g.transposedAboutCenter,
+  transposedAboutCenter: rt.transposedAboutCenter,
   uprightAnchoredRect: g.uprightAnchoredRect,
   fitStampBox: g.fitStampBox,
   rectHandlesFor: g.rectHandlesFor,
@@ -67,9 +74,9 @@ const basicsFns: Record<string, Fn> = {
   rotateKnob: g.rotateKnob,
   chordThrough: g.chordThrough,
   placeRotateKnob: g.placeRotateKnob,
-  shapeRectFor: g.shapeRectFor,
+  shapeRectFor: removedUpstream('shapeRectFor', '513541817'),
   pointInQuad: g.pointInQuad,
-  quadIntersectsRect: g.quadIntersectsRect,
+  quadIntersectsRect: removedUpstream('quadIntersectsRect', 'ad2be50f6'),
 };
 
 type Corners = [Vec, Vec, Vec, Vec];
@@ -82,7 +89,7 @@ const corners = (r: Rect): Corners => [
 const turned = (r: Rect, deg: number): Corners => {
   const cx = r.x + r.width / 2;
   const cy = r.y + r.height / 2;
-  return corners(r).map((p) => g.rotatePoint(p, v(cx, cy), deg)) as Corners;
+  return corners(r).map((p) => rt.rotatePoint(p, v(cx, cy), deg)) as Corners;
 };
 
 const PAGE = rc(0, 0, 600, 800);
@@ -276,9 +283,9 @@ const shapeFns: Record<string, Fn> = {
   geomVisualBounds: g.geomVisualBounds,
   selectionBounds: g.selectionBounds,
   selectionQuad: g.selectionQuad,
-  selectionCenter: g.selectionCenter,
+  selectionCenter: removedUpstream('selectionCenter', '6153c181e'),
   obbFromGeom: g.obbFromGeom,
-  centroidOf: g.centroidOf,
+  centroidOf: removedUpstream('centroidOf', 'a5b58d107'),
   geomRotation: g.geomRotation,
   isRotatableGeom: g.isRotatableGeom,
   geomHandles: g.geomHandles,
@@ -288,7 +295,7 @@ const shapeFns: Record<string, Fn> = {
   geomResetRotation: g.geomResetRotation,
   geomScaleAbout: g.geomScaleAbout,
   geomDragHandle: g.geomDragHandle,
-  calloutLinePoints: g.calloutLinePoints,
+  calloutLinePoints: removedUpstream('calloutLinePoints', '14bf747f2'),
 };
 
 const BORDERS: [string, Border | undefined][] = [
@@ -299,6 +306,65 @@ const BORDERS: [string, Border | undefined][] = [
   ['cloudy0', cloudy(0)],
   ['cloudy2.5', cloudy(2.5)],
 ];
+
+/**
+ * The old core's `centroidOf`, which upstream removed in a5b58d107. Kept here
+ * only to build the same pivot argument the `-90-self` cases always passed.
+ */
+function legacyCentroidOf(gm: Geom): Vec {
+  const r = gm.rect as Rect | undefined;
+  if (gm.t === 'rect' || gm.t === 'text' || gm.t === 'caret') return v(r!.x + r!.width / 2, r!.y + r!.height / 2);
+  if (gm.t === 'line') {
+    const a = gm.a as Vec;
+    const b = gm.b as Vec;
+    return v((a.x + b.x) / 2, (a.y + b.y) / 2);
+  }
+  type Q = { upperStart: Vec; upperEnd: Vec; lowerStart: Vec; lowerEnd: Vec };
+  const pts =
+    gm.t === 'poly'
+      ? (gm.points as Vec[])
+      : gm.t === 'ink'
+        ? (gm.strokes as Vec[][]).flat()
+        : (gm.quads as Q[]).flatMap((q) => [q.upperStart, q.upperEnd, q.lowerStart, q.lowerEnd]);
+  let sx = 0;
+  let sy = 0;
+  for (const p of pts) {
+    sx += p.x;
+    sy += p.y;
+  }
+  const n = pts.length || 1;
+  return v(sx / n, sy / n);
+}
+
+/**
+ * The handle ids the old core's `geomHandles` offered for a `Geom`. Upstream's
+ * `geomHandles` takes a `Shape` since a5b58d107; these name the same
+ * `geomDragHandle` cases as before.
+ */
+function legacyHandleIds(gm: Geom): string[] {
+  if (gm.t === 'rect' || gm.t === 'text') {
+    const ids: string[] = [...rt.RECT_HANDLES];
+    const callout = gm.callout as { knee?: Vec } | undefined;
+    if (gm.t === 'text' && callout) {
+      ids.push('callout-tip');
+      if (callout.knee) ids.push('callout-knee');
+    }
+    return ids;
+  }
+  if (gm.t === 'line') return ['v0', 'v1'];
+  if (gm.t === 'poly') return (gm.points as Vec[]).map((_, i) => `v${i}`);
+  return [];
+}
+
+/** The old core's `geomBounds` for a `Geom`, to place the same hit probes. */
+function legacyGeomBounds(gm: Geom): Rect {
+  if (gm.t === 'rect' || gm.t === 'text' || gm.t === 'caret') return gm.rect as Rect;
+  if (gm.t === 'line') return rt.rectFromPoints(gm.a as Vec, gm.b as Vec);
+  if (gm.t === 'poly') return rt.unionRect(gm.points as Vec[]);
+  if (gm.t === 'ink') return rt.unionRect((gm.strokes as Vec[][]).flat());
+  type Q = { upperStart: Vec; upperEnd: Vec; lowerStart: Vec; lowerEnd: Vec };
+  return rt.unionRect((gm.quads as Q[]).flatMap((q) => [q.upperStart, q.upperEnd, q.lowerStart, q.lowerEnd]));
+}
 
 const shapes: FunctionCase[] = [];
 for (const [name, gm] of GEOMS) {
@@ -313,7 +379,7 @@ for (const [name, gm] of GEOMS) {
     c('selectionCenter', `${name}-sw2`, gm, 2),
     c('geomRotateAbout', `${name}-zero`, gm, v(0, 0), 0),
     c('geomRotateAbout', `${name}-30-origin`, gm, v(0, 0), 30),
-    c('geomRotateAbout', `${name}-90-self`, gm, g.centroidOf(gm), 90),
+    c('geomRotateAbout', `${name}-90-self`, gm, legacyCentroidOf(gm), 90),
     c('geomRotateAbout', `${name}-neg45`, gm, v(100, 100), -45),
     c('geomScaleAbout', `${name}-iso`, gm, v(0, 0), 2, 2),
     c('geomScaleAbout', `${name}-aniso`, gm, v(50, 50), 0.5, 3),
@@ -378,7 +444,7 @@ shapes.push(c('geomResetRotation', 'rect-rot-infinite', gRect(rc(100, 100, 80, 6
 // Drag every handle a geom offers, plus the bogus ones, to one target.
 const dragTo = v(210, 185);
 for (const [name, gm] of GEOMS) {
-  const ids = [...g.geomHandles(gm).map((h) => h.id), 'bogus', 'v', 'v99', 'v-1', 'v1.5', 'x1', 'v 1', 'v0x1', 'v1e0', 'callout-tip', 'callout-knee', 'v0', 'v1'];
+  const ids = [...legacyHandleIds(gm), 'bogus', 'v', 'v99', 'v-1', 'v1.5', 'x1', 'v 1', 'v0x1', 'v1e0', 'callout-tip', 'callout-knee', 'v0', 'v1'];
   for (const id of [...new Set(ids)]) shapes.push(c('geomDragHandle', `${name}-${id}`, gm, id, dragTo));
 }
 shapes.push(c('geomDragHandle', 'rect-nw-collapse', geom('rect'), 'nw', v(178, 158)));
@@ -404,7 +470,7 @@ shapes.push(c('geomDragHandle', 'poly-exp', geom('poly-closed'), 'v2e-0', v(0, 0
 /** Probe points around a geom: its bounds' centre, corners, edge midpoints,
  *  and points just inside/outside each edge at the margin boundary. */
 function probes(gm: Geom, margin: number): Vec[] {
-  const b = g.geomBounds(gm);
+  const b = legacyGeomBounds(gm);
   const x0 = b.x;
   const y0 = b.y;
   const x1 = b.x + b.width;
@@ -458,15 +524,15 @@ hits.push(c('geomHitProbe', 'quads-rotated-inside', gQuads([tqRot(40, 40, 80, 10
 // ── text anchors: carets, callout connection, PDF bridge ─────────────────────
 
 const textFns: Record<string, Fn> = {
-  calloutConnection: g.calloutConnection,
-  caretRectFromTextEnd: g.caretRectFromTextEnd,
-  caretRectFromAnchor: g.caretRectFromAnchor,
-  caretGeomFromAnchor: g.caretGeomFromAnchor,
-  pdfToContentPoint: g.pdfToContentPoint,
-  contentToPdfPoint: g.contentToPdfPoint,
-  pdfToContentRect: g.pdfToContentRect,
-  contentToPdfRect: g.contentToPdfRect,
-  geomPdfBounds: g.geomPdfBounds,
+  calloutConnection: removedUpstream('calloutConnection', '14bf747f2'),
+  caretRectFromTextEnd: removedUpstream('caretRectFromTextEnd', 'c5ead0f24'),
+  caretRectFromAnchor,
+  caretGeomFromAnchor: removedUpstream('caretGeomFromAnchor', 'c5ead0f24'),
+  pdfToContentPoint: removedUpstream('pdfToContentPoint', '1a243431a'),
+  contentToPdfPoint: removedUpstream('contentToPdfPoint', '1a243431a'),
+  pdfToContentRect: removedUpstream('pdfToContentRect', '1a243431a'),
+  contentToPdfRect: removedUpstream('contentToPdfRect', '1a243431a'),
+  geomPdfBounds: removedUpstream('geomPdfBounds', '1a243431a'),
 };
 const BOX = rc(100, 100, 120, 40);
 const CROP = { left: 0, bottom: 0, right: 612, top: 792 };
@@ -543,7 +609,7 @@ for (const e of [...ENDINGS, undefined]) {
 // ── cloudy borders ───────────────────────────────────────────────────────────
 
 const cloudyFns: Record<string, Fn> = {
-  cloudyBorderExtent: cl.cloudyBorderExtent,
+  cloudyBorderExtent: removedUpstream('cloudyBorderExtent', 'c71ab9281'),
   cloudyPath: cl.cloudyPath,
   cloudyPolyPath: cl.cloudyPolyPath,
 };
