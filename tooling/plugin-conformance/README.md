@@ -79,6 +79,10 @@ settled after 5 real seconds fails the generator.
 | `abort`   | `promise`, `reason?`          | calls `abort` on a returned `AbortablePromise`                                                                                                                                            |
 | `drain`   |                               | nothing; records an entry                                                                                                                                                                 |
 
+Object methods can use a dotted path (`selection.list`). Resolve each member once
+at invocation time and call with the final containing object as `this`. Flat calls
+and the function-ref restriction remain unchanged.
+
 `meter: n` on any step but `advance` counts microtask turns. Right after the step's synchronous
 action the runner logs a `@@turn` callback with argument `i` for each of `n` turns, and every tracked
 promise that settles while the meter runs also logs `@@settled` with its promise number, from the
@@ -417,3 +421,48 @@ seams. The explicit refusal table includes deliberately malformed grid inputs
 and the independently reproduced shipping paged-empty camera refusal
 (`stage/src/services/scene.ts:itemRect`); Task13 must preserve the observation
 without an accidental Rust panic, and Task14 owns any upstream follow-up.
+
+### Current live annotation fixture port (Task12b2b1b-i)
+
+`annotation-live` registers the shipping annotation plugin under its real `annotation`
+id/token. It is a distinct fixture factory from the legacy `annotation` factory while
+unmigrated suites remain. Its helpers use the reviewed `annotation-current-fixtures`
+records, page-space layouts, immutable object/base-index refs, explicit object-number
+pools, flat `annotations.list` answers and real `apply` ChangeOps. Typed confirmation
+builders construct complete result/event envelopes before execution. They never inspect
+or reinterpret calls. Confirmed events publish before their call settles, and a local
+`origin.tx.id` equals the actual queue request's `opId`; deferred dependent writes must
+be confirmed in document order. No old annotation service method is restored.
+
+This factory supplies deterministic host entropy only to the shipping UUID generator's
+16-byte `Uint8Array` requests. At case start its counter is zero. Each request gets
+zero bytes with a big-endian uint32 counter in bytes 12–15, starting at 1. Other crypto
+requests delegate unchanged. The shipping UUIDv7 generator writes the fake clock's
+48-bit millisecond time and UUID version/variant bits into those bytes. A hold gets its
+ID when staged, before its timer sends it. One sequence serves every document in that
+case; it resets for the next case. Case-end cleanup restores the exact prior own-property
+descriptor (or deletes the temporary own property when the method was inherited), without
+changing the prototype. The same cleanup applies to runner/construction errors and
+refusals. Only `[annotation]` console errors are routed to the scenario callback log;
+other errors still reach the host console and the independent live audit.
+
+Task13 must reconstruct this explicit fixture port, the current nested capability nouns
+and dotted method traversal with the final containing object as receiver. Resolve getters
+at invocation time, once per segment; retain ordinary getter errors and the rule that
+function refs accept no method. Keep the schema 2 trace envelope: this addition changes
+method paths, records, session state, pending/confirmed sequencing and result payloads,
+not the envelope version. `plugins/annotation-reconciliation.json` is a new suite target
+for the later vector/replay task; no vector is written by this migration. Historical 49
+live definitions, exact name mapping and all 25+2 retired reconciliation mappings are in
+`historical/task-12b2b1b-i/`. Legacy annotation helpers/UUID shims remain solely for the
+66 deferred live cases and other unmigrated families; remove their stopgaps after those
+owners migrate, rather than exposing them in the current replay API.
+
+The direct live tests additionally pin a narrow failure-callback reentry edge. A refused
+create first emits its write-failed occurrence, then processes dependent refusals and
+notifies the changed view. Ordinary disappearance/refusal synchronously forgets its
+selection/draft. Re-entering move/up from the failure callback is safe, and its dependent
+update is aborted. This special reentry can leave an internal selected ID for a missing
+record; public selection/get/anchor/chrome/render reads are empty or disabled, and the
+draft is null. Preserve that exact current ordering/observation in Task13; it is separate
+from the ordinary H3 cleanup assertions and is not evidence of a public H3 crash.

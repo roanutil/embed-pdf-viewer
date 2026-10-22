@@ -1,492 +1,480 @@
-/**
- * `packages/plugin/annotation`: the data API (create, update, delete), the
- * optimistic effects and their rollback, selection, the props and flags
- * pipelines, text editing, settings and the render projections. Replayed by
- * `crates/plugins/annotation/tests/conformance.rs`.
- */
+/** Current annotation CRUD: engine drafts/patches and nested selection/text/tools APIs. */
 import type { ScenarioCase } from '../scenario';
 import type { Suite } from '../vectors';
-
+import { annotationAfter } from '../../../../packages/core/annotation/src/record';
 import {
-  PLUGINS,
-  SNAP,
-  advance,
-  boot,
+  scenario,
   call,
-  callout,
-  circle,
-  created,
-  doc,
-  fail,
-  freeText,
   hydrate,
-  ink,
-  line,
-  link,
-  markup,
-  objRef,
-  pr,
-  polygon,
-  settle,
-  square,
-  stamp,
-  textNote,
+  write,
+  created,
   updated,
-} from './annotation-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins the per-annotation commit debounce and live link targets, through engine calls and read outcomes. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-const shapes = { 1: [square(1), circle(2, { rect: { left: 300, bottom: 300, right: 400, top: 400 } }), line(3)] };
-
+  deleted,
+  refused,
+  square,
+  circle,
+  line,
+  polygon,
+  freeText,
+  callout,
+  link,
+  textNote,
+  markup,
+  pr,
+  objRef,
+  materialize,
+  confirmation,
+  settle,
+  fail,
+  advance,
+  doc,
+  PNG,
+} from './annotation-live-fixtures';
+const box = { x: 100, y: 100, width: 100, height: 100 };
+const seed = [
+  square(1),
+  circle(2, {
+    box: { x: 300, y: 300, width: 100, height: 100 },
+    rect: { x: 300, y: 300, width: 100, height: 100 },
+  }),
+  line(3),
+];
+const after = (n: number, patch: Parameters<typeof annotationAfter>[1]) =>
+  annotationAfter(seed[n - 1]!, patch);
+const select = (...refs: ReturnType<typeof objRef>[]) => call('selection.set', [refs]);
+const draw = (tool: string, phase: string, x: number, y: number) =>
+  call('createPointer', [tool, phase, pr(1), { x, y }]);
 const cases: ScenarioCase[] = [
-  {
-    name: 'create-programmatically',
-    covers:
-      'create() defaults an absent /F to print and sends an explicit one verbatim, then syncs the created DTO (vector, or baked for a stamp) and resolves its ref. An engine refusal rejects; a page the document does not have rejects with the NotFound page() throws.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(),
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(square(10)) },
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(stamp(11)) },
-          { path: 'page.annotations.create', pon: 1, times: 1, error: { name: 'EngineError', message: 'nope', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('create', [1, { subtype: 'square', rect: { left: 1, bottom: 2, right: 3, top: 4 } }]),
-      call('create', [1, { subtype: 'stamp', rect: { left: 1, bottom: 2, right: 3, top: 4 }, flags: { hidden: true } }]),
-      call('create', [1, { subtype: 'square', rect: { left: 1, bottom: 2, right: 3, top: 4 } }]),
-      call('create', [99, { subtype: 'square' }]),
-      call('list', [1]),
+  scenario(
+    'create-programmatically',
+    'Current complete draft creates preserve birth refs, flags and resources; engine and missing-page refusals reject.',
+    [
+      call('create', [
+        pr(1),
+        { subtype: 'square', box: { x: 1, y: 2, width: 3, height: 4 }, print: true },
+      ]),
+      call('create', [
+        pr(1),
+        { subtype: 'stamp', box: { x: 1, y: 2, width: 3, height: 4 }, hidden: true },
+        { appearance: PNG },
+      ]),
+      call('create', [pr(1), { subtype: 'square', box }]),
+      call('create', [pr(99), { subtype: 'square', box }]),
+      call('list'),
     ],
-  },
-  {
-    name: 'update-and-delete-by-ref',
-    covers:
-      'update() and delete() resolve the page from the model (or an index ref’s own pon), await the engine, and sync or remove. An unknown ref rejects with the page error; an engine refusal rejects and changes nothing.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(shapes),
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(square(1, { contents: 'patched' })) },
-          { path: 'page.annotations.update', pon: 1, times: 1, error: { name: 'EngineError', message: 'stale', code: 'Conflict' } },
-          { path: 'page.annotations.update', pon: 1, value: updated(square(1, { contents: 'by index' })) },
-          { path: 'page.annotations.delete', pon: 1, times: 1, value: {} },
-          { path: 'page.annotations.delete', pon: 1, error: { name: 'EngineError', message: 'locked', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('update', [objRef(1), { subtype: 'square', contents: 'patched' }]),
+    [
+      hydrate(),
+      write(1, [
+        {
+          item: created(
+            materialize(10001, {
+              subtype: 'square',
+              box: { x: 1, y: 2, width: 3, height: 4 },
+              print: true,
+            }),
+          ),
+        },
+      ]),
+      write(2, [
+        {
+          item: created(
+            materialize(10002, {
+              subtype: 'stamp',
+              box: { x: 1, y: 2, width: 3, height: 4 },
+              hidden: true,
+            }),
+          ),
+        },
+      ]),
+      refused('nope'),
+    ],
+  ),
+  scenario(
+    'update-and-delete-by-ref',
+    'Current patches preserve identity; absent/base-index refs and refused writes remain explicit, deletion is confirmed through doc.apply.',
+    [
+      call('update', [objRef(1), { contents: 'patched' }]),
       call('get', [objRef(1)]),
-      call('update', [objRef(1), { subtype: 'square', contents: 'again' }]),
-      call('update', [objRef(42), { subtype: 'square' }]),
-      call('update', [{ kind: 'index', page: pr(1), index: 0, revision: { docSessionId: 's', page: pr(1), generation: 1 } }, { subtype: 'square' }]),
+      call('update', [objRef(1), { contents: 'again' }]),
+      call('update', [objRef(42), { contents: 'missing' }]),
+      call('update', [
+        { kind: 'baseIndex', page: pr(1), baseIndex: 0 },
+        { contents: 'not-loaded' },
+      ]),
       call('delete', [objRef(2)]),
       call('delete', [objRef(3)]),
       call('delete', [objRef(42)]),
-      call('list', [1]),
+      call('list'),
     ],
-  },
-  {
-    name: 'selection-reads',
-    covers:
-      'select (a group member takes its group, add extends), selection, getSelection and getSelected (drafts skipped), deselect, and the selection flags and props (shared specs, first values, mixed keys, the derived link value).',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({
-            1: [
-              square(1, { flags: { ...FLAGS_LOCKED() } }),
-              square(2, { color: { r: 0, g: 0, b: 255 }, strokeWidth: 5 }),
-              circle(3),
-              link(4, { inReplyTo: objRef(3), replyType: 'group', target: { kind: 'uri', uri: 'https://child' } }),
-              markup('highlight', 5),
-            ],
-          }),
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('getSelectionFlags'),
-      call('getSelectionProps'),
-      call('select', [objRef(1)]),
-      call('select', [objRef(2), { add: true }]),
-      call('selection'),
-      call('getSelection'),
-      call('getSelected'),
-      call('getSelectionFlags'),
-      call('getSelectionProps'),
-      call('select', [objRef(3), { add: false }]),
-      call('getSelectionProps'),
-      call('select', [objRef(5), { add: true }]),
-      call('getSelectionProps'),
-      call('getSelectionFlags'),
-      call('deselect'),
-      call('selection'),
-      call('select', [objRef(77)]),
-      call('selection'),
+    [
+      hydrate(seed),
+      write(1, [{ item: updated(after(1, { contents: 'patched' })) }]),
+      refused('stale', 'Conflict'),
+      write(3, [{ item: deleted(objRef(2)), changed: [objRef(2)] }]),
+      refused('locked'),
     ],
-  },
-  {
-    name: 'restyle-writes-and-rolls-back',
-    covers:
-      'updateSelection is optimistic: each selected member takes the keys its kind declares, and one scoped engine write per changed member re-syncs from the returned DTO (bumping the appearance only on the engine’s say-so). A refused write rolls the member back to its last committed DTO.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(shapes),
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(square(1, { color: { r: 0, g: 255, b: 0 } }), true) },
-          { path: 'page.annotations.update', pon: 1, times: 1, defer: 'circle' },
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(line(3, { strokeWidth: 9 })) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('select', [objRef(1)]),
-      call('select', [objRef(2), { add: true }]),
-      call('updateSelection', [{ color: '#00ff00', fontSize: 30 }]),
-      call('getSelectionProps'),
-      fail('circle', 'stale revision'),
-      call('get', [objRef(2)]),
-      call('select', [objRef(3)]),
-      call('updateSelection', [{ strokeWidth: 9, lineEndings: { start: 'circle' } }]),
-      call('appearanceEpoch', [1]),
+  ),
+  scenario(
+    'selection-reads',
+    'Nested selection set/add/list and properties read complete current annotations; grouped parts select with their parent.',
+    [
+      call('selection.list'),
+      call('selection.getProperties'),
+      select(objRef(1)),
+      call('selection.add', [[objRef(2)]]),
+      call('selection.list'),
+      call('selection.getProperties'),
+      select(objRef(3)),
+      call('selection.getProperties'),
+      call('selection.add', [[objRef(5)]]),
+      call('selection.getProperties'),
+      call('selection.clear'),
+      call('selection.list'),
+      select(objRef(77)),
+      call('selection.list'),
     ],
-  },
-  {
-    name: 'flags-writes',
-    covers:
-      'updateSelectionFlags merges /F over the selection and writes the full flag set per changed member, re-syncing with the member’s own render source; a refused write reports to console.error. It works on a locked annotation (that is how one unlocks).',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1, { flags: FLAGS_LOCKED() }), square(2)] }),
-          { path: 'page.annotations.update', pon: 1, times: 1, value: updated(square(1)) },
-          { path: 'page.annotations.update', pon: 1, error: { name: 'EngineError', message: 'denied', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('select', [objRef(1)]),
-      call('select', [objRef(2), { add: true }]),
-      call('updateSelectionFlags', [{ locked: false, print: false }]),
-      call('getSelectionFlags'),
-      call('list', [1]),
+    [
+      hydrate([
+        square(1, { locked: true }),
+        square(2, { color: '#0000ff', strokeWidth: 5 }),
+        circle(3),
+        link(4, { reply: { to: objRef(3), type: 'group' } }),
+        markup('highlight', 5),
+      ]),
     ],
-  },
-  {
-    name: 'delete-and-rotate-the-selection',
-    covers:
-      'deleteSelection removes optimistically and fires one engine delete per committed member, whatever it answers; rotateSelection90 and resetSelectionRotation commit one geometry patch per rotatable member.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), square(2), polygon(3)] }),
-          { path: 'page.annotations.update', pon: 1, value: updated(square(1)) },
-          { path: 'page.annotations.delete', pon: 1, times: 1, value: {} },
-          { path: 'page.annotations.delete', pon: 1, error: { name: 'EngineError', message: 'x', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('select', [objRef(1)]),
-      call('rotateSelection90'),
-      call('resetSelectionRotation'),
-      call('select', [objRef(3)]),
-      call('rotateSelection90'),
-      call('select', [objRef(2), { add: true }]),
-      call('deleteSelection'),
-      call('list', [1]),
+  ),
+  scenario(
+    'restyle-writes-and-rolls-back',
+    'A multi-selection update is one atomic current Change; pending fields show before refusal and roll back as one.',
+    [
+      select(objRef(1), objRef(2)),
+      call('selection.update', [{ color: '#00ff00', fontSize: 30 }]),
+      call('list'),
+      fail('restyle', 'intended restyle refusal'),
+      call('list'),
+      select(objRef(3)),
+      call('selection.update', [{ strokeWidth: 9 }]),
+      call('get', [objRef(3)]),
     ],
-  },
-  {
-    name: 'drawn-shape-commits',
-    covers:
-      'A createPointer drag commits a draft: the create effect sends the repository draft (with the seeded /NM and /F), reconciles the temp id to the durable ref, and syncs the DTO as vector. A refused create drops the draft.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate(),
-          { path: 'page.annotations.create', pon: 1, times: 1, value: created(square(20)) },
-          { path: 'page.annotations.create', pon: 1, error: { name: 'EngineError', message: 'full', code: 'Refused' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('createPointer', ['square', 'down', 1, { x: 100, y: 100 }]),
-      call('createPointer', ['square', 'move', 1, { x: 150, y: 140 }]),
-      call('createPointer', ['square', 'up', 1, { x: 180, y: 160 }]),
-      call('list', [1]),
-      call('createPointer', ['circle', 'down', 1, { x: 10, y: 10 }]),
-      call('createPointer', ['circle', 'up', 1, { x: 60, y: 50 }]),
-      call('selection'),
-      call('createPointer', ['no-such-tool', 'down', 1, { x: 10, y: 10 }, false, 90]),
-      call('creationDraftAnchor'),
-      call('cancelCreationDraft'),
+    [
+      hydrate(seed),
+      { path: 'apply', times: 1, defer: 'restyle' },
+      write(2, [{ item: updated(after(3, { strokeWidth: 9 })) }]),
     ],
-  },
-  {
-    name: 'free-text-editing',
-    covers:
-      'beginTextEdit and beginTextEditAt (a hit on a free-text body or handle opens it; anything else reports false), setContents (optimistic, debounced 250ms per annotation, restarted by the next keystroke), endTextEdit (flushes the committed contents at once and cancels the timers), textItems and currentEditing.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [freeText(1, { rect: { left: 100, bottom: 600, right: 300, top: 700 } }), square(2, { rect: { left: 400, bottom: 100, right: 500, top: 200 } }), callout(3)] }),
-          { path: 'page.annotations.update', pon: 1, value: updated(freeText(1, { contents: 'Hello world' })) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('textItems', [1]),
-      call('beginTextEditAt', [1, { x: 150, y: 150 }]),
-      call('currentEditing'),
-      call('beginTextEditAt', [1, { x: 450, y: 650 }, 2, 0, 1]),
-      call('beginTextEditAt', [1, { x: 5, y: 5 }]),
-      call('setContents', [objRef(1), 'Hello w']),
+  ),
+  scenario(
+    'flags-writes',
+    'Flattened flags use the real selection patch, including an explicit unlock; a later refused atomic flag write rolls back both members.',
+    [
+      select(objRef(1), objRef(2)),
+      call('selection.update', [{ locked: false, print: false }]),
+      call('selection.list'),
+      call('selection.update', [{ hidden: true }]),
+      call('list'),
+    ],
+    [
+      hydrate([square(1, { locked: true }), square(2)]),
+      write(1, [
+        { item: updated(square(1, { locked: false, print: false })) },
+        { item: updated(square(2, { print: false })) },
+      ]),
+      refused('denied'),
+    ],
+  ),
+  scenario(
+    'delete-and-rotate-the-selection',
+    'Nested quarter-turn and reset write current patches; deleteSelection is one transaction and restores its members on refusal.',
+    [
+      select(objRef(1)),
+      call('selection.rotateBy', [90]),
+      call('get', [objRef(1)]),
+      call('selection.resetRotation'),
+      select(objRef(3), objRef(2)),
+      call('selection.delete'),
+      call('list'),
+    ],
+    [
+      hydrate(seed),
+      write(1, [{ item: updated(after(1, { rotation: 90 })) }]),
+      write(2, [{ item: updated(seed[0]!) }]),
+      refused('intended delete refusal'),
+    ],
+  ),
+  scenario(
+    'drawn-shape-commits',
+    'Pointer creation names the drawing at birth; confirmed creation and refused creation follow the real pending queue.',
+    [
+      draw('square', 'down', 100, 100),
+      draw('square', 'move', 150, 140),
+      draw('square', 'move', 180, 160),
+      draw('square', 'up', 180, 160),
+      call('list'),
+      draw('circle', 'down', 10, 10),
+      draw('circle', 'up', 60, 50),
+      call('selection.list'),
+      call('draft.get'),
+      call('draft.cancel'),
+    ],
+    [
+      hydrate(),
+      write(1, [
+        {
+          item: created(
+            materialize(10001, {
+              subtype: 'square',
+              box: { x: 100, y: 100, width: 80, height: 60 },
+              color: '#e5484d',
+              strokeWidth: 6,
+            }),
+          ),
+        },
+      ]),
+      refused('full'),
+    ],
+  ),
+  scenario(
+    'free-text-editing',
+    'Typing stages current rich text in a hold; the 250ms pause and text.end send the latest contents, and current editing/text projections follow.',
+    [
+      call('listTextItems', [pr(1)]),
+      call('beginTextEditAt', [pr(1), { x: 150, y: 150 }]),
+      call('text.getEditing'),
+      call('beginTextEditAt', [pr(1), { x: 5, y: 5 }]),
+      call('draftContents', [objRef(1), 'Hello w']),
       advance(100),
-      call('setContents', [objRef(1), 'Hello world']),
+      call('draftContents', [objRef(1), 'Hello world']),
       advance(249),
       advance(1),
-      call('setContents', [objRef(1), 'Hello world!']),
-      call('endTextEdit'),
-      advance(500),
-      call('currentEditing'),
-      call('beginTextEdit', [objRef(1)]),
-      call('textItems', [1, { zoom: 2, rotation: 0 }]),
-      call('endTextEdit'),
-      call('beginTextEdit', [objRef(3)]),
-      call('setContents', [objRef(3), 'lead']),
-      call('endTextEdit'),
+      call('draftContents', [objRef(1), 'Hello world!']),
+      call('text.end'),
+      call('text.getEditing'),
+      call('text.begin', [objRef(3)]),
+      call('draftContents', [objRef(3), 'lead']),
+      call('text.end'),
     ],
-  },
-  {
-    name: 'text-commits-debounce-per-annotation',
-    covers:
-      'Each annotation keeps its own debounce timer: typing into a second one neither cancels nor takes over the first one’s, and one firing leaves the other’s pending timer to be restarted, so each commits its last contents once.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [freeText(1, { rect: { left: 100, bottom: 600, right: 300, top: 700 } }), callout(3)] }),
-          { path: 'page.annotations.update', pon: 1, value: updated(freeText(1, { contents: 'a2' })) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('setContents', [objRef(1), 'a1']),
-      call('setContents', [objRef(3), 'b1']),
-      call('setContents', [objRef(1), 'a2']),
+    [
+      hydrate([
+        freeText(1),
+        square(2, {
+          box: { x: 400, y: 600, width: 100, height: 100 },
+          rect: { x: 400, y: 600, width: 100, height: 100 },
+        }),
+        callout(3),
+      ]),
+      write(1, [{ item: updated(freeText(1, { contents: 'Hello world' })) }], { ms: 0 }),
+      write(2, [{ item: updated(freeText(1, { contents: 'Hello world!' })) }], { ms: 350 }),
+      write(3, [{ item: updated(callout(3, { contents: 'lead' })) }], { ms: 350 }),
+    ],
+  ),
+  scenario(
+    'text-commits-flush-when-switching-annotation',
+    'The current single typing hold flushes when typing switches records; each pause writes the latest words.',
+    [
+      call('draftContents', [objRef(1), 'a1']),
+      call('draftContents', [objRef(3), 'b1']),
+      call('draftContents', [objRef(1), 'a2']),
       advance(300),
-      call('setContents', [objRef(1), 'a3']),
-      advance(100),
-      call('setContents', [objRef(3), 'b2']),
-      advance(200),
-      call('setContents', [objRef(3), 'b3']),
-      advance(300),
+      call('get', [objRef(1)]),
+      call('get', [objRef(3)]),
     ],
-  },
-  {
-    name: 'live-link-targets-and-finishing-a-draft',
-    covers:
-      'linkItemsOn reads a link’s target from the model, so an optimistic retarget shows before the engine answers, and an optimistic clear falls back to the target the engine last reported; finishCreationDraft commits a poly draft.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [link(3)] }),
-          { path: 'page.annotations.update', pon: 1, defer: 'retarget' },
-          { path: 'page.annotations.create', pon: 1, value: created(polygon(12)) },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('select', [objRef(3)]),
-      call('updateSelection', [{ link: { kind: 'uri', uri: 'https://new' } }]),
-      call('linkItemsOn', [1]),
-      call('updateSelection', [{ link: null }]),
-      call('linkItemsOn', [1]),
-      call('createPointer', ['polygon', 'down', 1, { x: 10, y: 10 }]),
-      call('createPointer', ['polygon', 'down', 1, { x: 50, y: 10 }]),
-      call('createPointer', ['polygon', 'down', 1, { x: 30, y: 40 }]),
-      call('finishCreationDraft'),
-      call('list', [1]),
+    [
+      hydrate([freeText(1), callout(3)]),
+      write(1, [{ item: updated(freeText(1, { contents: 'a1' })) }]),
+      write(2, [{ item: updated(callout(3, { contents: 'b1' })) }]),
+      write(3, [{ item: updated(freeText(1, { contents: 'a2' })) }], { ms: 0 }),
     ],
-  },
-  {
-    name: 'settings',
-    covers:
-      'setDefaults and currentDefaults through a tool’s preset (arrow reads its own bag; a bare subtype falls back), propsForTool through the tool’s props kind, setSnap and snapSettings, setChrome (deep merge) and chromeSettings, and chrome() dropping the rotate guides when they are disabled.',
-    plugins: [{ factory: 'interaction' }, { factory: 'annotation', config: { snap: { guides: false }, chrome: { accent: '#e91e63' }, tools: [{ id: 'arrow', extends: 'line', defaults: { lineEndings: { end: 'closed-arrow' } } }] } }],
-    engine: { documents: { a: doc([hydrate({ 1: [square(1)] })]) } },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('currentDefaults', ['arrow']),
-      call('currentDefaults', ['line']),
-      call('setDefaults', ['arrow', { strokeWidth: 3 }]),
-      call('currentDefaults', ['arrow']),
-      call('currentDefaults', ['square']),
-      call('currentDefaults', ['widget-text']),
-      call('propsForTool', ['free-text-callout']),
-      call('propsForTool', ['insert-text']),
-      call('propsForTool', ['nothing']),
-      call('snapSettings'),
-      call('setSnap', [{ rotationThreshold: 10 }]),
-      call('snapSettings'),
-      call('chromeSettings'),
-      call('setChrome', [{ handles: { hitSize: 40 }, guides: { enabled: false } }]),
-      call('chromeSettings'),
-      call('select', [objRef(1)]),
-      call('chrome', [1]),
-      call('chrome', [1, 2, 90, 1.5]),
-      call('chrome', [1, 2, 90, 1.5]),
-      call('selectionAnchor'),
-      call('selectionAnchor', [2, 0, 1]),
-      call('selectionAnchor', [2, 0, 1]),
+  ),
+  scenario(
+    'live-link-targets-and-finishing-a-draft',
+    'A standalone link target is an actual engine field, pending retarget shows immediately; a polygon finishes through draft.finish.',
+    [
+      select(objRef(3)),
+      call('selection.update', [{ target: { kind: 'uri', uri: 'https://new' } }]),
+      call('listLinkItems', [pr(1)]),
+      settle(
+        'retarget',
+        confirmation(1, [
+          { item: updated(link(3, { target: { kind: 'uri', uri: 'https://new' } })) },
+        ]).value,
+      ),
+      draw('polygon', 'down', 10, 10),
+      draw('polygon', 'down', 50, 10),
+      draw('polygon', 'down', 30, 40),
+      call('draft.finish'),
+      call('list'),
     ],
-  },
-  {
-    name: 'render-projections',
-    covers:
-      'pageItems (memoized by model, ghost and view), appearanceEpoch (baked, committed, painting annotations only), bakeScale (identity under the continuous policy), toContentBox, linkItemsOn (standalone and attached links, hidden ones excluded, the /AA hover flags), creationDraftAnchor.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({
-            1: [
-              square(1),
-              textNote(2, { inReplyTo: objRef(1), contents: 'reply' }),
-              link(3, { actions: { activate: { root: { kind: 'uri' } }, cursorEnter: { root: { kind: 'js' } } } }),
-              link(4, { inReplyTo: objRef(1), replyType: 'group', actions: { cursorExit: { root: { kind: 'js' } } } }),
-              link(5, { flags: { ...FLAGS_HIDDEN() } }),
-              link(6, { target: null }),
-              ink(7),
-            ],
-          }),
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('pageItems', [1]),
-      call('pageItems', [1, { zoom: 2, rotation: 90 }]),
-      call('appearanceEpoch', [1]),
-      call('appearanceEpoch', [2]),
-      call('bakeScale', [1.37]),
-      call('linkItemsOn', [1]),
-      call('linkItemsOn', [2]),
-      call('createPointer', ['polygon', 'down', 1, { x: 10, y: 10 }]),
-      call('createPointer', ['polygon', 'down', 1, { x: 50, y: 10 }]),
-      call('creationDraftAnchor'),
-      call('createPointer', ['polygon', 'down', 1, { x: 30, y: 40 }]),
-      call('creationDraftAnchor'),
-      call('cancelCreationDraft'),
+    [
+      hydrate([link(3)]),
+      write(1, [{ item: updated(link(3, { target: { kind: 'uri', uri: 'https://new' } })) }], {
+        defer: 'retarget',
+      }),
+      write(2, [
+        {
+          item: created(
+            materialize(10001, {
+              subtype: 'polygon',
+              vertices: [
+                { x: 10, y: 10 },
+                { x: 50, y: 10 },
+                { x: 30, y: 40 },
+              ],
+              color: '#e5484d',
+              strokeWidth: 6,
+            }),
+          ),
+        },
+      ]),
     ],
-  },
-  {
-    name: 'memoized-selectors-and-edges',
-    covers:
-      'The memoized selectors answer from cache while their inputs are unchanged and recompute on a view change; pointer intents carry zoom and display rotation; an unknown page has no page box; endTextEdit with nothing open is a plain end; a free-text with null contents flushes an empty string; a flags or props write on a draft that has no ref yet sends nothing.',
-    plugins: PLUGINS,
-    engine: {
-      documents: {
-        a: doc([
-          hydrate({ 1: [square(1), freeText(2, { contents: null, rect: { left: 300, bottom: 300, right: 400, top: 400 } }), link(3, { target: null })] }),
-          { path: 'page.annotations.update', pon: 1, value: updated(freeText(2, { contents: null })) },
-          { path: 'page.annotations.create', pon: 1, defer: 'draft' },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('pageItems', [1]),
-      call('pageItems', [1]),
-      call('pageItems', [1, { zoom: 2, rotation: 0 }]),
-      call('pageItems', [1, { zoom: 3, rotation: 0 }]),
-      call('pageItems', [1, { zoom: 3, rotation: 90 }]),
-      call('textItems', [1]),
-      call('textItems', [1]),
-      call('textItems', [1, { zoom: 2, rotation: 0 }]),
-      call('textItems', [1, { zoom: 2, rotation: 90 }]),
-      call('linkItemsOn', [1]),
-      call('linkItemsOn', [1]),
-      call('getSelectionFlags'),
-      call('getSelectionFlags'),
-      call('getSelectionProps'),
-      call('getSelectionProps'),
-      call('creationDraftAnchor'),
-      call('creationDraftAnchor'),
-      call('hitKind', [7, { x: 1, y: 1 }]),
-      call('editPointer', ['down', 1, { x: 100, y: 100 }, false, 2, 90, 1.5]),
-      call('editPointer', ['up', 1, { x: 100, y: 100 }, false, 2, 90, 1.5]),
-      call('marqueePointer', ['down', 1, { x: 5, y: 5 }, false, 2, 90, 1.5]),
-      call('marqueePointer', ['move', 1, { x: 50, y: 50 }, false, 2, 90, 1.5]),
-      call('marqueePointer', ['up', 1, { x: 50, y: 50 }, true]),
-      call('endTextEdit'),
-      call('beginTextEdit', [objRef(2)]),
-      call('endTextEdit'),
-      call('createPointer', ['square', 'down', 1, { x: 100, y: 500 }]),
-      call('createPointer', ['square', 'up', 1, { x: 180, y: 560 }]),
-      call('updateSelectionFlags', [{ locked: true }]),
-      call('updateSelection', [{ color: '#000000' }]),
-      settle('draft', created(square(30))),
+  ),
+  scenario(
+    'settings',
+    'Current tools defaults and shared settings preserve preset isolation and merge chrome/snap fields.',
+    [
+      call('tools.register', [
+        { id: 'arrow', extends: 'line', defaults: { lineEndings: { end: 'closed-arrow' } } },
+      ]),
+      call('tools.getDefaults', ['arrow']),
+      call('tools.getDefaults', ['line']),
+      call('tools.updateDefaults', ['arrow', { strokeWidth: 3 }]),
+      call('tools.getDefaults', ['arrow']),
+      call('tools.getProperties', ['free-text-callout']),
+      call('getSettings'),
+      call('updateSettings', [
+        {
+          snap: { rotationThreshold: 10 },
+          chrome: { handles: { hitSize: 40 }, rotationHandle: { enabled: false } },
+        },
+      ]),
+      call('getSettings'),
+      select(objRef(1)),
+      call('listChromeNodes', [pr(1)]),
+      call('selection.getAnchor'),
+      call('getSelectionAnchorIn', [{ scale: 2, rotation: 0, zoom: 1 }]),
     ],
-    allowUnmatched: false,
-  },
+    [hydrate([square(1)])],
+  ),
+  scenario(
+    'render-projections',
+    'Current page/link projections retain attached refs and hide excluded links; creation anchor uses draft.get in page space.',
+    [
+      call('listPageItems', [pr(1)]),
+      call('listPageItems', [pr(1), { zoom: 2, rotation: 90 }]),
+      call('getAppearanceEpoch', [pr(1)]),
+      call('listLinkItems', [pr(1)]),
+      call('listLinkItems', [pr(2)]),
+      draw('polygon', 'down', 10, 10),
+      draw('polygon', 'down', 50, 10),
+      call('draft.get'),
+      draw('polygon', 'down', 30, 40),
+      call('draft.get'),
+      call('draft.cancel'),
+    ],
+    [
+      hydrate([
+        square(1),
+        textNote(2, { reply: { to: objRef(1), type: 'reply' }, contents: 'reply' }),
+        link(3),
+        link(4, { reply: { to: objRef(1), type: 'group' } }),
+        link(5, { hidden: true }),
+        link(6, { target: null }),
+      ]),
+    ],
+  ),
+  scenario(
+    'memoized-selectors-and-edges',
+    'Current selectors cache by actual model/view; pending creations already carry stable refs and accept a follow-up update before confirmation.',
+    [
+      call('listPageItems', [pr(1)]),
+      call('listPageItems', [pr(1)]),
+      call('listTextItems', [pr(1)]),
+      call('listTextItems', [pr(1)]),
+      call('selection.getProperties'),
+      call('selection.getProperties'),
+      call('getHitKind', [pr(7), { x: 1, y: 1 }]),
+      call('text.end'),
+      draw('square', 'down', 100, 500),
+      draw('square', 'move', 180, 560),
+      draw('square', 'up', 180, 560),
+      call('selection.list'),
+      call('isPending', [objRef(10001)]),
+      call('selection.update', [{ color: '#000000' }]),
+      settle(
+        'draft',
+        confirmation(1, [
+          {
+            item: created(
+              materialize(10001, {
+                subtype: 'square',
+                box: { x: 100, y: 500, width: 80, height: 60 },
+                color: '#e5484d',
+                strokeWidth: 6,
+              }),
+            ),
+          },
+        ]).value,
+      ),
+      call('get', [objRef(10001)]),
+      settle(
+        'followup',
+        confirmation(2, [
+          {
+            item: updated(
+              materialize(10001, {
+                subtype: 'square',
+                box: { x: 100, y: 500, width: 80, height: 60 },
+                color: '#000000',
+                strokeWidth: 6,
+              }),
+            ),
+          },
+        ]).value,
+      ),
+      call('get', [objRef(10001)]),
+      call('isPending', [objRef(10001)]),
+    ],
+    [
+      hydrate([square(1), freeText(2)]),
+      write(
+        1,
+        [
+          {
+            item: created(
+              materialize(10001, {
+                subtype: 'square',
+                box: { x: 100, y: 500, width: 80, height: 60 },
+                color: '#e5484d',
+                strokeWidth: 6,
+              }),
+            ),
+          },
+        ],
+        { defer: 'draft' },
+      ),
+      write(
+        2,
+        [
+          {
+            item: updated(
+              materialize(10001, {
+                subtype: 'square',
+                box: { x: 100, y: 500, width: 80, height: 60 },
+                color: '#000000',
+                strokeWidth: 6,
+              }),
+            ),
+          },
+        ],
+        { defer: 'followup' },
+      ),
+    ],
+  ),
 ];
-
-function FLAGS_LOCKED() {
-  return { invisible: false, hidden: false, print: true, noZoom: false, noRotate: false, noView: false, readOnly: false, locked: true, toggleNoView: false, lockedContents: false };
-}
-function FLAGS_HIDDEN() {
-  return { ...FLAGS_LOCKED(), locked: false, hidden: true };
-}
-
-
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/annotation-crud.json',
     describes:
-      'packages/plugin/annotation: create/update/delete, the optimistic effects and their rollback, selection, props and flags, text editing, settings and projections.',
+      'Current live annotation CRUD, pending records, nested selection/text/tools, settings and projections.',
     cases,
   },
 ];

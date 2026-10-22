@@ -547,9 +547,16 @@ function resolveTarget(
     object = ctx.kernel.capability(tokenNamed(target.token), target.doc);
   }
   if (method === undefined) throw new Error('[scenario] a call on an object needs a method');
-  const fn = (object as Record<string, unknown>)[method];
+  const path = method.split('.');
+  let self = object;
+  for (const member of path.slice(0, -1)) {
+    if (self === null || self === undefined)
+      throw new Error(`[scenario] "${method}" is not a function`);
+    self = (self as Record<string, unknown>)[member];
+  }
+  const fn = self == null ? undefined : (self as Record<string, unknown>)[path.at(-1)!];
   if (typeof fn !== 'function') throw new Error(`[scenario] "${method}" is not a function`);
-  return { self: object, fn: fn as (...args: unknown[]) => unknown };
+  return { self, fn: fn as (...args: unknown[]) => unknown };
 }
 
 // ── decoding: canonical JSON back into live values ────────────────────────────
