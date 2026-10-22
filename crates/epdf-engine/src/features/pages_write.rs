@@ -536,27 +536,6 @@ fn require_unique(operation: &str, pages: &[PageObjectNumber]) -> Result<(), Eng
     Ok(())
 }
 
-/// That a page exists, without caring where.
-///
-/// Shared with the redaction applier, which resolves its pages up front for
-/// the same reason every operation here does: a scope naming one page that
-/// does not exist must change nothing.
-pub(crate) fn require_page(
-    document: &pdfium::Document,
-    page: PageObjectNumber,
-) -> Result<(), EngineError> {
-    let found = (0..document.page_count())
-        .any(|index| document.page_object_number_by_index(index) == page.get());
-    if found {
-        Ok(())
-    } else {
-        Err(EngineError::with_message(
-            EngineErrorCode::NotFound,
-            format!("no page with object number {}", page.get()),
-        ))
-    }
-}
-
 /// The write's meta: no page is named, and the transaction's stamp
 /// (`affectedPages: []`).
 fn meta_of(session: &DocumentSession) -> Result<MutationMeta, EngineError> {
@@ -755,9 +734,9 @@ pub fn flatten_pages(
     Ok(FlattenResult { page_object_numbers: pages.to_vec(), usage, results, meta })
 }
 
-/// `refused`, after the sequence moved for the pages a refused flatten had
-/// already changed.
-fn after_writes(
+/// `refused`, after the sequence moved for the pages a refused flatten (or
+/// redaction) had already changed.
+pub(crate) fn after_writes(
     session: &DocumentSession,
     changed: &[PageObjectNumber],
     refused: EngineError,

@@ -17,7 +17,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::dto::CachePins;
 use crate::identity::{PageObjectNumber, PageRef};
-use crate::revision::PageState;
 
 /// One page's cache pin patch.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -110,17 +109,6 @@ impl MutationMeta {
             undoable: stamp.undoable,
         }
     }
-}
-
-/// The page-state envelope the families answered before upstream's
-/// [`MutationMeta`]: each affected page's revision and weak-annotation
-/// state. Kept only for the write that has not moved to [`MutationMeta`]
-/// yet, `redaction.apply`, whose owner (8.23) deletes it.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageStateMeta {
-    pub affected_pages: Vec<PageState>,
-    pub cache_delta: Option<CacheDelta>,
 }
 
 #[cfg(test)]

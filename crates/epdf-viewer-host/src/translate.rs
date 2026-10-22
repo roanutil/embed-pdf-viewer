@@ -77,6 +77,10 @@ pub enum Decode {
     /// An annotation's embedded file: the result (`name`, `mimeType`,
     /// `size`), with the payload parked in the `HostTable` as `data`.
     AttachmentContent,
+    /// `redaction.apply`: [`Decode::Mutation`], with the result's and the
+    /// event's `scope` put back into the kernel's spelling
+    /// ([`to_kernel_redaction_scope`]).
+    RedactionMutation,
     /// A page mutation: `Mutation`, whose result and event must carry a
     /// layout that names every page by its `ref` (the kernel's page registry
     /// and the page-edit plugin read it).
@@ -207,7 +211,7 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         "page.annotations.update" => ("annotations.update", Decode::Mutation),
         "page.annotations.delete" => ("annotations.delete", Decode::Mutation),
         "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
-        "redaction.apply" => ("redaction.apply", Decode::Mutation),
+        "redaction.apply" => ("redaction.apply", Decode::RedactionMutation),
         "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
         "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
         // Page structure: one page op of a `document.apply` change each
@@ -3102,20 +3106,42 @@ fn take_binary(
     Ok((key, mime, name))
 }
 
-/// The kernel's apply scope as the host's `RedactionScope` reads it:
-/// `{kind: "pages", pages: [PageRef]}` with whole object numbers, or an
-/// annotations scope whose refs go whole.
+/// The kernel's apply scope (`{kind: "pages", pages}` or `{kind:
+/// "annotations", refs}`) as the host's `RedactionScope` reads it, upstream's
+/// `RedactionApplyScope`: `{pages: [PageRef]}` with whole object numbers, or
+/// `{annotations: [AnnotationRef]}` with whole refs.
 fn redaction_scope_out(path: &str, scope: Value) -> Result<Value, Error> {
     match scope.get("kind").and_then(Value::as_str) {
         Some("pages") => {
             let pages = scope.get("pages").cloned().unwrap_or(Value::Null);
-            Ok(serde_json::json!({ "kind": "pages", "pages": page_refs(path, &pages)? }))
+            Ok(serde_json::json!({ "pages": page_refs(path, &pages)? }))
         }
-        Some("annotations") => wire_refs_in(path, scope),
+        Some("annotations") => match scope.get("refs") {
+            Some(refs @ Value::Array(_)) => {
+                Ok(serde_json::json!({ "annotations": wire_refs_in(path, refs.clone())? }))
+            }
+            _ => Err(coded(
+                "invalid-input",
+                format!("[epdf-viewer-host] {path} takes a list of annotation refs: {scope}"),
+            )),
+        },
         _ => Err(coded(
             "invalid-input",
             format!("[epdf-viewer-host] {path} takes a pages or annotations scope: {scope}"),
         )),
+    }
+}
+
+/// The host's `scope` member of `object` (an apply result, or the
+/// `redaction.applied` event that spreads one) back in the kernel's
+/// spelling: `{pages}` as `{kind: "pages", pages}`, `{annotations}` as
+/// `{kind: "annotations", refs}`.
+fn to_kernel_redaction_scope(object: &mut Value) {
+    let Some(Value::Object(scope)) = object.get_mut("scope") else { return };
+    if let Some(pages) = scope.remove("pages") {
+        *scope = Map::from_iter([("kind".into(), "pages".into()), ("pages".into(), pages)]);
+    } else if let Some(refs) = scope.remove("annotations") {
+        *scope = Map::from_iter([("kind".into(), "annotations".into()), ("refs".into(), refs)]);
     }
 }
 
@@ -3211,6 +3237,15 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         Decode::Mutation | Decode::FormMutation => {
             let value = take(&mut result, "result")?;
             return Ok(Decoded { value, event: result.remove("event") });
+        }
+        Decode::RedactionMutation => {
+            let mut value = take(&mut result, "result")?;
+            to_kernel_redaction_scope(&mut value);
+            let mut event = result.remove("event");
+            if let Some(event) = event.as_mut() {
+                to_kernel_redaction_scope(event);
+            }
+            return Ok(Decoded { value, event });
         }
         Decode::PageMutation => {
             let value = take(&mut result, "result")?;

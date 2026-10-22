@@ -399,19 +399,29 @@ fn a_page_flatten_carries_meta_and_publishes_only_a_change() {
 fn a_redaction_carries_meta_and_publishes_only_a_change() {
     let mut host = Host::new();
     let (doc, pon) = open_fixture(&mut host, KINDS);
-    let scope = json!({ "kind": "pages", "pages": [page_ref(pon)] });
+    let scope = json!({ "pages": [page_ref(pon)] });
     let applied =
         call(&mut host, json!({ "kind": "redaction.apply", "docId": doc, "scope": scope }));
     assert_eq!(applied["event"]["type"], json!("redaction.applied"), "{applied}");
+    assert_eq!(applied["result"]["scope"], scope, "{applied}");
     assert_eq!(applied["result"]["results"][0]["status"], json!("applied"));
-    assert_eq!(applied["result"]["meta"]["affectedPages"][0]["page"], page_ref(pon));
+    let meta = &applied["result"]["meta"];
+    assert_eq!(meta["affectedPages"], json!([page_ref(pon)]), "{applied}");
+    assert_eq!(meta["cacheDelta"], Value::Null);
+    assert_eq!(meta["undoable"], json!(false), "a redaction is final");
+    // The finish notes the mutation once, as `WorkerHost.finishMutation`
+    // does.
     assert_eq!(applied["mutationSequence"], json!(1), "{applied}");
+    assert_eq!(applied["wrote"], json!(true));
     assert_result_rides(&applied);
 
+    // Nothing left to apply: unchanged, which is no mutation. The answer
+    // still carries the sequence it found (a kept divergence, 87b61b533).
     let again = call(&mut host, json!({ "kind": "redaction.apply", "docId": doc, "scope": scope }));
     assert_eq!(again["result"]["results"][0]["status"], json!("unchanged"), "{again}");
     assert!(again.get("event").is_none(), "{again}");
-    assert_eq!(again["result"]["meta"], Value::Null);
+    assert_eq!(again["result"]["meta"]["affectedPages"], json!([]), "{again}");
+    assert_eq!(again["wrote"], json!(false));
     assert_eq!(again["mutationSequence"], json!(1), "{again}");
 }
 
@@ -709,19 +719,24 @@ fn a_flatten_result_keeps_its_request_for_replay() {
     assert!(serde_json::from_value::<FlattenResult>(failed).is_err(), "no page status 'failed'");
 }
 
-/// A failed page as `RedactionApplier` answers it: the `error` is a
-/// `SerializedEngineError`, not a message. A flatten has no failed page:
-/// one that fails fails the call.
+/// A redaction as `RedactionApplier` answers it: the v3 scope, page refs,
+/// and a `MutationMeta`. A page has no `failed` status: one that fails
+/// fails the call, as a flatten's does.
 #[test]
-fn a_failed_page_carries_a_serialized_engine_error() {
+fn a_redaction_reads_and_writes_as_the_typescript_answers_it() {
     use epdf_engine::features::redaction::RedactionApplyResult;
-    let error = json!({ "name": "EngineError", "code": "Unknown",
-                        "message": "native page flatten failed after preflight" });
-    let redacted = json!({ "scope": { "kind": "pages", "pages": [page_ref(3u64)] },
-        "results": [{ "page": page_ref(3u64), "status": "failed", "removedAnnotationCount": 0,
-                      "error": error }],
-        "removedAnnotationCount": 0 });
+    let redacted = json!({ "scope": { "pages": [page_ref(3u64)] },
+        "results": [{ "page": page_ref(3u64), "status": "applied", "removedAnnotationCount": 0 }],
+        "removedAnnotationCount": 0,
+        "meta": { "affectedPages": [page_ref(3u64)], "cacheDelta": null, "opId": "op-1",
+                  "undoable": false } });
     let read: RedactionApplyResult =
         serde_json::from_value(redacted.clone()).expect("a TS redaction");
     assert_eq!(serde_json::to_value(&read).unwrap(), redacted);
+    let mut failed = redacted.clone();
+    failed["results"][0]["status"] = json!("failed");
+    assert!(
+        serde_json::from_value::<RedactionApplyResult>(failed).is_err(),
+        "no page status 'failed'"
+    );
 }

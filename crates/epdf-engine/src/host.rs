@@ -1691,30 +1691,25 @@ impl Host {
                     crate::session::save::DocumentEventInit::PagesFlattened,
                 )
             }
+            // `WorkerHost.handleRedactionApply`, as `pages.flatten`.
             "redaction.apply" => {
                 let scope: f::redaction::RedactionScope = field(body, "scope")?;
-                let result = {
-                    let owned = self.sessions.session(&key)?.document()?;
-                    f::redaction::apply(owned.document(), |page| owned.page(page), &scope, cancel)?
-                };
-                // `RedactionApplier.apply`: applying removes the marking and
-                // whatever went with it, so a page that was applied or failed
-                // is re-pinned. Nothing changed is no mutation.
-                let changed: Vec<_> = result
-                    .results
-                    .iter()
-                    .filter(|r| {
-                        matches!(
-                            r.status,
-                            f::redaction::RedactionStatus::Applied
-                                | f::redaction::RedactionStatus::Failed
-                        )
-                    })
-                    .map(|r| r.page_object_number)
-                    .collect();
-                self.finish_rewrite(&key, value(&result)?, &changed, |result| {
-                    crate::session::save::DocumentEventInit::RedactionApplied(result)
-                })
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let clock = self.clock.as_ref();
+                let result = f::changes::transaction::in_transaction(
+                    self.sessions.session_mut(&key)?,
+                    &op_id,
+                    clock,
+                    |session| f::redaction::apply(session, &scope, cancel),
+                )?;
+                let wrote = !result.meta.affected_pages.is_empty();
+                self.finish_flatten(
+                    &key,
+                    &op_id,
+                    value(&result)?,
+                    wrote,
+                    crate::session::save::DocumentEventInit::RedactionApplied,
+                )
             }
 
             "measure.setScale" => {
@@ -1935,9 +1930,9 @@ impl Host {
         use crate::session::save;
 
         // A final change ends undo for itself and every change before it
-        // (`FINAL_CHANGES` in `WorkerHost.finishMutation`): redaction apply,
-        // form repair and a completed signing, each of which finishes here
-        // with its event. The flattens end it in [`Host::finish_flatten`].
+        // (`FINAL_CHANGES` in `WorkerHost.finishMutation`): form repair and a
+        // completed signing, each of which finishes here with its event. The
+        // flattens and redaction apply end it in [`Host::finish_flatten`].
         if event.as_ref().is_some_and(save::DocumentEventInit::ends_undo) {
             self.sessions.session_mut(key)?.ledger_mut().end_undo();
         }
@@ -1959,7 +1954,8 @@ impl Host {
         Ok(HostResponse { json, payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default() })
     }
 
-    /// Finish a flatten (`handlePagesFlatten`, `handleAnnotationsFlatten`),
+    /// Finish a flatten or a redaction (`handlePagesFlatten`,
+    /// `handleAnnotationsFlatten`, `handleRedactionApply`),
     /// answered `{result, wrote, mutationSequence, event}`. One that wrote is
     /// a final change: it ends undo for itself and every change before it,
     /// the sequence bumps once, a layer saves its artifact, and the event
@@ -2003,33 +1999,6 @@ impl Host {
             json: envelope(answer),
             payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default(),
         })
-    }
-
-    /// Finish a content rewrite (`redaction.apply`, until 8.23 moves it to
-    /// [`Host::finish_flatten`]'s shape) whose result carries `meta`: `null`
-    /// with no finalization and no event when no page changed, otherwise
-    /// the changed pages settled and the event published.
-    fn finish_rewrite(
-        &mut self,
-        key: &SessionKey,
-        mut result: serde_json::Value,
-        changed: &[crate::identity::PageObjectNumber],
-        event: impl FnOnce(serde_json::Value) -> crate::session::save::DocumentEventInit,
-    ) -> Result<HostResponse, EngineError> {
-        if changed.is_empty() {
-            result["meta"] = serde_json::Value::Null;
-            let session = self.sessions.session(key)?;
-            return Ok(ok(serde_json::json!({
-                "result": result,
-                "mutationSequence": session.mutation_sequence(),
-            })));
-        }
-        let meta = crate::features::annotation::write::mutator::settle_rewritten_pages(
-            self.sessions.session_mut(key)?,
-            changed,
-        )?;
-        result["meta"] = value(&meta)?;
-        self.finish(key, event(result))
     }
 
     /// Stamp `event` as this engine's own: a local origin under the

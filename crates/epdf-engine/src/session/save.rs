@@ -46,7 +46,7 @@ pub enum MutationFamily {
     /// They do not re-read through a version-keyed cache, so the sequence
     /// bumps here.
     Ordinary,
-    /// The form writers and the redaction applier.
+    /// The form writers.
     /// Each re-reads after its own bump, so bumping again would rebuild
     /// every version-keyed cache for nothing.
     SelfSequenced,
@@ -183,7 +183,7 @@ pub enum DocumentEventInit {
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    /// `redaction.apply`, published only when `meta` is not null.
+    /// `redaction.apply`, published only when it wrote (`wrote`).
     #[serde(rename = "redaction.applied")]
     RedactionApplied(serde_json::Value),
     #[serde(rename = "metadata.updated")]
@@ -287,8 +287,7 @@ impl DocumentEventInit {
     /// only so the question has an answer.
     pub fn family(&self) -> MutationFamily {
         match self {
-            Self::RedactionApplied(_)
-            | Self::FormImported(_)
+            Self::FormImported(_)
             | Self::FormRepaired(_)
             | Self::FormFieldUpdated(_)
             // The install already advanced the sequence.

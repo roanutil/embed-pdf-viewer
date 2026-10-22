@@ -36,50 +36,11 @@ use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::pages_write::FlattenUsage;
 use crate::identity::{AnnotationRef, PageObjectNumber, PageRef};
-use crate::mutation::{MutationMeta, PageStateMeta};
+use crate::mutation::MutationMeta;
 use crate::session::document::DocumentSession;
 
 use super::delete::promote_inline_annotations;
 use super::resolve::resolve_annotation_index_raw;
-
-/// Whether this page holds an annotation nothing can address durably.
-///
-/// An annotation is weak when it has no indirect object number AND no `/NM`,
-/// which leaves its position in `/Annots` as the only way to name it. One is
-/// enough to make a rearrangement visible to a client, so the scan stops at
-/// the first.
-///
-/// An entry PDFium refuses is skipped rather than counted. It is a gap in the
-/// list, and a gap nobody can reference cannot be a reference that breaks.
-fn has_weak_annotations(page: &dyn PageAccess) -> Result<bool, EngineError> {
-    let view = page.view();
-    for index in 0..view.annotation_count() {
-        let Some(annotation) = view.annotation(index) else { continue };
-        if annotation.object_number() > 0 {
-            continue;
-        }
-        let nm = annotation.string_value("NM").unwrap_or(None);
-        if nm.as_deref().unwrap_or("").is_empty() {
-            return Ok(true);
-        }
-    }
-    Ok(false)
-}
-
-/// Scan the page and drop it again before the session is touched.
-///
-/// A separate function because the scan borrows the document out of the
-/// session and recording the answer borrows the session itself, so the two
-/// cannot overlap. Inlining it would leave every caller repeating the same
-/// block to end the borrow.
-fn scan_weak(
-    session: &DocumentSession,
-    page_object_number: PageObjectNumber,
-) -> Result<bool, EngineError> {
-    let owned = session.document()?;
-    let page = owned.page(page_object_number)?;
-    has_weak_annotations(&page)
-}
 
 /// One ref's outcome in [`flatten`]: `AnnotationFlattenItemResult`.
 #[derive(Debug, Clone, PartialEq, serde::Serialize)]
@@ -259,31 +220,6 @@ fn after_promotion(session: &DocumentSession, promoted: bool, refused: EngineErr
         session.note_mutation();
     }
     refused
-}
-
-/// The bookkeeping `PagesFlattener` and `RedactionApplier` perform once
-/// their pages are written: one sequence bump, each changed page's revision
-/// bumped and its weak-annotation state re-read (a failed re-read is
-/// ignored, as the TypeScript ignores it), and the `PageStateMeta` naming
-/// the pages in the order given.
-///
-/// `pages` is what the write CHANGED (applied or failed), not what it was
-/// asked for. A page left unchanged keeps its revision, so a ref a caller
-/// holds into it stays good.
-pub fn settle_rewritten_pages(
-    session: &mut DocumentSession,
-    pages: &[PageObjectNumber],
-) -> Result<PageStateMeta, EngineError> {
-    session.note_mutation();
-    for page in pages {
-        session.bump_revision(*page)?;
-        if let Ok(has_weak) = scan_weak(session, *page) {
-            let _ = session.record_weak_flag(*page, has_weak);
-        }
-    }
-    let affected_pages =
-        pages.iter().map(|page| session.page_state(*page)).collect::<Result<_, _>>()?;
-    Ok(PageStateMeta { affected_pages, cache_delta: None })
 }
 
 /// `AnnotationFlattener.exportAppearance`: a chosen set of one page's

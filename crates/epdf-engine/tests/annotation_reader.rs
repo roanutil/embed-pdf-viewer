@@ -345,7 +345,7 @@ fn named_refs(replay: &mut Replay) -> Vec<(String, Value)> {
 
 fn redact(replay: &mut Replay, refs: &[&Value]) -> Result<Value, Value> {
     replay.replay(&json!({ "kind": "redaction.apply", "effect": "contentWrite",
-        "jobId": "<job>", "opId": "<op>", "scope": { "kind": "annotations", "refs": refs } }))
+        "jobId": "<job>", "opId": "<op>", "scope": { "annotations": refs } }))
 }
 
 #[test]
