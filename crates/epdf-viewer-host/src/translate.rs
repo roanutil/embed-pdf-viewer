@@ -511,7 +511,8 @@ pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostRes
     if kind == "annotations.delete" {
         return kernel_delete::call(host, &request, payloads);
     }
-    let moved = page_space::render_target_to_page_space(host, &mut request);
+    let moved = page_space::render_target_to_page_space(host, &mut request)
+        | page_space::scale_to_page_space(host, &mut request);
     let response = if respelled || moved {
         host.call(&request.to_string(), payloads)
     } else {
@@ -1611,6 +1612,30 @@ mod kernel_create {
             out.insert("reply".into(), json!({ "to": to, "type": reply_type }));
         }
         draft.remove("replyType");
+        // A dimension's caption is its fields: a line's flag, position and
+        // offset, a shape's flag and centre on the page.
+        if let Some(caption) = draft.remove("caption").filter(Value::is_object) {
+            out.insert(
+                "captionEnabled".into(),
+                caption.get("enabled").cloned().unwrap_or(json!(false)),
+            );
+            if subtype == S::Line {
+                out.insert(
+                    "captionPosition".into(),
+                    caption.get("position").cloned().unwrap_or(json!("inline")),
+                );
+                out.insert(
+                    "captionOffset".into(),
+                    caption.get("offset").cloned().unwrap_or(Value::Null),
+                );
+            } else {
+                let center = caption.get("center").filter(|c| !c.is_null());
+                out.insert(
+                    "captionCenter".into(),
+                    center.map_or(Value::Null, |center| page_point(center, visible)),
+                );
+            }
+        }
         // A box kind's box: the turned-from box when it is turned, its rect
         // when upright. The kernel's turn is counterclockwise.
         let rotation_sent = draft.contains_key("rotation");
@@ -1699,6 +1724,17 @@ mod kernel_create {
                     "start": page_point(&value["start"], visible),
                     "end": page_point(&value["end"], visible),
                 }),
+                // `/IT` as the kernel spells it, the PDF name, for a
+                // dimension.
+                "intent" => match value.as_str() {
+                    Some("LineDimension") => json!("line-dimension"),
+                    Some("LineArrow") => json!("line-arrow"),
+                    Some("PolygonDimension") => json!("polygon-dimension"),
+                    Some("PolygonCloud") => json!("polygon-cloud"),
+                    Some("PolyLineDimension") => json!("polyline-dimension"),
+                    _ => value,
+                },
+                "measure" => super::page_space::kernel_measure_in_page_space(value, visible),
                 "cloudyIntensity" => match value.as_f64() {
                     Some(intensity) if intensity > 0.0 => value,
                     _ if update => Value::Null,
@@ -2101,6 +2137,76 @@ mod page_space {
         true
     }
 
+    /// A kernel scale (`subtype: "RL"`, its origin in the file's
+    /// coordinates) as the host takes it: `rectilinear`, its origin a place
+    /// on the page whose visible box is `visible`.
+    pub(super) fn kernel_measure_in_page_space(measure: Value, visible: PdfRect) -> Value {
+        let mut measure = respell_subtype(measure, &[("RL", "rectilinear"), ("GEO", "geospatial")]);
+        if measure.is_object() {
+            measure = epdf_engine::page_space::measure::page_measure_of(measure, visible);
+        }
+        measure
+    }
+
+    fn respell_subtype(mut measure: Value, names: &[(&str, &str)]) -> Value {
+        if let Some(subtype) = measure.get_mut("subtype")
+            && let Some((_, to)) = names.iter().find(|(from, _)| subtype.as_str() == Some(from))
+        {
+            *subtype = Value::String((*to).to_owned());
+        }
+        measure
+    }
+
+    /// A `measure.setScale` the kernel sent, in the host's spelling and on
+    /// the request's page (`kernel_measure_in_page_space`). Answers whether
+    /// it changed anything.
+    pub(super) fn scale_to_page_space(host: &Host, request: &mut Value) -> bool {
+        if request.get("kind").and_then(Value::as_str) != Some("measure.setScale")
+            || !request.get("measure").is_some_and(Value::is_object)
+        {
+            return false;
+        }
+        let Some(page) = request
+            .pointer("/page/objectNumber")
+            .and_then(Value::as_u64)
+            .and_then(|n| u32::try_from(n).ok())
+            .and_then(|n| PageObjectNumber::new(n).ok())
+        else {
+            return false;
+        };
+        let Ok(visible) = visible_boxes(host, request)(page) else { return false };
+        let measure = request["measure"].take();
+        request["measure"] = kernel_measure_in_page_space(measure, visible);
+        true
+    }
+
+    /// `measure.viewports`' answer as the kernel reads it: each `bbox` and
+    /// scale origin in the file's coordinates, a scale's subtype `RL` or
+    /// `GEO`.
+    fn kernel_viewports_of(viewports: Value, visible: PdfRect) -> Result<Value, String> {
+        let Value::Array(viewports) = viewports else {
+            return Err("the viewports are not a list".into());
+        };
+        let mut out = Vec::with_capacity(viewports.len());
+        for mut viewport in viewports {
+            let bbox: PageRect =
+                serde_json::from_value(viewport["bbox"].take()).map_err(|e| e.to_string())?;
+            viewport["bbox"] =
+                serde_json::to_value(pdf_rect_of(bbox, visible)).map_err(|e| e.to_string())?;
+            let measure = viewport["measure"].take();
+            viewport["measure"] = if measure.is_object() {
+                respell_subtype(
+                    epdf_engine::page_space::measure::pdf_measure_of(measure, visible),
+                    &[("rectilinear", "RL"), ("geospatial", "GEO")],
+                )
+            } else {
+                measure
+            };
+            out.push(viewport);
+        }
+        Ok(Value::Array(out))
+    }
+
     /// The host's page-space answer as the kernel reads it: `pages.list`'s
     /// boxes and page actions, `actions.read`'s destinations,
     /// `pages.geometry`'s runs, `search.query`'s match segments and
@@ -2117,7 +2223,12 @@ mod page_space {
         }
         if !matches!(
             kind,
-            "pages.list" | "actions.read" | "pages.geometry" | "search.query" | "forms.list"
+            "pages.list"
+                | "actions.read"
+                | "pages.geometry"
+                | "search.query"
+                | "forms.list"
+                | "measure.viewports"
         ) {
             return response;
         }
@@ -2127,7 +2238,22 @@ mod page_space {
         let Some(result) = envelope.get_mut("result").filter(|r| r.is_object()) else {
             return response;
         };
-        let converted = if kind == "forms.list" {
+        let converted = if kind == "measure.viewports" {
+            request
+                .get("page")
+                .cloned()
+                .and_then(|page| serde_json::from_value::<PageRef>(page).ok())
+                .ok_or_else(|| "the request names no page".to_owned())
+                .and_then(|page| {
+                    visible_boxes(host, request)(page.object_number()).map_err(|e| e.message)
+                })
+                .and_then(|visible| {
+                    let viewports = result["viewports"].take();
+                    let mut answer = result.take();
+                    answer["viewports"] = kernel_viewports_of(viewports, visible)?;
+                    Ok(answer)
+                })
+        } else if kind == "forms.list" {
             let mut boxes = visible_boxes(host, request);
             form_in_file_space(result.take(), &mut boxes)
         } else if kind == "pages.geometry" {

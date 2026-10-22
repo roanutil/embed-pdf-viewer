@@ -6,7 +6,7 @@
 //! `resolve/sentBack.ts`, `resolve/text.ts` (`noteStateFollows`,
 //! `assertRichTextAgreement`), `resolve/freeText.ts` (`freeTextFollows`,
 //! `calloutEndFollows`), `calloutEnd.ts`, `resolve/measurement.ts`
-//! (`measurementFollows`, as far as it is written before 8.25) and
+//! (`measurementFollows`) and
 //! `checkWrite.ts` (`assertAnnotationPatch`, `pdfResolveAnnotationPatch`).
 //!
 //! A patch arrives in the file's coordinates as the JSON object the caller
@@ -185,18 +185,6 @@ pub fn assert_annotation_patch(
                 "{kind} update field '{name}': this value can be read but not written; send it back unchanged or replace it"
             ))
             .with_details(serde_json::json!({ "field": name })));
-        }
-    }
-    for (name, value) in prepared {
-        // A foreign scale can't be written whatever 8.25 brings
-        // (`measurementFollows`).
-        if name == "measure"
-            && owner_of(subtype, name) == Some(FieldOwner::Data)
-            && let Some(scale) = value.get("subtype").and_then(Value::as_str)
-            && !matches!(scale, "rectilinear" | "RL")
-        {
-            let what = if scale == "geospatial" { "geospatial" } else { "foreign" };
-            return Err(invalid(format!("A {what} measure can't be written; leave measure out")));
         }
     }
     read_patch_fields(subtype, prepared).map(|_| ())
@@ -431,15 +419,6 @@ fn callout_end_follows(current: &Map<String, Value>, patch: &mut Map<String, Val
     patch.insert("calloutLine".into(), serde_json::to_value(points).unwrap_or_default());
 }
 
-/// A measurement field whose value needs 8.25's writing.
-fn measurement_not_ported(kind: &str, name: &str) -> EngineError {
-    EngineError::with_message(
-        EngineErrorCode::NotImplemented,
-        format!("{kind} update field '{name}': measurements are written by Task 8.25"),
-    )
-    .with_details(serde_json::json!({ "field": name }))
-}
-
 /// Whether a write names any of a caption's fields (`touchesCaption`).
 pub fn touches_caption(value: &Map<String, Value>) -> bool {
     ["captionEnabled", "captionPosition", "captionOffset", "captionCenter"]
@@ -447,22 +426,51 @@ pub fn touches_caption(value: &Map<String, Value>) -> bool {
         .any(|name| value.contains_key(*name))
 }
 
-fn is_rectilinear(measure: Option<&Value>) -> bool {
-    measure
-        .and_then(|m| m.get("subtype"))
-        .and_then(Value::as_str)
-        .is_some_and(|s| matches!(s, "rectilinear" | "RL"))
+fn point_of(value: Option<&Value>) -> Option<PdfPoint> {
+    value.filter(|v| !v.is_null()).and_then(|v| serde_json::from_value(v.clone()).ok())
 }
 
-/// `measurementFollows`, as far as this engine writes measurements before
-/// Task 8.25: caption fields merge with the current caption into a complete
-/// caption, which this engine writes when it is hidden, inline, with no
-/// offset or centre, or removed; and nothing here derives a label.
-///
-/// re-port (Task 8): 8.25 writes a scale (its removal too), a leader, a
-/// shown, placed or moved caption, and the label a dimension's points and
-/// scale derive. Until then an update that needs one is refused
-/// `NotImplemented`, before the first write.
+fn points_of(value: Option<&Value>) -> Option<Vec<PdfPoint>> {
+    value.filter(|v| !v.is_null()).and_then(|v| serde_json::from_value(v.clone()).ok())
+}
+
+/// `moveCenter`: a manual caption centre carried along by a rigid move of
+/// the vertices, inferred only when every vertex agrees. A vertex edit
+/// leaves the centre where it is (`None`).
+fn move_center(before: &[PdfPoint], after: &[PdfPoint], center: PdfPoint) -> Option<PdfPoint> {
+    use crate::features::measure::derive::js_hypot as hypot;
+    if before.len() != after.len() || before.len() < 2 {
+        return None;
+    }
+    let origin = before[0];
+    let moved = after[0];
+    let index =
+        before.iter().position(|point| hypot(point.x - origin.x, point.y - origin.y) > 1e-6)?;
+    let from = PdfPoint { x: before[index].x - origin.x, y: before[index].y - origin.y };
+    let to = PdfPoint { x: after[index].x - moved.x, y: after[index].y - moved.y };
+    let length = from.x * from.x + from.y * from.y;
+    let cos = (from.x * to.x + from.y * to.y) / length;
+    let sin = (from.x * to.y - from.y * to.x) / length;
+    if (cos * cos + sin * sin - 1.0).abs() > 1e-5 {
+        return None;
+    }
+    let transform = |point: PdfPoint| PdfPoint {
+        x: moved.x + cos * (point.x - origin.x) - sin * (point.y - origin.y),
+        y: moved.y + sin * (point.x - origin.x) + cos * (point.y - origin.y),
+    };
+    let rigid = before.iter().zip(after).all(|(point, at)| {
+        let placed = transform(*point);
+        hypot(placed.x - at.x, placed.y - at.y) <= 1e-3
+    });
+    rigid.then(|| transform(center))
+}
+
+/// `measurementFollows`: a dimension patch with what follows from it. A
+/// foreign measure's marker sent back keeps the measure as it is (another
+/// foreign one is refused); caption fields merge with the current caption
+/// into a complete caption; a whole-shape move carries a manual caption
+/// centre along; and the label is worked out from the resulting points and
+/// scale.
 fn measurement_follows(
     subtype: AnnotationSubtype,
     current: &Map<String, Value>,
@@ -472,43 +480,42 @@ fn measurement_follows(
     if !matches!(subtype, S::Line | S::Polygon | S::Polyline) {
         return Ok(());
     }
-    let kind = subtype.as_str();
-    let current_has = |name: &str| current.get(name).is_some_and(|v| !v.is_null());
-    // Removing a scale or a leader is a measurement write.
-    for name in ["measure", "leader"] {
-        if patch.get(name).is_some_and(Value::is_null) && current_has(name) {
-            return Err(measurement_not_ported(kind, name));
+    let subtype_of = |measure: Option<&Value>| {
+        measure.and_then(|m| m.get("subtype")).and_then(Value::as_str).map(str::to_owned)
+    };
+    if let Some(foreign) = subtype_of(patch.get("measure")).filter(|s| s != "rectilinear") {
+        if subtype_of(current.get("measure")).as_deref() != Some(foreign.as_str()) {
+            let what = if foreign == "geospatial" { "geospatial" } else { "foreign" };
+            return Err(invalid(format!("A {what} measure can't be written; leave measure out")));
         }
+        // The marker a read returned, sent back: the measure stays as it is.
+        patch.remove("measure");
     }
+    let current_of = |name: &str| current.get(name).cloned().unwrap_or(Value::Null);
     if subtype == S::Line {
         if touches_caption(patch) {
-            let enabled = patch.get("captionEnabled").or_else(|| current.get("captionEnabled"));
+            let enabled =
+                patch.get("captionEnabled").cloned().unwrap_or(current_of("captionEnabled"));
             let position = patch
                 .get("captionPosition")
                 .filter(|p| !p.is_null())
-                .or_else(|| current.get("captionPosition"));
-            let offset = patch.get("captionOffset").or_else(|| current.get("captionOffset"));
-            if enabled == Some(&Value::Bool(true)) {
-                return Err(measurement_not_ported(kind, "captionEnabled"));
-            }
-            if position.and_then(Value::as_str) == Some("top") {
-                return Err(measurement_not_ported(kind, "captionPosition"));
-            }
-            if offset.is_some_and(|o| !o.is_null()) {
-                return Err(measurement_not_ported(kind, "captionOffset"));
-            }
-            patch.insert("captionEnabled".into(), enabled.cloned().unwrap_or(Value::Null));
-            patch.insert("captionPosition".into(), Value::String("inline".into()));
-            patch.insert("captionOffset".into(), Value::Null);
+                .cloned()
+                .unwrap_or(current_of("captionPosition"));
+            let offset = patch.get("captionOffset").cloned().unwrap_or(current_of("captionOffset"));
+            patch.insert("captionEnabled".into(), enabled);
+            patch.insert("captionPosition".into(), position);
+            patch.insert("captionOffset".into(), offset);
         }
     } else {
-        // A whole-shape move carries a manual caption centre along.
-        if patch.get("vertices").is_some_and(|v| !v.is_null())
-            && patch.get("captionEnabled") != Some(&Value::Null)
+        if let (Some(after), Some(before), Some(center)) = (
+            points_of(patch.get("vertices")),
+            points_of(current.get("vertices")),
+            point_of(current.get("captionCenter")),
+        ) && patch.get("captionEnabled") != Some(&Value::Null)
             && !patch.contains_key("captionCenter")
-            && current_has("captionCenter")
+            && let Some(moved) = move_center(&before, &after, center)
         {
-            return Err(measurement_not_ported(kind, "captionCenter"));
+            patch.insert("captionCenter".into(), serde_json::to_value(moved).unwrap_or_default());
         }
         if touches_caption(patch) {
             if patch.get("captionEnabled") == Some(&Value::Null) {
@@ -517,39 +524,35 @@ fn measurement_follows(
             } else {
                 let enabled = patch
                     .get("captionEnabled")
-                    .or_else(|| current.get("captionEnabled"))
                     .filter(|e| !e.is_null())
+                    .or_else(|| current.get("captionEnabled").filter(|e| !e.is_null()))
                     .cloned()
                     .unwrap_or(Value::Bool(false));
-                if enabled == Value::Bool(true) {
-                    return Err(measurement_not_ported(kind, "captionEnabled"));
-                }
-                let center = patch.get("captionCenter").or_else(|| current.get("captionCenter"));
-                if center.is_some_and(|c| !c.is_null()) {
-                    return Err(measurement_not_ported(kind, "captionCenter"));
-                }
+                let center =
+                    patch.get("captionCenter").cloned().unwrap_or(current_of("captionCenter"));
                 patch.insert("captionEnabled".into(), enabled);
-                patch.insert("captionCenter".into(), Value::Null);
+                patch.insert("captionCenter".into(), center);
             }
         }
     }
-    // A dimension with a scale works its label out from its points and its
-    // scale (`measurementReadout`).
+    // The label, from the resulting points and scale (`measurementReadout`
+    // over the annotation as the patch leaves it).
     let label_inputs = ["linePoints", "vertices", "measure", "intent", "contents"];
     if label_inputs.iter().any(|name| patch.contains_key(*name)) {
-        let intent = patch.get("intent").or_else(|| current.get("intent")).and_then(Value::as_str);
-        let dimension = matches!(
-            (subtype, intent),
-            (S::Line, Some("line-dimension"))
-                | (S::Polyline, Some("polyline-dimension"))
-                | (S::Polygon, Some("polygon-dimension"))
+        let after = |name: &str| patch.get(name).or_else(|| current.get(name));
+        let line_points = after("linePoints")
+            .and_then(|line| Some((point_of(line.get("start"))?, point_of(line.get("end"))?)));
+        let readout = crate::features::measure::derive::measurement_readout(
+            &crate::features::measure::derive::DimensionInput {
+                subtype: subtype.as_str(),
+                intent: after("intent").and_then(Value::as_str),
+                measure: after("measure"),
+                line_points,
+                vertices: points_of(after("vertices")),
+            },
         );
-        let measure = match patch.get("measure") {
-            Some(measure) => Some(measure),
-            None => current.get("measure"),
-        };
-        if dimension && is_rectilinear(measure) {
-            return Err(measurement_not_ported(kind, "measure"));
+        if let Ok(readout) = readout {
+            patch.insert("contents".into(), Value::String(readout.label));
         }
     }
     Ok(())
@@ -684,21 +687,36 @@ mod tests {
     }
 
     #[test]
-    fn a_shown_caption_or_a_scaled_dimension_waits_for_8_25() {
+    fn a_caption_merges_with_the_lines_and_a_scaled_dimension_relabels_itself() {
         let line = map(json!({ "subtype": "line", "intent": "line-dimension",
-            "measure": { "subtype": "rectilinear" }, "captionEnabled": null,
-            "captionPosition": "inline", "captionOffset": null,
-            "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 1, "y": 1 } } }));
-        for patch in [
-            json!({ "captionEnabled": true }),
-            json!({ "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 2, "y": 2 } } }),
-        ] {
-            let refused = pdf_resolve_annotation_patch(&line, map(patch), None).unwrap_err();
-            assert_eq!(refused.code, EngineErrorCode::NotImplemented, "{refused}");
-        }
-        let hidden =
-            pdf_resolve_annotation_patch(&line, map(json!({ "captionEnabled": false })), None)
+            "measure": { "subtype": "rectilinear",
+                "x": [{ "unit": "m", "conversion": 1 }],
+                "distance": [{ "unit": "m", "conversion": 1, "precision": 100 }], "area": [] },
+            "captionEnabled": null, "captionPosition": "top",
+            "captionOffset": { "along": 1, "perpendicular": 2 },
+            "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 3, "y": 4 } } }));
+        let shown =
+            pdf_resolve_annotation_patch(&line, map(json!({ "captionEnabled": true })), None)
                 .unwrap();
-        assert_eq!(hidden.data["captionPosition"], "inline");
+        assert_eq!(shown.data["captionEnabled"], true);
+        assert_eq!(shown.data["captionPosition"], "top", "kept from the line");
+        assert_eq!(shown.data["captionOffset"], json!({ "along": 1, "perpendicular": 2 }));
+        assert!(!shown.data.contains_key("contents"), "no label input: {:?}", shown.data);
+        let moved = pdf_resolve_annotation_patch(
+            &line,
+            map(
+                json!({ "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 6, "y": 8 } } }),
+            ),
+            None,
+        )
+        .unwrap();
+        assert_eq!(moved.data["contents"], "10.00 m");
+        let foreign = pdf_resolve_annotation_patch(
+            &line,
+            map(json!({ "measure": { "subtype": "geospatial" } })),
+            None,
+        )
+        .unwrap_err();
+        assert_eq!(foreign.code, EngineErrorCode::InvalidArg, "{foreign}");
     }
 }

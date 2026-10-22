@@ -349,6 +349,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'routed',
+    note: "Answers {page, viewports}: every /VP entry in drawing order, its name and measure null when the file has none, a scale's subtype rectilinear, geospatial or unknown (readMeasure), each bbox and scale origin in page space at the host boundary (pageViewportsOf). No vector covers it: crates/epdf-engine/tests/measure.rs ports measurements.test.ts and runMeasurementConformance.",
   },
 
   // --- G7. Annotation reads. Rust never creates or retains the form model;
@@ -541,7 +542,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A one-op change (applyOne) and an op of document.apply: the v3 draft in page space, converted at the boundary (pdfAnnotationDraftOf), checked field by field against its kind (prepareCreate), and made on its page's /Annots without loading the page (EPDFPage_CreateAnnotRaw). Stamped with a UUIDv7 /NM when it names none; a stamp places a drawing found or added once per artwork (drawingFor); its reverse deletes it while it reads as left. Measurement fields (measure, captions, leader) are refused NotImplemented until 8.25. Gated by vectors/annotation/create.json through crates/epdf-engine/tests/annotation_create.rs.",
+    note: "A one-op change (applyOne) and an op of document.apply: the v3 draft in page space, converted at the boundary (pdfAnnotationDraftOf), checked field by field against its kind (prepareCreate), and made on its page's /Annots without loading the page (EPDFPage_CreateAnnotRaw). Stamped with a UUIDv7 /NM when it names none; a stamp places a drawing found or added once per artwork (drawingFor); its reverse deletes it while it reads as left. A dimension's caption is stated whole and its label worked out from its points and scale (resolveMeasurementDraft), then written with its scale and leader (writeMeasurementFields). Gated by vectors/annotation/create.json through crates/epdf-engine/tests/annotation_create.rs.",
   },
   {
     kind: 'annotations.update',
@@ -550,7 +551,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A one-op change (applyOne) and an op of document.apply: the v3 patch in page space, converted at the boundary (pdfAnnotationPatchOf), resolved against the annotation's read (pdfResolveAnnotationPatch: a drawn kind's rect becomes the shape that puts the drawing there, what it sends back as it reads is dropped, each field checked against its kind's update schema, what follows stated), then written in place by its kind's writer. The appearance verdict classifies the resolved patch (appearanceImpactOf); /RD is the appearance's. A widget is refused for doc.forms.updateWidget. Its reverse puts back by value the fields it changed that still show it, until 8.30 brings the dictionary captures. Measurement writes (a scale, a leader, a shown or placed caption, a derived label) are refused NotImplemented until 8.25. Gated by vectors/annotation/update.json and write.json through crates/epdf-engine/tests/annotation_update.rs and annotation_write.rs.",
+    note: "A one-op change (applyOne) and an op of document.apply: the v3 patch in page space, converted at the boundary (pdfAnnotationPatchOf), resolved against the annotation's read (pdfResolveAnnotationPatch: a drawn kind's rect becomes the shape that puts the drawing there, what it sends back as it reads is dropped, each field checked against its kind's update schema, what follows stated), then written in place by its kind's writer. The appearance verdict classifies the resolved patch (appearanceImpactOf); /RD is the appearance's. A widget is refused for doc.forms.updateWidget. Its reverse puts back by value the fields it changed that still show it, until 8.30 brings the dictionary captures. A dimension's caption merges with the one it has, a rigid move carries a manual caption centre, a foreign scale's marker sent back is kept, and the label follows its points and scale (measurementFollows). Gated by vectors/annotation/update.json and write.json through crates/epdf-engine/tests/annotation_update.rs and annotation_write.rs.",
   },
   {
     kind: 'annotations.delete',
@@ -934,6 +935,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
+    note: "Takes a rectilinear PdfMeasure with its origin in page space, converted at the boundary (pdfMeasureOf), or null to remove EmbedPDF's viewports; calibrates over the page's visible box (readBoxes crop) in one transaction, answering PageScaleResult with the write's opId in meta. A scale write with no measure is refused InvalidArg (d8027c034, a kept divergence for the user to confirm at Task 14). No vector covers it: crates/epdf-engine/tests/measure.rs.",
   },
 
   // --- G15. Server and file surfaces. Browser and local workers keep

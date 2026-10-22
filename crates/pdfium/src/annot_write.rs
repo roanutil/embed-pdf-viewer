@@ -675,30 +675,44 @@ impl Annotation<'_> {
 }
 
 impl Annotation<'_> {
-    /// A line's caption flag and position (`/Cap`, `/CP`), with no offset
-    /// (`EPDFAnnot_SetLineCaption`): `top` puts it above the line.
-    pub fn set_line_caption(&self, enabled: bool, top: bool) -> bool {
-        // SAFETY: the handle is live; a null offset is the normal position.
+    /// A line's caption flag, position and offset (`/Cap`, `/CP`, `/CO`,
+    /// `EPDFAnnot_SetLineCaption`): `top` puts it above the line, and an
+    /// offset of `None` is the normal position. `offset` is `(along,
+    /// perpendicular)` in the line's own axes, not a page point.
+    pub fn set_line_caption(&self, enabled: bool, top: bool, offset: Option<(f32, f32)>) -> bool {
+        let offset = offset
+            .map(|(along, perpendicular)| pdfium_sys::EPDF_CAPTION_OFFSET { along, perpendicular });
+        let offset = offset.as_ref().map_or(std::ptr::null(), std::ptr::from_ref);
+        // SAFETY: the handle is live; the offset is null or a local that
+        // outlives the call.
         unsafe {
             pdfium_sys::EPDFAnnot_SetLineCaption(
                 self.as_raw(),
                 i32::from(enabled),
                 u32::from(top) as _,
-                std::ptr::null(),
+                offset,
             ) != 0
         }
     }
 
-    /// A polygon's or polyline's caption flag, placed automatically
-    /// (`EPDFAnnot_SetShapeCaption` with no centre).
-    pub fn set_shape_caption(&self, enabled: bool) -> bool {
-        // SAFETY: the handle is live; a null centre places it automatically.
+    /// A polygon's or polyline's caption flag and centre
+    /// (`EPDFAnnot_SetShapeCaption`): a centre of `None` places it
+    /// automatically. The setter writes the whole caption.
+    pub fn set_shape_caption(&self, enabled: bool, center: Option<crate::PointF>) -> bool {
+        let center = center.map(|c| pdfium_sys::FS_POINTF { x: c.x, y: c.y });
+        let center = center.as_ref().map_or(std::ptr::null(), std::ptr::from_ref);
+        // SAFETY: the handle is live; the centre is null or a local that
+        // outlives the call.
         unsafe {
-            pdfium_sys::EPDFAnnot_SetShapeCaption(
-                self.as_raw(),
-                i32::from(enabled),
-                std::ptr::null(),
-            ) != 0
+            pdfium_sys::EPDFAnnot_SetShapeCaption(self.as_raw(), i32::from(enabled), center) != 0
+        }
+    }
+
+    /// A line's `/LL`, `/LLE` and `/LLO` (`EPDFAnnot_SetLineLeader`).
+    pub fn set_line_leader(&self, length: f32, extension: f32, offset: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetLineLeader(self.as_raw(), length, extension, offset) != 0
         }
     }
 }

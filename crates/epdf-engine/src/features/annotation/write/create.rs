@@ -31,6 +31,7 @@ use serde_json::{Map, Value};
 
 use super::context::AnnotationWriteContext;
 use super::draft::AnnotationActor;
+use super::measurement::{drawn_point, write_measurement_fields};
 use super::prepare::{
     DraftFields, DraftResources, LinkTargetWrite, PreparedDraft, Rgb, StampFit, intent_name,
     prepare_create, text_alignment_of,
@@ -504,11 +505,16 @@ fn apply_draft(
         }
         S::Polygon | S::Polyline => {
             let vertices = f.vertices.clone().unwrap_or_default();
-            let drawn = write_new_points(annotation, &[vertices], rotation(f))?;
-            write_intent(annotation, f)?;
-            write_caption(annotation, draft.subtype, f)?;
+            let placed = write_new_points(annotation, &[vertices], rotation(f))?;
+            // A caption centre, given upright, turned with the vertices
+            // (`draftWithDrawnCaption`).
+            let center = f.caption_center.flatten().map(|c| drawn_point(c, placed.turn));
+            write_measurement_fields(annotation, draft.subtype, f, center)?;
             apply_filled_style(annotation, f)?;
-            p::set_vertices(annotation, drawn.first().map(Vec::as_slice).unwrap_or_default())?;
+            p::set_vertices(
+                annotation,
+                placed.drawn.first().map(Vec::as_slice).unwrap_or_default(),
+            )?;
             if draft.subtype == S::Polygon {
                 write_cloudy(annotation, f)?;
             } else {
@@ -516,12 +522,11 @@ fn apply_draft(
             }
         }
         S::Line => {
-            write_intent(annotation, f)?;
-            write_caption(annotation, draft.subtype, f)?;
+            write_measurement_fields(annotation, draft.subtype, f, None)?;
             apply_filled_style(annotation, f)?;
             let line = f.line_points.ok_or_else(|| unknown("a line create has no linePoints"))?;
-            let drawn = write_new_points(annotation, &[vec![line.start, line.end]], rotation(f))?;
-            let ends = drawn.first().cloned().unwrap_or_default();
+            let placed = write_new_points(annotation, &[vec![line.start, line.end]], rotation(f))?;
+            let ends = placed.drawn.first().cloned().unwrap_or_default();
             if let [start, end] = ends.as_slice() {
                 p::set_line(annotation, *start, *end)?;
             }
@@ -531,8 +536,8 @@ fn apply_draft(
             write_intent(annotation, f)?;
             apply_geometry_style(annotation, f)?;
             let ink = f.ink_list.clone().unwrap_or_default();
-            let drawn = write_new_points(annotation, &ink, rotation(f))?;
-            p::set_ink_list(annotation, &drawn)?;
+            let placed = write_new_points(annotation, &ink, rotation(f))?;
+            p::set_ink_list(annotation, &placed.drawn)?;
         }
         S::Link => {
             p::set_rect(annotation, f.rect.ok_or_else(|| unknown("a link create has no rect"))?)?;
@@ -688,37 +693,6 @@ fn write_intent(annotation: &Annotation<'_>, f: &DraftFields) -> Result<(), Engi
     if let Some(Some(intent)) = &f.intent {
         let name = intent_name(intent).ok_or_else(|| unknown("an intent with no /IT name"))?;
         p::set_intent(annotation, name)?;
-    }
-    Ok(())
-}
-
-/// The caption half of `writeMeasurementFields`, for the captions a create
-/// can write before 8.25: hidden, inline, with no offset or centre. A line
-/// that names any caption field states the caption whole, hidden unless it
-/// says `null` (`resolveMeasurementDraft`); a shape writes a hidden caption
-/// when it says so.
-fn write_caption(
-    annotation: &Annotation<'_>,
-    subtype: AnnotationSubtype,
-    f: &DraftFields,
-) -> Result<(), EngineError> {
-    if !f.caption_touched {
-        return Ok(());
-    }
-    let enabled = match subtype {
-        AnnotationSubtype::Line => f.caption_enabled.unwrap_or(Some(false)),
-        _ => f.caption_enabled.flatten(),
-    };
-    // No caption flag: nothing to write on a new annotation.
-    if let Some(enabled) = enabled {
-        let ok = if subtype == AnnotationSubtype::Line {
-            annotation.set_line_caption(enabled, false)
-        } else {
-            annotation.set_shape_caption(enabled)
-        };
-        if !ok {
-            return Err(unknown("the caption could not be written"));
-        }
     }
     Ok(())
 }

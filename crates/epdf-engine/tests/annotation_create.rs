@@ -950,30 +950,51 @@ fn a_refused_change_takes_its_create_back() {
 
 // ── Fix round 1 ─────────────────────────────────────────────────────────────
 
-/// A measurement's scale, a shown caption or a leader needs 8.25's
-/// writing: refused `NotImplemented`, and nothing is written.
+/// A measurement's scale, a shown or placed caption and a leader are
+/// written as given and read back (`writeMeasurementFields`).
 #[test]
-fn a_measured_create_is_refused_until_8_25_and_writes_nothing() {
+fn a_measured_create_writes_each_measurement_field() {
     let file = load();
     let pon = file.cases[0].page_object_number;
     let line = case(&file, "line").draft.clone();
     let mut replay = open(&file);
-    let before = listed_count(&mut replay);
+    let scale = json!({ "subtype": "rectilinear", "ratio": "1 in = 1 in",
+        "x": [{ "unit": "in", "conversion": 0.013888889, "precision": 100 }],
+        "distance": [{ "unit": "in", "conversion": 1, "precision": 100 }],
+        "area": [{ "unit": "in²", "conversion": 1, "precision": 100 }] });
     for (field, value) in [
-        ("measure", json!({ "subtype": "rectilinear", "ratio": "1 in = 1 in" })),
+        ("measure", scale),
         ("captionEnabled", json!(true)),
         ("captionPosition", json!("top")),
         ("captionOffset", json!({ "along": 1, "perpendicular": 2 })),
         ("leader", json!({ "length": 10 })),
     ] {
         let mut draft = line.clone();
-        draft[field] = value;
-        let refused = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
+        draft[field] = value.clone();
+        let before = listed_count(&mut replay);
+        let created = create_draft(&mut replay, &draft, pon, &std::collections::BTreeMap::new())
             .outcome
-            .expect_err(field);
-        assert_eq!(refused["code"], "NotImplemented", "{field}: {refused}");
-        assert_eq!(refused["details"]["field"], field, "{field}: {refused}");
-        assert_eq!(listed_count(&mut replay), before, "{field}: something was written");
+            .unwrap_or_else(|e| panic!("{field}: {e}"));
+        let read = &created["annotation"];
+        assert_eq!(listed_count(&mut replay), before + 1, "{field}");
+        match field {
+            "measure" => {
+                assert_eq!(read["measure"]["subtype"], "rectilinear", "{read}");
+                assert_eq!(read["measure"]["ratio"], "1 in = 1 in", "{read}");
+            }
+            "leader" => assert_eq!(read["leader"]["length"], json!(10.0), "{read}"),
+            "captionOffset" => {
+                assert_eq!(
+                    test_support::canonical_numbers(&read["captionOffset"]),
+                    test_support::canonical_numbers(&value),
+                    "{read}"
+                );
+                // The caption is stated whole: hidden, inline.
+                assert_eq!(read["captionEnabled"], false, "{read}");
+                assert_eq!(read["captionPosition"], "inline", "{read}");
+            }
+            _ => assert_eq!(read[field], value, "{field}: {read}"),
+        }
     }
 }
 

@@ -6,7 +6,7 @@
 //! kind's `apply*Patch`), `writeAnnotationBox.ts` (`applyAnnotationBoxPatch`),
 //! `writeAnnotationPoints.ts` (`updatePoints`),
 //! `writeAnnotationTransformMetadata.ts` (`settleAnnotationTurn`),
-//! `writeMeasurementFields.ts` (as far as 8.25 leaves it),
+//! `writeMeasurementFields.ts` ([`super::measurement`]),
 //! `writeAnnotationRelationship.ts` (`writeAnnotationRelationship`,
 //! `writePopupParent`, `writeLinkedOpen`) and `writeEmbedMetadata.ts`
 //! (`applyEmbedMetadataOnUpdate`). Operation: `annotations.update`, a single
@@ -41,13 +41,14 @@ use super::create::{
     set_default_appearance, write_link_target,
 };
 use super::draft::AnnotationActor;
+use super::measurement::{drawn_point, write_measurement_fields};
 use super::patch::{ResolvedPatch, pdf_resolve_annotation_patch, touches_caption};
 use super::prepare::{
     DraftFields, DraftResources, Rgb, StampFit, assert_resources, intent_name, text_alignment_of,
 };
 use super::primitives::{
-    self as p, CurrentPoints, apply_annotation_box_patch, read_current_points, set_color,
-    set_opacity, shift_annot_rect, shift_between, update_points,
+    self as p, CurrentPoints, PlacedPoints, apply_annotation_box_patch, read_current_points,
+    set_color, set_opacity, shift_annot_rect, shift_between, update_points,
 };
 use super::stamp::{DrawingIndex, author_stamp_appearance, write_stamp_fit};
 use crate::cancel::CancelToken;
@@ -485,9 +486,14 @@ fn apply_patch(
                 f.vertices.as_ref().map(std::slice::from_ref),
                 f.rotation,
             )?;
-            write_measurement_fields(annotation, resolved.subtype, f)?;
-            if let Some(drawn) = placed {
-                p::set_vertices(annotation, drawn.first().map(Vec::as_slice).unwrap_or_default())?;
+            let (caption, center) =
+                patch_with_drawn_caption(annotation, f, &points, placed.as_ref());
+            write_measurement_fields(annotation, resolved.subtype, &caption, center)?;
+            if let Some(placed) = placed {
+                p::set_vertices(
+                    annotation,
+                    placed.drawn.first().map(Vec::as_slice).unwrap_or_default(),
+                )?;
             }
             apply_filled_style_patch(annotation, f)?;
             if resolved.subtype == S::Polygon {
@@ -497,14 +503,15 @@ fn apply_patch(
             }
         }
         S::Line => {
-            write_measurement_fields(annotation, resolved.subtype, f)?;
+            write_measurement_fields(annotation, resolved.subtype, f, None)?;
             apply_filled_style_patch(annotation, f)?;
             let points: Option<Vec<Vec<PdfPoint>>> =
                 f.line_points.map(|line| vec![vec![line.start, line.end]]);
             let current_points: CurrentPoints = read_current_points(annotation);
-            if let Some(drawn) =
+            if let Some(placed) =
                 update_points(annotation, &current_points, points.as_deref(), f.rotation)?
-                && let Some([start, end]) = drawn
+                && let Some([start, end]) = placed
+                    .drawn
                     .first()
                     .map(Vec::as_slice)
                     .and_then(|ends| <&[PdfPoint; 2]>::try_from(ends).ok())
@@ -522,7 +529,7 @@ fn apply_patch(
             if let Some(drawn) =
                 update_points(annotation, &points, f.ink_list.as_deref(), f.rotation)?
             {
-                p::set_ink_list(annotation, &drawn)?;
+                p::set_ink_list(annotation, &drawn.drawn)?;
             }
         }
         S::Text => {
@@ -714,40 +721,33 @@ fn apply_cloudy_patch(annotation: &Annotation<'_>, f: &DraftFields) -> Result<()
     }
 }
 
-/// `writeMeasurementFields`, as far as 8.25 leaves it: the intent, and a
-/// caption hidden, inline and unplaced, or removed. The patch reached here
-/// with its caption complete ([`super::patch`]'s `measurementFollows`).
-fn write_measurement_fields(
+/// `patchWithDrawnCaption`: an update's caption centre, given upright,
+/// turned with the vertices. When the vertices or their turn change and the
+/// caption isn't sent, a manual centre is written again under the new turn,
+/// so it stays where it was on the shape. Answers the fields to write and
+/// the centre as drawn.
+fn patch_with_drawn_caption(
     annotation: &Annotation<'_>,
-    subtype: AnnotationSubtype,
     f: &DraftFields,
-) -> Result<(), EngineError> {
-    write_intent_patch(annotation, f)?;
-    match (subtype, f.caption_enabled) {
-        (_, None) => {}
-        (AnnotationSubtype::Line, Some(None)) => p::remove_key(annotation, "Cap")?,
-        (AnnotationSubtype::Line, Some(Some(enabled))) => {
-            if !annotation.set_line_caption(enabled, false) {
-                return Err(unknown("EPDFAnnot_SetLineCaption returned false"));
-            }
-        }
-        (_, Some(None)) => {
-            for key in ["MeasurementCaption", "MeasurementCaptionCenter"] {
-                annotation.clear_embed_metadata_key(key).map_err(|e| {
-                    EngineError::with_message(
-                        EngineErrorCode::RuntimeUnavailable,
-                        format!("EPDFAnnot_ClearEmbedMetadataKey failed: {e}"),
-                    )
-                })?;
-            }
-        }
-        (_, Some(Some(enabled))) => {
-            if !annotation.set_shape_caption(enabled) {
-                return Err(unknown("EPDFAnnot_SetShapeCaption returned false"));
-            }
-        }
+    current: &CurrentPoints,
+    placed: Option<&PlacedPoints>,
+) -> (DraftFields, Option<PdfPoint>) {
+    use crate::features::annotation::read::turn::upright_point;
+    let turn = placed.map_or(current.turn, |placed| placed.turn);
+    if let Some(Some(center)) = f.caption_center {
+        return (f.clone(), Some(drawn_point(center, turn)));
     }
-    Ok(())
+    if placed.is_none() || f.caption_enabled.is_some() {
+        return (f.clone(), None);
+    }
+    let Some(caption) = annotation.shape_caption() else { return (f.clone(), None) };
+    let Some(center) = caption.center else { return (f.clone(), None) };
+    let center = PdfPoint { x: f64::from(center.x), y: f64::from(center.y) };
+    let mut fields = f.clone();
+    fields.caption_enabled = Some(Some(caption.enabled));
+    let upright = upright_point(center, current.turn);
+    fields.caption_center = Some(Some(upright));
+    (fields, Some(drawn_point(upright, turn)))
 }
 
 fn corners(quads: &[NamedPdfQuad]) -> Vec<PdfPoint> {

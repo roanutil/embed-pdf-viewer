@@ -1523,6 +1523,53 @@ fn page_measure_paths_go_to_the_measure_kinds() {
 }
 
 #[test]
+fn a_scale_and_its_viewports_reach_the_kernel_in_the_files_coordinates_and_its_spelling() {
+    // The host takes and answers upstream's scale (`rectilinear`, its
+    // origin in page space) and page-space viewports; `call_host` respells
+    // the kernel's scale on the way in and the viewports on the way back,
+    // so the kernel reads what it read before.
+    use epdf_viewer_host::translate::call_host;
+
+    let mut host = epdf_engine::host::Host::new();
+    let open = json!({ "kind": "open.fatMem", "jobId": 1, "docId": "d1" });
+    let fixture = test_support::fixture(test_support::MEASURE_FOREIGN_VIEWPORT);
+    let opened = call_host(&mut host, &open.to_string(), vec![fixture]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let pages: Value = serde_json::from_str(
+        &host
+            .call(&json!({ "kind": "pages.list", "jobId": 2, "docId": "d1" }).to_string(), vec![])
+            .json,
+    )
+    .unwrap();
+    let pon = pages["result"]["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+
+    let measure = json!({ "subtype": "RL", "ratio": "1 in = 1 m",
+        "x": [{ "unit": "m", "conversion": 1 }], "distance": [{ "unit": "m", "conversion": 1 }],
+        "area": [], "origin": { "x": 10, "y": 20 } });
+    let write = translate("d1", "page.measure.setScale", Some(pon), &[measure], 3).unwrap();
+    let written = call_host(&mut host, &write.request.to_string(), Vec::new());
+    assert!(!written.json.contains("\"error\""), "{}", written.json);
+
+    let read = translate("d1", "page.measure.viewports", Some(pon), &[], 4).unwrap();
+    let wire: Value =
+        serde_json::from_str(&host.call(&read.request.to_string(), Vec::new()).json).unwrap();
+    let ours = &wire["result"]["viewports"][1];
+    assert_eq!(ours["measure"]["subtype"], "rectilinear", "{wire}");
+    assert_eq!(ours["measure"]["origin"], json!({ "x": 10.0, "y": 772.0 }), "page space: {wire}");
+    assert_eq!(ours["bbox"], json!({ "x": 0.0, "y": 0.0, "width": 612.0, "height": 792.0 }));
+
+    let viewports =
+        decode(&read.decode, call_host(&mut host, &read.request.to_string(), Vec::new()))
+            .unwrap()
+            .value;
+    let ours = &viewports[1];
+    assert_eq!(ours["measure"]["subtype"], "RL", "{viewports}");
+    assert_eq!(ours["measure"]["origin"], json!({ "x": 10.0, "y": 20.0 }), "{viewports}");
+    assert_eq!(ours["bbox"], json!({ "left": 0.0, "bottom": 0.0, "right": 612.0, "top": 792.0 }));
+    assert_eq!(viewports[0]["measure"]["subtype"], "RL", "the foreign scale is RL too");
+}
+
+#[test]
 fn clearing_a_scale_sends_an_explicit_null() {
     let write = translate("doc-1", "page.measure.setScale", Some(7), &[Value::Null], 4).unwrap();
     assert!(write.request.as_object().unwrap().contains_key("measure"));
@@ -2197,6 +2244,55 @@ fn the_kernels_create_keeps_its_shape_while_the_wire_takes_upstreams() {
     assert_eq!(event["type"], "annotation.created");
     assert_eq!(event["created"], *created);
     assert!(event.get("annotation").is_none(), "{event}");
+}
+
+/// A kernel distance: its `/IT` the PDF name, its scale `RL`, its caption
+/// one object. The host takes upstream's fields (Task 8.25), and writes the
+/// scale, the caption, the leader and the label they work out.
+#[test]
+fn the_kernels_distance_reaches_the_wire_as_upstreams_measurement_fields() {
+    let mut host = opened_host();
+    let pages =
+        call_host_json(&mut host, json!({ "kind": "pages.list", "jobId": 2, "docId": "d" }));
+    let pon = pages["result"]["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
+    let draft = json!({ "subtype": "line", "nm": "kernel-distance",
+        "rect": { "left": 100.0, "bottom": 100.0, "right": 200.0, "top": 110.0 },
+        "linePoints": { "start": { "x": 100.0, "y": 105.0 }, "end": { "x": 200.0, "y": 105.0 } },
+        "color": { "r": 255, "g": 0, "b": 0 }, "opacity": 1, "strokeWidth": 1,
+        "intent": "LineDimension", "subject": "Distance", "contents": "kernel label",
+        "measure": { "subtype": "RL", "ratio": "1 in = 1 m",
+            "x": [{ "unit": "m", "conversion": 0.03, "precision": 100 }],
+            "distance": [{ "unit": "m", "conversion": 1, "precision": 100 }], "area": [] },
+        "caption": { "enabled": true, "position": "top" },
+        "leader": { "length": 10 },
+        "flags": { "print": true } });
+    let call = translate("d", "page.annotations.create", Some(pon), &[draft], 3).unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads);
+    let created = decode(&call.decode, response).unwrap().value["created"].clone();
+    assert_eq!(created["nm"], "kernel-distance", "{created}");
+
+    let listed: Value = serde_json::from_str(
+        &host
+            .call(
+                &json!({ "kind": "annotations.list", "jobId": 4, "docId": "d" }).to_string(),
+                vec![],
+            )
+            .json,
+    )
+    .unwrap();
+    let wire = listed["result"]["annotations"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|a| a["nm"] == "kernel-distance")
+        .expect("the distance lists")
+        .clone();
+    assert_eq!(wire["intent"], "line-dimension", "{wire}");
+    assert_eq!(wire["measure"]["subtype"], "rectilinear", "{wire}");
+    assert_eq!((&wire["captionEnabled"], &wire["captionPosition"]), (&json!(true), &json!("top")));
+    assert_eq!(wire["leader"]["length"], json!(10.0), "{wire}");
+    assert_eq!(wire["contents"], "3.00 m", "the engine's label: {wire}");
 }
 
 /// The kernel's update in its old spelling and the file's coordinates, sent

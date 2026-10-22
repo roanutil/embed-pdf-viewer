@@ -560,36 +560,47 @@ fn a_box_kinds_rect_differences_follow_its_drawing() {
     );
 }
 
+/// A scale, a shown or placed caption and a leader are written by an
+/// update, the caption merged with the one the line has
+/// (`measurementFollows`, `writeMeasurementFields`).
 #[test]
-fn a_measured_update_is_refused_until_8_25_and_writes_nothing() {
-    // re-port (Task 8): 8.25 writes a scale, a shown or placed caption and
-    // a leader. Until then each is `NotImplemented` naming the field, before
-    // the first write; a hidden caption is written.
+fn a_measured_update_writes_each_measurement_field() {
     let file = load();
     let line = case(&file, "line-endpoints");
     let mut replay = open(&file);
     let created = create(&mut replay, &line.draft, line.page_object_number, &BTreeMap::new());
-    for (patch, field) in [
-        (json!({ "captionEnabled": true }), "captionEnabled"),
-        (json!({ "captionPosition": "top" }), "captionPosition"),
-        (json!({ "captionOffset": { "along": 1, "perpendicular": 2 } }), "captionOffset"),
-        (json!({ "leader": { "length": 10 } }), "leader"),
-        (json!({ "measure": { "subtype": "rectilinear", "ratio": "1 in = 1 in" } }), "measure"),
-    ] {
-        let refused = update(&mut replay, &created["ref"], &patch, &BTreeMap::new())
+    let updated = |replay: &mut Replay, patch: Value| {
+        update(replay, &created["ref"], &patch, &BTreeMap::new())
             .outcome
-            .expect_err(field);
-        assert_eq!(refused["code"], "NotImplemented", "{field}: {refused}");
-        assert_eq!(refused["details"]["field"], field, "{refused}");
-        assert!(refused["message"].as_str().unwrap().contains("8.25"), "{refused}");
-    }
-    assert_eq!(listed(&mut replay).last(), Some(&created), "a refusal wrote");
-    let hidden =
-        update(&mut replay, &created["ref"], &json!({ "captionEnabled": false }), &BTreeMap::new())
-            .outcome
-            .expect("a hidden caption");
-    assert_eq!(hidden["annotation"]["captionEnabled"], false);
-    assert_eq!(hidden["annotation"]["captionPosition"], "inline");
+            .unwrap_or_else(|e| panic!("{patch}: {e}"))["annotation"]
+            .take()
+    };
+    let shown = updated(&mut replay, json!({ "captionEnabled": true }));
+    assert_eq!(
+        (&shown["captionEnabled"], &shown["captionPosition"]),
+        (&json!(true), &json!("inline"))
+    );
+    let top = updated(&mut replay, json!({ "captionPosition": "top" }));
+    assert_eq!((&top["captionEnabled"], &top["captionPosition"]), (&json!(true), &json!("top")));
+    let offset =
+        updated(&mut replay, json!({ "captionOffset": { "along": 1, "perpendicular": 2 } }));
+    assert_eq!(
+        test_support::canonical_numbers(&offset["captionOffset"]),
+        test_support::canonical_numbers(&json!({ "along": 1, "perpendicular": 2 }))
+    );
+    assert_eq!(offset["captionPosition"], "top", "the position is kept: {offset}");
+    let leader = updated(&mut replay, json!({ "leader": { "length": 10 } }));
+    assert_eq!(leader["leader"]["length"], json!(10.0), "{leader}");
+    let scaled = updated(
+        &mut replay,
+        json!({ "measure": { "subtype": "rectilinear", "ratio": "1 in = 1 in",
+            "x": [{ "unit": "in", "conversion": 0.013888889 }],
+            "distance": [{ "unit": "in", "conversion": 1 }], "area": [] } }),
+    );
+    assert_eq!(scaled["measure"]["ratio"], "1 in = 1 in", "{scaled}");
+    let cleared = updated(&mut replay, json!({ "measure": null, "leader": null }));
+    assert_eq!(cleared["measure"], Value::Null, "{cleared}");
+    assert_eq!(listed(&mut replay).last(), Some(&cleared), "the read is the listing's");
 }
 
 // ── `runColorConformance`'s update cases (color.test.ts) ───────────────────

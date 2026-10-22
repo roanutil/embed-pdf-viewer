@@ -399,15 +399,23 @@ pub fn write_annotation_box(
     Ok(())
 }
 
+/// Points placed (`PlacedPoints`): as drawn, in the lists they came in, and
+/// the turn that drew them from upright (`None` upright).
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlacedPoints {
+    pub drawn: Vec<Vec<PdfPoint>>,
+    pub turn: Option<PdfPointTurn>,
+}
+
 /// A create's points placed (`writeNewPoints`): upright points turned by
 /// `rotation` about the middle of their box, the turn recorded in our keys,
 /// and `/Rect` the box around the drawn points until the appearance measures
-/// itself. Answers the drawn points, in the lists they came in.
+/// itself.
 pub fn write_new_points(
     annotation: &Annotation<'_>,
     upright: &[Vec<PdfPoint>],
     rotation: Option<f64>,
-) -> Result<Vec<Vec<PdfPoint>>, EngineError> {
+) -> Result<PlacedPoints, EngineError> {
     let all: Vec<PdfPoint> = upright.iter().flatten().copied().collect();
     let turn: Option<PdfPointTurn> = turn_of(rotation)
         .filter(|_| !all.is_empty())
@@ -432,7 +440,7 @@ pub fn write_new_points(
         .collect();
     let flat: Vec<PdfPoint> = drawn.iter().flatten().copied().collect();
     set_rect(annotation, crate::geom::pdf_points_bounds(&flat))?;
-    Ok(drawn)
+    Ok(PlacedPoints { drawn, turn })
 }
 
 // ── an update's geometry ────────────────────────────────────────────────────
@@ -630,13 +638,14 @@ pub fn read_current_points(annotation: &Annotation<'_>) -> CurrentPoints {
 /// `updatePoints`: an update's points and turn, each kept when left out
 /// (`rotation: null` straightens the points where they are); `None` when
 /// neither changes. When the drawn points only shift, `/Rect` shifts with
-/// them. Answers the points as drawn, in the lists they came in.
+/// them. Answers the points as drawn, in the lists they came in, and the
+/// new turn.
 pub fn update_points(
     annotation: &Annotation<'_>,
     current: &CurrentPoints,
     upright: Option<&[Vec<PdfPoint>]>,
     rotation: Option<Option<f64>>,
-) -> Result<Option<Vec<Vec<PdfPoint>>>, EngineError> {
+) -> Result<Option<PlacedPoints>, EngineError> {
     if upright.is_none() && rotation.is_none() {
         return Ok(None);
     }
@@ -680,7 +689,7 @@ pub fn update_points(
     if let Some(shift) = shift_between(&before, &after) {
         shift_annot_rect(annotation, shift)?;
     }
-    Ok(Some(drawn))
+    Ok(Some(PlacedPoints { drawn, turn }))
 }
 
 /// `settleAnnotationTurn`: before the engine redraws or re-places a box

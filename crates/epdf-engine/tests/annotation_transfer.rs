@@ -500,9 +500,7 @@ fn an_export_refuses_a_page_or_an_annotation_the_document_does_not_have() {
 
 // ── Import (`runAnnotationImportConformance`) ──────────────────────────────
 
-/// `creatables()`: one create for every kind the engine can create. The
-/// polygon with a shown caption is left out: writing a caption is 8.25's
-/// (`a_measured_create_is_refused_until_8_25_and_writes_nothing`).
+/// `creatables()`: one create for every kind the engine can create.
 /// A create's draft and its resources by role.
 type Creatable = (Value, Vec<(&'static str, Vec<u8>)>);
 
@@ -521,6 +519,8 @@ fn creatables() -> Vec<Creatable> {
         json!({ "subtype": "square", "box": page_box(60.0, 50.0, 60.0, 40.0), "cloudyIntensity": 1 }),
         json!({ "subtype": "circle", "box": rect }),
         json!({ "subtype": "polygon", "rect": rect, "vertices": vertices }),
+        json!({ "subtype": "polygon", "rect": rect, "vertices": vertices, "captionEnabled": true,
+            "captionCenter": { "x": 90, "y": 80 } }),
         json!({ "subtype": "polyline", "rect": rect, "vertices": vertices }),
         json!({ "subtype": "line", "rect": rect,
             "linePoints": { "start": { "x": 50, "y": 90 }, "end": { "x": 130, "y": 50 } } }),
@@ -1080,16 +1080,15 @@ fn a_server_change_runs_an_import() {
 // exported again.
 
 /// The fixtures `annotation-transfer.test.ts` round-trips, `authoring`
-/// first. Left out until 8.25 writes measurements: `measure-acrobat-
-/// imperial.pdf` and `measure-acrobat-metric.pdf`, whose measured lines a
-/// create refuses (`measurements are written by Task 8.25`), which refuses
-/// their import whole.
+/// first.
 const ROUND_TRIPS: &[&str] = &[
     "authoring",
     "stamp-opacity-acrobat.pdf",
     "stamp-rewrapped-acrobat.pdf",
     "stamp-roundtrip-acrobat-60.pdf",
     "stamp-roundtrip-acrobat-100.pdf",
+    "measure-acrobat-imperial.pdf",
+    "measure-acrobat-metric.pdf",
     "action_payloads.pdf",
     "annots_action_handling.pdf",
     "annot_javascript.pdf",

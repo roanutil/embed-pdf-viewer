@@ -252,9 +252,16 @@ pub fn request_in_file_space(
             Ok(())
         }
 
-        // re-port (Task 8): a measure takes its places in page space
-        // upstream, and converts here once 8.25 moves it.
-        K::MeasureSetScale => Ok(()),
+        // The scale's origin on its page (`pdfMeasureOf`); `null` clears.
+        K::MeasureSetScale => {
+            if body.get("measure").is_some_and(serde_json::Value::is_object) {
+                let page: PageRef = from_value(body.get("page").cloned().unwrap_or_default())?;
+                let visible = box_of(page.object_number())?;
+                let measure = &mut body["measure"];
+                *measure = super::measure::pdf_measure_of(measure.take(), visible);
+            }
+            Ok(())
+        }
 
         // No places.
         K::Abort
@@ -452,10 +459,19 @@ pub fn result_in_page_space(
             Ok(answer)
         }),
 
-        // re-port (Task 8): these answer places in PDF space until their
-        // owners add the conversion here: viewports (8.25) and a signature's
-        // look (8.26).
-        K::MeasureViewports | K::FormsSetSignatureAppearance => Ok(response),
+        // Each viewport on the page the answer names
+        // (`pageViewportsOf(payload.viewports, boxOf(payload.page))`).
+        K::MeasureViewports => convert_result(response, |mut answer: serde_json::Value| {
+            let page: PageRef = from_value(answer.get("page").cloned().unwrap_or_default())?;
+            let visible = box_of(page.object_number())?;
+            let viewports = answer["viewports"].take();
+            answer["viewports"] = super::measure::page_viewports_of(viewports, visible)?;
+            Ok(answer)
+        }),
+
+        // re-port (Task 8): a signature's look answers places in PDF space
+        // until 8.26 adds its conversion here.
+        K::FormsSetSignatureAppearance => Ok(response),
 
         // The field or fields and the widget rows (`pageFormFieldOf`,
         // `pageWidgetOf`), in the result and in each event that carries

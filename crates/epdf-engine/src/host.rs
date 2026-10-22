@@ -943,9 +943,12 @@ impl Host {
                 .on_page(&key, body, |page| value(&f::text::reader::read_page_text(page, cancel)?)),
             "pages.geometry" => self
                 .on_page(&key, body, |page| value(&f::geometry::read_page_geometry(page, cancel)?)),
-            "measure.viewports" => {
-                self.on_page(&key, body, |page| f::measure::read_viewports(page.view(), cancel))
-            }
+            // `{page, viewports}`, the page as the request named it; the
+            // boundary puts each viewport in page space on it.
+            "measure.viewports" => self.on_page(&key, body, |page| {
+                let viewports = f::measure::read_viewports(page.view(), cancel)?;
+                Ok(serde_json::json!({ "page": body.get("page"), "viewports": viewports }))
+            }),
             // The boundary has put `options.target` in the file's
             // coordinates, and puts the answer's `area` back in page space.
             "pages.render" | "pages.renderEncoded" => {
@@ -1732,24 +1735,42 @@ impl Host {
                         "a scale write names no measure (null clears)",
                     )
                 })?;
-                let measure = Some(measure).filter(|m| !m.is_null());
-                {
-                    let owned = self.sessions.session(&key)?.document()?;
-                    let index = owned.page_index(pon)?;
-                    let page = owned.page(pon)?;
-                    f::measure::set_scale(owned.document(), index, page.view(), measure, cancel)?;
-                }
+                let measure = Some(measure.clone()).filter(|m| !m.is_null());
+                let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
+                let clock = self.clock.as_ref();
                 // `PageScaleResult`, naming the page as the request did. A
                 // calibration changes no page pixels and no annotation
-                // indices, so `meta` is empty.
+                // indices: `meta` names no page and carries the write's stamp.
+                let result = f::changes::transaction::in_transaction(
+                    self.sessions.session_mut(&key)?,
+                    &op_id,
+                    clock,
+                    |session| {
+                        {
+                            let owned = session.document()?;
+                            let index = owned.page_index(pon)?;
+                            let page = owned.page(pon)?;
+                            f::measure::set_scale(
+                                owned.document(),
+                                index,
+                                page.view(),
+                                measure.as_ref(),
+                                cancel,
+                            )?;
+                        }
+                        let meta = crate::mutation::MutationMeta::local(
+                            Vec::new(),
+                            &session.write_stamp()?,
+                        );
+                        Ok(serde_json::json!({
+                            "page": crate::identity::PageRef::new(pon),
+                            "meta": value(&meta)?,
+                        }))
+                    },
+                )?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PageViewportsChanged(
-                        serde_json::json!({
-                            "page": crate::identity::PageRef::new(pon),
-                            "meta": empty_meta(),
-                        }),
-                    ),
+                    crate::session::save::DocumentEventInit::PageViewportsChanged(result),
                 )
             }
             // `WorkerHost.handlePieceInfoUpdate`: the write in its own
@@ -2599,12 +2620,6 @@ fn ok(result: serde_json::Value) -> HostResponse {
             }),
         payloads: Vec::new(),
     }
-}
-
-/// `EMPTY_FORM_META` (`WorkerHost`) and `EMPTY_META` (`FormMutator`): a
-/// write with no page pins, on a local engine with no cache delta.
-fn empty_meta() -> serde_json::Value {
-    serde_json::json!({ "affectedPages": [], "cacheDelta": null })
 }
 
 /// Serialize an operation's result into the envelope's `result`.

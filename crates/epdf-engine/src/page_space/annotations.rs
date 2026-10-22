@@ -184,14 +184,13 @@ fn convert_field(
         },
         // A scale's origin (`/O`) is a place on the page (`pageMeasureOf`).
         S::Measure => {
-            let Value::Object(mut measure) = value else { return Ok(value) };
-            if measure.get("subtype").and_then(Value::as_str) == Some("RL")
-                && let Some(origin) = measure.remove("origin")
-            {
-                let origin = if origin.is_null() { origin } else { point(origin)? };
-                measure.insert("origin".into(), origin);
+            if !value.is_object() {
+                return Ok(value);
             }
-            Ok(Value::Object(measure))
+            Ok(match direction {
+                Direction::ToPage => super::measure::page_measure_of(value, visible),
+                Direction::ToPdf => super::measure::pdf_measure_of(value, visible),
+            })
         }
         S::LinkTarget => {
             let Value::Object(mut target) = value else { return Ok(value) };
@@ -473,7 +472,7 @@ mod tests {
         let line = with(
             base("line"),
             json!({ "linePoints": { "start": p(50.0, 732.0), "end": p(60.0, 722.0) },
-                "measure": { "subtype": "RL", "origin": p(50.0, 632.0) } }),
+                "measure": { "subtype": "rectilinear", "origin": p(50.0, 632.0) } }),
         );
         let page = page_annotation_of(line, &mut boxes()).unwrap();
         assert_eq!(page["linePoints"]["end"], p(10.0, 10.0));
@@ -490,12 +489,12 @@ mod tests {
         let polygon = with(
             base("polygon"),
             json!({ "vertices": [p(50.0, 732.0)], "captionCenter": null,
-                "measure": { "subtype": "GEO" } }),
+                "measure": { "subtype": "geospatial" } }),
         );
         let page = page_annotation_of(polygon, &mut boxes()).unwrap();
         assert_eq!(page["vertices"], json!([p(0.0, 0.0)]));
         assert_eq!(page["captionCenter"], Value::Null);
-        assert_eq!(page["measure"], json!({ "subtype": "GEO" }));
+        assert_eq!(page["measure"], json!({ "subtype": "geospatial" }));
     }
 
     #[test]

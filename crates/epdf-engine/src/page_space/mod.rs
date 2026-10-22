@@ -28,6 +28,7 @@ pub mod boundary;
 pub mod destinations;
 pub mod forms;
 pub mod helpers;
+pub mod measure;
 pub mod outline;
 pub mod pages;
 pub mod rendering;

@@ -21,6 +21,7 @@ pub mod context;
 pub mod create;
 pub mod delete;
 pub mod draft;
+pub mod measurement;
 pub mod mutator;
 pub mod patch;
 pub mod prepare;

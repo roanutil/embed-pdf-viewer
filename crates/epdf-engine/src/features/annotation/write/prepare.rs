@@ -396,6 +396,25 @@ impl StampFit {
 /// `Some(None)` null.
 pub type Nullable<T> = Option<Option<T>>;
 
+/// A line's leader lines (`LineLeaderSchema`): `/LL`, `/LLE`, `/LLO`.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LineLeader {
+    pub length: f64,
+    #[serde(default)]
+    pub extension: Option<f64>,
+    #[serde(default)]
+    pub offset: Option<f64>,
+}
+
+/// A line caption's displacement in the line's own axes (`/CO`), in PDF
+/// units: not a page point.
+#[derive(Debug, Clone, Copy, PartialEq, serde::Deserialize)]
+pub struct CaptionOffset {
+    pub along: f64,
+    pub perpendicular: f64,
+}
+
 /// Every data field a create may carry, across the kinds, each read into
 /// its type. Which ones a kind may carry is [`kind_fields`]; a field another
 /// kind declares never gets here.
@@ -457,10 +476,21 @@ pub struct DraftFields {
     pub file: Nullable<AttachmentFileWrite>,
     // A popup.
     pub open_popup: Option<bool>,
-    // A measurement's caption, as far as it is written before 8.25.
-    /// Whether the draft names any caption field (`touchesCaption`).
-    pub caption_touched: bool,
+    // A measurement.
+    /// `/Measure`: a rectilinear scale (`PdfMeasureWriteSchema`), or the
+    /// marker a read returned for a foreign one.
+    pub measure: Nullable<Value>,
+    /// A line's `/LL`, `/LLE` and `/LLO`.
+    pub leader: Nullable<LineLeader>,
+    /// `/Cap` on a line, our caption flag on a polygon or polyline.
     pub caption_enabled: Nullable<bool>,
+    /// A line's `/CP`: `inline` or `top`.
+    pub caption_position: Option<String>,
+    /// A line's `/CO`, along the line and its normal.
+    pub caption_offset: Nullable<CaptionOffset>,
+    /// A polygon's or polyline's caption centre; `null` places it
+    /// automatically.
+    pub caption_center: Nullable<PdfPoint>,
     // A widget.
     /// Its style fields, nullable where the widget kind's are.
     pub widget: super::widget::WidgetStyle,
@@ -841,31 +871,41 @@ pub(crate) fn read_field(
         }
         // A measurement's scale, caption and leader (`measureField`,
         // `shapeCaptionFields`, the line's caption and leader).
-        // re-port (Task 8): 8.25 writes the scale, a shown or placed
-        // caption and a leader, with the label they derive. Until then only
-        // the values a read of an unmeasured shape gives can be written: no
-        // scale, no leader, no offset or centre, a hidden caption, inline.
-        "measure" | "leader" | "captionOffset" | "captionCenter" => {
-            if !value.is_null() {
-                return Err(measurement_not_ported(kind, name));
+        "measure" => fields.measure = Some(read_measure(kind, name, value)?),
+        "leader" => {
+            let leader: Option<LineLeader> = read_nullable(kind, name, value)?;
+            if let Some(leader) = leader {
+                let float = |n: f64| finite(kind, name, n).and_then(|n| pdf_float(kind, name, n));
+                float(leader.length)?;
+                for n in [leader.extension, leader.offset].into_iter().flatten() {
+                    if float(n)? < 0.0 {
+                        return Err(invalid(kind, name, "must be nonnegative"));
+                    }
+                }
             }
-            if name != "measure" && name != "leader" {
-                fields.caption_touched = true;
-            }
+            fields.leader = Some(leader);
         }
-        "captionEnabled" => {
-            let enabled: Option<bool> = read_nullable(kind, name, value)?;
-            if enabled == Some(true) {
-                return Err(measurement_not_ported(kind, name));
-            }
-            fields.caption_touched = true;
-            fields.caption_enabled = Some(enabled);
-        }
+        "captionEnabled" => fields.caption_enabled = Some(read_nullable(kind, name, value)?),
         "captionPosition" => {
-            if one_of(kind, name, value, &["inline", "top"])? != "inline" {
-                return Err(measurement_not_ported(kind, name));
+            fields.caption_position = Some(one_of(kind, name, value, &["inline", "top"])?);
+        }
+        "captionOffset" => {
+            let offset: Option<CaptionOffset> = read_nullable(kind, name, value)?;
+            if let Some(offset) = offset {
+                for n in [offset.along, offset.perpendicular] {
+                    pdf_float(kind, name, n)?;
+                }
             }
-            fields.caption_touched = true;
+            fields.caption_offset = Some(offset);
+        }
+        "captionCenter" => {
+            let center: Option<PdfPoint> = read_nullable(kind, name, value)?;
+            if let Some(center) = center {
+                for n in [center.x, center.y] {
+                    pdf_float(kind, name, n)?;
+                }
+            }
+            fields.caption_center = Some(center);
         }
         // A widget is the form's: refused before its fields are read.
         _ => return Err(invalid(kind, name, "not a field this engine writes")),
@@ -873,13 +913,88 @@ pub(crate) fn read_field(
     Ok(())
 }
 
-/// A measurement field whose value needs 8.25's writing.
-fn measurement_not_ported(kind: &str, name: &str) -> EngineError {
-    EngineError::with_message(
-        EngineErrorCode::NotImplemented,
-        format!("{kind} field '{name}': measurements are written by Task 8.25"),
-    )
-    .with_details(serde_json::json!({ "field": name }))
+/// A number a PDF float holds (`assertPdfFloat`).
+fn pdf_float(kind: &str, name: &str, n: f64) -> Result<f64, EngineError> {
+    if crate::features::measure::derive::fround(n).is_finite() {
+        Ok(n)
+    } else {
+        Err(invalid(kind, name, "Value is outside PDF float range"))
+    }
+}
+
+/// `measureField`'s write schema: a rectilinear scale the engine can write
+/// (`PdfMeasureWriteSchema`, `assertWritableMeasure`), or the marker a read
+/// returned for a scale it can't model (`PdfForeignMeasureSchema`), which
+/// `measurementFollows` keeps or refuses.
+fn read_measure(kind: &str, name: &str, value: &Value) -> Result<Option<Value>, EngineError> {
+    if value.is_null() {
+        return Ok(None);
+    }
+    if matches!(value.get("subtype").and_then(Value::as_str), Some("geospatial" | "unknown")) {
+        return Ok(Some(serde_json::json!({ "subtype": value["subtype"] })));
+    }
+    crate::features::measure::assert_writable_measure(value)
+        .map_err(|message| invalid(kind, name, message))?;
+    Ok(Some(value.clone()))
+}
+
+/// `resolveMeasurementDraft`: a dimension draft ready for the writer. A
+/// foreign scale is refused; a draft that names any caption field states
+/// the caption whole, since the native setters write the whole caption at
+/// once; and the label is worked out from the points and the scale
+/// (`deriveMeasurementLabel`).
+fn resolve_measurement_draft(
+    subtype: AnnotationSubtype,
+    fields: &mut DraftFields,
+) -> Result<(), EngineError> {
+    use AnnotationSubtype as S;
+    if !matches!(subtype, S::Line | S::Polygon | S::Polyline) {
+        return Ok(());
+    }
+    if let Some(Some(measure)) = &fields.measure
+        && let Some(foreign) = measure.get("subtype").and_then(Value::as_str)
+        && foreign != "rectilinear"
+    {
+        let what = if foreign == "geospatial" { "geospatial" } else { "foreign" };
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("A {what} measure can't be written; leave measure out"),
+        ));
+    }
+    let touches = fields.caption_enabled.is_some()
+        || fields.caption_position.is_some()
+        || fields.caption_offset.is_some()
+        || fields.caption_center.is_some();
+    if touches {
+        if subtype == S::Line {
+            // `null` is a line without a caption flag, as a read says.
+            fields.caption_enabled = Some(fields.caption_enabled.unwrap_or(Some(false)));
+            fields.caption_position =
+                Some(fields.caption_position.take().unwrap_or_else(|| "inline".into()));
+            fields.caption_offset = Some(fields.caption_offset.flatten());
+        } else {
+            let center = fields.caption_center.flatten();
+            fields.caption_enabled =
+                Some(fields.caption_enabled.flatten().or(center.is_some().then_some(false)));
+            fields.caption_center = Some(center);
+        }
+    }
+    let line_points = fields.line_points.map(|line| (line.start, line.end));
+    let readout = crate::features::measure::derive::measurement_readout(
+        &crate::features::measure::derive::DimensionInput {
+            subtype: subtype.as_str(),
+            intent: fields.intent.as_ref().and_then(Option::as_deref),
+            measure: fields.measure.as_ref().and_then(Option::as_ref),
+            line_points,
+            vertices: fields.vertices.clone(),
+        },
+    );
+    if let Ok(readout) = readout
+        && fields.contents.as_ref().and_then(Option::as_deref) != Some(readout.label.as_str())
+    {
+        fields.contents = Some(Some(readout.label));
+    }
+    Ok(())
 }
 
 fn read_target(
@@ -1171,6 +1286,8 @@ pub fn derive_draft(
             fields.contents = Some(Some(plain_text(&rich.paragraphs)));
             fields.rich_text = Some(rich);
         }
+        // `resolveMeasurementDraft`.
+        S::Line | S::Polygon | S::Polyline => resolve_measurement_draft(draft.subtype, fields)?,
         // `redactDraftFollows`.
         S::Redact => {
             if fields.rect.is_none()
