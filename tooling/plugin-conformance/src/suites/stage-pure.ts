@@ -70,7 +70,7 @@ type StageAction = { type: string; [field: string]: unknown };
  * renamed the state's `vp` to `viewport`.
  */
 function stageReducer(state: StageState, action: StageAction): StageState {
-  const a = action as Record<string, never>;
+  const a = action as unknown as Record<string, never>;
   switch (action.type) {
     case 'CAMERA':
       return model.setCamera(state, a.camera);

@@ -393,7 +393,7 @@ type RenderAction = { type: string; [field: string]: unknown };
  * paint versions `paintAdvanced` bumped.
  */
 function reduceRender(state: RenderState, action: RenderAction): RenderState {
-  const a = action as Record<string, never>;
+  const a = action as unknown as Record<string, never>;
   switch (action.type) {
     case 'invalidate':
       return invalidatePages(state, a.pages, a.scope);

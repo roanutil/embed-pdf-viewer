@@ -16,7 +16,7 @@ type StampAction = { type: string; [field: string]: unknown };
 
 /** 4fc1a32af replaced `stampReducer` with one transition per action. */
 function stampReducer(state: StampState, action: StampAction): StampState {
-  const a = action as Record<string, never>;
+  const a = action as unknown as Record<string, never>;
   switch (action.type) {
     case 'LIBRARY_ADDED':
       return model.addLibrary(state, a.library);

@@ -21,7 +21,7 @@ type SearchAction = { type: string; [field: string]: unknown };
  * names `pagesSearched` and `pageCount`.
  */
 function reduceSearch(state: SearchState, action: SearchAction): SearchState {
-  const a = action as Record<string, never>;
+  const a = action as unknown as Record<string, never>;
   switch (action.type) {
     case 'START':
       return model.startSession(state, a.query, a.operationId);

@@ -58,7 +58,7 @@ type ViewManagerAction = { type: string; [field: string]: unknown };
  * pane, where the actions carried a whole pane and a whole order.
  */
 function viewManagerReducer(state: ViewManagerState, action: ViewManagerAction): ViewManagerState {
-  const a = action as Record<string, never>;
+  const a = action as unknown as Record<string, never>;
   switch (action.type) {
     case 'CREATE_PANE':
       return removedUpstream("viewManagerReducer 'CREATE_PANE' (a given pane)", '4fc1a32af')();
