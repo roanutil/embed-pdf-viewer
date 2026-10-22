@@ -36,9 +36,10 @@ use crate::access::OwnedDocument;
 use crate::auth::scope::{DocCapability, decode_pdf_bits};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::changes::ledger::ChangeLedger;
-use crate::features::changes::record::ReverseStep;
 use crate::features::signature::types::SignedDocumentPolicy;
-use crate::identity::{OBJECT_NUMBER_ISSUE_LIMIT, ObjectNumberRange, PageObjectNumber};
+use crate::identity::{
+    OBJECT_NUMBER_CEILING, OBJECT_NUMBER_ISSUE_LIMIT, ObjectNumberRange, PageObjectNumber,
+};
 use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
 
 /// How the underlying document was opened.
@@ -156,7 +157,28 @@ pub struct DocumentSession {
     /// (`persistLayerArtifact`). False for a session opened from bytes,
     /// whose caller holds the document and never asked for artifacts.
     persist_layer_artifact: bool,
+    /// Why the session can't be used any more, after a transaction neither
+    /// committed nor aborted (`unusableReason`).
+    unusable_reason: Option<&'static str>,
+    /// A native failure a test forces at the next commit (see
+    /// [`DocumentSession::force_commit_failure`]).
+    forced_failure: Cell<Option<CommitFailure>>,
 }
+
+/// Where [`DocumentSession::force_commit_failure`] makes the next commit
+/// fail, as upstream's tests make a native call throw.
+#[doc(hidden)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CommitFailure {
+    /// `EPDFLayer_IsInTransaction`, the check a commit makes before it
+    /// keeps anything: the write is refused and the transaction aborts.
+    InTransactionCheck,
+    /// `EPDFLayer_CommitTransaction` itself: the session becomes unusable.
+    Commit,
+}
+
+/// `COMMIT_FAILED`.
+const COMMIT_FAILED: &str = "a layer transaction failed to commit";
 
 /// What every meta of a write carries: its id, and whether it can be undone
 /// (`WriteStamp`).
@@ -166,18 +188,12 @@ pub struct WriteStamp {
     pub undoable: bool,
 }
 
-/// The write transaction a session is running (`OpenTransaction`).
-///
-/// Upstream runs every write inside an `EPDFLayer` transaction that its
-/// abort drops whole. This engine opens no layer transaction around its
-/// writes yet, so a transaction here keeps a journal of the reverse steps of
-/// what it wrote instead, and an abort runs them backwards
-/// ([`crate::features::changes::transaction`]). Task 8.30 extends it to
-/// every write kind, with the layer ceiling check at commit.
+/// The write transaction a session is running (`OpenTransaction`): an
+/// `EPDFLayer` transaction, whose overlay only a commit keeps and an abort
+/// drops whole.
 #[derive(Debug)]
 struct OpenTransaction {
     stamp: WriteStamp,
-    journal: Vec<ReverseStep>,
     /// Held numbers the transaction made objects at (`objectNumbersInUse`):
     /// spent when it commits, free again when it aborts.
     numbers_in_use: Vec<u32>,
@@ -247,6 +263,8 @@ impl DocumentSession {
             transaction: None,
             ledger: ChangeLedger::new(),
             persist_layer_artifact: true,
+            unusable_reason: None,
+            forced_failure: Cell::new(None),
         }
     }
 
@@ -814,6 +832,7 @@ impl DocumentSession {
         }
         self.parked_bytes = None;
         self.transaction = None;
+        self.unusable_reason = None;
         self.ledger.clear();
         // Back to granting nothing, so a closed session cannot be read through
         // even if a caller holds a reference to it.
@@ -849,21 +868,26 @@ impl DocumentSession {
         self.transaction.is_some()
     }
 
-    /// Open a write transaction for the write `op_id` names. Until
-    /// [`DocumentSession::commit_transaction`] or
-    /// [`DocumentSession::abort_transaction`], what it writes can be taken
-    /// back. One at a time.
+    /// Open a layer transaction for the write `op_id` names
+    /// (`beginTransaction`): until [`DocumentSession::commit_transaction`]
+    /// or [`DocumentSession::abort_transaction`], every write lands in an
+    /// overlay only a commit keeps, and every read sees it. One at a time.
     pub fn begin_transaction(&mut self, op_id: impl Into<String>) -> Result<(), EngineError> {
+        let document = self.document()?.document();
         if self.transaction.is_some() {
             return Err(EngineError::with_message(
                 EngineErrorCode::Unknown,
                 "a transaction is already open",
             ));
         }
-        self.document()?;
+        if !document.layer_begin_transaction() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "EPDFLayer_BeginTransaction refused",
+            ));
+        }
         self.transaction = Some(OpenTransaction {
             stamp: WriteStamp { op_id: op_id.into(), undoable: false },
-            journal: Vec::new(),
             numbers_in_use: Vec::new(),
         });
         Ok(())
@@ -882,23 +906,69 @@ impl DocumentSession {
         Ok(())
     }
 
-    /// Note the steps that reverse what the running write just wrote, in the
-    /// order they run. An abort runs every step noted, last first.
-    pub fn journal(&mut self, steps: &[ReverseStep]) -> Result<(), EngineError> {
-        self.require_transaction_mut()?.journal.extend_from_slice(steps);
-        Ok(())
-    }
-
-    /// Keep everything the open transaction wrote.
+    /// Keep everything the open transaction wrote (`commitTransaction`).
+    ///
+    /// Refused, with the transaction still open for the caller to abort,
+    /// when the layer no longer agrees one is open, or when the document
+    /// would pass `OBJECT_NUMBER_CEILING` (`LayerFull`, naming the layer's
+    /// last object number). A commit that fails can't say how far it got,
+    /// so the session becomes unusable.
     pub fn commit_transaction(&mut self) -> Result<(), EngineError> {
         self.require_transaction()?;
+        let forced = self.forced_failure.take();
+        let document = self.document()?.document();
+        if forced == Some(CommitFailure::InTransactionCheck) || !document.layer_in_transaction() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "the layer transaction is no longer open",
+            ));
+        }
+        let last_object_number = document.layer_last_object_number();
+        if last_object_number > OBJECT_NUMBER_CEILING {
+            return Err(EngineError::with_message(
+                EngineErrorCode::LayerFull,
+                format!("the document would pass object number {OBJECT_NUMBER_CEILING}"),
+            )
+            .with_details(serde_json::json!({ "lastObjectNumber": last_object_number })));
+        }
+        let committed =
+            forced != Some(CommitFailure::Commit) && document.layer_commit_transaction();
         let spent = self.transaction.take().map(|open| open.numbers_in_use).unwrap_or_default();
+        if !committed {
+            self.unusable_reason = Some(COMMIT_FAILED);
+            return Err(EngineError::with_message(EngineErrorCode::DocNotOpen, COMMIT_FAILED));
+        }
         for number in spent {
             self.release_held(number);
         }
         Ok(())
     }
 
+    /// Make the next commit fail where `at` says, as upstream's tests make
+    /// a native call throw. For tests: nothing else calls it.
+    #[doc(hidden)]
+    pub fn force_commit_failure(&self, at: CommitFailure) {
+        self.forced_failure.set(Some(at));
+    }
+
+    /// The failure [`DocumentSession::force_commit_failure`] armed that no
+    /// commit has met yet. For tests.
+    #[doc(hidden)]
+    pub fn pending_commit_failure(&self) -> Option<CommitFailure> {
+        self.forced_failure.get()
+    }
+
+    /// Refuse a session a transaction left in an unknown state
+    /// (`assertUsable`): it neither committed nor aborted.
+    pub fn assert_usable(&self) -> Result<(), EngineError> {
+        match self.unusable_reason {
+            None => Ok(()),
+            Some(reason) => Err(EngineError::with_message(
+                EngineErrorCode::DocNotOpen,
+                format!("{reason}; open the document again"),
+            )),
+        }
+    }
     /// `claimObjectNumber`: a create in the open transaction takes
     /// `number`, one the session holds when it hands numbers out itself, and
     /// that no earlier create of the transaction took. Whether another
@@ -944,18 +1014,25 @@ impl DocumentSession {
         self.held_object_numbers = kept;
     }
 
-    /// The steps that take back what the open transaction wrote, in the
-    /// order they were noted, leaving the transaction open with an empty
-    /// journal so the steps can run inside it. The caller runs them last
-    /// first, then aborts ([`crate::features::changes::transaction`]).
-    pub fn take_journal(&mut self) -> Vec<ReverseStep> {
-        self.transaction.as_mut().map(|open| std::mem::take(&mut open.journal)).unwrap_or_default()
-    }
-
-    /// Close the open transaction without keeping it. What it wrote must
-    /// already have been taken back ([`DocumentSession::take_journal`]).
+    /// Drop everything the open transaction wrote, and forget what this
+    /// session learned from it (`abortTransaction`): the numbers it made
+    /// objects at are free again and still held, and the drawings and the
+    /// page registry read the document again. Never fails: it runs while a
+    /// refusal is on its way out, and a failed abort makes the session
+    /// unusable instead.
     pub fn abort_transaction(&mut self) {
-        self.transaction = None;
+        if self.transaction.take().is_none() {
+            return;
+        }
+        let Some(state) = self.open.as_mut() else { return };
+        let aborted = state.document.document().layer_abort_transaction();
+        state.drawings.get_mut().forget();
+        state.records.clear();
+        state.fully_enumerated = false;
+        let reindexed = state.document.reindex().is_ok();
+        if !aborted || !reindexed {
+            self.unusable_reason = Some("a layer transaction failed to abort");
+        }
     }
 
     /// This session's change ledger.

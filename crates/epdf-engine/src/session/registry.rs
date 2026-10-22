@@ -297,11 +297,12 @@ impl SessionRegistry {
         Ok(())
     }
 
-    /// The session for `key`.
+    /// The session for `key` (`requireSession`).
     ///
     /// A locked session reports `DocPasswordRequired` rather than being served
     /// as if it were open, so an operation that reaches one gets a truthful
-    /// error naming what it needs.
+    /// error naming what it needs. One a transaction left in an unknown
+    /// state is `DocNotOpen` (`assertUsable`).
     pub fn session(&self, key: &SessionKey) -> Result<&DocumentSession, EngineError> {
         let session = self.sessions.get(key).ok_or_else(|| not_open(key))?;
         if session.is_locked() {
@@ -310,6 +311,7 @@ impl SessionRegistry {
                 format!("{} is locked and requires a password", describe(key)),
             ));
         }
+        session.assert_usable()?;
         Ok(session)
     }
 
@@ -323,6 +325,12 @@ impl SessionRegistry {
     /// for (`objectNumbers`, `signedDocumentPolicy`), which a locked session
     /// keeps for its unlock as upstream's does.
     pub fn configure(&mut self, key: &SessionKey) -> Option<&mut DocumentSession> {
+        self.sessions.get_mut(key)
+    }
+
+    /// The session under `key` whatever state it is in, for the host to
+    /// finish the transaction it opened on it.
+    pub fn entry_mut(&mut self, key: &SessionKey) -> Option<&mut DocumentSession> {
         self.sessions.get_mut(key)
     }
 

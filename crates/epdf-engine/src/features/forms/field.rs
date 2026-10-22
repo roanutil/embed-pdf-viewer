@@ -23,9 +23,7 @@
 //!
 //! Everything a caller can get wrong is checked before the first write; a
 //! failure after it aborts the layer transaction the write runs in, so a
-//! refused draft creates nothing. Upstream runs every write in one layer
-//! transaction (Task 8.30 ports that); until then each write here opens its
-//! own when none is open.
+//! refused draft creates nothing.
 //!
 //! # The family-defining bits are not patchable
 //!
@@ -58,7 +56,6 @@ use crate::features::annotation::write::context::AnnotationWriteContext;
 use crate::features::annotation::write::widget::{
     WIDGET_STYLE_NAMES, WidgetStyle, apply_widget_style, read_style_field,
 };
-use crate::features::changes::transaction::in_layer_transaction;
 use crate::geom::{PdfRect, PdfRotation, normalize_pdf_rect};
 use crate::identity::{AnnotationRef, PageObjectNumber};
 use crate::page_space::{Coordinates, PdfCoordinates};
@@ -922,42 +919,36 @@ pub fn create_field(
 ) -> Result<WrittenField, EngineError> {
     cancel.check()?;
     let document = writer.owned.document();
-    let (field_object_number, calculation_order) = in_layer_transaction(document, || {
-        let created = document
-            .create_field(draft.family.native(), &draft.name, object_number.unwrap_or(0))
-            .ok_or_else(|| {
-                rejected(&format!(
-                    "cannot create field \"{}\" (name conflict or invalid)",
-                    draft.name
-                ))
-            })?;
-        configure_new_field(document, draft, &plan.default_entry, created)?;
-        stamp_field_creation(document, created, actor, writer.now.as_deref())?;
-        if let Some(group) = &draft.group_id {
-            write_field_group(document, created, group)?;
+    let created = document
+        .create_field(draft.family.native(), &draft.name, object_number.unwrap_or(0))
+        .ok_or_else(|| {
+            rejected(&format!("cannot create field \"{}\" (name conflict or invalid)", draft.name))
+        })?;
+    configure_new_field(document, draft, &plan.default_entry, created)?;
+    stamp_field_creation(document, created, actor, writer.now.as_deref())?;
+    if let Some(group) = &draft.group_id {
+        write_field_group(document, created, group)?;
+    }
+    for (at, (placed, page_index, on_state)) in plan.placements.iter().enumerate() {
+        let number = widget_object_numbers.and_then(|numbers| numbers.get(at).copied());
+        let widget = create_unattached_widget(writer, *page_index, placed, number)?;
+        // A new field is never merged, so no split number is needed.
+        let adopted = document
+            .attach_widget(created, widget, on_state, 0)
+            .map_err(|_| rejected("the export value is not a name a PDF can hold"))?;
+        if !adopted {
+            return Err(EngineError::with_message(
+                EngineErrorCode::Unknown,
+                "widget adoption failed",
+            ));
         }
-        for (at, (placed, page_index, on_state)) in plan.placements.iter().enumerate() {
-            let number = widget_object_numbers.and_then(|numbers| numbers.get(at).copied());
-            let widget = create_unattached_widget(writer, *page_index, placed, number)?;
-            // A new field is never merged, so no split number is needed.
-            let adopted = document
-                .attach_widget(created, widget, on_state, 0)
-                .map_err(|_| rejected("the export value is not a name a PDF can hold"))?;
-            if !adopted {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "widget adoption failed",
-                ));
-            }
-        }
-        let order = follow_calculate_script(
-            document,
-            created,
-            draft.actions.as_ref().map(|actions| &actions.calculate),
-        )?;
-        Ok((created, order))
-    })?;
-    let field = read_back_field(document, field_object_number, cancel)?;
+    }
+    let calculation_order = follow_calculate_script(
+        document,
+        created,
+        draft.actions.as_ref().map(|actions| &actions.calculate),
+    )?;
+    let field = read_back_field(document, created, cancel)?;
     Ok(WrittenField { field, calculation_order })
 }
 
@@ -1217,79 +1208,77 @@ pub fn update_field(
     let after = form_field_after(&before, patch)?;
     cancel.check()?;
 
-    let calculation_order = in_layer_transaction(document, || {
-        if let Some(name) = &patch.name
-            && !document.set_field_name(object_number, name)
-        {
-            return Err(rejected(&format!(
-                "cannot rename to \"{name}\" (sibling conflict or invalid)"
-            )));
-        }
-        let (set, clear) = patch.flags.masks();
-        if (set, clear) != (0, 0) && !document.set_field_flags(object_number, set, clear) {
-            return Err(rejected("flag update rejected"));
-        }
-        let limit = match patch.max_length {
-            Patch::Keep => None,
-            Patch::Clear => Some(0),
-            Patch::Set(limit) => Some(limit as i32),
+    if let Some(name) = &patch.name
+        && !document.set_field_name(object_number, name)
+    {
+        return Err(rejected(&format!(
+            "cannot rename to \"{name}\" (sibling conflict or invalid)"
+        )));
+    }
+    let (set, clear) = patch.flags.masks();
+    if (set, clear) != (0, 0) && !document.set_field_flags(object_number, set, clear) {
+        return Err(rejected("flag update rejected"));
+    }
+    let limit = match patch.max_length {
+        Patch::Keep => None,
+        Patch::Clear => Some(0),
+        Patch::Set(limit) => Some(limit as i32),
+    };
+    if let Some(limit) = limit
+        && !document.set_field_max_length(object_number, limit)
+    {
+        return Err(rejected("maxLength rejected (current value exceeds it)"));
+    }
+    for (value, alternate) in [(&patch.alternate_name, true), (&patch.mapping_name, false)] {
+        let text = match value {
+            Patch::Keep => continue,
+            Patch::Clear => "",
+            Patch::Set(text) => text.as_str(),
         };
-        if let Some(limit) = limit
-            && !document.set_field_max_length(object_number, limit)
-        {
-            return Err(rejected("maxLength rejected (current value exceeds it)"));
-        }
-        for (value, alternate) in [(&patch.alternate_name, true), (&patch.mapping_name, false)] {
-            let text = match value {
-                Patch::Keep => continue,
-                Patch::Clear => "",
-                Patch::Set(text) => text.as_str(),
-            };
-            let ok = if alternate {
-                document.set_field_alternate_name(object_number, text)
+        let ok = if alternate {
+            document.set_field_alternate_name(object_number, text)
+        } else {
+            document.set_field_mapping_name(object_number, text)
+        };
+        if !ok {
+            return Err(rejected(if alternate {
+                "alternate name rejected"
             } else {
-                document.set_field_mapping_name(object_number, text)
-            };
-            if !ok {
-                return Err(rejected(if alternate {
-                    "alternate name rejected"
-                } else {
-                    "mapping name rejected"
-                }));
-            }
+                "mapping name rejected"
+            }));
         }
-        if let Some(group) = &patch.group_id
-            && Some(group) != before.base.group_id.as_ref()
-        {
-            write_field_group(document, object_number, group)?;
+    }
+    if let Some(group) = &patch.group_id
+        && Some(group) != before.base.group_id.as_ref()
+    {
+        write_field_group(document, object_number, group)?;
+    }
+    // New options and a new default, and the selection that goes with
+    // them, as the field's rules work them out.
+    let new_options = patch.options.is_some();
+    let new_default = !patch.default_value.is_keep();
+    if new_options || new_default {
+        if let Some(options) = &patch.options {
+            write_options(document, object_number, options)?;
         }
-        // New options and a new default, and the selection that goes with
-        // them, as the field's rules work them out.
-        let new_options = patch.options.is_some();
-        let new_default = !patch.default_value.is_keep();
-        if new_options || new_default {
-            if let Some(options) = &patch.options {
-                write_options(document, object_number, options)?;
-            }
-            write_default(
-                document,
-                object_number,
-                &before.base.default_value_entry,
-                &after.base.default_value_entry,
-            )?;
-            if new_options {
-                mutator.write_field_after(object_number, &before, &after, true)?;
-            }
-        }
-        if let Some(actions) = &patch.actions {
-            write_field_scripts(document, object_number, before.base.actions.as_ref(), actions)?;
-        }
-        follow_calculate_script(
+        write_default(
             document,
             object_number,
-            patch.actions.as_ref().map(|actions| &actions.calculate),
-        )
-    })?;
+            &before.base.default_value_entry,
+            &after.base.default_value_entry,
+        )?;
+        if new_options {
+            mutator.write_field_after(object_number, &before, &after, true)?;
+        }
+    }
+    if let Some(actions) = &patch.actions {
+        write_field_scripts(document, object_number, before.base.actions.as_ref(), actions)?;
+    }
+    let calculation_order = follow_calculate_script(
+        document,
+        object_number,
+        patch.actions.as_ref().map(|actions| &actions.calculate),
+    )?;
     let field = read_back_field(document, object_number, cancel)?;
     Ok(WrittenField { field, calculation_order })
 }
@@ -1379,29 +1368,26 @@ pub fn delete_field(
     // Apply boundary: the native delete validates before it writes, so a
     // refusal leaves the document untouched.
     cancel.check()?;
-    let calculation_order = in_layer_transaction(document, || {
-        // A deleted field's calculate script runs no more: it leaves the
-        // order first, while the order can still name it.
-        let order = follow_calculate_script(document, object_number, Some(&Patch::Clear))?;
-        if document.delete_field(object_number).is_none() {
-            return Err(rejected("field cannot be deleted"));
+    // A deleted field's calculate script runs no more: it leaves the
+    // order first, while the order can still name it.
+    let calculation_order = follow_calculate_script(document, object_number, Some(&Patch::Clear))?;
+    if document.delete_field(object_number).is_none() {
+        return Err(rejected("field cannot be deleted"));
+    }
+    for widget in &removed_widgets {
+        // Direct or unplaced: no `/Annots` entry to remove.
+        let Ok(page) = PageObjectNumber::new(widget.page_object_number) else { continue };
+        if widget.annot_object_number == 0 {
+            continue;
         }
-        for widget in &removed_widgets {
-            // Direct or unplaced: no `/Annots` entry to remove.
-            let Ok(page) = PageObjectNumber::new(widget.page_object_number) else { continue };
-            if widget.annot_object_number == 0 {
-                continue;
-            }
-            let reference = AnnotationRef::ObjectNumber { page, annot: widget.annot_object_number };
-            crate::features::annotation::write::delete::delete_released_widget(
-                document,
-                owned.page_index(page)?,
-                &reference,
-                object_number,
-            )?;
-        }
-        Ok(order)
-    })?;
+        let reference = AnnotationRef::ObjectNumber { page, annot: widget.annot_object_number };
+        crate::features::annotation::write::delete::delete_released_widget(
+            document,
+            owned.page_index(page)?,
+            &reference,
+            object_number,
+        )?;
+    }
     Ok(DeletedField { deleted: before.base.field_ref.clone(), removed_widgets, calculation_order })
 }
 
@@ -1461,25 +1447,21 @@ pub fn add_widget(
 ) -> Result<(FormFieldDto, FormWidgetRef), EngineError> {
     cancel.check()?;
     let document = writer.owned.document();
-    let widget = in_layer_transaction(document, || {
-        if let Some(page) = plan.merged_page {
-            crate::features::annotation::write::delete::promote_inline_annotations(
-                document,
-                writer.owned.page_index(page)?,
-                page,
-            )?;
-        }
-        let widget =
-            create_unattached_widget(writer, plan.page_index, &plan.placed, object_number)?;
-        let split = if plan.splits() { split_object_number.unwrap_or(0) } else { 0 };
-        let adopted = document
-            .attach_widget(plan.object_number, widget, &plan.on_state, split)
-            .map_err(|_| rejected("the export value is not a name a PDF can hold"))?;
-        if !adopted {
-            return Err(rejected("the widget could not join the field"));
-        }
-        Ok(widget)
-    })?;
+    if let Some(page) = plan.merged_page {
+        crate::features::annotation::write::delete::promote_inline_annotations(
+            document,
+            writer.owned.page_index(page)?,
+            page,
+        )?;
+    }
+    let widget = create_unattached_widget(writer, plan.page_index, &plan.placed, object_number)?;
+    let split = if plan.splits() { split_object_number.unwrap_or(0) } else { 0 };
+    let adopted = document
+        .attach_widget(plan.object_number, widget, &plan.on_state, split)
+        .map_err(|_| rejected("the export value is not a name a PDF can hold"))?;
+    if !adopted {
+        return Err(rejected("the widget could not join the field"));
+    }
     let field = read_back_field(document, plan.object_number, cancel)?;
     Ok((
         field,

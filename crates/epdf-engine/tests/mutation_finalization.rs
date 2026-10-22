@@ -36,15 +36,16 @@ fn an_ordinary_mutation_bumps_the_sequence_and_a_self_sequenced_one_does_not() {
     // The whole judgement the finalizer makes. A form write re-reads
     // through a version-keyed model before it returns, so it bumps first
     // and a second bump here would rebuild every such cache for nothing.
-    let session = open();
+    let mut session = open();
     let before = session.mutation_sequence();
 
-    let ordinary = finish_mutation(&session, MutationFamily::Ordinary, &CancelToken::never())
+    let ordinary = finish_mutation(&mut session, MutationFamily::Ordinary, &CancelToken::never())
         .expect("finalize");
     assert_eq!(ordinary.mutation_sequence, before + 1, "an ordinary mutation did not bump");
 
-    let already = finish_mutation(&session, MutationFamily::SelfSequenced, &CancelToken::never())
-        .expect("finalize");
+    let already =
+        finish_mutation(&mut session, MutationFamily::SelfSequenced, &CancelToken::never())
+            .expect("finalize");
     assert_eq!(
         already.mutation_sequence,
         before + 1,
@@ -58,10 +59,11 @@ fn a_base_session_has_no_artifact_to_persist() {
     // save. Only a layer has something to persist separately, and reporting
     // an empty artifact for a base one would give a host bytes to write
     // that mean nothing.
-    let session = open();
-    let finished = finish_mutation(&session, MutationFamily::Ordinary, &CancelToken::never())
+    let mut session = open();
+    let finished = finish_mutation(&mut session, MutationFamily::Ordinary, &CancelToken::never())
         .expect("finalize");
     assert!(finished.artifact.is_none(), "a base session produced an artifact");
+    assert!(finished.last_object_number.is_none(), "no artifact names a last object number");
 }
 
 #[test]

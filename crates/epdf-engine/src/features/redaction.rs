@@ -27,7 +27,6 @@ use serde::{Deserialize, Serialize};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::write::delete::promote_inline_annotations;
-use crate::features::changes::transaction::layer_transaction;
 use crate::identity::{AnnotationRef, PageObjectNumber, PageRef, WirePage};
 use crate::mutation::MutationMeta;
 use crate::session::document::DocumentSession;
@@ -127,48 +126,35 @@ pub fn apply(
     let mut affected: Vec<PageObjectNumber> = Vec::new();
     let mut total = 0u32;
 
-    // All or nothing: a page that fails, or a cancel, aborts the layer
-    // transaction, which takes back every page promoted or applied before
-    // it. Each page this loop loads closes before the abort (the pool keeps
-    // no page past its last holder), so none parsed the overlay survives it.
-    let written = layer_transaction(owned.document(), || {
-        for ((page, refs), page_index) in plan.iter().zip(indices) {
-            cancel.check()?;
-            // A redaction removes entries from /Annots; promotion keeps
-            // every position.
-            if promote_inline_annotations(owned.document(), page_index, *page)? {
+    // All or nothing: a page that fails, or a cancel, refuses the write,
+    // whose layer transaction aborts and takes back every page promoted or
+    // applied before it.
+    for ((page, refs), page_index) in plan.iter().zip(indices) {
+        cancel.check()?;
+        // A redaction removes entries from /Annots; promotion keeps
+        // every position.
+        if promote_inline_annotations(owned.document(), page_index, *page)? {
+            affected.push(*page);
+        }
+        let opened = owned.page(*page)?;
+        let view = opened.view();
+        let (status, removed) = match refs {
+            None => apply_every_marking(view)?,
+            Some(refs) => apply_named_markings(owned.document(), view, refs)?,
+        };
+        if status == RedactionStatus::Applied {
+            // Kept because the TypeScript makes the call; PDFium's apply
+            // has already rewritten the stream by the time it returns.
+            view.generate_content();
+            if !affected.contains(page) {
                 affected.push(*page);
             }
-            let opened = owned.page(*page)?;
-            let view = opened.view();
-            let (status, removed) = match refs {
-                None => apply_every_marking(view)?,
-                Some(refs) => apply_named_markings(owned.document(), view, refs)?,
-            };
-            if status == RedactionStatus::Applied {
-                // Kept because the TypeScript makes the call; PDFium's apply
-                // has already rewritten the stream by the time it returns.
-                view.generate_content();
-                if !affected.contains(page) {
-                    affected.push(*page);
-                }
-                total += removed;
-            }
-            results.push(RedactionItem {
-                page_object_number: *page,
-                status,
-                removed_annotation_count: removed,
-            });
+            total += removed;
         }
-        Ok(())
-    });
-    if let Err(refused) = written {
-        // Taken back: no write happened, so the sequence stays. Kept (a
-        // session that is not a layer): the pages written move it.
-        return Err(if refused.aborted {
-            refused.error
-        } else {
-            super::pages_write::after_writes(session, &affected, refused.error)
+        results.push(RedactionItem {
+            page_object_number: *page,
+            status,
+            removed_annotation_count: removed,
         });
     }
 

@@ -19,7 +19,6 @@ use super::{
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::destination::PdfDestination;
 use crate::features::annotation::write::prepare::LinkTargetWrite;
-use crate::features::changes::transaction::in_layer_transaction;
 use crate::identity::OutlineItemRef;
 use crate::mutation::MutationMeta;
 use crate::mutation::list_position::position_index;
@@ -307,15 +306,12 @@ impl<'a> OutlineMutator<'a> {
         fields: &OutlineFields,
         object_number: u32,
     ) -> Result<Created, EngineError> {
-        let created = in_layer_transaction(self.document, || {
-            let created = self.document.create_outline_item(object_number, parent, after, title);
-            if created == 0 {
-                return Err(outline_refused("create the item"));
-            }
-            let rest = OutlineFields { title: None, ..fields.clone() };
-            write_outline_fields(self.document, created, &rest)?;
-            Ok(created)
-        })?;
+        let created = self.document.create_outline_item(object_number, parent, after, title);
+        if created == 0 {
+            return Err(outline_refused("create the item"));
+        }
+        let rest = OutlineFields { title: None, ..fields.clone() };
+        write_outline_fields(self.document, created, &rest)?;
         let item = read_item(self.document, created, parent)?;
         Ok(Created {
             order: order_of(&self.tree(), parent),
@@ -332,9 +328,7 @@ impl<'a> OutlineMutator<'a> {
         patch: &OutlineFields,
     ) -> Result<Updated, EngineError> {
         let parent = require_item(&self.tree(), reference, "ref")?;
-        in_layer_transaction(self.document, || {
-            write_outline_fields(self.document, reference.object_number(), patch)
-        })?;
+        write_outline_fields(self.document, reference.object_number(), patch)?;
         Ok(Updated {
             item: read_item(self.document, reference.object_number(), parent)?,
             meta: self.meta(vec![reference]),
@@ -422,17 +416,13 @@ impl<'a> OutlineMutator<'a> {
             add(before.parent_of(placement.item).unwrap_or(TOP));
             add(placement.parent);
         }
-        in_layer_transaction(self.document, || {
-            for &OutlinePlacement { item, parent, after } in placements {
-                let now = self.tree();
-                let anchor =
-                    if after != 0 && now.parent_of(after) == Some(parent) { after } else { 0 };
-                if !self.document.move_outline_item(item, parent, anchor) {
-                    return Err(outline_refused(&format!("move item {item}")));
-                }
+        for &OutlinePlacement { item, parent, after } in placements {
+            let now = self.tree();
+            let anchor = if after != 0 && now.parent_of(after) == Some(parent) { after } else { 0 };
+            if !self.document.move_outline_item(item, parent, anchor) {
+                return Err(outline_refused(&format!("move item {item}")));
             }
-            Ok(())
-        })?;
+        }
         let after = self.tree();
         Ok(Moved {
             orders: parents.iter().map(|parent| order_of(&after, *parent)).collect(),
@@ -464,13 +454,9 @@ impl<'a> OutlineMutator<'a> {
         let tree = self.tree();
         require_item(&tree, reference, "ref")?;
         let going = tree.subtree_of(reference.object_number());
-        in_layer_transaction(self.document, || {
-            if self.document.delete_outline_item(reference.object_number()) {
-                Ok(())
-            } else {
-                Err(outline_refused(&format!("delete item {}", reference.object_number())))
-            }
-        })?;
+        if !self.document.delete_outline_item(reference.object_number()) {
+            return Err(outline_refused(&format!("delete item {}", reference.object_number())));
+        }
         Ok(self.meta(refs(&going)))
     }
 

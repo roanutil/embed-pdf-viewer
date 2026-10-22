@@ -75,9 +75,8 @@ pub fn unchanged_since(document: &Document, objects: &[CapturedObject]) -> bool 
 /// Put every dictionary back as it was before the op (one the op made is
 /// left as it is: nothing reaches it any more), and answer the captures
 /// that redo the op: each dictionary as it was just before, and as the
-/// revert left it (`revertObjects`). The imports run in a layer
-/// transaction, this engine's own when none is open (Task 8.30 opens one
-/// around every write).
+/// revert left it (`revertObjects`). The imports run in the change's layer
+/// transaction.
 pub fn revert_objects(
     document: &Document,
     objects: &[CapturedObject],
@@ -101,30 +100,14 @@ pub fn revert_objects_pending(
         .map(|(object, deep)| (object.object_number, deep.as_slice()))
         .collect();
     let redo = capture_before(document, &wanted);
-    let own_transaction = !document.layer_in_transaction();
-    if own_transaction && !document.layer_begin_transaction() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFLayer_BeginTransaction refused",
-        ));
-    }
     for object in objects {
         let Some(before) = &object.before else { continue };
         if !document.import_dict_raw(before) {
-            if own_transaction {
-                document.layer_abort_transaction();
-            }
             return Err(EngineError::with_message(
                 EngineErrorCode::Unknown,
                 "EPDFDoc_ImportDictRaw refused a capture",
             ));
         }
-    }
-    if own_transaction && !document.layer_commit_transaction() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFLayer_CommitTransaction refused",
-        ));
     }
     Ok(redo)
 }

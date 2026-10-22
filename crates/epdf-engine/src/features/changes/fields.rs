@@ -28,7 +28,6 @@ use super::record::{
     CalculationOrderStep, FieldRemoveStep, FieldRestoreStep, ReverseStep, RevertFallback,
     StepRights, WidgetDeleteStep, WidgetRestoreStep,
 };
-use super::transaction::in_layer_transaction;
 use crate::auth::scope::DocCapability;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::write::{FieldActionsPatch, WidgetActionsPatch, scripts_of};
@@ -398,16 +397,12 @@ pub fn restore_field(
         }
     }
     let document = ctx.session.document()?.document();
-    in_layer_transaction(document, || {
-        if document.import_field_raw(&step.capture) {
-            Ok(())
-        } else {
-            Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFForm_ImportFieldRaw refused a capture",
-            ))
-        }
-    })?;
+    if !document.import_field_raw(&step.capture) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFForm_ImportFieldRaw refused a capture",
+        ));
+    }
     let field = read_field_by_number(ctx, step.object_number)?.field;
     let left = to_value(&field)?;
     let (field, widgets, meta) = field_result(ctx, field)?;
@@ -677,16 +672,12 @@ pub fn restore_widget(
     if !unchanged_since(document, &field_objects) {
         return left_alone(ctx, "forms.restoreWidget");
     }
-    in_layer_transaction(document, || {
-        if document.import_annotations_raw(page_index, &step.capture) {
-            Ok(())
-        } else {
-            Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFPage_ImportAnnotsRaw refused a capture",
-            ))
-        }
-    })?;
+    if !document.import_annotations_raw(page_index, &step.capture) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFPage_ImportAnnotsRaw refused a capture",
+        ));
+    }
     if !step.detached.is_empty() {
         revert_objects(document, &step.detached)?;
     }

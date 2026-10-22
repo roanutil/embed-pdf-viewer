@@ -143,10 +143,8 @@ fn open_all<'page>(
 /// page's annotations. A content and annotation mutation of that page, run
 /// in the session's open write transaction, whose stamp its `meta` carries.
 ///
-/// A refusal after the promotion leaves the page promoted, which a layer
-/// transaction would take back; this engine opens none around its writes
-/// until Task 8.30, so the sequence moves for it, as `after-first-write`
-/// asks.
+/// A refusal after the promotion aborts the write's layer transaction,
+/// which takes the promotion back.
 pub fn flatten(
     session: &DocumentSession,
     page_object_number: PageObjectNumber,
@@ -164,15 +162,11 @@ pub fn flatten(
     // A flatten removes entries from /Annots; promotion keeps every position.
     let promoted = promote_inline_annotations(document, page_index, page_object_number)?;
 
-    let flattened = owned.page(page_object_number).and_then(|page| {
+    let (outcome, statuses) = owned.page(page_object_number).and_then(|page| {
         let annotations = open_all(page.view(), page_object_number, &positions)?;
         Ok(page.view().flatten_annotations(&annotations, usage.native()))
         // Every handle closes here, before anything reads the page again.
-    });
-    let (outcome, statuses) = match flattened {
-        Ok(flattened) => flattened,
-        Err(refused) => return Err(after_promotion(session, promoted, refused)),
-    };
+    })?;
 
     if outcome == pdfium::FlattenOutcome::Failed {
         // Every ref resolved on THIS page, so a failure is the fork
@@ -192,7 +186,7 @@ pub fn flatten(
                 "native annotation flatten failed after preflight",
             ),
         };
-        return Err(after_promotion(session, promoted, refused));
+        return Err(refused);
     }
 
     let results = refs
@@ -212,14 +206,6 @@ pub fn flatten(
     let affected_pages = if changed { vec![PageRef::new(page_object_number)] } else { Vec::new() };
     let meta = MutationMeta::local(affected_pages, &session.write_stamp()?);
     Ok(AnnotationFlattenResult { page_object_number, usage, results, meta })
-}
-
-/// `refused`, after the sequence moved for a promotion that stays.
-fn after_promotion(session: &DocumentSession, promoted: bool, refused: EngineError) -> EngineError {
-    if promoted {
-        session.note_mutation();
-    }
-    refused
 }
 
 /// `AnnotationFlattener.exportAppearance`: a chosen set of one page's

@@ -2,130 +2,45 @@
 //! (`WorkerHost.handleDocumentApply`, `applyOne`, `recorded`,
 //! `handleDocumentApplyChanges` and `resultOf`).
 //!
-//! [`in_transaction`] is the reusable part: it opens the session's write
-//! transaction under an `opId`, commits it when the write succeeds and takes
-//! back everything the write journaled when it fails, so a refused write
-//! leaves the document as it was. Task 8.30 runs every write kind through
-//! it and adds upstream's commit checks (the layer ceiling, the artifact's
-//! `lastObjectNumber`).
+//! Every write runs in one layer transaction (`WorkerHost.run`): the host
+//! opens it under the write's `opId` before the write's arm runs, commits it
+//! before the layer artifact is saved, and aborts it on any refusal, which
+//! drops everything the write did. [`in_transaction`] is the reusable part:
+//! it runs a write in the transaction already open, or opens its own for a
+//! caller that opened none (`document.applyChanges`, which runs one per
+//! change, and a caller below the host).
 
-use super::applier::{
-    AppliedChange, ChangeAuthority, ChangeContext, ChangeServices, ChangeSpace, apply, undo,
-};
+use super::applier::{AppliedChange, ChangeAuthority, ChangeServices, ChangeSpace, apply, undo};
 use super::item::{ChangeResult, pages_of};
 use super::ledger::KeptRecord;
 use super::op::Change;
 use super::record::ChangeRecord;
 use crate::cancel::CancelToken;
-use crate::clock::Clock;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::mutation::MutationMeta;
 use crate::session::document::DocumentSession;
 
-/// Run `write` in a layer transaction: this engine's own when none is open
-/// (Task 8.30 opens one around every write), aborted when `write` fails, so
-/// a refused write leaves nothing. A session that is not a layer opens none,
-/// and keeps what a refused write wrote.
-pub(crate) fn in_layer_transaction<T>(
-    document: &pdfium::Document,
-    write: impl FnOnce() -> Result<T, EngineError>,
-) -> Result<T, EngineError> {
-    layer_transaction(document, write).map_err(|refused| refused.error)
-}
-
-/// A write [`layer_transaction`] refused, and whether the abort took back
-/// what it wrote.
-pub(crate) struct Refused {
-    pub error: EngineError,
-    pub aborted: bool,
-}
-
-/// [`in_layer_transaction`], saying whether a refused write was taken back:
-/// a write that was not still changed the document, and its sequence has to
-/// move.
-pub(crate) fn layer_transaction<T>(
-    document: &pdfium::Document,
-    write: impl FnOnce() -> Result<T, EngineError>,
-) -> Result<T, Refused> {
-    let own = !document.layer_in_transaction() && document.layer_begin_transaction();
-    match write() {
-        Ok(done) => {
-            if own && !document.layer_commit_transaction() {
-                return Err(Refused {
-                    error: EngineError::with_message(
-                        EngineErrorCode::Unknown,
-                        "EPDFLayer_CommitTransaction refused",
-                    ),
-                    aborted: false,
-                });
-            }
-            Ok(done)
-        }
-        Err(error) => {
-            let aborted = own && document.layer_abort_transaction();
-            Err(Refused { error, aborted })
-        }
-    }
-}
-
-/// Run `write` in a transaction named `op_id`: commit it when it succeeds,
-/// take back what it journaled when it fails, and answer its answer.
+/// Run `write` in the session's transaction: the one open, which its opener
+/// commits or aborts, or one of its own named `op_id`, committed when the
+/// write succeeds and aborted when it fails, so a refused write leaves the
+/// document as it was.
 pub fn in_transaction<T>(
     session: &mut DocumentSession,
     op_id: &str,
-    clock: &dyn Clock,
     write: impl FnOnce(&mut DocumentSession) -> Result<T, EngineError>,
 ) -> Result<T, EngineError> {
+    if session.in_transaction() {
+        return write(session);
+    }
     session.begin_transaction(op_id)?;
-    match write(session) {
-        Ok(answer) => {
-            session.commit_transaction()?;
-            Ok(answer)
-        }
-        Err(refused) => {
-            roll_back(session, clock)?;
-            Err(refused)
-        }
+    let written = write(session).and_then(|answer| {
+        session.commit_transaction()?;
+        Ok(answer)
+    });
+    if written.is_err() {
+        session.abort_transaction();
     }
-}
-
-/// Take back everything the open transaction journaled, last first, then
-/// close it (`abortTransaction`). Each step meets the document exactly as
-/// the write left it, so none is left alone. A step that fails leaves the
-/// document holding part of the write, which is reported rather than the
-/// write's own refusal.
-fn roll_back(session: &mut DocumentSession, clock: &dyn Clock) -> Result<(), EngineError> {
-    let journal = session.take_journal();
-    let authority = ChangeAuthority::rollback();
-    let cancel = CancelToken::never();
-    let ChangeServices { clock, ids, fonts } = ChangeServices::of_clock(clock);
-    let mut ctx = ChangeContext {
-        session,
-        authority: &authority,
-        cancel: &cancel,
-        clock,
-        ids,
-        fonts,
-        own_fill: Default::default(),
-    };
-    let mut failed = None;
-    for step in journal.iter().rev() {
-        if let Err(e) = super::applier::run_step(&mut ctx, step) {
-            failed.get_or_insert(e);
-        }
-    }
-    session.abort_transaction();
-    // What the steps removed may be a drawing the index names.
-    if let Ok(drawings) = session.drawing_index() {
-        drawings.borrow_mut().forget();
-    }
-    match failed {
-        None => Ok(()),
-        Some(e) => Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            format!("a refused write could not be taken back: {e}"),
-        )),
-    }
+    written
 }
 
 /// The refusals a change keeps under its `opId`, like a success
@@ -172,11 +87,10 @@ pub fn run_change(
     services: ChangeServices<'_>,
     space: ChangeSpace,
 ) -> Result<Answered, EngineError> {
-    let clock = services.clock;
     if let Some(prior) = session.ledger().outcome(op_id) {
         return Ok(Answered { result: prior.replay(&fingerprint, op_id)?, replayed: true });
     }
-    let ran = in_transaction(session, op_id, clock, |session| {
+    let ran = in_transaction(session, op_id, |session| {
         let applied = match change {
             Change::Ops(ops) => apply(session, ops, authority, cancel, services, space)?,
             Change::UndoOf(undo_of) => {
@@ -316,12 +230,11 @@ pub fn run_server_changes(
     cancel: &CancelToken,
     services: ChangeServices<'_>,
 ) -> Result<Vec<ServerChangeOutcome>, EngineError> {
-    let clock = services.clock;
     let mut records: Vec<(String, Option<ChangeRecord>)> = Vec::new();
     let mut outcomes = Vec::with_capacity(changes.len());
     for entry in changes {
         let ServerChange { op_id, change, authority, record } = entry;
-        let ran = in_transaction(session, &op_id, clock, |session| {
+        let ran = in_transaction(session, &op_id, |session| {
             let applied = match change {
                 Change::Ops(ops) => {
                     apply(session, ops, &authority, cancel, services, ChangeSpace::Page)?

@@ -35,7 +35,6 @@ use super::pages::{PageListSnapshot, list_pages};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::write::delete::promote_inline_annotations;
-use crate::features::changes::transaction::layer_transaction;
 use crate::identity::{PageObjectNumber, PageRef};
 use crate::mutation::MutationMeta;
 use crate::mutation::list_position::{End, ListPosition};
@@ -313,28 +312,12 @@ pub fn insert_blank_pages(
         }
     };
 
+    // A number of its own needs the write's layer transaction, whose abort
+    // takes back the pages this call already made.
     let document = session.document()?.document();
-    // A number of its own needs a layer transaction; this engine opens none
-    // around its writes yet (Task 8.30), so the inserts have their own. A
-    // refused change is taken back through the op's reverse instead.
-    let own_transaction = numbers.is_some() && !document.layer_in_transaction();
-    if own_transaction && !document.layer_begin_transaction() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFLayer_BeginTransaction refused",
-        ));
-    }
     for created in 0..count {
         let number = numbers.as_ref().map_or(0, |numbers| numbers[created as usize]);
         if !document.insert_blank_page_raw(at + created, width, height, number) {
-            if own_transaction {
-                // The abort takes back the pages this call already made.
-                document.layer_abort_transaction();
-            } else {
-                for _ in 0..created {
-                    document.delete_page_by_object_number(document.page_object_number_by_index(at));
-                }
-            }
             // The index was checked: a numbered page refused is a number
             // another object has.
             if number != 0 {
@@ -349,12 +332,6 @@ pub fn insert_blank_pages(
                 ),
             ));
         }
-    }
-    if own_transaction && !document.layer_commit_transaction() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFLayer_CommitTransaction refused",
-        ));
     }
     session.refresh_page_registry()?;
     read_inserted(session, at, count, cancel)
@@ -686,12 +663,8 @@ fn require_unique_pages(pages: &[PageObjectNumber]) -> Result<(), EngineError> {
 /// Each page's inline annotations become objects first, so the entries the
 /// flatten removes from `/Annots` leave every other position alone.
 ///
-/// Upstream is all or nothing: a page that fails, or a cancel, throws, and
-/// the layer transaction takes back every page before it. This engine opens
-/// no layer transaction around its writes until Task 8.30, so the pages
-/// already changed stay changed, and the sequence moves for them before the
-/// refusal goes out (`after-first-write`: bookkeeping completes, and a
-/// refusal is no evidence of rollback).
+/// All or nothing: a page that fails, or a cancel, refuses the write, and
+/// its layer transaction aborts, taking back every page before it.
 pub fn flatten_pages(
     session: &DocumentSession,
     pages: &[PageObjectNumber],
@@ -709,35 +682,23 @@ pub fn flatten_pages(
     let mut results = Vec::with_capacity(pages.len());
     let mut affected: Vec<PageObjectNumber> = Vec::new();
     // All or nothing (`PagesFlattener`): a page that fails, or a cancel,
-    // aborts the layer transaction, which takes back every page promoted or
+    // refuses the write, whose abort takes back every page promoted or
     // flattened before it. Each page loaded here closes before the abort.
-    let written = layer_transaction(owned.document(), || {
-        for (page, page_index) in pages.iter().copied().zip(indices) {
-            cancel.check()?;
-            if promote_inline_annotations(owned.document(), page_index, page)? {
-                affected.push(page);
-            }
-            let status = match owned.page(page)?.view().flatten(usage.native()) {
-                pdfium::FlattenOutcome::NothingToDo => FlattenStatus::Unchanged,
-                pdfium::FlattenOutcome::Applied => FlattenStatus::Applied,
-                // Unexercised: nothing in the corpus makes a flatten fail.
-                outcome => return Err(flatten_failure(outcome)),
-            };
-            if status == FlattenStatus::Applied && !affected.contains(&page) {
-                affected.push(page);
-            }
-            results.push(FlattenItem { page_object_number: page, status });
+    for (page, page_index) in pages.iter().copied().zip(indices) {
+        cancel.check()?;
+        if promote_inline_annotations(owned.document(), page_index, page)? {
+            affected.push(page);
         }
-        Ok(())
-    });
-    if let Err(refused) = written {
-        // Taken back: no write happened, so the sequence stays. Kept (a
-        // session that is not a layer): the pages written move it.
-        return Err(if refused.aborted {
-            refused.error
-        } else {
-            after_writes(session, &affected, refused.error)
-        });
+        let status = match owned.page(page)?.view().flatten(usage.native()) {
+            pdfium::FlattenOutcome::NothingToDo => FlattenStatus::Unchanged,
+            pdfium::FlattenOutcome::Applied => FlattenStatus::Applied,
+            // Unexercised: nothing in the corpus makes a flatten fail.
+            outcome => return Err(flatten_failure(outcome)),
+        };
+        if status == FlattenStatus::Applied && !affected.contains(&page) {
+            affected.push(page);
+        }
+        results.push(FlattenItem { page_object_number: page, status });
     }
 
     let meta = MutationMeta::local(
@@ -745,19 +706,6 @@ pub fn flatten_pages(
         &session.write_stamp()?,
     );
     Ok(FlattenResult { page_object_numbers: pages.to_vec(), usage, results, meta })
-}
-
-/// `refused`, after the sequence moved for the pages a refused flatten (or
-/// redaction) changed and no layer transaction took back.
-pub(crate) fn after_writes(
-    session: &DocumentSession,
-    changed: &[PageObjectNumber],
-    refused: EngineError,
-) -> EngineError {
-    if !changed.is_empty() {
-        session.note_mutation();
-    }
-    refused
 }
 
 #[cfg(test)]

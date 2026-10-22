@@ -336,6 +336,9 @@ pub struct Host {
     /// choosing the codec on the host's behalf. The `*Encoded` kinds refuse
     /// while this is `None`, saying so.
     encoder: Option<Box<dyn crate::features::server::ImageEncoder>>,
+    /// The running write's `artifactPath`: where its layer artifact goes
+    /// instead of a payload. Set for the length of one call.
+    artifact_path: Option<String>,
 }
 
 impl Default for Host {
@@ -367,6 +370,7 @@ impl Host {
             clock: Box::new(crate::clock::SystemClock),
             ids: Box::new(crate::ids::SystemIdSource),
             encoder: None,
+            artifact_path: None,
         }
     }
 
@@ -452,23 +456,7 @@ impl Host {
         let cancel = CancelToken::never();
 
         // Read so that a malformed envelope is refused before any arm runs.
-        // Each kind's owner sub-task wires in what its handler does with
-        // `opId` and `authority`.
         let job = JobEnvelope::parse(&header.kind, &body)?;
-        // `WorkerHost.run` (`WorkerHost.ts:548-553`): a parked signing
-        // refuses a write before anything else, and then the write's own
-        // objects go at or above the floor its caller set, so the layer's
-        // last object number is raised to just below it before the write
-        // runs. The arm reports a session that is not open.
-        if let Some(floor) = job.object_number_floor
-            && let Ok(key) = header.key()
-            && let Ok(session) = self.sessions.session(&key)
-        {
-            if MUTATING_KINDS.contains(&header.kind.as_str()) {
-                crate::features::signature::mutator::assert_no_pending_signing(session)?;
-            }
-            session.raise_last_object_number(floor.saturating_sub(1))?;
-        }
 
         // `pageSpaceBoundary`: the places a caller sent in page space
         // convert to the file's coordinates before the handler runs, and the
@@ -484,7 +472,14 @@ impl Host {
             );
             crate::page_space::boundary::request_in_file_space(kind, &mut body, &mut box_of)?;
         }
-        let response = self.route_wire(&header, &body, payloads, &cancel)?;
+        self.artifact_path = optional(&body, "artifactPath")?;
+        let written = self.begin_write(&header, &mut body, &job);
+        let routed = written.and_then(|transacted| {
+            let routed = self.route_wire(&header, &body, payloads, &cancel);
+            self.end_write(transacted.as_ref(), routed)
+        });
+        self.artifact_path = None;
+        let response = routed?;
         match kind {
             Some(kind) => {
                 let mut box_of =
@@ -498,6 +493,71 @@ impl Host {
             }
             None => Ok(response),
         }
+    }
+
+    /// `WorkerHost.run`, before the arm: a write to an open session runs as
+    /// one layer transaction under its `opId` (the request's, or one minted
+    /// for it and written into the request so the arm reads the same). A
+    /// parked signing refuses the write before anything else; then the
+    /// transaction opens, and the write's own objects go at or above the
+    /// floor its caller set, so the layer's last object number is raised to
+    /// just below it. Answers the session the transaction is open on; a
+    /// write to no open session runs without one, and its arm refuses it.
+    fn begin_write(
+        &mut self,
+        header: &RequestHeader,
+        body: &mut serde_json::Value,
+        job: &JobEnvelope,
+    ) -> Result<Option<SessionKey>, EngineError> {
+        if !TRANSACTED_KINDS.contains(&header.kind.as_str()) {
+            return Ok(None);
+        }
+        let Ok(key) = header.key() else { return Ok(None) };
+        if self.sessions.session(&key).is_err() {
+            return Ok(None);
+        }
+        crate::features::signature::mutator::assert_no_pending_signing(
+            self.sessions.session(&key)?,
+        )?;
+        let op_id = self.op_id_of(job)?;
+        if job.op_id.is_none()
+            && let Some(fields) = body.as_object_mut()
+        {
+            fields.insert("opId".into(), serde_json::Value::String(op_id.clone()));
+        }
+        let session = self.sessions.session_mut(&key)?;
+        session.begin_transaction(op_id)?;
+        if let Some(floor) = job.object_number_floor
+            && let Err(refused) = session.raise_last_object_number(floor.saturating_sub(1))
+        {
+            session.abort_transaction();
+            return Err(refused);
+        }
+        Ok(Some(key))
+    }
+
+    /// `WorkerHost.run`, after the arm: a write that is done but saved
+    /// nothing (it had nothing to do) commits here; any refusal aborts the
+    /// transaction, leaving the document as it was. A write that committed
+    /// before its artifact was saved stays committed whatever followed.
+    fn end_write(
+        &mut self,
+        transacted: Option<&SessionKey>,
+        routed: Result<HostResponse, EngineError>,
+    ) -> Result<HostResponse, EngineError> {
+        let Some(session) = transacted.and_then(|key| self.sessions.entry_mut(key)) else {
+            return routed;
+        };
+        let committed = routed.and_then(|response| {
+            if session.in_transaction() {
+                session.commit_transaction()?;
+            }
+            Ok(response)
+        });
+        if committed.is_err() {
+            session.abort_transaction();
+        }
+        committed
     }
 
     /// The wire's kinds, in the file's coordinates: [`Host::route`] has
@@ -1164,7 +1224,7 @@ impl Host {
                 let event = item.events()?.into_iter().next().ok_or_else(|| {
                     EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
                 })?;
-                let (result, sequence, mut events, payloads) =
+                let (result, sequence, mut events, written) =
                     self.finish_change(&key, &op_id, None, vec![event], strip_item(item)?)?;
                 let mut answer = serde_json::json!({
                     "result": result,
@@ -1173,7 +1233,7 @@ impl Host {
                 if let Some(event) = events.pop() {
                     answer["event"] = event;
                 }
-                Ok(HostResponse { json: envelope(answer), payloads })
+                Ok(written.respond(answer))
             }
             // `WorkerHost.handleDocumentApply`: one change, in page space both
             // ways, each op converting as it runs. The answer carries the
@@ -1236,17 +1296,14 @@ impl Host {
                 for item in &answered.result.items {
                     events.extend(item.events()?);
                 }
-                let (result, sequence, events, payloads) =
+                let (result, sequence, events, written) =
                     self.finish_change(&key, &op_id, undo_of, events, result)?;
-                Ok(HostResponse {
-                    json: envelope(serde_json::json!({
-                        "result": result,
-                        "replayed": false,
-                        "mutationSequence": sequence,
-                        "events": events,
-                    })),
-                    payloads,
-                })
+                Ok(written.respond(serde_json::json!({
+                    "result": result,
+                    "replayed": false,
+                    "mutationSequence": sequence,
+                    "events": events,
+                })))
             }
             // `WorkerHost.handleDocumentApplyChanges`: a server request's
             // changes as one job, each in its own transaction, with one
@@ -1254,6 +1311,14 @@ impl Host {
             // upstream publishes none for it, since the server relays the
             // changes from its audit log.
             "document.applyChanges" => {
+                // `handleDocumentApplyChanges`: the changes' own objects go
+                // at or above the floor its caller set. Each change runs in
+                // its own transaction, so the raise is outside them all.
+                if let Some(floor) = JobEnvelope::parse(&header.kind, body)?.object_number_floor {
+                    self.sessions
+                        .session(&key)?
+                        .raise_last_object_number(floor.saturating_sub(1))?;
+                }
                 let entries: Vec<serde_json::Value> = field(body, "changes")?;
                 let mut changes = Vec::with_capacity(entries.len());
                 for entry in &entries {
@@ -1285,18 +1350,13 @@ impl Host {
                         "mutationSequence": session.mutation_sequence(),
                     })));
                 }
-                let finished = crate::session::save::finish_mutation(
-                    self.sessions.session(&key)?,
-                    crate::session::save::MutationFamily::Ordinary,
-                    &CancelToken::never(),
-                )?;
-                Ok(HostResponse {
-                    json: envelope(serde_json::json!({
-                        "outcomes": wire,
-                        "mutationSequence": finished.mutation_sequence,
-                    })),
-                    payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default(),
-                })
+                let written =
+                    self.finish_write(&key, crate::session::save::MutationFamily::Ordinary)?;
+                let sequence = written.sequence;
+                Ok(written.respond(serde_json::json!({
+                    "outcomes": wire,
+                    "mutationSequence": sequence,
+                })))
             }
             // `WorkerHost.handleAnnotationsCreate`: the single verb as a
             // one-op change, its caller's `actor` stamped and nothing else
@@ -1332,7 +1392,7 @@ impl Host {
                 let event = item.events()?.into_iter().next().ok_or_else(|| {
                     EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
                 })?;
-                let (result, sequence, mut events, payloads) =
+                let (result, sequence, mut events, written) =
                     self.finish_change(&key, &op_id, None, vec![event], strip_item(item)?)?;
                 let mut answer = serde_json::json!({
                     "result": result,
@@ -1341,7 +1401,7 @@ impl Host {
                 if let Some(event) = events.pop() {
                     answer["event"] = event;
                 }
-                Ok(HostResponse { json: envelope(answer), payloads })
+                Ok(written.respond(answer))
             }
             // `WorkerHost.handleAnnotationsImport`: a bundle's annotations as
             // a one-op change, its caller's `actor` stamped and nothing else
@@ -1403,7 +1463,7 @@ impl Host {
                 let event = item.events()?.into_iter().next().ok_or_else(|| {
                     EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
                 })?;
-                let (result, sequence, mut events, payloads) =
+                let (result, sequence, mut events, written) =
                     self.finish_change(&key, &op_id, None, vec![event], strip_item(item)?)?;
                 let mut answer = serde_json::json!({
                     "result": result,
@@ -1412,7 +1472,7 @@ impl Host {
                 if let Some(event) = events.pop() {
                     answer["event"] = event;
                 }
-                Ok(HostResponse { json: envelope(answer), payloads })
+                Ok(written.respond(answer))
             }
             // `WorkerHost.handleAnnotationsDelete`: the single verb as a
             // one-op change, checked against the request's authority with no
@@ -1439,11 +1499,9 @@ impl Host {
                 let refs: Vec<crate::identity::AnnotationRef> = field(body, "refs")?;
                 let usage: f::pages_write::FlattenUsage = field(body, "usage")?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| {
                         f::annotation::write::mutator::flatten(session, page, &refs, usage, cancel)
                     },
@@ -1643,11 +1701,9 @@ impl Host {
                 let page: crate::identity::PageRef = field(body, "page")?;
                 let replace: Option<String> = optional(body, "replace")?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| {
                         f::pages_write::set_name(session, &name, page, replace.as_deref(), cancel)
                     },
@@ -1664,11 +1720,9 @@ impl Host {
             "pages.removeName" => {
                 let name: String = field(body, "name")?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| f::pages_write::remove_name(session, &name, cancel),
                 )?;
                 self.finish(
@@ -1685,11 +1739,9 @@ impl Host {
                 let pages = pages_field(body)?;
                 let usage: f::pages_write::FlattenUsage = field(body, "usage")?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| f::pages_write::flatten_pages(session, &pages, usage, cancel),
                 )?;
                 let wrote = !result.meta.affected_pages.is_empty();
@@ -1705,11 +1757,9 @@ impl Host {
             "redaction.apply" => {
                 let scope: f::redaction::RedactionScope = field(body, "scope")?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| f::redaction::apply(session, &scope, cancel),
                 )?;
                 let wrote = !result.meta.affected_pages.is_empty();
@@ -1736,14 +1786,12 @@ impl Host {
                 })?;
                 let measure = Some(measure.clone()).filter(|m| !m.is_null());
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 // `PageScaleResult`, naming the page as the request did. A
                 // calibration changes no page pixels and no annotation
                 // indices: `meta` names no page and carries the write's stamp.
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| {
                         {
                             let owned = session.document()?;
@@ -1790,7 +1838,6 @@ impl Host {
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| {
                         let d = session.document()?.document();
                         f::files::piece_info::update_piece_info(
@@ -1820,11 +1867,9 @@ impl Host {
                 let holder = piece_info_holder(body)?;
                 let application = string_field(body, "application")?;
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let clock = self.clock.as_ref();
                 let result = f::changes::transaction::in_transaction(
                     self.sessions.session_mut(&key)?,
                     &op_id,
-                    clock,
                     |session| {
                         let d = session.document()?.document();
                         f::files::piece_info::delete_piece_info(d, holder, &application, cancel)?;
@@ -1920,11 +1965,10 @@ impl Host {
         if event.as_ref().is_some_and(save::DocumentEventInit::ends_undo) {
             self.sessions.session_mut(key)?.ledger_mut().end_undo();
         }
-        let session = self.sessions.session(key)?;
-        let finished = save::finish_mutation(session, family, &CancelToken::never())?;
+        let written = self.finish_write(key, family)?;
         let mut answer = serde_json::json!({
             "result": result,
-            "mutationSequence": finished.mutation_sequence,
+            "mutationSequence": written.sequence,
         });
         if let Some(event) = event {
             answer["event"] = serde_json::to_value(self.stamp(key, event)?).map_err(|e| {
@@ -1934,8 +1978,49 @@ impl Host {
                 )
             })?;
         }
-        let json = envelope(answer);
-        Ok(HostResponse { json, payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default() })
+        Ok(written.respond(answer))
+    }
+
+    /// `finishMutation` and `saveLayerArtifact`: commit the write's
+    /// transaction, bump the sequence, and save a layer session's artifact,
+    /// named in the answer as upstream names it (`artifact`, its bytes the
+    /// response's payload, or `artifactFile` when the request gave an
+    /// `artifactPath`), with the layer's last object number.
+    fn finish_write(
+        &mut self,
+        key: &SessionKey,
+        family: crate::session::save::MutationFamily,
+    ) -> Result<Written, EngineError> {
+        let finished = crate::session::save::finish_mutation(
+            self.sessions.session_mut(key)?,
+            family,
+            &CancelToken::never(),
+        )?;
+        let (artifact, payloads) = match (finished.artifact, self.artifact_path.take()) {
+            (None, _) => (None, Vec::new()),
+            (Some(bytes), Some(path)) => {
+                std::fs::write(&path, &bytes).map_err(|e| {
+                    EngineError::with_message(
+                        EngineErrorCode::Unknown,
+                        format!("writing the layer artifact to '{path}' failed: {e}"),
+                    )
+                })?;
+                let file = serde_json::json!({
+                    "path": path,
+                    "lastObjectNumber": finished.last_object_number,
+                });
+                (Some(("artifactFile", file)), Vec::new())
+            }
+            (Some(bytes), None) => {
+                let artifact = serde_json::json!({
+                    "payload": 0,
+                    "size": bytes.len(),
+                    "lastObjectNumber": finished.last_object_number,
+                });
+                (Some(("artifact", artifact)), vec![bytes])
+            }
+        };
+        Ok(Written { sequence: finished.mutation_sequence, artifact, payloads })
     }
 
     /// Finish a flatten or a redaction (`handlePagesFlatten`,
@@ -1966,23 +2051,16 @@ impl Host {
             })));
         }
         self.sessions.session_mut(key)?.ledger_mut().end_undo();
-        let finished = save::finish_mutation(
-            self.sessions.session(key)?,
-            save::MutationFamily::Ordinary,
-            &CancelToken::never(),
-        )?;
+        let written = self.finish_write(key, save::MutationFamily::Ordinary)?;
         let init = value(&event(result.clone()))?;
         let mut events = self.stamp_change(key, op_id, None, vec![init])?;
         let answer = serde_json::json!({
             "result": result,
             "wrote": true,
-            "mutationSequence": finished.mutation_sequence,
+            "mutationSequence": written.sequence,
             "event": events.pop(),
         });
-        Ok(HostResponse {
-            json: envelope(answer),
-            payloads: finished.artifact.map(|a| vec![a]).unwrap_or_default(),
-        })
+        Ok(written.respond(answer))
     }
 
     /// Stamp `event` as this engine's own: a local origin under the
@@ -2039,7 +2117,7 @@ impl Host {
         let authority = job.authority.as_ref().map(change_authority).transpose()?;
         let item = self.apply_one(key, &op_id, op, authority, cancel)?;
         let events = item.events()?;
-        let (result, sequence, mut events, payloads) =
+        let (result, sequence, mut events, written) =
             self.finish_change(key, &op_id, None, events, strip_item(item)?)?;
         let mut answer = serde_json::json!({
             "result": result,
@@ -2050,7 +2128,7 @@ impl Host {
         } else if let Some(event) = events.pop() {
             answer["event"] = event;
         }
-        Ok(HostResponse { json: envelope(answer), payloads })
+        Ok(written.respond(answer))
     }
 
     /// A single field or widget verb as a one-op change
@@ -2078,7 +2156,7 @@ impl Host {
         };
         let item = self.apply_one(key, &op_id, op, authority, cancel)?;
         let events = item.events()?;
-        let (result, sequence, mut events, payloads) =
+        let (result, sequence, mut events, written) =
             self.finish_change(key, &op_id, None, events, strip_item(item)?)?;
         let mut answer = serde_json::json!({
             "result": result,
@@ -2087,7 +2165,7 @@ impl Host {
         if let Some(event) = events.pop() {
             answer["event"] = event;
         }
-        Ok(HostResponse { json: envelope(answer), payloads })
+        Ok(written.respond(answer))
     }
 
     /// A single annotation verb as a one-op change, checked against the
@@ -2116,7 +2194,7 @@ impl Host {
         let event = item.events()?.into_iter().next().ok_or_else(|| {
             EngineError::with_message(EngineErrorCode::Unknown, "a write published nothing")
         })?;
-        let (result, sequence, mut events, payloads) =
+        let (result, sequence, mut events, written) =
             self.finish_change(key, &op_id, None, vec![event], strip_item(item)?)?;
         let mut answer = serde_json::json!({
             "result": result,
@@ -2125,7 +2203,7 @@ impl Host {
         if let Some(event) = events.pop() {
             answer["event"] = event;
         }
-        Ok(HostResponse { json: envelope(answer), payloads })
+        Ok(written.respond(answer))
     }
 
     /// An import verb as a one-op change (`handleAnnotationsImport`,
@@ -2153,14 +2231,14 @@ impl Host {
             return Ok(HostResponse { json: envelope(answer), payloads: Vec::new() });
         }
         let events = item.events()?;
-        let (result, sequence, events, payloads) =
+        let (result, sequence, events, written) =
             self.finish_change(key, &op_id, None, events, strip_item(item)?)?;
         let answer = serde_json::json!({
             "result": result,
             "mutationSequence": sequence,
             "events": events,
         });
-        Ok(HostResponse { json: envelope(answer), payloads })
+        Ok(written.respond(answer))
     }
 
     /// `applyOne`: a single verb as a one-op change in the file's own
@@ -2220,10 +2298,11 @@ impl Host {
         })
     }
 
-    /// Finish a write that ran as a change: the sequence bumps, a layer
-    /// saves its artifact, and each event is stamped as one fact of the
-    /// write `op_id` (`publishChange`). Answers the result as given, the
-    /// sequence, the stamped events and the artifact payload.
+    /// Finish a write that ran as a change: its transaction commits, the
+    /// sequence bumps, a layer saves its artifact, and each event is stamped
+    /// as one fact of the write `op_id` (`publishChange`). Answers the
+    /// result as given, the sequence, the stamped events and what was
+    /// written.
     fn finish_change(
         &mut self,
         key: &SessionKey,
@@ -2231,15 +2310,10 @@ impl Host {
         undo_of: Option<String>,
         events: Vec<serde_json::Value>,
         result: serde_json::Value,
-    ) -> Result<(serde_json::Value, u64, Vec<serde_json::Value>, Payloads), EngineError> {
-        let finished = crate::session::save::finish_mutation(
-            self.sessions.session(key)?,
-            crate::session::save::MutationFamily::Ordinary,
-            &CancelToken::never(),
-        )?;
+    ) -> Result<(serde_json::Value, u64, Vec<serde_json::Value>, Written), EngineError> {
+        let written = self.finish_write(key, crate::session::save::MutationFamily::Ordinary)?;
         let events = self.stamp_change(key, op_id, undo_of, events)?;
-        let payloads = finished.artifact.map(|a| vec![a]).unwrap_or_default();
-        Ok((result, finished.mutation_sequence, events, payloads))
+        Ok((result, written.sequence, events, written))
     }
 
     /// Stamp a change's events as this engine's own, each one fact of the
@@ -2566,6 +2640,25 @@ impl Host {
         let key = header.key()?;
         self.sessions.close_layer(&key);
         Ok(serde_json::Value::Null)
+    }
+}
+
+/// What finishing a write leaves beside its answer (`finishMutation`): the
+/// sequence, and the layer artifact as the answer names it, with its bytes.
+struct Written {
+    sequence: u64,
+    artifact: Option<(&'static str, serde_json::Value)>,
+    payloads: Payloads,
+}
+
+impl Written {
+    /// `answer`, naming the artifact beside its own fields
+    /// (`{ ...payload, ...saved.payload }`), its bytes the payloads.
+    fn respond(self, mut answer: serde_json::Value) -> HostResponse {
+        if let Some((name, artifact)) = self.artifact {
+            answer[name] = artifact;
+        }
+        HostResponse { json: envelope(answer), payloads: self.payloads }
     }
 }
 
@@ -2940,6 +3033,44 @@ const MUTATING_KINDS: &[&str] = &[
     "metadata.updateCustom",
     "document.apply",
     "document.applyChanges",
+    "annotations.create",
+    "annotations.update",
+    "annotations.delete",
+    "annotations.reorder",
+    "annotations.flatten",
+    "annotations.import",
+    "forms.setValue",
+    "forms.reset",
+    "forms.import",
+    "forms.importValues",
+    "forms.repair",
+    "forms.createField",
+    "forms.updateField",
+    "forms.setSignatureAppearance",
+    "forms.deleteField",
+    "forms.addWidget",
+    "forms.detachWidget",
+    "forms.updateWidget",
+    "forms.deleteWidget",
+    "forms.reorderCalculations",
+    "forms.reorderWidgets",
+    "pages.setName",
+    "pages.removeName",
+    "pages.flatten",
+    "redaction.apply",
+    "measure.setScale",
+    "pieceInfo.update",
+    "pieceInfo.delete",
+];
+
+/// The kinds that run as one layer transaction (`writesDocument`): every
+/// write to an open document but `document.applyChanges`, whose changes
+/// each run in their own, and `signatures.complete`, which replaces the
+/// document's bytes instead.
+const TRANSACTED_KINDS: &[&str] = &[
+    "metadata.update",
+    "metadata.updateCustom",
+    "document.apply",
     "annotations.create",
     "annotations.update",
     "annotations.delete",

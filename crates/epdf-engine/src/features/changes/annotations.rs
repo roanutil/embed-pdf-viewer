@@ -517,28 +517,11 @@ pub fn restore_annotations(
             "this delete can't be brought back: its record carries no capture of what it removed",
         ));
     };
-    // An import runs inside a layer transaction. This engine opens none
-    // around its writes yet (Task 8.30), so the import has its own.
-    let own_transaction = !document.layer_in_transaction();
-    if own_transaction && !document.layer_begin_transaction() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFLayer_BeginTransaction refused",
-        ));
-    }
+    // An import runs inside the change's layer transaction.
     if !document.import_annotations_raw(page_index, capture) {
-        if own_transaction {
-            document.layer_abort_transaction();
-        }
         return Err(EngineError::with_message(
             EngineErrorCode::Unknown,
             "EPDFPage_ImportAnnotsRaw refused a capture",
-        ));
-    }
-    if own_transaction && !document.layer_commit_transaction() {
-        return Err(EngineError::with_message(
-            EngineErrorCode::Unknown,
-            "EPDFLayer_CommitTransaction refused",
         ));
     }
     // A popup the delete took from an annotation that stayed links to it

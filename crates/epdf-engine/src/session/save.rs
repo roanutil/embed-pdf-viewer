@@ -62,26 +62,43 @@ pub struct MutationFinalization {
     /// a session opened from bytes (`open.fatMem`), whose caller holds the
     /// document: its writes go out with the next save.
     pub artifact: Option<Vec<u8>>,
+    /// The layer's last object number as the artifact saved it: every object
+    /// it has is at or below it (`LayerArtifactWorkerPayload.lastObjectNumber`).
+    /// `None` when there is no artifact.
+    pub last_object_number: Option<u32>,
 }
 
-/// Finish a mutation.
+/// Finish a mutation (`finishMutation`): keep the write's transaction, if
+/// one is open, before anything is saved, so nothing after this point can
+/// abort it; bump the sequence; and save a layer session's artifact.
+///
+/// A failure after the commit (the layer save) leaves a committed write
+/// that the caller must not mistake for a refused one.
 pub fn finish_mutation(
-    session: &DocumentSession,
+    session: &mut DocumentSession,
     family: MutationFamily,
     cancel: &crate::cancel::CancelToken,
 ) -> Result<MutationFinalization, EngineError> {
+    if session.in_transaction() {
+        session.commit_transaction()?;
+    }
     if family == MutationFamily::Ordinary {
         session.note_mutation();
     }
 
     // `saveLayerArtifact`: only a layer session that persists one.
-    let artifact = if session.persists_layer_artifact() {
-        Some(save_layer_to_buffer(session, LayerArtifactKind::Artifact, cancel)?)
+    let (artifact, last_object_number) = if session.persists_layer_artifact() {
+        let last = session.last_object_number()?;
+        (Some(save_layer_to_buffer(session, LayerArtifactKind::Artifact, cancel)?), last)
     } else {
-        None
+        (None, None)
     };
 
-    Ok(MutationFinalization { mutation_sequence: session.mutation_sequence(), artifact })
+    Ok(MutationFinalization {
+        mutation_sequence: session.mutation_sequence(),
+        artifact,
+        last_object_number,
+    })
 }
 
 /// Who caused a mutation.
@@ -107,7 +124,7 @@ pub struct EventOrigin {
     pub server_id: Option<i64>,
     /// The write this event is one fact of: its `opId`, and where the event
     /// stands among the write's events. Set on the writes that run as a
-    /// change (Task 8.6); Task 8.30 sets it on every write.
+    /// change (Task 8.6); Task 8.27 sets it on every write.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tx: Option<EventTx>,
     /// Set on the events of an undo: the `opId` of the change it undid.

@@ -44,12 +44,6 @@ impl ChangeAuthority {
         }
     }
 
-    /// Nothing checked and no one named: taking back a refused change, which
-    /// only restores what the change itself wrote.
-    pub fn rollback() -> Self {
-        Self { user_id: None, identity: IdentityClaims::default(), grants: None }
-    }
-
     /// `checkedAuthority`: a single verb's caller, stamped as it says, with
     /// nothing checked: the host that sent it checked it.
     pub fn checked(identity: IdentityClaims) -> Self {
@@ -204,14 +198,6 @@ pub struct ChangeServices<'a> {
     pub fonts: Option<&'a crate::features::fonts::FontRegistry>,
 }
 
-impl<'a> ChangeServices<'a> {
-    /// With no fonts and the system's ids: taking back a refused change,
-    /// which only removes or restores what the change itself wrote.
-    pub fn of_clock(clock: &'a dyn Clock) -> Self {
-        Self { clock, ids: &crate::ids::SystemIdSource, fonts: None }
-    }
-}
-
 /// What every op and step of a change runs with (`ChangeContext`).
 pub struct ChangeContext<'a> {
     pub session: &'a mut DocumentSession,
@@ -347,7 +333,6 @@ impl Collected {
         done: Done,
         space: ChangeSpace,
     ) -> Result<(), EngineError> {
-        ctx.session.journal(&done.reverse)?;
         self.items.push(space.item_out(ctx.session, done.item)?);
         self.reverses.push(done.reverse);
         Ok(())
@@ -523,10 +508,7 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
 }
 
 /// A reverse step's dispatch (`runStep`).
-pub(super) fn run_step(
-    ctx: &mut ChangeContext<'_>,
-    step: &ReverseStep,
-) -> Result<Done, EngineError> {
+fn run_step(ctx: &mut ChangeContext<'_>, step: &ReverseStep) -> Result<Done, EngineError> {
     match step {
         ReverseStep::MetadataRevert(step) => super::metadata::revert_metadata(ctx, step),
         ReverseStep::AttachmentsRemove(step) => super::attachments::remove_attachment(ctx, step),

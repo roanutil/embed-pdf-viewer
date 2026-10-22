@@ -201,25 +201,13 @@ pub fn restore_pages(
     }
     authorize(ctx)?;
     {
+        // An import runs inside the change's layer transaction. In the
+        // display order they had: each page it followed is back before it.
         let document = ctx.session.document()?.document();
-        // An import runs inside a layer transaction. This engine opens none
-        // around its writes yet (Task 8.30), so the import has its own.
-        let own_transaction = !document.layer_in_transaction();
-        if own_transaction && !document.layer_begin_transaction() {
-            return Err(unknown("EPDFLayer_BeginTransaction refused"));
-        }
-        // In the display order they had: each page it followed is back
-        // before it.
         for captured in &gone {
             if !document.import_page_raw(&captured.capture) {
-                if own_transaction {
-                    document.layer_abort_transaction();
-                }
                 return Err(unknown("EPDFPage_ImportRaw refused a capture"));
             }
-        }
-        if own_transaction && !document.layer_commit_transaction() {
-            return Err(unknown("EPDFLayer_CommitTransaction refused"));
         }
     }
     ctx.session.refresh_page_registry()?;

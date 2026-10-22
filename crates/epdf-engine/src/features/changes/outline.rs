@@ -19,7 +19,6 @@ use super::record::{
     CapturedObject, ObjectsRevertStep, OutlineLeftUnder, OutlineMoveStep, OutlineRemoveStep,
     OutlineReopenStep, OutlineRestoreStep, ReverseStep, RevertFallback, RevertSubject,
 };
-use super::transaction::in_layer_transaction;
 use crate::auth::scope::DocCapability;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::outline::tree::OutlineTree;
@@ -163,13 +162,10 @@ pub fn revert_outline_item(
     let document = ctx.session.document()?.document();
     if unchanged_since(document, &step.objects) {
         let mutator = mutator(ctx)?;
-        let reverted = in_layer_transaction(document, || {
-            let reverted = revert_objects_pending(document, &step.objects)?;
-            // The item came back with its own /Count; the items above it
-            // count again.
-            mutator.count_again(reference)?;
-            Ok(reverted)
-        })?;
+        let reverted = revert_objects_pending(document, &step.objects)?;
+        // The item came back with its own /Count; the items above it count
+        // again.
+        mutator.count_again(reference)?;
         let redo = capture_after(document, reverted)?;
         let Updated { item, meta } = mutator.updated(reference)?;
         let fallback = step.fallback.as_ref().map(|fallback| match fallback {
@@ -257,16 +253,12 @@ pub fn restore_outline_item(
     }
     authorize(ctx)?;
     let document = ctx.session.document()?.document();
-    in_layer_transaction(document, || {
-        if document.import_outline_item_raw(&step.capture) {
-            Ok(())
-        } else {
-            Err(EngineError::with_message(
-                EngineErrorCode::Unknown,
-                "EPDFOutline_ImportItemRaw refused a capture",
-            ))
-        }
-    })?;
+    if !document.import_outline_item_raw(&step.capture) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "EPDFOutline_ImportItemRaw refused a capture",
+        ));
+    }
     let restored = mutator(ctx)?.restored(number)?;
     let refs: Vec<OutlineItemRef> = restored.items.iter().map(|item| item.reference).collect();
     Ok(Done {

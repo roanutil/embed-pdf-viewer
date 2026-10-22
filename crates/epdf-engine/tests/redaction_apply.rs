@@ -624,12 +624,7 @@ fn write_with<T>(
 ) -> Result<T, epdf_engine::error::EngineError> {
     let key = epdf_engine::session::registry::SessionKey::document(replay.doc_id.clone());
     let session = replay.host.sessions_mut().session_mut(&key).expect("the session");
-    epdf_engine::features::changes::transaction::in_transaction(
-        session,
-        "op-cancelled",
-        &epdf_engine::clock::SystemClock,
-        write,
-    )
+    epdf_engine::features::changes::transaction::in_transaction(session, "op-cancelled", write)
 }
 
 /// The host's call is synchronous, so nothing can cancel it partway; the
