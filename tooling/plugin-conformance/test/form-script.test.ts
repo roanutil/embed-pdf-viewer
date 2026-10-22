@@ -19,7 +19,7 @@ test('all 46 current form scripting cases execute without obsolete calls or unma
 
 import { suites as actions } from '../src/suites/form-actions';
 import type { ScenarioCase, TraceEntry } from '../src/scenario';
-import { ref, objRef, pr, operationAt, LOCAL } from '../src/suites/form-script-fixtures';
+import { ref, objRef, pr, operationAt, LOCAL, act } from '../src/suites/form-script-fixtures';
 const inputs = [...scripting, ...actions].flatMap((suite) =>
   suite.kind === 'scenario' ? [...suite.cases] : [],
 );
@@ -343,13 +343,7 @@ test('all 59 cases settle completely with only exact named rejection channels an
     const diagnostics = trace.flatMap((entry) =>
       entry.callbacks.filter((callback) => callback.fn.startsWith('console.')),
     );
-    if (input.name === 'no-sandbox-host') {
-      assert.equal(diagnostics.length, 1);
-      assert.equal(diagnostics[0]!.fn, 'console.warn');
-      assert.deepEqual(diagnostics[0]!.args, [
-        "[form] this form has scripts, but they don't run: add the actions plugin with JavaScript on (`actionsPlugin({ javascript: { enabled: true, sandboxFactory } })`), or set the form's `validation` to 'none' to fill it in without them.",
-      ]);
-    } else assert.deepEqual(diagnostics, [], input.name);
+    assert.deepEqual(diagnostics, [], input.name);
   }
 });
 const inputOf = (name: string): ScenarioCase => {
@@ -414,7 +408,7 @@ const values: Record<string, unknown[]> = {
   'scripted-activation': [{ value: 'clicked' }],
   'scripted-activation-reads-the-folded-annotation': [{ value: 'clicked' }],
   'script-nodes-commit-through-the-form': [{ value: 'from-js' }],
-  'no-sandbox-host': [{ value: '3' }],
+  'no-sandbox-host': [{ value: '3' }, { value: '2' }],
   'the-reset-form-executor': [null, null, null, { checked: false }],
   'reset-form-action-door': [null],
   'commit-script-form-effects': [{ value: 'x' }, { value: 'x' }, { value: 'x' }],
@@ -1062,4 +1056,121 @@ test('exact 59-case migration closes every original 220 input against immutable 
     if (name === 'form-fixtures.ts')
       assert.equal(hash(await readFile(new URL('src/suites/' + name, root))), source.sha256);
   }
+});
+
+import { ActionsToken } from '../../../packages/plugin/actions/src/host-contract';
+registerPlugin('form-script-realm-state', {
+  factory: (_, env) =>
+    definePlugin({
+      id: 'form-script-realm-state',
+      token: env.token('form-script-realm-state'),
+      scope: 'document',
+      requires: [ActionsToken],
+      create: (ctx) => ({
+        api: {
+          get: () => {
+            const actions = ctx.get(ActionsToken);
+            return {
+              configured: actions.getSettings().javascript.enabled,
+              enabled: actions.isScriptingEnabled(),
+              realm: actions.scriptRealm !== undefined,
+              detached: actions.createDetachedScriptRealm !== undefined,
+            };
+          },
+          transact: async () => {
+            const actions = ctx.get(ActionsToken);
+            if (!actions.scriptRealm || !actions.createDetachedScriptRealm) return null;
+            const detached = actions.createDetachedScriptRealm({
+              doc: ctx.doc,
+              document: () => ctx.document(),
+              bootSources: async () => [],
+            });
+            try {
+              return {
+                normal: await actions.scriptRealm.transaction(
+                  async () => 'normal no-run transaction',
+                ),
+                detached: await detached.transaction(async () => 'detached no-run transaction'),
+              };
+            } finally {
+              detached.dispose();
+            }
+          },
+        },
+      }),
+    }),
+});
+test('an omitted sandbox factory preserves the authored switch and creates the actual lazy default realm', async () => {
+  const input = inputOf('no-sandbox-host');
+  for (const enabled of [true, false])
+    for (const sandbox of [null, { builds: [{}] }]) {
+      const result = await runScenario({
+        ...input,
+        plugins: [
+          ...input.plugins!.map((plugin) =>
+            plugin.factory === 'form-actions-current'
+              ? { ...plugin, config: { openSequence: 'off', javascript: { enabled, sandbox } } }
+              : plugin,
+          ),
+          { factory: 'form-script-realm-state' },
+        ],
+        steps: [
+          ...input.steps.slice(0, 2),
+          act('isScriptingEnabled', []),
+          { op: 'call', target: { token: 'form-script-realm-state', doc: 'a' }, method: 'get' },
+          {
+            op: 'call',
+            target: { token: 'form-script-realm-state', doc: 'a' },
+            method: 'transact',
+          },
+        ],
+      });
+      assert.deepEqual(result.unmatched, []);
+      assert.deepEqual(result.trace[2]!.outcome, { returned: enabled });
+      assert.deepEqual(result.trace[3]!.outcome, {
+        returned: { configured: enabled, enabled, realm: enabled, detached: enabled },
+      });
+      assert.deepEqual(
+        methodResolvedForProbe(result.trace),
+        enabled
+          ? [{ normal: 'normal no-run transaction', detached: 'detached no-run transaction' }]
+          : [null],
+      );
+      assert.deepEqual(
+        result.trace.flatMap((entry) => entry.callbacks),
+        [],
+      );
+    }
+});
+
+const methodResolvedForProbe = (trace: TraceEntry[]) =>
+  trace[4]!.settled.filter((item) => 'resolved' in item).map((item) => item.resolved);
+test('the lazy-default case explicitly skips form validation and confirms native values without script diagnostics', async () => {
+  const input = inputOf('no-sandbox-host'),
+    { trace, unmatched } = await run('no-sandbox-host');
+  const form = input.plugins!.find((plugin) => plugin.factory === 'form-current');
+  assert.ok(form);
+  assert.deepEqual(form.config, { validation: 'none' });
+  const actions = input.plugins!.find((plugin) => plugin.factory === 'form-actions-current');
+  assert.ok(actions);
+  assert.deepEqual(object(actions.config).javascript, { enabled: true, sandbox: null });
+  assert.deepEqual(trace[2]!.outcome, { returned: true });
+  assert.deepEqual(
+    methodResolved('no-sandbox-host', trace, 'setValue').map((value) => ({
+      status: object(value).status,
+      value: object(object(value).field).value,
+    })),
+    [{ status: 'applied', value: '3' }],
+  );
+  assert.deepEqual(readReturns('no-sandbox-host', trace), [{ value: '3' }, { value: '2' }]);
+  assert.deepEqual(writes(trace), [[write(2, '3')]]);
+  assert.deepEqual(unmatched, []);
+  assert.deepEqual(
+    trace.flatMap((entry) => entry.callbacks),
+    [],
+  );
+  assert.deepEqual(
+    trace.flatMap((entry) => entry.reports),
+    [],
+  );
 });

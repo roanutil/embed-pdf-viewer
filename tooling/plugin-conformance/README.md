@@ -536,3 +536,11 @@ The deferred form helper remains solely for stamp/signature consumers; both
 legacy bridges and the68 deferred compiler diagnostics remain open. Preserve
 the separately observed form-pipeline print policy gap and action-executor M14
 gate; no source behavior is changed here.
+
+The `no-sandbox-host` replacement now tests the actual enabled lazy default
+realm with no injected factory and an explicitly authored form
+`validation: 'none'`. Normal/detached no-run transactions and native confirmed
+values are checked with empty diagnostics. Default VM execution is a separate
+D/12c/13 coverage gap: the current tsx loader injects `__name` into the prelude
+and the real default VM rejects it. No factory/prelude substitution is hidden
+in the fixture; the original no-realm assumption remains archived.

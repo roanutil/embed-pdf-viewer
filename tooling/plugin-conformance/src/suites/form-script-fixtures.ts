@@ -152,7 +152,7 @@ registerPlugin('form-actions-current', {
     return actionsPlugin({
       ...rest,
       javascript: {
-        enabled: javascript.enabled && javascript.sandbox !== null,
+        enabled: javascript.enabled,
         ...(javascript.sandbox ? { sandboxFactory: sandboxFactory(javascript.sandbox, env) } : {}),
         ...(hostIdentity
           ? {
@@ -376,8 +376,10 @@ export function formScenario(
   sandbox?: SandboxSpec | null,
   annotation = false,
   over: Partial<FakeDocumentSpec> = {},
+  formConfig?: FormConfig,
 ): ScenarioCase {
-  const config = { validation: sandbox === undefined ? 'none' : 'scripts' } satisfies FormConfig;
+  const config =
+    formConfig ?? ({ validation: sandbox === undefined ? 'none' : 'scripts' } satisfies FormConfig);
   return {
     name,
     covers,

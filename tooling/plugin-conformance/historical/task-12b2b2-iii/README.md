@@ -54,6 +54,32 @@ another page's number through the form ownership join; the dispatcher sees
 no row on that page and returns to the form's unchanged path. This observed
 behavior is explicitly asserted rather than silently tightened.
 
+## Lazy default realm without an injected factory
+
+The `no-sandbox-host` name preserves its original archived case, but the
+removed assumption that enabled-without-sandbox has no realm is not current
+behavior. Actions `scripting/realm.ts` creates a host/transaction port when
+`enabled` is true; `scripting/environment.ts` supplies a lazy QuickJS factory
+when no factory is injected. The fixture passes the authored enable flag
+unchanged for null, scripted and disabled configurations. Null means the
+factory is omitted, not that scripting is disabled.
+
+This case explicitly authors form `validation: 'none'`, observes
+`isScriptingEnabled() === true`, then confirms the native amount3 and
+unchanged total2 without warning or script diagnostics. Independent tests
+inspect the real current settings plus normal/detached realm ports and run
+transactions that request no boot/run, so neither constructs a VM. This is
+lazy-default configuration/transaction coverage, not default VM execution.
+
+A separate local probe of the actual default QuickJS factory fails installing
+its prelude under the required tsx loader: esbuild injects `__name` into the
+`installAcroJs.toString()` source and the VM reports `__name` is undefined.
+No clean prelude, injected default factory or source-package fix is substituted
+here. Default omitted-factory VM execution remains an explicit D/12c/13
+coverage gap. The authored-sandbox K/V/C/F/effect cases remain active; all
+original archives are immutable. Reconstruct the declared enabled flag,
+explicit validation setting, lazy realm and native output exactly.
+
 ## Host inputs and cleanup
 
 `form-script-fixtures.ts` owns an isolated current actions registration and a

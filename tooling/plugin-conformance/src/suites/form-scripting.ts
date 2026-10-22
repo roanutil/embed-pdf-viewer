@@ -1359,11 +1359,13 @@ const capabilityCases: ScenarioCase[] = [
   ),
   formScenario(
     'no-sandbox-host',
-    'Enabled configuration without a sandbox has no transaction port. The form warns once, fills through the native queue, and never builds a sandbox.',
+    'Enabled configuration with no injected factory creates the current lazy default realm. Explicit validation:none keeps this native fill outside scripts; this case observes the enabled realm without constructing its default VM.',
     snapshot([AMOUNT, TOTAL], widgetRows, [ref(3)]),
     [
+      act('isScriptingEnabled', []),
       call('setValue', [ref(2), textValue('3')]),
       call('getValue', [ref(2)]),
+      call('getValue', [ref(3)]),
       call('activateWidget', [objRef(102)]),
     ],
     [
@@ -1376,6 +1378,9 @@ const capabilityCases: ScenarioCase[] = [
       ),
     ],
     null,
+    false,
+    {},
+    { validation: 'none' },
   ),
 ];
 

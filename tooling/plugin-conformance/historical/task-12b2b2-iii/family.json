@@ -4170,17 +4170,25 @@
       "after": {
         "file": "plugins/form-scripting.json",
         "name": "no-sandbox-host",
-        "canonicalInputSha256": "fbb12a140b212e55fc32271fbe7509a8d55209150c1639fea13d6a9ce52e44cf",
-        "intent": "Enabled configuration without a sandbox has no transaction port. The form warns once, fills through the native queue, and never builds a sandbox."
+        "canonicalInputSha256": "8ed489ace753b7c140f40147421902496439131c99c7553ff1b38f925fd89a25",
+        "intent": "Enabled configuration with no injected factory creates the current lazy default realm. Explicit validation:none keeps this native fill outside scripts; this case observes the enabled realm without constructing its default VM."
       },
       "disposition": "current-shipping-replacement",
-      "reason": "services/scripting.ts current host emits one exact warning for scripted fields without a realm, then the native fill succeeds with no sandbox creation.",
+      "reason": "actions scripting/realm.ts and environment.ts create a lazy default realm when enabled:true and sandboxFactory is omitted; services/scripting.ts independently obeys the explicitly authored validation:none setting. Actual settings/normal and detached realm ports/no-run transactions and native confirmation are asserted with empty diagnostics. The removed no-host/no-realm assumption remains archived. Default VM execution is not claimed: the tsx loader injects __name into PRELUDE_SOURCE and the real factory fails installing it. D/12c/13 retain this explicit coverage gap; no factory or prelude is substituted.",
       "task11InputDrift": false,
       "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/actions/src/dispatch/run.ts#createRunner",
         "packages/plugin/form/src/write/values.ts#createValueWrites",
         "packages/plugin/form/src/read/fields.ts#valueOf",
         "packages/plugin/form/src/write/activation.ts#createActivation",
-        "packages/plugin/form/src/write/fill.ts#createFill"
+        "packages/plugin/form/src/write/fill.ts#createFill",
+        "packages/plugin/actions/src/scripting/realm.ts#createRealm",
+        "packages/plugin/actions/src/scripting/environment.ts#createScriptRealmFactory",
+        "packages/plugin/form/src/services/scripting.ts#createScriptingSeam",
+        "packages/core/acrojs/src/host.ts#createScriptHost",
+        "packages/core/acrojs/src/prelude.ts#PRELUDE_SOURCE",
+        "packages/core/js-sandbox/src/QuickJsSandbox.ts#QuickJsSandbox.create"
       ]
     },
     {
