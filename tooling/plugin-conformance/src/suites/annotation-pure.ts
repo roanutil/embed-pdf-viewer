@@ -9,37 +9,77 @@
 import { buildCommentThreads } from '../../../../packages/engine/core/src/runtime';
 import { sniffBinaryMetadata } from '../../../../packages/engine/core/src/resource/binaryMetadata';
 import { buildTextItems } from '../../../../packages/plugin/annotation/src/text-item';
-import { iconPlacementDraft } from '../../../../packages/plugin/annotation/src/write/placement';
+import { iconPlacement as iconPlacementDraft } from '../../../../packages/plugin/annotation/src/write/placement';
+import * as annotationModel from '../../../../packages/plugin/annotation/src/model';
+import type { AnnotationState } from '../../../../packages/plugin/annotation/src/model';
+import { buildToolRegistry, toolTouchOf as isTouchDirect } from '../../../../packages/plugin/annotation/src/tools/definitions';
+import { fromDTO as upstreamFromDTO } from '../../../../packages/core/annotation/src/record/index';
 import {
-  annotationReducer,
-  initialAnnotationState,
-  mergeChrome,
-  DEFAULT_CHROME,
-} from '../../../../packages/plugin/annotation/src/model';
-import { buildToolRegistry, isTouchDirect } from '../../../../packages/plugin/annotation/src/tools/definitions';
-import { fromDTO } from '../../../../packages/plugin/annotation/src/repository';
-import {
-  bodyFromTextStyle,
   cssFontFamilyForFace,
-  cssFontFamilyForFont,
-  faceForFont,
   familyKey,
   fontForFace,
   rangeProps,
-  richDocOf,
-  runDeltaForProps,
+  runDeltaForFields as runDeltaForProps,
   runsInRange,
   stripBodyDefaults,
   textCommitPatch,
 } from '../../../../packages/plugin/annotation/src/rich-text';
-import { geometryFromInput } from '../../../../packages/plugin/annotation/src/create-input';
+import { bodyFromTextStyle, faceForFont, richDocOf } from '../../../../packages/core/annotation/src/richtext';
+import { cssFontFamilyForFont } from '../../../../packages/core/annotation/src/font-css';
 import { previewBucket } from '../../../../packages/plugin/annotation/src/host-contract';
 import { initialModel, defaultsFor } from '../../../../packages/core/annotation/src/update';
+import { removedUpstream } from '../removed';
 
 import { CROP, callout, freeText, objRef, pr, square, textNote, markup, link, widget, base } from './annotation-fixtures';
 import type { FunctionCase, Suite } from '../vectors';
 
 const c = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
+
+// ── upstream's moves and removals ────────────────────────────────────────────
+//
+// Renamed: `iconPlacementDraft` is `iconPlacement` (11a1259d9),
+// `isTouchDirect` is `toolTouchOf` (cdf4586c7) and `runDeltaForProps` is
+// `runDeltaForFields` (17191ea39). Moved to the core by d29344e88:
+// `fromDTO` (it takes the engine's record alone), `bodyFromTextStyle`,
+// `faceForFont` and `richDocOf`; `cssFontFamilyForFont` moved to the core's
+// `font-css.ts` in 97383027a. Removed: `geometryFromInput` (cabdb0c7b), and
+// `mergeChrome` and `DEFAULT_CHROME` with the chrome settings (cdf4586c7);
+// `initialAnnotationState` takes no config since cdf4586c7.
+const fromDTO = (dto: never, _crop?: unknown, _source?: unknown) => upstreamFromDTO(dto);
+const geometryFromInput = removedUpstream('geometryFromInput', 'cabdb0c7b');
+const mergeChrome = removedUpstream('mergeChrome', 'cdf4586c7');
+const initialAnnotationState = (_config?: unknown) => annotationModel.initialAnnotationState();
+/** The old `DEFAULT_CHROME`, as the `mergeChrome` cases' input. */
+const DEFAULT_CHROME = {
+  accent: '#3858e9',
+  outline: { style: 'solid', width: 1 },
+  handles: { size: 8, hitSize: 24, fill: '#ffffff' },
+  knob: { size: 10, hitSize: 24, offset: 32, stalk: true, fill: '#ffffff' },
+  guides: { enabled: true, style: 'solid', width: 1, axisOpacity: 0.35, indicatorOpacity: 0.8 },
+};
+
+/**
+ * 4fc1a32af replaced `annotationReducer` with transitions. The plugin keeps
+ * the session, not the model (`withSession`), and the text selection
+ * (`setTextSelection`); hydration, chrome, the tool ghost and the stamp-arm
+ * epoch left the state, so those actions record a removal error.
+ */
+function annotationReducer(state: AnnotationState, action: { type: string; [field: string]: unknown }): AnnotationState {
+  const a = action as unknown as Record<string, never>;
+  switch (action.type) {
+    case 'SET_MODEL':
+      return annotationModel.withSession(state, a.model);
+    case 'SET_TEXT_SELECTION':
+      return annotationModel.setTextSelection(state, a.selection);
+    case 'SET_HYDRATION':
+    case 'SET_CHROME':
+    case 'SET_TOOL_GHOST':
+    case 'STAMP_ARM_CHANGED':
+      return removedUpstream(`annotationReducer '${action.type}'`, '4fc1a32af')();
+    default:
+      return state;
+  }
+}
 
 const cases: FunctionCase[] = [];
 

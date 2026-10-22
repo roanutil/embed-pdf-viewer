@@ -9,30 +9,11 @@
  * annotations it produced, with styles varied to reach the cloudy, dashed and
  * endings couplings.
  */
-import {
-  boxGeomFields,
-  cssToColor,
-  colorToCss,
-  fromDTO,
-  linkChildRects,
-  styleFromDTO,
-  toCreateDraft,
-  toPatch,
-  toScopedPatch,
-  widgetAppearanceFromProps,
-  writableTarget,
-} from '../../../../packages/plugin/annotation/src/repository';
-import {
-  borderFromDTO,
-  boxGeomFromDTO,
-  insetPdfRectByRD,
-  rotFromDTO,
-} from '../../../../packages/plugin/annotation/src/repository/seam';
-import { cloudyExtras } from '../../../../packages/plugin/annotation/src/repository/kinds/shape';
-import { calloutFields } from '../../../../packages/plugin/annotation/src/repository/kinds/freeText';
-import { pdfBoundsOfQuads, quadPointsFor } from '../../../../packages/plugin/annotation/src/repository/kinds/quads';
-import { widgetKindOf } from '../../../../packages/plugin/annotation/src/repository/kinds/misc';
-import type { Annot, Border } from '../../../../packages/core/annotation/src/types';
+import { fromDTO as upstreamFromDTO } from '../../../../packages/core/annotation/src/record/index';
+import { linkChildRects, writableTarget } from '../../../../packages/core/annotation/src/record/links';
+import { widgetKindOf } from '../../../../packages/core/annotation/src/kinds/widget';
+import { removedUpstream } from '../removed';
+import type { Annot, Border } from './annotation-core-fixtures';
 import { annotationKey } from '../../../../packages/engine/core/src/runtime';
 
 import {
@@ -191,6 +172,29 @@ function BLUE_DTO() {
 function RED_DTO() {
   return { r: 239, g: 68, b: 68 };
 }
+
+// d29344e88 moved the record conversion from the plugin's `repository/` into
+// the core (`record/`): `fromDTO`, `linkChildRects` and `writableTarget` are
+// there, and `widgetKindOf` is in `kinds/widget.ts`. `fromDTO` takes the
+// engine's record alone and answers a `ModelAnnotation`. The rest went as the
+// core moved onto the engine's records; each records a removal error.
+const fromDTO = (dto: never, _crop?: unknown, _source?: unknown) => upstreamFromDTO(dto) as unknown as Annot;
+const boxGeomFields = removedUpstream('boxGeomFields', 'b979f2aef');
+const cssToColor = removedUpstream('cssToColor', 'c053c3d33');
+const colorToCss = removedUpstream('colorToCss', 'c053c3d33');
+const styleFromDTO = removedUpstream('styleFromDTO', '23a18802a');
+const toCreateDraft = removedUpstream('toCreateDraft', 'b979f2aef');
+const toPatch = removedUpstream('toPatch', 'b979f2aef');
+const toScopedPatch = removedUpstream('toScopedPatch', '0bcaa4e8c');
+const widgetAppearanceFromProps = removedUpstream('widgetAppearanceFromProps', '17191ea39');
+const borderFromDTO = removedUpstream('borderFromDTO', '23a18802a');
+const boxGeomFromDTO = removedUpstream('boxGeomFromDTO', '513541817');
+const insetPdfRectByRD = removedUpstream('insetPdfRectByRD', '2bdc74fbf');
+const rotFromDTO = removedUpstream('rotFromDTO', 'b979f2aef');
+const cloudyExtras = removedUpstream('cloudyExtras', '513541817');
+const calloutFields = removedUpstream('calloutFields', '14bf747f2');
+const pdfBoundsOfQuads = removedUpstream('pdfBoundsOfQuads', '1a243431a');
+const quadPointsFor = removedUpstream('quadPointsFor', 'b979f2aef');
 
 const annotOf = (label: string, source: 'baked' | 'vector' = 'vector'): Annot => {
   const found = DTOS.find(([l]) => l === label);
