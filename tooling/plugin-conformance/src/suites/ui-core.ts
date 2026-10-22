@@ -22,13 +22,10 @@
 import {
   DEFAULT_IMPORTANCE,
   PINNED,
-  addItem,
-  chromeHelpers,
-  custom,
-  defineChrome,
+  custom as upstreamCustom,
   filterBar,
   formatShortcut,
-  group,
+  group as upstreamGroup,
   item,
   matchShortcut,
   normalizeBar,
@@ -36,12 +33,8 @@ import {
   projectOverflow,
   projectShed,
   projectStrip,
-  removeItems,
-  replaceItem,
   solve,
-  validateChrome,
   type BarSchema,
-  type ChromeSchema,
   type FitMetrics,
   type FitResult,
   type KeyStroke,
@@ -51,7 +44,33 @@ import {
   type ResolveMenuTarget,
 } from '../../../../packages/core/ui/src/index';
 
+import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
+
+// d65fe1380 replaced the chrome schema with the layout model ("The chrome
+// schema helpers are removed"): `defineChrome`, `validateChrome`, `addItem`,
+// `removeItems`, `replaceItem` and the `chromeHelpers` bundle are gone. The
+// cases keep their schema inputs.
+type ChromeSchema = Record<string, unknown>;
+const defineChrome = removedUpstream('defineChrome', 'd65fe1380');
+const validateChrome = removedUpstream('validateChrome', 'd65fe1380');
+const addItem = removedUpstream('addItem', 'd65fe1380');
+const removeItems = removedUpstream('removeItems', 'd65fe1380');
+const replaceItem = removedUpstream('replaceItem', 'd65fe1380');
+const chromeHelpers = removedUpstream('chromeHelpers', 'd65fe1380');
+
+// cdf4586c7 reordered the builders: `group(id, items, options?)` and
+// `custom(slot, terminal?, options?)`, where they took `(id, options, items?)`
+// and `(slot, options)`. The cases' bars are built with the old builders,
+// copied here as they were, and the `group` and `custom` cases reach
+// upstream's.
+type GroupOptions = Record<string, unknown> & { items?: readonly unknown[] };
+function group(id: string, optsOrItems: readonly unknown[] | GroupOptions, items?: readonly unknown[]): never {
+  if (Array.isArray(optsOrItems)) return { id, items: optsOrItems } as never;
+  const { items: optItems, ...opts } = optsOrItems as GroupOptions;
+  return { id, ...opts, items: items ?? optItems ?? [] } as never;
+}
+const custom = (slot: string, opts: Record<string, unknown>): never => ({ slot, ...opts }) as never;
 
 // ── callback tables ──────────────────────────────────────────────────────────
 
@@ -97,8 +116,8 @@ const resolveFrom =
 const schemaFunctions = {
   constants: () => ({ PINNED, DEFAULT_IMPORTANCE }),
   item,
-  custom,
-  group,
+  custom: upstreamCustom,
+  group: upstreamGroup,
   normalizeBar,
   filterBar: (bar: NormalizedBar, keepKeys: readonly string[]) =>
     filterBar(bar, (unit) => keepKeys.includes(unit.key)),
@@ -149,20 +168,11 @@ const shortcutFunctions = {
 
 const helperFunctions = {
   /** The bundle's member names, in order: it is public API. */
-  keys: () => Object.keys(chromeHelpers),
+  keys: chromeHelpers,
   /** Each member is the module's own function, not a copy. */
-  identity: () => ({
-    addItem: chromeHelpers.addItem === addItem,
-    removeItems: chromeHelpers.removeItems === removeItems,
-    replaceItem: chromeHelpers.replaceItem === replaceItem,
-    item: chromeHelpers.item === item,
-    group: chromeHelpers.group === group,
-    custom: chromeHelpers.custom === custom,
-    defineChrome: chromeHelpers.defineChrome === defineChrome,
-  }),
+  identity: chromeHelpers,
   /** Call a member by name, as a `chrome: (base, h) => …` transform would. */
-  call: (name: keyof typeof chromeHelpers, ...args: unknown[]) =>
-    (chromeHelpers[name] as (...a: unknown[]) => unknown)(...args),
+  call: chromeHelpers,
 };
 
 // ── shared fixtures ──────────────────────────────────────────────────────────
