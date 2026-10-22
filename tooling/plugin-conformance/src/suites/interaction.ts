@@ -10,21 +10,27 @@
  */
 import {
   FeedbackToken,
-  builtinTools,
   feedbackPlugin,
   interactionPlugin,
-  samplePointOn,
 } from '../../../../packages/plugin/interaction/src/index';
-import { InteractionToken } from '../../../../packages/plugin/interaction/src/host-contract';
 import {
+  InteractionToken,
+  samplePointOn,
+} from '../../../../packages/plugin/interaction/src/host-contract';
+import {
+  activateTool,
+  builtinTools,
   initialInteractionState,
-  reduceInteraction,
+  popTool,
+  pushTool,
+  setCursor,
+  type InteractionState,
 } from '../../../../packages/plugin/interaction/src/model';
 import type {
   InteractionConfig,
   PlatformFeedback,
-  PointerSample,
 } from '../../../../packages/plugin/interaction/src/index';
+import type { PointerSample } from '../../../../packages/plugin/interaction/src/host-contract';
 import type { PageRef } from '../../../../packages/core/main/src/index';
 
 import type { FakeDocumentSpec } from '../fake-engine';
@@ -664,16 +670,32 @@ const cases: ScenarioCase[] = [
 const withProject = (sample: Record<string, unknown>): PointerSample => {
   const { projects, ...rest } = sample as { projects?: Record<string, unknown> };
   const out = rest as unknown as PointerSample;
-  if (projects) out.project = (page: PageRef) => projects[String(page.pageObjectNumber)] as never;
+  if (projects) out.project = (page: PageRef) => projects[String(page.objectNumber)] as never;
   return out;
 };
 
 const functions = {
   samplePointOn: (sample: Record<string, unknown>, pon: number) =>
-    samplePointOn(withProject(sample), { kind: 'objectNumber', pageObjectNumber: pon }),
+    samplePointOn(withProject(sample), { kind: 'objectNumber', objectNumber: pon }),
   builtinTools,
-  initialInteractionState,
-  reduceInteraction,
+  // Upstream's state no longer takes the config: the controller activates
+  // `defaultTool` after the document opens.
+  initialInteractionState: (_config: unknown) => initialInteractionState(),
+  // Upstream replaced the reducer with one pure transition per action.
+  reduceInteraction: (state: InteractionState, action: { type: string; toolId?: string; cursor?: string }) => {
+    switch (action.type) {
+      case 'SET_TOOL':
+        return activateTool(state, action.toolId!);
+      case 'PUSH_TOOL':
+        return pushTool(state, action.toolId!);
+      case 'POP_TOOL':
+        return popTool(state);
+      case 'SET_CURSOR':
+        return setCursor(state, action.cursor as InteractionState['cursor']);
+      default:
+        return state;
+    }
+  },
 };
 
 const fc = (fn: string, label: string, ...args: unknown[]): FunctionCase => ({ name: `${fn}/${label}`, fn, args });
