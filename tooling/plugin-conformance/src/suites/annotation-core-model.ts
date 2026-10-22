@@ -71,16 +71,18 @@ type AnnotationPropsPatch = Record<string, unknown>;
 
 /** Every subtype the kind table names, plus unknown and prototype keys. */
 export const SUBTYPES = [
-  ...new Set(Object.keys(kd.KINDS)),
-  'popup',
-  'widget',
-  'free-text-callout',
-  'unknown',
-  '',
-  'constructor',
-  'toString',
-  '__proto__',
-  'hasOwnProperty',
+  ...new Set([
+    ...Object.keys(kd.KINDS),
+    'popup',
+    'widget',
+    'free-text-callout',
+    'unknown',
+    '',
+    'constructor',
+    'toString',
+    '__proto__',
+    'hasOwnProperty',
+  ]),
 ];
 
 const FLAG_NAMES = fl.FLAG_KEYS;
