@@ -22,6 +22,52 @@ use crate::error::{EngineError, EngineErrorCode};
 use crate::mutation::MutationMeta;
 use crate::session::document::DocumentSession;
 
+/// Run `write` in a layer transaction: this engine's own when none is open
+/// (Task 8.30 opens one around every write), aborted when `write` fails, so
+/// a refused write leaves nothing. A session that is not a layer opens none,
+/// and keeps what a refused write wrote.
+pub(crate) fn in_layer_transaction<T>(
+    document: &pdfium::Document,
+    write: impl FnOnce() -> Result<T, EngineError>,
+) -> Result<T, EngineError> {
+    layer_transaction(document, write).map_err(|refused| refused.error)
+}
+
+/// A write [`layer_transaction`] refused, and whether the abort took back
+/// what it wrote.
+pub(crate) struct Refused {
+    pub error: EngineError,
+    pub aborted: bool,
+}
+
+/// [`in_layer_transaction`], saying whether a refused write was taken back:
+/// a write that was not still changed the document, and its sequence has to
+/// move.
+pub(crate) fn layer_transaction<T>(
+    document: &pdfium::Document,
+    write: impl FnOnce() -> Result<T, EngineError>,
+) -> Result<T, Refused> {
+    let own = !document.layer_in_transaction() && document.layer_begin_transaction();
+    match write() {
+        Ok(done) => {
+            if own && !document.layer_commit_transaction() {
+                return Err(Refused {
+                    error: EngineError::with_message(
+                        EngineErrorCode::Unknown,
+                        "EPDFLayer_CommitTransaction refused",
+                    ),
+                    aborted: false,
+                });
+            }
+            Ok(done)
+        }
+        Err(error) => {
+            let aborted = own && document.layer_abort_transaction();
+            Err(Refused { error, aborted })
+        }
+    }
+}
+
 /// Run `write` in a transaction named `op_id`: commit it when it succeeds,
 /// take back what it journaled when it fails, and answer its answer.
 pub fn in_transaction<T>(

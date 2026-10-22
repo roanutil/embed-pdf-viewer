@@ -35,6 +35,7 @@ use super::pages::{PageListSnapshot, list_pages};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::write::delete::promote_inline_annotations;
+use crate::features::changes::transaction::layer_transaction;
 use crate::identity::{PageObjectNumber, PageRef};
 use crate::mutation::MutationMeta;
 use crate::mutation::list_position::{End, ListPosition};
@@ -707,24 +708,36 @@ pub fn flatten_pages(
 
     let mut results = Vec::with_capacity(pages.len());
     let mut affected: Vec<PageObjectNumber> = Vec::new();
-    for (page, page_index) in pages.iter().copied().zip(indices) {
-        let flattened = cancel.check().and_then(|()| {
+    // All or nothing (`PagesFlattener`): a page that fails, or a cancel,
+    // aborts the layer transaction, which takes back every page promoted or
+    // flattened before it. Each page loaded here closes before the abort.
+    let written = layer_transaction(owned.document(), || {
+        for (page, page_index) in pages.iter().copied().zip(indices) {
+            cancel.check()?;
             if promote_inline_annotations(owned.document(), page_index, page)? {
                 affected.push(page);
             }
-            Ok(owned.page(page)?.view().flatten(usage.native()))
-        });
-        let status = match flattened {
-            Ok(pdfium::FlattenOutcome::NothingToDo) => FlattenStatus::Unchanged,
-            Ok(pdfium::FlattenOutcome::Applied) => FlattenStatus::Applied,
-            // Unexercised: nothing in the corpus makes a flatten fail.
-            Ok(outcome) => return Err(after_writes(session, &affected, flatten_failure(outcome))),
-            Err(refused) => return Err(after_writes(session, &affected, refused)),
-        };
-        if status == FlattenStatus::Applied && !affected.contains(&page) {
-            affected.push(page);
+            let status = match owned.page(page)?.view().flatten(usage.native()) {
+                pdfium::FlattenOutcome::NothingToDo => FlattenStatus::Unchanged,
+                pdfium::FlattenOutcome::Applied => FlattenStatus::Applied,
+                // Unexercised: nothing in the corpus makes a flatten fail.
+                outcome => return Err(flatten_failure(outcome)),
+            };
+            if status == FlattenStatus::Applied && !affected.contains(&page) {
+                affected.push(page);
+            }
+            results.push(FlattenItem { page_object_number: page, status });
         }
-        results.push(FlattenItem { page_object_number: page, status });
+        Ok(())
+    });
+    if let Err(refused) = written {
+        // Taken back: no write happened, so the sequence stays. Kept (a
+        // session that is not a layer): the pages written move it.
+        return Err(if refused.aborted {
+            refused.error
+        } else {
+            after_writes(session, &affected, refused.error)
+        });
     }
 
     let meta = MutationMeta::local(
@@ -735,7 +748,7 @@ pub fn flatten_pages(
 }
 
 /// `refused`, after the sequence moved for the pages a refused flatten (or
-/// redaction) had already changed.
+/// redaction) changed and no layer transaction took back.
 pub(crate) fn after_writes(
     session: &DocumentSession,
     changed: &[PageObjectNumber],

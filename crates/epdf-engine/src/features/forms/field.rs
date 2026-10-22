@@ -58,6 +58,7 @@ use crate::features::annotation::write::context::AnnotationWriteContext;
 use crate::features::annotation::write::widget::{
     WIDGET_STYLE_NAMES, WidgetStyle, apply_widget_style, read_style_field,
 };
+use crate::features::changes::transaction::in_layer_transaction;
 use crate::geom::{PdfRect, PdfRotation, normalize_pdf_rect};
 use crate::identity::{AnnotationRef, PageObjectNumber};
 use crate::page_space::{Coordinates, PdfCoordinates};
@@ -904,33 +905,6 @@ pub fn plan_create(
 pub struct WrittenField {
     pub field: FormFieldDto,
     pub calculation_order: Option<OrderChange>,
-}
-
-/// Run `write` in a layer transaction: this engine's own when none is open
-/// (Task 8.30 opens one around every write), aborted when `write` fails, so
-/// a refused write leaves nothing.
-fn in_layer_transaction<T>(
-    document: &Document,
-    write: impl FnOnce() -> Result<T, EngineError>,
-) -> Result<T, EngineError> {
-    let own = !document.layer_in_transaction() && document.layer_begin_transaction();
-    match write() {
-        Ok(done) => {
-            if own && !document.layer_commit_transaction() {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFLayer_CommitTransaction refused",
-                ));
-            }
-            Ok(done)
-        }
-        Err(refused) => {
-            if own {
-                document.layer_abort_transaction();
-            }
-            Err(refused)
-        }
-    }
 }
 
 /// `createField` from the apply boundary: the field at `object_number` (the

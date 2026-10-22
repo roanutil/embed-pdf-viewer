@@ -27,6 +27,7 @@ use serde::{Deserialize, Serialize};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::write::delete::promote_inline_annotations;
+use crate::features::changes::transaction::layer_transaction;
 use crate::identity::{AnnotationRef, PageObjectNumber, PageRef, WirePage};
 use crate::mutation::MutationMeta;
 use crate::session::document::DocumentSession;
@@ -114,8 +115,8 @@ pub fn apply(
     use crate::access::{DocumentAccess, PageAccess};
 
     cancel.check()?;
-    let plan = build_plan(scope)?;
     let owned = session.document()?;
+    let plan = build_plan(scope, &|page| owned.page_index(page).map(drop))?;
     // Every page resolves before anything is applied: a scope naming one
     // page that does not exist must redact nothing.
     let indices =
@@ -126,8 +127,13 @@ pub fn apply(
     let mut affected: Vec<PageObjectNumber> = Vec::new();
     let mut total = 0u32;
 
-    for ((page, refs), page_index) in plan.iter().zip(indices) {
-        let outcome = cancel.check().and_then(|()| {
+    // All or nothing: a page that fails, or a cancel, aborts the layer
+    // transaction, which takes back every page promoted or applied before
+    // it. Each page this loop loads closes before the abort (the pool keeps
+    // no page past its last holder), so none parsed the overlay survives it.
+    let written = layer_transaction(owned.document(), || {
+        for ((page, refs), page_index) in plan.iter().zip(indices) {
+            cancel.check()?;
             // A redaction removes entries from /Annots; promotion keeps
             // every position.
             if promote_inline_annotations(owned.document(), page_index, *page)? {
@@ -135,31 +141,34 @@ pub fn apply(
             }
             let opened = owned.page(*page)?;
             let view = opened.view();
-            let outcome = match refs {
-                None => apply_every_marking(view),
-                Some(refs) => apply_named_markings(owned.document(), view, refs),
-            }?;
-            if outcome.0 == RedactionStatus::Applied {
+            let (status, removed) = match refs {
+                None => apply_every_marking(view)?,
+                Some(refs) => apply_named_markings(owned.document(), view, refs)?,
+            };
+            if status == RedactionStatus::Applied {
+                // Kept because the TypeScript makes the call; PDFium's apply
+                // has already rewritten the stream by the time it returns.
                 view.generate_content();
+                if !affected.contains(page) {
+                    affected.push(*page);
+                }
+                total += removed;
             }
-            Ok(outcome)
-        });
-        let (status, removed) = match outcome {
-            Ok(outcome) => outcome,
-            Err(refused) => {
-                return Err(super::pages_write::after_writes(session, &affected, refused));
-            }
-        };
-        if status == RedactionStatus::Applied {
-            if !affected.contains(page) {
-                affected.push(*page);
-            }
-            total += removed;
+            results.push(RedactionItem {
+                page_object_number: *page,
+                status,
+                removed_annotation_count: removed,
+            });
         }
-        results.push(RedactionItem {
-            page_object_number: *page,
-            status,
-            removed_annotation_count: removed,
+        Ok(())
+    });
+    if let Err(refused) = written {
+        // Taken back: no write happened, so the sequence stays. Kept (a
+        // session that is not a layer): the pages written move it.
+        return Err(if refused.aborted {
+            refused.error
+        } else {
+            super::pages_write::after_writes(session, &affected, refused.error)
         });
     }
 
@@ -176,8 +185,12 @@ pub fn apply(
 }
 
 /// Normalize a scope into per-page work, in the order it was given
-/// (`buildPlan`, with its messages).
-fn build_plan(scope: &RedactionScope) -> Result<Plan, EngineError> {
+/// (`buildPlan`, with its messages). A pages scope resolves each page with
+/// `resolve` before it looks for duplicates, as `resolvePageRefs` does.
+fn build_plan(
+    scope: &RedactionScope,
+    resolve: &dyn Fn(PageObjectNumber) -> Result<(), EngineError>,
+) -> Result<Plan, EngineError> {
     match scope {
         RedactionScope::Pages { pages } => {
             if pages.is_empty() {
@@ -185,6 +198,9 @@ fn build_plan(scope: &RedactionScope) -> Result<Plan, EngineError> {
                     EngineErrorCode::InvalidArg,
                     "redaction.apply requires at least one page",
                 ));
+            }
+            for page in pages {
+                resolve(*page)?;
             }
             let mut plan: Plan = Vec::with_capacity(pages.len());
             for page in pages {
@@ -357,20 +373,33 @@ mod tests {
 
     #[test]
     fn a_plan_names_at_least_one_target_and_each_page_once() {
-        let empty = build_plan(&RedactionScope::Pages { pages: vec![] }).unwrap_err();
+        let empty = build_plan(&RedactionScope::Pages { pages: vec![] }, &|_| Ok(())).unwrap_err();
         assert!(empty.is(EngineErrorCode::InvalidArg), "{empty}");
         assert_eq!(empty.message, "redaction.apply requires at least one page");
         let twice =
-            build_plan(&RedactionScope::Pages { pages: vec![page(3), page(3)] }).unwrap_err();
+            build_plan(&RedactionScope::Pages { pages: vec![page(3), page(3)] }, &|_| Ok(()))
+                .unwrap_err();
         assert_eq!(twice.message, "redaction.apply was given duplicate page object number 3");
-        let none = build_plan(&RedactionScope::Annotations { annotations: vec![] }).unwrap_err();
+        let none = build_plan(&RedactionScope::Annotations { annotations: vec![] }, &|_| Ok(()))
+            .unwrap_err();
         assert_eq!(none.message, "redaction.apply requires at least one annotation ref");
+
+        // A page resolves before the duplicate check: `{pages: [999, 999]}`
+        // is NotFound, as `resolvePageRefs` answers it.
+        let missing = |p: PageObjectNumber| {
+            Err(EngineError::with_message(EngineErrorCode::NotFound, format!("no page {p}")))
+        };
+        let unknown =
+            build_plan(&RedactionScope::Pages { pages: vec![page(999), page(999)] }, &missing)
+                .unwrap_err();
+        assert!(unknown.is(EngineErrorCode::NotFound), "{unknown}");
 
         // Refs group by page, in the order their pages first appear.
         let by = |p, base_index| AnnotationRef::BaseIndex { page: page(p), base_index };
-        let plan = build_plan(&RedactionScope::Annotations {
-            annotations: vec![by(4, 0), by(3, 1), by(4, 2)],
-        })
+        let plan = build_plan(
+            &RedactionScope::Annotations { annotations: vec![by(4, 0), by(3, 1), by(4, 2)] },
+            &|_| Ok(()),
+        )
         .unwrap();
         assert_eq!(
             plan,

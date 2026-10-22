@@ -819,7 +819,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A content write and a final change: promotes each page, answers per-page applied or unchanged and MutationMeta, and its event carries the write's opId. A failing page or a cancel refuses the call and keeps the pages already flattened, with no layer transaction around the write until 8.30. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs.",
+    note: "A content write and a final change: promotes each page, answers per-page applied or unchanged and MutationMeta, and its event carries the write's opId. A failing page or a cancel refuses the call and its layer transaction takes back the pages already flattened, with no sequence bump. Gated by vectors/pages/mutate.json, replayed by crates/epdf-engine/tests/flatten_corpus.rs.",
   },
   {
     kind: 'redaction.apply',
@@ -828,7 +828,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'ported',
-    note: "A content write and a final change, answered like pages.flatten: takes a {pages} or {annotations} scope, promotes each page, applies a page's refs in one native call, and answers per-page applied or unchanged with MutationMeta. A failing page or a cancel refuses the call, with no layer transaction around the write until 8.30. A no-op answer keeps mutationSequence (kept divergence, 87b61b533). Gated by vectors/redaction/apply.json, replayed by crates/epdf-engine/tests/redaction_apply.rs.",
+    note: "A content write and a final change, answered like pages.flatten: takes a {pages} or {annotations} scope, promotes each page, applies a page's refs in one native call, and answers per-page applied or unchanged with MutationMeta. A failing page or a cancel refuses the call and its layer transaction takes back the pages already promoted or applied, with no sequence bump. A no-op answer keeps mutationSequence (kept divergence, 87b61b533). Gated by vectors/redaction/apply.json, replayed by crates/epdf-engine/tests/redaction_apply.rs.",
   },
 
   // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.

@@ -28,6 +28,7 @@ use super::record::{
     CalculationOrderStep, FieldRemoveStep, FieldRestoreStep, ReverseStep, RevertFallback,
     StepRights, WidgetDeleteStep, WidgetRestoreStep,
 };
+use super::transaction::in_layer_transaction;
 use crate::auth::scope::DocCapability;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::write::{FieldActionsPatch, WidgetActionsPatch, scripts_of};
@@ -962,29 +963,6 @@ pub fn properties_of(field: &FormFieldDto) -> Map<String, Value> {
         _ => {}
     }
     out
-}
-
-/// Run `write` in a layer transaction: this engine's own when none is open
-/// (Task 8.30 opens one around every write), aborted when `write` fails.
-fn in_layer_transaction(
-    document: &pdfium::Document,
-    write: impl FnOnce() -> Result<(), EngineError>,
-) -> Result<(), EngineError> {
-    let own = !document.layer_in_transaction() && document.layer_begin_transaction();
-    let done = write();
-    if own {
-        if done.is_ok() {
-            if !document.layer_commit_transaction() {
-                return Err(EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "EPDFLayer_CommitTransaction refused",
-                ));
-            }
-        } else {
-            document.layer_abort_transaction();
-        }
-    }
-    done
 }
 
 fn to_value<T: serde::Serialize>(value: &T) -> Result<Value, EngineError> {
