@@ -170,8 +170,27 @@ export const c = (fn: string, label: string, ...args: unknown[]): FunctionCase =
       cloudyIntensity: (args[2] as Border | undefined)?.cloudyIntensity,
     });
   if (['rotateDraftDelta', 'rotateDraftDeltas'].includes(fn)) args[1] = sessionIds(args[1]);
-  return { name: `${fn}/${label}`, fn, args };
+  return { name: `${fn}/${label}`, fn, args: args.map(canonicalIdSets) };
 };
+/** Every Set in these case inputs is an inert-id set, including positional tuples.
+ * Convert them before recording, preserving objects without a set unchanged. */
+function canonicalIdSets(value: unknown): unknown {
+  if (value instanceof Set) return new Set([...value].map(idsOf));
+  if (Array.isArray(value)) {
+    const next = value.map(canonicalIdSets);
+    return next.some((item, index) => item !== value[index]) ? next : value;
+  }
+  if (value && typeof value === 'object') {
+    let changed = false;
+    const entries = Object.entries(value).map(([key, item]) => {
+      const next = canonicalIdSets(item);
+      changed ||= next !== item;
+      return [key, next];
+    });
+    return changed ? Object.fromEntries(entries) : value;
+  }
+  return value;
+}
 export const v = (x: number, y: number): Point => ({ x, y });
 export const rc = (x: number, y: number, width: number, height: number): Rect => ({
   x,

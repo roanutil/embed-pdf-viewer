@@ -465,7 +465,7 @@ const propCases: FunctionCase[] = [
   c(
     'defaultsFor',
     'null-fill-and-link',
-    { defaults: { link: { interiorColor: null, link: null } } },
+    { defaults: { link: { interiorColor: null, target: null } } },
     'link',
   ),
   c(

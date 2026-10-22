@@ -488,7 +488,7 @@ const RUNS: Case[] = [
   ['create-link', {}, drag('link', v(10, 10), v(110, 60))],
   [
     'create-link-preset',
-    { defaults: { 'docs-link': { link: URI as never } } },
+    { defaults: { 'docs-link': { target: URI } } },
     drag('link', v(10, 10), v(110, 60), {}, { preset: 'docs-link' }),
   ],
   ['create-stamp-ignored', {}, drag('stamp', v(10, 10), v(110, 60))],
@@ -1157,7 +1157,12 @@ const RUNS: Case[] = [
   [
     'set-defaults-null',
     {},
-    [{ type: 'setDefaults', preset: 'square', patch: { interiorColor: null, link: null } }],
+    [
+      { type: 'setDefaults', preset: 'square', patch: { interiorColor: null } },
+      ...drag('square', v(10, 10), v(60, 60)),
+      // Attached links belong to setLink, not the square's tool defaults.
+      { type: 'setLink', target: null },
+    ],
   ],
   [
     'set-defaults-keeps-fill',
@@ -1166,9 +1171,11 @@ const RUNS: Case[] = [
       {
         type: 'setDefaults',
         preset: 'square',
-        patch: { interiorColor: '#ff0000', link: { kind: 'uri', uri: 'x' } as never },
+        patch: { interiorColor: '#ff0000' },
       },
       { type: 'setDefaults', preset: 'square', patch: { color: '#000000' } },
+      ...drag('square', v(10, 10), v(60, 60)),
+      { type: 'setLink', target: { kind: 'uri', uri: 'x' } },
     ],
   ],
   [
