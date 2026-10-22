@@ -1254,3 +1254,56 @@ test('the original49 live definitions, all3 renames,33 additions and27 historica
     reconciliationAssertion(row.scenario);
   }
 });
+
+test('a throwing prior entropy accessor leaves console routing intact for the next ordinary case', async () => {
+  const before = descriptor();
+  const proto = Object.getPrototypeOf(globalThis.crypto);
+  const error = console.error;
+  const warn = console.warn;
+  const throwing = {
+    configurable: true,
+    enumerable: false,
+    get: () => {
+      throw new Error('entropy getter refused');
+    },
+    set: undefined,
+  };
+  try {
+    Object.defineProperty(globalThis.crypto, 'getRandomValues', throwing);
+    await assert.rejects(
+      () =>
+        runScenario(
+          scenario(
+            'early-factory-failure',
+            'Fallible host capture precedes global hook installation',
+            [],
+          ),
+        ),
+      /entropy getter refused/,
+    );
+    assert.equal(console.error, error, 'the failed factory must restore the exact console.error');
+    assert.equal(console.warn, warn, 'the failed factory must restore the exact console.warn');
+    assert.deepEqual(descriptor(), throwing);
+    assert.equal(Object.getPrototypeOf(globalThis.crypto), proto);
+    if (before) Object.defineProperty(globalThis.crypto, 'getRandomValues', before);
+    else delete (globalThis.crypto as unknown as Record<string, unknown>).getRandomValues;
+    const ordinary = currentCases.find((c) => c.name === 'stamp-preview-providers');
+    assert.ok(ordinary);
+    const result = await runScenario(ordinary);
+    assert.deepEqual(result.unmatched, []);
+    assert.deepEqual(diagnostics(result.trace), expectedRefusals[ordinary.name]);
+    assert.equal(
+      result.trace.flatMap((t) => t.callbacks).filter((c) => c.fn === 'console.error').length,
+      1,
+    );
+    assert.equal(console.error, error);
+    assert.equal(console.warn, warn);
+    assert.deepEqual(descriptor(), before);
+    assert.equal(Object.getPrototypeOf(globalThis.crypto), proto);
+  } finally {
+    console.error = error;
+    console.warn = warn;
+    if (before) Object.defineProperty(globalThis.crypto, 'getRandomValues', before);
+    else delete (globalThis.crypto as unknown as Record<string, unknown>).getRandomValues;
+  }
+});
