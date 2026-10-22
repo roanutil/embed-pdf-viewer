@@ -493,7 +493,7 @@ token and settings/create/state/connect. It takes complete current records from
 `form-current-fixtures.ts`, with explicit `FormSnapshot.widgets`, flat field properties
 and current refs. Its typed static value-set answers carry a full ChangeResult,
 FormMutationMeta and `forms.valueSet` event before settlement. It adds no old method
-aliases or console wrapper. The original `form-fixtures.ts` remains for the 119 deferred
+aliases or console wrapper. The original `form-fixtures.ts` remains for the 59 deferred
 live form cases and the stamp/signature consumers; it is not the current replay API.
 
 `case-entropy.ts` now owns the existing annotation fixture's UUID host input. Annotation
@@ -503,3 +503,20 @@ unchanged. Annotation keeps its scoped console owner; form installs no console h
 Run `node --import=tsx --conditions=development --test test/form-current.test.ts` for
 current form semantics, shared entropy, exact diagnostic expectations and archival
 accounting. No vectors or Rust replay code are updated by these input migrations.
+
+### Current form fill and design inputs
+
+`form-fill.ts` and `form-design.ts` retain all 60 original names with current
+shipping behavior. [The fill/design history](historical/task-12b2b2-ii/README.md)
+links exact BASE source/inputs, the exhaustive before/after digest manifest,
+removed-door replacements and the verified upstream no-annotation handler
+refusal limitation. Current forms now comprise core102 + fill31 + design29;
+only scripting46/actions13 remain for the later forms slice.
+
+`form-live-fixtures.ts` builds complete typed static apply answers and current
+page-space rows over the reviewed factory. Its distinct diagnostic host records
+only `[form]` console errors, installed before annotation and restored after it;
+that fixed order, current bundle/ref-map schemas and the form-owned widget lender
+are Task13 replay seams. Shared entropy and the reviewed current factories are
+unchanged. Run `node --import=tsx --conditions=development --test test/form-live.test.ts`
+for independent operations/results/permission/event/schema/lifecycle assertions.

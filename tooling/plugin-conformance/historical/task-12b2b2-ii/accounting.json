@@ -1,0 +1,1250 @@
+{
+  "base": "2334ab2310be71cef497633cb44e53664f237c86",
+  "originalWholeForms": 220,
+  "originalOwned": 60,
+  "currentOwned": 60,
+  "originalFill": 31,
+  "originalDesign": 29,
+  "currentFill": 31,
+  "currentDesign": 29,
+  "mapped": 60,
+  "renamed": 0,
+  "retired": [],
+  "added": [],
+  "task11": {
+    "source": ".superpowers/sdd/multiplatform-upstream-catchup/task-11-cases.out:45-46",
+    "fillInputDiff": 0,
+    "designInputDiff": 0
+  },
+  "removalEvidence": [
+    "4fc1a32af: mirrors/current queue replace copied model/geometry cache/forced rereads and legacy message updates",
+    "cdf4586c7: shared public naming and current refs/DTOs replace stale convenience methods"
+  ],
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "hydrates-on-open",
+        "canonicalInputSha256": "902560dac1bc3b943087528acb29a6ffb7caaaff83b150bb369eb58f61454ce1",
+        "intent": "The capability reads the snapshot once when the document opens; reads return null and empty until it lands, then index by key and by widget. The twins follow the wildcard grant."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "hydrates-on-open",
+        "canonicalInputSha256": "57f9a3b87beaca82237369e4f59bf4e891e8910a84caf20aff29d55779bc1a94",
+        "intent": "One deferred complete snapshot; reads and widget joins are empty until it lands. Authority is per field."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads",
+        "packages/plugin/form/src/controller.ts#createFormController",
+        "packages/plugin/form/src/services/fill-rights.ts#createFillRights",
+        "packages/plugin/form/src/read/fields.ts#widgetObjectOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "no-read-grant-never-lists",
+        "canonicalInputSha256": "c20e5c86af8c0bf969982ca154932f3c2c7058681cd59e391df1283a6b0be356",
+        "intent": "Without doc.forms.read the capability fires no list at open or on refresh(), the model stays empty, and the twins say which grants the session has."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "no-read-grant-never-lists",
+        "canonicalInputSha256": "3c8ee4dc88d8f8826fb6c6c264407dcc328fec0306711bb0094d058707412fba",
+        "intent": "The readable mirror stays forbidden and never calls forms.list, including refresh."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/controller.ts#createFormController",
+        "packages/plugin/form/src/services/fill-rights.ts#createFillRights"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "refresh-coalesces-and-forces",
+        "canonicalInputSha256": "be0ebec2b35faca3d496d1089ba20371a788e2e87fdaa2c93a84c21b081a4d5b",
+        "intent": "A refresh while a read is in flight queues exactly one more read after it and resolves when that settles; any number of calls during the read coalesce into that one. (v2 forced a read per `refresh(true)`; v3 has no force argument.)"
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "refresh-coalesces-and-forces",
+        "canonicalInputSha256": "e468383b8aaf8f73f72d2bd143899532e899d7a87d1545151f0ac6bb836984ae",
+        "intent": "Current mirror coalesces concurrent refreshes; a subsequent explicit refresh starts a fresh load. No force flag."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-load-warns",
+        "canonicalInputSha256": "cc036ae714d507d9f6392d76a6fad502c8ade9301f33173716ac44fa9d73a05d",
+        "intent": "A snapshot read that rejects is reported to console.warn and leaves the model empty; the next refresh reads again."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-load-warns",
+        "canonicalInputSha256": "ebd79c9122d02b79498ea2223ce7895740dad5c214a3c6b8c7f73559cc190ccb",
+        "intent": "Current mirror exposes a failed read through error status, without console or kernel reports; refresh recovers."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "widget-geometry-loads-once-per-page",
+        "canonicalInputSha256": "9b39564647a38205cfaf14ce86d2d76e2ec78fa923304b4fa43069709a9996ae",
+        "intent": "ensureGeom reads one page of annotations, keeps object-number widgets as crop-relative content boxes (skipping other subtypes and index refs), ignores a page it is loading or has loaded or does not know, and the projection (listWidgets included) joins it."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "widget-geometry-loads-once-per-page",
+        "canonicalInputSha256": "53597074d57189fbc1b949137ca03c6b74e32b1cff844af454e769f0ee22abb7",
+        "intent": "Complete page-space widget rows arrive with the one form snapshot. ensureLoaded shares that load; no annotation geometry read exists."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-geometry-read-can-retry",
+        "canonicalInputSha256": "447b45f97a1485784eb69d3b64fc3ec836f414c31fea3b995ce3016c8c654ea2",
+        "intent": "A page read that rejects clears the loading latch, so the next ensureGeom reads again."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-geometry-read-can-retry",
+        "canonicalInputSha256": "a3ee21a38489b63b6b11c744915f9682e069bcabd7542c57fbcf6bf8e101d53b",
+        "intent": "Geometry is part of the fields load now; a refused snapshot reports once and explicit refresh retries the full current snapshot."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "fill-authority-fuses-into-disabled",
+        "canonicalInputSha256": "cb0afcbe471d775e5507808a5d0eca0c8344dc7ad07ba46096332e17e3d0b833",
+        "intent": "Without doc.forms.fill every projected item is disabled, read-only ones included; the grant is re-read on every projection, and a fillable session leaves the flag gate in charge."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "fill-authority-fuses-into-disabled",
+        "canonicalInputSha256": "d5a26705e4e72c5243d7b26a546a7b01c6566b9a5d1a2f288ad6dbd94c21f3ca",
+        "intent": "Per-field fill authority and readOnly determine disabled; ordinary and readonly widgets are independently projected in two sessions."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads",
+        "packages/plugin/form/src/services/fill-rights.ts#createFillRights"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "typed-writes",
+        "canonicalInputSha256": "4856539117321686e8cf762b9a3de22e8f27fe038ed849a54129d16122bff33f",
+        "intent": "setText, toggle and choose send the family value through setValue, mark the field writing, and re-read the snapshot (which clears it). A null toggle clears the group."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "typed-writes",
+        "canonicalInputSha256": "aa0ab3da974ff17e6020ff13cfc71fca17b99772aa26866e6af9873b7c09c148",
+        "intent": "Current family writes use value/checked/selectedValues and current refs; null clears a checkbox via its value vocabulary."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "writes-serialize",
+        "canonicalInputSha256": "3d7026e2aa21ba1ddfffde50bf6f9994f7ab4c94daf14ec98fa4b9f748fe7ebc",
+        "intent": "A second write waits for the first one to finish, its re-read included."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "writes-serialize",
+        "canonicalInputSha256": "96bfd92ea0b9e1024b8299b97f820753bacf743d86217bda42e001d45bbea9d9",
+        "intent": "Current fills send in order without waiting for prior answers; pending reads see the later fill until both confirmations land."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-write-reverts",
+        "canonicalInputSha256": "86cde25f832c5194a1e072837714fce91f8038f9514a56dd8bf44bffff8cfcb7",
+        "intent": "An engine refusal clears the writing mark and rejects with the engine error; the queue carries on."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-write-reverts",
+        "canonicalInputSha256": "4f3c3ac5fdafeb675b72fe8d354a16a90cb009478b684f005593ba0d41401934",
+        "intent": "An engine refusal rolls back the pending value and rejects; the next fill confirms normally."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "the-write-gate",
+        "canonicalInputSha256": "2676a35347348da82ee0fbe45d955c1de7407aa598e5980392c4c08cd1f7b28e",
+        "intent": "Without doc.forms.fill, setText/toggle/choose and reset reject with PermissionDenied before any engine call or writing mark."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "the-write-gate",
+        "canonicalInputSha256": "0db3cab600ed743ee3c5907f5547bc13d4c71b97a68be360f60efd2f53675ddc",
+        "intent": "Known fields denied fill reject value/checkbox/choice/reset locally before any apply."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "commit-value-without-scripting",
+        "canonicalInputSha256": "2fa22b819da0d3a49cd19895d911cdd47742b6137ab030675a348191c522b2d2",
+        "intent": "commitValue is setValue plus a forced re-read: applied when widgets changed, unchanged otherwise, rejected with the engine error."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "commit-value-without-scripting",
+        "canonicalInputSha256": "9618e9edf4d01e6a0807eb901bea0eac022bed72b942f4950b16f298b369a90b",
+        "intent": "The public validated setValue replaces commitValue: applied or unchanged comes from result.meta.undoable; a named engine refusal rejects."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-rides-the-batch",
+        "canonicalInputSha256": "bd85891add9caf7b3d98b76106436fc33426626d637e5cc2319a6ef3112fa54b",
+        "intent": "reset(key) applies one reset effect, re-reads, and patches the field from the fresh snapshot; a key the snapshot no longer has just clears the writing mark."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-rides-the-batch",
+        "canonicalInputSha256": "3f5de2a2b3d12913eff15db4df3137038229ef195794169262d323a89e55e605",
+        "intent": "Current reset is one forms.reset ChangeOp and confirmed value facts, with no re-read. Unknown refs select nothing."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-reset-batch-rejects",
+        "canonicalInputSha256": "4c0abb29235f4e493d91aae96e544301100df7260194efbed58fec3f30abe3b3",
+        "intent": "A failed or rejected reset entry rejects reset() with the entry's error message, or 'reset failed' without one, after the re-read; a thrown batch rejects with the engine error."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "a-failed-reset-batch-rejects",
+        "canonicalInputSha256": "330a48712cee5d0c610ba0daf1c736cb11eb263cab7eaa737c5dad30f4997b6b",
+        "intent": "Current resets are atomic apply changes; exact named engine refusals reject without stale per-entry batch statuses."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-without-the-batch",
+        "canonicalInputSha256": "ea2f6ab7a899e6edbc40b8d3b9b82608782d1c0171bd7a62f0ce854e8c7f8eed",
+        "intent": "An engine with no applyEffects resets through forms.reset and patches the field it answers with; a refusal reverts and rejects."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-without-the-batch",
+        "canonicalInputSha256": "4acefd2932c868b80dfb7b93ea8db97477b4549023585195c32c94a8746607b2",
+        "intent": "Removed applyEffects/reset fallback is replaced by the sole current change queue; successful and refused reset preserve defaults/rollback."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "set-value-passthrough",
+        "canonicalInputSha256": "730b7fd9daf5c22711e5a2f90adc6cbf29230e73257d1716ccba20dd449d4901",
+        "intent": "setValue is the raw engine door: it resolves with the engine result after a forced re-read, and rejects with the engine error."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "set-value-passthrough",
+        "canonicalInputSha256": "03022b70c67be3bee8699a20cee46d99f7059e31b087d66ee44ce99bb21e2b32",
+        "intent": "Current setValue returns the confirmed field and status; the next refused value leaves it intact."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "interchange",
+        "canonicalInputSha256": "7c9de57f393c450b99e1300e8f45b667d94ce3f3e5456b6ee0649be064ab1244",
+        "intent": "exportData defaults to 'xfdf'; importData passes its format through (undefined included) and SETs the snapshot the engine answers, without a re-read; repair re-reads; each rejects with the engine error."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "interchange",
+        "canonicalInputSha256": "6e26861edcacfb2ca1b38dd885673e150c40b4605725fbe6de5dc813f4bc2c34",
+        "intent": "Current bundles replace FDF/XFDF data doors; export/import/repair use current direct engine services and exact refusals."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/interchange.ts#createInterchange",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "the-twins",
+        "canonicalInputSha256": "1c3e69acb2bc0c0c6a5b9673ddf7c4c7be4b71fd2f480327f4ea010eedf3c0e2",
+        "intent": "canRead, canFill and canDesign each mirror one grant, independently."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "the-twins",
+        "canonicalInputSha256": "b7c0296f60f34e657d21b96a487615ad28b967dea5514e0b9010e9f48e03afc0",
+        "intent": "Read/design grants and per-field fill authority are independently exposed by the current twins."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/controller.ts#createFormController",
+        "packages/plugin/form/src/services/fill-rights.ts#createFillRights"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "the-effect-folds-foreign-events",
+        "canonicalInputSha256": "87a533d2bc9024d74c39f00c4101d85bee3645d4124b2cc18e7ea26748a4b909",
+        "intent": "A remote form event re-reads the snapshot; an own value event is ignored; an own structural event clears the widget geometry and re-reads; stream.desynced re-reads; events without an origin and non-form events are ignored."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "the-effect-folds-foreign-events",
+        "canonicalInputSha256": "2091f66b09c7bd6b87501660f31a013e0a03c62ba5abd386ca42c39f3000e5b6",
+        "intent": "Current remote and local facts fold directly without reads; deletion removes the field/rows. Desynchronization reloads the complete form."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "the-effect-refresh-is-latched",
+        "canonicalInputSha256": "8e1626b10afd45fba51747619d49f2ee920a710b78d13f61dd34d8adc54d8351",
+        "intent": "While the effect is re-reading, further events coalesce into one more read queued after it (v2 dropped them); a failed re-read does not stop the queue."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "the-effect-refresh-is-latched",
+        "canonicalInputSha256": "edec0f6174a4a05f351b931351127a4d2a8576f1265c033e3b766aac5e6f66bd",
+        "intent": "While refresh is in flight current mirrors buffer facts, then replay them over the loaded snapshot. The last buffered fact wins, and later facts fold normally."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "a-reset-action-without-a-batch-door",
+        "canonicalInputSha256": "94ca2bd9df1c68a161b3cf3022fc651b2e90290f160c1153eb03b1639fc42ad5",
+        "intent": "resetFormAction on an engine with no applyEffects resolves unchanged with an unsupported-api diagnostic and never reaches the engine; with no actions plugin there is no port to surface it through."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "a-reset-action-without-a-batch-door",
+        "canonicalInputSha256": "1cbdc4fc4ccfd58a21cb3b437a98d26c3a4910af7f73fc6f931c22b71def5afe",
+        "intent": "The host reset action uses the same current forms.reset operation without an actions plugin or any removed batch API."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "close-unsubscribes",
+        "canonicalInputSha256": "e621f7b0e2f452dd3ce1edc7f17712c3c396b53fcbee8b20d4525f1c6f94704b",
+        "intent": "Closing the document releases the event subscription."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "close-unsubscribes",
+        "canonicalInputSha256": "93c228d7c9f9476ee422651676140a20d9c62f0fbe7c5d49f70fea526a1f9384",
+        "intent": "Closing releases the form instance, its mirrors and hooks; reopening constructs a fresh model."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "geometry-on-an-offset-crop",
+        "canonicalInputSha256": "31f3f2e84d35b775f4770544bf3a5894fbc0aec7e42f35eb71237d3cbb5779bb",
+        "intent": "Content boxes subtract the crop origin: a page whose crop does not start at zero."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "geometry-on-an-offset-crop",
+        "canonicalInputSha256": "876857ab4eaab8febc73be848dc0eb29334128fb7865dcb8ae70eb49ba70b791",
+        "intent": "Current widget rows already carry crop-relative page coordinates, including fractional dimensions; reads preserve them."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads",
+        "packages/plugin/form/src/model.ts#widgetAt"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "reads-over-the-snapshot",
+        "canonicalInputSha256": "8262520b10a2987bc7df01d03e6193b5723cd6c0b786e1e30a32252c59fd8171",
+        "intent": "getStatus walks loading to ready; listFields filters by family, exact name and widget page (an unplaced widget matches no page); getValue maps each value entry to the write vocabulary and answers null for a valueless, unsupported or unknown field; exportValues keys the valued ones by name; getFieldForWidget takes a ref or an object number, and a non-object-number ref finds nothing."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "reads-over-the-snapshot",
+        "canonicalInputSha256": "a29487e72ddc9244c1cd39d3439f37c9d58ede68d3a02f216d996c7fab134589",
+        "intent": "Current list filters, values, widget addresses and exportValues read complete flat field records and page rows; unplaced widgets are absent."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/read/fields.ts#plainValueOf",
+        "packages/plugin/form/src/read/fields.ts#valueOf",
+        "packages/plugin/form/src/read/fields.ts#widgetObjectOf",
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "status-without-read-and-after-a-failed-load",
+        "canonicalInputSha256": "2bb5c54f8b68147a612842f8efc15ed172af94fdcb2ba15f69dfc5c3945af66c",
+        "intent": "Without doc.forms.read the status is 'forbidden'; a load that rejects leaves it 'error'."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "status-without-read-and-after-a-failed-load",
+        "canonicalInputSha256": "1301f378e50c66f210d30a7975cb8a5dc28c470bbcba9921cdf9bbbeb6a5ecf2",
+        "intent": "The current mirror returns forbidden without read permission and error after a named load refusal."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": ["packages/plugin/form/src/sync/fields.ts#createFieldsMirror"]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "batch-writes",
+        "canonicalInputSha256": "9b6bf30e7dec34b0996d5539f3359129133886d2325e6b6c7571590a6695a85f",
+        "intent": "setValues writes each entry through the validated path in order and reports the refs that landed and the ones that threw, with the error info; importValues does the same keyed by name. Without doc.forms.fill every entry fails permission-denied."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "batch-writes",
+        "canonicalInputSha256": "de4988c8311227cadd0af73d28c32b379c18e31f12916f7054b72435facfd608",
+        "intent": "Current batch accepts well-typed fields and reports unknown refs independently; plain import skips missing, forbidden and incompatible values. Accepted fields share one apply."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/values.ts#createValueWrites",
+        "packages/plugin/form/src/read/fields.ts#plainValueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "values-keyed-by-integer-like-names",
+        "canonicalInputSha256": "bc253f1d523a42fda483163284adca7795f77eb2fb5db82a581e1ed5e7e3d1f8",
+        "intent": "exportValues and importValues follow JavaScript object key order: integer-like names ('2', '10') first in ascending numeric order, then the rest in insertion order, whatever the field order."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "values-keyed-by-integer-like-names",
+        "canonicalInputSha256": "adc128d8fd8a1de238645319b1fdadfec09468ce817170113535cf769069feb5",
+        "intent": "Plain import/export follow JavaScript integer-like property ordering; the actual apply operation order records that ordering."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/read/fields.ts#plainValueOf",
+        "packages/plugin/form/src/write/values.ts#createValueWrites"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-all",
+        "canonicalInputSha256": "6dc082d0ac6885a18e70b0c50827c3878a0be384f6de41a0036ff8f11a88643e",
+        "intent": "resetAll resets every resettable field (buttons and signatures skipped), a listed subset by object number or name, or its complement with exclude, through the one reset batch; it answers the refs it resolved from the current snapshot."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-all",
+        "canonicalInputSha256": "4c0c8135cfbb068ff8dd17a00a0d3d4c7bf8038f4a359a39839992023f5f9bab",
+        "intent": "Current reset() selects every fillable resettable field, or explicit refs. Host action exclusion preserves ISO target selection; empty include selects none."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-all-failures",
+        "canonicalInputSha256": "489612423f9c5449db5918067b08c357ef3385bf96fd4811bfa291204d6b9b40",
+        "intent": "A failed or rejected reset entry makes resetAll report its fields as failed 'operation-failed' and the rest as applied; without doc.forms.fill it rejects permission-denied before any call; before the snapshot lands it reads one itself."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "reset-all-failures",
+        "canonicalInputSha256": "6da159dd9682df65f655c63d609d41bc8eafe5cbe84264426499c1f3ceaf4570",
+        "intent": "Explicit denied reset rejects locally; reset waits for the snapshot. Current atomic engine refusal rejects the entire change and the next reset succeeds."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/reset.ts#createResetWrites",
+        "packages/plugin/form/src/read/fields.ts#valueOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "confirmed-change-events",
+        "canonicalInputSha256": "9bc9339e1e973d992fcd67622171acf151c1b6558a92829d845ad92ea2d862a2",
+        "intent": "Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin, whose sub becomes the actorId. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "confirmed-change-events",
+        "canonicalInputSha256": "f6638c00f15c97c134a2e776b60d8f4300f668e0e6e9f5409dc482a2553a6703",
+        "intent": "Current facts announce value/create/update/widget/remove/delete with exact origins; refresh alone announces resync. Unrelated version facts do not synthesize form writes."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/sync/fields.ts#createFieldsMirror",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-fill.json",
+        "name": "an-unsubscribed-listener-hears-nothing",
+        "canonicalInputSha256": "daea068fab9db34c11aa07738b108112cee4737bbe22945f4980c79576f1f6ab",
+        "intent": "The unsubscribe an event hook returns detaches that listener."
+      },
+      "after": {
+        "file": "plugins/form-fill.json",
+        "name": "an-unsubscribed-listener-hears-nothing",
+        "canonicalInputSha256": "8a6cabd4f142f5e4dc88e1768720e8969ac8a3aec5c84586d4355690302dac02",
+        "intent": "An event hook returns a callable unsubscribe; detaching it prevents the subsequent refreshed snapshot callback."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": ["packages/plugin/form/src/sync/fields.ts#createFieldsMirror"]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "init-without-annotation",
+        "canonicalInputSha256": "012dfe1f83f3f7b2c1c6c9b07fabba55576b2312bed9be1ba750e07f758b6440",
+        "intent": "Without the annotation plugin init registers form-fill, form-edit and the five palette tools as plain hub tools enabling 'form-place' and 'annotation-edit', plus the place handler."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "init-without-annotation",
+        "canonicalInputSha256": "406cc88f22cf9d95b15beb6ee56a28f0460ac96c3ad9922c34da2ea1a4a8773b",
+        "intent": "Current connect registers fill/edit and all seven palette tools on the actual interaction hub."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": ["packages/plugin/form/src/connect.ts#connectForm"]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "init-with-annotation",
+        "canonicalInputSha256": "4e0df1205aaf8f2d77ceb8965eed8c413004cea5e42a4dd8a6ef82beebd306d3",
+        "intent": "With the annotation plugin the palette tools join its registry (subtype, click policy, defaults) and a 'form-widgets' behavior is engaged for widget subtypes exactly while the active tool enables 'form-fill'."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "init-with-annotation",
+        "canonicalInputSha256": "1c84136a34545de1263eaccc2551c93862a6cb93b4ccf964a8d1c3b3044c7b65",
+        "intent": "Palette tools join annotation.tools; widgets lend in design mode and return to form fill mode."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "place-a-text-field",
+        "canonicalInputSha256": "879b7925eab730415fbf0f95ded85cfae36db0883b7f9d7f31b74579fd8eea5c",
+        "intent": "placeField converts the content box to a PDF rect on the page crop, auto-names against the current snapshot, sends the draft (appearance only when given), re-reads, clears that page’s geometry, and returns the field and its widget on the page."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "place-a-text-field",
+        "canonicalInputSha256": "4432cd107f03b7b0ab3df5a4e945e2f6d3be75b216d3ba148fdf951a089c05b7",
+        "intent": "Current create accepts page-space drafts and explicit names. The handler owns auto-naming; engine answers fold without geometry reloads."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "place-each-family",
+        "canonicalInputSha256": "e58f5f76797b470d838404853d678e6eb4a03dd6896e86f5c7568ec1bbcee570",
+        "intent": "A radio draft carries one widget with onState 'option1'; combobox and listbox drafts carry two starter options; checkbox takes the plain widget. A widget on another page is reported as null."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "place-each-family",
+        "canonicalInputSha256": "274ab70f74d58721d491a777f3ec42cdcbb2d3270673668203c8e3f49cf8d4a6",
+        "intent": "Current direct drafts retain radio exportValue and complete choice options, and return complete family-specific fields/widgets."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "placement-before-the-snapshot",
+        "canonicalInputSha256": "aa8d19829ad548d6579b98cca2b451265d65402f74f84cae769145619e3f16c5",
+        "intent": "Placing before the first snapshot lands names against an empty form."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "placement-before-the-snapshot",
+        "canonicalInputSha256": "32145b0f59827853f8537a2cef28fd6a13988c71073797a9be5bcbe2c443fc80",
+        "intent": "The actual handler names against the current view while the first list is pending; create shows after confirmation and remains after the snapshot loads."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "placement-is-page-bound",
+        "canonicalInputSha256": "a1b7f31cad11479e16bdfd9c26d7adc06903ae1b182acf89031bb353d62ae428",
+        "intent": "An overshooting box is intersected with the page; a box under one point in either axis after that rejects (exactly one point is enough), as does a page the document does not have; neither reaches the engine."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "placement-is-page-bound",
+        "canonicalInputSha256": "79c75f311bb1b6d6ee69d1a9e6f5f866a811399bff6aae928716298d6f0aa9e0",
+        "intent": "Actual gesture placement clamps overshoots, ignores degenerate drags and unknown pages, and permits one-point geometry."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "placement-refused-by-the-engine",
+        "canonicalInputSha256": "c61f51682b9e137a94ee105f36882d25d2145ff4a61a94648560e9f5f9bff9e5",
+        "intent": "A createField refusal rejects placeField and changes nothing; the queue carries on."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "placement-refused-by-the-engine",
+        "canonicalInputSha256": "00f4b3da5ce9b1f9b7fa0cc551f29b31ff0579b996678aed9ee1fa4328e9d5a0",
+        "intent": "A current create refusal rejects without confirmation; the next create succeeds with its own allocated refs."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "placement-reloads-the-annotation-page",
+        "canonicalInputSha256": "85b915b20644d7133ff9b8e630387478358374bfb382042638c3d9f7b6fc5bd8",
+        "intent": "With the annotation plugin placeField awaits the page reload before resolving, so the widget is selectable."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "placement-reloads-the-annotation-page",
+        "canonicalInputSha256": "2f17b1c21eed641db85b999ac9670e40116f1467f3467a8f8946e8d6c6eadc6a",
+        "intent": "Current confirmed widget rows are lent directly to annotation in design mode; selection needs no extra annotation read."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "page-box",
+        "canonicalInputSha256": "e63f866c3a70fe53b6b63f164c66c6d1f9722b0cedca8bebfcc71b6466768473",
+        "intent": "pageBox is the page's content box {0, 0, w, h}, or null for a page the document does not have."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "page-box",
+        "canonicalInputSha256": "a2589d0cb672869a8eba3c5d738c1c7e1ef034fd2ccd2f534b424a9835c036bb",
+        "intent": "The host page box is in current page-space coordinates; unknown pages return null."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": ["packages/plugin/form/src/read/widgets.ts#createWidgetReads"]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "update-field",
+        "canonicalInputSha256": "6938a8f84f093f51adc399dd43651e420c3585a7abd785d1aacbc0931d6c2346",
+        "intent": "updateField sends the patch against the key’s ref and re-reads; a refusal rejects."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "update-field",
+        "canonicalInputSha256": "f5bad46432ab3abb2c3eecda5a356d76299bdc0171ccfcfe77f9e63f23c4cde1",
+        "intent": "Current update stages a patch against an actual field ref and folds the answer; a named engine family refusal rejects."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "delete-field",
+        "canonicalInputSha256": "3b7014da92ab455374d826502b97135b618f0604e08ad1253fa66b17ce1b9158",
+        "intent": "deleteField deletes by ref, re-reads, clears the geometry of each page the field's widgets were on (once each, direct widgets skipped) and nudges the annotation plane there; an unknown key still deletes, with no pages."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "delete-field",
+        "canonicalInputSha256": "266de815b243202d2cad129690d518dfe883b9619f17cdb6ede8546a587d260b",
+        "intent": "Deleting a spread field removes its widgets on both pages from form and annotation lending. Unknown ref deletion is an explicit engine not-found refusal."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign",
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "queued-verbs-interleave-with-page-reloads",
+        "canonicalInputSha256": "954eccb8c7bf7befbdd9b37306fbd7bd12ca167c086ab9c23880e6ff95296980",
+        "intent": "The annotation reloads a delete nudges run unawaited beside the next queued verb: their page reads and model updates interleave with the update, turn for turn."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "queued-verbs-interleave-with-page-reloads",
+        "canonicalInputSha256": "851ebca679406db1abbd66e678658198922f5284947ff239cbe3b140d0178463",
+        "intent": "Current structural ops overlap without old page reloads; a confirmed update remains while a prior delete awaits its answer."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "delete-field-without-annotation",
+        "canonicalInputSha256": "4632f882242db5872a05d0fecaae190f1a926580ce76cb3ca1262010bf7d2270",
+        "intent": "Without the annotation plugin there is no plane to nudge; a refusal rejects."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "delete-field-without-annotation",
+        "canonicalInputSha256": "9f456e399b5076e63380cf7e7e317c5da4ebcefac92125964df9492663d6fc39",
+        "intent": "Direct delete works with no annotation plugin; a later engine not-found refusal is preserved."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "detach-widget",
+        "canonicalInputSha256": "6d14202b3853f1d003d59ec91e034b6dedf71aef55a5c35910916597cf0e8832",
+        "intent": "detachWidget sends the widget's page with its object number, re-reads, then clears and nudges that page; an unknown widget detaches with page 0 and touches no page, and so does a direct widget."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "detach-widget",
+        "canonicalInputSha256": "812dfe16c6049aeb244125211fbcc79f66ebfa54d64b83b87c4a0525670406f1",
+        "intent": "Current removeWidget takes field and annotation refs; detached rows remain on the page with field:null and are no longer projected as fields."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/read/fields.ts#widgetObjectOf"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "widget-hit-test",
+        "canonicalInputSha256": "4aeb301f658d683a0eb49671cffd4399d6a574174dee06f054d7cfbe1c97d609",
+        "intent": "getWidgetAt kicks the page's geometry read and, until it lands, asks the annotation plane's live boxes: the smallest widget with a field under the point wins, a widget no field owns and a non-widget annotation are skipped. Once the geometry lands the model answers; a page without either answers null."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "widget-hit-test",
+        "canonicalInputSha256": "69c3ddd8e17b5d3b698f67fbf35e330568b7c913f81c938dea8b7afe05eae511",
+        "intent": "Current model hit test returns the smallest owned widget; unowned widgets and unknown pages return null before and after ensureLoaded."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/model.ts#widgetAt",
+        "packages/plugin/form/src/read/widgets.ts#createWidgetReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "widget-hit-test-live-boxes-compare-areas",
+        "canonicalInputSha256": "b28d2c5ca79c37618904e26cdaced8e4d323f995c08c9adbd7d2d43cc8d98442",
+        "intent": "The live-box fallback compares areas, not perimeters or aspect ratios: a 2 x 200 widget beats a 30 x 30 one and a 40 x 10 widget beats a 30 x 30 one; between equal areas the first listed wins."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "widget-hit-test-live-boxes-compare-areas",
+        "canonicalInputSha256": "65f91488a8f8c5636d0e4f94d5144d6f4431309e6a19d1df0a811feae5d83963",
+        "intent": "Current snapshot hit test compares area and preserves first-listed ties; removed live fallback has the same surviving geometric owner."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": ["packages/plugin/form/src/model.ts#widgetAt"]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "widget-hit-test-without-annotation",
+        "canonicalInputSha256": "b57ef69bafb7fc5bd0cd84fa62eddf6e475b62b95710cd824eb209c7ed8b65b0",
+        "intent": "Without the annotation plugin a page whose geometry has not landed answers null."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "widget-hit-test-without-annotation",
+        "canonicalInputSha256": "bd74f6b4ddf4d572c7b039bdb40822a594afb4c1cadc138676faa16d69df31c0",
+        "intent": "Before the current form snapshot lands no widget can hit; after it lands the model hits without annotation."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": ["packages/plugin/form/src/model.ts#widgetAt"]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "attach-widget",
+        "canonicalInputSha256": "4d33f052fff9f0f53a0cf912e40aee9e564edec4353a1ce884744bd39b577be5",
+        "intent": "attachWidget links an annotation to the field by ref, re-reads, then clears and nudges the widget's page; a refusal rejects."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "attach-widget",
+        "canonicalInputSha256": "e69cae15ebcb7cfe147f6c76e3c5b2eec104719043e082ff2635dc8426a75c85",
+        "intent": "Current addWidget creates another placement on the field, allocates its real ref and inherits look; a refused follow-up is explicit."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "place-with-a-name-and-options",
+        "canonicalInputSha256": "286df9450a344f067b5edd14bb90929ef7631e394d3b7c3905a2e48fc43f5380",
+        "intent": "An explicit name skips auto-naming, and a choice field takes the options given instead of the two starters."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "place-with-a-name-and-options",
+        "canonicalInputSha256": "cdedba462aa09c47f4a0c426b5f92a00f4debef7e8f555892a5a1ad85f9c8826",
+        "intent": "Current explicit create supports custom choice names/options and signature fields without a stale placeField door."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/write/fields.ts#createFieldWrites",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "a-click-places-the-tool-default",
+        "canonicalInputSha256": "d322afbf77c947d175014f6b156cbc2755302dd7b0b8d67c3e729511af351720",
+        "intent": "A click (under the drag threshold in both axes) places the tool's click size centred on the down point through the shared placement layer, styled from the tool's live defaults, and selects the new widget."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "a-click-places-the-tool-default",
+        "canonicalInputSha256": "74df6879b5575fbafe2be0b0ffba9ad8262b120d48aea2422ac8bd6b96911a25",
+        "intent": "A real pointer click creates the default text tool draft and selects the final allocated widget in design mode."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "a-click-near-the-edge-is-clamped",
+        "canonicalInputSha256": "a51116958daae260c996a5fd42b4c16cecb44c3673ab4bb4e588ff19f7dff0e9",
+        "intent": "The click box is kept on the page by the shared placement layer."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "a-click-near-the-edge-is-clamped",
+        "canonicalInputSha256": "df832a3bbc9bc3826d24403a5fe1feb4b4f0d3e52e7db62ea963a99b47463afc",
+        "intent": "The real listbox tool click clamps its standard size to the page edge."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "a-thin-drag-is-a-drag",
+        "canonicalInputSha256": "3585231767b48610cf2540467b2d04b69a789dc795b72e5fa43ca9e1e1976681",
+        "intent": "Without the annotation plugin a 100 x 2 drag commits as the dragged rect, styled from the table's static defaults; nothing is selected."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "a-thin-drag-is-a-drag",
+        "canonicalInputSha256": "a3790cfcd0f9303db0e641403151b250a9af1c3a726e311fa5a13ef0aa471afb",
+        "intent": "Without annotation a 100 by 2 drag commits its exact page-space rectangle and the tool static look."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "the-home-page-tracks-through-the-projection",
+        "canonicalInputSha256": "1d33b1398cf6e2c1794156bc1a79d34ec132f4fcc491f1d4eb25663e47a17f46",
+        "intent": "Moves over another page project back onto the home page; the up sample is final; a move that projects nowhere is ignored; an up over a gap falls back to the last resolved point."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "the-home-page-tracks-through-the-projection",
+        "canonicalInputSha256": "749c3f0f357579a77d4ca3a6da58459030a58cd1d8ed553421dbfa56ead1c0ec",
+        "intent": "Cross-page moves use the serialized projection callable, null projections are ignored, and gap releases use the last resolved home-page point."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "the-live-preview",
+        "canonicalInputSha256": "a39e94a558c3cc2600eff6d086f3a4f5c7bdf582ffa1ae14349b5ff3c9ecb436",
+        "intent": "With the annotation plugin a move past the drag threshold previews the dragged box through the placement ghost, a move back under it clears the preview, and the up clears it."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "the-live-preview",
+        "canonicalInputSha256": "4c7d31a3ff7a3e549243bfead8b52bd1b9d3424f8c53a8eff271617f78689ba9",
+        "intent": "The real form placement handler updates annotation page items past the shared drag threshold and clears its preview on release."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "the-click-threshold-is-strict",
+        "canonicalInputSha256": "fc3463124d2529593eb2ae5912b8c1ccb89e2ee41aacea1416fb92795d20134a",
+        "intent": "A drag exactly the drag threshold wide (or tall) is a drag, not a click: here a degenerate one, which placeField refuses."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "the-click-threshold-is-strict",
+        "canonicalInputSha256": "e90b9d1ca58d900a2f54675c15ad9398a09145430721a8f3468bbc475ab014fd",
+        "intent": "Exactly three points is a drag; degenerate dimensions produce no placement or engine call."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "the-handler-outranks-lower-priorities",
+        "canonicalInputSha256": "fd1f3cfefd3a43bcc4bde091fa558dc9b3a221cb05cfadb16d1d1ce7d2070aee",
+        "intent": "At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked; the gesture starts under the id 'form-place'."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "the-handler-outranks-lower-priorities",
+        "canonicalInputSha256": "c8d6e13824dacb7b0180a7df079c9ca900843cf3f697099e6fc0c777dad9c5d4",
+        "intent": "The actual priority95 form handler captures before a priority50 observer and reports form-place in gesture events."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "the-handler-declines",
+        "canonicalInputSha256": "384f80d7d735034799fc142565e77dac00b8329f5817562a18f0304666f9340c",
+        "intent": "No capture off a page, under a tool the palette does not know (even one enabling form-place), without the design grant, or under a palette id re-registered without form-place; the gesture falls through to other handlers."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "the-handler-declines",
+        "canonicalInputSha256": "60b0861d2dca0753af6eb9a9016f4ef4922a7c374f6a65703a924c07aef43ac1",
+        "intent": "The real handler declines gaps, unknown palette tools, missing design authority and a replacement tool without form-place."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "auto-select-waits-for-a-stable-world",
+        "canonicalInputSha256": "f2eb0ba760c43de160d47fb402b2e6512e71c0ea243e7e0568da6add05fdfa8d",
+        "intent": "No selection when the tool changed while the engine wrote, when the engine reported no widget on the page, or when the widget has no object number."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "auto-select-waits-for-a-stable-world",
+        "canonicalInputSha256": "47e8dad23913e532dcfd0c05779d6fafafb4e96b0bfdafc621fb9a63770faff7",
+        "intent": "Reserved object numbers make selection immediate; switching away drops it. A later field on another page or with no widget stays unselected."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/write/lending.ts#createWidgetLender",
+        "packages/plugin/form/src/services/design.ts#createDesign"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/form-design.json",
+        "name": "a-failed-placement-is-logged",
+        "canonicalInputSha256": "d5b89e0cecaa0ad13ee7d1a9154710d1e301101169f21917090bf049b21b0117",
+        "intent": "A placeField rejection is contained and reported to console.error: a drag that is thin in one axis after clamping, a click on a page the document does not have, an engine refusal."
+      },
+      "after": {
+        "file": "plugins/form-design.json",
+        "name": "a-failed-placement-is-logged",
+        "canonicalInputSha256": "20bf79386b326e51d3585b2ad1c74090aa1cd3a674a94b753a92cc4eaed53391",
+        "intent": "The current handler silently skips too-thin clamped geometry and unknown pages, and contains an exact engine refusal via console.error."
+      },
+      "disposition": "current-shipping-replacement",
+      "task11InputDrift": false,
+      "sourceEvidence": [
+        "packages/plugin/form/src/connect.ts#connectForm",
+        "packages/plugin/form/src/tools/handlers.ts#createPlaceHandler",
+        "packages/plugin/form/src/read/fields.ts#createFieldReads"
+      ]
+    }
+  ]
+}

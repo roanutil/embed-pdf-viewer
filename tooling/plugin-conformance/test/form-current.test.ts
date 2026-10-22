@@ -521,7 +521,7 @@ for (const suite of lifecycle)
           ]);
       }
     });
-test('all 220 original definitions are archived, all 101 owned cases map exactly and the 119 deferred definitions stay byte-identical', async () => {
+test('all 220 original definitions are archived, all 101 owned cases map exactly and the 59 deferred definitions plus legacy helper stay byte-identical', async () => {
   const root = new URL('../', import.meta.url),
     history = new URL('historical/task-12b2b2-i/', root);
   const original = JSON.parse(await readFile(new URL('original-inputs.json', history), 'utf8')) as {
@@ -597,7 +597,7 @@ test('all 220 original definitions are archived, all 101 owned cases map exactly
       source.sha256,
       filename + ' archive',
     );
-    if (filename !== 'form-core.ts')
+    if (['form-scripting.ts', 'form-actions.ts', 'form-fixtures.ts'].includes(filename))
       assert.equal(
         digest(await readFile(new URL('src/suites/' + filename, root))),
         source.sha256,

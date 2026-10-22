@@ -1,0 +1,315 @@
+{
+  "base": "2334ab2310be71cef497633cb44e53664f237c86",
+  "sources": [
+    {
+      "path": "src/suites/form-fill.ts",
+      "sha256": "29dcfacbb47e5752378063513b0bfff19b2058ca6e78287238097ff2accd5993"
+    },
+    {
+      "path": "src/suites/form-design.ts",
+      "sha256": "750fae31cd54b7cfb81dd8ca712212dc6fc66174a1ecade23da4d65d6389af56"
+    }
+  ],
+  "cases": [
+    {
+      "file": "plugins/form-fill.json",
+      "name": "hydrates-on-open",
+      "sha256": "902560dac1bc3b943087528acb29a6ffb7caaaff83b150bb369eb58f61454ce1"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "no-read-grant-never-lists",
+      "sha256": "c20e5c86af8c0bf969982ca154932f3c2c7058681cd59e391df1283a6b0be356"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "refresh-coalesces-and-forces",
+      "sha256": "be0ebec2b35faca3d496d1089ba20371a788e2e87fdaa2c93a84c21b081a4d5b"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-load-warns",
+      "sha256": "cc036ae714d507d9f6392d76a6fad502c8ade9301f33173716ac44fa9d73a05d"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "widget-geometry-loads-once-per-page",
+      "sha256": "9b39564647a38205cfaf14ce86d2d76e2ec78fa923304b4fa43069709a9996ae"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-geometry-read-can-retry",
+      "sha256": "447b45f97a1485784eb69d3b64fc3ec836f414c31fea3b995ce3016c8c654ea2"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "fill-authority-fuses-into-disabled",
+      "sha256": "cb0afcbe471d775e5507808a5d0eca0c8344dc7ad07ba46096332e17e3d0b833"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "typed-writes",
+      "sha256": "4856539117321686e8cf762b9a3de22e8f27fe038ed849a54129d16122bff33f"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "writes-serialize",
+      "sha256": "3d7026e2aa21ba1ddfffde50bf6f9994f7ab4c94daf14ec98fa4b9f748fe7ebc"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-write-reverts",
+      "sha256": "86cde25f832c5194a1e072837714fce91f8038f9514a56dd8bf44bffff8cfcb7"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-write-gate",
+      "sha256": "2676a35347348da82ee0fbe45d955c1de7407aa598e5980392c4c08cd1f7b28e"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "commit-value-without-scripting",
+      "sha256": "2fa22b819da0d3a49cd19895d911cdd47742b6137ab030675a348191c522b2d2"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-rides-the-batch",
+      "sha256": "bd85891add9caf7b3d98b76106436fc33426626d637e5cc2319a6ef3112fa54b"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-failed-reset-batch-rejects",
+      "sha256": "4c0abb29235f4e493d91aae96e544301100df7260194efbed58fec3f30abe3b3"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-without-the-batch",
+      "sha256": "ea2f6ab7a899e6edbc40b8d3b9b82608782d1c0171bd7a62f0ce854e8c7f8eed"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "set-value-passthrough",
+      "sha256": "730b7fd9daf5c22711e5a2f90adc6cbf29230e73257d1716ccba20dd449d4901"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "interchange",
+      "sha256": "7c9de57f393c450b99e1300e8f45b667d94ce3f3e5456b6ee0649be064ab1244"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-twins",
+      "sha256": "1c3e69acb2bc0c0c6a5b9673ddf7c4c7be4b71fd2f480327f4ea010eedf3c0e2"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-effect-folds-foreign-events",
+      "sha256": "87a533d2bc9024d74c39f00c4101d85bee3645d4124b2cc18e7ea26748a4b909"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "the-effect-refresh-is-latched",
+      "sha256": "8e1626b10afd45fba51747619d49f2ee920a710b78d13f61dd34d8adc54d8351"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "a-reset-action-without-a-batch-door",
+      "sha256": "94ca2bd9df1c68a161b3cf3022fc651b2e90290f160c1153eb03b1639fc42ad5"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "close-unsubscribes",
+      "sha256": "e621f7b0e2f452dd3ce1edc7f17712c3c396b53fcbee8b20d4525f1c6f94704b"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "geometry-on-an-offset-crop",
+      "sha256": "31f3f2e84d35b775f4770544bf3a5894fbc0aec7e42f35eb71237d3cbb5779bb"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reads-over-the-snapshot",
+      "sha256": "8262520b10a2987bc7df01d03e6193b5723cd6c0b786e1e30a32252c59fd8171"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "status-without-read-and-after-a-failed-load",
+      "sha256": "2bb5c54f8b68147a612842f8efc15ed172af94fdcb2ba15f69dfc5c3945af66c"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "batch-writes",
+      "sha256": "9b6bf30e7dec34b0996d5539f3359129133886d2325e6b6c7571590a6695a85f"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "values-keyed-by-integer-like-names",
+      "sha256": "bc253f1d523a42fda483163284adca7795f77eb2fb5db82a581e1ed5e7e3d1f8"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-all",
+      "sha256": "6dc082d0ac6885a18e70b0c50827c3878a0be384f6de41a0036ff8f11a88643e"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "reset-all-failures",
+      "sha256": "489612423f9c5449db5918067b08c357ef3385bf96fd4811bfa291204d6b9b40"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "confirmed-change-events",
+      "sha256": "9bc9339e1e973d992fcd67622171acf151c1b6558a92829d845ad92ea2d862a2"
+    },
+    {
+      "file": "plugins/form-fill.json",
+      "name": "an-unsubscribed-listener-hears-nothing",
+      "sha256": "daea068fab9db34c11aa07738b108112cee4737bbe22945f4980c79576f1f6ab"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "init-without-annotation",
+      "sha256": "012dfe1f83f3f7b2c1c6c9b07fabba55576b2312bed9be1ba750e07f758b6440"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "init-with-annotation",
+      "sha256": "4e0df1205aaf8f2d77ceb8965eed8c413004cea5e42a4dd8a6ef82beebd306d3"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "place-a-text-field",
+      "sha256": "879b7925eab730415fbf0f95ded85cfae36db0883b7f9d7f31b74579fd8eea5c"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "place-each-family",
+      "sha256": "e58f5f76797b470d838404853d678e6eb4a03dd6896e86f5c7568ec1bbcee570"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-before-the-snapshot",
+      "sha256": "aa8d19829ad548d6579b98cca2b451265d65402f74f84cae769145619e3f16c5"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-is-page-bound",
+      "sha256": "a1b7f31cad11479e16bdfd9c26d7adc06903ae1b182acf89031bb353d62ae428"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-refused-by-the-engine",
+      "sha256": "c61f51682b9e137a94ee105f36882d25d2145ff4a61a94648560e9f5f9bff9e5"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "placement-reloads-the-annotation-page",
+      "sha256": "85b915b20644d7133ff9b8e630387478358374bfb382042638c3d9f7b6fc5bd8"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "page-box",
+      "sha256": "e63f866c3a70fe53b6b63f164c66c6d1f9722b0cedca8bebfcc71b6466768473"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "update-field",
+      "sha256": "6938a8f84f093f51adc399dd43651e420c3585a7abd785d1aacbc0931d6c2346"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "delete-field",
+      "sha256": "3b7014da92ab455374d826502b97135b618f0604e08ad1253fa66b17ce1b9158"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "queued-verbs-interleave-with-page-reloads",
+      "sha256": "954eccb8c7bf7befbdd9b37306fbd7bd12ca167c086ab9c23880e6ff95296980"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "delete-field-without-annotation",
+      "sha256": "4632f882242db5872a05d0fecaae190f1a926580ce76cb3ca1262010bf7d2270"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "detach-widget",
+      "sha256": "6d14202b3853f1d003d59ec91e034b6dedf71aef55a5c35910916597cf0e8832"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "widget-hit-test",
+      "sha256": "4aeb301f658d683a0eb49671cffd4399d6a574174dee06f054d7cfbe1c97d609"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "widget-hit-test-live-boxes-compare-areas",
+      "sha256": "b28d2c5ca79c37618904e26cdaced8e4d323f995c08c9adbd7d2d43cc8d98442"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "widget-hit-test-without-annotation",
+      "sha256": "b57ef69bafb7fc5bd0cd84fa62eddf6e475b62b95710cd824eb209c7ed8b65b0"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "attach-widget",
+      "sha256": "4d33f052fff9f0f53a0cf912e40aee9e564edec4353a1ce884744bd39b577be5"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "place-with-a-name-and-options",
+      "sha256": "286df9450a344f067b5edd14bb90929ef7631e394d3b7c3905a2e48fc43f5380"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-click-places-the-tool-default",
+      "sha256": "d322afbf77c947d175014f6b156cbc2755302dd7b0b8d67c3e729511af351720"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-click-near-the-edge-is-clamped",
+      "sha256": "a51116958daae260c996a5fd42b4c16cecb44c3673ab4bb4e588ff19f7dff0e9"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-thin-drag-is-a-drag",
+      "sha256": "3585231767b48610cf2540467b2d04b69a789dc795b72e5fa43ca9e1e1976681"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-home-page-tracks-through-the-projection",
+      "sha256": "1d33b1398cf6e2c1794156bc1a79d34ec132f4fcc491f1d4eb25663e47a17f46"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-live-preview",
+      "sha256": "a39e94a558c3cc2600eff6d086f3a4f5c7bdf582ffa1ae14349b5ff3c9ecb436"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-click-threshold-is-strict",
+      "sha256": "fc3463124d2529593eb2ae5912b8c1ccb89e2ee41aacea1416fb92795d20134a"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-handler-outranks-lower-priorities",
+      "sha256": "fd1f3cfefd3a43bcc4bde091fa558dc9b3a221cb05cfadb16d1d1ce7d2070aee"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "the-handler-declines",
+      "sha256": "384f80d7d735034799fc142565e77dac00b8329f5817562a18f0304666f9340c"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "auto-select-waits-for-a-stable-world",
+      "sha256": "f2eb0ba760c43de160d47fb402b2e6512e71c0ea243e7e0568da6add05fdfa8d"
+    },
+    {
+      "file": "plugins/form-design.json",
+      "name": "a-failed-placement-is-logged",
+      "sha256": "d5b89e0cecaa0ad13ee7d1a9154710d1e301101169f21917090bf049b21b0117"
+    }
+  ]
+}
