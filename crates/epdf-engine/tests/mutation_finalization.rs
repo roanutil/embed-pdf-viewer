@@ -92,6 +92,9 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
         (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::FormFieldUpdated(nothing.clone()), MutationFamily::SelfSequenced),
+        // A repair is counted once, after its commit (`noteEdit` in
+        // `finishMutation`).
+        (DocumentEventInit::FormRepaired(nothing.clone()), MutationFamily::Ordinary),
     ] {
         assert_eq!(event.family(), expected, "{}", event.type_name());
     }

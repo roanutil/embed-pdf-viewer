@@ -54,8 +54,9 @@ fn open() -> (Host, Value) {
     (host, first)
 }
 
-/// A save with what may differ between equal documents blanked: the second
-/// id and `/Size`.
+/// A save with what may differ between equal documents blanked: the
+/// trailer's whole `/ID` array, both ids, as upstream's `comparable` blanks
+/// it to `/ID[]`, and `/Size`.
 fn comparable(bytes: &[u8]) -> String {
     let text: String = bytes.iter().map(|&b| b as char).collect();
     let ids = blank_after(&text, "/ID", |rest| rest.find(']').map_or(rest.len(), |at| at + 1));
@@ -736,8 +737,47 @@ fn common_open_signing(host: &mut Host) -> String {
 }
 
 #[test]
-fn the_save_comparison_blanks_only_the_second_id_and_the_size() {
+fn the_save_comparison_blanks_the_whole_id_array_and_the_size() {
     let trailer = b"<</Root 1 0 R /Size 25/ID[<AB><CD>]>>\nstartxref\n12";
     assert_eq!(comparable(trailer), "<</Root 1 0 R /Size _/ID _>>\nstartxref\n12");
     assert_eq!(comparable(b"/Size 7 >>"), "/Size _ >>");
+}
+
+#[test]
+fn a_repair_whose_commit_is_refused_leaves_the_sequence_as_it_was() {
+    // `finishMutation` counts a write once, after its commit (`noteEdit`):
+    // a repair refused at its commit moved nothing.
+    let (mut host, _) = open();
+    let before = session(&host).mutation_sequence();
+    session(&host).force_commit_failure(CommitFailure::InTransactionCheck);
+    send(&mut host, json!({ "kind": "forms.repair" }), vec![]).expect_err("refused at its commit");
+    assert_eq!(session(&host).mutation_sequence(), before);
+
+    let repaired = call(&mut host, json!({ "kind": "forms.repair" }));
+    assert_eq!(repaired["mutationSequence"], json!(before + 1), "{repaired}");
+}
+
+#[test]
+fn a_refused_numbered_create_leaves_its_number_held() {
+    // `abortTransaction`: the numbers a create claimed are free again, and
+    // still the session's.
+    let mut host = Host::new();
+    let opened = send(
+        &mut host,
+        json!({ "kind": "open.fatMem", "reserveObjectNumbers": 4 }),
+        vec![test_support::fixture(HELLO)],
+    )
+    .expect("open");
+    let number = opened["objectNumbers"]["first"].as_u64().expect("a reserved range") as u32;
+    let first = call(&mut host, json!({ "kind": "pages.list" }))["pages"][0]["ref"].clone();
+    let create = json!({ "kind": "annotations.create", "page": first, "objectNumber": number,
+        "draft": { "subtype": "square", "box": rect(20.0) } });
+
+    session(&host).force_commit_failure(CommitFailure::InTransactionCheck);
+    send(&mut host, create.clone(), vec![]).expect_err("refused at its commit");
+    assert!(session(&host).holds_object_number(number), "the refused create spent its number");
+
+    let created = call(&mut host, create);
+    assert_eq!(created["result"]["annotation"]["ref"]["objectNumber"], json!(number));
+    assert!(!session(&host).holds_object_number(number), "the commit did not spend it");
 }

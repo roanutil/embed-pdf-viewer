@@ -307,7 +307,6 @@ impl DocumentEventInit {
     pub fn family(&self) -> MutationFamily {
         match self {
             Self::FormImported(_)
-            | Self::FormRepaired(_)
             | Self::FormFieldUpdated(_)
             // The install already advanced the sequence.
             | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,

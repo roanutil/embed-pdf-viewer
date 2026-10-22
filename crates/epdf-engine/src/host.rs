@@ -784,11 +784,6 @@ impl Host {
         use crate::features as f;
 
         let key = header.key()?;
-        if MUTATING_KINDS.contains(&header.kind.as_str())
-            && let Ok(session) = self.sessions.session(&key)
-        {
-            f::signature::mutator::assert_no_pending_signing(session)?;
-        }
         match header.kind.as_str() {
             // ── Document reads ────────────────────────────────────────
             "metadata.read" => {
@@ -1658,7 +1653,6 @@ impl Host {
                     let d = self.document(&key)?;
                     f::forms::write::repair(d, bake, &stamp, cancel)?
                 };
-                self.note_form_write(&key)?;
                 self.finish(
                     &key,
                     crate::session::save::DocumentEventInit::FormRepaired(value(&result)?),
@@ -1978,14 +1972,6 @@ impl Host {
     ) -> Result<HostResponse, EngineError> {
         let family = event.family();
         self.finalize(key, family, Some(event), result)
-    }
-
-    /// `session.noteMutation()` as `FormMutator` and `FormsEffectsApplier`
-    /// call it after a write lands: the form writers are `SelfSequenced`,
-    /// so the finish does not bump for them.
-    fn note_form_write(&self, key: &SessionKey) -> Result<(), EngineError> {
-        self.sessions.session(key)?.note_mutation();
-        Ok(())
     }
 
     /// [`Host::finish`] for a mutation the TypeScript publishes no event
@@ -3088,43 +3074,6 @@ fn strip_item(
         )),
     }
 }
-
-/// Every kind that writes to a session's document: refused while a signing
-/// is parked (`WorkerHost.ts` `MUTATING_KINDS`, the kinds this host routes).
-const MUTATING_KINDS: &[&str] = &[
-    "metadata.update",
-    "metadata.updateCustom",
-    "document.apply",
-    "document.applyChanges",
-    "annotations.create",
-    "annotations.update",
-    "annotations.delete",
-    "annotations.reorder",
-    "annotations.flatten",
-    "annotations.import",
-    "forms.setValue",
-    "forms.reset",
-    "forms.import",
-    "forms.importValues",
-    "forms.repair",
-    "forms.createField",
-    "forms.updateField",
-    "forms.setSignatureAppearance",
-    "forms.deleteField",
-    "forms.addWidget",
-    "forms.detachWidget",
-    "forms.updateWidget",
-    "forms.deleteWidget",
-    "forms.reorderCalculations",
-    "forms.reorderWidgets",
-    "pages.setName",
-    "pages.removeName",
-    "pages.flatten",
-    "redaction.apply",
-    "measure.setScale",
-    "pieceInfo.update",
-    "pieceInfo.delete",
-];
 
 /// What a job does to the parsed pages the host keeps (`pageEffectOf`,
 /// from each kind's `RequestEffect`): a `contentWrite` changes content or

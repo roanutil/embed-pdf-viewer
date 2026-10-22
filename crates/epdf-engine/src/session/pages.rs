@@ -115,8 +115,11 @@ impl Drop for PooledPage {
     fn drop(&mut self) {
         // The page this hold has stays alive until this struct's fields
         // drop, after the residency may have let go of its own claim.
-        if let Ok(mut residency) = self.residency.try_borrow_mut() {
-            residency.release(self.owner, self.page_object_number);
+        match self.residency.try_borrow_mut() {
+            Ok(mut residency) => residency.release(self.owner, self.page_object_number),
+            // Only a page dropped inside a residency call could meet it
+            // borrowed, and no residency call holds a page.
+            Err(_) => debug_assert!(false, "a page was released while the residency was in use"),
         }
     }
 }
