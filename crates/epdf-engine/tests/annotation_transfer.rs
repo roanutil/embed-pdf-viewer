@@ -749,7 +749,10 @@ fn a_restore_leaves_out_a_name_the_page_has_and_what_points_at_it_then_names_on_
         .collect();
     assert_eq!(reasons, ["name-conflict", "parent-dropped", "name-conflict", "name-conflict"]);
     assert_eq!(second["result"]["annotations"], json!([]));
-    assert_eq!(second["events"], json!([]), "nothing was written");
+    // Nothing was written: the answer is the result alone, no sequence and
+    // no events (`handleAnnotationsImport`).
+    let keys: Vec<&String> = second.as_object().unwrap().keys().collect();
+    assert_eq!(keys, ["result"], "nothing was written: {second}");
 }
 
 #[test]

@@ -140,11 +140,10 @@ pub enum ChangeOp {
     },
     /// Every page of the PDF `source`, copied in at `position` (the end
     /// when left out). The source is a payload the request carries,
-    /// `{ "payload": n }`, or its bytes written out as a list of numbers,
-    /// as a recorded request holds upstream's typed array.
+    /// `{ "payload": n }`, as every other byte resource on this wire: upstream's
+    /// typed array, moved beside the JSON rather than spelled in it.
     #[serde(rename = "pages.insert")]
     PagesInsert {
-        #[serde(deserialize_with = "source_bytes")]
         source: ResourceBytes,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         position: Option<crate::features::pages_write::PagePosition>,
@@ -437,20 +436,6 @@ impl WireBundle {
                 .collect::<Result<_, EngineError>>()?,
         })
     }
-}
-
-/// A `pages.insert` source: a payload it names, or its bytes.
-fn source_bytes<'de, D: serde::Deserializer<'de>>(d: D) -> Result<ResourceBytes, D::Error> {
-    #[derive(Deserialize)]
-    #[serde(untagged)]
-    enum Source {
-        Bytes(Vec<u8>),
-        Payload(ResourceBytes),
-    }
-    Ok(match Source::deserialize(d)? {
-        Source::Bytes(bytes) => ResourceBytes::Bytes(bytes),
-        Source::Payload(payload) => payload,
-    })
 }
 
 /// The bytes beside an op, by role (`WireAnnotationResources`).

@@ -100,6 +100,22 @@ fn layout(replay: &mut Replay) -> Value {
     replay.replay(&json!({ "kind": "pages.list", "jobId": "<job>" })).expect("the pages list")
 }
 
+/// `request` as this wire sends it: a recorded insert holds upstream's typed
+/// array as a list of numbers (`recording-engine.ts`), where this wire
+/// carries bytes as a payload the op names (`{ "payload": n }`).
+fn sent(replay: &mut Replay, request: &Value) -> Result<Value, Value> {
+    let mut request = request.clone();
+    let mut payloads = Vec::new();
+    for op in request["change"]["ops"].as_array_mut().into_iter().flatten() {
+        if let Some(Value::Array(bytes)) = op.get("source") {
+            let bytes: Vec<u8> = bytes.iter().map(|b| b.as_u64().expect("a byte") as u8).collect();
+            op["source"] = json!({ "payload": payloads.len() });
+            payloads.push(bytes);
+        }
+    }
+    replay.send(&request, payloads).outcome
+}
+
 #[test]
 fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
     let file = load();
@@ -108,7 +124,8 @@ fn a_page_mutation_leaves_the_layout_the_typescript_engine_left() {
     for case in file.cases.iter().filter(|case| !case.refused && !case.flattens()) {
         applied += 1;
         let mut replay = open(&file, case);
-        let answer = replay.replay(&case.request).unwrap_or_else(|e| panic!("{}: {e}", case.name));
+        let answer =
+            sent(&mut replay, &case.request).unwrap_or_else(|e| panic!("{}: {e}", case.name));
         let items = answer["result"]["items"].as_array().expect("items");
         assert_eq!(items.len(), 1, "{}: one op, one item", case.name);
         let item = &items[0];
@@ -150,7 +167,7 @@ fn a_refused_page_mutation_is_refused_for_the_same_reason() {
     for case in file.cases.iter().filter(|case| case.refused && !case.flattens()) {
         refusals += 1;
         let mut replay = open(&file, case);
-        let error = replay.replay(&case.request).expect_err(&case.name);
+        let error = sent(&mut replay, &case.request).expect_err(&case.name);
         assert_eq!(
             error["code"].as_str(),
             case.refused_with.as_deref(),
@@ -172,7 +189,7 @@ fn a_refused_mutation_changes_nothing() {
     for case in file.cases.iter().filter(|case| case.refused && !case.flattens()) {
         let mut replay = open(&file, case);
         let before = layout(&mut replay);
-        replay.replay(&case.request).expect_err(&case.name);
+        sent(&mut replay, &case.request).expect_err(&case.name);
         assert_eq!(layout(&mut replay), before, "{}: the refusal changed the document", case.name);
     }
 }

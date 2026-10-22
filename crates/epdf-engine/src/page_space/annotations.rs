@@ -12,7 +12,9 @@
 
 use serde_json::{Map, Value};
 
-use super::destinations::{PageDestination, page_destination_of, pdf_destination_of};
+use super::destinations::{
+    PageDestination, page_destination_of, pdf_destination_of, pdf_destination_value_of,
+};
 use super::{VisibleBoxOf, page_point_of, page_rect_of, pdf_point_of, pdf_rect_of};
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::actions::destination::PdfDestination;
@@ -200,10 +202,13 @@ fn convert_field(
                         name,
                         &page_destination_of(read::<PdfDestination>(name, destination)?, box_of)?,
                     )?,
-                    Direction::ToPdf => write(
-                        name,
-                        &pdf_destination_of(read::<PageDestination>(name, destination)?, box_of)?,
-                    )?,
+                    // An axis left out stays out (`pdfDestinationOf`), as
+                    // an outline's does: only an `expect` tells the two
+                    // apart.
+                    Direction::ToPdf => {
+                        read::<PageDestination>(name, destination.clone())?;
+                        pdf_destination_value_of(destination, box_of)?
+                    }
                 };
                 target.insert("destination".into(), destination);
             }
@@ -516,5 +521,20 @@ mod tests {
         assert_eq!(asked, vec![3, 9], "the annotation's page, then the destination's");
         let uri = with(base("link"), json!({ "target": { "kind": "uri", "uri": "https://x" } }));
         assert_eq!(page_annotation_of(uri, &mut boxes()).unwrap()["target"]["uri"], "https://x");
+    }
+
+    #[test]
+    fn a_link_written_without_an_axis_leaves_it_out() {
+        // `pdfDestinationOf` writes `left` or `top` only when the
+        // destination names `x` or `y`: a left-out axis stays out rather
+        // than becoming `null`, which an `expect` would tell apart.
+        let draft = json!({ "subtype": "link", "target": { "kind": "goto", "destination": {
+            "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 9 }, "y": 100 } } });
+        let Value::Object(draft) = draft else { unreachable!() };
+        let pdf = pdf_annotation_draft_of(draft, VISIBLE, &mut boxes()).unwrap();
+        let destination = &pdf["target"]["destination"];
+        assert_eq!(destination["top"], 632.0, "{destination}");
+        assert!(destination.get("left").is_none(), "{destination}");
+        assert!(destination.get("zoom").is_none(), "{destination}");
     }
 }

@@ -654,17 +654,16 @@ fn an_insert_refuses_empty_bytes_garbage_and_an_unknown_neighbour() {
 }
 
 #[test]
-fn an_insert_takes_its_source_as_a_list_of_bytes_too() {
-    // A recorded request holds upstream's typed array as a list of numbers
-    // (`recording-engine.ts`); the op reads it as the same bytes.
+fn an_insert_takes_its_source_as_a_payload_only() {
+    // Bytes ride beside the JSON on this wire, as every other resource
+    // does: a source spelled as a list of numbers is not one.
     let mut host = open();
     let before = refs(&mut host);
     let single = extracted(&mut host, &before[..1]);
-    let inserted = item(
-        &apply(&mut host, "i1", json!([{ "type": "pages.insert", "source": single }]))
-            .expect("insert"),
-    );
-    assert_eq!(inserted["insertedPages"].as_array().map(Vec::len), Some(1));
+    let refused = apply(&mut host, "i1", json!([{ "type": "pages.insert", "source": single }]))
+        .expect_err("a list of bytes");
+    assert_eq!(refused["code"], "WireFormat", "{refused}");
+    assert_eq!(refs(&mut host), before, "the refusal changed the document");
 }
 
 // ── A change: all of its ops or none ─────────────────────────────────────

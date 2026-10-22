@@ -2273,7 +2273,7 @@ impl Host {
     /// `handleFormsImport`, `handleFormsImportValues`): kept under its
     /// `opId` with the record that undoes it, so a retry under it gets the
     /// first answer. One that left everything out wrote nothing: it answers
-    /// its result with no mutation finished and no events.
+    /// its result alone, with no mutation finished.
     fn import_verb(
         &mut self,
         key: &SessionKey,
@@ -2284,13 +2284,10 @@ impl Host {
     ) -> Result<HostResponse, EngineError> {
         let op_id = self.op_id_of(job)?;
         let item = self.apply_one_item(key, &op_id, op, Some(authority), cancel)?;
+        // Everything left out: nothing was written, and the answer is the
+        // result alone (`handleFormsImport`, `handleFormsImportValues`).
         if !item.wrote() {
-            let sequence = self.sessions.session(key)?.mutation_sequence();
-            let answer = serde_json::json!({
-                "result": strip_item(item)?,
-                "mutationSequence": sequence,
-                "events": [],
-            });
+            let answer = serde_json::json!({ "result": strip_item(item)? });
             return Ok(HostResponse { json: envelope(answer), payloads: Vec::new() });
         }
         let events = item.events()?;
