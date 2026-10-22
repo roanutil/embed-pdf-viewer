@@ -503,11 +503,11 @@ fn a_write_refused_for_a_parked_signing_spends_no_numbers() {
     let last = opened["result"]["lastObjectNumber"].as_u64().expect("a layer");
     let listed =
         call(&mut host, serde_json::json!({ "kind": "signatures.list", "docId": "d" }), vec![]);
-    let field = listed["result"]["signatures"][0]["field"].clone();
+    let field = listed["result"]["snapshot"]["signatures"][0]["field"].clone();
     let prepared = call(
         &mut host,
         serde_json::json!({ "kind": "signatures.prepare", "docId": "d",
-            "input": { "field": field, "attribution": { "name": "Test Signer" } } }),
+            "input": { "field": field, "signer": { "name": "Test Signer" } } }),
         vec![],
     );
     assert!(prepared.get("error").is_none(), "{prepared}");

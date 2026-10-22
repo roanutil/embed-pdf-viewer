@@ -91,7 +91,8 @@ pub struct PdfRevision {
     pub signature_index: Option<u32>,
 }
 
-/// `SignatureSigner`.
+/// `SignatureSigner`. `signed_at` is `/M` as an `IsoDateTime`
+/// ([`crate::clock::pdf_date_to_iso`]); `None` when absent or not a date.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignatureSigner {
@@ -99,7 +100,24 @@ pub struct SignatureSigner {
     pub reason: Option<String>,
     pub location: Option<String>,
     pub contact_info: Option<String>,
-    pub claimed_time: Option<String>,
+    pub signed_at: Option<String>,
+}
+
+/// `SignatureSignerInput`: what a signature says about its signer, as
+/// `signatures.prepare` takes it. `signed_at` is `/M`, default now.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SignatureSignerInput {
+    #[serde(default)]
+    pub name: Option<String>,
+    #[serde(default)]
+    pub reason: Option<String>,
+    #[serde(default)]
+    pub location: Option<String>,
+    #[serde(default)]
+    pub contact_info: Option<String>,
+    #[serde(default)]
+    pub signed_at: Option<crate::dto::IsoDateTime>,
 }
 
 /// `SignatureSeedValue`.

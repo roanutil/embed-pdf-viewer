@@ -20,11 +20,10 @@
 //! and `decode` respells an answer on the way back, so the kernel keeps its
 //! spelling until Task 13 ports it.
 //!
-//! A kernel path that maps onto a kind upstream removed goes to the host
-//! through `Host::call_legacy` (see [`call_host`]), each until the sub-task
-//! named beside it in `route` moves it to the kind that replaced it. The
-//! kernel's page structure edits are `document.apply` changes of one page
-//! op each ([`kernel_pages`]).
+//! A kernel path that maps onto a kind upstream removed or renamed goes to
+//! the kind that replaced it: the kernel's page structure edits are
+//! `document.apply` changes of one page op each ([`kernel_pages`]), and its
+//! `signatures.abort` is `signatures.cancel` (7bccc4f35).
 //!
 //! Answers are read the host's way, which is not the TypeScript worker's in
 //! two respects: the host sends a result bare where the worker tags it
@@ -68,6 +67,13 @@ pub enum Decode {
     /// [`Decode::Mutation`] for a form or signature write, whose result and
     /// event hold form records.
     FormMutation,
+    /// [`Decode::FormResult`], answering one member of the result, which
+    /// must be there: `signatures.list`'s `snapshot`, `signatures.analyze`'s
+    /// `analysis`.
+    FormResultField(&'static str),
+    /// `signatures.cancel`'s `{ result }`, its `cancelled` status the
+    /// kernel's `aborted`.
+    SigningCancel,
     /// Width, height and stride, with the pixels moved into the `HostTable`
     /// behind a `$host` id, plus what the render plugin and its ffi read:
     /// the pixel format as `PageRaster` spells it and a raw-pixel `source`
@@ -101,8 +107,9 @@ pub enum Decode {
     /// The first payload itself, as `{"$bytes": base64}`: a signature's
     /// `/Contents`, a digest, a revision's bytes.
     InlineBytes,
-    /// The result, with the first payload added under this key as
-    /// `{"$bytes": base64}` (`signatures.prepare`'s digest).
+    /// The result's own `result`, with the first payload put under this key
+    /// as `{"$bytes": base64}` in place of the `{payload}` that names it
+    /// (`signatures.prepare`'s digest).
     ResultWithBytes(&'static str),
 }
 
@@ -249,15 +256,15 @@ fn route(path: &str) -> Option<(&'static str, Decode)> {
         // the `page` the stamp plugin reads, and no layout.
         "pages.flatten" => ("pages.flatten", Decode::Mutation),
         "download" => ("document.saveBuffer", Decode::HostBytes),
-        "signatures.list" => ("signatures.list", Decode::FormResult),
+        "signatures.list" => ("signatures.list", Decode::FormResultField("snapshot")),
         "signatures.contents" => ("signatures.contents", Decode::InlineBytes),
         "signatures.digest" => ("signatures.digest", Decode::InlineBytes),
         "signatures.revisionBytes" => ("signatures.revisionBytes", Decode::InlineBytes),
-        "signatures.analyze" => ("signatures.analyze", Decode::FormResult),
+        "signatures.analyze" => ("signatures.analyze", Decode::FormResultField("analysis")),
         "signatures.prepare" => ("signatures.prepare", Decode::ResultWithBytes("digest")),
         "signatures.complete" => ("signatures.complete", Decode::FormMutation),
-        // Renamed `signatures.cancel` upstream; owner 8.26.
-        "signatures.abort" => ("signatures.abort", Decode::Result),
+        // Renamed `signatures.cancel` upstream (7bccc4f35).
+        "signatures.abort" => ("signatures.cancel", Decode::SigningCancel),
         // `{ tag: 'document.version'; version }`: the kernel takes the version.
         "document.version" => ("document.version", Decode::Field("version")),
         "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::FormMutation),
@@ -405,14 +412,21 @@ pub fn translate(
             for pointer in ["/certify/permission", "/lock/permission", "/contentsSize"] {
                 whole_at(path, &mut input, pointer)?;
             }
-            // The artwork travels as a payload; no artwork, no appearance.
+            // The kernel's `attribution` is upstream's `signer` (7bccc4f35).
+            if let Some(map) = input.as_object_mut()
+                && let Some(attribution) = map.remove("attribution")
+            {
+                map.insert("signer".into(), attribution);
+            }
+            // The artwork travels as a payload the appearance names; no
+            // artwork, no appearance. Upstream takes a one-page PDF and no
+            // page index.
             if let Some(appearance) = input.get_mut("appearance") {
                 let pdf = appearance.get("pdf").and_then(epdf_kernel::bytes::Bytes::from_json);
                 match pdf {
                     Some(pdf) => {
+                        *appearance = serde_json::json!({ "pdf": { "payload": payloads.len() } });
                         payloads.push(pdf.0);
-                        let page = optional_whole(path, "pageIndex", appearance.get("pageIndex"))?;
-                        *appearance = serde_json::json!({ "pageIndex": if page.is_null() { 0.into() } else { page } });
                     }
                     None => {
                         input.as_object_mut().map(|m| m.remove("appearance"));
@@ -427,13 +441,11 @@ pub fn translate(
             whole_at(path, &mut input, "/expectedVersion/editsVersion")?;
             vec![("input", without(input, "cms"))]
         }
-        "signatures.abort" => vec![("signingId", arg(0))],
+        "signatures.cancel" => vec![("signingId", arg(0))],
+        // Upstream draws a one-page PDF and takes no page index.
         "forms.setSignatureAppearance" => {
             payloads.push(bytes_at(&arg(1), "pdf", path)?);
-            vec![
-                ("ref", wire_field_ref(path, arg(0))?),
-                ("pageIndex", optional_whole(path, "pageIndex", arg(1).get("pageIndex"))?),
-            ]
+            vec![("ref", wire_field_ref(path, arg(0))?)]
         }
         _ => vec![],
     };
@@ -474,18 +486,14 @@ const FORM_RECORD_KINDS: &[&str] = &[
     "forms.setSignatureAppearance",
 ];
 
-/// Send one translated request to `host`: through [`Host::call`], or through
-/// [`Host::call_legacy`] for a kind upstream removed, which the wire answers
-/// as unknown. `route` names each one's owner sub-task.
+/// Send one translated request to `host` through [`Host::call`], answered
+/// in the kernel's shape where it differs.
 pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostResponse {
     let Ok(mut request) = serde_json::from_str::<Value>(json) else {
         // Not JSON: the host's own refusal says so.
         return host.call(json, payloads);
     };
     let kind = request.get("kind").and_then(Value::as_str).unwrap_or_default().to_owned();
-    if epdf_engine::host::LEGACY_KINDS.contains(&kind.as_str()) {
-        return host.call_legacy(json, payloads);
-    }
     // `translate` builds a `document.apply` for the kernel's page edits
     // only.
     if kind == "document.apply" {
@@ -672,6 +680,7 @@ mod kernel_forms {
         "forms.deleteField",
         "forms.attachWidget",
         "forms.detachWidget",
+        "forms.setSignatureAppearance",
     ];
 
     /// The kernel's call `kind`, one of [`KINDS`], answered in its shape.
@@ -692,6 +701,7 @@ mod kernel_forms {
             "forms.detachWidget" => field_edit(host, request, "forms.detachWidget"),
             "forms.export" => export_bundle(host, request),
             "forms.import" => import_bundle(host, request, payloads),
+            "forms.setSignatureAppearance" => signature_appearance(host, request, payloads),
             _ => repair(host, request, payloads),
         };
         match answer {
@@ -1131,6 +1141,23 @@ mod kernel_forms {
         let event =
             if kind == "forms.updateField" { "form.fieldUpdated" } else { "form.widgetDetached" };
         Ok((kernel_field_answer(host, request, &answer, event)?, response.payloads))
+    }
+
+    /// `forms.setSignatureAppearance`: the PDF as payload 0; the answer as
+    /// the kernel reads a field edit, its event the kernel's
+    /// `form.fieldUpdated`.
+    fn signature_appearance(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
+        let mut call = request.clone();
+        call["effect"] = json!("write");
+        let response = host.call(&call.to_string(), payloads);
+        let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
+        if envelope.get("error").is_some() {
+            return Err(response);
+        }
+        let Some(answer) = envelope.get_mut("result").map(Value::take) else {
+            return Err(response);
+        };
+        Ok((kernel_field_answer(host, request, &answer, "form.fieldUpdated")?, response.payloads))
     }
 
     /// `forms.deleteField`: the kernel reads what went as
@@ -2854,6 +2881,17 @@ fn to_kernel_form_records(value: &mut Value) {
             if let Some(field) = map.get_mut("field") {
                 field_ref(field);
             }
+            // A signature's `signer.signedAt` (an `IsoDateTime`) is the
+            // kernel's `claimedTime`, the PDF date `/M` holds.
+            if let Some(Value::Object(signer)) = map.get_mut("signer")
+                && let Some(signed_at) = signer.remove("signedAt")
+            {
+                let claimed = signed_at
+                    .as_str()
+                    .and_then(|iso| epdf_engine::clock::format_pdf_date(iso).ok())
+                    .map_or(Value::Null, Value::from);
+                signer.insert("claimedTime".into(), claimed);
+            }
             for key in ["calculationOrder", "refs"] {
                 if let Some(Value::Array(refs)) = map.get_mut(key) {
                     refs.iter_mut().for_each(field_ref);
@@ -3292,7 +3330,14 @@ fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
-    if matches!(decode, Decode::FormResult | Decode::FormMutation) {
+    // A prepare's notice names its field too.
+    if matches!(
+        decode,
+        Decode::FormResult
+            | Decode::FormMutation
+            | Decode::FormResultField(_)
+            | Decode::ResultWithBytes(_)
+    ) {
         to_kernel_form_records(&mut envelope);
     }
     to_kernel_refs(&mut envelope);
@@ -3326,7 +3371,14 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
             Value::Array(mut pages) if !pages.is_empty() => pages.swap_remove(0),
             other => return Err(malformed(format!("a listing with no page: {other}"))),
         },
-        Decode::Field(name) => take(&mut result, name)?,
+        Decode::Field(name) | Decode::FormResultField(name) => take(&mut result, name)?,
+        Decode::SigningCancel => {
+            let mut value = take(&mut result, "result")?;
+            if value["status"] == "cancelled" {
+                value["status"] = "aborted".into();
+            }
+            value
+        }
         Decode::PageList => {
             let Some(Value::Array(pages)) = result.get("pages") else {
                 return Err(malformed("a page list without \"pages\"".into()));
@@ -3396,8 +3448,9 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
                 .into_iter()
                 .next()
                 .ok_or_else(|| malformed(format!("a result without its {key} payload")))?;
-            result.insert((*key).into(), epdf_kernel::bytes::Bytes(bytes).to_json());
-            Value::Object(result)
+            let mut value = take(&mut result, "result")?;
+            value[*key] = epdf_kernel::bytes::Bytes(bytes).to_json();
+            value
         }
         Decode::HostBytes => {
             let bytes = response

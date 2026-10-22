@@ -764,6 +764,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
+    note: "A one-op change (the forms.setSignatureAppearance op): a one-page PDF drawn into every widget of an unsigned signature field, checked as signing the field (authorizeFieldWrite sign); its reverse puts the widgets' appearances back. Gated by crates/epdf-engine/tests/signature_sign.rs.",
   },
 
   // --- G13. Page assembly and redaction.
@@ -1046,8 +1047,8 @@ export const OPERATIONS: readonly OperationRow[] = [
     stage: 'A',
     phase: 5,
     cancellation: 'queued-only',
-    rustStatus: 'planned',
-    note: "A session effect. Still planned: this branch's Rust host keeps the arm under its pre-rename kind, signatures.abort, which the wire answers as an unknown kind and only Host::call_legacy reaches (crates/epdf-engine/src/host.rs, LEGACY_KINDS) until Task 8.26 renames it. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
+    rustStatus: 'routed',
+    note: "A session effect, renamed from signatures.abort (7bccc4f35): discards the parked candidate and answers { result: { status } }, cancelled, already-completed or unknown. Gated by crates/epdf-engine/tests/signature_sign.rs. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
   },
   {
     kind: 'signatures.finalizeCandidate',

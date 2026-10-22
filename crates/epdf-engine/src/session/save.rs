@@ -204,15 +204,17 @@ pub enum DocumentEventInit {
     #[serde(rename = "page.viewportsChanged")]
     PageViewportsChanged(serde_json::Value),
     /// A signing candidate was parked: the document is read-only until it
-    /// completes or aborts. A notice rather than a mutation result, so it
-    /// carries what the call named and no result.
+    /// completes or is cancelled. A notice rather than a mutation result, so
+    /// it carries what the call named and no result.
     #[serde(rename = "signature.prepared", rename_all = "camelCase")]
     SignaturePrepared { signing_id: String, field: serde_json::Value },
     /// The sealed bytes are installed: `{signingId, ...SignatureCompleteResult}`.
     #[serde(rename = "signature.completed")]
     SignatureCompleted(serde_json::Value),
-    /// A parked signing was aborted (`status: "aborted"` only). A notice,
-    /// with no result.
+    /// A parked signing was cancelled (`signatures.cancel` answering
+    /// `status: "cancelled"` only). A notice, with no result. Upstream's
+    /// local service names it `signatures.cancelled`; this host keeps the
+    /// name its listeners know until the event audit (Task 8.27).
     #[serde(rename = "signature.aborted", rename_all = "camelCase")]
     SignatureAborted { signing_id: String },
 }

@@ -296,6 +296,11 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         expect: Option<serde_json::Map<String, serde_json::Value>>,
     },
+    /// A one-page PDF drawn into every widget of an unsigned signature
+    /// field (`SignatureAppearanceInput`); the PDF is a request payload,
+    /// `{ "pdf": { "payload": n } }`.
+    #[serde(rename = "forms.setSignatureAppearance")]
+    FormsSetSignatureAppearance { field: FormFieldRef, appearance: SignatureAppearance },
     /// A new outline item under `parent` (`None`: the top level), at
     /// `position` among its children (the end when left out), at
     /// `objectNumber` when given. The draft (`OutlineItemDraft`) stays the
@@ -481,6 +486,12 @@ impl OpResources {
     }
 }
 
+/// `SignatureAppearanceInput`: the one-page PDF a visual fill draws.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct SignatureAppearance {
+    pub pdf: ResourceBytes,
+}
+
 /// One resource's bytes. On this wire a resource names the request payload
 /// that holds it, `{ "payload": n }`, as an annotation write's resources do;
 /// the host puts the bytes in before the change runs or is fingerprinted
@@ -554,6 +565,17 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             ChangeOp::AnnotationsImport { bundle, .. }
             | ChangeOp::FormsImport { bundle, .. }
             | ChangeOp::FormsImportValues { bundle, .. } => bundle.resolve(payloads)?,
+            ChangeOp::FormsSetSignatureAppearance { appearance, .. } => {
+                if let ResourceBytes::Payload(index) = appearance.pdf {
+                    let bytes = payloads.get(index).ok_or_else(|| {
+                        malformed(format!(
+                            "appearance payload {index} is missing: the request carries {}",
+                            payloads.len()
+                        ))
+                    })?;
+                    appearance.pdf = ResourceBytes::Bytes(bytes.clone());
+                }
+            }
             ChangeOp::MetadataUpdate { .. }
             | ChangeOp::MetadataUpdateCustom { .. }
             | ChangeOp::AttachmentsDelete { .. }
@@ -641,6 +663,7 @@ impl ChangeOp {
             Self::FormsReorderCalculations { .. } => "forms.reorderCalculations",
             Self::FormsReorderWidgets { .. } => "forms.reorderWidgets",
             Self::FormsUpdateWidget { .. } => "forms.updateWidget",
+            Self::FormsSetSignatureAppearance { .. } => "forms.setSignatureAppearance",
             Self::OutlineCreate { .. } => "outline.create",
             Self::OutlineUpdate { .. } => "outline.update",
             Self::OutlineMove { .. } => "outline.move",
@@ -664,10 +687,8 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// The op types of upstream's `ChangeOp` union this engine does not run yet,
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
-pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.26: a signature field's appearance.
-    ("forms.setSignatureAppearance", "8.26"),
-];
+/// Empty since 8.26 registered `forms.setSignatureAppearance`, the last.
+pub const OP_OWNERS: &[(&str, &str)] = &[];
 
 /// The imports `document.apply` refuses, with the verb that runs each
 /// (`assertNoImport`).
@@ -762,6 +783,7 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::FormsReorderCalculations { .. }
         | ChangeOp::FormsReorderWidgets { .. }
         | ChangeOp::FormsUpdateWidget { .. }
+        | ChangeOp::FormsSetSignatureAppearance { .. }
         | ChangeOp::OutlineCreate { .. }
         | ChangeOp::OutlineUpdate { .. }
         | ChangeOp::OutlineMove { .. }
@@ -805,15 +827,41 @@ mod tests {
     }
 
     #[test]
-    fn an_op_another_task_registers_refuses_the_whole_change_naming_its_owner() {
+    fn an_op_of_the_wrong_shape_refuses_the_whole_change() {
         let refused = parse_ops(&serde_json::json!([
             { "type": "metadata.update", "patch": {} },
             { "type": "forms.setSignatureAppearance" },
         ]))
         .unwrap_err();
-        assert_eq!(refused.code, EngineErrorCode::NotImplemented);
-        assert!(refused.message.contains("8.26"), "{refused}");
-        assert_eq!(refused.details.unwrap()["opIndex"], 1);
+        assert_eq!(refused.code, EngineErrorCode::WireFormat);
+        assert!(refused.message.contains("op 1"), "{refused}");
+    }
+
+    #[test]
+    fn a_signature_appearance_takes_its_pdf_from_a_payload() {
+        let mut change = parse_change(&serde_json::json!({ "ops": [
+            { "type": "forms.setSignatureAppearance",
+              "field": { "kind": "fqn", "name": "sig" },
+              "appearance": { "pdf": { "payload": 1 } } },
+        ] }))
+        .unwrap();
+        resolve_payloads(&mut change, &[b"a".to_vec(), b"%PDF".to_vec()]).unwrap();
+        let Change::Ops(ops) = &change else { panic!("ops") };
+        let ChangeOp::FormsSetSignatureAppearance { appearance, .. } = &ops[0] else {
+            panic!("{:?}", ops[0])
+        };
+        assert_eq!(appearance.pdf.bytes().unwrap(), b"%PDF");
+        let refused = resolve_payloads(
+            &mut parse_change(&serde_json::json!({ "ops": [
+                { "type": "forms.setSignatureAppearance",
+                  "field": { "kind": "fqn", "name": "sig" },
+                  "appearance": { "pdf": { "payload": 3 } } },
+            ] }))
+            .unwrap(),
+            &[],
+        )
+        .unwrap_err();
+        assert_eq!(refused.code, EngineErrorCode::WireFormat);
     }
 
     #[test]
@@ -939,6 +987,7 @@ mod tests {
             "outline.update",
             "outline.move",
             "outline.delete",
+            "forms.setSignatureAppearance",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

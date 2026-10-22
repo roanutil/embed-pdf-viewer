@@ -5,7 +5,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{page_ref, sig_call, sig_open_fixture};
+use common::{page_ref, sig_call, sig_list, sig_open_fixture};
 
 const FIX: &str = "packages/engine/main/test/fixtures";
 
@@ -14,7 +14,8 @@ fn analyze(host: &mut Host, doc: &str, index: u32, until: &str) -> Value {
         host,
         json!({ "kind": "signatures.analyze", "docId": doc,
                 "input": { "since": { "signatureIndex": index }, "until": until } }),
-    )
+    )["analysis"]
+        .take()
 }
 
 fn add_square(host: &mut Host, doc: &str, pon: u32) {
@@ -65,7 +66,7 @@ fn an_unsaved_annotation_after_an_approval_is_permitted_under_the_baseline() {
 fn an_edit_after_a_certification_that_forbids_it_is_judged_forbidden() {
     let mut host = Host::new();
     let (doc, pon) = sig_open_fixture(&mut host, &format!("{FIX}/signed_certified.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     // The fixture certifies with P=2: form fill and signing only.
     assert_eq!(snapshot["protection"]["certification"]["permission"], json!(2), "{snapshot}");
     add_square(&mut host, &doc, pon);
@@ -80,18 +81,18 @@ fn an_edit_after_a_certification_that_forbids_it_is_judged_forbidden() {
 fn the_working_copy_snapshot_adds_a_revision_for_unsaved_edits() {
     let mut host = Host::new();
     let (doc, pon) = sig_open_fixture(&mut host, &format!("{FIX}/signed_two_approvals.pdf"));
-    let saved = sig_call(
+    let saved = sig_list(
         &mut host,
         json!({ "kind": "signatures.list", "docId": doc, "workingCopy": true }),
     );
     assert_eq!(saved["revisions"].as_array().unwrap().len(), 3);
     add_square(&mut host, &doc, pon);
-    let working = sig_call(
+    let working = sig_list(
         &mut host,
         json!({ "kind": "signatures.list", "docId": doc, "workingCopy": true }),
     );
     assert_eq!(working["revisions"].as_array().unwrap().len(), 4, "{working}");
-    let persisted = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let persisted = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     assert_eq!(persisted["revisions"].as_array().unwrap().len(), 3);
 }
 
@@ -99,7 +100,7 @@ fn the_working_copy_snapshot_adds_a_revision_for_unsaved_edits() {
 fn a_field_mdp_lock_is_listed() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/signed_fieldmdp.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     assert!(!snapshot["protection"]["fieldLocks"].as_array().unwrap().is_empty(), "{snapshot}");
 }
 

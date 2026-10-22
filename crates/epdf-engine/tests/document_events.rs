@@ -25,15 +25,6 @@ fn envelope(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Valu
     envelope
 }
 
-/// [`envelope`], through `Host::call_legacy`, for a kind upstream removed.
-fn legacy_envelope(host: &mut Host, mut request: Value, payloads: Vec<Vec<u8>>) -> Value {
-    request["jobId"] = json!(5);
-    let response = host.call_legacy(&request.to_string(), payloads);
-    let envelope: Value = serde_json::from_str(&response.json).unwrap();
-    assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
-    envelope
-}
-
 fn page_refs(host: &mut Host, doc: &str) -> Vec<Value> {
     let list = call(host, json!({ "kind": "pages.list", "docId": doc }));
     list["pages"].as_array().expect("pages").iter().map(|p| p["ref"].clone()).collect()
@@ -428,20 +419,20 @@ fn a_redaction_carries_meta_and_publishes_only_a_change() {
 const SIGNING: &str = "packages/engine/main/test/fixtures/unsigned_sigfield.pdf";
 
 #[test]
-fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
+fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_aborted() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, SIGNING);
-    let field = call(&mut host, json!({ "kind": "signatures.list", "docId": doc }))["signatures"]
-        [0]["field"]
+    let field = call(&mut host, json!({ "kind": "signatures.list", "docId": doc }))["snapshot"]
+        ["signatures"][0]["field"]
         .clone();
     let prepared = envelope(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": doc, "input": { "field": field } }),
         Vec::new(),
     );
-    let signing_id = prepared["result"]["signingId"].clone();
+    let signing_id = prepared["result"]["result"]["signingId"].clone();
     assert!(signing_id.is_string(), "{prepared}");
-    // Beside the result, which stays the bare `SignaturePrepareResult`.
+    // Beside the answer, which stays `{ result: SignaturePrepared }`.
     assert!(prepared["result"].get("event").is_none(), "{prepared}");
     let event = &prepared["event"];
     assert_eq!(event["type"], json!("signature.prepared"), "{prepared}");
@@ -449,13 +440,14 @@ fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
     assert_eq!(event["field"], field);
     assert_eq!(event["origin"]["kind"], json!("local"));
 
-    // Removed upstream, renamed `signatures.cancel`; owner 8.26.
-    let aborted = legacy_envelope(
+    // `signatures.cancel` (7bccc4f35); its notice keeps this host's name
+    // until the event audit (8.27).
+    let aborted = envelope(
         &mut host,
-        json!({ "kind": "signatures.abort", "docId": doc, "signingId": signing_id }),
+        json!({ "kind": "signatures.cancel", "docId": doc, "signingId": signing_id }),
         Vec::new(),
     );
-    assert_eq!(aborted["result"]["status"], json!("aborted"), "{aborted}");
+    assert_eq!(aborted["result"]["result"]["status"], json!("cancelled"), "{aborted}");
     assert_eq!(
         aborted["event"].as_object().map(|e| {
             let mut keys: Vec<_> = e.keys().cloned().collect();
@@ -468,13 +460,13 @@ fn a_parked_signing_publishes_prepared_and_its_abort_publishes_aborted() {
     assert_eq!(aborted["event"]["type"], json!("signature.aborted"));
     assert_eq!(aborted["event"]["signingId"], signing_id);
 
-    // Nothing parked any more: not an abort, so no notice.
-    let nothing = legacy_envelope(
+    // Nothing parked any more: not a cancel, so no notice.
+    let nothing = envelope(
         &mut host,
-        json!({ "kind": "signatures.abort", "docId": doc, "signingId": signing_id }),
+        json!({ "kind": "signatures.cancel", "docId": doc, "signingId": signing_id }),
         Vec::new(),
     );
-    assert_ne!(nothing["result"]["status"], json!("aborted"), "{nothing}");
+    assert_eq!(nothing["result"]["result"]["status"], json!("unknown"), "{nothing}");
     assert!(nothing.get("event").is_none(), "{nothing}");
 }
 

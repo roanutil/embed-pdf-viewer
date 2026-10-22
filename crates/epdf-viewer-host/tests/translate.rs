@@ -924,15 +924,22 @@ fn a_field_ref_with_no_record_around_it_is_still_a_field_ref() {
     let decoded = decode(&call.decode, answer(&json)).unwrap().value;
     assert_eq!(decoded["calculationOrder"], json!([kernel_field(4), null]));
 
+    // `{ snapshot }`, answered as the snapshot; `signer.signedAt` is the
+    // kernel's `claimedTime`, the PDF date.
     let call = translate("d1", "signatures.list", None, &[], 2).unwrap();
-    let json = json!({ "result": { "signatures": [{ "field": wire_field(12),
-        "widget": { "ref": wire_annot(2, 13), "objectNumber": 13, "page": wire_page(2) } }] } })
+    let json = json!({ "result": { "snapshot": { "signatures": [{ "field": wire_field(12),
+        "widget": { "ref": wire_annot(2, 13), "objectNumber": 13, "page": wire_page(2) },
+        "signer": { "name": "A", "signedAt": "2026-10-08T10:42:00+01:00" } }] } } })
     .to_string();
     let decoded = decode(&call.decode, answer(&json)).unwrap().value;
     let signature = &decoded["signatures"][0];
     assert_eq!(signature["field"], kernel_field(12));
     assert_eq!(signature["widget"]["annotObjectNumber"], 13);
     assert_eq!(signature["widget"]["page"], page_ref(2));
+    assert_eq!(
+        signature["signer"],
+        json!({ "name": "A", "claimedTime": "D:20261008104200+01'00'" })
+    );
 }
 
 #[test]
@@ -1845,7 +1852,8 @@ fn a_visual_fill_moves_the_pdf_into_a_payload() {
     )
     .unwrap();
     assert_eq!(call.request["ref"], wire_field(12));
-    assert_eq!(call.request["pageIndex"], json!(0));
+    // Upstream draws a one-page PDF: no page index (7bccc4f35).
+    assert!(call.request.get("pageIndex").is_none(), "{}", call.request);
     assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
 }
 
@@ -1856,13 +1864,18 @@ fn prepare_moves_its_appearance_into_a_payload_and_whole_numbers() {
         "certify": { "permission": 2.0 },
         "lock": { "action": "include", "fields": ["a"], "permission": 1.0 },
         "appearance": { "pdf": { "$bytes": "JVBERg==" }, "pageIndex": 0.0 },
+        "attribution": { "name": "Ann", "reason": "ok" },
     });
     let call = translate("doc-1", "signatures.prepare", None, &[request], 1).unwrap();
     let input = &call.request["input"];
     assert_eq!(input["field"], wire_field(12));
     assert_eq!(input["certify"]["permission"], json!(2));
     assert_eq!(input["lock"]["permission"], json!(1));
-    assert_eq!(input["appearance"], json!({ "pageIndex": 0 }));
+    // The artwork is the payload its appearance names (7bccc4f35).
+    assert_eq!(input["appearance"], json!({ "pdf": { "payload": 0 } }));
+    // The kernel's `attribution` is upstream's `signer`.
+    assert_eq!(input["signer"], json!({ "name": "Ann", "reason": "ok" }));
+    assert!(input.get("attribution").is_none(), "{input}");
     assert_eq!(call.payloads, vec![b"%PDF".to_vec()]);
     // No artwork: the appearance is left out altogether.
     let bare = json!({ "field": { "kind": "objectNumber", "fieldObjectNumber": 12 },
@@ -1883,7 +1896,9 @@ fn the_reads_carry_their_arguments() {
     assert_eq!(call.request["algorithm"], json!("sha256"));
     let call = translate("d", "signatures.revisionBytes", None, &[json!(1.0)], 1).unwrap();
     assert_eq!(call.request["revisionIndex"], json!(1));
+    // Renamed upstream (7bccc4f35).
     let call = translate("d", "signatures.abort", None, &[json!("s1")], 1).unwrap();
+    assert_eq!(call.request["kind"], json!("signatures.cancel"));
     assert_eq!(call.request["signingId"], json!("s1"));
     let input = json!({ "since": { "signatureIndex": 1.0 }, "until": "working-copy" });
     let call = translate("d", "signatures.analyze", None, &[input], 1).unwrap();
@@ -1896,12 +1911,12 @@ fn the_reads_carry_their_arguments() {
 
 #[test]
 fn a_signing_notice_beside_the_result_is_handed_back() {
-    // `signatures.prepare` and `signatures.abort` are not mutations: their
-    // answer is the bare result, and the notice the host publishes rides in
+    // `signatures.prepare` and `signatures.cancel` are not mutations: their
+    // answer is `{ result }`, and the notice the host publishes rides in
     // the envelope beside it.
     let call = translate("d", "signatures.prepare", None, &[json!({})], 1).unwrap();
     let response = HostResponse {
-        json: r#"{"result":{"signingId":"s1"},"event":{"type":"signature.prepared","signingId":"s1","field":{"kind":"objectNumber","fieldObjectNumber":5},"origin":{"kind":"local"}}}"#.into(),
+        json: r#"{"result":{"result":{"signingId":"s1","digest":{"payload":0}}},"event":{"type":"signature.prepared","signingId":"s1","field":{"kind":"objectNumber","objectNumber":5},"origin":{"kind":"local"}}}"#.into(),
         payloads: vec![vec![0; 32]],
     };
     let decoded = decode(&call.decode, response).unwrap();
@@ -1911,14 +1926,18 @@ fn a_signing_notice_beside_the_result_is_handed_back() {
     assert_eq!(event["type"], json!("signature.prepared"));
     assert_eq!(event["field"]["fieldObjectNumber"], json!(5));
 
+    // The kernel's `abort` is `cancel`, its `cancelled` the kernel's
+    // `aborted`.
     let call = translate("d", "signatures.abort", None, &[json!("s1")], 2).unwrap();
-    let json = r#"{"result":{"status":"aborted"},"event":{"type":"signature.aborted","signingId":"s1","origin":{"kind":"local"}}}"#;
+    let json = r#"{"result":{"result":{"status":"cancelled"}},"event":{"type":"signature.aborted","signingId":"s1","origin":{"kind":"local"}}}"#;
     let decoded = decode(&call.decode, answer(json)).unwrap();
     assert_eq!(decoded.value, json!({ "status": "aborted" }));
     assert_eq!(decoded.event.unwrap()["type"], json!("signature.aborted"));
 
-    // An abort that found nothing parked has no notice.
-    let decoded = decode(&call.decode, answer(r#"{"result":{"status":"unknown"}}"#)).unwrap();
+    // A cancel that found nothing parked has no notice.
+    let decoded =
+        decode(&call.decode, answer(r#"{"result":{"result":{"status":"unknown"}}}"#)).unwrap();
+    assert_eq!(decoded.value, json!({ "status": "unknown" }));
     assert!(decoded.event.is_none());
 }
 
@@ -1932,8 +1951,10 @@ fn contents_come_back_as_bytes() {
 
 #[test]
 fn prepare_answers_its_digest_inside_the_result() {
-    let response =
-        HostResponse { json: r#"{"result":{"signingId":"s1"}}"#.into(), payloads: vec![vec![9]] };
+    let response = HostResponse {
+        json: r#"{"result":{"result":{"signingId":"s1","digest":{"payload":0}}}}"#.into(),
+        payloads: vec![vec![9]],
+    };
     let decoded = decode(&Decode::ResultWithBytes("digest"), response).unwrap();
     assert_eq!(decoded.value["digest"], json!({ "$bytes": "CQ==" }));
     assert_eq!(decoded.value["signingId"], json!("s1"));
@@ -1954,18 +1975,49 @@ fn opened_host() -> epdf_engine::host::Host {
     host
 }
 
-/// A kernel path mapped onto a kind upstream removed still reaches the
-/// host, through `call_legacy`, while the wire answers it as unknown.
+/// The kernel's `signatures.abort` reaches the host as `signatures.cancel`
+/// (7bccc4f35), the wire answering the old kind as unknown.
 #[test]
-fn a_removed_kind_goes_through_the_legacy_entry() {
+fn a_kernel_abort_is_a_cancel_on_the_wire() {
     let mut host = opened_host();
     let abort = json!({ "kind": "signatures.abort", "jobId": 3, "docId": "d",
         "signingId": "nothing-parked" });
     let wire: Value =
         serde_json::from_str(&host.call(&abort.to_string(), Vec::new()).json).unwrap();
     assert_eq!(wire["error"]["message"], "unknown request kind: signatures.abort", "{wire}");
-    let legacy = call_host_json(&mut host, abort);
-    assert!(legacy.get("error").is_none(), "{legacy}");
+    let call = translate("d", "signatures.abort", None, &[json!("nothing-parked")], 3).unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads);
+    let decoded = decode(&call.decode, response).unwrap();
+    assert_eq!(decoded.value, json!({ "status": "unknown" }));
+}
+
+/// The kernel's visual fill through `call_host`: the field answered in the
+/// file's coordinates and its spelling, the event its `form.fieldUpdated`.
+#[test]
+fn a_kernel_visual_fill_answers_a_field_edit() {
+    let mut host = epdf_engine::host::Host::new();
+    let fixtures = "packages/engine/main/test/fixtures";
+    let bytes = test_support::fixture(&format!("{fixtures}/unsigned_sigfield.pdf"));
+    let opened = host.call(r#"{"kind":"open.fatMem","jobId":1,"docId":"d"}"#, vec![bytes]);
+    assert!(!opened.json.contains("\"error\""), "{}", opened.json);
+    let artwork = test_support::fixture(&format!("{fixtures}/signature_artwork.pdf"));
+    let pdf = epdf_kernel::bytes::Bytes(artwork).to_json();
+    let field = json!({ "kind": "fqn", "name": "sig" });
+    let call = translate(
+        "d",
+        "forms.setSignatureAppearance",
+        None,
+        &[field, json!({ "pdf": pdf, "pageIndex": 0 })],
+        2,
+    )
+    .unwrap();
+    let response =
+        epdf_viewer_host::translate::call_host(&mut host, &call.request.to_string(), call.payloads);
+    let decoded = decode(&call.decode, response).unwrap();
+    assert_eq!(decoded.value["field"]["name"], json!("sig"), "{}", decoded.value);
+    assert!(decoded.value["field"]["fieldObjectNumber"].as_u64().is_some(), "{}", decoded.value);
+    assert_eq!(decoded.event.expect("an event")["type"], json!("form.fieldUpdated"));
 }
 
 /// The kernel's form export and import through `call_host`: a form bundle

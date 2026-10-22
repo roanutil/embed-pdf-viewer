@@ -106,24 +106,6 @@ impl RequestHeader {
     }
 }
 
-/// Which entry a request came in through.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Route {
-    /// [`Host::call`]: upstream's `WorkerRequest` union.
-    Wire,
-    /// [`Host::call_legacy`]: the kinds upstream removed.
-    Legacy,
-}
-
-/// The kinds upstream removed from `WorkerRequest`, which [`Host::call`]
-/// refuses as unknown and [`Host::call_legacy`] still routes, each until
-/// the sub-task named beside it moves its callers to the kind that replaced
-/// it.
-pub const LEGACY_KINDS: &[&str] = &[
-    // 8.26: renamed `signatures.cancel` (7bccc4f35).
-    "signatures.abort",
-];
-
 /// The kinds that carry `WriteJobFields` (`worker-protocol.ts`): an `opId`
 /// and an optional `objectNumberFloor`.
 pub const WRITE_KINDS: &[&str] = &[
@@ -435,21 +417,7 @@ impl Host {
     /// host that got no response at all could not tell a refused operation
     /// from a crashed engine.
     pub fn call(&mut self, request: &str, payloads: Payloads) -> HostResponse {
-        Self::respond(self.route(request, payloads, Route::Wire))
-    }
-
-    /// Handle one request of a kind upstream removed from the wire.
-    ///
-    /// Exists for the Task 8 transition only. [`Host::call`] answers each of
-    /// [`LEGACY_KINDS`] as an unknown kind, as `WorkerHost` does, while the
-    /// kernel's calls in `epdf-viewer-host`'s `translate.rs` and the tests
-    /// that still use them reach the old arms here. Every other kind is
-    /// unknown to this entry. Each owner sub-task moves its callers to the
-    /// kind that replaced its kinds and deletes their arms; Task 8.27 deletes
-    /// this.
-    #[doc(hidden)]
-    pub fn call_legacy(&mut self, request: &str, payloads: Payloads) -> HostResponse {
-        Self::respond(self.route(request, payloads, Route::Legacy))
+        Self::respond(self.route(request, payloads))
     }
 
     fn respond(routed: Result<HostResponse, EngineError>) -> HostResponse {
@@ -472,12 +440,7 @@ impl Host {
         }
     }
 
-    fn route(
-        &mut self,
-        request: &str,
-        payloads: Payloads,
-        route: Route,
-    ) -> Result<HostResponse, EngineError> {
+    fn route(&mut self, request: &str, payloads: Payloads) -> Result<HostResponse, EngineError> {
         let header: RequestHeader = serde_json::from_str(request).map_err(|e| {
             EngineError::with_message(
                 EngineErrorCode::WireFormat,
@@ -488,19 +451,10 @@ impl Host {
             .map_err(|e| EngineError::with_message(EngineErrorCode::WireFormat, format!("{e}")))?;
         let cancel = CancelToken::never();
 
-        // A removed kind is unknown to the wire, and only a removed kind is
-        // known to the legacy entry.
-        let legacy = LEGACY_KINDS.contains(&header.kind.as_str());
-        if legacy != (route == Route::Legacy) {
-            return Err(unknown_kind(&header.kind));
-        }
         // Read so that a malformed envelope is refused before any arm runs.
         // Each kind's owner sub-task wires in what its handler does with
         // `opId` and `authority`.
         let job = JobEnvelope::parse(&header.kind, &body)?;
-        if legacy {
-            return self.route_legacy(&header, &body, payloads, &cancel);
-        }
         // `WorkerHost.run` (`WorkerHost.ts:548-553`): a parked signing
         // refuses a write before anything else, and then the write's own
         // objects go at or above the floor its caller set, so the layer's
@@ -827,41 +781,66 @@ impl Host {
                 // over the loaded bytes. The same as the loaded bytes when
                 // nothing is unsaved.
                 let working_copy: bool = optional(body, "workingCopy")?.unwrap_or(false);
-                if working_copy {
+                let snapshot = if working_copy {
                     let session = self.sessions.session(&key)?;
-                    let snapshot = f::signature::analyzer::read_working_copy_snapshot(session)?;
-                    return Ok(ok(value(&snapshot)?));
-                }
-                let d = self.document(&key)?;
-                Ok(ok(value(&f::signature::reader::read_snapshot(d)?)?))
+                    f::signature::analyzer::read_working_copy_snapshot(session)?
+                } else {
+                    f::signature::reader::read_snapshot(self.document(&key)?)?
+                };
+                // `{ tag: 'signatures.list', snapshot }`.
+                Ok(ok(serde_json::json!({ "snapshot": value(&snapshot)? })))
             }
             // ── Signatures (writes) ──────────────────────────────────
+            // `WorkerHost.handleSignaturesPrepare`: the field must be the
+            // request authority's to sign (the session's without one).
+            // Answers `{ result }`, the digest a payload its `digest` names.
             "signatures.prepare" => {
                 let input: f::signature::mutator::SignaturePrepareInput = field(body, "input")?;
+                let job = JobEnvelope::parse(&header.kind, body)?;
                 let session = self.sessions.session(&key)?;
-                session.require(DocCapability::DocSign)?;
+                require_some_signing(session)?;
                 if input.certify.is_some() {
                     session.require(DocCapability::DocSignCertify)?;
                 }
-                let appearance = input.appearance.and(payloads.first().map(Vec::as_slice));
+                let authority = match &job.authority {
+                    Some(wire) => change_authority(wire)?,
+                    None => f::changes::applier::ChangeAuthority::of_session(session),
+                };
+                let appearance = match &input.appearance {
+                    Some(appearance) => Some(resource_payload(&appearance.pdf, &payloads)?),
+                    None => None,
+                };
                 let signing_id = self.ids.next_uuid_v4();
-                let (prepared, digest) =
-                    f::signature::mutator::prepare(session, &input, appearance, signing_id)?;
-                let prepared = value(&prepared)?;
+                let (prepared, digest) = f::signature::mutator::prepare(
+                    session, &input, appearance, signing_id, &authority,
+                )?;
+                let mut prepared = value(&prepared)?;
                 // `LocalDocumentSignaturesService.prepare` publishes the
                 // parked candidate: its id and the field the call named.
                 let notice = crate::session::save::DocumentEventInit::SignaturePrepared {
                     signing_id: prepared["signingId"].as_str().unwrap_or_default().to_owned(),
                     field: value(&input.field)?,
                 };
-                self.answer_with_notice(&key, prepared, notice, vec![digest])
+                prepared["digest"] = serde_json::json!({ "payload": 0 });
+                let answer = serde_json::json!({ "result": prepared });
+                self.answer_with_notice(&key, answer, notice, vec![digest])
             }
+            // `WorkerHost.handleSignaturesComplete`: under the request's
+            // `opId`, final and never undoable, the field still the
+            // authority's to sign.
             "signatures.complete" => {
                 let input: f::signature::mutator::SignatureCompleteInput = field(body, "input")?;
                 let cms = payload(&payloads, 0, "the CMS")?.to_vec();
+                let job = JobEnvelope::parse(&header.kind, body)?;
+                let op_id = self.op_id_of(&job)?;
                 let session = self.sessions.session_mut(&key)?;
-                session.require(DocCapability::DocSign)?;
-                let result = f::signature::mutator::complete(session, &input, &cms)?;
+                require_some_signing(session)?;
+                let authority = match &job.authority {
+                    Some(wire) => change_authority(wire)?,
+                    None => f::changes::applier::ChangeAuthority::of_session(session),
+                };
+                let result =
+                    f::signature::mutator::complete(session, &input, &cms, &op_id, &authority)?;
                 let result = value(&result)?;
                 if result["status"] == "already-completed" {
                     return Ok(ok(serde_json::json!({
@@ -877,25 +856,43 @@ impl Host {
                     result,
                 )
             }
+            // `WorkerHost.handleSignaturesCancel`: a session effect, not a
+            // write. Answers `{ result }`; a cancel that discarded a
+            // candidate also publishes its notice.
+            "signatures.cancel" => {
+                let signing_id = string_field(body, "signingId")?;
+                let session = self.sessions.session(&key)?;
+                require_some_signing(session)?;
+                let result = f::signature::mutator::cancel(session, &signing_id);
+                let cancelled = result.status == f::signature::mutator::CancelStatus::Cancelled;
+                let answer = serde_json::json!({ "result": value(&result)? });
+                if !cancelled {
+                    return Ok(ok(answer));
+                }
+                let notice =
+                    crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
+                self.answer_with_notice(&key, answer, notice, Vec::new())
+            }
+            // `WorkerHost.handleFormsSetSignatureAppearance`: a one-op
+            // change under the request's authority, the PDF payload 0.
             "forms.setSignatureAppearance" => {
                 let reference: f::forms::snapshot::FormFieldRef = field(body, "ref")?;
-                let page_index: i32 = optional(body, "pageIndex")?.unwrap_or(0);
                 let pdf = payload(&payloads, 0, "the appearance PDF")?.to_vec();
-                let session = self.sessions.session_mut(&key)?;
-                session.require(DocCapability::DocFormsFill)?;
-                let result = f::signature::mutator::set_signature_appearance(
-                    session, &reference, &pdf, page_index, cancel,
-                )?;
-                self.finish(
-                    &key,
-                    crate::session::save::DocumentEventInit::FormFieldUpdated(value(&result)?),
-                )
+                let op = f::changes::op::ChangeOp::FormsSetSignatureAppearance {
+                    field: reference,
+                    appearance: f::changes::op::SignatureAppearance {
+                        pdf: f::changes::op::ResourceBytes::Bytes(pdf),
+                    },
+                };
+                self.field_verb(&key, &header.kind, body, op, true, cancel)
             }
             "signatures.analyze" => {
                 self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
                 let input: f::signature::analysis::types::AnalyzeInput = field(body, "input")?;
                 let session = self.sessions.session(&key)?;
-                Ok(ok(value(&f::signature::analyzer::analyze(session, &input)?)?))
+                let analysis = f::signature::analyzer::analyze(session, &input)?;
+                // `{ tag: 'signatures.analyze', analysis }`.
+                Ok(ok(serde_json::json!({ "analysis": value(&analysis)? })))
             }
             "signatures.contents" => {
                 self.sessions.session(&key)?.require(DocCapability::DocFormsRead)?;
@@ -1088,6 +1085,7 @@ impl Host {
             "document.saveBuffer" => {
                 let mode: f::save::SaveMode = field(body, "mode")?;
                 let session = self.sessions.session(&key)?;
+                assert_rewrite_keeps_signatures(session, mode)?;
                 Ok(bytes_response(f::save::save_to_buffer(session, mode, cancel)?))
             }
             "document.saveLayerBuffer" => {
@@ -1107,6 +1105,7 @@ impl Host {
                 let mode: f::save::SaveMode = field(body, "mode")?;
                 let path = string_field(body, "path")?;
                 let session = self.sessions.session(&key)?;
+                assert_rewrite_keeps_signatures(session, mode)?;
                 let bytes = f::save::save_to_buffer(session, mode, cancel)?;
                 std::fs::write(&path, bytes).map_err(|e| {
                     EngineError::with_message(
@@ -1840,50 +1839,6 @@ impl Host {
             }
 
             // `WorkerHost`'s `default:` arm, word for word.
-            other => {
-                let _ = payloads;
-                Err(unknown_kind(other))
-            }
-        }
-    }
-
-    /// The kinds upstream removed, routed for [`Host::call_legacy`] alone.
-    ///
-    /// Each arm is the one `route_session` had, moved here unchanged apart
-    /// from the ref spelling, and each names the sub-task that moves its
-    /// callers to the kind that replaced it and deletes the arm.
-    fn route_legacy(
-        &mut self,
-        header: &RequestHeader,
-        body: &serde_json::Value,
-        payloads: Payloads,
-        _cancel: &CancelToken,
-    ) -> Result<HostResponse, EngineError> {
-        use crate::features as f;
-
-        let key = header.key()?;
-        if MUTATING_KINDS.contains(&header.kind.as_str())
-            && let Ok(session) = self.sessions.session(&key)
-        {
-            f::signature::mutator::assert_no_pending_signing(session)?;
-        }
-        match header.kind.as_str() {
-            // Owner: 8.26 (`signatures.cancel`, 7bccc4f35).
-            "signatures.abort" => {
-                let signing_id = string_field(body, "signingId")?;
-                let session = self.sessions.session(&key)?;
-                session.require(DocCapability::DocSign)?;
-                let result = value(&f::signature::mutator::abort(session, &signing_id))?;
-                // `LocalDocumentSignaturesService.abort` publishes only an
-                // abort that happened, not one that found nothing parked.
-                if result["status"] != "aborted" {
-                    return Ok(ok(result));
-                }
-                let notice =
-                    crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
-                self.answer_with_notice(&key, result, notice, Vec::new())
-            }
-
             other => {
                 let _ = payloads;
                 Err(unknown_kind(other))
@@ -2693,6 +2648,59 @@ fn bundle_response(bundle: crate::features::transfer::Bundle) -> HostResponse {
     HostResponse { json: envelope(serde_json::json!({ "bundle": answer })), payloads }
 }
 
+/// `gate('sign-some-field')` (`ScopeGuard.assertSomeFieldWrite('sign')`):
+/// the session may sign some signature field, its group's or any; the
+/// write checks which.
+fn require_some_signing(
+    session: &crate::session::document::DocumentSession,
+) -> Result<(), EngineError> {
+    if session.authority().allows_some_field_write(crate::auth::scope::FieldWriteAction::Sign) {
+        return Ok(());
+    }
+    session.require(DocCapability::DocSign)
+}
+
+/// `assertRewriteKeepsSignatures`: a rewrite drops every revision, and with
+/// them every signature, so a signed document refuses it unless the session
+/// permits breaking signatures (`signedDocumentPolicy: 'permit'`). A
+/// document whose signatures cannot be read is not known to be signed.
+fn assert_rewrite_keeps_signatures(
+    session: &crate::session::document::DocumentSession,
+    mode: crate::features::save::SaveMode,
+) -> Result<(), EngineError> {
+    use crate::features::signature::types::SignedDocumentPolicy;
+    if mode != crate::features::save::SaveMode::Rewrite
+        || session.signed_document_policy() != SignedDocumentPolicy::Protect
+    {
+        return Ok(());
+    }
+    let protection =
+        crate::features::signature::reader::read_protection(session.document()?.document()).ok();
+    if protection.is_some_and(|protection| protection.judged.is_some()) {
+        return Err(EngineError::with_message(
+            EngineErrorCode::ProtectedDocument,
+            "the document is signed: a rewrite save would void every signature (use an incremental save)",
+        ));
+    }
+    Ok(())
+}
+
+/// The bytes a request's resource names, `{ "payload": n }`.
+fn resource_payload<'a>(
+    resource: &crate::features::changes::op::ResourceBytes,
+    payloads: &'a Payloads,
+) -> Result<&'a [u8], EngineError> {
+    match resource {
+        crate::features::changes::op::ResourceBytes::Payload(index) => {
+            payload(payloads, *index, "the appearance PDF")
+        }
+        crate::features::changes::op::ResourceBytes::Bytes(_) => Err(EngineError::with_message(
+            EngineErrorCode::WireFormat,
+            "a resource names its payload",
+        )),
+    }
+}
+
 fn bytes_response(bytes: Vec<u8>) -> HostResponse {
     HostResponse {
         json: envelope(serde_json::json!({ "size": bytes.len() })),
@@ -2864,7 +2872,8 @@ fn strip_item(
         // Without its `skipped` too, as `handleFormsReset` strips it.
         ChangeItem::FormsSetValue { field, widgets, meta }
         | ChangeItem::FormsSetDisplay { field, widgets, meta }
-        | ChangeItem::FormsSetAppearanceText { field, widgets, meta } => {
+        | ChangeItem::FormsSetAppearanceText { field, widgets, meta }
+        | ChangeItem::FormsSetSignatureAppearance { field, widgets, meta } => {
             Ok(serde_json::json!({ "field": field, "widgets": widgets, "meta": value(&meta)? }))
         }
         ChangeItem::FormsReset { fields, widgets, meta, .. } => {

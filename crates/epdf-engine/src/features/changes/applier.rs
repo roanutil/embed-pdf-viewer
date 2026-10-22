@@ -78,24 +78,9 @@ impl ChangeAuthority {
         {
             return Ok(());
         }
-        // `describeProtection`.
-        let cause = match &protection.certification {
-            Some(certification) => format!(
-                "certification signature {} (permission {})",
-                certification.signature_index, certification.permission
-            ),
-            None => format!(
-                "an existing signature (declared level '{}')",
-                protection
-                    .enforced
-                    .and_then(|level| serde_json::to_value(level).ok())
-                    .and_then(|level| level.as_str().map(str::to_owned))
-                    .unwrap_or_else(|| "none declared".to_owned())
-            ),
-        };
         Err(EngineError::with_message(
             EngineErrorCode::ProtectedDocument,
-            format!("the document is signed: {cause} forbids '{capability}'"),
+            crate::features::signature::protection::describe_protection(capability, protection),
         ))
     }
 }
@@ -509,6 +494,9 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         }
         ChangeOp::FormsReorderWidgets { page, widgets, position } => {
             super::fields::reorder_widgets(ctx, *page, widgets, position)
+        }
+        ChangeOp::FormsSetSignatureAppearance { field, appearance } => {
+            super::forms::set_signature_appearance(ctx, field, appearance.pdf.bytes()?)
         }
         ChangeOp::FormsUpdateWidget { widget, patch, expect } => {
             super::fields::update_widget(ctx, widget, patch, expect.as_ref(), at)

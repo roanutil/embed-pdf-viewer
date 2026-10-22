@@ -6,9 +6,7 @@
 //! `packages/engine/main/test/changes.test.ts`) that need only the ops this
 //! engine runs, with metadata ops in place of the annotation and form ops
 //! upstream's spell a case with where the case is about the queue rather
-//! than the op. The other op types answer `NotImplemented` naming their
-//! owner (`features::changes::op::OP_OWNERS`), whose sub-task ports the
-//! rest of the conformance.
+//! than the op.
 
 mod common;
 
@@ -344,7 +342,7 @@ fn a_change_this_session_never_answered_cannot_be_undone() {
 }
 
 #[test]
-fn an_op_another_task_ports_refuses_the_change_before_anything_runs() {
+fn an_op_of_the_wrong_shape_refuses_the_change_before_anything_runs() {
     let mut host = open();
     let before = facts(&mut host);
     let refused = apply(
@@ -353,8 +351,8 @@ fn an_op_another_task_ports_refuses_the_change_before_anything_runs() {
             { "type": "forms.setSignatureAppearance" }] }),
         None,
     )
-    .expect_err("forms.setSignatureAppearance is 8.26's");
-    assert_eq!(refused["code"], "NotImplemented", "{refused}");
+    .expect_err("a signature appearance names its field and its PDF");
+    assert_eq!(refused["code"], "WireFormat", "{refused}");
     assert_eq!(facts(&mut host), before);
 }
 

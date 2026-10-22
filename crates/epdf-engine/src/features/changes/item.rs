@@ -154,6 +154,13 @@ pub enum ChangeItem {
         widgets: Vec<serde_json::Value>,
         meta: FormMutationMeta,
     },
+    /// `FormFieldUpdateResult` of a signature field's drawn look.
+    #[serde(rename = "forms.setSignatureAppearance")]
+    FormsSetSignatureAppearance {
+        field: serde_json::Value,
+        widgets: Vec<serde_json::Value>,
+        meta: FormMutationMeta,
+    },
     /// `FormResetResult`: the fields that changed, read back, and the rows
     /// of their changed widgets; in an undo, the fields it left alone, by
     /// name.
@@ -345,6 +352,7 @@ impl ChangeItem {
             Self::FormsSetValue { meta, .. }
             | Self::FormsSetDisplay { meta, .. }
             | Self::FormsSetAppearanceText { meta, .. }
+            | Self::FormsSetSignatureAppearance { meta, .. }
             | Self::FormsReset { meta, .. }
             | Self::FormsCreate { meta, .. }
             | Self::FormsUpdate { meta, .. }
@@ -390,6 +398,7 @@ impl ChangeItem {
             Self::FormsSetValue { meta, .. }
             | Self::FormsSetDisplay { meta, .. }
             | Self::FormsSetAppearanceText { meta, .. }
+            | Self::FormsSetSignatureAppearance { meta, .. }
             | Self::FormsReset { meta, .. }
             | Self::FormsCreate { meta, .. }
             | Self::FormsUpdate { meta, .. }
@@ -523,7 +532,8 @@ impl ChangeItem {
                 serde_json::json!({ "field": field, "widgets": widgets, "meta": to_value(meta)? }),
             ),
             Self::FormsSetDisplay { field, widgets, meta }
-            | Self::FormsSetAppearanceText { field, widgets, meta } => (
+            | Self::FormsSetAppearanceText { field, widgets, meta }
+            | Self::FormsSetSignatureAppearance { field, widgets, meta } => (
                 "forms.updated",
                 serde_json::json!({ "field": field, "widgets": widgets, "meta": to_value(meta)? }),
             ),

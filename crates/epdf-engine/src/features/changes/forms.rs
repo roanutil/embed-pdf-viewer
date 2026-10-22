@@ -1,8 +1,9 @@
 //! The form value ops and their reverse
 //! (`services/src/features/changes/internal/formChanges.ts`: `setValue`,
-//! `setDisplay`, `setAppearanceText`, `reset`, `revertForm`, and the fill
-//! checks `authorizeFill`, `authorizeScriptOutput`, `authorizeSomeFill`,
-//! `authorizeRevertedFills`, `opsFillOwnField` and `stepsFillOwnField`).
+//! `setDisplay`, `setAppearanceText`, `setSignatureAppearance`, `reset`,
+//! `revertForm`, and the fill checks `authorizeFill`,
+//! `authorizeScriptOutput`, `authorizeSomeFill`, `authorizeRevertedFills`,
+//! `opsFillOwnField` and `stepsFillOwnField`).
 //!
 //! Each op captures the dictionaries it may write (the field and each of
 //! its widgets, with `/AP` and `/MK`) before it writes, and how it left them
@@ -93,6 +94,43 @@ pub fn set_appearance_text(
     })
 }
 
+/// `forms.setSignatureAppearance`; its reverse puts the widgets'
+/// appearances back. The field must be the caller's to sign.
+pub fn set_signature_appearance(
+    ctx: &mut ChangeContext<'_>,
+    reference: &FormFieldRef,
+    pdf: &[u8],
+) -> Result<Done, EngineError> {
+    ctx.cancel.check()?;
+    let before = read_field(ctx, reference)?;
+    ctx.authority
+        .require_field_write(before.field.base.group_id.as_deref(), FieldWriteAction::Sign)?;
+    record_revert(ctx, &before, "forms.setSignatureAppearance", |mutator, cancel| {
+        mutator.set_signature_appearance(reference, pdf, cancel)
+    })
+}
+
+/// A write to the field `before` reads, recording what it writes and
+/// reporting the field read back (`recordRevert`).
+fn record_revert(
+    ctx: &mut ChangeContext<'_>,
+    before: &ReadField,
+    reports: &str,
+    write: impl FnOnce(
+        &FormMutator<'_>,
+        &crate::cancel::CancelToken,
+    ) -> Result<FieldWriteResult, EngineError>,
+) -> Result<Done, EngineError> {
+    let document = ctx.session.document()?.document();
+    let pending = capture_before(document, &objects_of(before));
+    let field = write(&mutator(ctx)?, ctx.cancel)?.field;
+    let objects = capture_after(document, pending)?;
+    Ok(Done {
+        item: form_item(ctx, reports, vec![field])?,
+        reverse: vec![revert_step(reports, objects, vec![before.object_number])],
+    })
+}
+
 /// `forms.reset`; its reverse puts back each field it changed.
 pub fn reset(
     ctx: &mut ChangeContext<'_>,
@@ -172,7 +210,7 @@ pub fn revert_form(
         return left_alone(ctx, &step.reports);
     };
     if FILLS.contains(&step.reports.as_str()) {
-        authorize_reverted_fills(ctx, fields)?;
+        authorize_reverted_fills(ctx, &step.reports, fields)?;
     } else {
         ctx.authority.require(DocCapability::DocFormsModify)?;
     }
@@ -289,11 +327,29 @@ fn authorize_some_fill(ctx: &ChangeContext<'_>) -> Result<(), EngineError> {
 }
 
 /// `authorizeRevertedFills`: each field an undo or redo of a fill puts
-/// back, as the fill would be.
-fn authorize_reverted_fills(ctx: &ChangeContext<'_>, fields: &[u32]) -> Result<(), EngineError> {
-    ctx.authority.require_unprotected(DocCapability::DocFormsFill)?;
+/// back, as the fill would be (a signature's look is signing, the rest
+/// filling in).
+fn authorize_reverted_fills(
+    ctx: &ChangeContext<'_>,
+    reports: &str,
+    fields: &[u32],
+) -> Result<(), EngineError> {
+    let signs = reports == "forms.setSignatureAppearance";
+    ctx.authority.require_unprotected(if signs {
+        DocCapability::DocSign
+    } else {
+        DocCapability::DocFormsFill
+    })?;
     for object_number in fields {
-        if let Some(target) = try_read_field_by_number(ctx, *object_number) {
+        let Some(target) = try_read_field_by_number(ctx, *object_number) else {
+            continue;
+        };
+        if signs {
+            ctx.authority.require_field_write(
+                target.field.base.group_id.as_deref(),
+                FieldWriteAction::Sign,
+            )?;
+        } else {
             authorize_fill(ctx, &target)?;
         }
     }
@@ -497,6 +553,9 @@ pub(super) fn field_item(
     Ok(match reports {
         "forms.setDisplay" => ChangeItem::FormsSetDisplay { field, widgets, meta },
         "forms.setAppearanceText" => ChangeItem::FormsSetAppearanceText { field, widgets, meta },
+        "forms.setSignatureAppearance" => {
+            ChangeItem::FormsSetSignatureAppearance { field, widgets, meta }
+        }
         "forms.update" => ChangeItem::FormsUpdate {
             field,
             widgets,

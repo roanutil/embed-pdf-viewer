@@ -84,71 +84,6 @@ pub(crate) fn resolve(
     }
 }
 
-/// A field stored as a direct object cannot be written.
-///
-/// PDFium's write API addresses a field by object number, and a direct
-/// dictionary has none. The read side still reports such a field, by name,
-/// because a document that contains one is not broken; it is only unwritable.
-pub(super) fn require_writable(resolved: &ResolvedField) -> Result<u32, EngineError> {
-    if resolved.object_number == 0 {
-        return Err(EngineError::with_message(
-            EngineErrorCode::InvalidArg,
-            "the form field is stored as a direct object and cannot be written",
-        ));
-    }
-    Ok(resolved.object_number)
-}
-
-/// Resolve a reference, refuse a direct-object field, and read the field
-/// through a fresh model: `resolveFieldRef`, `assertWritable`, `readFieldAt`
-/// for a caller outside this module (the signature visual fill).
-pub(crate) fn read_writable_field(
-    document: &Document,
-    reference: &FormFieldRef,
-    cancel: &CancelToken,
-) -> Result<FormFieldDto, EngineError> {
-    let model = load_model(document)?;
-    let resolved = resolve(&model, reference)?;
-    let object_number = require_writable(&resolved)?;
-    require_unlocked(document, &model, &resolved)?;
-    drop(model);
-    read_field_back(document, object_number, cancel)
-}
-
-/// `FormMutator.assertNotLockedBySignature`: a field an earlier signature
-/// froze (its FieldMDP, or the `/Lock` of a signed field) refuses every
-/// write, `ProtectedDocument`. A document whose signature model cannot be
-/// built is not known to be locked.
-pub(super) fn require_unlocked(
-    document: &Document,
-    model: &FormModel<'_>,
-    resolved: &ResolvedField,
-) -> Result<(), EngineError> {
-    use crate::features::signature::protection::field_lock_for;
-    use crate::features::signature::types::FieldLockSource;
-    let Ok(protection) = crate::features::signature::reader::read_protection(document) else {
-        return Ok(());
-    };
-    if protection.field_locks.is_empty() {
-        return Ok(());
-    }
-    let name = model
-        .field(resolved.index)
-        .and_then(|f| super::snapshot::text(f.name()).ok().flatten())
-        .unwrap_or_default();
-    if let Some(lock) = field_lock_for(&protection, &name) {
-        return Err(EngineError::with_message(
-            EngineErrorCode::ProtectedDocument,
-            format!(
-                "form field \"{name}\" is locked by signature {} ({})",
-                lock.signature_index,
-                if lock.source == FieldLockSource::Fieldmdp { "FieldMDP" } else { "/Lock" }
-            ),
-        ));
-    }
-    Ok(())
-}
-
 /// Load a model, or say the document has no form machinery at all.
 pub(crate) fn load_model(document: &Document) -> Result<FormModel<'_>, EngineError> {
     document.form_model().ok_or_else(|| {
@@ -421,6 +356,66 @@ impl FormMutator<'_> {
                 )
             })?;
         self.read_back(resolved.object_number, &changed.object_numbers, Some(true), cancel)
+    }
+
+    /// Draw a one-page PDF into every widget of an unsigned signature field
+    /// (`setSignatureAppearance`): the visual "sign" of a viewer without a
+    /// signer. The field's value stays empty and nothing is sealed; a signed
+    /// field is refused `ProtectedDocument` (its appearance is part of what
+    /// the signature covers).
+    pub fn set_signature_appearance(
+        &self,
+        reference: &FormFieldRef,
+        pdf: &[u8],
+        cancel: &CancelToken,
+    ) -> Result<FieldWriteResult, EngineError> {
+        use crate::features::signature::reader::{
+            read_signatures_from_model, widget_refs, with_signature_model,
+        };
+        cancel.check()?;
+        let model = load_model(self.document)?;
+        let resolved = resolve(&model, reference)?;
+        self.assert_writable(&model, &resolved)?;
+        let before = read_at(&model, resolved.index)?;
+        drop(model);
+        let name = &before.base.name;
+        if before.base.family != FormFieldFamily::Signature {
+            let family = serde_json::to_value(before.base.family).unwrap_or_default();
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!(
+                    "'{name}' is a {} field, not a signature field",
+                    family.as_str().unwrap_or("unknown")
+                ),
+            ));
+        }
+        let signed = with_signature_model(self.document, |model| {
+            Ok(read_signatures_from_model(model)?
+                .iter()
+                .any(|s| s.signed && s.field_object_number() == resolved.object_number))
+        })?;
+        if signed {
+            return Err(EngineError::with_message(
+                EngineErrorCode::ProtectedDocument,
+                format!("'{name}' is signed; its appearance is sealed with the signature"),
+            ));
+        }
+        let widgets = widget_refs(&before.kind);
+        if widgets.is_empty() {
+            return Err(EngineError::with_message(
+                EngineErrorCode::InvalidArg,
+                format!("'{name}' has no widget to draw into"),
+            ));
+        }
+        for (annot, page) in &widgets {
+            crate::features::signature::mutator::bake_widget_appearance(
+                self.document,
+                &crate::features::signature::types::FormWidget::new(*annot, *page),
+                pdf,
+            )?;
+        }
+        let drawn: Vec<u32> = widgets.iter().map(|(annot, _)| *annot).collect();
+        self.read_back(resolved.object_number, &drawn, Some(true), cancel)
     }
 
     /// Put fields back to their default value (`reset`): the ones named, or,

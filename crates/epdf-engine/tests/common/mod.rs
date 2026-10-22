@@ -39,17 +39,6 @@ pub fn call(host: &mut Host, mut request: Value) -> Value {
     envelope["result"].take()
 }
 
-/// [`call`], through [`Host::call_legacy`]: for a kind upstream removed,
-/// which the wire answers as unknown until its owner sub-task moves the
-/// caller to the kind that replaced it.
-pub fn call_legacy(host: &mut Host, mut request: Value) -> Value {
-    request["jobId"] = json!(2);
-    let response = host.call_legacy(&request.to_string(), Vec::new());
-    let mut envelope: Value = serde_json::from_str(&response.json).unwrap();
-    assert!(envelope.get("error").is_none(), "{request} failed: {envelope}");
-    envelope["result"].take()
-}
-
 /// Send `request` and answer the `error` envelope it must produce.
 pub fn call_err(host: &mut Host, mut request: Value) -> Value {
     request["jobId"] = json!(3);
@@ -125,4 +114,18 @@ pub fn sig_call_bytes_with(host: &mut Host, request: Value) -> (Value, Vec<u8>) 
 /// `call` with one payload.
 pub fn sig_call_with_payload(host: &mut Host, request: Value, payload: Vec<u8>) -> Value {
     sig_send(host, request, vec![payload]).0
+}
+
+/// `signatures.list`'s `snapshot` (`{ tag: 'signatures.list', snapshot }`).
+pub fn sig_list(host: &mut Host, request: Value) -> Value {
+    sig_call(host, request)["snapshot"].take()
+}
+
+/// `signatures.prepare`: the `SignaturePrepared` its `{ result }` holds,
+/// and the digest, the payload its `digest` names.
+pub fn sig_prepare(host: &mut Host, request: Value) -> (Value, Vec<u8>) {
+    let (mut answer, digest) = sig_call_bytes_with(host, request);
+    let prepared = answer["result"].take();
+    assert_eq!(prepared["digest"], json!({ "payload": 0 }), "{prepared}");
+    (prepared, digest)
 }

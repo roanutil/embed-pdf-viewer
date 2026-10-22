@@ -5,7 +5,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{sig_call, sig_call_bytes, sig_open_fixture};
+use common::{sig_call, sig_call_bytes, sig_list, sig_open_fixture};
 
 const FIX: &str = "packages/engine/main/test/fixtures";
 
@@ -13,7 +13,7 @@ const FIX: &str = "packages/engine/main/test/fixtures";
 fn two_approvals_list_in_field_order_with_whole_revision_coverage() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/signed_two_approvals.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     assert_eq!(snapshot["chainValid"], json!(true));
     let signatures = snapshot["signatures"].as_array().unwrap();
     assert_eq!(signatures.len(), 2);
@@ -38,7 +38,7 @@ fn two_approvals_list_in_field_order_with_whole_revision_coverage() {
 fn a_certification_is_named_in_protection() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/signed_certified.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     assert_eq!(snapshot["signatures"][0]["catalogCertification"], json!(true));
     assert!(snapshot["protection"]["certification"].is_object(), "{snapshot}");
 }
@@ -47,7 +47,7 @@ fn a_certification_is_named_in_protection() {
 fn an_unsigned_field_lists_unsigned() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let s = &snapshot["signatures"][0];
     assert_eq!(s["signed"], json!(false));
     assert_eq!(s["coverage"], Value::Null);
@@ -61,7 +61,7 @@ fn an_unsigned_field_lists_unsigned() {
 fn contents_and_revision_bytes_are_payloads() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/signed_two_approvals.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let field = snapshot["signatures"][0]["field"].clone();
     let cms = sig_call_bytes(
         &mut host,
@@ -83,7 +83,7 @@ fn contents_and_revision_bytes_are_payloads() {
 fn the_contents_of_an_unsigned_field_are_not_found() {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
-    let snapshot = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let field = snapshot["signatures"][0]["field"].clone();
     let response = host.call(
         &json!({ "kind": "signatures.contents", "jobId": 1, "docId": doc, "ref": field })

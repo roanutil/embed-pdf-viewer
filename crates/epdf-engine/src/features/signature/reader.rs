@@ -141,7 +141,7 @@ pub fn read_signatures_from_model(
                 reason: s(i, string_key::REASON)?,
                 location: s(i, string_key::LOCATION)?,
                 contact_info: s(i, string_key::CONTACT_INFO)?,
-                claimed_time: s(i, string_key::M)?,
+                signed_at: s(i, string_key::M)?.and_then(|m| crate::clock::pdf_date_to_iso(&m)),
             },
             doc_mdp: permission(model.doc_mdp_permission(i)),
             catalog_certification: model.is_catalog_certification(i),

@@ -5,8 +5,7 @@
 //! here before its handler runs ([`request_in_file_space`]) and every result
 //! converts here before it leaves the host ([`result_in_page_space`]), so
 //! the wire answers page space as the TypeScript engine does. Both run once,
-//! on [`crate::host::Host::call`]'s path; the kinds upstream removed
-//! (`Host::call_legacy`) never cross it.
+//! on [`crate::host::Host::call`]'s path.
 //!
 //! Both matches are over [`WireKind`] with no catch-all arm, as upstream's
 //! result switch is typed so that a result whose shape depends on the space
@@ -469,15 +468,12 @@ pub fn result_in_page_space(
             Ok(answer)
         }),
 
-        // re-port (Task 8): a signature's look answers places in PDF space
-        // until 8.26 adds its conversion here.
-        K::FormsSetSignatureAppearance => Ok(response),
-
         // The field or fields and the widget rows (`pageFormFieldOf`,
         // `pageWidgetOf`), in the result and in each event that carries
         // them.
         K::FormsSetValue
         | K::FormsReset
+        | K::FormsSetSignatureAppearance
         | K::FormsCreateField
         | K::FormsUpdateField
         | K::FormsAddWidget
@@ -681,6 +677,7 @@ pub fn change_op_in_file_space(
         | ChangeOp::FormsSetValue { .. }
         | ChangeOp::FormsSetDisplay { .. }
         | ChangeOp::FormsSetAppearanceText { .. }
+        | ChangeOp::FormsSetSignatureAppearance { .. }
         | ChangeOp::FormsReset { .. }
         | ChangeOp::FormsUpdate { .. }
         | ChangeOp::FormsDelete { .. }
@@ -800,6 +797,13 @@ pub fn change_item_in_page_space(
         }),
         ChangeItem::FormsSetAppearanceText { field, widgets, meta } => {
             Ok(ChangeItem::FormsSetAppearanceText {
+                field: super::forms::page_form_field_value(field, box_of)?,
+                widgets: page_widgets(widgets, box_of)?,
+                meta,
+            })
+        }
+        ChangeItem::FormsSetSignatureAppearance { field, widgets, meta } => {
+            Ok(ChangeItem::FormsSetSignatureAppearance {
                 field: super::forms::page_form_field_value(field, box_of)?,
                 widgets: page_widgets(widgets, box_of)?,
                 meta,

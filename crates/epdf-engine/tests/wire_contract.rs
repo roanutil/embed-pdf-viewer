@@ -24,8 +24,7 @@ use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::features::render::raster::PageRaster;
 use epdf_engine::features::server::{EncodedImage, ImageEncoder, RenderEncode};
 use epdf_engine::host::{
-    AUTHORITY_KINDS, FLOOR_ONLY_KINDS, Host, JobEnvelope, LEGACY_KINDS, Payloads, RequestEffect,
-    WRITE_KINDS,
+    AUTHORITY_KINDS, FLOOR_ONLY_KINDS, Host, JobEnvelope, Payloads, RequestEffect, WRITE_KINDS,
 };
 
 const VECTOR: &str = "tooling/engine-conformance/vectors/wire/requests.json";
@@ -40,8 +39,9 @@ const DOC_ID: &str = "doc-1";
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf";
 
 /// The kinds of upstream's union this host does not route yet, each with the
-/// sub-task that routes it. That sub-task removes its rows.
-const NOT_YET_ROUTED: &[(&str, &str)] = &[("signatures.cancel", "8.26")];
+/// sub-task that routes it. That sub-task removes its rows; 8.26 removed the
+/// last, `signatures.cancel`.
+const NOT_YET_ROUTED: &[(&str, &str)] = &[];
 
 /// Routed kinds whose arm answers `NotImplemented` for the request this
 /// test sends, each with the sub-task that ports it. Task 6 stubbed them
@@ -139,15 +139,6 @@ fn send(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
     request["jobId"] = 2.into();
     request["docId"] = DOC_ID.into();
     let response = host.call(&request.to_string(), Vec::new());
-    serde_json::from_str(&response.json).expect("every response is JSON")
-}
-
-/// [`send`], through `Host::call_legacy`.
-fn send_legacy(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
-    let mut request = request;
-    request["jobId"] = 2.into();
-    request["docId"] = DOC_ID.into();
-    let response = host.call_legacy(&request.to_string(), Vec::new());
     serde_json::from_str(&response.json).expect("every response is JSON")
 }
 
@@ -279,39 +270,23 @@ fn every_wire_kind_routes_to_an_implementation() {
 }
 
 #[test]
-fn every_removed_kind_is_unknown_to_the_wire_and_known_to_the_legacy_entry() {
-    // The kind upstream removed that is still parked (`signatures.abort`
-    // renamed `signatures.cancel`, 7bccc4f35) answer as `WorkerHost` answers
-    // a kind it has no case for, and reach their old arm only through
-    // `call_legacy`, until each owner sub-task retires it. 8.8 retired
-    // `attachments.create`, `attachments.delete` and `pieceInfo.clear`; 8.12
-    // the three annotation listings; 8.16 `annotations.move`; 8.18 the five
-    // page structure kinds, now `document.apply` ops; 8.20
-    // `forms.applyEffects`, whose effects are `document.apply` ops; 8.21
-    // `forms.attachWidget`, which `forms.addWidget` replaced (d7bd2d277).
-    assert_eq!(LEGACY_KINDS.len(), 1);
+fn every_removed_kind_is_unknown_to_the_wire() {
+    // Answered as `WorkerHost` answers a kind it has no case for. 8.8
+    // retired `attachments.create`, `attachments.delete` and
+    // `pieceInfo.clear`; 8.12 the three annotation listings; 8.16
+    // `annotations.move`; 8.18 the five page structure kinds, now
+    // `document.apply` ops; 8.20 `forms.applyEffects`, whose effects are
+    // `document.apply` ops; 8.21 `forms.attachWidget`, which
+    // `forms.addWidget` replaced (d7bd2d277); 8.26 `signatures.abort`,
+    // renamed `signatures.cancel` (7bccc4f35).
     let cases = cases();
-    for kind in LEGACY_KINDS {
-        assert!(!cases.iter().any(|c| c.kind == *kind), "{kind} is in upstream's union");
+    for kind in ["signatures.abort", "forms.applyEffects", "annotations.move"] {
+        assert!(!cases.iter().any(|c| c.kind == kind), "{kind} is in upstream's union");
         let mut host = open();
-        let request = serde_json::json!({ "kind": kind, "jobId": 1, "docId": DOC_ID }).to_string();
-        let wire: serde_json::Value =
-            serde_json::from_str(&host.call(&request, payloads()).json).unwrap();
+        let wire = send(&mut host, serde_json::json!({ "kind": kind }));
         assert_eq!(wire["error"]["code"], "InvalidArg", "{kind}: {wire}");
         assert_eq!(wire["error"]["message"], format!("{UNKNOWN_KIND}{kind}"), "{kind}: {wire}");
-
-        let legacy: serde_json::Value =
-            serde_json::from_str(&host.call_legacy(&request, payloads()).json).unwrap();
-        let message = legacy["error"]["message"].as_str().unwrap_or("");
-        assert!(!message.starts_with(UNKNOWN_KIND), "{kind} is unknown to call_legacy: {legacy}");
     }
-}
-
-#[test]
-fn the_legacy_entry_knows_no_other_kind() {
-    let mut host = open();
-    let answer = send_legacy(&mut host, serde_json::json!({ "kind": "pages.list" }));
-    assert_eq!(answer["error"]["message"], format!("{UNKNOWN_KIND}pages.list"), "{answer}");
 }
 
 #[test]
@@ -342,9 +317,11 @@ fn the_page_space_boundary_knows_every_wire_kind_and_no_other() {
     let mut known: Vec<String> = WireKind::ALL.iter().map(|(k, _)| (*k).to_owned()).collect();
     known.sort();
     assert_eq!(known, vector);
-    for kind in LEGACY_KINDS {
-        assert_eq!(WireKind::of(kind), None, "{kind} was removed from the wire");
-    }
+    assert_eq!(
+        WireKind::of("signatures.abort"),
+        None,
+        "signatures.abort was removed from the wire"
+    );
 }
 
 #[test]
