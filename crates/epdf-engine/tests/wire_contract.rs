@@ -440,6 +440,21 @@ fn an_envelope_upstream_requires_is_required() {
 }
 
 #[test]
+fn an_effect_is_read_but_not_held_to_the_kinds() {
+    // Upstream's worker never reads `effect` at run time: a request stating
+    // another kind's effect is answered as its kind, as there.
+    let mut host = open();
+    let answer = host.call(
+        &serde_json::json!({ "kind": "pages.list", "effect": "write", "jobId": 5,
+            "docId": DOC_ID })
+        .to_string(),
+        Vec::new(),
+    );
+    let answer: serde_json::Value = serde_json::from_str(&answer.json).unwrap();
+    assert!(answer["result"]["pages"].is_array(), "{answer}");
+}
+
+#[test]
 fn a_field_the_kind_does_not_take_is_ignored() {
     // As `WorkerHost` ignores it: a read carries no op and no authority.
     let body = serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 2,
@@ -460,8 +475,6 @@ fn a_malformed_envelope_is_a_wire_error() {
     let unchecked = serde_json::json!({ "identity": {}, "grants": null });
     for bad in [
         serde_json::json!({ "kind": "pages.list", "effect": "sometimes" }),
-        // The kind states its effect: another one is not this kind's.
-        serde_json::json!({ "kind": "pages.list", "effect": "write" }),
         serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
             "opId": 3 }),
         serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},

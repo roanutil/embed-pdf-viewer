@@ -107,12 +107,14 @@ check('a refused operation returns rather than throwing', () => {
   const response = engine.call(
     JSON.stringify({
       kind: 'pages.text',
+      effect: 'read',
+      jobId: 907,
       docId: 'd',
-      page: { kind: 'objectNumber', pageObjectNumber: 99999 },
+      page: { kind: 'objectNumber', objectNumber: 99999 },
     }),
     [],
   );
-  assert.ok(JSON.parse(response.json).error.code, response.json);
+  assert.equal(JSON.parse(response.json).error.code, 'NotFound', response.json);
   engine.shutdown();
 });
 

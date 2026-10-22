@@ -401,8 +401,7 @@ impl JobEnvelope {
     ///
     /// A field the kind does not take is ignored, as `WorkerHost` ignores
     /// it. A field it takes that is missing, or in the wrong shape, is
-    /// `WireFormat`, as any malformed argument is; so is an `effect` other
-    /// than the one the kind states. A kind the wire does not have has no
+    /// `WireFormat`, as any malformed argument is. A kind the wire does not have has no
     /// envelope to read: its arm refuses it.
     pub fn parse(kind: &str, body: &serde_json::Value) -> Result<Self, EngineError> {
         if crate::page_space::boundary::WireKind::of(kind).is_none() {
@@ -421,22 +420,14 @@ impl JobEnvelope {
             }
         };
         required("jobId")?;
+        // Required, and read as one of the eight values, but not checked
+        // against the kind's: upstream's worker never reads `effect` at run
+        // time (its types are what keep it right).
         let effect = match RequestEffect::of(kind) {
             None => None,
-            Some(stated) => {
+            Some(_) => {
                 required("effect")?;
-                let effect: RequestEffect = field(body, "effect")?;
-                if effect != stated {
-                    return Err(EngineError::with_message(
-                        EngineErrorCode::WireFormat,
-                        format!(
-                            "the '{kind}' request's effect is '{}', not '{}'",
-                            stated.as_str(),
-                            effect.as_str()
-                        ),
-                    ));
-                }
-                Some(effect)
+                Some(field(body, "effect")?)
             }
         };
         if writes {
@@ -593,7 +584,9 @@ impl Host {
     ///
     /// For a native host that stands in for upstream's client, as
     /// `epdf-viewer-host` does for the kernel. A wire client sends the
-    /// envelope itself.
+    /// envelope itself: wire bindings (wasm, uniffi, node) must not call
+    /// this. Task 13 deletes it with the kernel's own envelope.
+    #[doc(hidden)]
     pub fn fill_envelope(&self, request: &mut serde_json::Value) {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -624,7 +617,9 @@ impl Host {
 
     /// [`Host::call`] with the envelope filled in ([`Host::fill_envelope`]).
     /// A request that is not JSON goes as it came, for [`Host::call`] to
-    /// refuse.
+    /// refuse. Not for wire bindings; Task 13 deletes it with
+    /// [`Host::fill_envelope`].
+    #[doc(hidden)]
     pub fn call_filled(&mut self, request: &str, payloads: Payloads) -> HostResponse {
         match serde_json::from_str::<serde_json::Value>(request) {
             Ok(mut parsed) => {

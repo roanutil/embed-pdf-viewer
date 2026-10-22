@@ -36,6 +36,39 @@ fn an_open_with_a_narrow_scope_refuses_a_metadata_write() {
     assert_eq!(envelope["error"]["code"], json!("Forbidden"), "{envelope}");
 }
 
+/// A kind that takes an `authority` is checked against the one the request
+/// carries. A client filling it from a narrow session sends that session's
+/// scope (`SessionAuthority::to_wire`), and the write is refused as the
+/// session would refuse it; the same request from a full session is not.
+#[test]
+fn a_filled_authority_carries_a_narrow_sessions_scope() {
+    const FORMS: &str = "tooling/engine-conformance/fixtures/form_fields.pdf";
+    let set_value = |doc: &str| {
+        json!({ "kind": "forms.setValue", "docId": doc,
+            "ref": { "kind": "objectNumber", "objectNumber": 4 },
+            "value": { "value": "x" } })
+    };
+    let mut host = Host::new();
+    let narrow =
+        sig_open_fixture_with(&mut host, FORMS, json!({ "scope": ["doc.open", "doc.forms.read"] }));
+    let mut request = set_value(&narrow);
+    host.fill_envelope(&mut request);
+    assert_eq!(
+        request["authority"]["grants"]["scope"],
+        json!(["doc.open", "doc.forms.read"]),
+        "{request}"
+    );
+    let refused: serde_json::Value =
+        serde_json::from_str(&host.call(&request.to_string(), Vec::new()).json).unwrap();
+    assert_eq!(refused["error"]["code"], json!("Forbidden"), "{refused}");
+
+    let mut host = Host::new();
+    let full = sig_open_fixture_with(&mut host, FORMS, json!({ "scope": ["*"] }));
+    let response = host.call_filled(&set_value(&full).to_string(), Vec::new());
+    let written: serde_json::Value = serde_json::from_str(&response.json).unwrap();
+    assert!(written.get("error").is_none(), "{written}");
+}
+
 #[test]
 fn an_invalid_scope_fails_the_open() {
     let mut host = Host::new();
