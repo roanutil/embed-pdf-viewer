@@ -87,7 +87,12 @@ fn set_scale_keeps_a_foreign_viewport() {
         }),
         "{written}"
     );
-    assert_eq!(written["result"]["event"]["type"], json!("page.viewportsChanged"), "{written}");
+    assert_eq!(written["result"]["event"]["type"], json!("pages.scaleSet"), "{written}");
+    assert_eq!(
+        written["result"]["event"]["origin"]["tx"],
+        json!({ "id": "scale-1", "index": 0, "count": 1 }),
+        "{written}"
+    );
     assert!(written["result"]["mutationSequence"].is_u64(), "{written}");
 
     let after = viewports(&mut host, &doc, pon);

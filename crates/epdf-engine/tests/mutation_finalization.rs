@@ -69,8 +69,8 @@ fn a_base_session_has_no_artifact_to_persist() {
 #[test]
 fn the_family_comes_from_the_event_rather_than_from_the_caller() {
     // Derived rather than passed, so a caller cannot finalize a form write
-    // as an ordinary one. Ten event types are self-sequenced and the rest
-    // are not, and getting one wrong is a stale cache nobody notices.
+    // as an ordinary one. A completed signing is self-sequenced and the
+    // rest are not, and getting one wrong is a stale cache nobody notices.
     let nothing = serde_json::Value::Null;
     for (event, expected) in [
         (
@@ -91,7 +91,7 @@ fn the_family_comes_from_the_event_rather_than_from_the_caller() {
         (DocumentEventInit::MetadataUpdated(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::PagesFlattened(nothing.clone()), MutationFamily::Ordinary),
         (DocumentEventInit::RedactionApplied(nothing.clone()), MutationFamily::Ordinary),
-        (DocumentEventInit::FormFieldUpdated(nothing.clone()), MutationFamily::SelfSequenced),
+        (DocumentEventInit::SignaturesCompleted(nothing.clone()), MutationFamily::SelfSequenced),
         // A repair is counted once, after its commit (`noteEdit` in
         // `finishMutation`).
         (DocumentEventInit::FormRepaired(nothing.clone()), MutationFamily::Ordinary),
@@ -120,18 +120,17 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
         },
         DocumentEventInit::RedactionApplied(nothing.clone()),
         DocumentEventInit::MetadataUpdated(nothing.clone()),
-        DocumentEventInit::FormImported(nothing.clone()),
+        DocumentEventInit::MetadataCustomUpdated(nothing.clone()),
         DocumentEventInit::FormRepaired(nothing.clone()),
-        DocumentEventInit::FormFieldUpdated(nothing.clone()),
-        DocumentEventInit::PageViewportsChanged(nothing.clone()),
-        DocumentEventInit::SignaturePrepared { signing_id: String::from("s"), field: empty() },
-        DocumentEventInit::SignatureCompleted(nothing),
-        DocumentEventInit::SignatureAborted { signing_id: String::from("s") },
+        DocumentEventInit::PagesScaleSet(nothing.clone()),
+        DocumentEventInit::SignaturesPrepared { field: empty(), prepared: empty() },
+        DocumentEventInit::SignaturesCompleted(nothing),
+        DocumentEventInit::SignaturesCancelled { signing_id: String::from("s") },
     ];
     // The TypeScript union (`core/src/events/DocumentEvent.ts`) had thirty
     // members. Two are not here: `stream.desynced` is a transport notice no
     // engine publishes locally, and `document.versioned` follows
-    // `signature.completed` from `epdf-viewer-host`'s publisher, because a
+    // `signatures.completed` from `epdf-viewer-host`'s publisher, because a
     // host answer carries one event. The attachment events are not here
     // either: they are a change's (`ChangeItem::events`), since attachment
     // writes run only as `document.apply` ops (c2d7a5194). Nor are the
@@ -144,7 +143,17 @@ fn the_reported_type_name_is_the_one_on_the_wire() {
     // field and widget events (`forms.created`, `forms.deleted`,
     // `forms.widgetAdded` and the rest), whose writes run as changes too
     // (8.21), which retired `forms.attachWidget`'s.
-    assert_eq!(every.len(), 14, "the event list and the TypeScript union disagree");
+    assert_eq!(every.len(), 13, "the event list and the TypeScript union disagree");
+
+    // Every name is one the union spells.
+    let union = std::fs::read_to_string(
+        test_support::workspace_root().join("packages/engine/core/src/events/DocumentEvent.ts"),
+    )
+    .expect("the TypeScript union");
+    for event in &every {
+        let spelled = format!("type: '{}'", event.type_name());
+        assert!(union.contains(&spelled), "{} is not an upstream event", event.type_name());
+    }
 
     for event in &every {
         let wire = serde_json::to_value(event).expect("serialize");
@@ -207,7 +216,7 @@ fn an_event_carries_its_result_verbatim() {
     );
 
     let wire = serde_json::to_value(&event).expect("serialize");
-    assert_eq!(wire["type"], "annotation.created", "the tag is not on the envelope");
+    assert_eq!(wire["type"], "annotations.created", "the tag is not on the envelope");
     assert_eq!(wire["origin"]["kind"], "local", "the provenance is not on the envelope");
     // The result, unchanged. Every field the operation returned is on the
     // envelope beside the tag and the provenance, which is what lets a

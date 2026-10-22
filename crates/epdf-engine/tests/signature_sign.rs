@@ -101,7 +101,13 @@ fn prepare_then_complete_seals_the_field() {
     assert_eq!(completed["result"]["meta"]["cacheDelta"], Value::Null);
     let pages = completed["result"]["meta"]["affectedPages"].as_array().unwrap();
     assert!(!pages.is_empty() && pages.iter().all(|p| p["kind"] == "objectNumber"), "{completed}");
-    assert_eq!(completed["event"]["type"], json!("signature.completed"));
+    assert_eq!(completed["event"]["type"], json!("signatures.completed"));
+    // The first of two facts of the write: `document.versioned` follows.
+    assert_eq!(
+        completed["event"]["origin"]["tx"],
+        json!({ "id": "sign-1", "index": 0, "count": 2 }),
+        "{completed}"
+    );
     assert_eq!(completed["event"]["signingId"], prepared["signingId"]);
     assert_ne!(completed["result"]["version"]["sha256"], before["sha256"]);
     let snapshot = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));

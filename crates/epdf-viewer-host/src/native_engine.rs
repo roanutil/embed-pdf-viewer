@@ -185,10 +185,16 @@ fn publish(doc: &str, event: &Value) {
         if let Some(state) = state {
             state.take_protection(event.get("protection").unwrap_or(&Value::Null));
         }
+        // The second fact of the signing's write: the engine stamped the
+        // first as one of two.
+        let mut origin = event.get("origin").cloned().unwrap_or(Value::Null);
+        if let Some(tx) = origin.get_mut("tx").filter(|tx| tx.is_object()) {
+            tx["index"] = json!(1);
+        }
         let versioned = json!({
             "type": "document.versioned",
             "version": event.get("version").cloned().unwrap_or(Value::Null),
-            "origin": event.get("origin").cloned().unwrap_or(Value::Null),
+            "origin": origin,
         });
         for listener in listeners {
             listener(&versioned);

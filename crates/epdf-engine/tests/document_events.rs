@@ -419,7 +419,7 @@ fn a_redaction_carries_meta_and_publishes_only_a_change() {
 const SIGNING: &str = "packages/engine/main/test/fixtures/unsigned_sigfield.pdf";
 
 #[test]
-fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_aborted() {
+fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_cancelled() {
     let mut host = Host::new();
     let (doc, _) = open_fixture(&mut host, SIGNING);
     let field = call(&mut host, json!({ "kind": "signatures.list", "docId": doc }))["snapshot"]
@@ -435,13 +435,20 @@ fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_aborted() {
     // Beside the answer, which stays `{ result: SignaturePrepared }`.
     assert!(prepared["result"].get("event").is_none(), "{prepared}");
     let event = &prepared["event"];
-    assert_eq!(event["type"], json!("signature.prepared"), "{prepared}");
+    assert_eq!(event["type"], json!("signatures.prepared"), "{prepared}");
     assert_eq!(event["signingId"], signing_id);
     assert_eq!(event["field"], field);
+    // `{ field, ...SignaturePrepared }`: the candidate as the call answered it.
+    for (key, value) in prepared["result"]["result"].as_object().expect("the candidate") {
+        assert_eq!(&event[key], value, "{key}: {prepared}");
+    }
     assert_eq!(event["origin"]["kind"], json!("local"));
+    // The one fact of its write (`publishWrite`).
+    assert!(event["origin"]["tx"]["id"].is_string(), "{prepared}");
+    assert_eq!(event["origin"]["tx"]["index"], json!(0));
+    assert_eq!(event["origin"]["tx"]["count"], json!(1));
 
-    // `signatures.cancel` (7bccc4f35); its notice keeps this host's name
-    // until the event audit (8.27).
+    // `signatures.cancel` (7bccc4f35) publishes `signatures.cancelled`.
     let aborted = envelope(
         &mut host,
         json!({ "kind": "signatures.cancel", "docId": doc, "signingId": signing_id }),
@@ -457,7 +464,8 @@ fn a_parked_signing_publishes_prepared_and_its_cancel_publishes_aborted() {
         Some(vec!["origin".to_string(), "signingId".to_string(), "type".to_string()]),
         "{aborted}",
     );
-    assert_eq!(aborted["event"]["type"], json!("signature.aborted"));
+    assert_eq!(aborted["event"]["type"], json!("signatures.cancelled"));
+    assert_eq!(aborted["event"]["origin"]["tx"]["count"], json!(1), "{aborted}");
     assert_eq!(aborted["event"]["signingId"], signing_id);
 
     // Nothing parked any more: not a cancel, so no notice.
@@ -552,6 +560,11 @@ fn every_form_write_carries_meta() {
         "{repaired}"
     );
     assert_eq!(repaired["result"]["needsAppearancesCleared"], json!(false), "{repaired}");
+    assert_eq!(
+        repaired["event"]["origin"]["tx"],
+        json!({ "id": "repair-1", "index": 0, "count": 1 }),
+        "{repaired}"
+    );
 }
 
 #[test]

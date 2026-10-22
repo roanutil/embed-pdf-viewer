@@ -42,7 +42,8 @@ fn a_name_change_publishes_pages_named() {
     let mut host = Host::new();
     let (doc, pon) = open_fixture(&mut host, REPORT);
     let response = host.call(
-        &json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "name": "a=A", "page": page_ref(pon) })
+        &json!({ "kind": "pages.setName", "jobId": 1, "docId": doc, "opId": "name-1", "name": "a=A",
+            "page": page_ref(pon) })
             .to_string(),
         Vec::new(),
     );
@@ -50,13 +51,21 @@ fn a_name_change_publishes_pages_named() {
     assert_eq!(envelope["result"]["event"]["type"], json!("pages.named"), "{}", envelope["error"]);
     assert_eq!(envelope["result"]["event"]["name"], json!("a=A"));
     assert_eq!(envelope["result"]["event"]["page"], page_ref(pon));
+    // The one fact of its write (`publishWrite`).
+    assert_eq!(
+        envelope["result"]["event"]["origin"]["tx"],
+        json!({ "id": "name-1", "index": 0, "count": 1 })
+    );
     let response = host.call(
-        &json!({ "kind": "pages.removeName", "jobId": 2, "docId": doc, "name": "a=A" }).to_string(),
+        &json!({ "kind": "pages.removeName", "jobId": 2, "docId": doc, "opId": "name-2",
+            "name": "a=A" })
+        .to_string(),
         Vec::new(),
     );
     let envelope: Value = serde_json::from_str(&response.json).unwrap();
     assert_eq!(envelope["result"]["event"]["type"], json!("pages.named"), "{}", envelope["error"]);
     assert_eq!(envelope["result"]["event"]["page"], Value::Null);
+    assert_eq!(envelope["result"]["event"]["origin"]["tx"]["id"], json!("name-2"));
     assert_eq!(envelope["result"]["result"]["layout"]["namedPages"], json!([]));
 }
 

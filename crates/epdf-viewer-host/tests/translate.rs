@@ -1639,7 +1639,7 @@ fn a_scale_write_publishes_its_page_as_a_page_ref() {
             "result": result,
             "mutationSequence": 2,
             "event": {
-                "type": "page.viewportsChanged",
+                "type": "pages.scaleSet",
                 "page": page_ref(7),
                 "meta": { "affectedPages": [], "cacheDelta": null },
                 "origin": { "kind": "local", "sessionId": "s", "ts": 1 }
@@ -1652,6 +1652,7 @@ fn a_scale_write_publishes_its_page_as_a_page_ref() {
     let page = json!({ "kind": "objectNumber", "pageObjectNumber": 7 });
     assert_eq!(decoded.value["page"], page);
     let event = decoded.event.expect("the event to publish");
+    // The host's `pages.scaleSet`, under the name the kernel listens for.
     assert_eq!(event["type"], json!("page.viewportsChanged"));
     assert_eq!(event["page"], page);
 }
@@ -1935,7 +1936,7 @@ fn a_signing_notice_beside_the_result_is_handed_back() {
     // the envelope beside it.
     let call = translate("d", "signatures.prepare", None, &[json!({})], 1).unwrap();
     let response = HostResponse {
-        json: r#"{"result":{"result":{"signingId":"s1","digest":{"payload":0}}},"event":{"type":"signature.prepared","signingId":"s1","field":{"kind":"objectNumber","objectNumber":5},"origin":{"kind":"local"}}}"#.into(),
+        json: r#"{"result":{"result":{"signingId":"s1","digest":{"payload":0}}},"event":{"type":"signatures.prepared","signingId":"s1","field":{"kind":"objectNumber","objectNumber":5},"origin":{"kind":"local"}}}"#.into(),
         payloads: vec![vec![0; 32]],
     };
     let decoded = decode(&call.decode, response).unwrap();
@@ -1948,7 +1949,7 @@ fn a_signing_notice_beside_the_result_is_handed_back() {
     // The kernel's `abort` is `cancel`, its `cancelled` the kernel's
     // `aborted`.
     let call = translate("d", "signatures.abort", None, &[json!("s1")], 2).unwrap();
-    let json = r#"{"result":{"result":{"status":"cancelled"}},"event":{"type":"signature.aborted","signingId":"s1","origin":{"kind":"local"}}}"#;
+    let json = r#"{"result":{"result":{"status":"cancelled"}},"event":{"type":"signatures.cancelled","signingId":"s1","origin":{"kind":"local"}}}"#;
     let decoded = decode(&call.decode, answer(json)).unwrap();
     assert_eq!(decoded.value, json!({ "status": "aborted" }));
     assert_eq!(decoded.event.unwrap()["type"], json!("signature.aborted"));

@@ -3358,6 +3358,28 @@ fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
     pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a layout page"))
 }
 
+/// The host's events as upstream names them, put back under the names the
+/// kernel's listeners know: `pages.scaleSet` is `page.viewportsChanged`, and
+/// the signing notices `signature.prepared`, `signature.completed` and
+/// `signature.aborted`. Both places an answer carries an event (a notice
+/// beside the result, a mutation's inside it). Dead once Task 13 ports the
+/// kernel's listeners.
+fn to_kernel_event_names(envelope: &mut Value) {
+    fn respell(event: Option<&mut Value>) {
+        let Some(Value::Object(event)) = event else { return };
+        let kernel = match event.get("type").and_then(Value::as_str) {
+            Some("pages.scaleSet") => "page.viewportsChanged",
+            Some("signatures.prepared") => "signature.prepared",
+            Some("signatures.completed") => "signature.completed",
+            Some("signatures.cancelled") => "signature.aborted",
+            _ => return,
+        };
+        event.insert("type".into(), Value::String(kernel.into()));
+    }
+    respell(envelope.get_mut("event"));
+    respell(envelope.get_mut("result").and_then(|result| result.get_mut("event")));
+}
+
 /// Read a host response into what the call's caller expects.
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
@@ -3373,13 +3395,14 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         to_kernel_form_records(&mut envelope);
     }
     to_kernel_refs(&mut envelope);
+    to_kernel_event_names(&mut envelope);
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
         let message = error.get("message").and_then(Value::as_str).unwrap_or_default();
         return Err(Error::engine(code, format!("{code}: {message}")));
     }
     // A notice the host publishes beside a result that is not a
-    // mutation's (`signature.prepared`, `signature.aborted`). A mutation's
+    // mutation's (`signatures.prepared`, `signatures.cancelled`). A mutation's
     // event rides inside its result and is taken below.
     let notice = envelope.get_mut("event").map(Value::take);
     if let Decode::Unit = decode {

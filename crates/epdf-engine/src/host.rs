@@ -64,7 +64,7 @@ struct Envelope<'a> {
     #[serde(skip_serializing_if = "Option::is_none")]
     error: Option<&'a EngineError>,
     /// A notice an answer publishes beside a result that is not a
-    /// mutation's (`signature.prepared`, `signature.aborted`). A mutation's
+    /// mutation's (`signatures.prepared`, `signatures.cancelled`). A mutation's
     /// event rides inside its result instead, as `{result,
     /// mutationSequence, event}`.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -926,13 +926,13 @@ impl Host {
                     session, &input, appearance, signing_id, &authority,
                 )?;
                 let mut prepared = value(&prepared)?;
-                // `LocalDocumentSignaturesService.prepare` publishes the
-                // parked candidate: its id and the field the call named.
-                let notice = crate::session::save::DocumentEventInit::SignaturePrepared {
-                    signing_id: prepared["signingId"].as_str().unwrap_or_default().to_owned(),
-                    field: value(&input.field)?,
-                };
                 prepared["digest"] = serde_json::json!({ "payload": 0 });
+                // `LocalDocumentSignaturesService.prepare` publishes the
+                // parked candidate beside the field the call named.
+                let notice = crate::session::save::DocumentEventInit::SignaturesPrepared {
+                    field: value(&input.field)?,
+                    prepared: prepared.clone(),
+                };
                 let answer = serde_json::json!({ "result": prepared });
                 self.answer_with_notice(&key, answer, notice, vec![digest])
             }
@@ -963,7 +963,8 @@ impl Host {
                 event["signingId"] = serde_json::json!(input.signing_id);
                 self.finish_with(
                     &key,
-                    crate::session::save::DocumentEventInit::SignatureCompleted(event),
+                    &op_id,
+                    crate::session::save::DocumentEventInit::SignaturesCompleted(event),
                     result,
                 )
             }
@@ -981,7 +982,7 @@ impl Host {
                     return Ok(ok(answer));
                 }
                 let notice =
-                    crate::session::save::DocumentEventInit::SignatureAborted { signing_id };
+                    crate::session::save::DocumentEventInit::SignaturesCancelled { signing_id };
                 self.answer_with_notice(&key, answer, notice, Vec::new())
             }
             // `WorkerHost.handleFormsSetSignatureAppearance`: a one-op
@@ -1656,13 +1657,15 @@ impl Host {
             "forms.repair" => {
                 let bake: bool = optional(body, "bakeAppearances")?.unwrap_or(false);
                 let op_id = self.op_id_of(&JobEnvelope::parse(&header.kind, body)?)?;
-                let stamp = crate::session::document::WriteStamp { op_id, undoable: false };
+                let stamp =
+                    crate::session::document::WriteStamp { op_id: op_id.clone(), undoable: false };
                 let result = {
                     let d = self.document(&key)?;
                     f::forms::write::repair(d, bake, &stamp, cancel)?
                 };
                 self.finish(
                     &key,
+                    &op_id,
                     crate::session::save::DocumentEventInit::FormRepaired(value(&result)?),
                 )
             }
@@ -1762,6 +1765,7 @@ impl Host {
                 )?;
                 self.finish(
                     &key,
+                    &op_id,
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
                         page_object_number: Some(page.object_number()),
@@ -1779,6 +1783,7 @@ impl Host {
                 )?;
                 self.finish(
                     &key,
+                    &op_id,
                     crate::session::save::DocumentEventInit::PagesNamed {
                         name,
                         page_object_number: None,
@@ -1869,7 +1874,8 @@ impl Host {
                 )?;
                 self.finish(
                     &key,
-                    crate::session::save::DocumentEventInit::PageViewportsChanged(result),
+                    &op_id,
+                    crate::session::save::DocumentEventInit::PagesScaleSet(result),
                 )
             }
             // `WorkerHost.handlePieceInfoUpdate`: the write in its own
@@ -1961,13 +1967,15 @@ impl Host {
     /// decided in one place rather than at each of the twenty-odd call sites.
     /// The family comes off the event rather than the caller, which is what
     /// stops a form write being finalized as an ordinary one.
+    /// The event is the one fact of the write `op_id` (`publishWrite`).
     fn finish(
         &mut self,
         key: &SessionKey,
+        op_id: &str,
         event: crate::session::save::DocumentEventInit,
     ) -> Result<HostResponse, EngineError> {
         let result = event.result().cloned().unwrap_or(serde_json::Value::Null);
-        self.finish_with(key, event, result)
+        self.finish_with(key, op_id, event, result)
     }
 
     /// [`Host::finish`], answering `result` where the event carries more
@@ -1975,11 +1983,12 @@ impl Host {
     fn finish_with(
         &mut self,
         key: &SessionKey,
+        op_id: &str,
         event: crate::session::save::DocumentEventInit,
         result: serde_json::Value,
     ) -> Result<HostResponse, EngineError> {
         let family = event.family();
-        self.finalize(key, family, Some(event), result)
+        self.finalize(key, family, Some((op_id, event)), result)
     }
 
     /// [`Host::finish`] for a mutation the TypeScript publishes no event
@@ -1997,16 +2006,14 @@ impl Host {
         &mut self,
         key: &SessionKey,
         family: crate::session::save::MutationFamily,
-        event: Option<crate::session::save::DocumentEventInit>,
+        event: Option<(&str, crate::session::save::DocumentEventInit)>,
         result: serde_json::Value,
     ) -> Result<HostResponse, EngineError> {
-        use crate::session::save;
-
         // A final change ends undo for itself and every change before it
         // (`FINAL_CHANGES` in `WorkerHost.finishMutation`): form repair and a
         // completed signing, each of which finishes here with its event. The
         // flattens and redaction apply end it in [`Host::finish_flatten`].
-        if event.as_ref().is_some_and(save::DocumentEventInit::ends_undo) {
+        if event.as_ref().is_some_and(|(_, event)| event.ends_undo()) {
             self.sessions.session_mut(key)?.ledger_mut().end_undo();
         }
         let written = self.finish_write(key, family)?;
@@ -2014,13 +2021,8 @@ impl Host {
             "result": result,
             "mutationSequence": written.sequence,
         });
-        if let Some(event) = event {
-            answer["event"] = serde_json::to_value(self.stamp(key, event)?).map_err(|e| {
-                EngineError::with_message(
-                    EngineErrorCode::WireFormat,
-                    format!("the event could not be serialized: {e}"),
-                )
-            })?;
+        if let Some((op_id, event)) = event {
+            answer["event"] = self.stamp_write(key, op_id, event)?;
         }
         Ok(written.respond(answer))
     }
@@ -2107,28 +2109,26 @@ impl Host {
         Ok(written.respond(answer))
     }
 
-    /// Stamp `event` as this engine's own: a local origin under the
-    /// session's id, at the clock's now.
-    fn stamp(
+    /// Stamp `event` as this engine's own and as the one fact of the write
+    /// `op_id` (`publishWrite`): a local origin under the session's id, at
+    /// the clock's now, with `tx` naming the write. A completed signing is
+    /// the first of two facts: `document.versioned` follows it from the
+    /// host's publisher (`LocalDocumentSignaturesService.complete`), because
+    /// an answer carries one event.
+    fn stamp_write(
         &self,
         key: &SessionKey,
+        op_id: &str,
         event: crate::session::save::DocumentEventInit,
-    ) -> Result<crate::session::save::DocumentEvent, EngineError> {
-        use crate::session::save;
-
-        let session = self.sessions.session(key)?;
-        Ok(save::publish(
-            event,
-            save::EventOrigin {
-                kind: save::OriginKind::Local,
-                session_id: session.session_id().to_owned(),
-                sub: None,
-                ts: self.clock.now().epoch_millis,
-                server_id: None,
-                tx: None,
-                undo_of: None,
-            },
-        ))
+    ) -> Result<serde_json::Value, EngineError> {
+        let versioned =
+            matches!(event, crate::session::save::DocumentEventInit::SignaturesCompleted(_));
+        let mut stamped = self.stamp_change(key, op_id, None, vec![value(&event)?])?;
+        let mut stamped = stamped.pop().unwrap_or(serde_json::Value::Null);
+        if versioned {
+            stamped["origin"]["tx"]["count"] = serde_json::json!(2);
+        }
+        Ok(stamped)
     }
 
     /// The `opId` a write runs under (`opIdOf`): the request's, or a fresh
@@ -2425,6 +2425,9 @@ impl Host {
 
     /// Answer `result` with a notice beside it in the envelope: the
     /// signing notices, which follow a call that is not a mutation.
+    /// Like a write's, the notice is the one fact of an `opId`
+    /// (`publishWrite(write.opId, …)`): one the host mints, as upstream's
+    /// main thread mints one for a call that names none.
     fn answer_with_notice(
         &self,
         key: &SessionKey,
@@ -2432,7 +2435,8 @@ impl Host {
         notice: crate::session::save::DocumentEventInit,
         payloads: Vec<Vec<u8>>,
     ) -> Result<HostResponse, EngineError> {
-        let event = value(&self.stamp(key, notice)?)?;
+        let op_id = self.ids.next_uuid_v4();
+        let event = self.stamp_write(key, &op_id, notice)?;
         let json = serde_json::to_string(&Envelope {
             result: Some(result),
             error: None,

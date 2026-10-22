@@ -124,7 +124,8 @@ pub struct EventOrigin {
     pub server_id: Option<i64>,
     /// The write this event is one fact of: its `opId`, and where the event
     /// stands among the write's events. Set on the writes that run as a
-    /// change (Task 8.6); Task 8.27 sets it on every write.
+    /// change, and on every other write and notice: `publishWrite` stamps
+    /// each event it publishes.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub tx: Option<EventTx>,
     /// Set on the events of an undo: the `opId` of the change it undid.
@@ -169,14 +170,14 @@ pub enum OriginKind {
 #[serde(tag = "type")]
 pub enum DocumentEventInit {
     /// `LocalPageAnnotationsService.create`: the page the write addressed.
-    #[serde(rename = "annotation.created")]
+    #[serde(rename = "annotations.created")]
     AnnotationCreated {
         #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
         #[serde(flatten)]
         result: serde_json::Value,
     },
-    #[serde(rename = "annotation.updated")]
+    #[serde(rename = "annotations.updated")]
     AnnotationUpdated {
         #[serde(rename = "page", with = "crate::identity::page_ref")]
         page_object_number: PageObjectNumber,
@@ -208,32 +209,32 @@ pub enum DocumentEventInit {
     /// `metadata.updateCustom` (a4b8259f7).
     #[serde(rename = "metadata.customUpdated")]
     MetadataCustomUpdated(serde_json::Value),
-    #[serde(rename = "form.imported")]
-    FormImported(serde_json::Value),
     /// `forms.repair` (`publishWrite(opId, { type: 'forms.repaired' })`).
     #[serde(rename = "forms.repaired")]
     FormRepaired(serde_json::Value),
-    #[serde(rename = "form.fieldUpdated")]
-    FormFieldUpdated(serde_json::Value),
     /// `measure.setScale`. The TypeScript publishes it from
     /// `LocalPageMeasureService` rather than the worker, with the same
     /// `PageScaleResult` the call answers.
-    #[serde(rename = "page.viewportsChanged")]
-    PageViewportsChanged(serde_json::Value),
+    #[serde(rename = "pages.scaleSet")]
+    PagesScaleSet(serde_json::Value),
     /// A signing candidate was parked: the document is read-only until it
-    /// completes or is cancelled. A notice rather than a mutation result, so
-    /// it carries what the call named and no result.
-    #[serde(rename = "signature.prepared", rename_all = "camelCase")]
-    SignaturePrepared { signing_id: String, field: serde_json::Value },
+    /// completes or is cancelled. `LocalDocumentSignaturesService.prepare`
+    /// publishes the field the call named beside the prepared candidate
+    /// (`{field, ...SignaturePrepared}`), its digest named as the answer
+    /// names it.
+    #[serde(rename = "signatures.prepared")]
+    SignaturesPrepared {
+        field: serde_json::Value,
+        #[serde(flatten)]
+        prepared: serde_json::Value,
+    },
     /// The sealed bytes are installed: `{signingId, ...SignatureCompleteResult}`.
-    #[serde(rename = "signature.completed")]
-    SignatureCompleted(serde_json::Value),
+    #[serde(rename = "signatures.completed")]
+    SignaturesCompleted(serde_json::Value),
     /// A parked signing was cancelled (`signatures.cancel` answering
-    /// `status: "cancelled"` only). A notice, with no result. Upstream's
-    /// local service names it `signatures.cancelled`; this host keeps the
-    /// name its listeners know until the event audit (Task 8.27).
-    #[serde(rename = "signature.aborted", rename_all = "camelCase")]
-    SignatureAborted { signing_id: String },
+    /// `status: "cancelled"` only). A notice, with no result.
+    #[serde(rename = "signatures.cancelled", rename_all = "camelCase")]
+    SignaturesCancelled { signing_id: String },
 }
 
 impl DocumentEventInit {
@@ -251,36 +252,32 @@ impl DocumentEventInit {
             | Self::RedactionApplied(v)
             | Self::MetadataUpdated(v)
             | Self::MetadataCustomUpdated(v)
-            | Self::FormImported(v)
             | Self::FormRepaired(v)
-            | Self::FormFieldUpdated(v)
-            | Self::PageViewportsChanged(v)
-            | Self::SignatureCompleted(v) => Some(v),
+            | Self::PagesScaleSet(v)
+            | Self::SignaturesCompleted(v) => Some(v),
             Self::AnnotationCreated { result, .. }
             | Self::AnnotationUpdated { result, .. }
             | Self::PagesNamed { result, .. } => Some(result),
-            Self::SignaturePrepared { .. } | Self::SignatureAborted { .. } => None,
+            Self::SignaturesPrepared { .. } | Self::SignaturesCancelled { .. } => None,
         }
     }
 
     /// The wire `type`, which is also the tag a consumer switches on.
     pub fn type_name(&self) -> &'static str {
         match self {
-            Self::AnnotationCreated { .. } => "annotation.created",
-            Self::AnnotationUpdated { .. } => "annotation.updated",
+            Self::AnnotationCreated { .. } => "annotations.created",
+            Self::AnnotationUpdated { .. } => "annotations.updated",
             Self::AnnotationsFlattened(_) => "annotations.flattened",
             Self::PagesFlattened(_) => "pages.flattened",
             Self::PagesNamed { .. } => "pages.named",
             Self::RedactionApplied(_) => "redaction.applied",
             Self::MetadataUpdated(_) => "metadata.updated",
             Self::MetadataCustomUpdated(_) => "metadata.customUpdated",
-            Self::FormImported(_) => "form.imported",
             Self::FormRepaired(_) => "forms.repaired",
-            Self::FormFieldUpdated(_) => "form.fieldUpdated",
-            Self::PageViewportsChanged(_) => "page.viewportsChanged",
-            Self::SignaturePrepared { .. } => "signature.prepared",
-            Self::SignatureCompleted(_) => "signature.completed",
-            Self::SignatureAborted { .. } => "signature.aborted",
+            Self::PagesScaleSet(_) => "pages.scaleSet",
+            Self::SignaturesPrepared { .. } => "signatures.prepared",
+            Self::SignaturesCompleted(_) => "signatures.completed",
+            Self::SignaturesCancelled { .. } => "signatures.cancelled",
         }
     }
 
@@ -294,7 +291,7 @@ impl DocumentEventInit {
                 | Self::PagesFlattened(_)
                 | Self::AnnotationsFlattened(_)
                 | Self::FormRepaired(_)
-                | Self::SignatureCompleted(_)
+                | Self::SignaturesCompleted(_)
         )
     }
 
@@ -306,10 +303,8 @@ impl DocumentEventInit {
     /// only so the question has an answer.
     pub fn family(&self) -> MutationFamily {
         match self {
-            Self::FormImported(_)
-            | Self::FormFieldUpdated(_)
             // The install already advanced the sequence.
-            | Self::SignatureCompleted(_) => MutationFamily::SelfSequenced,
+            Self::SignaturesCompleted(_) => MutationFamily::SelfSequenced,
             _ => MutationFamily::Ordinary,
         }
     }
