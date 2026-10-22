@@ -182,7 +182,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'routed',
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'document.version',
     group: 'G3',
@@ -256,7 +256,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'routed',
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'fonts.authorizeEditing',
     group: 'G4',
@@ -303,7 +303,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Gated by vectors/metadata/read.json through crates/epdf-engine/tests/metadata_corpus.rs. The standard fields only: createdAt and modifiedAt keep the offset the file wrote (pdfDateToIso); the custom keys are metadata.readCustom.',
+    note: 'Gated by vectors/metadata/read.json through crates/epdf-engine/tests/metadata_corpus.rs. The standard fields only, answered { metadata }: createdAt and modifiedAt keep the offset the file wrote (pdfDateToIso); the custom keys are metadata.readCustom.',
   },
   {
     kind: 'metadata.readCustom',
@@ -312,7 +312,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Gated with metadata.read: the generator folds metadata.custom.get() into the read it records, and metadata_corpus.rs does the same.',
+    note: 'Answered { custom }. Gated with metadata.read: the generator folds metadata.custom.get() into the read it records, and metadata_corpus.rs does the same.',
   },
   {
     kind: 'pages.list',
@@ -330,7 +330,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'cooperative',
     rustStatus: 'ported',
-    note: 'Rust reads openDestination and answers every destination in page space at the host boundary (mapDocumentActions), triggers first.',
+    note: 'Rust reads openDestination and answers { snapshot }, every destination in page space at the host boundary (mapDocumentActions), triggers first.',
   },
   {
     kind: 'outline.read',
@@ -342,7 +342,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     note: "New in 67ccb76dc. Answers the DocumentOutline, every item depth first, each destination of its target and its action in page space at the host boundary (pageOutlineOf); no page is loaded. The outline's writes are the document.apply ops outline.create, outline.update, outline.move and outline.delete. No vector covers it: crates/epdf-engine/tests/outline.rs ports runOutlineConformance.",
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'measure.viewports',
     group: 'G6',
@@ -390,10 +390,10 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 2,
     cancellation: 'non-preemptible',
     rustStatus: 'ported',
-    note: "One family per request (annotations, or widgets for page.forms). Every mode and every state an annotation stores, each labelled (17350fb4c); an annotation with no normal appearance is drawn in memory into EPDFAnnot_GetDrawingRect's box, never written (25dd21f38). A box kind drawn turned renders upright into its box, the turn passed to EPDF_RenderAnnotBitmapUnrotated (runtime 5e9241945). Refs by baseIndex or object number; rects converted to page space at the host boundary (pageAppearancesOf). Gated by vectors/annotation/appearances.json through crates/epdf-engine/tests/annotation_appearance.rs.",
+    note: "One family per request (annotations, or widgets for page.forms). Every mode and every state an annotation stores, each labelled (17350fb4c); an annotation with no normal appearance is drawn in memory into EPDFAnnot_GetDrawingRect's box, never written (25dd21f38). A box kind drawn turned renders upright into its box, the turn passed to EPDF_RenderAnnotBitmapUnrotated (runtime 5e9241945). Refs by baseIndex or object number; rects converted to page space at the host boundary (pageAppearancesOf). Answered { page, result: { page, appearances } }, the request's page beside the reader's. Gated by vectors/annotation/appearances.json through crates/epdf-engine/tests/annotation_appearance.rs.",
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'annotations.list',
     group: 'G7',
@@ -498,7 +498,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     note: 'Creates and closes its own scratch document (PagesExtractor.ts:73-112), a named exception to Stage A "retains nothing, closes nothing": FPDF_CreateNewDocument with FPDF_ImportPagesByIndex for a plain copy, EPDFDoc_ExportPagesFlattened with flatten (what it paints arrives already checked against the caller\'s rights, resolvePageExtract), either keeping the title. Takes PageRefs in the caller\'s order. Gated by vectors/pages/extract.json, which records the sources sent, through crates/epdf-engine/tests/page_extract_corpus.rs; page_extract.rs ports the extract conformance suite.',
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'annotations.exportAppearance',
     group: 'G9',
@@ -835,7 +835,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     note: "A content write and a final change, answered like pages.flatten: takes a {pages} or {annotations} scope, promotes each page, applies a page's refs in one native call, and answers per-page applied or unchanged with MutationMeta. A failing page or a cancel refuses the call and its layer transaction takes back the pages already promoted or applied, with no sequence bump. A no-op answer keeps mutationSequence (kept divergence, 87b61b533). Gated by vectors/redaction/apply.json, replayed by crates/epdf-engine/tests/redaction_apply.rs.",
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'annotations.flatten',
     group: 'G13',
@@ -920,7 +920,7 @@ export const OPERATIONS: readonly OperationRow[] = [
   //   rustStatus: 'ported',
   // },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'pieceInfo.delete',
     group: 'G14',
@@ -937,7 +937,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
-    note: "Takes a rectilinear PdfMeasure with its origin in page space, converted at the boundary (pdfMeasureOf), or null to remove EmbedPDF's viewports; calibrates over the page's visible box (readBoxes crop) in one transaction, answering PageScaleResult with the write's opId in meta. A scale write with no measure is refused InvalidArg (d8027c034, a kept divergence for the user to confirm at Task 14). No vector covers it: crates/epdf-engine/tests/measure.rs.",
+    note: "Takes a rectilinear PdfMeasure with its origin in page space, converted at the boundary (pdfMeasureOf), or null to remove EmbedPDF's viewports; calibrates over the page's visible box (readBoxes crop) in one transaction, answering PageScaleResult with the write's opId in meta. A scale write with no measure is refused InvalidArg, as MeasureMutator.ts:30-35 throws (d8027c034 is parity now, 8.25). Publishes pages.scaleSet. No vector covers it: crates/epdf-engine/tests/measure.rs.",
   },
 
   // --- G15. Server and file surfaces. Browser and local workers keep
@@ -978,7 +978,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     note: 'The target is page space, as document.renderPageFile takes it. Answers {page, pageCount, image}, the bytes payload 0.',
   },
 
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
+  // New in the catch-up to upstream b456ee4fd.
   {
     kind: 'signatures.list',
     group: 'G15',
@@ -1004,7 +1004,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: "WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
+    note: "Answers { bytes }, the bytes payload 0. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
   },
   {
     kind: 'signatures.digest',
@@ -1013,7 +1013,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: "WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
+    note: "Answers { digest }, the digest payload 0. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
   },
   {
     kind: 'signatures.revisionBytes',
@@ -1022,7 +1022,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 5,
     cancellation: 'queued-only',
     rustStatus: 'routed',
-    note: "WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
+    note: "Answers { bytes, size }, the bytes payload 0. WorkerHost.ts:599-628 calls the signature handlers without the job's AbortSignal, so no throwIfAborted reaches them.",
   },
   {
     kind: 'signatures.prepare',
