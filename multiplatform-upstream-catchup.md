@@ -45,16 +45,18 @@ Merging impl into this branch conflicts in `packages/framework/react/src/toolbar
 
 ### Plugin vectors
 
-`tooling/plugin-conformance/src/staleness.ts`, fixed in this commit (it silenced the console that scenario suites record, and checked each suite against every vector file), reports 110 unchanged on this branch's tip, matching `vectors:check`. On the probe merge (`scratch/catchup-probe`, `db5997aa6`, upstream's side on every conflict):
+`tooling/plugin-conformance/src/staleness.ts`, fixed in this commit (it silenced the console that scenario suites record, and checked each suite against every vector file), reports 110 unchanged on this branch's tip, matching `vectors:check`.
+
+After Task 11 (`research/catchup-plugins` at `295d3a802`), every suite file imports and none throws: `npx tsx --conditions=development src/staleness.ts` reports `stale: 99, unchanged: 11`, against `no-import: 31, stale: 24, unchanged: 5, throws: 13` at `2ea138c02`. The vectors are not regenerated; Task 12 does that.
 
 | State | Count | Vector files |
 |---|---|---|
-| Unchanged | 5 | `core/signature-parse`, `core/stage-anchor`, `core/stage-camera`, `core/stage-layout`, `plugins/actions` |
-| Stale | 24 | `kernel/lifecycle`, `kernel/turns`; `core/acrojs`, `core/acrojs-host`; `core/signature-` `document`, `signers`, `trust`, `verify`; `plugins/actions-` `dispatcher`, `hover`, `lifecycle`, `script`, `submit`, `triggers`; `plugins/` `metadata`, `page-edit`, `render-capability`, `render-tile-plane`, `search`, `search-stage`, `search-find-all`, `stage-capability`, `stage-events`, `stage-motion` |
-| Throws | 13 | the eight annotation scenarios, the four form scenarios and `stage-feeds`, all `no plugin factory "interaction"` |
-| Does not import | 31 suite files | `annotation-core-*` (6, `initialStyle` gone from `update`), `annotation-pure`, `annotation-repository`, `commands`, `form-core`, `geometry`, `i18n`, `interaction`, `kernel-utils`, `link`, `measurement`, `redaction`, `render-pure`, `search-reducer`, `selection`, `shell`, `signature-plugin`, `stage-pure`, `stamp-*` (7), `ui-core`, `view-manager` |
+| Unchanged | 11 | `core/annotation-endings`, `core/annotation-richtext`, `core/geometry-basics`, `core/signature-parse`, `core/stage-anchor`, `core/stage-camera`, `core/stage-layout`, `plugins/actions`, `plugins/i18n/plurals`, `plugins/render-policy`, `plugins/render-tiles` |
+| Stale | 99 | every other vector file the suites write |
+| Throws | 0 | |
+| Does not import | 0 | |
 
-As last time, most of "throws" is `interaction.ts` not importing.
+Where upstream removed a function outright, the suite keeps its cases and they record `threw` with `<name> was removed upstream in <commit>` (`tooling/plugin-conformance/src/removed.ts`). The full list, with commits, is in Task 11's report. Most cases still pass the inputs they were written with, so many stale files record old-shaped inputs meeting reshaped code. The largest gap is `PageRef`: upstream renamed its field from `pageObjectNumber` to `objectNumber` (`595bdc6c7`), and the suites' literal page refs and `fake-engine.ts` still use the old name. Task 12 has to migrate those inputs before its regenerated vectors mean anything.
 
 ### Engine vectors
 
