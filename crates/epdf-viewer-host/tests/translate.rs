@@ -494,7 +494,7 @@ fn a_locked_open_resolves_locked_and_keeps_its_session_on_the_host() {
         }),
     );
     let answer: Value = serde_json::from_str(&futures::executor::block_on(rx).unwrap()).unwrap();
-    assert_eq!(answer, json!({ "result": { "closedSessions": 1 } }));
+    assert_eq!(answer, json!({ "result": null }));
 }
 
 use epdf_viewer_host::translate::{PATHS, maps, optional_whole, whole};

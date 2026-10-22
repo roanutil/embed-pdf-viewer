@@ -102,7 +102,11 @@ fn a_document_opens_reads_and_closes_across_the_abi() {
 
     let (json, _) =
         call(host, &serde_json::json!({ "kind": "close", "docId": "d" }).to_string(), &[]);
-    assert_eq!(json["result"]["closedSessions"], 1);
+    // `{ tag: 'close' }`: the tag alone, a null result.
+    assert_eq!(json, serde_json::json!({ "result": null }));
+    let (json, _) =
+        call(host, &serde_json::json!({ "kind": "pages.list", "docId": "d" }).to_string(), &[]);
+    assert_eq!(json["error"]["code"], "DocNotOpen", "the close left the session open: {json}");
 
     unsafe { epdf_wasm::epdf_host_destroy(host) };
 }

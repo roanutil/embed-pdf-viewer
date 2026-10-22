@@ -110,9 +110,9 @@ fn an_open_without_its_bytes_is_refused_before_a_session_exists() {
 }
 
 #[test]
-fn a_close_reports_what_it_closed_and_a_second_one_reports_nothing() {
-    // The count is how a host tells "closed it" from "there was nothing to
-    // close", which a pool reconciling its own bookkeeping needs.
+fn a_close_answers_the_tag_alone_and_a_second_one_answers_the_same() {
+    // `WorkerHost.handleClose` answers `{ tag: 'close' }` whether or not a
+    // session was there: closing nothing is the state the caller asked for.
     let mut host = Host::new();
     call(
         &mut host,
@@ -121,10 +121,11 @@ fn a_close_reports_what_it_closed_and_a_second_one_reports_nothing() {
     );
 
     let json = call(&mut host, serde_json::json!({ "kind": "close", "docId": "d" }), Vec::new());
-    assert_eq!(json["result"]["closedSessions"], 1);
+    assert_eq!(json, serde_json::json!({ "result": null }));
+    assert_eq!(host.sessions().len(), 0);
 
     let json = call(&mut host, serde_json::json!({ "kind": "close", "docId": "d" }), Vec::new());
-    assert_eq!(json["result"]["closedSessions"], 0);
+    assert_eq!(json, serde_json::json!({ "result": null }));
     assert_eq!(host.sessions().len(), 0);
 }
 
@@ -144,7 +145,7 @@ fn a_document_opened_and_closed_without_a_single_read_leaves_nothing_behind() {
         );
         assert!(json.get("error").is_none(), "round {round} would not open: {json}");
         let json = call(&mut host, serde_json::json!({ "kind": "close", "docId": id }), Vec::new());
-        assert_eq!(json["result"]["closedSessions"], 1, "round {round} did not close");
+        assert_eq!(json, serde_json::json!({ "result": null }), "round {round} did not close");
     }
     assert_eq!(host.sessions().len(), 0, "sessions accumulated across rounds");
 }
@@ -201,16 +202,31 @@ fn checking_a_password_answers_without_changing_the_session() {
 }
 
 #[test]
-fn a_layer_close_answers_whether_there_was_one_to_close() {
-    // Boolean rather than silent, for the same reason the document close
-    // returns a count: a host reconciling its own map needs to know.
+fn a_layer_close_answers_the_tag_alone_whether_or_not_there_was_one() {
+    // `WorkerHost.handleLayerClose`: idempotent, the caller may be closing a
+    // layer this host never held, and the answer is `{ tag: 'close' }`.
     let mut host = Host::new();
     let json = call(
         &mut host,
         serde_json::json!({ "kind": "layer.close", "docId": "d", "layerName": "nothing" }),
         Vec::new(),
     );
-    assert_eq!(json["result"]["closed"], false);
+    assert_eq!(json, serde_json::json!({ "result": null }));
+
+    call(
+        &mut host,
+        serde_json::json!({ "kind": "open.layerMemBase", "docId": "d", "layerName": "a",
+            "baseKey": "base", "layer": { "kind": "fresh" } }),
+        vec![bytes(PLAIN)],
+    );
+    assert_eq!(host.sessions().len(), 1);
+    let json = call(
+        &mut host,
+        serde_json::json!({ "kind": "layer.close", "docId": "d", "layerName": "a" }),
+        Vec::new(),
+    );
+    assert_eq!(json, serde_json::json!({ "result": null }));
+    assert_eq!(host.sessions().len(), 0);
 }
 
 #[test]

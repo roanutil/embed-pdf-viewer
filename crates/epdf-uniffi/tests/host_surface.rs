@@ -66,7 +66,10 @@ fn a_document_opens_reads_and_closes_through_one_call() {
     );
 
     let json = call(&engine, serde_json::json!({ "kind": "close", "docId": "d" }), Vec::new());
-    assert_eq!(json["result"]["closedSessions"], 1);
+    // `{ tag: 'close' }`: the tag alone, a null result.
+    assert_eq!(json, serde_json::json!({ "result": null }));
+    let json = call(&engine, serde_json::json!({ "kind": "pages.list", "docId": "d" }), Vec::new());
+    assert_eq!(json["error"]["code"], "DocNotOpen", "the close left the session open: {json}");
     engine.shutdown();
 }
 

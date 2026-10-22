@@ -2550,17 +2550,22 @@ impl Host {
         Ok(read_live(session.document()?.document(), self.clock.as_ref()))
     }
 
+    /// `WorkerHost.handleClose`: every session of the document, answered
+    /// with the tag alone (`{ tag: 'close' }`), which this wire spells as a
+    /// null result. Closing nothing is the state the caller asked for.
     fn close_document(&mut self, header: &RequestHeader) -> Result<serde_json::Value, EngineError> {
         let doc_id = header.doc_id.as_deref().ok_or_else(|| {
             EngineError::with_message(EngineErrorCode::WireFormat, "a close names no document")
         })?;
-        let closed = self.sessions.close_document(doc_id);
-        Ok(serde_json::json!({ "closedSessions": closed }))
+        self.sessions.close_document(doc_id);
+        Ok(serde_json::Value::Null)
     }
 
+    /// `WorkerHost.handleLayerClose`: one session, answered as `close` is.
     fn close_layer(&mut self, header: &RequestHeader) -> Result<serde_json::Value, EngineError> {
         let key = header.key()?;
-        Ok(serde_json::json!({ "closed": self.sessions.close_layer(&key) }))
+        self.sessions.close_layer(&key);
+        Ok(serde_json::Value::Null)
     }
 }
 
