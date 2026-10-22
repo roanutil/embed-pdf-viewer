@@ -32,20 +32,30 @@ use crate::error::{EngineError, EngineErrorCode};
 use crate::features::render::raster::{PageRaster, RenderOptions, render_page};
 use crate::identity::PageObjectNumber;
 
-/// What format to encode a raster as.
+/// What format to encode a raster as (`RenderEncode`, `worker-protocol.ts`):
+/// a `PageNetworkRenderFormat` and an optional quality.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "format", rename_all = "camelCase")]
-#[serde(rename_all_fields = "camelCase")]
-pub enum RenderEncode {
+#[serde(rename_all = "camelCase")]
+pub struct RenderEncode {
+    pub format: RenderEncodeFormat,
+    /// WebP quality from 0 (smallest) to 1 (best), passed through to the
+    /// encoder as upstream's worker passes it. PNG is lossless and ignores
+    /// it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub quality: Option<f64>,
+}
+
+impl RenderEncode {
+    /// A PNG, which takes no quality.
+    pub const PNG: Self = Self { format: RenderEncodeFormat::Png, quality: None };
+}
+
+/// `PageNetworkRenderFormat` (`dto/PageRender.ts`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum RenderEncodeFormat {
     Png,
-    /// Quality is the encoder's own scale, passed through: what 80 means is
-    /// the encoder's business and not this engine's.
-    Jpeg {
-        quality: Option<u8>,
-    },
-    Webp {
-        quality: Option<u8>,
-    },
+    Webp,
 }
 
 /// An encoded image, and what it is.

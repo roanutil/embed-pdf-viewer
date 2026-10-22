@@ -1120,7 +1120,7 @@ impl Host {
                     &options,
                     cancel,
                 )?;
-                // `{page, appearances}` (`AnnotationAppearancesResult`), each
+                // `AnnotationAppearancesResult`, each
                 // appearance's pixels in their own payload, in the same
                 // order. A page of stamps is tens of megabytes of RGBA, and
                 // putting that through the JSON would be the single most
@@ -1153,10 +1153,15 @@ impl Host {
                     }
                     index.push(entry);
                 }
+                // `{ tag, page, result: { page, appearances } }`: the page
+                // as the request named it beside the reader's result.
                 Ok(HostResponse {
                     json: envelope(serde_json::json!({
-                        "page": crate::identity::PageRef::from(result.page),
-                        "appearances": index,
+                        "page": body["page"],
+                        "result": {
+                            "page": crate::identity::PageRef::from(result.page),
+                            "appearances": index,
+                        },
                     })),
                     payloads,
                 })

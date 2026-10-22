@@ -141,13 +141,12 @@ fn read(case: &Case) -> Vec<Placed> {
     for family in ["annotations", "widgets"] {
         let (answer, payloads) =
             host_render(&mut host, case.page_object_number, family, Some(options.clone()));
-        let result = &answer["result"];
-        assert_eq!(
-            result["page"],
-            json!({ "kind": "objectNumber", "objectNumber": case.page_object_number }),
-            "{}: {answer}",
-            case.name,
-        );
+        // `{ page, result: { page, appearances } }`: the request's page
+        // beside the reader's.
+        let page = json!({ "kind": "objectNumber", "objectNumber": case.page_object_number });
+        assert_eq!(answer["result"]["page"], page, "{}: {answer}", case.name);
+        let result = &answer["result"]["result"];
+        assert_eq!(result["page"], page, "{}: {answer}", case.name);
         let appearances = result["appearances"].as_array().unwrap_or_else(|| {
             panic!("{}: {family}: no appearances: {answer}", case.name);
         });
@@ -708,7 +707,7 @@ fn a_real_document_renders_visible_appearances_under_their_names() {
         "annotations",
         Some(json!({ "viewport": { "kind": "scale", "scale": 1 } })),
     );
-    let result = &answer["result"];
+    let result = &answer["result"]["result"];
     assert_eq!(result["page"], json!({ "kind": "objectNumber", "objectNumber": 2 }), "{answer}");
     let appearances = result["appearances"].as_array().expect("appearances");
     assert!(appearances.len() >= 4, "{answer}");
@@ -852,7 +851,7 @@ fn a_scale_viewport_that_names_no_scale_is_scale_one() {
     let (answer, _) =
         host_render(&mut host, 3, "annotations", Some(json!({ "viewport": { "kind": "scale" } })));
     assert!(answer.get("error").is_none(), "{answer}");
-    let square = &answer["result"]["appearances"][0]["raster"];
+    let square = &answer["result"]["result"]["appearances"][0]["raster"];
     assert_eq!(
         (square["width"].as_u64(), square["height"].as_u64()),
         (Some(40), Some(40)),
@@ -990,7 +989,7 @@ fn each_appearance_answers_its_picture_in_upstreams_shape() {
     // (`encodeRaster`): its `data` or `bytes` the payload at its index.
     let mut host = host_with(states_pdf());
     let (answer, payloads) = host_render(&mut host, 3, "widgets", None);
-    let appearances = answer["result"]["appearances"].as_array().expect("appearances");
+    let appearances = answer["result"]["result"]["appearances"].as_array().expect("appearances");
     assert_eq!(appearances.len(), payloads.len());
     for (i, appearance) in appearances.iter().enumerate() {
         let raster = &appearance["raster"];
@@ -1015,7 +1014,7 @@ fn each_appearance_answers_its_picture_in_upstreams_shape() {
         Vec::new(),
     );
     let answer: Value = serde_json::from_str(&response.json).expect("JSON");
-    let appearances = answer["result"]["appearances"].as_array().expect("appearances");
+    let appearances = answer["result"]["result"]["appearances"].as_array().expect("appearances");
     assert_eq!(appearances.len(), 5, "{answer}");
     for (i, appearance) in appearances.iter().enumerate() {
         let image = &appearance["image"];

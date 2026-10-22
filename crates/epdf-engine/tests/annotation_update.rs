@@ -1021,7 +1021,7 @@ fn stamp_appearance(replay: &mut Replay, index: usize) -> (usize, usize, usize, 
         Vec::new(),
     );
     let result = answer.outcome.expect("the appearances render");
-    let appearances = result["appearances"].as_array().expect("appearances");
+    let appearances = result["result"]["appearances"].as_array().expect("appearances");
     let (at, shown) = appearances
         .iter()
         .enumerate()

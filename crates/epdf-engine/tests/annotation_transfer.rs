@@ -1443,7 +1443,9 @@ fn appearance_rasters(
         )
         .unwrap_or_else(|e| panic!("renderAppearances: {e}"));
     let mut rasters = std::collections::HashMap::new();
-    for (appearance, pixels) in answer["appearances"].as_array().unwrap().iter().zip(payloads) {
+    for (appearance, pixels) in
+        answer["result"]["appearances"].as_array().unwrap().iter().zip(payloads)
+    {
         if appearance["mode"] != "normal" {
             continue;
         }

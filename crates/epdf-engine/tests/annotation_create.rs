@@ -494,7 +494,7 @@ fn render(replay: &mut Replay, pon: u32) -> Vec<(Value, Vec<u8>)> {
         Vec::new(),
     );
     let result = answer.outcome.expect("render");
-    result["appearances"]
+    result["result"]["appearances"]
         .as_array()
         .expect("appearances")
         .iter()

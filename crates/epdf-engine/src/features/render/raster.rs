@@ -41,19 +41,23 @@ pub enum RenderUsage {
 /// [`check_render_usage`] reads, and a left-out layer option takes
 /// [`resolve_page_layers`]' default.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", default)]
+#[serde(rename_all = "camelCase", default, bound(deserialize = "R: Deserialize<'de>"))]
 pub struct RenderOptions<R = PdfRect> {
-    /// The whole page when absent.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// The whole page when absent. A `null` is read as given, and as the
+    /// whole page (`!target` in `resolveTarget`), so a print picture refuses
+    /// it as upstream's `!== undefined` does.
+    #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "null_target")]
     pub target: Option<RenderTarget<R>>,
     /// Scale 1 when absent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub viewport: Option<RenderViewport>,
-    /// Upright when absent.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Upright when absent, or `null` (`rotation ?? 0`), which counts as
+    /// given.
+    #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "null_rotation")]
     pub rotation: Option<PdfRotation>,
-    /// White when absent.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// White when absent, or `null` (anything but `'transparent'`), which
+    /// counts as given.
+    #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "null_background")]
     pub background: Option<RenderBackground>,
     /// Draw the page's annotations, from their appearances.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -64,7 +68,9 @@ pub struct RenderOptions<R = PdfRect> {
     pub include_form_fields: Option<bool>,
     /// The screen when absent. A print picture follows the print rules, and
     /// takes a `dpi` viewport and no `target`, `rotation` or `background`.
-    #[serde(skip_serializing_if = "Option::is_none")]
+    /// Anything but `"display"` or `"print"`, `null` and non-strings
+    /// included, is [`RenderUsage::Unknown`], refused naming the `usage`.
+    #[serde(skip_serializing_if = "Option::is_none", deserialize_with = "any_usage")]
     pub usage: Option<RenderUsage>,
     /// Output-pixel budget. The request is refused BEFORE anything is
     /// allocated when the computed size exceeds it.
@@ -79,6 +85,44 @@ pub struct RenderOptions<R = PdfRect> {
     /// policy.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_output_pixels: Option<u64>,
+}
+
+/// A given `target`, `null` as the whole page.
+fn null_target<'de, D, R>(deserializer: D) -> Result<Option<RenderTarget<R>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+    R: Deserialize<'de>,
+{
+    Ok(Some(Option::<RenderTarget<R>>::deserialize(deserializer)?.unwrap_or(RenderTarget::Page)))
+}
+
+/// A given `rotation`, `null` as upright.
+fn null_rotation<'de, D>(deserializer: D) -> Result<Option<PdfRotation>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Some(Option::<PdfRotation>::deserialize(deserializer)?.unwrap_or(PdfRotation::None)))
+}
+
+/// A given `background`, `null` as white.
+fn null_background<'de, D>(deserializer: D) -> Result<Option<RenderBackground>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Some(Option::<RenderBackground>::deserialize(deserializer)?.unwrap_or_default()))
+}
+
+/// A given `usage`, of any JSON type: what isn't `"display"` or `"print"`
+/// is [`RenderUsage::Unknown`].
+fn any_usage<'de, D>(deserializer: D) -> Result<Option<RenderUsage>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(Some(match serde_json::Value::deserialize(deserializer)? {
+        serde_json::Value::String(usage) if usage == "display" => RenderUsage::Display,
+        serde_json::Value::String(usage) if usage == "print" => RenderUsage::Print,
+        _ => RenderUsage::Unknown,
+    }))
 }
 
 impl<R> RenderOptions<R> {
@@ -383,6 +427,11 @@ pub fn render_page_area_in_slices(
         )
         .map_err(|e| match e {
             pdfium::SlicedRender::Stopped(e) => e,
+            // `FPDF_RENDER_FAILED`: no raster (`PageRenderReader.render`).
+            pdfium::SlicedRender::Pdfium(pdfium::PdfiumError::Render) => EngineError::with_message(
+                EngineErrorCode::RuntimeUnavailable,
+                format!("failed to render page object {}", view.object_number()),
+            ),
             pdfium::SlicedRender::Pdfium(e) => {
                 EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
             }

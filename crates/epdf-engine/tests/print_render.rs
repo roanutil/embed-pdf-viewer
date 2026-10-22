@@ -278,6 +278,17 @@ fn refused_options() -> Vec<(Value, &'static str)> {
         (with(print(150), json!({ "rotation": 90 })), "rotation"),
         (with(print(150), json!({ "background": "transparent" })), "background"),
         (json!({ "usage": "paper", "viewport": { "kind": "dpi", "dpi": 150 } }), "usage"),
+        // As `!== undefined` reads them: a `null` is given, a usage that
+        // isn't a string is not one of the two, and a dpi that is missing or
+        // not a number is neither 150 nor 300.
+        (with(print(150), json!({ "target": null })), "target"),
+        (with(print(150), json!({ "rotation": null })), "rotation"),
+        (with(print(150), json!({ "background": null })), "background"),
+        (json!({ "usage": null, "viewport": { "kind": "dpi", "dpi": 150 } }), "usage"),
+        (json!({ "usage": 1, "viewport": { "kind": "dpi", "dpi": 150 } }), "usage"),
+        (json!({ "usage": "print", "viewport": { "kind": "dpi" } }), "viewport"),
+        (json!({ "usage": "print", "viewport": { "kind": "dpi", "dpi": "150" } }), "viewport"),
+        (json!({ "viewport": { "kind": "dpi", "dpi": null } }), "viewport"),
     ]
 }
 
@@ -386,6 +397,7 @@ fn a_screen_picture_takes_any_option_and_no_dpi() {
         json!({}),
         json!({ "usage": "display", "rotation": 90, "background": "transparent",
             "target": { "kind": "page" }, "viewport": { "kind": "width", "width": 10 } }),
+        json!({ "target": null, "rotation": null, "background": null }),
     ] {
         let parsed: RenderOptions<epdf_engine::geom::PageRect> =
             serde_json::from_value(options.clone()).expect("the options parse");

@@ -396,8 +396,10 @@ pub fn result_in_page_space(
             convert_result(response, |mut answer: serde_json::Value| {
                 let page: PageRef = from_value(answer.get("page").cloned().unwrap_or_default())?;
                 let visible = box_of(page.object_number())?;
-                if let Some(appearances) =
-                    answer.get_mut("appearances").and_then(serde_json::Value::as_array_mut)
+                if let Some(appearances) = answer
+                    .get_mut("result")
+                    .and_then(|result| result.get_mut("appearances"))
+                    .and_then(serde_json::Value::as_array_mut)
                 {
                     page_appearances_of(appearances, visible).map_err(|e| {
                         unserializable(format!("an appearance's rect is not a rect: {e}"))

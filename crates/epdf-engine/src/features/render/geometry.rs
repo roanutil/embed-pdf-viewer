@@ -52,8 +52,25 @@ pub enum RenderViewport {
     /// of the paper the page prints on, A4 or Letter ([`print_scale`]). The
     /// wire's `PrintDpi` is 150 or 300; any other number is read, and
     /// refused by `check_render_usage` naming the `viewport`, as
-    /// `checkRenderUsage` refuses it.
-    Dpi { dpi: f64 },
+    /// `checkRenderUsage` refuses it; so is a `dpi` that is missing or not
+    /// a number, read as NaN.
+    Dpi {
+        #[serde(default = "no_dpi", deserialize_with = "dpi_or_nan")]
+        dpi: f64,
+    },
+}
+
+/// A `dpi` viewport's `dpi` when it names none: no DPI a print takes.
+fn no_dpi() -> f64 {
+    f64::NAN
+}
+
+/// A `dpi` of any JSON type: a number as itself, anything else NaN.
+fn dpi_or_nan<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Ok(serde_json::Value::deserialize(deserializer)?.as_f64().unwrap_or(f64::NAN))
 }
 
 /// The scale a `scale` viewport has when it names none.

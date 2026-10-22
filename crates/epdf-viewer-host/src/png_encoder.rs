@@ -3,7 +3,7 @@
 
 use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::features::render::raster::PageRaster;
-use epdf_engine::features::server::{EncodedImage, ImageEncoder, RenderEncode};
+use epdf_engine::features::server::{EncodedImage, ImageEncoder, RenderEncode, RenderEncodeFormat};
 
 pub struct PngEncoder;
 
@@ -13,7 +13,7 @@ impl ImageEncoder for PngEncoder {
         raster: &PageRaster,
         encode: &RenderEncode,
     ) -> Result<EncodedImage, EngineError> {
-        if !matches!(encode, RenderEncode::Png) {
+        if encode.format != RenderEncodeFormat::Png {
             return Err(EngineError::with_message(
                 EngineErrorCode::NotImplemented,
                 "the native asset engine encodes png only",
