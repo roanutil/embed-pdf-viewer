@@ -153,7 +153,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'control',
     rustStatus: 'routed',
-    note: 'Idempotent: rejects new work, invalidates handles, releases on the owner thread. Closing an engine closes its documents.',
+    note: "Idempotent: rejects new work, invalidates handles, releases on the owner thread. Closing an engine closes its documents. Answered with the tag alone ({ tag: 'close' }, WorkerHost.handleClose), which Rust spells as a null result, whether or not a session was there.",
   },
   {
     kind: 'layer.close',
@@ -162,6 +162,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'control',
     rustStatus: 'routed',
+    note: "Idempotent: the caller may be closing a layer this worker never held. Answered with the tag alone ({ tag: 'close' }, WorkerHost.handleLayerClose), which Rust spells as a null result.",
   },
   {
     kind: 'abort',
@@ -207,7 +208,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 1,
     cancellation: 'non-preemptible',
     rustStatus: 'routed',
-    note: 'Never answers and never queues: WorkerHost.receive takes it on arrival, even mid-render (WorkerHost.ts:418), and jobId only names the message. So it is not queued-only, since there is no queue to drop it from; an abort finds no job and the bookkeeping always completes, which is non-preemptible with no wait. Not one of the four control frames (worker-kinds.ts), so it cannot carry the control case. Rust records the sets on the page pool of an open session and answers null, since Host::call answers every call; input it cannot read is dropped and answered null too, as upstream drops it unanswered; the pool keeps no page past its last holder, as an upstream pool without a residency keeps none.',
+    note: 'Never answers and never queues: WorkerHost.receive takes it on arrival, even mid-render (WorkerHost.ts:418), and jobId only names the message. So it is not queued-only, since there is no queue to drop it from; an abort finds no job and the bookkeeping always completes, which is non-preemptible with no wait. Not one of the four control frames (worker-kinds.ts), so it cannot carry the control case. Rust records the sets on the page residency of the host, through the page pool of an open session, and answers null, since Host::call answers every call; input it cannot read is dropped and answered null too, as upstream drops it unanswered. The residency keeps parsed pages within a byte budget across every document on the host (PageResidency.ts, 384 MB by default), closing the pages no view shows first; the host asks its idle timer between calls rather than on a timer, and loads a page at once rather than in slices.',
   },
 
   // --- G4. Render and fonts. Fonts are engine-level and move as one unit,
