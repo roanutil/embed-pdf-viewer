@@ -1,0 +1,1747 @@
+{
+  "base": "d8034e3f6f5f4a99b1ae785146473f4de71fa262",
+  "original": 61,
+  "current": 64,
+  "renamed": 0,
+  "wholeCaseRetirements": 0,
+  "added": 3,
+  "task11InputDiff": 0,
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "reads-without-a-measure-service",
+        "inputSha256": "d35864d4e7063d6573ba66180732f79cbb28d1c8c3218c65debf8f963d966191",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "reads-without-a-measure-service",
+        "inputSha256": "493a871089c446acefc3874a4e8e7cb631ff3cbc6007472bc48956fbe1d4b8eb",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "0427e3dc9 makes PageHandle.measure mandatory. Root-approved replacement keeps name/archive and exercises empty required service/default scale with persistent:true; no active malformed absent-service fallback vector. Old missing-page read throws become current unavailable readouts, while ensureLoaded still rejects not-found. Local fallback source remains and its transition/projection is pure-tested.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/sync/viewports.ts:35-149",
+        "packages/plugin/measurement/src/model.ts:126-147",
+        "packages/plugin/measurement/src/read/scale.ts:45-99"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "imperial-default-and-custom-presets",
+        "inputSha256": "9a7bc783d89c23f3478ec33748f4a0a7d8877e47dee96d88ff0397f551ddc33b",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "imperial-default-and-custom-presets",
+        "inputSha256": "e3d901c84ae1ad9a1c61b4d4f7731c515a5ea7488cf79ec19ce53ba5e0bfb3b3",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/read/scale.ts:45-99",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "custom-default-measure",
+        "inputSha256": "277f4b1e7d2acaa18975058653f50e250c203e56aa78d7ee6690846d232b6bd7",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "custom-default-measure",
+        "inputSha256": "dff4beb4612b2c71864b260daffa77c9dd1c4e8e7ce66b090c33d82e7a850afc",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/read/scale.ts:45-99"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "measure-service-viewports",
+        "inputSha256": "99be30cf58c156a753007fa6c42fb32d4f458ad0a35f4ac90c14ba39f99000a6",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "measure-service-viewports",
+        "inputSha256": "9537815119f29cc2992ec7e89b867feaafdf93003656d222bd17009a0eb606fa",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/sync/viewports.ts:35-149",
+        "packages/plugin/measurement/src/model.ts:126-147",
+        "packages/plugin/measurement/src/read/scale.ts:45-99"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "viewport-reads-fail-refresh-and-rehydrate",
+        "inputSha256": "d57d8d91b9f213f1987257501b9751788897c3592109aca3332f673afb90e48b",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "viewport-reads-fail-refresh-and-rehydrate",
+        "inputSha256": "2abe3769b1c535f4d5e4b917567dd835e003e17251d0007d2c2bcf0ad3f426f1",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/sync/viewports.ts:35-149",
+        "packages/plugin/measurement/src/model.ts:126-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "refresh-epochs",
+        "inputSha256": "b9400a62d01d89cbd5baf61c8a0768ca564a7d1aa0669885567b28e4c0d046e3",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "refresh-epochs",
+        "inputSha256": "39177e51ce088ce58ced585bb41010aa8550e7bb0419fbf915d92e4622ca503b",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/sync/viewports.ts:35-149",
+        "packages/plugin/measurement/src/model.ts:126-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-one-page",
+        "inputSha256": "35f5eb332ccb0edb5f75819ba07ca6493206a0cdc82bd2799c4695679f56d513",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-one-page",
+        "inputSha256": "f1d0a183b1d5dfff9a14fad46cd936c11c0592ac9e05e606641b0e0c7180b17f",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-several-pages",
+        "inputSha256": "23f5ee89f20bab4cd6f0b4ab078c72a98a50953772c14ce71a44894fe1811499",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-on-several-pages",
+        "inputSha256": "9637fa9bb16226e3c453ed16cdeed8b6bf8cc775ebdbb5e4a69a79ec30c948cc",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-preflight",
+        "inputSha256": "9eca2685fc46457b08240dbd61eb0c83b8108f67dfaf032421f2b73a5d5ee4c7",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "set-scale-preflight",
+        "inputSha256": "ebe4c52f5efc5e09289279857da05a86c6216f5989a130cdcaec0fe5e7a699b5",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "units-precision-and-presets",
+        "inputSha256": "42722c60f62cee4ca7812e5946d641d050ba7ec3f2dffd8eef85aaf5ee93bafc",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "units-precision-and-presets",
+        "inputSha256": "2b0c7c75c007bd7ad0634e38d76853cdba403ca7b7d8f974c70e4d8f21f798cc",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "service-writes-and-foreign-scales",
+        "inputSha256": "397ee19acd97b3f9176f227f736fc392fbf31fe7a81b5015820279db8372754e",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "service-writes-and-foreign-scales",
+        "inputSha256": "b2bc49596842b40ccbb9090050f55d619b0caa28ea2f4a1009f81881c2b318c3",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "calibration-flow",
+        "inputSha256": "bd3920c53b94b16f43d003652ea4bc8f7596058c6346e5c0ea4c5792a9bd7b3b",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "calibration-flow",
+        "inputSha256": "f27c08a03ecc2dcb4b1516f8c27ae394b57e9d1d14d2536b744fc1af82065fc7",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Use inherited current capture tool (ruler extends calibrate) instead of removed meta.capture. Record final end-point move before up so capture is144 rather than stale midpoint72; actual current scale result, remeasure ChangeOps/events and cross-page request/dismissal survive. Both original and corrected complete inputs are preserved.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/calibration.ts:24-59",
+        "packages/plugin/measurement/src/write/scale.ts:210-237",
+        "packages/plugin/annotation/src/tools/definitions.ts:398-402,768",
+        "packages/core/annotation/src/update/draw.ts:231-234"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "zero-length-capture",
+        "inputSha256": "5f280c954a8bd166d8e115c9295949eeb19d9edcb9b046e810152266d53d8746",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "zero-length-capture",
+        "inputSha256": "2210b9b873a674c4102ac00c60d18d4c0a32384c407a598567030756f228b0e8",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/calibration.ts:24-59",
+        "packages/plugin/measurement/src/write/scale.ts:210-237",
+        "packages/plugin/annotation/src/tools/definitions.ts:398-402,768",
+        "packages/core/annotation/src/update/draw.ts:231-234"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "without-authority",
+        "inputSha256": "df873d41ee18d7bdb493e56aa0b8d9220e2df856fd7c8efe7c6a27a6d7983b3c",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "without-authority",
+        "inputSha256": "15107bbb19663a38dcde53343681132d9e7b74bdaf5c519ce559bd88ebbb3de0",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/services/store.ts:12-18",
+        "packages/plugin/measurement/src/write/create.ts:108-117",
+        "packages/plugin/measurement/src/write/calibration.ts:28-33"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "create-measurement",
+        "inputSha256": "1ad354c7289d79a5bad04f734aa96e94f511ad9e7591e0fd6362f84cdd3af0da",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "create-measurement",
+        "inputSha256": "33e33f07f887c040656445cfa4535cb4475f10c400654fead0dbccbcda8be8c3",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current typed draft/create/apply/confirmed Annotation with drawn/caption bounds and reserved10001..10003 refs replaces obsolete per-page create DTO. Original invalid geometry/not-found survives; explicit engine-refusal/rollback and not-ready/loading recovery extend successful/refused ownership evidence inside the same named case.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/create.ts:24-119",
+        "packages/plugin/annotation/src/write/crud.ts:32-116",
+        "packages/core/annotation/src/record/written.ts:79-87"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "listener-throws",
+        "inputSha256": "dc16ddb8e9766c028fd556a499421cba872bce13101deb1f5497bfc8d46ec6cc",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "listener-throws",
+        "inputSha256": "5da2e566c42ef02d9027adc95cd44be01354777124c25f28bc987ee25edbb6c5",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current ctx.events routes the exact listener Error through kernel.report rather than removed console.error wrapper. Successful changes/unsubscribe survive, with one exact named report and no console diagnostics.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101",
+        "packages/plugin/measurement/src/services/events.ts:12-19"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "pages-inserted-and-removed",
+        "inputSha256": "bc234081909f2dfcc2241f80bb99b297a17957bdeab5a6d7b5ba8a7685bdef82",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "pages-inserted-and-removed",
+        "inputSha256": "977bb49f679a7cc76a9c6cbc9499d8c6077f79376f66b9c8cfd5970c953c195a",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/sync/viewports.ts:35-149",
+        "packages/plugin/measurement/src/model.ts:126-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "page-removed-while-a-change-waits",
+        "inputSha256": "bfc70ca4a1c75813f8177ceed95c82a66ccaded9923f5ebc3eba23ee484de54d",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "page-removed-while-a-change-waits",
+        "inputSha256": "f442b301f80714f911443f244c99c6a3adc0fa52946bdc5c4f7ac7dd68964dc8",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Surviving intent uses direct complete current PageRef/Annotation/PdfMeasure inputs, the required measure service, typed static results and matching confirmed facts. Original definition preserves removed optional-service/cached geometry/alias details.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement.json",
+        "name": "close-mid-flight",
+        "inputSha256": "dda07130288f43844c7fe165a041cfb762ade5b21539ced0c13b91f46bf0a9b0",
+        "fn": null
+      },
+      "after": {
+        "file": "plugins/measurement.json",
+        "name": "close-mid-flight",
+        "inputSha256": "a6766054d2f6e1df0526903f38b6a22a95d6c0c52d618575470780375447c3fc",
+        "fn": null
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Current all-page call resolves two exact scaleError rows, queued single-page call rejects instance-closed, and kernel reports one dropped closed-state update from setReports/finally. Replace stale no-update/not-ready prose with explicit source-owned channels; fresh document recovery is checked. No production fix or generic report allowance.",
+      "evidence": [
+        "packages/plugin/measurement/src/contract.ts",
+        "packages/plugin/measurement/src/sync/viewports.ts",
+        "packages/engine/core/src/engine/PageHandle.ts:19 (0427e3dc9)",
+        "packages/engine/core/src/dto/Measure.ts",
+        "cdf4586c7",
+        "packages/plugin/measurement/src/write/scale.ts:64-194",
+        "packages/plugin/annotation/src/write/measurement.ts:49-101"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "initial-state",
+        "inputSha256": "922ff7523e06a147eb16d9fd37a92bbe6b07b53c2cbd47be9bc9610d0aa7e0fe",
+        "fn": "initialMeasurementState"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "initial-state",
+        "inputSha256": "922ff7523e06a147eb16d9fd37a92bbe6b07b53c2cbd47be9bc9610d0aa7e0fe",
+        "fn": "initialMeasurementState"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-page-scale",
+        "inputSha256": "d6a3f19d85932de76f4cfc20168180b54329221dc5b6bec648716b25928cfda7",
+        "fn": "measurementReducer"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-page-scale",
+        "inputSha256": "07c9a73ffb9d6b49b611adab6b1e53a81cf6116e4180f7244a948795074a55e8",
+        "fn": "setLocalViewports"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Retire the old action's independently cached public scale/page state (removed by4fc1a32af). Replace only its surviving session-only viewport storage intent with actual setLocalViewports(state,2,viewports); current mirror-backed public projection is covered by all19 live cases and three added pageScaleOf cases. This is not whole-operation equivalence.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-up",
+        "inputSha256": "988e4e694b2ebc3d55a85f9bd8d4153a3b36188b4cd41c050a24e52d89eeec7a",
+        "fn": "measurementReducer"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-up",
+        "inputSha256": "773d656516359bda782b8729196825c6c074b2e913d95e8228d77dd74f40a73d",
+        "fn": "beginScaleChange"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Named model transition replaces removed action-dispatch wrapper. Record actual state and actual transition argument, with no old action translation at invocation.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-floors-at-zero",
+        "inputSha256": "6fd5ea7021c35c4fdfcb5262750062eb84d9b7708ed87603dc682e8aa5045127",
+        "fn": "measurementReducer"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-pending-floors-at-zero",
+        "inputSha256": "55bd7b203f6ed2d765c72edc5e3f56d35fc9cf661b2e3c25a305714dc70222a4",
+        "fn": "endScaleChange"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Retire removed multi-delta reducer dispatch; directly exercise shipping endScaleChange on pending0 to preserve the floor/identity invariant. beginScaleChange is covered separately, with real multi-request busy behavior in live cases.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-calibration",
+        "inputSha256": "d2ecd8af8e217b15fb08ffd30eb3a9055535d8e5618ebc57a16233469c8390af",
+        "fn": "measurementReducer"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-calibration",
+        "inputSha256": "fa336fd29f09f4acfe5740fda1e1172d85721e6379f53e93891f96c7727a6d57",
+        "fn": "setCalibration"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Named model transition replaces removed action-dispatch wrapper. Record actual state and actual transition argument, with no old action translation at invocation.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-reports",
+        "inputSha256": "8901193466719eac7e29daff5dccef0cb8e2fa4889d95edff1d3ce76109e7ed3",
+        "fn": "measurementReducer"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-reports",
+        "inputSha256": "4e353f15bdc18850664f6179e3e1be566ff8bf9702e539db9d0da0ef7845c98e",
+        "fn": "setReports"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Named model transition replaces removed action-dispatch wrapper. Record actual state and actual transition argument, with no old action translation at invocation.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-unknown",
+        "inputSha256": "0beb36bb60fbe5fa38ee64dd00529e7016b5f31ae7936ae3b6629f3983bd49af",
+        "fn": "measurementReducer"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "reduce-unknown",
+        "inputSha256": "3fc1ccb4ec313eb1af27c16a3c8579ea2b5bda211cb6745b3aa8fc8275e23aa7",
+        "fn": "clearLoadError"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Retire removed reducer dispatch/unknown-message branch; replace its surviving unchanged-state intent with shipping clearLoadError(state,99) on an absent page entry. No local unknown-action implementation remains.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-presets",
+        "inputSha256": "24fe9986245445a806a5047df082ae82ae7e5cf446c3d89a4d37d896aa83afa9",
+        "fn": "defaultPresets"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-presets",
+        "inputSha256": "68aa622c1a796c1b1b805f57af9bb1829f233641b36acda8cf4bee2e34a0f6b1",
+        "fn": "DEFAULT_PRESETS"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-metric",
+        "inputSha256": "507e1897303de645b64b4bef536aca7d69f47db4492dc08149f9c86ed5066e89",
+        "fn": "defaultMeasure"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-metric",
+        "inputSha256": "af0c0f0e0e73167c1dad632a178c5866c4cf339ced2a51e96bbcc8eec41f7dbd",
+        "fn": "defaultMeasure"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-imperial-user-unit",
+        "inputSha256": "0ff0311b27e6c8fbd13e72e51262f0836007d2185df0aee8d9b73c6e85d00af4",
+        "fn": "defaultMeasure"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-imperial-user-unit",
+        "inputSha256": "c53697dab80ad2872e5dfeda8215a66551e1948edfdfce00ad9a725784301134",
+        "fn": "defaultMeasure"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-explicit-metric",
+        "inputSha256": "271d215de72339f53933f90c00331e95a837ad8b32798e56c162942e1c664776",
+        "fn": "defaultMeasure"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-explicit-metric",
+        "inputSha256": "3e1124dcc7d92766ec8161f3840590581b8a57fee7dc049417c9c6b951397a7d",
+        "fn": "defaultMeasure"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-object",
+        "inputSha256": "e9509957d47c76d0ccb1a8ce39798e694cf39b90216871c6a9ebe64e989e21d3",
+        "fn": "defaultMeasure"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-object",
+        "inputSha256": "fb0e87da925ae7df3ca0033519755071583779f82c86058cb59db7253e700df1",
+        "fn": "defaultMeasure"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-bad-user-unit",
+        "inputSha256": "4032eedd5e3d8e39606f0c50b4d46ca4910158ee1d7736260949bb826cede055",
+        "fn": "defaultMeasure"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "default-measure-bad-user-unit",
+        "inputSha256": "dca23cb63d9ebfeb7949e09beecd2d39255d4ba2faaf76de365132f5de6977ce",
+        "fn": "defaultMeasure"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual defaultMeasure(\"metric\",0) now reaches the shipping InvalidArg EngineError; old config-object argument silently bypassed userUnit validation. Exact negative plus valid userUnit recovery is independently asserted.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-owned",
+        "inputSha256": "661f1d1e62e668b3c9d5a327fe9c9fccebc6e5916b4f97438a82005bd3fa78ba",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-owned",
+        "inputSha256": "cada50fa495cd18c324bb67bdd3d750991285fabc7e06ce35ea077e361836c12",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-last-containing",
+        "inputSha256": "d592f575febe52ac6baa7326cf8545efd370db2ee74dfbf3d28830b4b6e43cce",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-last-containing",
+        "inputSha256": "4d79010e0e1bc69ea80a7eb1f78ed11d68084975cef6a1b0fe35e84884cb9f62",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-foreign-without-measure",
+        "inputSha256": "390b0eca8b213a9094d9c241e4b6e7f329643e363060d426138f695c76710660",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-foreign-without-measure",
+        "inputSha256": "cef8c00ea0c2424508bc663f9ed4601feefa01de588a16b61b72253cb7029c72",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-default",
+        "inputSha256": "a725005b504f030d6173f5036ef12e7cd6e48e18fe8333d27f465e1473efd866",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-default",
+        "inputSha256": "e9424c3c0735e7c3d99476c3dd8d32704d1ebc51c54d583c63fab7a99f0806a2",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-none",
+        "inputSha256": "28acd3e611b2d36fcfd4f55db7109b7bbf93477605810b24403a1759c988c2c9",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-none",
+        "inputSha256": "44ae3c78ef8d06aba47510a3b8a8474c2cc7f04d09484d89ef2a0c4093b97884",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-beside-the-centre",
+        "inputSha256": "76a23ca9074e788366da6d6dfb111e124a9fe7c08b29e052c9ecb1fa710f9516",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-beside-the-centre",
+        "inputSha256": "bb429f0336520b4bce2a7ec161a7d8cf1d3721fc51ab43590a49b128d528dbb4",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-on-a-raised-crop",
+        "inputSha256": "a260aa2fe9c649c65c64ac602915286fe198161adb2551e1d5afea07d14a318a",
+        "fn": "selectPageScale"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "select-on-a-raised-crop",
+        "inputSha256": "4cc0103c590ffe59dbef13c4482ca756db31e07bd8842c8aa261e86ea3dd0195",
+        "fn": "selectPageScale"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/model.ts:35-147"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit",
+        "inputSha256": "c8452a281c33dae3a6461c8f290bba56fb696f6b45466d96cf25cb7bb1249ace",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit",
+        "inputSha256": "d667a77e9fba6fe2a8947ae1cbcce9dd6efc17cda34920e83ea9de1156d37fa7",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-and-area",
+        "inputSha256": "9f458683b7cc080c3d445669cc78cbbbe01e231fbd41b9966efb170ec6d801cc",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-and-area",
+        "inputSha256": "afa953a2146b551177e699081000e0337ca8d853f96783e07ae490086145e342",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-from-fraction",
+        "inputSha256": "f9de497dec0d130b503236601f0a310c966aa7fc0b39204db3890f05ef944396",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-from-fraction",
+        "inputSha256": "a79d20f5e4e86389fda30ae510c950fde8e3d868a8f67cb10e60fcd650ae1bbd",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-keeps-precision",
+        "inputSha256": "569141291844feddbeaff78093e8e4fabb2aba06cd8f5eb6ff3d46857ed48cfa",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-keeps-precision",
+        "inputSha256": "83609ce8af0e66b164d2248144e09ca51437c372f2c165d83ee73c630be23580",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-precision",
+        "inputSha256": "dc52835c9560db1e538c9d42fd77968970e7861fbb5906a016daec4d187d5c42",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-precision",
+        "inputSha256": "d54fbb13629de1c13419905a8a5f69013b6f1e37afd197e54459256b0e9ecd4a",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-distance",
+        "inputSha256": "cde6b377733486dea99100aac4e89ba08f9d87b389f6e8d2f20159604dbb374f",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-distance",
+        "inputSha256": "5723ec8973fe95cb22af4b28f7c73333b419f12c945411011670fa0ea5761c59",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-unknown-base",
+        "inputSha256": "d2c57f6a1d89b0d844c1426f8239ee314b260f36102bb71fb8625f769da069b8",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-unknown-base",
+        "inputSha256": "63e276c8e4d0e7345515d9c55fbaf7e3da40b821b013e0abe34a6a6bc16cd013",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-x",
+        "inputSha256": "94b49a5f1b0f7d13c858c91d66c04c08d65f907ae7478445b4edd62d3289d4e5",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-no-x",
+        "inputSha256": "a3c61a2f6bd9d16b197819b8699304c723bdf3411b81ea049e22b278abe6a49a",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-padded-base",
+        "inputSha256": "fe50c0604c0ef7e5bd4202206418bda208f1f148c8ca99e8d83fd25e1c00b04f",
+        "fn": "withUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-unit-padded-base",
+        "inputSha256": "85b6f3e49ef829e4ee74478f2fbb89d843799e40b2e40677baad9ecc998c9453",
+        "fn": "withUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit",
+        "inputSha256": "4c1ff745d4eeaef1b5a40a634bf86ca92762b95999feda7b1307687ed45df719",
+        "fn": "withAreaUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit",
+        "inputSha256": "b3e34e4847e71112cf59c7a16fa22dc8b7731bb510671dc97de9e1816715b46b",
+        "fn": "withAreaUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-from-fraction",
+        "inputSha256": "a81a883682457a56b9448795bfc12042990efa9a2da298a4d6a11c35e43521dd",
+        "fn": "withAreaUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-from-fraction",
+        "inputSha256": "80e8d5d110fd4821f31b873c313d4b5d8d9bc62195bd01dce70920486de9dec8",
+        "fn": "withAreaUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-precision",
+        "inputSha256": "223ee0887c312e06a91e53f1d9af203f239cd560dbadac67be1914279aba7c7c",
+        "fn": "withAreaUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-precision",
+        "inputSha256": "15d43eb5d61e02a1a400eca623b32b6aaf18ac0ecf909914afbc7fc54e0943f5",
+        "fn": "withAreaUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-area",
+        "inputSha256": "02a664e0938cce6f36165ea6e23fb63be548590a352844caf08c65a89a9c5841",
+        "fn": "withAreaUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-area",
+        "inputSha256": "48fcd992447e718356beb758ee9426da033465b8f5fd08071b5bd63f156635a8",
+        "fn": "withAreaUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-unknown-base",
+        "inputSha256": "811aa64a206e98ab4f5510f05a0a3bff9c0bf39118977c6b79fdb5bbbbc8fc3f",
+        "fn": "withAreaUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-unknown-base",
+        "inputSha256": "95ce9643f6cca582ac692e2125f315f19b2612028df57a83bb4bdfe2b0d98c78",
+        "fn": "withAreaUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-x",
+        "inputSha256": "1d20528890f355b905b41ea0d91ed4691d03e95b433d30e6aabad92f2d0c00b4",
+        "fn": "withAreaUnit"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-area-unit-no-x",
+        "inputSha256": "7f4f64b6d00ddcb56b5113c42239d0e3fc387c88b6b6151a285715e382aec63e",
+        "fn": "withAreaUnit"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision",
+        "inputSha256": "6ee0b94bb502985ce9823e6ef17e50005acd48c763a8fa86a29fcbc7aefd67ae",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision",
+        "inputSha256": "a0a2cc186738580530537cec26738156be9fee22d0e37c17f7832bf0220ef9e9",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-one",
+        "inputSha256": "d61c4d6de6d568113eb7c79f000580d2706b94827834bf890b0229c94b32ad99",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-one",
+        "inputSha256": "a7735325771e806da73e589d1ef8f0641414a3a4c6e335adcbcbd13bd34cd536",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-max",
+        "inputSha256": "cec172c0a419298060de9cb4bed6de1fbfdd1773f7dfa3f88194959ce91901a2",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-max",
+        "inputSha256": "d0ffc4d562abd2180bdbea95fd3cffa16fc6a78c2b05914cb78881a249379756",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-too-big",
+        "inputSha256": "2f1cdd3e574acb4bc7760eadfd3db0084f416f80d423f6e277589d2bbf2cc104",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-too-big",
+        "inputSha256": "e6c37987f7e5b4cdcdfd404436dcf3c27f9ddd821bbd629c66f4a06ed83bdb89",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-not-power",
+        "inputSha256": "100cec85dfb7add8544880804d11f174e809b1cc71ee3c4bbacf46202eb932e0",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-not-power",
+        "inputSha256": "937c410e490da9cdb7893a66c5638f1d25bcc39518097c0ceb48ea34a13a2494",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-fraction",
+        "inputSha256": "2c7f85b09b53ecd2cbaf361163e82cf3fa2b98de8b640bc0a39d0b59b8b86070",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-fraction",
+        "inputSha256": "e5e21ad3d76ecff5ebf1c55724197eb90d18ee077c386096b6bab1da047969e0",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    },
+    {
+      "before": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-empty-lists",
+        "inputSha256": "802e67ce1e4843dca15f4fc73266ad4866787c698d64e1de3b64ebaf623b2384",
+        "fn": "withPrecision"
+      },
+      "after": {
+        "file": "plugins/measurement-functions.json",
+        "name": "with-precision-empty-lists",
+        "inputSha256": "d2f821ac634fbfe362c8cb8a12f5406903f7f2b9f512ea116a8ebd2def40b8f3",
+        "fn": "withPrecision"
+      },
+      "disposition": "mapped",
+      "task11InputDrift": false,
+      "reason": "Actual current shipping function receives its complete recorded argument tuple directly. Current rectilinear measures and page-space boxes/sizes replace legacy RL/crop/config-bag inputs. Named invalid inputs remain explicit and source-checked.",
+      "evidence": [
+        "packages/plugin/measurement/src/model.ts",
+        "packages/plugin/measurement/src/scale.ts",
+        "packages/engine/core/src/measure/calibrate.ts",
+        "c053c3d33",
+        "4fc1a32af",
+        "packages/plugin/measurement/src/scale.ts:14-105"
+      ]
+    }
+  ],
+  "additions": [
+    {
+      "file": "plugins/measurement-functions.json",
+      "name": "page-scale-loading",
+      "input": {
+        "name": "page-scale-loading",
+        "fn": "pageScaleOf",
+        "args": [
+          {
+            "status": "loading",
+            "size": {
+              "width": 600,
+              "height": 800
+            },
+            "fallback": {
+              "subtype": "rectilinear",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m\u00b2",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "persistent": true
+          }
+        ]
+      },
+      "inputSha256": "fa9b6f059968f7db59e8a1803e9aa78dcdbb73e9d6c2b82a98cdc55e2369bfb9",
+      "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
+      "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
+    },
+    {
+      "file": "plugins/measurement-functions.json",
+      "name": "page-scale-failed-known",
+      "input": {
+        "name": "page-scale-failed-known",
+        "fn": "pageScaleOf",
+        "args": [
+          {
+            "viewports": [
+              {
+                "bbox": {
+                  "x": 0,
+                  "y": 0,
+                  "width": 600,
+                  "height": 800
+                },
+                "measure": {
+                  "subtype": "rectilinear",
+                  "ratio": "1 in = 1 ft",
+                  "x": [
+                    {
+                      "unit": "ft",
+                      "conversion": 0.013888888888888888,
+                      "precision": 100
+                    }
+                  ],
+                  "distance": [
+                    {
+                      "unit": "ft",
+                      "conversion": 1,
+                      "precision": 100
+                    }
+                  ],
+                  "area": [
+                    {
+                      "unit": "ft\u00b2",
+                      "conversion": 1,
+                      "precision": 100
+                    }
+                  ]
+                },
+                "owned": true,
+                "name": null
+              }
+            ],
+            "status": "error",
+            "error": {
+              "name": "EngineError",
+              "code": "RuntimeUnavailable",
+              "message": "offline"
+            },
+            "size": {
+              "width": 600,
+              "height": 800
+            },
+            "fallback": {
+              "subtype": "rectilinear",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m\u00b2",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "persistent": true
+          }
+        ]
+      },
+      "inputSha256": "8010b2c3dca90d4a51566163a56bb3156037f97ac0bbdd7f6b15bd0e3f55fd66",
+      "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
+      "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
+    },
+    {
+      "file": "plugins/measurement-functions.json",
+      "name": "page-scale-failed-empty",
+      "input": {
+        "name": "page-scale-failed-empty",
+        "fn": "pageScaleOf",
+        "args": [
+          {
+            "status": "error",
+            "error": {
+              "name": "EngineError",
+              "code": "RuntimeUnavailable",
+              "message": "offline"
+            },
+            "fallback": {
+              "subtype": "rectilinear",
+              "ratio": "1 in = 1 m",
+              "x": [
+                {
+                  "unit": "m",
+                  "conversion": 0.013888888888888888,
+                  "precision": 100
+                }
+              ],
+              "distance": [
+                {
+                  "unit": "m",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ],
+              "area": [
+                {
+                  "unit": "m\u00b2",
+                  "conversion": 1,
+                  "precision": 100
+                }
+              ]
+            },
+            "persistent": false
+          }
+        ]
+      },
+      "inputSha256": "9e1635f284275703cd2f853e8ef58e045236a517b476acef90b9ee0e54c356ec",
+      "reason": "Additional independent current pageScaleOf projection: complete readiness/persistence/source/error/known-data fields.",
+      "evidence": ["packages/plugin/measurement/src/model.ts:126-147"]
+    }
+  ]
+}

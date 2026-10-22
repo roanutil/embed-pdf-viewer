@@ -544,3 +544,28 @@ values are checked with empty diagnostics. Default VM execution is a separate
 D/12c/13 coverage gap: the current tsx loader injects `__name` into the prelude
 and the real default VM rejects it. No factory/prelude substitution is hidden
 in the fixture; the original no-realm assumption remains archived.
+
+### Current measurement oracle
+
+`measurement-current` registers the shipping measurement plugin with its real
+settings/create/state/connect and reuses `annotation-live`, interaction and the
+reviewed shared case entropy. `measurement-fixtures.ts` authors complete current
+page-space viewports, scale results/facts and static annotation confirmations
+before execution; it never translates an obsolete runtime request.
+
+The measurement suite retains61 original names and adds3 explicit `pageScaleOf`
+projections. Pure cases call actual named model/scale functions with recorded
+current argument tuples, including direct page size. Current engines require
+`page.measure`; former optional-service inputs are archived and their live
+replacements use the required service with persistent scales. The retained
+shipping missing-service defensive branch has no active live malformed-engine
+vector in this slice. The local fallback transition is covered directly.
+
+Run `node --import=tsx --conditions=development --test test/measurement.test.ts`.
+Exact original family inputs/source/channel history is under
+`historical/task-12b2b3/`; current measurement mappings, partial-behavior
+retirements, source evidence and Task13 replay contracts are under
+`historical/task-12b2b3-i/`. Keep schema2 and exact named thrown/rejected/returned/
+callback/report outcomes, stable-born refs, mutation metadata and current
+float-derived labels. Legacy annotation/form/stamp fixtures remain for deferred
+consumers until their owners migrate them.
