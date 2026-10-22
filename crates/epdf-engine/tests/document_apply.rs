@@ -350,10 +350,10 @@ fn an_op_another_task_ports_refuses_the_change_before_anything_runs() {
     let refused = apply(
         &mut host,
         json!({ "ops": [update(json!({ "title": "Changed" })),
-            { "type": "outline.delete", "ref": { "kind": "objectNumber", "objectNumber": 1 } }] }),
+            { "type": "forms.setSignatureAppearance" }] }),
         None,
     )
-    .expect_err("outline.delete is 8.24's");
+    .expect_err("forms.setSignatureAppearance is 8.26's");
     assert_eq!(refused["code"], "NotImplemented", "{refused}");
     assert_eq!(facts(&mut host), before);
 }

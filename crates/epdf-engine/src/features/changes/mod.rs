@@ -20,11 +20,11 @@
 //!
 //! The op table ([`op`]) runs the metadata, attachment, annotation, page
 //! and form value ops ([`forms`]), the form's design: its fields, their
-//! widgets and the calculation order ([`fields`]), and the imports of
-//! annotation and form bundles, which only their own verbs and a server's
-//! change run (`document.apply` refuses them); every other op type answers
-//! `NotImplemented` naming the sub-task that registers it
-//! ([`op::OP_OWNERS`]).
+//! widgets and the calculation order ([`fields`]), the outline
+//! ([`outline`]), and the imports of annotation and form bundles, which
+//! only their own verbs and a server's change run (`document.apply`
+//! refuses them); every other op type answers `NotImplemented` naming the
+//! sub-task that registers it ([`op::OP_OWNERS`]).
 //!
 //! # Events
 //!
@@ -62,6 +62,7 @@ pub mod ledger;
 pub mod metadata;
 pub mod objects;
 pub mod op;
+pub mod outline;
 pub mod pages;
 pub mod record;
 pub mod transaction;

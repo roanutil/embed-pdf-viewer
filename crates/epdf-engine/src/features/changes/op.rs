@@ -16,7 +16,8 @@ use crate::error::{EngineError, EngineErrorCode};
 use crate::features::files::attachments::{AttachmentFileBase, AttachmentRef};
 use crate::features::forms::snapshot::FormFieldRef;
 use crate::features::forms::value::FormFieldValue;
-use crate::identity::PageRef;
+use crate::features::outline::OutlinePosition;
+use crate::identity::{OutlineItemRef, PageRef};
 
 /// One change (`Change`): its ops in order, all of them or none; or the
 /// reverse of an earlier change, named by its `opId`.
@@ -295,6 +296,45 @@ pub enum ChangeOp {
         #[serde(default, skip_serializing_if = "Option::is_none")]
         expect: Option<serde_json::Map<String, serde_json::Value>>,
     },
+    /// A new outline item under `parent` (`None`: the top level), at
+    /// `position` among its children (the end when left out), at
+    /// `objectNumber` when given. The draft (`OutlineItemDraft`) stays the
+    /// object sent: the create checks it as it runs.
+    #[serde(rename = "outline.create", rename_all = "camelCase")]
+    OutlineCreate {
+        parent: Option<OutlineItemRef>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        position: Option<OutlinePosition>,
+        data: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        object_number: Option<serde_json::Number>,
+    },
+    /// The fields `patch` names (`OutlineItemPatch`). `expect` is the
+    /// values it assumes the item reads now.
+    #[serde(rename = "outline.update")]
+    OutlineUpdate {
+        #[serde(rename = "ref")]
+        reference: OutlineItemRef,
+        patch: serde_json::Map<String, serde_json::Value>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
+    /// The items go together, with the items under them, under `parent` at
+    /// `position` among its children.
+    #[serde(rename = "outline.move")]
+    OutlineMove {
+        refs: Vec<OutlineItemRef>,
+        parent: Option<OutlineItemRef>,
+        position: OutlinePosition,
+    },
+    /// The item and the items under it.
+    #[serde(rename = "outline.delete")]
+    OutlineDelete {
+        #[serde(rename = "ref")]
+        reference: OutlineItemRef,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        expect: Option<serde_json::Map<String, serde_json::Value>>,
+    },
 }
 
 /// Whose an import's rows are (`attribution`): `restore` writes the
@@ -535,7 +575,11 @@ pub fn resolve_payloads(change: &mut Change, payloads: &[Vec<u8>]) -> Result<(),
             | ChangeOp::FormsDeleteWidget { .. }
             | ChangeOp::FormsReorderCalculations { .. }
             | ChangeOp::FormsReorderWidgets { .. }
-            | ChangeOp::FormsUpdateWidget { .. } => {}
+            | ChangeOp::FormsUpdateWidget { .. }
+            | ChangeOp::OutlineCreate { .. }
+            | ChangeOp::OutlineUpdate { .. }
+            | ChangeOp::OutlineMove { .. }
+            | ChangeOp::OutlineDelete { .. } => {}
         }
     }
     Ok(())
@@ -597,6 +641,10 @@ impl ChangeOp {
             Self::FormsReorderCalculations { .. } => "forms.reorderCalculations",
             Self::FormsReorderWidgets { .. } => "forms.reorderWidgets",
             Self::FormsUpdateWidget { .. } => "forms.updateWidget",
+            Self::OutlineCreate { .. } => "outline.create",
+            Self::OutlineUpdate { .. } => "outline.update",
+            Self::OutlineMove { .. } => "outline.move",
+            Self::OutlineDelete { .. } => "outline.delete",
         }
     }
 }
@@ -617,11 +665,6 @@ pub fn change_value(change: &Change) -> Result<serde_json::Value, EngineError> {
 /// each with the sub-task that registers it. The one list the owners look
 /// in: each removes its rows when it adds its variant to [`ChangeOp`].
 pub const OP_OWNERS: &[(&str, &str)] = &[
-    // 8.24: the outline.
-    ("outline.create", "8.24"),
-    ("outline.update", "8.24"),
-    ("outline.move", "8.24"),
-    ("outline.delete", "8.24"),
     // 8.26: a signature field's appearance.
     ("forms.setSignatureAppearance", "8.26"),
 ];
@@ -718,7 +761,11 @@ pub fn parse_op(at: usize, op: &serde_json::Value) -> Result<ChangeOp, EngineErr
         | ChangeOp::FormsDeleteWidget { .. }
         | ChangeOp::FormsReorderCalculations { .. }
         | ChangeOp::FormsReorderWidgets { .. }
-        | ChangeOp::FormsUpdateWidget { .. } => {}
+        | ChangeOp::FormsUpdateWidget { .. }
+        | ChangeOp::OutlineCreate { .. }
+        | ChangeOp::OutlineUpdate { .. }
+        | ChangeOp::OutlineMove { .. }
+        | ChangeOp::OutlineDelete { .. } => {}
     }
     Ok(parsed)
 }
@@ -761,11 +808,11 @@ mod tests {
     fn an_op_another_task_registers_refuses_the_whole_change_naming_its_owner() {
         let refused = parse_ops(&serde_json::json!([
             { "type": "metadata.update", "patch": {} },
-            { "type": "outline.create", "data": {} },
+            { "type": "forms.setSignatureAppearance" },
         ]))
         .unwrap_err();
         assert_eq!(refused.code, EngineErrorCode::NotImplemented);
-        assert!(refused.message.contains("8.24"), "{refused}");
+        assert!(refused.message.contains("8.26"), "{refused}");
         assert_eq!(refused.details.unwrap()["opIndex"], 1);
     }
 
@@ -888,6 +935,10 @@ mod tests {
             "annotations.import",
             "forms.import",
             "forms.importValues",
+            "outline.create",
+            "outline.update",
+            "outline.move",
+            "outline.delete",
         ] {
             assert!(!names.contains(&ported), "{ported} is ported and still listed");
         }

@@ -62,6 +62,78 @@ pub enum ReverseStep {
     WidgetDelete(WidgetDeleteStep),
     #[serde(rename = "calculations.restore")]
     CalculationsRestore(CalculationOrderStep),
+    #[serde(rename = "outline.remove")]
+    OutlineRemove(OutlineRemoveStep),
+    #[serde(rename = "outline.restore")]
+    OutlineRestore(OutlineRestoreStep),
+    #[serde(rename = "outline.move")]
+    OutlineMove(OutlineMoveStep),
+    #[serde(rename = "outline.reopen")]
+    OutlineReopen(OutlineReopenStep),
+}
+
+/// Deletes outline items a create or a restore brought back, when nobody
+/// changed them since: the item and the items under it are the same ones,
+/// and their dictionaries read exactly as the change left them
+/// (`OutlineRemoveStep`). Undoing a create never deletes an item someone
+/// gave a child, or renamed, since.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutlineRemoveStep {
+    #[serde(rename = "ref")]
+    pub reference: crate::identity::OutlineItemRef,
+    /// The item and the items under it, depth first, each as the change
+    /// left it (the guard).
+    pub left: Vec<CapturedObject>,
+}
+
+/// Opens again a parent the op this step follows emptied, as it was open
+/// before: a parent without children has no open state, so it comes back
+/// closed with its first child. Only while its children are just the ones
+/// the undo put back (`OutlineReopenStep`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutlineReopenStep {
+    #[serde(rename = "ref")]
+    pub reference: crate::identity::OutlineItemRef,
+    /// The children it has once the undo put them back.
+    pub children: Vec<u32>,
+}
+
+/// Brings back what an outline delete removed: the same items, at the same
+/// numbers, at the place the item had (`EPDFOutline_ImportItemRaw`). Left
+/// alone when its parent is gone or it is back already
+/// (`OutlineRestoreStep`).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutlineRestoreStep {
+    #[serde(rename = "ref")]
+    pub reference: crate::identity::OutlineItemRef,
+    /// Its parent when it went; `None` for the top level.
+    pub parent: Option<crate::identity::OutlineItemRef>,
+    #[serde(with = "hex_vec")]
+    pub capture: Vec<u8>,
+}
+
+/// Puts outline items back where they were before a move: its reverse,
+/// and, the other way round, its redo (`OutlineMoveStep`). Each item goes
+/// only while it is still under the parent the move left it under, and its
+/// parent is still there.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct OutlineMoveStep {
+    /// Where each goes back to, by object number, in document order, so an
+    /// anchor is placed before what follows it.
+    pub placements: Vec<crate::features::outline::OutlinePlacement>,
+    /// The parent each was left under (0: the top level).
+    pub left: Vec<OutlineLeftUnder>,
+}
+
+/// An item, and the parent a move left it under.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OutlineLeftUnder {
+    pub item: u32,
+    pub parent: u32,
 }
 
 /// The rights a step takes as a restoring import's undo or redo: what the
@@ -282,8 +354,16 @@ pub struct CapturedObject {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum RevertSubject {
-    Annotation { annotation: crate::identity::AnnotationRef },
-    Fields { fields: Vec<u32> },
+    Annotation {
+        annotation: crate::identity::AnnotationRef,
+    },
+    Fields {
+        fields: Vec<u32>,
+    },
+    #[serde(rename_all = "camelCase")]
+    OutlineItem {
+        outline_item: crate::identity::OutlineItemRef,
+    },
 }
 
 /// How a revert puts values back when the dictionaries it wrote changed
@@ -308,6 +388,13 @@ pub enum RevertFallback {
     #[serde(rename_all = "camelCase")]
     Properties {
         object_number: u32,
+        restore: serde_json::Map<String, serde_json::Value>,
+        left: serde_json::Map<String, serde_json::Value>,
+    },
+    /// The fields an outline item update changed, as a patch in the file's
+    /// coordinates: their old values (`restore`) and the values it left
+    /// (`left`). A field still holding its value is put back.
+    Outline {
         restore: serde_json::Map<String, serde_json::Value>,
         left: serde_json::Map<String, serde_json::Value>,
     },
@@ -484,6 +571,13 @@ pub fn record_bytes(record: &ChangeRecord) -> usize {
             | ReverseStep::WidgetRestore(_)
             | ReverseStep::CalculationsRestore(_) => 0,
             ReverseStep::FieldRestore(step) => step.capture.len(),
+            ReverseStep::OutlineRestore(step) => step.capture.len(),
+            ReverseStep::OutlineRemove(step) => step
+                .left
+                .iter()
+                .map(|object| object.before.as_ref().map_or(0, Vec::len) + object.after.len())
+                .sum(),
+            ReverseStep::OutlineMove(_) | ReverseStep::OutlineReopen(_) => 0,
         })
         .sum()
 }

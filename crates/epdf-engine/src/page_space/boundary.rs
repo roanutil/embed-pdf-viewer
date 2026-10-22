@@ -443,10 +443,16 @@ pub fn result_in_page_space(
             Ok(answer)
         }),
 
+        // Every item's target and action, each destination on the page it
+        // goes to (`pageOutlineOf`).
+        K::OutlineRead => convert_result(response, |outline: serde_json::Value| {
+            super::outline::page_outline_of(outline, box_of)
+        }),
+
         // re-port (Task 8): these answer places in PDF space until their
-        // owners add the conversion here: the outline (8.24), viewports
-        // (8.25) and a signature's look (8.26).
-        K::OutlineRead | K::MeasureViewports | K::FormsSetSignatureAppearance => Ok(response),
+        // owners add the conversion here: viewports (8.25) and a signature's
+        // look (8.26).
+        K::MeasureViewports | K::FormsSetSignatureAppearance => Ok(response),
 
         // The field or fields and the widget rows (`pageFormFieldOf`,
         // `pageWidgetOf`), in the result and in each event that carries
@@ -614,6 +620,29 @@ pub fn change_op_in_file_space(
             };
             Ok(ChangeOp::FormsDeleteWidget { widget, expect })
         }
+        // The draft's target, on the page it goes to (`pdfOutlineDraftOf`).
+        ChangeOp::OutlineCreate { parent, position, data, object_number } => {
+            Ok(ChangeOp::OutlineCreate {
+                parent,
+                position,
+                data: super::outline::pdf_outline_draft_of(data, box_of)?,
+                object_number,
+            })
+        }
+        // The patch's target, and what it expects (`pdfOutlinePatchOf`).
+        ChangeOp::OutlineUpdate { reference, patch, expect } => Ok(ChangeOp::OutlineUpdate {
+            reference,
+            patch: super::outline::pdf_outline_patch_of(patch, box_of)?,
+            expect: expect
+                .map(|expect| super::outline::pdf_outline_patch_of(expect, box_of))
+                .transpose()?,
+        }),
+        ChangeOp::OutlineDelete { reference, expect } => Ok(ChangeOp::OutlineDelete {
+            reference,
+            expect: expect
+                .map(|expect| super::outline::pdf_outline_patch_of(expect, box_of))
+                .transpose()?,
+        }),
         // A bundle is page space: the import converts each create on the
         // page it goes to.
         op @ (ChangeOp::AnnotationsImport { .. }
@@ -638,7 +667,8 @@ pub fn change_op_in_file_space(
         | ChangeOp::FormsDelete { .. }
         | ChangeOp::FormsRemoveWidget { .. }
         | ChangeOp::FormsReorderCalculations { .. }
-        | ChangeOp::FormsReorderWidgets { .. }) => Ok(op),
+        | ChangeOp::FormsReorderWidgets { .. }
+        | ChangeOp::OutlineMove { .. }) => Ok(op),
     }
 }
 
@@ -822,6 +852,26 @@ pub fn change_item_in_page_space(
                 skipped,
             })
         }
+        // The item read back, its target's and its action's destinations
+        // each on the page it goes to (`pageOutlineItemOf`).
+        ChangeItem::OutlineCreate { item, order, meta } => Ok(ChangeItem::OutlineCreate {
+            item: super::outline::page_outline_item_of(item, box_of)?,
+            order,
+            meta,
+        }),
+        ChangeItem::OutlineUpdate { item, meta, skipped } => Ok(ChangeItem::OutlineUpdate {
+            item: super::outline::page_outline_item_of(item, box_of)?,
+            meta,
+            skipped,
+        }),
+        ChangeItem::OutlineRestore { items, order, meta } => Ok(ChangeItem::OutlineRestore {
+            items: items
+                .into_iter()
+                .map(|item| super::outline::page_outline_item_of(item, box_of))
+                .collect::<Result<_, _>>()?,
+            order,
+            meta,
+        }),
         // No places.
         item @ (ChangeItem::MetadataUpdate { .. }
         | ChangeItem::MetadataUpdateCustom { .. }
@@ -833,6 +883,8 @@ pub fn change_item_in_page_space(
         | ChangeItem::FormsDelete { .. }
         | ChangeItem::FormsReorderWidgets { .. }
         | ChangeItem::FormsReorderCalculations { .. }
+        | ChangeItem::OutlineMove { .. }
+        | ChangeItem::OutlineDelete { .. }
         | ChangeItem::Skipped { .. }) => Ok(item),
     }
 }

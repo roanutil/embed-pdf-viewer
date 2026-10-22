@@ -743,6 +743,14 @@ impl Host {
                 let d = self.document(&key)?;
                 Ok(ok(value(&f::actions::document::read_document_actions(d, cancel)?)?))
             }
+            // `WorkerHost.handleOutlineRead`: every item, depth first, no
+            // page loaded. Answers the `DocumentOutline` (`{ tag, outline }`
+            // without its tag and its key), as `metadata.read` answers its
+            // metadata.
+            "outline.read" => {
+                let d = self.document(&key)?;
+                Ok(ok(value(&f::outline::read::read_outline(d, cancel)?)?))
+            }
             "annotations.list" => {
                 let pages = match body.get("pages") {
                     None | Some(serde_json::Value::Null) => None,
@@ -2883,6 +2891,16 @@ fn strip_item(
         | ChangeItem::PagesRestore { .. } => {
             Err(EngineError::with_message(EngineErrorCode::Unknown, "a page op has no single verb"))
         }
+        // Nor do the outline ops (67ccb76dc): `doc.outline`'s verbs are
+        // one-op changes through `document.apply` (`outlineVerbs`).
+        ChangeItem::OutlineCreate { .. }
+        | ChangeItem::OutlineUpdate { .. }
+        | ChangeItem::OutlineMove { .. }
+        | ChangeItem::OutlineDelete { .. }
+        | ChangeItem::OutlineRestore { .. } => Err(EngineError::with_message(
+            EngineErrorCode::Unknown,
+            "an outline op has no single verb",
+        )),
     }
 }
 

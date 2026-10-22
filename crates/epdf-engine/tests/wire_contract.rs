@@ -41,7 +41,7 @@ const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf"
 
 /// The kinds of upstream's union this host does not route yet, each with the
 /// sub-task that routes it. That sub-task removes its rows.
-const NOT_YET_ROUTED: &[(&str, &str)] = &[("outline.read", "8.24"), ("signatures.cancel", "8.26")];
+const NOT_YET_ROUTED: &[(&str, &str)] = &[("signatures.cancel", "8.26")];
 
 /// Routed kinds whose arm answers `NotImplemented` for the request this
 /// test sends, each with the sub-task that ports it. Task 6 stubbed them

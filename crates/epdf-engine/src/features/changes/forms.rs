@@ -423,6 +423,9 @@ fn swap_fallback(fallback: &RevertFallback) -> RevertFallback {
             restore: left.clone(),
             left: restore.clone(),
         },
+        RevertFallback::Outline { restore, left } => {
+            RevertFallback::Outline { restore: left.clone(), left: restore.clone() }
+        }
     }
 }
 

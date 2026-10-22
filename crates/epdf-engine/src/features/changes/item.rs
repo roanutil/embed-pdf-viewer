@@ -9,6 +9,7 @@ use crate::features::annotation::write::create::AnnotationMutationMeta;
 use crate::features::files::attachments::EmbeddedFileItem;
 use crate::features::forms::write::FormMutationMeta;
 use crate::features::metadata_write::{CustomMetadataUpdateResult, MetadataUpdateResult};
+use crate::features::outline::OutlineMutationMeta;
 use crate::identity::PageRef;
 use crate::mutation::MutationMeta;
 
@@ -281,6 +282,38 @@ pub enum ChangeItem {
         dropped: Vec<serde_json::Value>,
         meta: FormMutationMeta,
     },
+    /// `OutlineCreateResult`: the new item read back, and its parent's
+    /// children with it. Items stay JSON, so one item holds them in either
+    /// space ([`crate::page_space::outline`] converts them).
+    #[serde(rename = "outline.create")]
+    OutlineCreate {
+        item: serde_json::Value,
+        order: crate::features::outline::OutlineOrder,
+        meta: OutlineMutationMeta,
+    },
+    /// `OutlineUpdateResult`: the item read back; in an undo, the fields it
+    /// left alone.
+    #[serde(rename = "outline.update")]
+    OutlineUpdate {
+        item: serde_json::Value,
+        meta: OutlineMutationMeta,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        skipped: Vec<String>,
+    },
+    /// `OutlineMoveResult`: the children of every parent the move changed.
+    #[serde(rename = "outline.move")]
+    OutlineMove { orders: Vec<crate::features::outline::OutlineOrder>, meta: OutlineMutationMeta },
+    /// `OutlineDeleteResult`: in `meta.changed`, what went, the item first.
+    #[serde(rename = "outline.delete")]
+    OutlineDelete { meta: OutlineMutationMeta },
+    /// `OutlineRestoreResult`, only in an undo: what a delete removed, back
+    /// under the refs it had, and its parent's children with it.
+    #[serde(rename = "outline.restore")]
+    OutlineRestore {
+        items: Vec<serde_json::Value>,
+        order: crate::features::outline::OutlineOrder,
+        meta: OutlineMutationMeta,
+    },
     /// An op an undo left alone entirely (`SkippedChangeItem`): the document
     /// no longer showed what the change being undone had set, so nothing was
     /// written. `op` is the item it would have been.
@@ -326,6 +359,11 @@ impl ChangeItem {
             | Self::FormsImport { meta, .. }
             | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &meta.meta,
+            Self::OutlineCreate { meta, .. }
+            | Self::OutlineUpdate { meta, .. }
+            | Self::OutlineMove { meta, .. }
+            | Self::OutlineDelete { meta }
+            | Self::OutlineRestore { meta, .. } => &meta.meta,
         }
     }
 
@@ -366,6 +404,11 @@ impl ChangeItem {
             | Self::FormsImport { meta, .. }
             | Self::FormsImportValues { meta, .. }
             | Self::FormsUpdateWidget { meta, .. } => &mut meta.meta,
+            Self::OutlineCreate { meta, .. }
+            | Self::OutlineUpdate { meta, .. }
+            | Self::OutlineMove { meta, .. }
+            | Self::OutlineDelete { meta }
+            | Self::OutlineRestore { meta, .. } => &mut meta.meta,
         }
     }
 
@@ -510,6 +553,29 @@ impl ChangeItem {
             | Self::FormsReorderWidgets { .. }
             | Self::FormsReorderCalculations { .. }
             | Self::FormsUpdateWidget { .. } => return self.field_events(),
+            Self::OutlineCreate { item, order, meta } => (
+                "outline.created",
+                serde_json::json!({ "item": item, "order": to_value(order)?,
+                    "meta": to_value(meta)? }),
+            ),
+            Self::OutlineUpdate { item, meta, .. } => {
+                ("outline.updated", serde_json::json!({ "item": item, "meta": to_value(meta)? }))
+            }
+            Self::OutlineMove { orders, meta } => (
+                "outline.moved",
+                serde_json::json!({ "orders": to_value(orders)?, "meta": to_value(meta)? }),
+            ),
+            // `deletedOutlineItemsOf`: the refs in `meta.changed`.
+            Self::OutlineDelete { meta } => (
+                "outline.deleted",
+                serde_json::json!({ "deleted": to_value(&meta.changed)?,
+                    "meta": to_value(meta)? }),
+            ),
+            Self::OutlineRestore { items, order, meta } => (
+                "outline.restored",
+                serde_json::json!({ "items": items, "order": to_value(order)?,
+                    "meta": to_value(meta)? }),
+            ),
             Self::Skipped { .. } => return Ok(Vec::new()),
         };
         let mut event_value = serde_json::json!({ "type": event });

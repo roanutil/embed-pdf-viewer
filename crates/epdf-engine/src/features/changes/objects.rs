@@ -82,6 +82,17 @@ pub fn revert_objects(
     document: &Document,
     objects: &[CapturedObject],
 ) -> Result<Vec<CapturedObject>, EngineError> {
+    let redo = revert_objects_pending(document, objects)?;
+    capture_after(document, redo)
+}
+
+/// [`revert_objects`], answering the redo's captures before the guard is
+/// taken, for a revert that writes once more before it is done: an outline
+/// item counts its ancestors again (`revertObjects`, then `captureAfter`).
+pub fn revert_objects_pending(
+    document: &Document,
+    objects: &[CapturedObject],
+) -> Result<Vec<PendingCapture>, EngineError> {
     let keys: Vec<Vec<&str>> =
         objects.iter().map(|object| object.deep.iter().map(String::as_str).collect()).collect();
     let wanted: Vec<(u32, &[&str])> = objects
@@ -115,7 +126,7 @@ pub fn revert_objects(
             "EPDFLayer_CommitTransaction refused",
         ));
     }
-    capture_after(document, redo)
+    Ok(redo)
 }
 
 /// The dictionary's canonical bytes, `None` when there is none at that

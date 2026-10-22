@@ -32,6 +32,7 @@ pub mod measure;
 mod metadata;
 mod metadata_write;
 pub mod named_pages;
+mod outline;
 mod page;
 mod page_list;
 mod page_write;
@@ -71,6 +72,7 @@ pub use form_write::{
 pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;
+pub use outline::{OUTLINE_TOP, OutlineItem};
 pub use page::{AppearanceTurn, Page, PageView, SharedPage};
 pub use page_list::PageBoxType;
 pub use page_write::{AnnotationFlattenStatus, FlattenOutcome, FlattenUsage};

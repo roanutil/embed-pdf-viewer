@@ -195,7 +195,9 @@ impl OwnFill {
                 {
                     match &step.subject {
                         RevertSubject::Fields { fields } => Some(fields.clone()),
-                        RevertSubject::Annotation { .. } => None,
+                        RevertSubject::Annotation { .. } | RevertSubject::OutlineItem { .. } => {
+                            None
+                        }
                     }
                 }
                 _ => None,
@@ -511,6 +513,24 @@ fn run_op(ctx: &mut ChangeContext<'_>, op: &ChangeOp, at: usize) -> Result<Done,
         ChangeOp::FormsUpdateWidget { widget, patch, expect } => {
             super::fields::update_widget(ctx, widget, patch, expect.as_ref(), at)
         }
+        ChangeOp::OutlineCreate { parent, position, data, object_number } => {
+            super::outline::create_outline_item(
+                ctx,
+                *parent,
+                position.as_ref(),
+                data,
+                object_number.as_ref(),
+            )
+        }
+        ChangeOp::OutlineUpdate { reference, patch, expect } => {
+            super::outline::update_outline_item(ctx, *reference, patch, expect.as_ref(), at)
+        }
+        ChangeOp::OutlineMove { refs, parent, position } => {
+            super::outline::move_outline_items(ctx, refs, *parent, position)
+        }
+        ChangeOp::OutlineDelete { reference, expect } => {
+            super::outline::delete_outline_item(ctx, *reference, expect.as_ref(), at)
+        }
     }
 }
 
@@ -529,6 +549,9 @@ pub(super) fn run_step(
             super::record::RevertSubject::Annotation { .. } => {
                 super::annotations::revert_annotation(ctx, step)
             }
+            super::record::RevertSubject::OutlineItem { .. } => {
+                super::outline::revert_outline_item(ctx, step)
+            }
         },
         ReverseStep::AnnotationRestore(step) => super::annotations::restore_annotations(ctx, step),
         ReverseStep::AnnotationReorder(step) => super::annotations::reorder_back(ctx, step),
@@ -543,6 +566,10 @@ pub(super) fn run_step(
         ReverseStep::CalculationsRestore(step) => {
             super::fields::restore_calculation_order(ctx, step)
         }
+        ReverseStep::OutlineRemove(step) => super::outline::remove_outline_item(ctx, step),
+        ReverseStep::OutlineRestore(step) => super::outline::restore_outline_item(ctx, step),
+        ReverseStep::OutlineMove(step) => super::outline::move_outline_items_back(ctx, step),
+        ReverseStep::OutlineReopen(step) => super::outline::reopen_outline_item(ctx, step),
     }
 }
 

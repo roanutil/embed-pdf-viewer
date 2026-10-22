@@ -81,6 +81,49 @@ impl<'de> Deserialize<'de> for PageRef {
     }
 }
 
+/// How callers address an item of the document's outline
+/// (`OutlineItemRef`): the object number of its dictionary, which ISO
+/// 32000-2 §12.3.3 requires to be indirect. A layer never renumbers and
+/// never gives a deleted item's number to anything else, so it names the
+/// item for the life of the document. One kind, as [`PageRef`] has.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(tag = "kind")]
+pub enum OutlineItemRef {
+    #[serde(rename = "objectNumber", rename_all = "camelCase")]
+    ObjectNumber { object_number: u32 },
+}
+
+/// Read by hand so that `objectNumber` must be a positive integer, as
+/// `OutlineItemRefSchema` has it.
+impl<'de> Deserialize<'de> for OutlineItemRef {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(tag = "kind")]
+        enum Wire {
+            #[serde(rename = "objectNumber", rename_all = "camelCase")]
+            ObjectNumber { object_number: u32 },
+        }
+        let Wire::ObjectNumber { object_number } = Wire::deserialize(d)?;
+        if object_number == 0 {
+            return Err(serde::de::Error::custom("objectNumber must be a positive integer, got 0"));
+        }
+        Ok(Self::ObjectNumber { object_number })
+    }
+}
+
+impl OutlineItemRef {
+    /// `toOutlineItemRef`.
+    pub fn new(object_number: u32) -> Self {
+        Self::ObjectNumber { object_number }
+    }
+
+    pub fn object_number(self) -> u32 {
+        match self {
+            Self::ObjectNumber { object_number } => object_number,
+        }
+    }
+}
+
 impl PageRef {
     /// `toPageRef`.
     pub fn new(page: PageObjectNumber) -> Self {

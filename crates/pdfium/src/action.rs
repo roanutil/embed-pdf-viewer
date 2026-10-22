@@ -316,6 +316,14 @@ pub struct DestinationLocation {
     pub zoom: Option<f32>,
 }
 
+impl<'doc> RawDestination<'doc> {
+    /// Wrap a destination handle a reader of another module answered;
+    /// `None` for a null one.
+    pub(crate) fn from_raw(dest: pdfium_sys::FPDF_DEST, document: &'doc Document) -> Option<Self> {
+        (!dest.is_null()).then_some(Self { dest, document })
+    }
+}
+
 impl RawDestination<'_> {
     /// The page this destination names, or zero when it names none.
     pub fn page_object_number(&self) -> u32 {
@@ -393,7 +401,7 @@ where
 }
 
 /// Measure then fill, for a UTF-16 accessor. The length is in bytes.
-fn read_utf16<F>(mut call: F) -> Result<Option<String>, PdfiumError>
+pub(crate) fn read_utf16<F>(mut call: F) -> Result<Option<String>, PdfiumError>
 where
     F: FnMut(*mut u16, std::os::raw::c_ulong) -> std::os::raw::c_ulong,
 {

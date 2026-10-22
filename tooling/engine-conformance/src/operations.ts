@@ -331,16 +331,17 @@ export const OPERATIONS: readonly OperationRow[] = [
     rustStatus: 'ported',
     note: 'Rust reads openDestination and answers every destination in page space at the host boundary (mapDocumentActions), triggers first.',
   },
-
-  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
   {
     kind: 'outline.read',
     group: 'G6',
     stage: 'A',
     phase: 2,
     cancellation: 'cooperative',
-    rustStatus: 'planned',
+    rustStatus: 'routed',
+    note: "New in 67ccb76dc. Answers the DocumentOutline, every item depth first, each destination of its target and its action in page space at the host boundary (pageOutlineOf); no page is loaded. The outline's writes are the document.apply ops outline.create, outline.update, outline.move and outline.delete. No vector covers it: crates/epdf-engine/tests/outline.rs ports runOutlineConformance.",
   },
+
+  // New in the catch-up to upstream b456ee4fd; not ported to Rust yet.
   {
     kind: 'measure.viewports',
     group: 'G6',
@@ -596,7 +597,7 @@ export const OPERATIONS: readonly OperationRow[] = [
     phase: 4,
     cancellation: 'after-first-write',
     rustStatus: 'routed',
-    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation, page and form value ops, and the form's design ops: fields, widgets and the calculation order (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs, tests/form_apply.rs, tests/form_widgets.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
+    note: "One change as one transaction: annotation, form, page, attachment, metadata and outline ops (Change.ts). Rust runs the metadata, attachment, annotation, page and form value ops, the form's design ops: fields, widgets and the calculation order, and the outline ops (features/changes, tests/document_apply.rs, tests/files_write.rs, tests/page_structure.rs, tests/form_apply.rs, tests/form_widgets.rs, tests/outline.rs) and answers NotImplemented naming the owner sub-task for every other op type; an op's bytes ride as a request payload its resources name, { payload: n } (a pages.insert source too, or the list of bytes a recorded request holds); a refused change is taken back through its ops' reverse steps. Carries the page and attachment writes that were their own kinds, and their invariants. Page identity survives a pages.reorder op within the same live document: FPDF_MovePages rewrites the page tree and leaves /Annots alone, so every page and annotation ref, baseIndex included, names the same thing after it (page_structure.rs). A pages.insert op's source is retained on one owner, the session, until it closes (PagesInserter.ts:88, session.retainUntilClose, reached through changes/internal/pageChanges.ts:53), so a source document handle never crosses owners. Each page op's position is a neighbour or an end (ListPosition), resolved when the op runs; its reverse is pages.rotate, pages.reorder, pages.restore (the fork's page capture, names included) or pages.remove (guarded by a digest of the page). Gated for the page ops by vectors/pages/mutate.json through crates/epdf-engine/tests/pages_mutate.rs.",
   },
   {
     kind: 'document.applyChanges',

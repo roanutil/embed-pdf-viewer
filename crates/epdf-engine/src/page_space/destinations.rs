@@ -178,6 +178,42 @@ pub fn pdf_destination_of(
     })
 }
 
+/// A page-space destination as the wire spells it, in the file's
+/// coordinates, an axis left out staying out (`pdfDestinationOf`, which
+/// writes `left` or `top` only `'x' in destination` or `'y' in
+/// destination`). [`PageDestination`] reads a left-out axis as `null`; a
+/// write treats the two the same, but an `expect` compares them apart.
+pub fn pdf_destination_value_of(
+    destination: serde_json::Value,
+    box_of: &mut VisibleBoxOf<'_>,
+) -> Result<serde_json::Value, EngineError> {
+    let sent: PageDestination = serde_json::from_value(destination.clone()).map_err(|e| {
+        EngineError::with_message(
+            crate::error::EngineErrorCode::WireFormat,
+            format!("a destination is not the shape it takes: {e}"),
+        )
+    })?;
+    let mut converted = serde_json::to_value(pdf_destination_of(sent, box_of)?).map_err(|e| {
+        EngineError::with_message(crate::error::EngineErrorCode::WireFormat, e.to_string())
+    })?;
+    let axes: &[(&str, &str)] = match sent {
+        PageDestination::Xyz { .. } => &[("x", "left"), ("y", "top"), ("zoom", "zoom")],
+        PageDestination::FitH { .. } | PageDestination::FitBh { .. } => &[("y", "top")],
+        PageDestination::FitV { .. } | PageDestination::FitBv { .. } => &[("x", "left")],
+        PageDestination::Fit { .. }
+        | PageDestination::FitR { .. }
+        | PageDestination::FitB { .. } => &[],
+    };
+    if let Some(out) = converted.as_object_mut() {
+        for (axis, key) in axes {
+            if destination.get(axis).is_none() {
+                out.remove(*key);
+            }
+        }
+    }
+    Ok(converted)
+}
+
 /// An action tree with every destination in page space (`mapActionTree` with
 /// `pageDestinationOf`).
 pub fn page_action_tree_of(

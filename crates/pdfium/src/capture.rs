@@ -142,6 +142,40 @@ impl Document {
         }
     }
 
+    /// `EPDFOutline_ExportItemRawToOwnedBuffer`: the outline item
+    /// `object_number` as `EPDFOutline_DeleteItem` removes it, with the
+    /// items under it, every object the layer holds a version of that they
+    /// reach, and its place. `None` when it is not an item in the outline,
+    /// a list it is in holds an item that isn't an indirect object, or the
+    /// document is not a layer.
+    pub fn export_outline_item_raw(&self, object_number: u32) -> Option<Vec<u8>> {
+        let mut size: std::os::raw::c_ulong = 0;
+        // SAFETY: the handle is live and `size` is a valid out-parameter.
+        let buffer = unsafe {
+            pdfium_sys::EPDFOutline_ExportItemRawToOwnedBuffer(
+                self.as_raw(),
+                object_number,
+                &raw mut size,
+            )
+        };
+        take_owned(buffer, size)
+    }
+
+    /// `EPDFOutline_ImportItemRaw`: put the outline item of `capture` back
+    /// with the items under it, after the sibling it followed while that is
+    /// still there, else first. `false` outside a layer transaction, for a
+    /// malformed capture, when its parent is gone, or when it is in the
+    /// outline already.
+    pub fn import_outline_item_raw(&self, capture: &[u8]) -> bool {
+        let Ok(size) = std::os::raw::c_ulong::try_from(capture.len()) else {
+            return false;
+        };
+        // SAFETY: the handle is live and `capture` outlives the call.
+        unsafe {
+            pdfium_sys::EPDFOutline_ImportItemRaw(self.as_raw(), capture.as_ptr().cast(), size) != 0
+        }
+    }
+
     /// `EPDFDoc_ExportDictCanonicalToOwnedBuffer`: the dictionary
     /// `object_number` as bytes a guard compares, without the keys in
     /// `skip_keys` and with every object the layer holds under `deep_keys`,
