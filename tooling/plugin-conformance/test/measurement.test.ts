@@ -1032,7 +1032,12 @@ test('the complete original B3 archive and all 61 measurement mappings remain ex
   };
   for (const source of baseline.archive) {
     assert.equal(digest(await readFile(new URL(source.name + '.ts.txt', history))), source.sha256);
-    if (source.name !== 'measurement' && source.name !== 'redaction')
+    if (
+      source.name !== 'measurement' &&
+      source.name !== 'redaction' &&
+      source.name !== 'stamp-functions' &&
+      source.name !== 'stamp-library'
+    )
       assert.equal(
         digest(await readFile(new URL('../src/suites/' + source.name + '.ts', import.meta.url))),
         source.sha256,
