@@ -477,6 +477,7 @@ dependencies = [
 name = "epdf-geometry"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-kernel",
  "plugin-conformance",
  "serde",

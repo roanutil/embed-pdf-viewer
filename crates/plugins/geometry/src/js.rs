@@ -65,7 +65,7 @@ pub fn sign(x: f64) -> f64 {
 /// `Math.hypot(a, b)`, as V8 computes it (`math.tq`): an infinity wins over
 /// NaN, then the values are normalized by the largest and summed with Kahan
 /// compensation. The platform `hypot` can differ from it in the last bit, and
-/// `normalizeQuad` compares these lengths against a threshold.
+/// `normalizePdfQuad` compares these lengths against a threshold.
 pub fn hypot(a: f64, b: f64) -> f64 {
     let values = [a, b];
     let mut max = 0.0_f64;
@@ -190,7 +190,7 @@ mod tests {
         assert_eq!(min_of(&[]), f64::INFINITY);
     }
 
-    /// Only `normalizeQuad` calls `sign` inside this crate, never with 0;
+    /// Only `normalizePdfQuad` calls `sign` inside this crate, never with 0;
     /// the downstream ports (annotation-core, stage) can pass either zero.
     #[test]
     fn sign_keeps_signed_zeros_and_nan() {
