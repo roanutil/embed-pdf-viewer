@@ -266,7 +266,7 @@ Port current SearchSlice including pagesSearched, page-space bounds/snippets, pe
 
 ### epdf-plugin-link — Task 13.21
 
-Reference: `packages/plugin/link/src/{controller,model}.ts and resolution helpers`.
+Reference: `packages/plugin/link/src/{controller,source,connect}.ts`.
 
 Port live annotation/actions capabilities, obj:n/base:page:n keys, page-space bounds/destinations, flat visibility and complete URI/group reply action trees. Preserve current cache/pending cancellation contracts.
 
@@ -357,7 +357,7 @@ Port named transitions, snapshot restore (without public id/focusRequest; restor
 
 ### epdf-plugin-commands — Task 13.29
 
-Reference: `packages/plugin/commands/src/{controller,model}.ts and definition/run helpers`.
+Reference: `packages/plugin/commands/src/{controller,registry,services/availability}.ts`.
 
 Port stateless settings-backed definitions, runtime shadowing, identity-aware disposers, live derivations, scoped capability/context callbacks and {commandId,refusal} shortcuts.
 

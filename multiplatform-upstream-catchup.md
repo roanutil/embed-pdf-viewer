@@ -1155,7 +1155,7 @@ Shared interfaces are the current TS contracts: `PluginContext` create/connect/s
 
 **Files:** `crates/epdf-kernel/src/`, `crates/epdf-kernel/tests/`, `crates/epdf-kernel/Cargo.toml`. **Needs:** none (engine port already complete).
 
-**Vectors:** New files named below; no existing suite assigned.
+**Vectors:** No existing suite assigned; behavioral tests below.
 
 **Current TS reference:** `packages/core/main/src/{kernel,context,state,mirror,page-mirror,changes,guarded-handle,clock,settings,errors}.ts`.
 
@@ -1437,7 +1437,7 @@ Shared interfaces are the current TS contracts: `PluginContext` create/connect/s
 
 **Vectors:** `plugins/link-functions.json`, `plugins/link.json`
 
-**Current TS reference:** `packages/plugin/link/src/{controller,model}.ts and resolution helpers`.
+**Current TS reference:** `packages/plugin/link/src/{controller,source,connect}.ts`.
 
 **Behavior and interface:** Port live annotation/actions capabilities, obj:n/base:page:n keys, page-space bounds/destinations, flat visibility and complete URI/group reply action trees. Preserve current cache/pending cancellation contracts.
 
@@ -1549,7 +1549,7 @@ Shared interfaces are the current TS contracts: `PluginContext` create/connect/s
 
 **Vectors:** `plugins/commands/functions.json`, `plugins/commands/plugin.json`
 
-**Current TS reference:** `packages/plugin/commands/src/{controller,model}.ts and definition/run helpers`.
+**Current TS reference:** `packages/plugin/commands/src/{controller,registry,services/availability}.ts`.
 
 **Behavior and interface:** Port stateless settings-backed definitions, runtime shadowing, identity-aware disposers, live derivations, scoped capability/context callbacks and {commandId,refusal} shortcuts.
 
@@ -1603,7 +1603,7 @@ Shared interfaces are the current TS contracts: `PluginContext` create/connect/s
 
 **Files:** `crates/epdf-viewer-host/src/`, `crates/epdf-viewer-host/tests/`, `crates/epdf-viewer-host/Cargo.toml`. **Needs:** 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10, 13.11, 13.12, 13.13, 13.14, 13.15, 13.16, 13.17, 13.18, 13.19, 13.20, 13.21, 13.22, 13.23, 13.24, 13.25, 13.26, 13.27, 13.28, 13.29, 13.30, 13.31, 13.32.
 
-**Vectors:** New files named below; no existing suite assigned.
+**Vectors:** No existing suite assigned; behavioral tests below.
 
 **Current TS reference:** `packages/engine/core/src/engine/DocumentHandle.ts; packages/engine/core/src/events/DocumentEvent.ts; packages/engine/services/src/worker-host/WorkerHost.ts; packages/core/main/src/guarded-handle.ts`.
 
