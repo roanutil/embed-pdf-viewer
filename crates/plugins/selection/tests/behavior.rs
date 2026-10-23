@@ -24,14 +24,22 @@ fn code_of<T: std::fmt::Debug>(result: Result<T, epdf_kernel::Error>) -> Option<
 
 #[test]
 fn a_point_on_an_edge_two_characters_share_hits_the_first() {
-    let (kernel, _) = kernel(1, BOTH, Vec::new());
+    // Glyph 0's right edge is 0.1 + 0.2, a rounding bit past glyph 1's left
+    // edge at 0.3, so a point there just above the line is nearer glyph 1 by
+    // that bit alone. `EDGE_EPSILON` keeps glyph 0, as the TypeScript does
+    // (`text/layout.ts:362`).
+    let cells = json!({ "$textLayout": { "runs": [{
+        "rect": { "x": 0.1, "y": 0, "width": 0.4, "height": 10 }, "start": 0,
+        "glyphs": [
+            { "loose": { "x": 0.1, "y": 0, "width": 0.2, "height": 10 } },
+            { "loose": { "x": 0.3, "y": 0, "width": 0.2, "height": 10 } }
+        ]
+    }] } });
+    let (kernel, _) = kernel(1, BOTH, vec![json!({ "path": "page.text.layout", "value": cells })]);
     let selection = selection(&kernel);
     let _ = selection.ensure_loaded(page(1));
     rt::run_until_stalled();
-    // "abc" at x 50..68: x 56 is the edge glyphs 0 and 1 share. Just above
-    // the line, no tight box holds the point, so the near-miss pass decides,
-    // and both glyphs are as near.
-    assert!(selection.begin_gesture_at(page(1), Point { x: 56.0, y: 49.5 }));
+    assert!(selection.begin_gesture_at(page(1), Point { x: 0.3, y: -1e-12 }));
     let range = selection.get_range().unwrap();
     assert_eq!((range.start.index, range.end.index), (0, 1));
 }

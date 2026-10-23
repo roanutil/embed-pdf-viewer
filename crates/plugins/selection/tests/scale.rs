@@ -1,51 +1,49 @@
-//! Page-range work decodes the registry once per call, not once per page
-//! (M22). Each recompute rebuilds the segments of every loaded page, as the
-//! TypeScript's does, so a select-all that settles page by page is
-//! O(pages^2); before the registry was decoded once it was O(pages^3), and
-//! 400 pages took minutes.
+//! Page-range work decodes the registry once per page list, not once per
+//! page (M22). Each recompute rebuilds the segments of every loaded page,
+//! as the TypeScript's does, so a select-all that settles page by page is
+//! O(pages^2); while every page lookup re-decoded the registry it was
+//! O(pages^3), and 400 pages took minutes. `read_model` had a second path
+//! of the same kind.
 //!
-//! The guard is a growth bound (Ruling13.15): select-all plus `read_text` at
-//! 400 pages may take at most 6 times as long as at 200. Quadratic work
-//! comes out near 4, cubic near 8. An absolute budget measured the kernel's
-//! page mirror too, whose `PageMirror::write` copies every entry on each
-//! write (carried to Task 14). A 10 s ceiling at 400 pages still catches a
-//! hang.
+//! The guard counts decodes rather than timing them (Ruling13.15, revised
+//! after review): a 400-page select-all and its text read must decode the
+//! registry a small constant number of times. A 10 s ceiling still catches
+//! a hang.
 
 mod common;
 
 use std::time::{Duration, Instant};
 
 use epdf_kernel::rt;
+use epdf_plugin_selection::controller::registry_decodes;
 use epdf_plugin_selection::*;
 
 use common::{BOTH, kernel, selection};
 
-/// Select every page, settle, and read the text back; the time it took.
-fn select_all_and_read(pages: u32) -> Duration {
-    let (kernel, _) = kernel(pages, BOTH, Vec::new());
+const PAGES: u32 = 400;
+
+#[test]
+fn a_long_select_all_and_read_decode_the_registry_a_constant_number_of_times() {
+    let (kernel, _) = kernel(PAGES, BOTH, Vec::new());
     let selection = selection(&kernel);
     let started = Instant::now();
+    let before = registry_decodes();
     selection.select_all().unwrap();
     rt::run_until_stalled();
 
     let snapshot = selection.get_snapshot();
-    assert_eq!(snapshot.pages.len(), pages as usize, "every page has its segments");
+    assert_eq!(snapshot.pages.len(), PAGES as usize, "every page has its segments");
     let range = snapshot.range.unwrap();
-    assert_eq!(range.end.page.page_object_number, pages);
+    assert_eq!(range.end.page.page_object_number, PAGES);
     assert_eq!(range.end.index, 3);
 
     let text = selection.read_text(OperationOptions::default());
     rt::run_until_stalled();
     let text = text.peek().expect("settled").expect("read");
-    assert_eq!(text, vec!["abc"; pages as usize].join("\n"));
-    started.elapsed()
-}
+    assert_eq!(text, vec!["abc"; PAGES as usize].join("\n"));
 
-#[test]
-fn select_all_grows_quadratically_with_the_page_count() {
-    let small = select_all_and_read(200);
-    let large = select_all_and_read(400);
-    let ratio = large.as_secs_f64() / small.as_secs_f64();
-    assert!(ratio < 6.0, "200 pages in {small:?}, 400 in {large:?}: {ratio:.1}x");
-    assert!(large < Duration::from_secs(10), "400 pages took {large:?}");
+    let decodes = registry_decodes() - before;
+    assert!(decodes <= 2, "decoded the registry {decodes} times for {PAGES} pages");
+    let elapsed = started.elapsed();
+    assert!(elapsed < Duration::from_secs(10), "{PAGES} pages took {elapsed:?}");
 }

@@ -122,3 +122,56 @@ fn settings_change_for_every_document_and_reset_to_the_registered_ones() {
     selection.reset_settings();
     assert_eq!(selection.get_settings(), selection_defaults());
 }
+
+#[test]
+fn a_malformed_setting_reads_as_its_default_and_is_reported() {
+    use std::cell::RefCell;
+
+    use epdf_kernel::{Kernel, KernelOptions, OpenOptions, kernel::OpenSource};
+    use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
+    use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
+    use serde_json::json;
+
+    rt::reset();
+    let reports = Rc::new(RefCell::new(Vec::<String>::new()));
+    let sink = reports.clone();
+    let fake = FakeEngine::new(json!({ "documents": { "a": {
+        "pages": [common::page_row(0, 1)], "security": { "allows": BOTH }, "responses": []
+    } } }));
+    let kernel = Kernel::new(
+        Rc::new(AsEngine(fake)),
+        vec![
+            interaction_plugin(InteractionConfig::default()),
+            selection_plugin(SelectionConfig::default()),
+        ],
+        KernelOptions {
+            report: Some(Rc::new(move |e| sink.borrow_mut().push(e.message.clone()))),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let _ = kernel.start();
+    rt::run_until_stalled();
+    let _ = kernel.documents().open(
+        OpenSource::Input(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })),
+        OpenOptions::default(),
+    );
+    rt::run_until_stalled();
+    let selection = selection(&kernel);
+    let seen = Rc::new(Cell::new(0.0));
+    let s = seen.clone();
+    let _off = selection.on_settings_changed(move |event| {
+        s.set(event.settings.drag_threshold);
+        Ok(())
+    });
+    // A host writing JSON straight into the store, past the typed API.
+    let store = kernel.settings_of(SELECTION.any()).unwrap();
+    store.update_settings(&json!({ "dragThreshold": "far", "color": "red" }));
+    assert_eq!(selection.get_settings().drag_threshold, 4.0, "the default");
+    assert_eq!(selection.get_settings().color.as_deref(), Some("red"), "the rest still reads");
+    assert_eq!(seen.get(), 4.0, "the listener still hears the change");
+    assert!(
+        reports.borrow().iter().any(|m| m.starts_with("[selection] malformed settings")),
+        "{reports:?}"
+    );
+}

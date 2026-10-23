@@ -29,4 +29,9 @@ fn a_range_ending_at_i64_min_on_a_later_page_saturates() {
     };
     selection.select(SelectionRangeInput::Range(range)).unwrap();
     rt::run_until_stalled();
+    // The focus, `i64::MIN - 1`, saturates at `i64::MIN` and clamps to glyph 0 of
+    // page 2 once its geometry loads: page 1 whole, and page 2's first glyph.
+    let range = selection.get_range().expect("a selection");
+    assert_eq!((range.start.page, range.start.index), (PageRef::new(1), 0));
+    assert_eq!((range.end.page, range.end.index), (PageRef::new(2), 1));
 }

@@ -68,8 +68,21 @@ struct Registry {
     by_pon: HashMap<PageObjectNumber, i64>,
 }
 
+thread_local! {
+    static REGISTRY_DECODES: Cell<usize> = const { Cell::new(0) };
+}
+
+/// How many times this thread has decoded a page registry. M22's guard
+/// (`tests/scale.rs`) asserts a long select-all and read decode it a
+/// small constant number of times, not once per page.
+#[doc(hidden)]
+pub fn registry_decodes() -> usize {
+    REGISTRY_DECODES.with(Cell::get)
+}
+
 impl Registry {
     fn decode(pages: &Value) -> Self {
+        REGISTRY_DECODES.with(|n| n.set(n.get() + 1));
         let rows = pages.as_array().map(Vec::as_slice).unwrap_or_default();
         let mut pons = Vec::with_capacity(rows.len());
         let mut by_pon = HashMap::with_capacity(rows.len());
@@ -224,6 +237,26 @@ fn page_key(page: PageRef) -> Value {
 fn hydrate(answer: &Value) -> Option<TextLayout> {
     let snapshot = answer.get("$textLayout").unwrap_or(answer);
     serde_json::from_value::<PageGeometrySnapshot>(snapshot.clone()).ok().map(create_text_layout)
+}
+
+/// The settings the store holds, and why the whole value did not decode
+/// when it didn't: then they are read member by member, and a member of
+/// the wrong type keeps its default.
+fn settings_of(value: &Value) -> (SelectionSettings, Option<Error>) {
+    serde_json::from_value(value.clone()).map(|settings| (settings, None)).unwrap_or_else(|e| {
+        let defaults = selection_defaults();
+        let config = SelectionConfig::from_json(value);
+        let handles = config.handles.unwrap_or_default();
+        let lenient = SelectionSettings {
+            drag_threshold: config.drag_threshold.unwrap_or(defaults.drag_threshold),
+            color: config.color.unwrap_or(defaults.color),
+            handles: SelectionHandleSettings {
+                color: handles.color.unwrap_or(defaults.handles.color),
+                shadow: handles.shadow.unwrap_or(defaults.handles.shadow),
+            },
+        };
+        (lenient, Some(Error::new(format!("[selection] malformed settings: {e}"))))
+    })
 }
 
 /// `createSelectionController(ctx)`: the api and its `connect` half, which
@@ -784,10 +817,13 @@ impl SelectionCapability {
 
     // ── settings ──
 
-    /// The settings, for every open document.
+    /// The settings, for every open document. The typed API only writes
+    /// well-typed members, but a host can write any JSON through the
+    /// kernel's settings store; a member of the wrong type reads as its
+    /// default here (where the TypeScript hands the value back), and
+    /// `on_settings_changed` reports it.
     pub fn get_settings(&self) -> SelectionSettings {
-        serde_json::from_value((*self.0.settings.get()).clone())
-            .unwrap_or_else(|_| selection_defaults())
+        settings_of(&self.0.settings.get()).0
     }
 
     /// Merge `changes` into the settings, for every document. Fires
@@ -808,9 +844,11 @@ impl SelectionCapability {
         listener: impl Fn(&SelectionSettingsChanged) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
         self.0.settings.events.on(move |event| {
-            let settings = serde_json::from_value((*event.settings).clone())
-                .unwrap_or_else(|_| selection_defaults());
-            listener(&SelectionSettingsChanged { settings, changed: event.changed.clone() })
+            let (settings, malformed) = settings_of(&event.settings);
+            listener(&SelectionSettingsChanged { settings, changed: event.changed.clone() })?;
+            // After the listener, so a malformed member is reported without
+            // keeping the change from it.
+            malformed.map_or(Ok(()), Err)
         })
     }
 
