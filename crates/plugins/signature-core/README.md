@@ -74,16 +74,23 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   for SignedData"; this port applies the same structure and reports the same text, but asn1js's
   schema matcher has corners (extra members, constructed strings) it doesn't follow member for
   member.
-- `timestamp::read_timestamp_info` checks the five members pkijs's `TSTInfo` schema requires and
-  ignores the rest. asn1js also ignores members past a schema's end, but it refuses some optional
-  members its matcher cannot place, so a token pkijs reads as `malformed` can pass this reader. Its
-  imprint and signature are still checked. A GeneralizedTime asn1js cannot read is `malformed` in
-  both, with different text.
+- `timestamp::read_timestamp_info` reads a TSTInfo as `new pkijs.TSTInfo({ schema })` does. The
+  schema match follows asn1js's `compareSchema`, including its rule that a trailing member no
+  optional slot can place fails the whole schema, and genTime goes through a port of asn1js's
+  `GeneralizedTime.fromString`. `tests/timestamp.rs` replays 66 TSTInfo inputs with the verdicts
+  pkijs 3.4.0 and asn1js 3.0.10 gave for them. Two corners stay apart. A GeneralizedTime without
+  `Z` is local time to asn1js, so its value depends on the host's time zone; this reads it as a
+  host on UTC does. Accepting or refusing it doesn't depend on the zone, and the gate never reads
+  the time. And asn1js stops at 100 levels and 10,000 nodes and meets a bad GeneralizedTime before
+  any BER error later in the bytes; this reader stops at 64 levels (H1) and reports the BER error.
+- A constructed eContent joins its primitive pieces only, as asn1js's `OctetString.getValue()`
+  does: a nested constructed piece adds no bytes.
 - An ECDSA hash shorter than half the curve's field (SHA-256 over P-521) is left-padded before
   `verify_prehash`, which is what WebCrypto's integer conversion does; the `ecdsa` crate would
   otherwise refuse it.
-- RSA keys go through `rsa::RsaPublicKey::new`, which refuses moduli above 4,096 bits. WebCrypto
-  in Node accepts up to 16,384. Such a signature verifies as `invalid` here.
+- RSA moduli up to 16,384 bits verify, and a longer one imports but never verifies, as Node's
+  WebCrypto behaves (`crypto.rs:126`, `tests/adversarial.rs:108,118`). This is not a deviation:
+  the `rsa` crate's own default stops at 4,096 bits, so the limit is set explicitly.
 - Two CA certificates that issue each other send pkijs's `buildPath` into a recursion that never
   returns: `validateChain` hangs. A straight port overflows the stack instead, which aborts the
   process, and a hostile PDF can carry such a chain. `ChainEngine::build_path` refuses an issuer
