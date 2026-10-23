@@ -635,7 +635,9 @@ impl Inner {
             let reason = cancelled(&format!("closed while opening: {}", s.id()));
             s.burst.borrow_mut().take();
             s.mirror_starts.borrow_mut().clear();
-            s.changes.close();
+            // The change queue closes in the scope's teardown (`create`'s
+            // defer), as TS closes it: after the plugins' event sources are
+            // disposed, so no listener hears the refusals.
             s.cancel.abort(reason.clone());
             let engine_op = s.engine_op.borrow().clone();
             if let Some(abort) = engine_op {
