@@ -1,0 +1,69 @@
+{
+  "base": "fe4e8b81793d9ea436f357a41e4de7c0b19b2eaa",
+  "commits": {
+    "stagedEdits": "291be55e577c2e1389f2497b30a5768f4f8df37f",
+    "permissions": "5443a5649c5fa07784c5726c0492dbeb35042dec",
+    "objectNumber": "595bdc6c72d7192a530f73eba58b9c3b1d0bb7fa",
+    "pageSpace": "6153c181e803ae87dc38bc63fd6f506c6905b1f1"
+  },
+  "currentOwners": [
+    {
+      "path": "packages/plugin/page-edit/src/controller.ts",
+      "sha256": "39bf49fa96d6908751083f3368f6843f8766214baa6bc6bb006382e2aab34b31"
+    },
+    {
+      "path": "packages/plugin/page-edit/src/contract.ts",
+      "sha256": "8f69dbe9c572d93aefd29d9dec932044c372dedbe98d621613f4e54e2b03887c"
+    },
+    {
+      "path": "packages/plugin/page-edit/src/model.ts",
+      "sha256": "c44258e49c59e24ba5bb383a6d69912d41542e562286108c7eac6efd894ead29"
+    },
+    {
+      "path": "packages/core/main/src/changes.ts",
+      "sha256": "686a67ac92baed42efd7aa7c4885f41418a5595957395a9cdddaac2ffcbbc866"
+    },
+    {
+      "path": "packages/core/main/src/page-of.ts",
+      "sha256": "3cd8ffb39e72cb23c24f63abe3b6d4514d68bc6e07d578f6ca230b5160eff1a5"
+    },
+    {
+      "path": "packages/core/main/src/errors.ts",
+      "sha256": "bc7012fde188e512fc7e24cf8e9aa828e9c5aff37171300b57c67d508b13b0fe"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/Change.ts",
+      "sha256": "0b8fcb5edd0a2b2b360b86994b6944fff036e16cbba116309430994229adc09c"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/ListPosition.ts",
+      "sha256": "74f2fdb95ecf1ee658f2d6e9eae83c76103204de2f9bd5dc0853c0bc57da68a0"
+    },
+    {
+      "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
+      "sha256": "2b16e4344fe7eb70bf15f720ec395d127ef320639b0d61554959651891df8c98"
+    },
+    {
+      "path": "packages/engine/core/src/events/DocumentEvent.ts",
+      "sha256": "9972d85381c4688bde882f7d14063bf26a228c287c3a685dcfc112fcb0d1cf57"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/PageInsertResult.ts",
+      "sha256": "9ddd4cebb5f3fc42c24207f99f8af1079fdd1e5f3897544e5a589176b5e4a6c7"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageLayout.ts",
+      "sha256": "7997a6156ecb159ce234594eae22e1d3385bf657f8c687f6dcc6f1914cb8a05b"
+    }
+  ],
+  "rules": {
+    "staging": "291be55e5 controller stages Change ops, labels and undo predictions; changes.ts sends immediately in staging order and engine owns order",
+    "positions": "291be55e5 move/placement index API becomes reorder/PagePosition neighbour or start/end; positionOf validates refs before sizeAt, even with explicit size",
+    "validation": "refsOf requires nonempty and pageOf existence; rotateBy type is quarter/half turns and PdfRotation required on every PageLayout",
+    "permissions": "controller refuse checks assemble/download then caller signal; duplicate also asserts download; other document extract is source engine authority",
+    "registry": "documents consumes full confirmed layout facts, events before promise settlement; returned result alone does not update registry",
+    "history": "rotationOf folds pending shows, rotate groups all ops into one change with undo groups; extraction sends holds and waits for changes.whenSettled",
+    "lifetime": "close cancels change queue with instance-closed; captured capability authority remains readable but writes cannot stage",
+    "boundaries": "Fake table supplies explicit typed engine facts/results only. No actual PDF parsing/editing claim; actual shipping controller/kernel/change queue execute."
+  }
+}

@@ -1,446 +1,545 @@
-/**
- * `packages/plugin/page-edit`. Replayed by
- * `crates/plugins/page-edit/tests/conformance.rs`.
- *
- * Stateless and document-scoped: every case is a scenario over the fake
- * engine, whose `security.allows` answers the `canEdit()` twin and whose
- * response table answers the page service (`pages.rotate` and the rest),
- * including the engine's own `PermissionDenied` refusal: the plugin has no
- * client-side gate, so a refused edit is the engine's rejection, passed
- * through as the promise the verb returns.
- */
+/** Current page-edit transactions over validated page refs and confirmed layouts. */
 import { pageEditPlugin, PageEditToken } from '../../../../packages/plugin/page-edit/src/index';
-
-import type { FakeDocumentSpec } from '../fake-engine';
-import { registerPlugin, type ScenarioCase, type Step } from '../scenario';
+import { registerPlugin, onCaseEnd, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "page-edit dispatches no actions. These cases pin what each verb sends the engine and how its promise settles.",
-} as const;
-
-registerPlugin('page-edit', { factory: () => pageEditPlugin(), tokens: [PageEditToken] });
-
-const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
-const box = (w: number, h: number) => ({ left: 0, bottom: 0, right: w, top: h });
-const page = (pon: number, index: number, rotation: number, width: number, height: number) => ({
-  index,
-  ref: pr(pon),
-  label: null,
-  size: { width, height },
-  rotation,
-  userUnit: 1,
-  boxes: { media: box(width, height), crop: box(width, height) },
-});
-const three = [page(10, 0, 0, 100, 200), page(20, 1, 90, 300, 400), page(30, 2, 270, 500, 600)];
-const doc = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({
-  pages: three,
-  security: { allows: ['doc.pages.assemble'] },
-  ...over,
-});
-const ok = (path: string, value: unknown = { ok: true }) => ({ path, value });
-
-const start: Step = { op: 'call', target: 'kernel', method: 'start' };
-const open = (id: string): Step => ({
-  op: 'call',
-  target: 'documents',
-  method: 'open',
-  args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
-});
-const edit = (method: string, args: unknown[] = [], doc = 'a'): Step => ({
-  op: 'call',
-  target: { token: 'page-edit', doc },
-  method,
-  args,
-});
-const denied = (required = 'doc.pages.assemble') => ({
-  name: 'PermissionDenied',
-  message: `permission denied (local): ${required}`,
-  required,
-  context: 'local',
-});
-
-const plugins = [{ factory: 'page-edit' }];
-const answering = [
-  ok('pages.rotate'),
-  ok('pages.move'),
-  ok('pages.delete'),
-  ok('pages.insertBlank', { insertedPages: [pr(99)] }),
-  ok('pages.insert', { insertedPages: [pr(77), pr(78)] }),
-];
-
-const cases: ScenarioCase[] = [
-  {
-    name: 'can-edit',
-    covers: 'canEdit() is the doc.pages.assemble authority, wildcard included; it is the one twin for every structure verb.',
-    plugins,
-    engine: {
-      documents: {
-        a: doc(),
-        b: doc({ security: { allows: ['doc.render', 'doc.pages.modify'] } }),
-        c: doc({ security: { allows: '*' } }),
-      },
-    },
-    steps: [start, open('a'), open('b'), open('c'), edit('canEdit', [], 'a'), edit('canEdit', [], 'b'), edit('canEdit', [], 'c')],
+import {
+  bindTransactions,
+  pr,
+  page,
+  three,
+  layout,
+  meta,
+  remote,
+  rotated,
+  reordered,
+  deleted,
+  inserted,
+  result,
+  fact,
+  answer,
+  doc,
+  start,
+  open,
+  close,
+  edit,
+  copy,
+  readPages,
+  emit,
+  settle,
+  scenario,
+} from './page-edit-current-fixtures';
+import { installCaseEntropy, restoreCaseEntropy } from '../case-entropy';
+registerPlugin('page-edit', {
+  factory: () => {
+    installCaseEntropy();
+    return pageEditPlugin();
   },
-  {
-    name: 'rotate-by',
-    covers:
-      'rotateBy turns a relative turn into the absolute wire from the registry rotation, wrapping into [0, 360); an unknown page rejects not-found; any number is carried through the arithmetic.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
+  tokens: [PageEditToken],
+});
+onCaseEnd(restoreCaseEntropy);
+const p10 = (r: 0 | 90 | 180 | 270) => [page(10, 0, r), three[1], three[2]];
+const r90 = rotated([pr(10)], 90, p10(90));
+const r180 = rotated([pr(10)], 180, p10(180));
+const d20 = deleted([pr(20)], [three[0], { ...three[2], index: 1 }]);
+const add99 = inserted('pages.insertBlank', [99], [...three, page(99, 3, 0, 500, 600)]);
+const ins77 = inserted('pages.insert', [77], [...three, page(77, 3, 0, 50, 60)]);
+const denied = {
+  name: 'PermissionDenied',
+  message: 'source download refused',
+  code: 'Forbidden',
+  details: { required: 'doc.download', context: 'local' },
+};
+const cases: ScenarioCase[] = [
+  scenario(
+    'can-edit',
+    'Assemble and download selectors are independent; wildcard grants both.',
+    [],
+    [
+      edit('canEdit', []),
+      edit('canExtract', []),
+      open('b'),
+      edit('canEdit', [], 'b'),
+      edit('canExtract', [], 'b'),
+      open('c'),
+      edit('canEdit', [], 'c'),
+      edit('canExtract', [], 'c'),
+    ],
+  ),
+  scenario(
+    'rotate-by',
+    'Relative quarter/half turns use confirmed current rotations; unknown pages reject before staging.',
+    [
+      answer(r90),
+      answer(rotated([pr(10)], 0, p10(0))),
+      answer(rotated([pr(20)], 180, [three[0], page(20, 1, 180, 300, 400), three[2]])),
+      answer(
+        rotated([pr(30)], 0, [three[0], page(20, 1, 180, 300, 400), page(30, 2, 0, 500, 600)]),
+      ),
+      answer(rotated([pr(30)], 270, [three[0], page(20, 1, 180, 300, 400), three[2]])),
+    ],
+    [
       edit('rotateBy', [[pr(10)], 90]),
+      readPages,
       edit('rotateBy', [[pr(10)], -90]),
       edit('rotateBy', [[pr(20)], 90]),
       edit('rotateBy', [[pr(30)], 90]),
       edit('rotateBy', [[pr(30)], -90]),
       edit('rotateBy', [[pr(99)], 90]),
       edit('rotateBy', [[pr(99)], -90]),
-      edit('rotateBy', [[pr(20)], 45]),
-      edit('rotateBy', [[pr(20)], 450]),
-      edit('rotateBy', [[pr(20)], -720]),
-      edit('rotateBy', [[pr(20)], -900]),
-      edit('rotateBy', [[pr(20)], 0.5]),
-      edit('rotateBy', [[pr(20)], { $number: 'NaN' }]),
+      readPages,
     ],
-  },
-  {
-    name: 'rotate-by-follows-the-registry',
-    covers: 'After a pages.rotated event replaces the registry, rotateBy starts from the new rotation.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      { op: 'emit', doc: 'a', event: { type: 'pages.rotated', pages: [pr(10)], origin: { kind: 'local', sessionId: 's1', sub: null }, layout: { pageCount: 3, pages: [page(10, 0, 180, 100, 200), three[1], three[2]] } } },
+  ),
+  scenario(
+    'rotate-by-follows-the-registry',
+    'A remote confirmed layout replaces the registry before the next relative turn.',
+    [answer(rotated([pr(10)], 270, p10(270)))],
+    [
+      emit(fact(rotated([pr(10)], 180, p10(180)), remote)),
       edit('rotateBy', [[pr(10)], 90]),
+      readPages,
     ],
-  },
-  {
-    name: 'passthroughs',
-    covers: 'setRotation, move and delete forward their arguments unchanged and return the engine promise, which settles with the engine answer.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [start, open('a'), edit('setRotation', [[pr(10), pr(20)], 180]), edit('move', [[pr(20), pr(30)], { index: 0 }]), edit('delete', [[pr(30)]]), edit('move', [[], { index: -1 }])],
-  },
-  {
-    name: 'refused-by-the-engine',
-    covers:
-      'Without doc.pages.assemble canEdit() is false, and every verb still calls the engine, whose PermissionDenied rejects the returned promise with its full shape.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      documents: {
-        a: doc({
-          security: { allows: ['doc.render'] },
-          responses: ['pages.rotate', 'pages.move', 'pages.delete', 'pages.insertBlank', 'pages.insert'].map((path) => ({ path, error: denied() })),
-        }),
-      },
-    },
-    steps: [
-      start,
-      open('a'),
-      edit('canEdit'),
+  ),
+  scenario(
+    'passthroughs',
+    'Absolute rotation, reorder and delete stage precise current ops, then expose confirmed order/count.',
+    [
+      answer(
+        rotated([pr(10), pr(20)], 180, [page(10, 0, 180), page(20, 1, 180, 300, 400), three[2]]),
+      ),
+      answer(
+        reordered(
+          [pr(20), pr(30)],
+          [page(20, 0, 180, 300, 400), { ...three[2], index: 1 }, page(10, 2, 180)],
+        ),
+      ),
+      answer(deleted([pr(30)], [page(20, 0, 180, 300, 400), page(10, 1, 180)])),
+    ],
+    [
+      edit('setRotation', [[pr(10), pr(20)], 180]),
+      edit('reorder', [[pr(20), pr(30)], 'start']),
+      readPages,
+      edit('delete', [[pr(30)]]),
+      readPages,
+      edit('reorder', [[], 'start']),
+    ],
+  ),
+  scenario(
+    'refused-by-the-engine',
+    'Local permission gates refuse all writes before engine work; an allowed verb preserves engine refusal.',
+    [],
+    [
+      edit('canEdit', []),
       edit('rotateBy', [[pr(10)], 90]),
       edit('setRotation', [[pr(10)], 90]),
-      edit('move', [[pr(10)], { index: 2 }]),
+      edit('reorder', [[pr(10)], 'end']),
       edit('delete', [[pr(10)]]),
-      edit('insertBlank'),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }]),
+      edit('insertBlank', []),
+      copy('insertFromBytes'),
+      edit('extract', [[pr(10)]]),
+      edit('duplicate', [[pr(10)]]),
+      open('b'),
+      edit('rotateBy', [[pr(10)], 90], 'b'),
     ],
-  },
-  {
-    name: 'deferred-and-aborted',
-    covers: 'A deferred edit settles when the engine answers, and the verbs run one at a time: the delete reaches the engine only after the rotate settles.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      documents: {
-        a: doc({
-          responses: [
-            { path: 'pages.rotate', defer: 'rotate' },
-            { path: 'pages.delete', defer: 'delete' },
-          ],
-        }),
+    { security: { allows: ['doc.render'] } },
+  ),
+  scenario(
+    'deferred-and-aborted',
+    'Deferred staged edits are sent in staging order; pages stay confirmed until each event arrives.',
+    [
+      { path: 'apply', times: 1, defer: 'rotate', events: [fact(r90)] },
+      {
+        path: 'apply',
+        times: 1,
+        defer: 'delete',
+        events: [fact(deleted([pr(20)], [page(10, 0, 90), { ...three[2], index: 1 }]))],
       },
-    },
-    steps: [
-      start,
-      open('a'),
+    ],
+    [
       edit('rotateBy', [[pr(10)], 90]),
       edit('delete', [[pr(20)]]),
-      { op: 'settle', label: 'rotate', value: { rotated: [10] } },
-      { op: 'settle', label: 'delete', value: { deleted: [20] } },
+      readPages,
+      settle('rotate', result(r90)),
+      readPages,
+      settle('delete', result(deleted([pr(20)], [page(10, 0, 90), { ...three[2], index: 1 }]))),
+      readPages,
     ],
-  },
-  {
-    name: 'add-blank',
-    covers:
-      'insertBlank: append by default sized like the last page; ref placements land after/before the anchor sized like it; an index placement is forwarded verbatim and sized like its predecessor, clamped into the registry; explicit size and count win; a missing anchor rejects not-found.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      edit('insertBlank'),
-      edit('insertBlank', [{}]),
-      edit('insertBlank', [{ placement: { after: pr(20) } }]),
-      edit('insertBlank', [{ placement: { before: pr(10) } }]),
-      edit('insertBlank', [{ placement: { before: pr(30) } }]),
-      edit('insertBlank', [{ placement: { index: 2 } }]),
-      edit('insertBlank', [{ placement: { index: 0 } }]),
-      edit('insertBlank', [{ placement: { index: -5 } }]),
-      edit('insertBlank', [{ placement: { index: 10 } }]),
-      edit('insertBlank', [{ size: { width: 612, height: 792 }, count: 3, placement: { after: pr(10) } }]),
-      edit('insertBlank', [{ count: 2 }]),
-      edit('insertBlank', [{ size: { width: 1, height: 2 } }]),
-      edit('insertBlank', [{ placement: { after: pr(99) } }]),
-      edit('insertBlank', [{ placement: { before: pr(99) } }]),
-      edit('insertBlank', [{ placement: { index: 1, after: pr(99) } }]),
-      edit('insertBlank', [{ placement: { after: pr(10), before: pr(30) } }]),
-    ],
-  },
-  {
-    name: 'add-blank-fractional-index',
-    covers:
-      'An index placement that is not an integer (or NaN) makes the predecessor lookup read a page that does not exist, which throws the TypeError the TypeScript throws; an explicit size skips the lookup.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      edit('insertBlank', [{ placement: { index: 1.5 } }]),
-      edit('insertBlank', [{ placement: { index: { $number: 'NaN' } } }]),
-      edit('insertBlank', [{ placement: { index: { $number: 'Infinity' } } }]),
-      edit('insertBlank', [{ placement: { index: 1.5 }, size: { width: 3, height: 4 } }]),
-    ],
-  },
-  {
-    name: 'insert',
-    covers: 'insertFromBytes forwards the bytes and the resolved placement index; a missing anchor rejects not-found before any engine call.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, {}]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { placement: { after: pr(20) } }]),
-      edit('insertFromBytes', [{ $bytes: '' }, { placement: { before: pr(30) } }]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { placement: { index: 7 } }]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { placement: { after: pr(5) } }]),
-    ],
-  },
-  {
-    name: 'a-captured-capability-outlives-its-document',
-    covers:
-      'A capability captured before its document closed keeps its guarded handle and the last registry it saw: canEdit still answers, and each verb still reaches the engine, but its promise rejects instance-closed (the kernel no longer resolves the capability).',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'page-edit' }, 'a'] },
-      { op: 'call', target: 'documents', method: 'close', args: ['a'] },
-      edit('canEdit'),
-      { op: 'call', target: { ref: 0 } },
-      { op: 'call', target: { ref: 1 }, args: [[pr(20)], 90] },
-      { op: 'call', target: { ref: 5 }, args: [] },
-      { op: 'call', target: { ref: 5 }, args: [{ placement: { index: 3 } }] },
-      { op: 'call', target: { ref: 5 }, args: [{ placement: { after: pr(20) } }] },
-    ],
-  },
-  {
-    name: 'an-empty-registry',
-    covers: 'A document with no pages: rotation reads as 0, a PON anchor is not found, and a blank page defaults to US Letter wherever it goes.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ pages: [], responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      edit('rotateBy', [[pr(10)], -90]),
-      edit('insertBlank'),
-      edit('insertBlank', [{ placement: { index: 4 } }]),
-      edit('insertBlank', [{ placement: { index: 0.5 } }]),
-      edit('insertBlank', [{ placement: { after: pr(10) } }]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { placement: { index: 0 } }]),
-    ],
-  },
-  {
-    name: 'rotate-by-groups-and-empty',
-    covers:
-      'rotateBy groups pages by their resulting rotation and makes one engine call per group, in first-seen order, resolving with the last answer; no pages rejects invalid-input without an engine call.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      documents: {
-        a: doc({
-          pages: [...three, page(40, 3, 0, 700, 800)],
-          responses: [
-            { path: 'pages.rotate', args: [[pr(10), pr(40)], 90], value: { rotated: 'first' } },
-            { path: 'pages.rotate', args: [[pr(20)], 180], value: { rotated: 'second' } },
-            { path: 'pages.rotate', args: [[pr(30)], 0], value: { rotated: 'third' } },
+  ),
+  scenario(
+    'add-blank',
+    'Blank defaults and explicit size/count use end/start or validated neighbour positions.',
+    [
+      answer(add99),
+      answer(
+        inserted(
+          'pages.insertBlank',
+          [98],
+          [...three, page(99, 3, 0, 500, 600), page(98, 4, 0, 500, 600)],
+        ),
+      ),
+      answer(
+        inserted(
+          'pages.insertBlank',
+          [97],
+          [
+            three[0],
+            three[1],
+            page(97, 2, 0, 300, 400),
+            { ...three[2], index: 3 },
+            page(99, 4, 0, 500, 600),
+            page(98, 5, 0, 500, 600),
           ],
-        }),
-      },
-    },
-    steps: [start, open('a'), edit('rotateBy', [[pr(10), pr(20), pr(30), pr(40)], 90]), edit('rotateBy', [[], 90])],
-  },
-  {
-    name: 'move-to-the-end',
-    covers: "move with 'end' (or no placement) sends the registry's page count as the destination; ref placements resolve after or before their anchor.",
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: answering }) } },
-    steps: [
-      start,
-      open('a'),
-      edit('move', [[pr(10)], 'end']),
-      edit('move', [[pr(10)]]),
-      edit('move', [[pr(30)], { after: pr(10) }]),
-      edit('move', [[pr(10)], { before: pr(30) }]),
-      edit('move', [[pr(10)], { before: pr(99) }]),
+        ),
+      ),
+      answer(
+        inserted(
+          'pages.insertBlank',
+          [96, 95, 94],
+          [
+            page(10, 0),
+            page(96, 1, 0, 612, 792),
+            page(95, 2, 0, 612, 792),
+            page(94, 3, 0, 612, 792),
+            page(20, 4, 90, 300, 400),
+            page(97, 5, 0, 300, 400),
+            page(30, 6, 270, 500, 600),
+            page(99, 7, 0, 500, 600),
+            page(98, 8, 0, 500, 600),
+          ],
+        ),
+      ),
     ],
-  },
-  {
-    name: 'insert-a-subset-of-another-pdf',
-    covers:
-      'insertFromBytes with pageIndexes opens the bytes beside the document (full scope, an id from the clock), lists its pages, extracts the chosen ones by ref, inserts the extract at the placement and closes the source. A missing index rejects not-found and still closes the source; a refused open rejects with the mapped error.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      defaultDocument: 'src',
-      documents: {
-        a: doc({ responses: answering }),
-        src: {
-          pages: [page(5, 0, 0, 10, 20), page(6, 1, 0, 30, 40), page(7, 2, 0, 50, 60)],
-          responses: [{ path: 'pages.extract', value: { $bytes: 'BAUG' } }],
-        },
-      },
-      responses: [
-        { path: 'open', args: [{ kind: 'bytes', id: 'page-edit-source-0', bytes: { $bytes: 'ERET' } }, { scope: ['*'] }], times: 1, error: denied('doc.open') },
-      ],
-    },
-    steps: [
-      start,
-      open('a'),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [2, 0], placement: { after: pr(10) } }]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [] }]),
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [1, 3] }]),
-      edit('insertFromBytes', [{ $bytes: 'ERET' }, { pageIndexes: [0] }]),
+    [
+      edit('insertBlank', []),
+      edit('insertBlank', [{}]),
+      edit('insertBlank', [{ position: { after: pr(20) } }]),
+      edit('insertBlank', [
+        { position: { after: pr(10) }, size: { width: 612, height: 792 }, count: 3 },
+      ]),
+      edit('insertBlank', [{ position: { after: pr(99 + 100) } }]),
+      edit('insertBlank', [{ position: { before: pr(199) } }]),
+      readPages,
     ],
-  },
-  {
-    name: 'insert-a-subset-names-the-missing-index',
-    covers:
-      "The source id is Date.now() in base 36. A pageIndexes entry that is negative, fractional or not finite names no page and rejects not-found, the message spelling the index as String() does (1e+21, 1e-7 and all).",
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      defaultDocument: 'src',
-      documents: {
-        a: doc({ responses: answering }),
-        src: {
-          pages: [page(5, 0, 0, 10, 20), page(6, 1, 0, 30, 40), page(7, 2, 0, 50, 60)],
-          responses: [{ path: 'pages.extract', value: { $bytes: 'BAUG' } }],
-        },
-      },
-    },
-    steps: [
-      start,
-      open('a'),
+  ),
+  scenario(
+    'add-blank-fractional-index',
+    'Index positions retired; invalid numeric neighbour arguments now reject not-found without TypeErrors, explicit size does not bypass validation.',
+    [],
+    [
+      ...[1.5, NaN, Infinity].map((n) => edit('insertBlank', [{ position: { before: pr(n) } }])),
+      edit('insertBlank', [{ position: { before: pr(1.5) }, size: { width: 3, height: 4 } }]),
+    ],
+  ),
+  scenario(
+    'insert',
+    'Byte insertion retains source bytes and validated neighbour/end position; missing anchors refuse.',
+    [
+      answer(ins77),
+      answer(
+        inserted(
+          'pages.insert',
+          [78],
+          [three[0], three[1], page(78, 2), { ...three[2], index: 3 }, page(77, 4, 0, 50, 60)],
+        ),
+      ),
+    ],
+    [
+      copy('insertFromBytes'),
+      copy('insertFromBytes', { $bytes: '' }, { position: { before: pr(30) } }),
+      copy('insertFromBytes', undefined, { position: { after: pr(5) } }),
+      readPages,
+    ],
+  ),
+  scenario(
+    'a-captured-capability-outlives-its-document',
+    'Captured capability reads authority after close; staged verbs reject instance-closed while unresolved token lookup is absent.',
+    [],
+    [
+      { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'page-edit' }, 'a'] },
+      close,
+      edit('canEdit', []),
+      { op: 'call', target: { ref: 0 } },
+      { op: 'call', target: { ref: 4 }, args: [[pr(20)], 90] },
+      { op: 'call', target: { ref: 8 }, args: [] },
+    ],
+  ),
+  scenario(
+    'an-empty-registry',
+    'Missing pages reject; an empty document inserts Letter blanks at start/end then exposes confirmed new pages.',
+    [
+      answer(inserted('pages.insertBlank', [99], [page(99, 0, 0, 612, 792)])),
+      answer(inserted('pages.insert', [77], [page(77, 0), page(99, 1, 0, 612, 792)])),
+    ],
+    [
+      edit('rotateBy', [[pr(10)], -90]),
+      edit('insertBlank', []),
+      copy('insertFromBytes', undefined, { position: 'start' }),
+      edit('insertBlank', [{ position: { after: pr(10) } }]),
+      readPages,
+    ],
+    { pages: [] },
+  ),
+  scenario(
+    'rotate-by-groups-and-empty',
+    'Different rotations group as three ops in one history transaction; empty pages reject.',
+    [
+      answer(
+        rotated([pr(10), pr(40)], 90, [page(10, 0, 90), three[1], three[2], page(40, 3, 90)]),
+        rotated([pr(20)], 180, [
+          page(10, 0, 90),
+          page(20, 1, 180, 300, 400),
+          three[2],
+          page(40, 3, 90),
+        ]),
+        rotated([pr(30)], 0, [
+          page(10, 0, 90),
+          page(20, 1, 180, 300, 400),
+          page(30, 2, 0, 500, 600),
+          page(40, 3, 90),
+        ]),
+      ),
+    ],
+    [
+      edit('rotateBy', [[pr(10), pr(20), pr(30), pr(40)], 90]),
+      edit('rotateBy', [[], 90]),
+      readPages,
+    ],
+    { pages: [...three, page(40, 3)] },
+  ),
+  scenario(
+    'move-to-the-end',
+    'Reorder keeps end and validated ref positions; missing anchor refuses.',
+    [
+      answer(
+        reordered([pr(10)], [{ ...three[1], index: 0 }, { ...three[2], index: 1 }, page(10, 2)]),
+      ),
+      answer(
+        reordered([pr(30)], [{ ...three[1], index: 0 }, page(10, 1), { ...three[2], index: 2 }]),
+      ),
+      answer(
+        reordered([pr(10)], [{ ...three[1], index: 0 }, page(10, 1), { ...three[2], index: 2 }]),
+      ),
+    ],
+    [
+      edit('reorder', [[pr(10)], 'end']),
+      edit('reorder', [[pr(30)], { after: pr(10) }]),
+      edit('reorder', [[pr(10)], { before: pr(30) }]),
+      edit('reorder', [[pr(10)], { before: pr(99) }]),
+      readPages,
+    ],
+  ),
+  scenario(
+    'insert-a-subset-of-another-pdf',
+    'Scratch source opens with full scope, extracts selected refs in order and closes on success/refusal.',
+    [
+      answer(
+        inserted(
+          'pages.insert',
+          [77, 78],
+          [
+            three[0],
+            page(77, 1, 0, 50, 60),
+            page(78, 2, 0, 10, 20),
+            { ...three[1], index: 3 },
+            { ...three[2], index: 4 },
+          ],
+        ),
+      ),
+    ],
+    [
+      copy('insertFromBytes', undefined, { pageIndexes: [2, 0], position: { after: pr(10) } }),
+      copy('insertFromBytes', undefined, { pageIndexes: [] }),
+      copy('insertFromBytes', undefined, { pageIndexes: [1, 3] }),
+      copy('insertFromBytes', { $bytes: 'ERET' }, { pageIndexes: [0] }),
+    ],
+  ),
+  scenario(
+    'insert-a-subset-names-the-missing-index',
+    'Source ids use the clock; invalid source indexes name their value in not-found and close the scratch handle.',
+    [answer(inserted('pages.insert', [77], [...three, page(77, 3, 0, 30, 40)]))],
+    [
       { op: 'advance', ms: 1234567890 },
-      edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [1] }]),
-      ...[
-        -1,
-        1.5,
-        -0.5,
-        { $number: 'Infinity' },
-        { $number: '-Infinity' },
-        { $number: 'NaN' },
-        1e20,
-        1e21,
-        1e-7,
-      ].map((index) => edit('insertFromBytes', [{ $bytes: 'AQID' }, { pageIndexes: [index] }])),
+      copy('insertFromBytes', undefined, { pageIndexes: [1] }),
+      ...[-1, 1.5, -0.5, Infinity, -Infinity, NaN, 1e20, 1e21, 1e-7].map((n) =>
+        copy('insertFromBytes', undefined, { pageIndexes: [n] }),
+      ),
     ],
-  },
-  {
-    name: 'rotate-by-a-page-without-a-rotation',
-    covers:
-      'A registry page with no rotation turns into NaN, which is its own Map key: the numbered pages still group apart from it, one engine call per group.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      documents: {
-        a: doc({
-          pages: [three[0], { ...three[1], rotation: undefined }, three[2]],
-          responses: answering,
-        }),
-      },
-    },
-    steps: [start, open('a'), edit('rotateBy', [[pr(10), pr(20), pr(30)], 90])],
-  },
-  {
-    name: 'insert-from-another-document',
-    covers:
-      "insertFromDocument extracts the pages from the other open document's handle and inserts the bytes at the placement ('end' by default); a document that is not open rejects not-found; a refused extract rejects with the mapped error.",
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: {
-      documents: {
-        a: doc({ responses: answering }),
-        b: doc({ responses: [{ path: 'pages.extract', args: [[pr(20)]], value: { $bytes: 'BwgJ' } }, { path: 'pages.extract', error: denied('doc.pages.extract') }] }),
-      },
-    },
-    steps: [
-      start,
-      open('a'),
+  ),
+  scenario(
+    'rotate-by-a-page-without-a-rotation',
+    'Malformed undefined rotations retire; valid mixed registry rotations retain separate groups.',
+    [
+      answer(
+        rotated([pr(10)], 90, [page(10, 0, 90), three[1], three[2]]),
+        rotated([pr(20)], 180, [page(10, 0, 90), page(20, 1, 180, 300, 400), three[2]]),
+        rotated([pr(30)], 0, [
+          page(10, 0, 90),
+          page(20, 1, 180, 300, 400),
+          page(30, 2, 0, 500, 600),
+        ]),
+      ),
+    ],
+    [edit('rotateBy', [[pr(10), pr(20), pr(30)], 90]), readPages],
+  ),
+  scenario(
+    'insert-from-another-document',
+    'Open source resolves its own refs/indexes and extracts bytes; missing source/page and source download refusal propagate.',
+    [
+      answer(inserted('pages.insert', [77], [...three, page(77, 3, 90, 300, 400)])),
+      answer(
+        inserted(
+          'pages.insert',
+          [78],
+          [
+            page(78, 0, 90, 300, 400),
+            ...three.map((p) => ({ ...p, index: p.index + 1 })),
+            page(77, 4, 90, 300, 400),
+          ],
+        ),
+      ),
+    ],
+    [
       open('b'),
       edit('insertFromDocument', ['b', [pr(20)]]),
-      edit('insertFromDocument', ['b', [pr(20)], { placement: { index: 0 } }]),
+      edit('insertFromDocument', ['b', [1], { position: 'start' }]),
       edit('insertFromDocument', ['zzz', [pr(20)]]),
+      edit('insertFromDocument', ['b', [pr(99)]]),
       edit('insertFromDocument', ['b', [pr(30)]]),
     ],
-  },
-  {
-    name: 'duplicate',
-    covers:
-      'duplicate extracts the pages and inserts the copy right after the last of them by default, or at the placement given; no pages rejects invalid-input before any engine call.',
-    plugins,
-    ...UNSNAPSHOTTED,
-    engine: { documents: { a: doc({ responses: [...answering, { path: 'pages.extract', value: { $bytes: 'CgsM' } }] }) } },
-    steps: [
-      start,
-      open('a'),
+  ),
+  scenario(
+    'duplicate',
+    'Duplicate waits for staged work then extracts and inserts after last ref; explicit end, unknown/empty refusals and direct extraction survive.',
+    [
+      { path: 'pages.extract', value: { $bytes: 'CgsM' } },
+      answer(
+        inserted(
+          'pages.insert',
+          [77, 78],
+          [three[0], three[1], page(77, 2), page(78, 3, 90, 300, 400), { ...three[2], index: 4 }],
+        ),
+      ),
+      answer(
+        inserted(
+          'pages.insert',
+          [79],
+          [
+            three[0],
+            three[1],
+            page(77, 2),
+            page(78, 3, 90, 300, 400),
+            { ...three[2], index: 4 },
+            page(79, 5, 270, 500, 600),
+          ],
+        ),
+      ),
+    ],
+    [
       edit('duplicate', [[pr(10), pr(20)]]),
-      edit('duplicate', [[pr(30)], { placement: 'end' }]),
+      edit('duplicate', [[pr(30)], { position: 'end' }]),
       edit('duplicate', [[pr(99)]]),
       edit('duplicate', [[]]),
       edit('extract', [[pr(10)]]),
+      readPages,
     ],
-  },
+  ),
   {
     name: 'state-and-scope',
-    covers: 'The plugin keeps an empty slice per document and has no capability before a document opens.',
-    plugins,
+    covers:
+      'Capability is absent before open; current selection is empty and selecting pages deduplicates resolved refs.',
+    plugins: [{ factory: 'page-edit' }],
     engine: { documents: { a: doc() } },
-    steps: [edit('canEdit'), start, edit('canEdit'), open('a'), edit('canEdit')],
+    steps: [
+      edit('canEdit', []),
+      start,
+      edit('canEdit', []),
+      open(),
+      edit('canEdit', []),
+      edit('getSelected', []),
+      edit('select', [[0, pr(20), pr(20), pr(99)]]),
+      edit('getSelected', []),
+      edit('select', [[]]),
+      edit('getSelected', []),
+    ],
   },
 ];
-
+// Each document and scratch answer uses the existing current fake/engine ports.
+const configured = cases.map((c) => {
+  let engine = c.engine!;
+  if (c.name === 'can-edit')
+    engine = {
+      ...engine,
+      documents: {
+        ...engine.documents,
+        b: doc([], { security: { allows: ['doc.download'] } }),
+        c: doc([], { security: { allows: '*' } }),
+      },
+    };
+  if (c.name === 'refused-by-the-engine')
+    engine = {
+      ...engine,
+      documents: {
+        ...engine.documents,
+        b: doc([
+          {
+            path: 'apply',
+            error: {
+              name: 'EngineError',
+              message: 'write refused',
+              code: 'Forbidden',
+              details: { required: 'doc.pages.assemble', context: 'local' },
+            },
+          },
+        ]),
+      },
+    };
+  if (c.name.startsWith('insert-a-subset')) {
+    engine = {
+      ...engine,
+      defaultDocument: 'src',
+      documents: {
+        ...engine.documents,
+        src: doc([{ path: 'pages.extract', value: { $bytes: 'BAUG' } }], {
+          pages: [page(5, 0, 0, 10, 20), page(6, 1, 0, 30, 40), page(7, 2, 0, 50, 60)],
+        }),
+      },
+      responses:
+        c.name === 'insert-a-subset-names-the-missing-index'
+          ? []
+          : [
+              {
+                path: 'open',
+                args: [
+                  { kind: 'bytes', id: 'page-edit-source-0', bytes: { $bytes: 'ERET' } },
+                  { scope: ['*'] },
+                ],
+                error: {
+                  name: 'EngineError',
+                  message: 'source open refused',
+                  code: 'Forbidden',
+                  details: { required: 'doc.open', context: 'local' },
+                },
+              },
+            ],
+    };
+  }
+  if (c.name === 'insert-from-another-document')
+    engine = {
+      ...engine,
+      documents: {
+        ...engine.documents,
+        b: doc([
+          { path: 'pages.extract', args: [[pr(20)]], value: { $bytes: 'BwgJ' } },
+          { path: 'pages.extract', error: denied },
+        ]),
+      },
+    };
+  return bindTransactions({ ...c, engine });
+});
 export const suites: Suite[] = [
-  { kind: 'scenario', file: 'plugins/page-edit.json', describes: 'packages/plugin/page-edit: PON-addressed page edits over the engine handle.', cases },
+  {
+    kind: 'scenario',
+    file: 'plugins/page-edit.json',
+    describes: 'Current validated page edits, staged transactions and confirmed registry layouts.',
+    cases: configured,
+  },
 ];

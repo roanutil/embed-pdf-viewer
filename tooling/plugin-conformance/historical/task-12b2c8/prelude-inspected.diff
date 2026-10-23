@@ -1,0 +1,372 @@
+diff --git a/crates/plugins/acrojs/prelude.js b/crates/plugins/acrojs/prelude.js
+index 711097439..9cf3d7672 100644
+--- a/crates/plugins/acrojs/prelude.js
++++ b/crates/plugins/acrojs/prelude.js
+@@ -1,18 +1,18 @@
+-(function installAcroJs(g) {
+-    const host = g;
++(function installAcroJs(globalObject) {
++    const host = globalObject;
+     const NativeDate = Date;
+     let state = null;
+     const cloneValue = (value) => Array.isArray(value) ? value.map((item) => String(item)) : value;
+-    const sameValue = (a, b) => {
+-        if (Array.isArray(a) && Array.isArray(b)) {
+-            return a.length === b.length && a.every((item, index) => item === b[index]);
++    const sameValue = (left, right) => {
++        if (Array.isArray(left) && Array.isArray(right)) {
++            return left.length === right.length && left.every((item, index) => item === right[index]);
+         }
+-        return a === b;
++        return left === right;
+     };
+     const refKey = (ref) => {
+         const value = ref;
+         return value?.kind === 'objectNumber'
+-            ? `obj:${String(value.fieldObjectNumber)}`
++            ? `obj:${String(value.objectNumber)}`
+             : `fqn:${String(value?.name ?? '')}`;
+     };
+     const diagnostic = (code, message) => {
+@@ -148,17 +148,21 @@
+             return [Number(color[1]), Number(color[1]), Number(color[1])];
+         if (space === 'RGB')
+             return [Number(color[1]), Number(color[2]), Number(color[3])];
+-        const c = Number(color[1]);
+-        const m = Number(color[2]);
+-        const y = Number(color[3]);
+-        const k = Number(color[4]);
+-        return [1 - Math.min(1, c + k), 1 - Math.min(1, m + k), 1 - Math.min(1, y + k)];
++        const cyan = Number(color[1]);
++        const magenta = Number(color[2]);
++        const yellow = Number(color[3]);
++        const black = Number(color[4]);
++        return [
++            1 - Math.min(1, cyan + black),
++            1 - Math.min(1, magenta + black),
++            1 - Math.min(1, yellow + black),
++        ];
+     };
+-    const sameAnnotValue = (a, b) => {
+-        if (Array.isArray(a) && Array.isArray(b)) {
+-            return a.length === b.length && a.every((item, index) => item === b[index]);
++    const sameAnnotValue = (left, right) => {
++        if (Array.isArray(left) && Array.isArray(right)) {
++            return left.length === right.length && left.every((item, index) => item === right[index]);
+         }
+-        return a === b;
++        return left === right;
+     };
+     const cloneAnnotValue = (value) => (Array.isArray(value) ? [...value] : value);
+     const makeAnnot = (record) => {
+@@ -188,8 +192,8 @@
+             get: () => cloneAnnotValue(record.current[key]),
+             set: (value) => stage(key, value, validate),
+         });
+-        const isNum = (v) => typeof v === 'number' && isFinite(v);
+-        const isBool = (v) => typeof v === 'boolean';
++        const isNum = (value) => typeof value === 'number' && isFinite(value);
++        const isBool = (value) => typeof value === 'boolean';
+         Object.defineProperties(wrapper, {
+             name: { enumerable: true, get: () => String(input.name ?? '') },
+             type: { enumerable: true, get: () => ACROBAT_TYPE[subtype] ?? subtype },
+@@ -198,12 +202,12 @@
+             subject: { enumerable: true, get: () => String(input.subject ?? '') },
+             strokeColor: prop('strokeColor', isColorArray),
+             fillColor: prop('fillColor', isColorArray),
+-            opacity: prop('opacity', (v) => isNum(v) && Number(v) >= 0 && Number(v) <= 1),
+-            width: prop('width', (v) => isNum(v) && Number(v) >= 0),
+-            style: prop('borderStyle', (v) => v === 'S' || v === 'D'),
+-            dash: prop('dash', (v) => Array.isArray(v) && v.every(isNum)),
+-            rect: prop('rect', (v) => Array.isArray(v) && v.length === 4 && v.every(isNum)),
+-            contents: prop('contents', (v) => typeof v === 'string'),
++            opacity: prop('opacity', (value) => isNum(value) && Number(value) >= 0 && Number(value) <= 1),
++            width: prop('width', (value) => isNum(value) && Number(value) >= 0),
++            style: prop('borderStyle', (value) => value === 'S' || value === 'D'),
++            dash: prop('dash', (value) => Array.isArray(value) && value.every(isNum)),
++            rect: prop('rect', (value) => Array.isArray(value) && value.length === 4 && value.every(isNum)),
++            contents: prop('contents', (value) => typeof value === 'string'),
+             hidden: prop('hidden', isBool),
+             print: prop('print', isBool),
+             readOnly: prop('readOnly', isBool),
+@@ -296,7 +300,7 @@
+     doc.print = () => state?.uiEffects.push({ kind: 'print' });
+     // Acrobat's doc.submitForm: positional (cURL, bFDF, bEmpty, aFields) or a
+     // single argument object ({cURL, aFields, bEmpty, cSubmitAs, bGet}). It
+-    // emits a submit INTENT — resolution (Table 239/240 semantics) and the
++    // emits a submit intent — resolution (Table 239/240 semantics) and the
+     // sink chain (embedder handler → the document's home → blocked) live
+     // outside the VM; nothing here touches a network.
+     doc.submitForm = (cUrlOrArgs, bFDF, bEmpty, aFields) => {
+@@ -304,7 +308,7 @@
+             return;
+         const args = cUrlOrArgs !== null && typeof cUrlOrArgs === 'object'
+             ? cUrlOrArgs
+-            : { cURL: cUrlOrArgs, bFDF: bFDF, bEmpty: bEmpty, aFields: aFields };
++            : { cURL: cUrlOrArgs, bFDF, bEmpty, aFields };
+         const names = Array.isArray(args.aFields)
+             ? args.aFields.map((name) => String(name))
+             : null;
+@@ -336,7 +340,7 @@
+         // boilerplate (`!ADBE::…VersChk…` name-tree scripts) branches on. Honest
+         // values for an emulated modern-Reader-level environment, so those
+         // scripts take their "viewer is current" paths instead of tripping over
+-        // `undefined`. Deliberately NO `xfa_installed`: we never claim XFA.
++        // `undefined`. Deliberately no `xfa_installed`: we never claim XFA.
+         platform: 'WIN',
+         language: 'ENU',
+         viewerType: 'Reader',
+@@ -359,7 +363,7 @@
+         },
+         launchURL: () => blocked('app.launchURL'),
+         // Acrobat's contract when a viewer component (e.g. the XFA plugin) is not
+-        // available is `undefined` — NEVER a throw. A web viewer has no
++        // available is `undefined` — never a throw. A web viewer has no
+         // installable components, so "not available" is always the truthful
+         // answer; Adobe's XFA-check boilerplate calls this after its upgrade nag.
+         findComponent: () => {
+@@ -461,25 +465,25 @@
+         });
+         const fieldsByName = new Map(fields.map((field) => [String(field.input.name), field]));
+         const fieldsByRef = new Map(fields.map((field) => [refKey(field.input.ref), field]));
+-        const annots = (input.annots ?? []).map((annot) => {
++        const annots = (input.annots ?? []).map((annotation) => {
+             const writableSnapshot = () => ({
+-                strokeColor: cloneAnnotValue(annot.strokeColor ?? ['T']),
+-                fillColor: cloneAnnotValue(annot.fillColor ?? ['T']),
+-                opacity: Number(annot.opacity ?? 1),
+-                width: Number(annot.width ?? 1),
+-                borderStyle: String(annot.borderStyle ?? 'S'),
+-                dash: cloneAnnotValue(annot.dash ?? []),
+-                rect: cloneAnnotValue(annot.rect ?? [0, 0, 0, 0]),
+-                contents: String(annot.contents ?? ''),
+-                hidden: Boolean(annot.hidden),
+-                print: Boolean(annot.print),
+-                readOnly: Boolean(annot.readOnly),
+-                locked: Boolean(annot.locked),
+-                noView: Boolean(annot.noView),
+-                toggleNoView: Boolean(annot.toggleNoView),
++                strokeColor: cloneAnnotValue(annotation.strokeColor ?? ['T']),
++                fillColor: cloneAnnotValue(annotation.fillColor ?? ['T']),
++                opacity: Number(annotation.opacity ?? 1),
++                width: Number(annotation.width ?? 1),
++                borderStyle: String(annotation.borderStyle ?? 'S'),
++                dash: cloneAnnotValue(annotation.dash ?? []),
++                rect: cloneAnnotValue(annotation.rect ?? [0, 0, 0, 0]),
++                contents: String(annotation.contents ?? ''),
++                hidden: Boolean(annotation.hidden),
++                print: Boolean(annotation.print),
++                readOnly: Boolean(annotation.readOnly),
++                locked: Boolean(annotation.locked),
++                noView: Boolean(annotation.noView),
++                toggleNoView: Boolean(annotation.toggleNoView),
+             });
+             const record = {
+-                input: annot,
++                input: annotation,
+                 original: writableSnapshot(),
+                 current: writableSnapshot(),
+                 wrapper: {},
+@@ -552,19 +556,23 @@
+     const formValue = (field, value) => {
+         const family = String(field.input.family);
+         if (family === 'text')
+-            return { type: 'text', value: String(value ?? '') };
++            return { value: String(value ?? '') };
+         if (family === 'checkbox' || family === 'radio') {
+-            const token = value === null || value === undefined || String(value) === 'Off' ? null : String(value);
+-            return { type: 'toggle', state: token };
++            // A toggle's script value is its export value, 'Off' when clear.
++            return {
++                value: value === null || value === undefined || String(value) === 'Off' ? null : String(value),
++            };
+         }
+         if (family === 'combobox') {
+-            const selected = Array.isArray(value) ? value.slice(0, 1).map(String) : [String(value ?? '')];
+-            return { type: 'choice', values: selected };
++            const selected = Array.isArray(value) ? value[0] : value;
++            const text = selected === null || selected === undefined ? '' : String(selected);
++            return { value: text === '' ? null : text };
+         }
+         if (family === 'listbox') {
++            if (Array.isArray(value))
++                return { selectedValues: value.map(String) };
+             return {
+-                type: 'choice',
+-                values: Array.isArray(value) ? value.map(String) : [String(value ?? '')],
++                selectedValues: value === null || value === undefined || value === '' ? [] : [String(value)],
+             };
+         }
+         diagnostic('invalid-field-value', `field '${String(field.input.name)}' cannot accept a scripted value`);
+@@ -727,19 +735,19 @@
+             if (target === 'RGB')
+                 return ['RGB', rgb[0], rgb[1], rgb[2]];
+             if (target === 'CMYK') {
+-                const k = 1 - Math.max(rgb[0], rgb[1], rgb[2]);
+-                return ['CMYK', 1 - rgb[0] - k, 1 - rgb[1] - k, 1 - rgb[2] - k, k];
++                const black = 1 - Math.max(rgb[0], rgb[1], rgb[2]);
++                return ['CMYK', 1 - rgb[0] - black, 1 - rgb[1] - black, 1 - rgb[2] - black, black];
+             }
+             return ['T'];
+         },
+-        equal: (a, b) => {
+-            if (!isColorArray(a) || !isColorArray(b))
++        equal: (left, right) => {
++            if (!isColorArray(left) || !isColorArray(right))
+                 return false;
+-            const left = colorToRgbTriple(a);
+-            const right = colorToRgbTriple(b);
+-            if (left === null || right === null)
+-                return left === right;
+-            return left.every((component, index) => Math.abs(component - right[index]) < 1e-6);
++            const leftRgb = colorToRgbTriple(left);
++            const rightRgb = colorToRgbTriple(right);
++            if (leftRgb === null || rightRgb === null)
++                return leftRgb === rightRgb;
++            return leftRgb.every((component, index) => Math.abs(component - rightRgb[index]) < 1e-6);
+         },
+     });
+     host.getField = getField;
+@@ -794,14 +802,14 @@
+         const value = values.length === 0
+             ? 0
+             : op === 'PRD'
+-                ? values.reduce((a, b) => a * b, 1)
++                ? values.reduce((left, right) => left * right, 1)
+                 : op === 'AVG'
+-                    ? values.reduce((a, b) => a + b, 0) / values.length
++                    ? values.reduce((left, right) => left + right, 0) / values.length
+                     : op === 'MIN'
+                         ? Math.min(...values)
+                         : op === 'MAX'
+                             ? Math.max(...values)
+-                            : values.reduce((a, b) => a + b, 0);
++                            : values.reduce((left, right) => left + right, 0);
+         if (state)
+             state.event.value = value;
+     };
+@@ -853,13 +861,13 @@
+     const formatMismatch = () => rejectWithAlert(`The value entered does not match the format of the field [ ${String(state?.event.targetName ?? '')} ]`);
+     const dateMismatch = (format) => rejectWithAlert(`Invalid date/time: please ensure that the date/time exists. Field [ ${String(state?.event.targetName ?? '')} ] should match format ${String(format ?? '')}`);
+     const mergeChange = (eventObject) => {
+-        const e = (eventObject ?? state?.event ?? {});
+-        const value = String(e.value ?? '');
+-        if (e.willCommit)
++        const event = (eventObject ?? state?.event ?? {});
++        const value = String(event.value ?? '');
++        if (event.willCommit)
+             return value;
+-        const start = Math.max(0, Math.trunc(Number(e.selStart ?? 0)));
+-        const end = Math.max(start, Math.trunc(Number(e.selEnd ?? 0)));
+-        return value.slice(0, start) + String(e.change ?? '') + value.slice(end);
++        const start = Math.max(0, Math.trunc(Number(event.selStart ?? 0)));
++        const end = Math.max(start, Math.trunc(Number(event.selEnd ?? 0)));
++        return value.slice(0, start) + String(event.change ?? '') + value.slice(end);
+     };
+     host.AFMergeChange = mergeChange;
+     const makeNumber = (value) => {
+@@ -878,7 +886,8 @@
+         }
+         else if (text.includes(',')) {
+             // A single comma reads as the decimal separator; several are thousands.
+-            text = (text.match(/,/g) ?? []).length === 1 ? text.replace(',', '.') : text.replace(/,/g, '');
++            text =
++                (text.match(/,/g) ?? []).length === 1 ? text.replace(',', '.') : text.replace(/,/g, '');
+         }
+         const parsed = Number(text);
+         return text !== '' && Number.isFinite(parsed) ? parsed : null;
+@@ -1003,19 +1012,19 @@
+             }
+         }
+         const timeMatch = /(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?/i.exec(text);
+-        let H = 0;
+-        let M = 0;
+-        let S = 0;
++        let hours = 0;
++        let minutes = 0;
++        let seconds = 0;
+         if (timeMatch) {
+-            H = Number(timeMatch[1]);
+-            M = Number(timeMatch[2]);
+-            S = Number(timeMatch[3] ?? 0);
++            hours = Number(timeMatch[1]);
++            minutes = Number(timeMatch[2]);
++            seconds = Number(timeMatch[3] ?? 0);
+             const marker = String(timeMatch[4] ?? '').toLowerCase();
+-            if (marker === 'pm' && H < 12)
+-                H += 12;
+-            if (marker === 'am' && H === 12)
+-                H = 0;
+-            if (H > 23 || M > 59 || S > 59)
++            if (marker === 'pm' && hours < 12)
++                hours += 12;
++            if (marker === 'am' && hours === 12)
++                hours = 0;
++            if (hours > 23 || minutes > 59 || seconds > 59)
+                 return null;
+         }
+         const dateText = timeMatch
+@@ -1028,9 +1037,9 @@
+             if (order.indexOf(kind) < 0)
+                 order.push(kind);
+         }
+-        let y = null;
+-        let m = namedMonth;
+-        let d = null;
++        let year = null;
++        let month = namedMonth;
++        let day = null;
+         let cursor = 0;
+         for (const kind of order) {
+             if (kind === 'm' && namedMonth !== null)
+@@ -1040,32 +1049,32 @@
+             const value = numbers[cursor];
+             cursor += 1;
+             if (kind === 'y')
+-                y = value;
++                year = value;
+             else if (kind === 'm')
+-                m = value;
++                month = value;
+             else
+-                d = value;
++                day = value;
+         }
+-        if (y === null && m === null && d === null && !timeMatch)
++        if (year === null && month === null && day === null && !timeMatch)
+             return null;
+         const today = nowWall();
+-        if (y === null)
+-            y = today.y;
+-        else if (y < 100)
+-            y = y < 50 ? 2000 + y : 1900 + y;
+-        if (m === null)
+-            m = today.m;
+-        if (d === null)
+-            d = 1;
+-        if (m < 1 || m > 12 || d < 1 || d > 31)
++        if (year === null)
++            year = today.y;
++        else if (year < 100)
++            year = year < 50 ? 2000 + year : 1900 + year;
++        if (month === null)
++            month = today.m;
++        if (day === null)
++            day = 1;
++        if (month < 1 || month > 12 || day < 1 || day > 31)
+             return null;
+-        const probe = new NativeDate(NativeDate.UTC(y, m - 1, d));
+-        if (probe.getUTCFullYear() !== y ||
+-            probe.getUTCMonth() !== m - 1 ||
+-            probe.getUTCDate() !== d) {
++        const probe = new NativeDate(NativeDate.UTC(year, month - 1, day));
++        if (probe.getUTCFullYear() !== year ||
++            probe.getUTCMonth() !== month - 1 ||
++            probe.getUTCDate() !== day) {
+             return null;
+         }
+-        return { y, m, d, H, M, S };
++        return { y: year, m: month, d: day, H: hours, M: minutes, S: seconds };
+     };
+     const afDateFormatEx = (format) => {
+         if (!state)

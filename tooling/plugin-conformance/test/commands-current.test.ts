@@ -509,11 +509,12 @@ test('original definitions, complete occurrence accounting and every prior tooli
   });
   const preserved = record(read('preservation.json'));
   for (const p of preserved.files as { path: string; sha256: string }[]) {
-    // Later owners cover these four active paths; immutable C5 manifests and all other 433 stay exact.
+    // Later owners cover these five active paths; immutable C5 manifests and all other 432 stay exact.
     if (
       [
         'tooling/plugin-conformance/src/suites/link.ts',
         'tooling/plugin-conformance/src/suites/metadata.ts',
+        'tooling/plugin-conformance/src/suites/page-edit.ts',
         'tooling/plugin-conformance/test/acrojs-current.test.ts',
         'tooling/plugin-conformance/test/actions-current.test.ts',
       ].includes(p.path)
