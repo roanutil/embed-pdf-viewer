@@ -2,20 +2,24 @@
 
 `packages/plugin/render` in Rust, plus `engine-core`'s render-policy snaps (`snapFullPageViewport`,
 `snapAppearanceScale`, `snapTileScale`, `CONTINUOUS_RENDER_POLICY`), which the plugin's arithmetic
-rests on. All 1,450 cases in six vector files replay identically (`cargo test -p
-epdf-plugin-render`):
+rests on. All 1,470 cases in six schema-2 vector files replay identically (`cargo test -p
+epdf-plugin-render`), with no member-order allowances and no outcome exceptions:
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
 | `vectors/plugins/render-tiles.json` | function | 701 | `tiles.ts`: grids at 11 scales × 3 tile sizes × 6 page shapes, want sets, paint rects, bleed, coverage, the prefetch ring |
-| `vectors/plugins/render-strategy.json` | function | 457 | `resolveRenderOptions`, `resolveStrategy` over 6 policies × 20 option sets, `baseAskWidth` |
+| `vectors/plugins/render-strategy.json` | function | 475 | `resolveRenderOptions`, `resolveStrategy` over 6 policies × 22 option sets, `baseAskWidth` |
 | `vectors/plugins/render-policy.json` | function | 180 | the three snaps, 31 of them throwing `InvalidArg` |
-| `vectors/plugins/render-ledger.json` | function | 33 | `reduceRender` and `annotatedPons` |
-| `vectors/plugins/render-capability.json` | scenario | 38 | both render doors, keys, conformance, the raster store (singleflight, refcounted aborts, LRU by cost), batches, epochs, the three events, permission refusals, close |
-| `vectors/plugins/render-tile-plane.json` | scenario | 41 | the tile manager behind `createViewDemand`: engagement, levels, retention, settle timers, backpressure, views, handle refcounts |
+| `vectors/plugins/render-ledger.json` | function | 32 | `initialRenderState`, `invalidatePages` and `pixelChangeOf` |
+| `vectors/plugins/render-capability.json` | scenario | 39 | both render doors, keys, conformance, the raster store (singleflight, refcounted aborts, LRU by cost), batches, epochs, the three events, permission refusals, close |
+| `vectors/plugins/render-tile-plane.json` | scenario | 43 | the tile manager behind `createViewDemand`: engagement, levels, retention, settle timers, backpressure, views, handle refcounts |
 
 `tests/api.rs` covers the typed surface the vectors can't reach: `ViewDemand` identity, the store and
-manager accessors, and handle costs.
+manager accessors, handle costs, M25 and R7. `tests/behavior.rs` drives the capability through the
+kernel and the fake engine: what each invalidation scope repaints and which facts change nothing, a
+tile answer that lands after its tile left the want set, tile work and renders in flight at close,
+the settings, the page-layer rights and the appearance pictures. `tests/conformance.rs` also pins the
+31 refusals of `render-policy.json` and their four reasons.
 
 `toEngineRect` and `tileEngineRect` left `tiles.ts` in v3, and their 171 cases with them. The tile
 manager now hands its owner a page-space rect, and the controller converts it with
@@ -30,10 +34,20 @@ result as the engine call's `target.rect`, so the vectors still pin it. The Rust
 token. The TypeScript has two lenses on one token: `RenderCapability` for applications and
 `RenderHostCapability` (from `contract/host`) for view layers. Rust can't widen a token's type, so
 `RenderCapability` here carries both, with the TypeScript's methods in snake case. The public ones
-are `can_render`, `render_page`, `render_thumbnail`, `render_pages`, `get_render_policy`,
+are the settings (`get_settings`, `update_settings`, `reset_settings`, `on_settings_changed`),
+`can_render`, `render_page`, `render_thumbnail`, `render_pages`, `get_render_policy`,
 `get_render_epoch`, `invalidate` and `on_invalidated`. The host ones are `render_source`,
-`get_source_key`, `conform_viewport`, `get_paint_settings`, `create_view_demand`,
-`on_render_completed` and `on_render_failed`.
+`get_source_key`, `conform_viewport`, `get_paint_settings`, `get_layer_rights`,
+`create_view_demand`, `render_appearances`, `kept_appearances`, `get_appearance_scale`,
+`on_render_completed` and `on_render_failed`. The public doors take a page as `PageArg`, a
+`PageRef` or a zero-based index, as the TypeScript's `PageRef | number`.
+
+The config is the plugin's registered settings, merged over `render_defaults()` by the kernel.
+`update_settings` changes every document and re-plans every view's pages at once. Every picture
+names what it draws (`PageLayerOptions`): an option left out draws what the session may read, and
+an explicit `true` the session may not read is refused by the doors and counted as left out by the
+reads. The ledger keeps content, annotation and form-field versions per page, and a picture's
+epoch is the sum of the parts it draws (`a1f0` in a key draws annotations and no form fields).
 
 `create_view_demand(view_id)` returns a `ViewDemand`. `set_demand` schedules and re-plans;
 `get_plan` is pure and hands back the same `Rc<TilePaintPlan>` until something changes, so a layer
@@ -44,18 +58,19 @@ count and demands. The pure planning API is public too, for `plugin-stage` and h
 `strategy`, `paint_plan`, `policy`, `RasterStore` and `TileManager` (with `TileManagerDeps` to run
 one outside the controller).
 
-Every render door is an `async` function in v3, so it returns a `Promise` that rejects:
-`permission-denied` naming the operation (`render.renderPage requires doc.render`), `not-found` for
-a page the document lacks, or the engine's refusal mapped through `toPluginError`. `get_source_key`
-and `conform_viewport` stay synchronous and return `Err(not-found)`. `invalidate` and
-`ViewDemand::set_demand` return `Result` because re-planning can throw where the engine refuses a
-page the registry lists (`plan-throws-when-the-engine-refuses-the-page`).
+Every render door is an `async` function, so it returns a `Promise` that rejects: `permission-denied`
+naming the operation (`render.renderPage requires doc.render`), `not-found` for a page the document
+lacks, or the engine's refusal mapped through `toPluginError`. `get_source_key` and
+`conform_viewport` stay synchronous and return `Err(not-found)`. `invalidate` and
+`ViewDemand::set_demand` return nothing: the TypeScript's `fetchTile` is `async` now, so an engine
+that refuses a listed page fails the tile instead of throwing out of the plan
+(`plan-throws-when-the-engine-refuses-the-page`, whose name predates that).
 
 ## The host seam
 
-The only browser objects the package touches are `requestAnimationFrame` and the console. Both come
-in through `RenderHost`. Its default is what the TypeScript does under Node: `setTimeout(cb, 16)` on
-the kernel's clock for frames, and stderr for `console.warn` and `console.debug`. The raster store
+The only browser object the package touches is the console, and it comes in through `RenderHost`
+(stderr by default). Frames and the settle timer are the kernel's clock (`ctx.clock`), which the
+instance owns, so both are cancelled at close. The raster store
 never touches an `ImageBitmap` or object URL. It costs a handle from its `source`, `width` and
 `height` and returns the engine's JSON as `PageImageHandle`; `objectUrl()` is the engine's business.
 
@@ -73,8 +88,8 @@ settles exactly the call it means.
 
 `localeCompare` orders a paint list's keys under Node's ICU root collation, which puts `|` before
 digits: `3,1|a1` sorts before `3,10|a1`, the opposite of byte order. `js::locale_compare` carries
-that table for printable ASCII, the only characters a tile key holds. `js::to_fixed` rounds ties
-away from zero as `Number#toFixed` does (`0.125` to `0.13`); Rust's `{:.2}` rounds them to even.
+that table for printable ASCII, the only characters a tile key holds. `toFixed` is
+`epdf_geometry::js::to_fixed`, which takes at most 20 digits; the plugin's two callers pass 1 and 2.
 
 The strategy memos compare the policy by value, where the TypeScript compares by reference. A
 document's policy is fixed at open, so the two recompute at the same moments, and the one-time format
@@ -91,23 +106,82 @@ for a new key before `attach` checks the consumer's signal, so the consumer reje
 `operation-cancelled` at once while the fetch runs on unowned, and a later signal-less ask joins
 it. v3 kept this through both doors (`signal-already-aborted`).
 
-Closing a document still does not stop its tile manager. An armed settle timer fires after close
-and asks the engine for its tiles through the guarded handle, which aborts each call at once with
-the lifetime's `CancelledError` and rejects it `instance-closed`. The `paintAdvanced` that follows
-is dropped and reported once by the kernel. What changed in v3 is the plan after close: the ledger
-lease answers the last state, so the plan reads it and paints the cached tiles where v2 threw
-`TypeError: Cannot read properties of undefined (reading 'contentEpochs')`
-(`close-with-tiles-in-flight`). A base render in flight at close rejects `instance-closed` at close
-rather than resolving on the late answer (`close-with-a-render-in-flight`).
+Closing a document cancels the tile manager's settle timer and its frame wake-up, because both are
+on the instance clock. Tiles in flight reject `instance-closed` through the guarded handle and free
+their slots. The plan after close still reads the last ledger and paints the cached tiles, and a
+level change there arms a timer the closed clock never runs (`close-with-tiles-in-flight`, and
+`closing_cancels_tile_work_the_settle_timer_and_renders_in_flight` in `tests/behavior.rs`). A base
+render in flight at close rejects `instance-closed` at close rather than resolving on the late
+answer (`close-with-a-render-in-flight`).
 
-`renderPages` sorts its results by each page's index in a `Map` built from the input, so a page
-listed twice sorts both entries at its last index (`render-pages-batch`).
+`renderPages` sorts its results by each entry's own input index, so a page listed twice keeps both
+places (`render-pages-batch`).
+
+The TypeScript asks the engine for every render with `priority: 'high'` and the view it is for
+(`ctx.doc.with({priority, view})`). The Rust `DocumentHandle` has no such hint, so the port sends
+neither; the vectors' fake engine does not record them. The host handles are Task 13.33's.
 
 Not ported: inputs outside the TypeScript's types, which crash it. A handle that isn't an object, an
-event missing the member its type names, an invalidate scope other than `content` or `annotations`,
-and a render policy this port can't parse (it reads as `continuous`).
+invalidate scope other than `content`, `annotations` or `fields`, and a render policy this port
+can't parse (it reads as `continuous`).
+
+## Rust-only divergences
+
+Each is on a path no vector reaches, and each is registered in
+`docs/research/rust-plugins-branch-review.md`, Status.
+
+- M25: a `fetch_tile` that answers `Err` at once (only a Rust embedder of `TileManager` can) fails
+  that tile and frees its slot. A synchronous throw in the TypeScript would strand both
+  (`a_synchronous_tile_refusal_frees_its_slot`).
+- M26: an empty width ladder or tile pyramid degrades to an `undefined` width (a NaN viewport width
+  in `conform_viewport`) or a NaN level, where `list[len - 1]` would panic.
+- R7: a zero tile span yields no tiles, where the TypeScript's loop runs out of memory
+  (`a_zero_tile_span_yields_no_tiles_instead_of_looping`).
+- An event missing the member `pixelChangeOf` reads (an annotation fact with no `page`) names no page
+  for it, where the TypeScript throws a `TypeError` in the event listener.
+- A settings value this port cannot decode (a member of the wrong type, written past the typed API
+  through `Kernel::settings_of`) resolves as the defaults, where the TypeScript resolves whatever is
+  there.
+
+## Migrating from the pre-13.16 API
+
+For annotation (13.17), form (13.18), page-edit (13.19) and viewer-host and epdf-web (13.33).
+
+| Old | New |
+|---|---|
+| `RenderAction`, `reduce_render`, `define::<RenderState, RenderAction>` | removed. `model::invalidate_pages(state, pons, scope) -> Option<RenderState>`, applied with `update_state` |
+| `RenderState.annotated_epochs`, `RenderState.paint_versions` | `annotation_epochs` and `field_epochs`; plan wake-ups are `ctx.notify()`, not a state bump |
+| `invalidation::annotated_pons(event, all)` | `pixel_change_of(event, all) -> Option<PixelChange { pages, scope }>`, current event names (`annotations.*`, `forms.*`, `redaction.applied`, `pages.flattened`, `annotations.flattened`, `signatures.completed`, `stream.desynced`) |
+| `InvalidateScope::{Content, Annotations}` | adds `Fields` |
+| `RenderInvalidatedEvent.origin` as a mapped `ChangeOrigin` | the event's raw `origin`, `Value::Null` for the verb or an event without one |
+| `include_annotations: Option<bool>` on `RenderPageOptions`, `RenderThumbnailOptions`, `RenderSourceOptions` | `layers: PageLayerOptions { include_annotations, include_form_fields }`; `RenderSourceOptions` adds `view` |
+| `get_render_epoch(page, include_annotations: bool)` | `get_render_epoch(impl Into<PageArg>, PageLayerOptions)` |
+| `get_source_key(page, scale, Option<bool>)` | `get_source_key(page, scale, PageLayerOptions)` |
+| `render_page`, `render_thumbnail` take `PageRef`; `render_pages` takes `Vec<PageRef>` | `impl Into<PageArg>` and `Vec<PageArg>`; `PageRenderFailure.page` and `RenderBatchResult.skipped` are `PageArg` |
+| `invalidate(..) -> Result<(), Error>`, `InvalidateOptions.pages: Option<Vec<PageRef>>` | `invalidate(..)`, `pages: Option<Vec<PageArg>>` |
+| `ViewDemand::set_demand(page, demand, Option<bool>) -> Result<(), Error>` | `set_demand(page, demand, PageLayerOptions)` |
+| `TileManager::plan(view, pon, demand, bool) -> Result<Rc<TilePaintPlan>, Error>` | `plan(view, pon, demand, PageRenderLayers) -> Rc<TilePaintPlan>` |
+| `TileManagerDeps { options, fetch_tile(pon, ..), get_epoch(pon, bool), .. }` | `get_options`, `after` (the clock), `fetch_tile(view, pon, rect, scale, layers, signal)`, `get_epoch(pon, PageRenderLayers)` |
+| `RenderHost.request_frame` | removed: frames are `ctx.clock().next_frame` |
+| `PaintSettings.fade_ms`, `TilesOptions.fade_ms`, `ResolvedTiles.fade_ms` | removed; `get_paint_settings()` is `Rc<PaintSettings { tiles }>` |
+| `TilesSetting` in `paint_plan` | in `contract`, and serializes (`false` or the options) |
+| `create_render_controller(cx, &config, host)` | `create_render_controller(cx, host)`; the config is the registered settings |
+| tile request `target.rect` as PDF edges via `pageRectToPdf` | page space `{x, y, width, height}`, as `render.image` takes it |
+| new | `render_defaults`, `RenderSettingsChanged`, `get_layer_rights`, `render_appearances`, `kept_appearances`, `get_appearance_scale`, `AppearanceStore`, `RecentPictures`, `same_page_view_demand`, `resolve_page_layers`, `layers_key_of`, `render_epoch_of` |
+| ffi `RenderPaintSettings.fade_ms` | removed. The ffi doors add an `include_form_fields` argument beside `include_annotations`, and `RenderInvalidateScope` adds `Fields`. `src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds (13.33) |
+
+Known call sites: `crates/epdf-viewer-host/src/session.rs` (`RenderHost { request_frame, .. }`,
+`render_plugin_with_host`), `crates/epdf-viewer-host/src/lib.rs` and `api.rs` (the ffi handle and
+config), `crates/epdf-manual-bridge/src/render.rs` (`start_render_page`), and
+`crates/epdf-web/src/adapters.rs` (the harness, whose live `host` drops `requestFrame`).
+`crates/plugins/annotation/src/read/render.rs` uses only `policy`, which is unchanged. Appearance
+paths are `page.annotations.renderAppearances` and `page.forms.renderAppearances`; a native or web
+handle must route them (13.33).
 
 ## Coverage
+
+Stale since Task 13.16 (the counts and lines below are the pre-13.16 port's); Task 14 regenerates
+them.
 
 The generators reach 2,283 of 2,293 statements and 469 of 483 branches of the package. None of the
 rest is reachable from the public surface, or from this port's:
@@ -137,6 +211,8 @@ The engine-core snaps live outside `coverage.json`'s ported set (`packages/engin
 have no entry there.
 
 ## Mutation testing
+
+Stale since Task 13.16: the lines below name the pre-13.16 code. Task 14 reruns it.
 
 `scripts/mutants.sh -p epdf-plugin-render --test-package epdf-plugin-render --file <file>`, file by
 file over every module but `harness.rs`, catches 527 of 543 viable mutants (521 caught, 6
