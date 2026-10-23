@@ -1,0 +1,1103 @@
+{
+  "base": "1c122e2c81ac52f7d0ef14f5d660655da6e74a4a",
+  "originalArchiveBase": "d8034e3f6f5f4a99b1ae785146473f4de71fa262",
+  "original": 41,
+  "originalAssets": 20,
+  "originalApi": 21,
+  "current": 41,
+  "mapped": 41,
+  "renamed": 0,
+  "wholeCaseRetirements": 0,
+  "added": 0,
+  "netAdditions": 0,
+  "changedMappedInputs": 41,
+  "partialRetirements": 22,
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "create-update-and-delete-libraries",
+        "inputSha256": "8f859361cdc36e4dd1cef3609584f1a6d42429bd18222a5671862a52c2e97774"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "create-update-and-delete-libraries",
+        "inputSha256": "47c0970a20ea8e7a03e0d6f7618311929c8ef4a183b54ae7c2d8623fe86cb5d2"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "library-writes-that-fail",
+        "inputSha256": "6d25911095bb48f844b90a90de60f6009356459c9949042ad91b7947dd0bc2ba"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "library-writes-that-fail",
+        "inputSha256": "e6ff459aa2ebecfaac56ad87c61c65146de93486e8261b559e8c8db369875a1c"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Optional absent named-page service precondition removed from createLibrary. Actual required metadata Unsupported plus download Io failure exercise current no-state/finally-close paths.",
+      "source": ["packages/plugin/stamp/src/write/libraries.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "import-a-registered-library",
+        "inputSha256": "2146a2c1d5aac644bef900c6cf40f62f9d124a61bafe21b4c06c30cd43ea5bc4"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "import-a-registered-library",
+        "inputSha256": "046b422f17c7a276d377f9ffefe56364ced1ad5210a2f9b4a80b582a2d891af5"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "registry-refusals",
+        "inputSha256": "2cd14c5794ce1534f83727a89f17c043ee92d9ddfc3b683109c2db46bb324cf9"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "registry-refusals",
+        "inputSha256": "1a9b4a7d8ad75b1521548714419759da2b5c4572bcd3be89df105318df6842d7"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Missing namedPages is an explicit malformed DTO negative; current named-page entries and required local services are otherwise complete.",
+      "source": ["packages/plugin/stamp/src/write/libraries.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "marks-become-assets",
+        "inputSha256": "1bba981cff49a49a86d6afd85f48ff904c1490a17f817697bae15e86c2988053"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "marks-become-assets",
+        "inputSha256": "29c6dbca322333d9a1eda34460cf43091582e2748eb45acea06d571ab0c1a256"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/marks.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "marks-that-are-refused",
+        "inputSha256": "d6f74b7928e2685dc6ab3953a087828b3ec54a7f898a11d6a79d553e3214aea8"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "marks-that-are-refused",
+        "inputSha256": "e723661cb99c5a878b4819d47359d6ca8cf4d2355e9b29773eba83beea55af43"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/marks.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "an-ink-mark-with-defaults",
+        "inputSha256": "7bf2a13ea9082f4672cfb4cc38bdb2624d014121e955674a7b9d9b4a462e6a2c"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "an-ink-mark-with-defaults",
+        "inputSha256": "25b61e99089868d5030be75a3ab1a0ef5933e886439379df7df77f3928286cbf"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/marks.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "edit-move-and-copy-assets",
+        "inputSha256": "266d63d6d0b3c701dd28093b9df4e5d6426a0931389f07b4f9ca7cdaa1888fa9"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "edit-move-and-copy-assets",
+        "inputSha256": "0852ceb10e199166bbb92bfcb317dc062f3d47c1ec907cc0a9f60b119d635088"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "edits-queued-behind-removals",
+        "inputSha256": "4988099a2fbf4ceb19f3e7a4fa70b5561604cc011c5938441b2114d6664e21d7"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "edits-queued-behind-removals",
+        "inputSha256": "dbdeab62f617344ba75b82fd6cdda9da61dda7309f6a3be21fb3d03987356819"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "copies-carry-their-metadata",
+        "inputSha256": "564172552457a3c229518923cfeb0ed06c61a77a8ddb71b558e1e0057005d52b"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "copies-carry-their-metadata",
+        "inputSha256": "04684a6cf5e6bc9c634c6924023bdb65b102242e60f5a8573f043bda28d07387"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "raster-pages-that-fail",
+        "inputSha256": "66585bf4222905ba9fa644b8abe7acec8bb283883dbc8fd19170f5a74a7655a2"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "raster-pages-that-fail",
+        "inputSha256": "9cbde2144e60e4ccc6c23a0c0f2b2c49e66cf0137661cace1ccf82d27507d869"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Old invalid failed flatten item status and absent required flatten service retired. Current typed unchanged status and EngineError Unsupported exercise stamp refusal and recovery.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/engine/core/src/mutation/PageFlattenResult.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "an-asset-from-annotations",
+        "inputSha256": "71af9d22512e6b5c4d7ff9ddf6ba6f7f270e803e6cc6cb8207423cd14a160953"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "an-asset-from-annotations",
+        "inputSha256": "0e4b79134f7fbd3a0db4d9a48512dc865571d68e7148ad27ccf29addaae4f9b2"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Document id moved to operation options; real download/page preflight precede export. Closed document now rejects permission-denied, with explicit denied-open-document and missing-page channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "rendered-previews",
+        "inputSha256": "00e2fff5190fd21af523992172312d1b900a6d9526b85f5c2d3ee080e84f9980"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "rendered-previews",
+        "inputSha256": "02573d1baee74bef528d639057978deb03eba08f27a7d3fb5ae6614d740417b1"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Missing contentType is explicitly malformed engine data exercising source fallback; all valid image replies are current typed data projections. Cache/fallback/deletion intents remain.",
+      "source": [
+        "packages/plugin/stamp/src/read/catalog.ts",
+        "packages/plugin/stamp/src/services/ghosts.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "place-without-the-pointer",
+        "inputSha256": "320b2f3c0fb5954742cc225a556f7b8ce17359a738e59bebf2f6c8ae3b28e8ec"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "place-without-the-pointer",
+        "inputSha256": "235130c7532ded21dead27b861355bd9857e1eb6761f48dc8af724719cd2535a"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Current asset-first/page-space center/options API and annotation apply/resources replace obsolete create DTOs; per-page failure is a returned BatchResult.failed entry.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "the-armed-asset",
+        "inputSha256": "0837f4eee870de34a6c2282899d5ff9d6136e5d924022b37ec9c93233071fa4b"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "the-armed-asset",
+        "inputSha256": "16c082ef75b26c5267914e37d0c7bfcfddf90a592c54f4e924fe495cccb16e91"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "can-place-without-a-document",
+        "inputSha256": "c09c0d131961008aa1b83fbdb76e233794a484117e846847fbaef5b45779b923"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "can-place-without-a-document",
+        "inputSha256": "c42302f5dffd448c8bb1dc6a39c74fdb5292b81a75dffc76e9d419b403f83355"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "restore-stored-libraries",
+        "inputSha256": "9b1af4c2ba24b502a8d1a5a7b8690d5771a9ecfcb10041319d843121ac74408b"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "restore-stored-libraries",
+        "inputSha256": "ce9e4e1d26ed4df6b84d5017420c7c013b1ce795f9c1397713c32fea58dbe75e"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "a-store-that-cannot-list",
+        "inputSha256": "33a3ac98b90dbb6e12cb76d9d1d2a789604145d71c585fe971ecf5cab126f9b7"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "a-store-that-cannot-list",
+        "inputSha256": "b434fb18be6aea6cc791beb1fb1551a1000eded4a82e7550da2f177d4b493a6f"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": [
+        "packages/plugin/stamp/src/write/libraries.ts",
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "persist-library-changes",
+        "inputSha256": "4fb21f9e41f5a53917b3c2700b50e58cd46f19e10b822b3cb9222e9fd08d93ac"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "persist-library-changes",
+        "inputSha256": "3f241dd7ed2b73a9b6c9dcc3405b211ec2c93f15afea0a40b9baaa3c70c08c48"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "DebounceMs/time thresholds removed. Current per-library burst persistence saves canonical bytes immediately, excludes configured libraries, deletes and unsubscribes.",
+      "source": ["packages/plugin/stamp/src/persistence.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "stop-flushes-a-write-still-pending-behind-another",
+        "inputSha256": "52ebf97e06b729b65fc54b37abca52d01784c38bb6111f0a4a0d2ac321280b64"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "stop-flushes-a-write-still-pending-behind-another",
+        "inputSha256": "a927e135724fb8945cfb650dd45fc91e86df7d93cb65fa1f9b444e5b7fb983df"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Stop timer flush removed. A controlled real store port holds A while B completes; unsubscribe allows the requested A write to finish and prevents later C work.",
+      "source": ["packages/plugin/stamp/src/persistence.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-api.json",
+        "name": "persistence-failures-are-reported",
+        "inputSha256": "ad45318cbcae637b78d5ff0dcac57c15128969f4cf78a00feffc0e4c13c558f2"
+      },
+      "after": {
+        "file": "plugins/stamp-api.json",
+        "name": "persistence-failures-are-reported",
+        "inputSha256": "407832acd7dd69d5eb98ce33fb824dc5bdcf0a0975e566c4171d71b1526bbe78"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Default debounce250ms removed. Current actual store put/delete warn and continue on independent libraries.",
+      "source": ["packages/plugin/stamp/src/persistence.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-raster-asset-is-sniffed-and-previews-itself",
+        "inputSha256": "48bd6728686ef707634ae7f8bddfcd0be37651dd2226dc25a275150f33d3391c"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-raster-asset-is-sniffed-and-previews-itself",
+        "inputSha256": "bc2b0a4935df32ade212150902892e32899f9b0c42829d50720f5a6b2003fd10"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Loose raster storage and source-as-preview are removed. Current raster bytes are flattened into a real canonical PDF page and its rendered thumbnail is read back.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "supplied-previews-and-sizes",
+        "inputSha256": "4fac49feb69264a59e0200235c74fd0eaae83fb1598de5d988edfd66d0a03f0e"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "supplied-previews-and-sizes",
+        "inputSha256": "ff9dcdb7f2ce1f0c0e5611ee0e5a894e050cf04413706fa89e68a0ec8534693b"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Size/preview intent survives; size now sizes the raster page. Empty MIME is omitted by resolveBinarySource and defaults to image/png.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/engine/core/src/resource/BinarySource.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-pdf-needs-a-size",
+        "inputSha256": "c06f04e755326d9d5929e6968a59b1b4e7c7adeb46d9b045c52525cbbc308789"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-pdf-needs-a-size",
+        "inputSha256": "a6a2ffd2852365ac853bdbf32c93bd0edb00023e546cbef57c54bef78c1c4e2d"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Old loose-PDF size requirement/no-preview result removed. Current PDF page geometry wins with and without the size hint; supplied preview still skips render.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "asset-sources-that-are-refused",
+        "inputSha256": "b4efc3d03cbfc2b679d2589f71b84dfe3b3c7f56054e392e0b0a199e7a5834f2"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "asset-sources-that-are-refused",
+        "inputSha256": "328c3723cb33aefb9b014735baf2cef9a63596df571ea2c1b41aa097df6b11a2"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "into-an-existing-loose-library",
+        "inputSha256": "1d4f2ded5383852631ec7923ead30ea3f964d6964dd4a9c942632e810bbbbca7"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "into-an-existing-loose-library",
+        "inputSha256": "fe9a2e6ed3b2aff4f52c7c0598b86bbeb4fe8245ccaf5c19adf896f20ef2ead6"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Loose libraries removed. Existing canonical library append survives; empty id is a named not-found refusal rather than implicit library creation.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "appends-a-page-to-a-canonical-library",
+        "inputSha256": "2ea85bf81033afd63041bf3f0d4a5eb3ba453cd0d313a5376a83767f2f008d3c"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "appends-a-page-to-a-canonical-library",
+        "inputSha256": "2e27fc6d133c3f1d224a6821570c5fa6023db33a455d3d5e4f3fe3fb7c8293ac"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-supplied-preview-skips-the-render",
+        "inputSha256": "8bac3dc2c7ca06d5c96ce25c632ca3a4b99bd432a024d66822a856bcb20ca4b4"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-supplied-preview-skips-the-render",
+        "inputSha256": "851d09f3b30cfd3312804e116aed6e228730024d365b3e82655f6eb5c01ad25f"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "appends-that-are-refused",
+        "inputSha256": "c4b88d373e0c66873ffed714d0247173847c882d6565c4d1a8f9fe999e0909df"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "appends-that-are-refused",
+        "inputSha256": "dcdf509fb8dc6def2098b8e71bb24b094350bb60db88a057bc233dfd387d7675"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Optional absent PieceInfo and unknown obsolete page handles retired. Required local PieceInfo Unsupported and NotFound replies now exercise real current refusal and finally-close; multi-page/layout refusals remain.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/engine/core/src/engine/LocalPageHandle.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "an-unsaved-append-changes-nothing",
+        "inputSha256": "01c54c0b80beae231c4a2ce0ed5e6893429e4d6ef66f617b8801315d2b3bf4aa"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "an-unsaved-append-changes-nothing",
+        "inputSha256": "9223933e6cafee1811950b099c17d5a5237d2330782111baf0368d60761feef6"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-save-that-answers-nothing",
+        "inputSha256": "7060890d5f88f027b9b344c3ce9908a0c7d2d773c38092dc473d0a8571c54fc4"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-save-that-answers-nothing",
+        "inputSha256": "e1bf0749a6b0cd3ea893226c9cf1a6df7db93b830f2adf3f5317cbfc1f5a0eab"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Missing download/extract are explicitly malformed engine replies, never valid DTOs; current null/read/export rejection differences are asserted.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "removes-a-canonical-page-first",
+        "inputSha256": "12f50d85f0fdfbea264f2b87260b5af8ac3b9a0097562602263daac8e5280c17"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "removes-a-canonical-page-first",
+        "inputSha256": "7a0a2300176cda23ab8b0c8e61fcc4e669230a99167e5e6cd8ce0fcc709e8647"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "removing-the-last-page-drops-the-library",
+        "inputSha256": "87fd3dd7b007efba9881b33e69d11856d75836fc760b8f4dc3f1087aaf1e8ab3"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "removing-the-last-page-drops-the-library",
+        "inputSha256": "22e7dd375f511e571a8e637361c7ad89e5077e003b2b7bd03de9636b914cb8dc"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Last-page auto-drop/loose no-engine delete removed. Current imported sole-page deletion respects engine InvalidArg; seed-backed final asset deletion retains an empty canonical library.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/engine/core/src/engine/DocumentPagesService.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-failed-page-delete-keeps-the-asset",
+        "inputSha256": "4337ee321d5e0761d866c3915ee67501fe5221ab7d805d7405f41cd45454e184"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-failed-page-delete-keeps-the-asset",
+        "inputSha256": "4228d82ed0c4112950de1e1e9340747f8299697885cd6eed6dbdc0799dc255ec"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "removals-are-serialized-per-library",
+        "inputSha256": "dd3b883ebd0092f483c9d4db4db54d40c819b40dd0914bf178d69bd5eccc50d8"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "removals-are-serialized-per-library",
+        "inputSha256": "6b6dd05b8273295db4e7d3985654eebb7a0b9804ab80cdeba18d2b6565f43a34"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Old auto-drop of final asset removed. Three initial pages leave one legal page while preserving serialized duplicate no-op and independent other-library progression.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "remove-library",
+        "inputSha256": "65fa399d9a554c2cf91a65828b673e2f8a70df539e53dbec1c226fe62a13bb71"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "remove-library",
+        "inputSha256": "519d258be5c472f918371d9197c349a8fc3f8d7c23084907c9f02454a482e0b1"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Removed reducer LIBRARY_REMOVED dispatch envelope is not a target. Current deleteLibrary clears descriptors/resources; unknown/repeated delete emits no facts.",
+      "source": ["packages/plugin/stamp/src/write/libraries.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "an-append-queued-behind-a-removed-library",
+        "inputSha256": "772a6ef195887aaaefebaa1730f8e071c3e96fa69e50fd9d938649c432497fc0"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "an-append-queued-behind-a-removed-library",
+        "inputSha256": "3eb97a224d2fd9213bf463d8d7218a16667b38965c779309b6a21d68cd94fde9"
+      },
+      "disposition": "mapped",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Surviving intent uses actual current typed capability arguments, canonical byte resources, complete official static engine replies and reviewed host; exact results/facts/readbacks and named negative channels have independent assertions.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-append-queued-behind-a-removed-library",
+        "inputSha256": "0c324b7b415183325a83590301c3cbea1365f4fa9b05f0e55a7c659177e78b7a"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-append-queued-behind-a-removed-library",
+        "inputSha256": "83d74d15ab67689f691d9c7e1e6f12247b5f0329e754b91f1f216db9e8d925cb"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Loose replacement collision removed. Surviving raster queue intent now uses canonical storage and refuses after queued library deletion.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/write/libraries.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-append-finds-its-library-canonical",
+        "inputSha256": "0591af155bb933f7fe4ec5991c073fc90a90d3fe5dcf3f5a2af0ba9e35984055"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-append-finds-its-library-canonical",
+        "inputSha256": "87f17815a08fabf9d69556e6a1e3bdd05ce09d8d33c7e5b001e8a1a13e30d88e"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Loose-to-canonical replacement race removed. Surviving queue-state freshness is a current raster append following delete, reopening rewritten canonical bytes.",
+      "source": ["packages/plugin/stamp/src/write/assets.ts"],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-asset-under-a-canonical-id",
+        "inputSha256": "602862d6221025306378aa5c22e74dbbcc9acbefa9d05cbc2489071e1c96c7cf"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-loose-asset-under-a-canonical-id",
+        "inputSha256": "a3505e2f3aa9ec41b5aaa991e40de93602a38c220774d6eafaffd5185f7c4dbf"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Loose asset/canonical ownership collision removed. Current preferred-id collision exercises the surviving identity protection: createLibrary allocates a fresh id and retains original canonical assets.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/write/libraries.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-queued-mutation-after-destroy",
+        "inputSha256": "26428185c43aefccb5ea0cdfbc9015af6d105598cbd3dfebc63492ff3a43cf16"
+      },
+      "after": {
+        "file": "plugins/stamp-assets.json",
+        "name": "a-queued-mutation-after-destroy",
+        "inputSha256": "986f885406cc1b6b944db0585e330c22330aefd6ebff5e8c79e847bec0cceea9"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current shipping StampCapability via reviewed stamp-current host",
+      "reason": "Old destroyed-store TypeError retired. Current serial queue is not lifetime-bound: valid pending writes finish, state updates are dropped with exact instance-closed report. This is observed source behavior, not a cancellation guarantee.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/core/main/src/context.ts",
+        "packages/core/main/src/serial-queue.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    }
+  ],
+  "additions": [],
+  "retirements": [],
+  "sourceEvidence": [
+    {
+      "path": "packages/plugin/stamp/src/stamp.plugin.ts",
+      "sha256": "f45c6b3e5eedd53fc970fbe9ad0550a1cd4c51c5ec2404a07e10ffaf4532b013",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/controller.ts",
+      "sha256": "136016e00e714a4d4e100d9738ba1110e885b5e5c9eabe0f5bc791d11b72522f",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/model.ts",
+      "sha256": "247b19ca9007f69e64223238a85b7aada2f307d89c62caebb4582cb359e308e9",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/contract.ts",
+      "sha256": "eb79ee0c63acd2f652048455273f33ff7d1992b2f7024a79d2970dd149ea2fb6",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/token.ts",
+      "sha256": "edce71570e2b2ba8ebfbf4366246b56149f0f0105b7fa94baf2e570793e6be95",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/stamp/src/convention.ts",
+      "sha256": "2a33349c2099b67bacfcff63a57897061ae9f6e5ee85a9cd32725b00bd902439",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/stamp/src/persistence.ts",
+      "sha256": "b1d55990e1187731037fd339ddbe5a82d62a9562f78f49ae662cb9f09175ba1f",
+      "commit": "1512f81969be7477b0cc0db597fb20ebdb59343d"
+    },
+    {
+      "path": "packages/plugin/stamp/src/read/catalog.ts",
+      "sha256": "a32006c95141f2b49bb3c0f507801049377acdc0f734ccd9072c173914abff73",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/libraries.ts",
+      "sha256": "61068dfbcd99992bacbcf0e5697c3fe355d1c106d2b794dc95c3a25fd09c57fc",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/assets.ts",
+      "sha256": "c2a214fc32854193e54233ff6ee01c539ec23006d70ff0b668fa10b173a2abaa",
+      "commit": "b32fdf584c5600b347ce3997d4cd7e43d53a0946"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/placement.ts",
+      "sha256": "5bfe38a1ccf7c4432b2ffbb7dab7c61f8d0c7f2f7768ce11e889ce65ed9b6692",
+      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/asset-engine.ts",
+      "sha256": "04afd933a1b385b17cd4a2d2f707297e1225c43682149063a07a5aa4e9432562",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/binaries.ts",
+      "sha256": "2382d17a47243734c98df9dac95ebab061c74ebeb7cd040921774097f2d2e095",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/ghosts.ts",
+      "sha256": "0dcd9060b1dbdf38c116711a2079f64dd5f0cce0bf55e2d766354ce2f6ccbfad",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/events.ts",
+      "sha256": "4e3eddcef50d831a8aa960b2493259d7dc44dd337d7a2c74bcbebe93a2981fba",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalEngine.ts",
+      "sha256": "26c49891387a11f668687eb41c17e960c6f4fe568d1b2737f338f1a0964cc0fb",
+      "commit": "51d9e5ad05cf522d500186a591f2d89709ceb523"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalDocumentHandle.ts",
+      "sha256": "6aaf591e462f97f71ab85615a43c534e03506c17e947bace741e6568d801dba0",
+      "commit": "91404cfcb36167f72b620e65a83511eed485d95c"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalPageHandle.ts",
+      "sha256": "2965e842ba022cd45cca975ad0fd41f6f1a203565089e324982b948d1a5d4478",
+      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+    },
+    {
+      "path": "packages/engine/core/src/engine/localEngineBrand.ts",
+      "sha256": "dcb7227fac784fca57e06a0151f7fba9f5fbb03469af1ac1c6f0923ffe62c7ce",
+      "commit": "51d9e5ad05cf522d500186a591f2d89709ceb523"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PieceInfo.ts",
+      "sha256": "f77b32fdad6aab44cf3556e5ee0b154997e03b6426755a1932d90485517cd8bb",
+      "commit": "fd175ba5082e2cfdb7a839945e92280d5ed4bae7"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageRender.ts",
+      "sha256": "59e748481f9b6bf62840c8772de8e649e8d64a2e64462df0de5807a217ae0bb1",
+      "commit": "7e0d96c1cc8a6440b37ae1071f68d0f17c2535bd"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageListSnapshot.ts",
+      "sha256": "547e65db0c9e26bce218f2e1aa7cd9d0955ce694cbb12fec9ea9d1bcbc29c429",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/dto/NamedPage.ts",
+      "sha256": "1a1e2bcc48f170cc418b1cad4f619d20930880a9eca0d9a23bb4021286057fe5",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/engine/core/src/identity/PageRef.ts",
+      "sha256": "14b0278760d50aa1c0eb121902b271e3c7555854e9ea54ee80dc462484f69da9",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/core/main/src/settings.ts",
+      "sha256": "aa3032d4911ce7b4574d70d75af1d14dfd94ca304ab08bce2d534ad1f0024af1",
+      "commit": "7ebe12c2415a1a532383553622d3b2b2f6950e40"
+    },
+    {
+      "path": "packages/core/main/src/types.ts",
+      "sha256": "b584eef26358085af12a750f42c565ae839a8b792acbd4cf47b508be3651c5c4",
+      "commit": "070cc50bfc6b9d8a503711ef437da29a69238942"
+    },
+    {
+      "path": "packages/core/main/src/testing.ts",
+      "sha256": "8c46e5851adbfe10f62ccbda83fcf1bb98c0029c2bef57e5c0d59ec3dbe2805f",
+      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/marks.ts",
+      "sha256": "ef213fee267ff6c6b75f4b37577e40d7d9f62d6df810548c77cc5627a702d852",
+      "commit": "7b5df5e70541b6ed8c8d9661ffd886a52cc70705"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/errors.ts",
+      "sha256": "d71f51013850cff56d32b95467bfe8ae9658805bbca012bb1493ac4e8980b95b",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/documents.ts",
+      "sha256": "42ae651a460d4bd4efe68022cded39c90286baf76acfaaab8045a1c27f8f1661",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/blank-library.ts",
+      "sha256": "13b5c5f4dea5d01cbc3635341d389b1e8d64bb979b1679912d8330f943e959e4",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/annotation/src/write/stamps.ts",
+      "sha256": "29f1053d2cc25d59026dd5bac3a4e83b7b23b47d468ea5673eb5f3f416142b85",
+      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+    },
+    {
+      "path": "packages/plugin/annotation/src/contract.ts",
+      "sha256": "e3dacccd2a85f9d33ae9b67a32f59a1365f0b2cef4f66acb0ed6a4606ded744f",
+      "commit": "277961ad3f9a01195824f2bffa1340ca5f44fcde"
+    },
+    {
+      "path": "packages/plugin/annotation/src/write/ops.ts",
+      "sha256": "8887ea7c78a593142a7535a936e5682029bb6e8407a7fcbc9c43f232303b9668",
+      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+    },
+    {
+      "path": "packages/core/main/src/context.ts",
+      "sha256": "01b25039519568b49a9a3aead7fd26c6b8c084797a44b850de1730f79ee96981",
+      "commit": "6ff01074abcfacaff7e98716eea3f2cc0eff9822"
+    },
+    {
+      "path": "packages/core/main/src/serial-queue.ts",
+      "sha256": "0c71bbb2851d67dc6f2e0229eb6b15f7b6cde9d668514d9560c967f5d73164e0",
+      "commit": "75791ed22babfae3b8c3445b93abad015514db23"
+    },
+    {
+      "path": "packages/core/main/src/changes.ts",
+      "sha256": "686a67ac92baed42efd7aa7c4885f41418a5595957395a9cdddaac2ffcbbc866",
+      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+    },
+    {
+      "path": "packages/engine/core/src/resource/BinarySource.ts",
+      "sha256": "ea025e0e403231fcf08fa0645615b6782d71e114acbc50838d02b6c7d4ec7f4f",
+      "commit": "118bb2ea899cc336ff2d5baedfbc56bab3168fa7"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/MutationMeta.ts",
+      "sha256": "51496c0fcc5d4628d9ba7b3f508098185e0e5e18cdcd4d8d9d8a89532f9932eb",
+      "commit": "4374980a537c5b15a43dbebb5072b1de4120f29c"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/AnnotationMutationResults.ts",
+      "sha256": "4ac799cf86a58511a55c4cfd06c4dce526eee4893ad2087d8e6d70b3a4da7753",
+      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/PageNameInput.ts",
+      "sha256": "6af04280b51d4e4fa6aadf19f4995e3037d49dbbc1c539239b410b920f393a3b",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/PageFlattenResult.ts",
+      "sha256": "40e3fd76e9a4a696ef01dfe9368284c9fd516bc2ea7fb4ec09a0e5c8131c8f15",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
+      "sha256": "2b16e4344fe7eb70bf15f720ec395d127ef320639b0d61554959651891df8c98",
+      "commit": "b69c40377d790a2899adab04b20dd2174ed5935a"
+    }
+  ],
+  "diagnosticAuthority": "test/stamp-mutations.test.ts authors independent exact method/error/channel expectations; actual current per-case channels are captured in ignored iv-after runtime, not used as semantic expected output.",
+  "currentSourceHashes": [
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-assets.ts",
+      "sha256": "b157fcb501063c69cb9caac1814381e97839b45662a2f5c9ecf3189b370db44f"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-api.ts",
+      "sha256": "513e8e2c8fec32051780f3be63240445693e2ad16f04f0bf99df2a463f4aebe3"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-mutation-fixtures.ts",
+      "sha256": "b39b0a1e1c24ca014b0a56dc6fe98f86048c535741192f60dd4d8ab02865f336"
+    }
+  ],
+  "removalEvidence": [
+    {
+      "commit": "1aea4f52e92be1f9a49a1945a4e6ee0b57097004",
+      "contract": "Loose storage, loose-PDF size requirement and final-asset auto-drop replaced by canonical PDF page authoring; current queue coverage consumes this replacement.",
+      "before": {
+        "commit": "fd5c90d4f76cbbe6b7bcdf62851851e013666dad",
+        "path": "packages/plugin/stamp/src/capability.ts",
+        "sha256": "9a813b2be68bce33538e4a61bf4400b86b35e29c9d1d6da4390a3f7d2c6aa2b8"
+      },
+      "after": {
+        "commit": "1aea4f52e92be1f9a49a1945a4e6ee0b57097004",
+        "path": "packages/plugin/stamp/src/capability.ts",
+        "sha256": "0603d41d1ca63822827c29eeb5e88afef8c38be1c29a91d6a98ebbf37a2e2258"
+      }
+    },
+    {
+      "commit": "1512f81969be7477b0cc0db597fb20ebdb59343d",
+      "contract": "debounceMs/timer flush removed; current per-library burst queue and already-requested work survive unsubscribe.",
+      "before": {
+        "commit": "1cca8297d0e72458bb2ec9c1ed0099659dcd7811",
+        "path": "packages/plugin/stamp/src/persistence.ts",
+        "sha256": "7e982913168859dbc06526924c50e45765de0670573489d7ce08f0e7b4f39806"
+      },
+      "after": {
+        "commit": "1512f81969be7477b0cc0db597fb20ebdb59343d",
+        "path": "packages/plugin/stamp/src/persistence.ts",
+        "sha256": "b1d55990e1187731037fd339ddbe5a82d62a9562f78f49ae662cb9f09175ba1f"
+      }
+    },
+    {
+      "commit": "62c1245d1705979bb23e1e11cff33973b5248c19",
+      "contract": "Current capability names, OperationOptions, PluginError and owned controller services replace obsolete public vocabulary and reducer dispatch targets.",
+      "before": {
+        "commit": "34dce7737092582c0832e61f37651360fe549fe5",
+        "path": "packages/plugin/stamp/src/contract.ts",
+        "sha256": "721169b23652c188ff91f5f8087fb89e58bb2b0ab3c1bcd0fefab39eb524bb9b"
+      },
+      "after": {
+        "commit": "62c1245d1705979bb23e1e11cff33973b5248c19",
+        "path": "packages/plugin/stamp/src/contract.ts",
+        "sha256": "caea6ba5185dd3817bce1324082b16efdb898d4cf98fe9a5b37678908b633e9c"
+      }
+    }
+  ]
+}

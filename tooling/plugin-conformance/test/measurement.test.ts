@@ -1036,7 +1036,9 @@ test('the complete original B3 archive and all 61 measurement mappings remain ex
       source.name !== 'measurement' &&
       source.name !== 'redaction' &&
       source.name !== 'stamp-functions' &&
-      source.name !== 'stamp-library'
+      source.name !== 'stamp-library' &&
+      source.name !== 'stamp-assets' &&
+      source.name !== 'stamp-api'
     )
       assert.equal(
         digest(await readFile(new URL('../src/suites/' + source.name + '.ts', import.meta.url))),
