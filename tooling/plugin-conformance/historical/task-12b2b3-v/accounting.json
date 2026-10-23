@@ -1,0 +1,818 @@
+{
+  "base": "35c7adebfd949d36cf3faa0e3b2bf0d02a294336",
+  "originalArchiveBase": "d8034e3f6f5f4a99b1ae785146473f4de71fa262",
+  "original": 19,
+  "current": 22,
+  "mapped": 19,
+  "renamed": 0,
+  "wholeCaseRetirements": 0,
+  "added": 3,
+  "changedMappedInputs": 19,
+  "partialRetirements": 9,
+  "mappings": [
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "arm-delegates-to-the-annotation-plugin",
+        "inputSha256": "3b8ee99b0ab75ef37f6d669c3a174e36a6368dde0ce7dbc81fa75ea4d5c9db98"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "arm-delegates-to-the-annotation-plugin",
+        "inputSha256": "e673ef89beb8534d9b8ee42ec9302e7db2f1c7f27a02efe3bfa8028eaa9c957f"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "the-target-width-sizes-the-ghost-and-a-template-ghost-is-cached",
+        "inputSha256": "9009b632d2a36a9b4339dc2c2d13c0a4a8d836dc2f3803d542d8b43ce96c32c1"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "the-target-width-sizes-the-ghost-and-a-template-ghost-is-cached",
+        "inputSha256": "2ed511193834c02a283e7ef685bbd7f77f31a72f203ef83be36f5ab4a9c92859"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-raster-asset-arms-with-its-own-preview",
+        "inputSha256": "ace878cbba69db9e83a0d6a9feb61310c36686efbff3dd9761275fb6b3567737"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-raster-asset-arms-with-its-own-preview",
+        "inputSha256": "84f2b8f9e55e45683f8e432447984eb69037fcb0c9f922a20810550589733aff"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Loose raster/source-as-preview and unrendered PDF assets are removed. Current raster authoring flattens PNG into a canonical PDF page, arms its true aspect and lazily rendered ghost. A PDF thumbnail render Io rejects import and leaves the raster arm/resources intact; this is current failure recovery, not old previewless-PDF success.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/annotation/src/write/stamps.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "arming-what-is-not-there",
+        "inputSha256": "e20603ca8b406014a512addd6555022c22516559ffc498779a0aaa046e5a464a"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "arming-what-is-not-there",
+        "inputSha256": "5c188a320da4e845195065ca6eb32b4ef8486cbfc9d03b8ff9b89e6a85cbb0ee"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Current permission preflight replaces kernel missing-capability throws; disarm missing/closed targets is inert. Unknown asset still rejects before permission. No old capability alias or stale missing-method exception is emitted.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/stamp/src/read/catalog.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "scripting-off-arms-the-template",
+        "inputSha256": "4f86542f78fd0c20822a2601385dce62116dcd1866a0c74251a432a0753e567c"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "scripting-off-arms-the-template",
+        "inputSha256": "3d0a7a0d87d60976f6acb17174bfd15c162f518551fca3a3d035d47bc874f7a6"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "no-sandbox-host",
+        "inputSha256": "4a15f76f79da4a523031c22016a5c6b23cc0ff9d6934d8ab18520d90fc226eb8"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "no-sandbox-host",
+        "inputSha256": "40b5c6074258b528ae988e9f8a2d60816fd561726ed9e975c491220b14189ff5"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Old enabled-scripting/no-sandbox bypass was removed when actions became realm owner. Enabled actions without an injected sandbox now constructs default QuickJS; D owns its known tsx serialized __name execution gap. Current case covers the real no-actions-host bypass and arms unchanged; it does not claim to cover enabled default-VM execution.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/actions/src/scripting/environment.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-raster-asset-is-never-evaluated",
+        "inputSha256": "320dc1bb4708c33c21148f3a85253f8003b7fe1937a8513210b21f449838560b"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-raster-asset-is-never-evaluated",
+        "inputSha256": "20bed29a43a2990c78f13cd7e9b1e6f2087d05de5d863207d204f3d105b972a6"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Loose raster early-return is removed with canonical storage: a raster-authored PDF page can carry forms. This valid canonical raster case opens/closes the copy and has no selected-page field, so no sandbox is built and template bytes arm.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/write/placement.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-stamp-without-fields-on-its-page-arms-the-template",
+        "inputSha256": "53343c3366658f1f3a8599ff67b9041f80444c663a18bf89fe300989f41b91c2"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-stamp-without-fields-on-its-page-arms-the-template",
+        "inputSha256": "f876f38a2463c5bebb9e92d04a0095c1c7a7ce4ac3ef00af6ff29eb127957aa6"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "materializes-a-dynamic-stamp",
+        "inputSha256": "27ec2ff2d63e7a94fd93e4f7d3e518ec39a1ce6ff214278ecc898ee59ebb3da4"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "materializes-a-dynamic-stamp",
+        "inputSha256": "5c54d6cbb653e11faa8fadf8a3b0ebfe1e38e461480245df27a2e6edb3b4be15"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-loose-dynamic-stamp",
+        "inputSha256": "1d147f77484fcd17adda73a61f247944138c7303d01a71fb7afce2a98e78c893"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-loose-dynamic-stamp",
+        "inputSha256": "abf7d4189eefc16e5f50181d4fa1e55841345d200170faef334db8c156367549"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Loose PDF source/size semantics are removed. createAsset builds a canonical library and appends a page; current PDF source geometry (300x120) wins over the obsolete size hint. The selected appended page900 materializes under the identityless target and canonical bytes stay reusable.",
+      "source": [
+        "packages/plugin/stamp/src/write/assets.ts",
+        "packages/plugin/stamp/src/write/placement.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "dynamic-stamp-refusals",
+        "inputSha256": "3a5ac986cf112290ef2a535d9f9d1e098e942847659640ae2a930e672fb4928d"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "dynamic-stamp-refusals",
+        "inputSha256": "660dbcca814504dbffb2003a0ac98ffef8517551d284338fc6a8ac895dc8c0e8"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Optional missing flatten/extract service probes are retired: LocalDocumentHandle requires both. Typed EngineError Unsupported flatten and Io extraction now prove real source failure/finally-close; closed target now permission-denied before copying, missing canonical page remains invalid-input.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/engine/core/src/engine/LocalDocumentHandle.ts",
+        "packages/engine/core/src/engine/DocumentPagesService.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-failed-boot-script-is-a-diagnostic",
+        "inputSha256": "c5f4c54d471c045f386f31e017ff54d30788c8dc4733baf43a3b5faeb12bacc0"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-failed-boot-script-is-a-diagnostic",
+        "inputSha256": "c28e17bb3d00f430f3f88add98217df3f12b3f4fa8ddfaa818aad578b17ad126"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-failed-recalculation-fails-the-arm",
+        "inputSha256": "62f2fe791e9e916558ad0144e352f53e93c98da85a30c57d311b22d05fda9c86"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-failed-recalculation-fails-the-arm",
+        "inputSha256": "3f24748bb22c73254df4164f2bc643966428bfb17b5ef42f6725fadca0d8c82a"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "an-error-observer-that-throws",
+        "inputSha256": "1e9f8fa5da60a6d92f6b0aa78805385611a05d50adf1c8ff594c6e21ba3d5741"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "an-error-observer-that-throws",
+        "inputSha256": "ea287140f4614124b0ac1e820dc8a454dd89f176f7674a571ed7c26154a40695"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Removed stamp onError callback/console channel is replaced with actual actions.onScriptFailed. A throwing event listener reaches the kernel report channel with exact named TypeError while budget failure still rejects arm; no generic TypeError is accepted.",
+      "source": [
+        "packages/plugin/actions/src/scripting/surface.ts",
+        "packages/core/main/src/event-hook.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "observers-see-a-successful-run",
+        "inputSha256": "d2b26c97dc4c024c8f22e41270b20deed065d6ca0862b2f9bb3db4f826746022"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "observers-see-a-successful-run",
+        "inputSha256": "12c212d5bf56904efddf116db2336df5a54411a0442fb549c4d4ef1a8fbc0cb8"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Removed stamp onUiEffect exception isolation/continue behavior is not reproduced. The current actions alert adapter throwing Error propagates through surfaceScriptCommit, rejects arm with exact operation-failed cause, and finally disposes/closes. Accepted UI/diagnostic coverage survives independently in the failed-boot-continuation case.",
+      "source": [
+        "packages/plugin/actions/src/scripting/surface.ts",
+        "packages/plugin/stamp/src/write/placement.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-flatten-that-fails-or-skips",
+        "inputSha256": "c10b8786fe026a0d5fff65c3b60181b8bfea271c454bbf9a7d6b19bd17726d5c"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-flatten-that-fails-or-skips",
+        "inputSha256": "9ba49de5e3e5fc12ce896b031b0c6d8a8cc717486122dfe09d201b73b16fe8de"
+      },
+      "disposition": "mapped-with-partial-retirement",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Removed per-page failed/skipped flatten statuses and malformed text/null/boolean/missing page-ref interpolation probes are retired. Current flatten fails atomically via EngineError Refused; typed unchanged is successful and still materializes. No obsolete invalid PageRef DTO remains active.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/engine/core/src/mutation/PageFlattenResult.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-failed-copy-close-fails-the-arm",
+        "inputSha256": "cfa0e5d46e165916c58d8221b8abc115bdb4e2a651430336aabc36f2d0a83dbd"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-failed-copy-close-fails-the-arm",
+        "inputSha256": "9eb7689a7845e244ea199914113ceb78872ec46fbb468223ff1601448e58f77f"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-library-without-canonical-bytes",
+        "inputSha256": "2dada7c000835c65ae1ff2bf7e14e34559e541a39ab168523c9e4deb493beb5b"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "a-library-without-canonical-bytes",
+        "inputSha256": "9388ac54a61209842dd4d7c54f94f3d1f58d888d3a33c43ff103589d0e20db10"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    },
+    {
+      "before": {
+        "file": "plugins/stamp-placement.json",
+        "name": "teardown-destroys-a-factory-engine-once",
+        "inputSha256": "7864aab308e1929231142c174212ca121c213912bdddbac355ae548059efc400"
+      },
+      "after": {
+        "file": "plugins/stamp-placement.json",
+        "name": "teardown-destroys-a-factory-engine-once",
+        "inputSha256": "15fd824dccdc8e4d9115e463013928bde93d9832d0f5e9f358ddf8b34bf93e97"
+      },
+      "disposition": "mapped",
+      "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
+      "reason": "Surviving intent invokes current typed asset-first/options, annotation.stamps/ghost APIs and actions-owned detached realms; complete official form/layout/flatten/image/native mutation answers are authored before invocation. Independent tests assert exact successful arm/bytes/size/resources/ops/ref/opId/facts/public readbacks and named channels.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/actions/src/scripting/environment.ts",
+        "packages/plugin/actions/src/scripting/surface.ts"
+      ],
+      "task11InputDrift": false,
+      "inputChanged": true
+    }
+  ],
+  "additions": [
+    {
+      "file": "plugins/stamp-placement.json",
+      "name": "dynamic-placement-writes-materialized-bytes-and-batch-facts",
+      "inputSha256": "9960a791adf17fb5448448d10f6bc12e71bfe89766973b4f5740fbfea7f73c75",
+      "target": "Current shipping placement, annotation apply or file-picker APIs",
+      "reason": "Independent successful dynamic appearance bytes/resources, exact reservations/ops/opIds/facts/public reads plus per-page failure/recovery and all-page preflight.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/annotation/src/services/file-picker.ts"
+      ]
+    },
+    {
+      "file": "plugins/stamp-placement.json",
+      "name": "file-picker-places-cancels-and-expires-the-click",
+      "inputSha256": "a403c9556e8fd24d84cd44b62c15cb56ce2a74ab7943b302eb48b89eb3c7166f",
+      "target": "Current shipping placement, annotation apply or file-picker APIs",
+      "reason": "Actual current file-picker prompt, exact request/source bytes and one confirmed write; cancel and expired tool intent make no write.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/annotation/src/services/file-picker.ts"
+      ]
+    },
+    {
+      "file": "plugins/stamp-placement.json",
+      "name": "permission-refusal-recovers-on-an-authorized-document",
+      "inputSha256": "0cde4a8961ef3ea6a086553c2056a58ffd5f0aa654bc1fa8e72fd58c82ac4d63",
+      "target": "Current shipping placement, annotation apply or file-picker APIs",
+      "reason": "Open permission denial before copy; later independent authorized document successfully arms and disarms.",
+      "source": [
+        "packages/plugin/stamp/src/write/placement.ts",
+        "packages/plugin/annotation/src/write/stamps.ts",
+        "packages/plugin/annotation/src/services/file-picker.ts"
+      ]
+    }
+  ],
+  "retirements": [],
+  "sourceEvidence": [
+    {
+      "path": "packages/plugin/stamp/src/stamp.plugin.ts",
+      "sha256": "f45c6b3e5eedd53fc970fbe9ad0550a1cd4c51c5ec2404a07e10ffaf4532b013",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/controller.ts",
+      "sha256": "136016e00e714a4d4e100d9738ba1110e885b5e5c9eabe0f5bc791d11b72522f",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/model.ts",
+      "sha256": "247b19ca9007f69e64223238a85b7aada2f307d89c62caebb4582cb359e308e9",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/contract.ts",
+      "sha256": "eb79ee0c63acd2f652048455273f33ff7d1992b2f7024a79d2970dd149ea2fb6",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/token.ts",
+      "sha256": "edce71570e2b2ba8ebfbf4366246b56149f0f0105b7fa94baf2e570793e6be95",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/stamp/src/convention.ts",
+      "sha256": "2a33349c2099b67bacfcff63a57897061ae9f6e5ee85a9cd32725b00bd902439",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/stamp/src/persistence.ts",
+      "sha256": "b1d55990e1187731037fd339ddbe5a82d62a9562f78f49ae662cb9f09175ba1f",
+      "commit": "1512f81969be7477b0cc0db597fb20ebdb59343d"
+    },
+    {
+      "path": "packages/plugin/stamp/src/read/catalog.ts",
+      "sha256": "a32006c95141f2b49bb3c0f507801049377acdc0f734ccd9072c173914abff73",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/libraries.ts",
+      "sha256": "61068dfbcd99992bacbcf0e5697c3fe355d1c106d2b794dc95c3a25fd09c57fc",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/assets.ts",
+      "sha256": "c2a214fc32854193e54233ff6ee01c539ec23006d70ff0b668fa10b173a2abaa",
+      "commit": "b32fdf584c5600b347ce3997d4cd7e43d53a0946"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/placement.ts",
+      "sha256": "5bfe38a1ccf7c4432b2ffbb7dab7c61f8d0c7f2f7768ce11e889ce65ed9b6692",
+      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/asset-engine.ts",
+      "sha256": "04afd933a1b385b17cd4a2d2f707297e1225c43682149063a07a5aa4e9432562",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/binaries.ts",
+      "sha256": "2382d17a47243734c98df9dac95ebab061c74ebeb7cd040921774097f2d2e095",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/ghosts.ts",
+      "sha256": "0dcd9060b1dbdf38c116711a2079f64dd5f0cce0bf55e2d766354ce2f6ccbfad",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/events.ts",
+      "sha256": "4e3eddcef50d831a8aa960b2493259d7dc44dd337d7a2c74bcbebe93a2981fba",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalEngine.ts",
+      "sha256": "26c49891387a11f668687eb41c17e960c6f4fe568d1b2737f338f1a0964cc0fb",
+      "commit": "51d9e5ad05cf522d500186a591f2d89709ceb523"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalDocumentHandle.ts",
+      "sha256": "6aaf591e462f97f71ab85615a43c534e03506c17e947bace741e6568d801dba0",
+      "commit": "91404cfcb36167f72b620e65a83511eed485d95c"
+    },
+    {
+      "path": "packages/engine/core/src/engine/LocalPageHandle.ts",
+      "sha256": "2965e842ba022cd45cca975ad0fd41f6f1a203565089e324982b948d1a5d4478",
+      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+    },
+    {
+      "path": "packages/engine/core/src/engine/localEngineBrand.ts",
+      "sha256": "dcb7227fac784fca57e06a0151f7fba9f5fbb03469af1ac1c6f0923ffe62c7ce",
+      "commit": "51d9e5ad05cf522d500186a591f2d89709ceb523"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PieceInfo.ts",
+      "sha256": "f77b32fdad6aab44cf3556e5ee0b154997e03b6426755a1932d90485517cd8bb",
+      "commit": "fd175ba5082e2cfdb7a839945e92280d5ed4bae7"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageRender.ts",
+      "sha256": "59e748481f9b6bf62840c8772de8e649e8d64a2e64462df0de5807a217ae0bb1",
+      "commit": "7e0d96c1cc8a6440b37ae1071f68d0f17c2535bd"
+    },
+    {
+      "path": "packages/engine/core/src/dto/PageListSnapshot.ts",
+      "sha256": "547e65db0c9e26bce218f2e1aa7cd9d0955ce694cbb12fec9ea9d1bcbc29c429",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/dto/NamedPage.ts",
+      "sha256": "1a1e2bcc48f170cc418b1cad4f619d20930880a9eca0d9a23bb4021286057fe5",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/engine/core/src/identity/PageRef.ts",
+      "sha256": "14b0278760d50aa1c0eb121902b271e3c7555854e9ea54ee80dc462484f69da9",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/core/main/src/settings.ts",
+      "sha256": "aa3032d4911ce7b4574d70d75af1d14dfd94ca304ab08bce2d534ad1f0024af1",
+      "commit": "7ebe12c2415a1a532383553622d3b2b2f6950e40"
+    },
+    {
+      "path": "packages/core/main/src/types.ts",
+      "sha256": "b584eef26358085af12a750f42c565ae839a8b792acbd4cf47b508be3651c5c4",
+      "commit": "070cc50bfc6b9d8a503711ef437da29a69238942"
+    },
+    {
+      "path": "packages/core/main/src/testing.ts",
+      "sha256": "8c46e5851adbfe10f62ccbda83fcf1bb98c0029c2bef57e5c0d59ec3dbe2805f",
+      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+    },
+    {
+      "path": "packages/plugin/stamp/src/write/marks.ts",
+      "sha256": "ef213fee267ff6c6b75f4b37577e40d7d9f62d6df810548c77cc5627a702d852",
+      "commit": "7b5df5e70541b6ed8c8d9661ffd886a52cc70705"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/errors.ts",
+      "sha256": "d71f51013850cff56d32b95467bfe8ae9658805bbca012bb1493ac4e8980b95b",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/services/documents.ts",
+      "sha256": "42ae651a460d4bd4efe68022cded39c90286baf76acfaaab8045a1c27f8f1661",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/stamp/src/blank-library.ts",
+      "sha256": "13b5c5f4dea5d01cbc3635341d389b1e8d64bb979b1679912d8330f943e959e4",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/annotation/src/write/stamps.ts",
+      "sha256": "29f1053d2cc25d59026dd5bac3a4e83b7b23b47d468ea5673eb5f3f416142b85",
+      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+    },
+    {
+      "path": "packages/plugin/annotation/src/contract.ts",
+      "sha256": "e3dacccd2a85f9d33ae9b67a32f59a1365f0b2cef4f66acb0ed6a4606ded744f",
+      "commit": "277961ad3f9a01195824f2bffa1340ca5f44fcde"
+    },
+    {
+      "path": "packages/plugin/annotation/src/write/ops.ts",
+      "sha256": "8887ea7c78a593142a7535a936e5682029bb6e8407a7fcbc9c43f232303b9668",
+      "commit": "5f4686dc817b9563721ba1367b7b245dfc8254f4"
+    },
+    {
+      "path": "packages/core/main/src/context.ts",
+      "sha256": "01b25039519568b49a9a3aead7fd26c6b8c084797a44b850de1730f79ee96981",
+      "commit": "6ff01074abcfacaff7e98716eea3f2cc0eff9822"
+    },
+    {
+      "path": "packages/core/main/src/serial-queue.ts",
+      "sha256": "0c71bbb2851d67dc6f2e0229eb6b15f7b6cde9d668514d9560c967f5d73164e0",
+      "commit": "75791ed22babfae3b8c3445b93abad015514db23"
+    },
+    {
+      "path": "packages/core/main/src/changes.ts",
+      "sha256": "686a67ac92baed42efd7aa7c4885f41418a5595957395a9cdddaac2ffcbbc866",
+      "commit": "270c2d6153febee3de7115cbdb9f48d873c2d658"
+    },
+    {
+      "path": "packages/engine/core/src/resource/BinarySource.ts",
+      "sha256": "ea025e0e403231fcf08fa0645615b6782d71e114acbc50838d02b6c7d4ec7f4f",
+      "commit": "118bb2ea899cc336ff2d5baedfbc56bab3168fa7"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/MutationMeta.ts",
+      "sha256": "51496c0fcc5d4628d9ba7b3f508098185e0e5e18cdcd4d8d9d8a89532f9932eb",
+      "commit": "4374980a537c5b15a43dbebb5072b1de4120f29c"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/AnnotationMutationResults.ts",
+      "sha256": "4ac799cf86a58511a55c4cfd06c4dce526eee4893ad2087d8e6d70b3a4da7753",
+      "commit": "1233d13493c6a1c5ac4db3b25f60b54114c2f2c7"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/PageNameInput.ts",
+      "sha256": "6af04280b51d4e4fa6aadf19f4995e3037d49dbbc1c539239b410b920f393a3b",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/engine/core/src/mutation/PageFlattenResult.ts",
+      "sha256": "40e3fd76e9a4a696ef01dfe9368284c9fd516bc2ea7fb4ec09a0e5c8131c8f15",
+      "commit": "bc0057f3af16017b898633b7d8bf5b28311ba0b0"
+    },
+    {
+      "path": "packages/engine/core/src/engine/DocumentPagesService.ts",
+      "sha256": "2b16e4344fe7eb70bf15f720ec395d127ef320639b0d61554959651891df8c98",
+      "commit": "b69c40377d790a2899adab04b20dd2174ed5935a"
+    },
+    {
+      "path": "packages/plugin/actions/src/scripting/environment.ts",
+      "sha256": "f429c645dfa877788406b35c2018f1724e2c4fa7a97ef718d518fad00aed843e",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/actions/src/scripting/surface.ts",
+      "sha256": "0c27786f72554030e329f3632745d9e2ddb7a80c3944764759b9d61dbb2e477f",
+      "commit": "6ff01074abcfacaff7e98716eea3f2cc0eff9822"
+    },
+    {
+      "path": "packages/plugin/actions/src/scripting/realm.ts",
+      "sha256": "51463817e3dc391037a8c4e0c5980e331f4dc376231e1b19d63ab1e2cfc9af8d",
+      "commit": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719"
+    },
+    {
+      "path": "packages/plugin/actions/src/host-contract.ts",
+      "sha256": "b6f97b8b9e93ac2e9629f3c1de088202d1fea97bac20edf480990cc3ba507745",
+      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+    },
+    {
+      "path": "packages/plugin/actions/src/contract.ts",
+      "sha256": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69",
+      "commit": "19280be70a0ed7a4daae510809b0eb21fee94ac7"
+    },
+    {
+      "path": "packages/plugin/annotation/src/services/file-picker.ts",
+      "sha256": "b40533e5551147f30b11365f84697b29704ef0d78bebaf4d11136133788fcb9a",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    },
+    {
+      "path": "packages/plugin/annotation/src/host-contract.ts",
+      "sha256": "6c11305db7470bfd648cfaedcbda7364c009bf3699be3369d4985b7b48741feb",
+      "commit": "d2f1f4c0be32e6e530719a613c690a0a10b89302"
+    },
+    {
+      "path": "packages/plugin/form/src/scripting/controller.ts",
+      "sha256": "8a174d1ac8c6e4352c830e039d005dd0a4d541271c00f5793b635344dde5dec1",
+      "commit": "5da4ca52ad31040143d5f272a451d5dd4e2eec53"
+    },
+    {
+      "path": "packages/core/acrojs/src/host.ts",
+      "sha256": "294384478ab4ed7f62e901e7a333386b25a64d40e33e66053dfbe9be549abda0",
+      "commit": "c78997346647b0e53f7c8d1b98b80865f05a299e"
+    },
+    {
+      "path": "packages/engine/core/src/auth/scope/types.ts",
+      "sha256": "cc23b81bf7bbab1490ccb1982edbbec9e789c8c1cfccb69f051c6b205bd2cdd1",
+      "commit": "67ccb76dc0bfe473406a43274d425baf6c285878"
+    },
+    {
+      "path": "packages/engine/core/src/forms/effects.ts",
+      "sha256": "6c3b5fde1d926bbb6c802f42ca54277e944e2c9faec34f92d48a37030fceb83c",
+      "commit": "98e5c270c6a7fb3446523fecbbb73bfee9ef1971"
+    },
+    {
+      "path": "packages/core/main/src/event-hook.ts",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508",
+      "commit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411"
+    }
+  ],
+  "removalEvidence": [
+    {
+      "commit": "ba2ec06c6945cfefe2aba2485ab02bc6c5a8c230",
+      "contract": "Detached realm owner moves from stamp scripting config to the target actions host; no-host bypass and source-owned surface channels replace removed observer policy.",
+      "before": {
+        "commit": "112ab16f6bab5d66e4fdd3900d9ca4a43a65b365",
+        "path": "packages/plugin/stamp/src/capability.ts",
+        "sha256": "918139de09c637eaf4a6034ec2ed41b1b5c7140e910059e7691e35d9752e9b9c"
+      },
+      "after": {
+        "commit": "ba2ec06c6945cfefe2aba2485ab02bc6c5a8c230",
+        "path": "packages/plugin/stamp/src/capability.ts",
+        "sha256": "9a813b2be68bce33538e4a61bf4400b86b35e29c9d1d6da4390a3f7d2c6aa2b8"
+      }
+    },
+    {
+      "commit": "ba2ec06c6945cfefe2aba2485ab02bc6c5a8c230",
+      "contract": "StampScripting settings removed; actions javascript.enabled and stamp dynamic setting now govern evaluation.",
+      "before": {
+        "commit": "112ab16f6bab5d66e4fdd3900d9ca4a43a65b365",
+        "path": "packages/plugin/stamp/src/types.ts",
+        "sha256": "c95c6e1942cc8719e7ad950cb24c4664694af22f1f69ee1cc265c97d7e3ce77f"
+      },
+      "after": {
+        "commit": "ba2ec06c6945cfefe2aba2485ab02bc6c5a8c230",
+        "path": "packages/plugin/stamp/src/types.ts",
+        "sha256": "c6a62c9e16863999e42777fca4711e2aa3c0deeb1d30f9d1374fe035cf8b2233"
+      }
+    },
+    {
+      "commit": "1aea4f52e92be1f9a49a1945a4e6ee0b57097004",
+      "contract": "Canonical PDF page authoring replaces loose raster/PDF storage and raster early-return.",
+      "before": {
+        "commit": "fd5c90d4f76cbbe6b7bcdf62851851e013666dad",
+        "path": "packages/plugin/stamp/src/capability.ts",
+        "sha256": "9a813b2be68bce33538e4a61bf4400b86b35e29c9d1d6da4390a3f7d2c6aa2b8"
+      },
+      "after": {
+        "commit": "1aea4f52e92be1f9a49a1945a4e6ee0b57097004",
+        "path": "packages/plugin/stamp/src/capability.ts",
+        "sha256": "0603d41d1ca63822827c29eeb5e88afef8c38be1c29a91d6a98ebbf37a2e2258"
+      }
+    },
+    {
+      "commit": "0bec240dec90f99893058044161b9d9aa45789f4",
+      "contract": "Current atomic flatten call replaces per-page failed/skipped result inspection and template-literal malformed-page status errors.",
+      "before": {
+        "commit": "fc3ce8a7a6491c73de4fe8616d46d0db9d23f7b2",
+        "path": "packages/plugin/stamp/src/write/placement.ts",
+        "sha256": "b758f9ef4e0ea72c2ed65268995c4dc1b1d050e5c86aa2495dbcc4322a8f5a81"
+      },
+      "after": {
+        "commit": "0bec240dec90f99893058044161b9d9aa45789f4",
+        "path": "packages/plugin/stamp/src/write/placement.ts",
+        "sha256": "403a9fcd4ae90525d5e30ea3f930c22bd9182dc8de667bc17b8d9d0333718c59"
+      }
+    }
+  ],
+  "currentSourceHashes": [
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-placement.ts",
+      "sha256": "780c2f797aa885097af08712cae9ef11d3f0cd680d90a22d8ca07434685608c7"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-placement-fixtures.ts",
+      "sha256": "a632d43a9e31e711ddbd151c598ebb7fc4d6475876578ff7bdc5b07602947b1d"
+    }
+  ]
+}
