@@ -6,11 +6,8 @@
 //! with some of it on screen is `visible`, with that part and its device
 //! pixels; a page laid out just off screen is `near`.
 //!
-//! The TypeScript tells the engine through `ctx.doc.setWorkingSet(id,
-//! pages)`. The Rust kernel's `DocumentHandle` has no such member yet, so
-//! [`connect_working_set`] keeps the watch, its change detection and the
-//! told key, and the engine call is the kernel's carry (see the crate
-//! README).
+//! It is told through `ctx.doc.setWorkingSet(id, pages)`
+//! ([`epdf_kernel::engine::DocumentHandle::set_working_set`]).
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -103,15 +100,17 @@ pub(crate) fn connect_working_set(
     let told = Rc::new(RefCell::new(String::new()));
     let tell = {
         let told = told.clone();
-        move |shown: &[VisiblePage]| {
+        let ctx = ctx.clone();
+        move |shown: &[VisiblePage]| -> Result<(), Error> {
             let pages = working_set_of(shown);
             let key = key_of(&pages);
             if *told.borrow() == key {
-                return;
+                return Ok(());
             }
             *told.borrow_mut() = key;
-            // `ctx.doc.setWorkingSet(ctx.id, pages)`: not in the Rust
-            // kernel's document handle yet (README, "Working set").
+            let pages = serde_json::to_value(&pages).map_err(|e| Error::new(e.to_string()))?;
+            ctx.doc()?.set_working_set(ctx.id(), pages);
+            Ok(())
         }
     };
     let tell = Rc::new(tell);
@@ -121,11 +120,7 @@ pub(crate) fn connect_working_set(
         ctx,
         move || Ok(select.list_visible_pages()),
         Rc::ptr_eq,
-        move |next, _| {
-            on_change(next);
-            Ok(())
-        },
+        move |next, _| on_change(next),
     )?;
-    tell(&stage.list_visible_pages());
-    Ok(())
+    tell(&stage.list_visible_pages())
 }

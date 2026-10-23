@@ -98,6 +98,11 @@ pub trait DocumentHandle {
     fn last_server_id(&self) -> Option<String> {
         None
     }
+    /// `setWorkingSet(view, pages)`: what `view` shows of the document, a
+    /// `WorkingSetPage[]` as JSON. A scheduling hint that changes no result;
+    /// each call replaces the view's last set. A host that does not rank
+    /// work ignores it, as the cloud engine does.
+    fn set_working_set(&self, _view: &str, _pages: Value) {}
 }
 
 impl dyn DocumentHandle {

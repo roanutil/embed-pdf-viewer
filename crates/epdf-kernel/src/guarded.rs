@@ -155,6 +155,11 @@ impl DocumentHandle for GuardedHandle {
     fn last_server_id(&self) -> Option<String> {
         self.inner.last_server_id()
     }
+
+    /// A synchronous member: the TypeScript guard passes it through.
+    fn set_working_set(&self, view: &str, pages: Value) {
+        self.inner.set_working_set(view, pages)
+    }
 }
 
 struct GuardedSecurity {
