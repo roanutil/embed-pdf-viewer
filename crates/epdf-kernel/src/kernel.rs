@@ -180,7 +180,6 @@ struct Session {
     download_wraps: Rc<RefCell<Vec<crate::settle::DownloadWrap>>>,
     burst: RefCell<Option<(String, crate::store::StoreHold)>>,
     changes: crate::changes::DocumentChanges,
-    events: EventHookSource<Value>,
     mirror_starts: RefCell<Vec<(String, Rc<dyn Fn()>)>>,
     constructing: RefCell<Vec<*const PluginDef>>,
     id: RefCell<String>,
@@ -446,7 +445,6 @@ impl Inner {
                 download_wraps: Rc::default(),
                 burst: RefCell::new(None),
                 changes,
-                events: EventHookSource::new(Some(self.report.clone())),
                 mirror_starts: RefCell::new(Vec::new()),
                 constructing: RefCell::new(Vec::new()),
                 instance_id: format!("{id}#{}", self.instance_counter.get()),
@@ -484,8 +482,6 @@ impl Inner {
         );
         let changes = session.changes.clone();
         session.scope.defer_fn(move || changes.close());
-        let events = session.events.clone();
-        session.cancel.on_abort(Rc::new(move |_| events.dispose()));
         session
     }
 
@@ -1185,13 +1181,11 @@ impl Inner {
                 this.set_unsaved_changes(&session, true);
             }
             let Some(layout) = layout_from_event(event) else {
-                session.events.emit(event);
                 return;
             };
             let id = session.id();
             let core = this.store.core();
             let Some(existing) = core.documents.get(&id).cloned() else {
-                session.events.emit(event);
                 return;
             };
             let updated = DocumentMeta {
@@ -1212,7 +1206,6 @@ impl Inner {
                 "revision": revision,
                 "pages": pages,
             }));
-            session.events.emit(event);
         }));
         session.scope.defer_fn(move || unsubscribe.call());
 

@@ -766,3 +766,69 @@ fn close_rejects_pending_changes_only_after_the_plugins_event_sources_are_gone()
     assert!(heard.borrow().is_empty(), "heard {:?}", heard.borrow());
     run(kernel.destroy()).unwrap();
 }
+#[test]
+fn a_page_mirror_subscribes_to_the_handle_at_creation_between_the_kernel_and_connect() {
+    use epdf_kernel::page_mirror::{Affected, PageMirrorSpec};
+    use epdf_kernel::plugin::Controller;
+    // `onDocumentEvent` (core/main/src/context.ts:216): a mirror subscribes
+    // to `doc.events` itself when it is created, so it sees an event after
+    // the kernel's own listener has updated the meta and before the
+    // listeners `connect` adds, and it unsubscribes when the instance closes.
+    rt::reset();
+    let document = doc(false);
+    let seen: Rc<RefCell<Vec<(&'static str, u64)>>> = Rc::default();
+    let at_creation = Rc::new(Cell::new(usize::MAX));
+    let (log, count, handle) = (seen.clone(), at_creation.clone(), document.clone());
+    let token = Token::<()>::new("mirrored");
+    let plugin = define::<Value, CoreAction>("mirrored")
+        .document_scoped()
+        .create(&token, move |ctx: Controller<Value, CoreAction>| {
+            let before = handle.events.listener_count();
+            let (mirror_log, mirror_ctx) = (log.clone(), ctx.clone());
+            let mirror = ctx.page_mirror(PageMirrorSpec {
+                name: "pages".into(),
+                load: Rc::new(|_, _, _| Promise::resolved(json!(0))),
+                affected: Rc::new(move |_| {
+                    let revision = mirror_ctx.document().map_or(0, |m| m.revision);
+                    mirror_log.borrow_mut().push(("mirror", revision));
+                    Affected::None
+                }),
+                fold: None,
+                predict: None,
+                changed: None,
+            })?;
+            count.set(handle.events.listener_count() - before);
+            let (connect_log, connect_ctx) = (log.clone(), ctx.clone());
+            // The instance keeps its mirror for as long as it lives.
+            let connect: epdf_kernel::plugin::ConnectFn = Rc::new(move || {
+                let _kept = &mirror;
+                let (log, ctx) = (connect_log.clone(), connect_ctx.clone());
+                connect_ctx.listen(connect_ctx.doc()?.subscribe(Rc::new(move |_| {
+                    let revision = ctx.document().map_or(0, |m| m.revision);
+                    log.borrow_mut().push(("connect", revision));
+                })));
+                Ok(())
+            });
+            Ok(((), Some(connect)))
+        })
+        .build();
+    let kernel =
+        Kernel::new(Rc::new(TestEngine(document.clone())), vec![plugin], options()).unwrap();
+    run(kernel.start()).unwrap();
+    let subscribed_before_open = document.events.listener_count();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    assert_eq!(at_creation.get(), 1, "the mirror subscribed to the handle when it was created");
+
+    let page = json!({"ref":{"kind":"objectNumber","objectNumber":3}});
+    document.events.emit(&json!({
+        "type": "pages.rotated",
+        "layout": {"pageCount": 1, "pages": [page]},
+        "origin": {"kind": "remote"}
+    }));
+    rt::run_until_stalled();
+    assert_eq!(*seen.borrow(), vec![("mirror", 1), ("connect", 1)]);
+
+    run(kernel.documents().close("doc")).unwrap();
+    assert_eq!(document.events.listener_count(), subscribed_before_open);
+    run(kernel.destroy()).unwrap();
+}
