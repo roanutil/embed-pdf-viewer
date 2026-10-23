@@ -319,7 +319,8 @@ pub fn set_viewport(state: &Rc<StageState>, viewport: Size) -> Rc<StageState> {
 }
 
 pub fn set_dpr(state: &Rc<StageState>, dpr: f64) -> Rc<StageState> {
-    if object_is(state.dpr, dpr) {
+    // `state.dpr === dpr`.
+    if state.dpr == dpr {
         return state.clone();
     }
     with(state, |next| next.dpr = dpr)

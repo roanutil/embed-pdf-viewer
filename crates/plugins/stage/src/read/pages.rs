@@ -38,8 +38,13 @@ impl StageCapability {
         Size { width: content.width / b.content_scale, height: content.height / b.content_scale }
     }
 
-    /// Attach durable identity and the per-page transform.
-    pub(crate) fn with_transform(&self, b: &PageBox) -> VisiblePage {
+    /// Attach durable identity and the per-page transform. `None` where the
+    /// TypeScript throws `Mat2D.invert: non-invertible matrix`: a view scale
+    /// whose square underflows (a huge device ratio over a tiny unbounded
+    /// zoom). No read here returns a `Result`, so the page is left out of
+    /// the visible list and `get_page_frame` answers `None` (a Rust-only
+    /// divergence, registered with the crate's other kept ones).
+    pub(crate) fn with_transform(&self, b: &PageBox) -> Option<VisiblePage> {
         let registry = self.registry();
         let registered = registry.get(b.page_index).and_then(Option::as_ref);
         let page_size = registered.map_or_else(|| Self::unrotated_points(b), |r| r.size);
@@ -64,7 +69,7 @@ impl StageCapability {
             ),
             dpr: ratio,
         })
-        .expect("a page transform at a positive zoom is invertible");
+        .ok()?;
         // The on-screen page region in points: viewport ∩ footprint in view
         // space, inverted through the transform.
         let size = self.viewport();
@@ -77,14 +82,14 @@ impl StageCapability {
         } else {
             Rect { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
         };
-        VisiblePage {
+        Some(VisiblePage {
             page: *b,
             page_ref: self.page_ref_at(b.page_index),
             screen_x,
             screen_y,
             transform,
             visible_rect,
-        }
+        })
     }
 
     // ── the scroller projection ──
@@ -154,7 +159,7 @@ impl StageCapability {
         let pages: Vec<VisiblePage> = items
             .iter()
             .flat_map(|item| item.pages.iter())
-            .map(|b| self.with_transform(b))
+            .filter_map(|b| self.with_transform(b))
             .collect();
         let pages = Rc::new(pages);
         *self.inner.visible_memo.borrow_mut() = Some((inputs, pages.clone()));
@@ -242,7 +247,7 @@ impl StageCapability {
         // pages reads `undefined` there and throws; here it answers `None`.
         let item = &scene.items[scene.item_of_page(index)?];
         let b = item.pages.iter().find(|p| p.page_index == index)?;
-        Some(self.with_transform(b))
+        self.with_transform(b)
     }
 
     /// The page under a viewport point and the page-space point on it;

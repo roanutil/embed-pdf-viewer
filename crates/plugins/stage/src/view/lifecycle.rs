@@ -19,9 +19,8 @@ impl StageCapability {
     pub fn set_viewport_size(&self, size: Size) -> Result<(), Error> {
         if !self.inner.placement.started.get() {
             self.update(|s| set_viewport(s, size));
-            // Rules see the box before placement resolves. Without a
-            // reaction nothing clamps, so this cannot fail.
-            let _ = self.sync_responsive(false);
+            // Rules see the box before placement resolves.
+            self.sync_responsive_quietly();
             if size.width > 0.0 && size.height > 0.0 && self.page_count() > 0 {
                 self.place_initial();
             }
@@ -42,7 +41,7 @@ impl StageCapability {
         self.update(|s| set_viewport(s, size));
         // A breakpoint crossing rides the same reframe; only a rule-driven
         // flow flip escalates past reapply.
-        let effect = self.sync_responsive(false).unwrap_or(SettingEffect::None);
+        let effect = self.sync_responsive_quietly();
         if effect == SettingEffect::Reflow {
             self.go_to_target(
                 self.st().cursor as isize,
@@ -113,7 +112,10 @@ impl StageCapability {
         self.inner.placement.started.set(true);
         let mut by_priority = self.inner.providers.borrow().clone();
         // `Array#sort` with `(left, right) => right.priority - left.priority`:
-        // stable.
+        // stable. A NaN priority makes that comparator inconsistent, and
+        // neither language promises an order then (Rust's `sort_by` may even
+        // panic on a non-total order past 20 entries); `total_cmp` would not
+        // match V8's order either, so equal-on-NaN stays.
         by_priority.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         let mut view = None;
         for (_, _, provider) in by_priority {

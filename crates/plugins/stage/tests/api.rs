@@ -8,6 +8,7 @@ use std::rc::Rc;
 
 use epdf_geometry::{Point, Rect, Size};
 use epdf_kernel::clock::HostClock;
+use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, Engine, EngineCall};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::kernel::{OpenOptions, OpenSource};
 use epdf_kernel::{Error, Kernel, KernelOptions, Unsubscribe, rt};
@@ -51,9 +52,71 @@ fn page(pon: u32, index: u32) -> Value {
         "label": null, "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1 })
 }
 
+type WorkingSets = Rc<RefCell<Vec<(String, Value)>>>;
+
+/// The fake engine, its documents recording `set_working_set`.
+struct Recording {
+    engine: AsEngine,
+    sets: WorkingSets,
+}
+
+impl Engine for Recording {
+    fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
+        let sets = self.sets.clone();
+        self.engine.open(input, options).convert(move |inner| {
+            Ok(Rc::new(RecordingHandle { inner: inner.clone(), sets: sets.clone() })
+                as Rc<dyn DocumentHandle>)
+        })
+    }
+    fn destroy(&self) -> EngineCall<()> {
+        self.engine.destroy()
+    }
+}
+
+struct RecordingHandle {
+    inner: Rc<dyn DocumentHandle>,
+    sets: WorkingSets,
+}
+
+impl DocumentHandle for RecordingHandle {
+    fn id(&self) -> String {
+        self.inner.id()
+    }
+    fn capabilities(&self) -> Value {
+        self.inner.capabilities()
+    }
+    fn security(&self) -> Rc<dyn DocumentSecurity> {
+        self.inner.security()
+    }
+    fn has(&self, member: &str) -> bool {
+        self.inner.has(member)
+    }
+    fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value> {
+        self.inner.call(path, pon, args)
+    }
+    fn page_index(&self, pon: u32) -> Result<u32, Error> {
+        self.inner.page_index(pon)
+    }
+    fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> Unsubscribe {
+        self.inner.subscribe(listener)
+    }
+    fn set_working_set(&self, view: &str, pages: Value) {
+        self.sets.borrow_mut().push((view.to_string(), pages));
+    }
+}
+
 /// A kernel over `pages` (three 600x800 pages by default), with frames or
 /// without, the stage registered with `settings`.
 fn fixture(frames: bool, pages: Vec<Value>, settings: StageSettingsPatch) -> Fixture {
+    fixture_recording(frames, pages, settings, Rc::default())
+}
+
+fn fixture_recording(
+    frames: bool,
+    pages: Vec<Value>,
+    settings: StageSettingsPatch,
+    sets: WorkingSets,
+) -> Fixture {
     rt::reset();
     let fake = FakeEngine::new(json!({ "documents": { "a": { "pages": pages } } }));
     let reports = Rc::new(RefCell::new(Vec::new()));
@@ -64,7 +127,7 @@ fn fixture(frames: bool, pages: Vec<Value>, settings: StageSettingsPatch) -> Fix
     };
     let config = StageConfig { settings, ..Default::default() };
     let kernel = Kernel::new_with_clock(
-        Rc::new(AsEngine(fake)),
+        Rc::new(Recording { engine: AsEngine(fake), sets }),
         vec![stage_plugin(StagePluginOptions { config, ..Default::default() })],
         options,
         Rc::new(FrameClock(frames)),
@@ -432,4 +495,74 @@ fn rule_predicates_debug_print_without_the_closure() {
     assert_eq!(format!("{rule:?}"), "Predicate(fn)");
     let query = RuleWhen::Query(BoxQuery { max_width: Some(600.0), ..Default::default() });
     assert!(format!("{query:?}").starts_with("Query(BoxQuery"));
+}
+
+#[test]
+fn the_working_set_is_told_at_connect_and_on_each_change() {
+    let sets: WorkingSets = Rc::default();
+    let f = fixture_recording(false, three_pages(), units(), sets.clone());
+    let stage = f.stage();
+    // At connect nothing is placed: the empty set keys as the empty string
+    // the lens starts from, so nothing is told (`working-set.ts` `told = ''`).
+    assert!(sets.borrow().is_empty());
+    stage.set_viewport_size(Size { width: 1000.0, height: 500.0 }).expect("viewport");
+    let told = sets.borrow().len();
+    assert_eq!(told, 1, "placement told the visible pages once, when it published");
+    let (view, last) = sets.borrow().last().cloned().expect("a set");
+    assert_eq!(view, "stage");
+    assert_eq!(last, serde_json::to_value(working_set_of(&stage.list_visible_pages())).unwrap());
+    assert_eq!(last[0]["page"], json!({ "kind": "objectNumber", "objectNumber": 1 }));
+    assert_eq!(last[0]["role"], json!("visible"));
+    // A new visible list with the same key tells nothing; a scroll does.
+    stage.set_device_pixel_ratio(1.0);
+    stage
+        .update_settings(StageSettingsPatch { padding: Some(24.0), ..Default::default() })
+        .unwrap();
+    assert_eq!(sets.borrow().len(), told, "an unchanged set is not told again");
+    stage.scroll_by(StageScrollToOptions { top: Some(300.0), ..Default::default() }).unwrap();
+    assert_eq!(sets.borrow().len(), told + 1);
+    assert_ne!(sets.borrow().last().unwrap().1, last);
+}
+
+#[test]
+fn non_finite_camera_input_on_a_grid_is_an_error() {
+    // M27's `Result` half: where the TypeScript throws (no item under a NaN
+    // camera or point), the verb answers `Err` and nothing panics.
+    let (_f, stage) = grid(GridColumns::Count(2.0), three_pages());
+    let nan = Camera { x: f64::NAN, y: 0.0, zoom: 1.0 };
+    let error = stage.set_camera(nan).expect_err("no item under a NaN camera");
+    assert_eq!(error.name, "TypeError");
+    assert!(stage.get_viewpoint().is_err());
+    assert!(stage.set_viewport_size(Size { width: 900.0, height: 700.0 }).is_err());
+    stage.set_camera(Camera { x: 0.0, y: 0.0, zoom: 1.0 }).expect("a finite camera recovers");
+    assert!(stage.zoom_by(f64::NAN, None).is_err());
+    assert!(stage.pan_by(f64::NAN, 0.0).is_err());
+    assert!(stage.double_tap_zoom(Point { x: f64::NAN, y: 0.0 }).is_err());
+}
+
+#[test]
+fn a_nan_zoom_on_an_auto_wrapped_grid_does_not_panic() {
+    let (_f, stage) = grid(GridColumns::Policy(ColumnsPolicy::Auto), three_pages());
+    let _ = stage.zoom_by(f64::NAN, None);
+    let _ = stage.set_camera(Camera { x: f64::NAN, y: f64::NAN, zoom: f64::NAN });
+    let _ = stage.get_viewpoint();
+    let _ = stage.list_visible_pages();
+    let _ = stage.set_viewport_size(Size { width: 800.0, height: 600.0 });
+}
+
+#[test]
+fn a_non_invertible_page_transform_leaves_the_page_out() {
+    // A huge device ratio over a tiny unbounded zoom: the view scale's
+    // square underflows, and the TypeScript throws `Mat2D.invert:
+    // non-invertible matrix` from the page reads. Rust leaves the page out
+    // of the visible list and answers no frame, without a panic.
+    let settings = StageSettingsPatch { bounded: Some(false), ..units() };
+    let f = fixture(false, three_pages(), settings);
+    let stage = f.stage();
+    stage.set_viewport_size(VIEWPORT).expect("viewport");
+    stage.set_device_pixel_ratio(1e160);
+    let _ = stage.set_camera(Camera { x: 0.0, y: 0.0, zoom: 1e-170 });
+    assert!(stage.list_visible_pages().is_empty());
+    assert!(stage.get_page_frame(0usize).is_none());
+    assert!(stage.get_page_at(Point { x: 1.0, y: 1.0 }).is_none());
 }

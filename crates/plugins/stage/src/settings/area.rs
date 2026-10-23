@@ -71,12 +71,9 @@ impl StageCapability {
         }
     }
 
-    /// Re-resolve and apply what changed since the last resolution. `react`
-    /// routes the patch through `apply_settings`; without it (inside
-    /// `set_viewport_size`, whose caller runs its own reframe) only the
-    /// patch and the cache invalidation land, and the strongest effect is
-    /// reported so the caller can escalate a rule-driven flow flip.
-    pub(crate) fn sync_responsive(&self, react: bool) -> Result<SettingEffect, Error> {
+    /// Re-resolve and diff against the last resolution: the patch of what
+    /// changed and its keys (`syncResponsive`'s first half).
+    fn resolve_changes(&self) -> (StageSettingsPatch, Vec<SettingKey>) {
         let rules = self.inner.rules.borrow().clone();
         let resolved =
             resolve_responsive(&self.inner.base.borrow(), &rules, &box_of(self.viewport()));
@@ -84,12 +81,27 @@ impl StageCapability {
         *self.inner.last_effective.borrow_mut() = resolved.effective;
         self.publish_active(resolved.active);
         let keys = patch_keys(&patch);
+        (patch, keys)
+    }
+
+    /// `syncResponsive(true)`: re-resolve and route what changed through
+    /// `apply_settings`, the full anchor-preserving update.
+    pub(crate) fn sync_responsive(&self) -> Result<(), Error> {
+        let (patch, keys) = self.resolve_changes();
         if keys.is_empty() {
-            return Ok(SettingEffect::None);
+            return Ok(());
         }
-        if react {
-            self.apply_settings(patch)?;
-            return Ok(SettingEffect::None); // reacted in full
+        self.apply_settings(patch)
+    }
+
+    /// `syncResponsive(false)`, inside `set_viewport_size`, whose caller
+    /// runs its own reframe: only the patch and the cache invalidation land,
+    /// and the strongest effect is reported so the caller can escalate a
+    /// rule-driven flow flip. Nothing here clamps, so nothing can fail.
+    pub(crate) fn sync_responsive_quietly(&self) -> SettingEffect {
+        let (patch, keys) = self.resolve_changes();
+        if keys.is_empty() {
+            return SettingEffect::None;
         }
         self.update(|s| patch_settings(s, &patch));
         let strongest =
@@ -97,7 +109,7 @@ impl StageCapability {
         if strongest == SettingEffect::Scene || strongest == SettingEffect::Reflow {
             self.invalidate_scene();
         }
-        Ok(strongest)
+        strongest
     }
 }
 
@@ -132,7 +144,7 @@ impl StageCapability {
     /// `on_settings_changed`.
     pub fn reset_settings(&self) -> Result<(), Error> {
         *self.inner.base.borrow_mut() = self.inner.initial_base.clone();
-        self.sync_responsive(true).map(|_| ())
+        self.sync_responsive()
     }
 
     /// Change any subset in one update that keeps the view on the same
@@ -141,13 +153,13 @@ impl StageCapability {
     pub fn update_settings(&self, changes: StageSettingsPatch) -> Result<(), Error> {
         let merged = merge_settings(&self.inner.base.borrow(), &changes);
         *self.inner.base.borrow_mut() = merged;
-        self.sync_responsive(true).map(|_| ())
+        self.sync_responsive()
     }
 
     /// Replace the container-query rules and re-resolve.
     pub fn set_responsive_rules(&self, rules: Vec<ResponsiveRule>) -> Result<(), Error> {
         *self.inner.rules.borrow_mut() = Rc::new(rules);
-        self.sync_responsive(true).map(|_| ())
+        self.sync_responsive()
     }
 
     /// Whether the named responsive rule matches the current box.
