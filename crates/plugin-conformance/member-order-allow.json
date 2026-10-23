@@ -4,89 +4,6 @@
       "$.callbacks[].args[].event"
     ]
   },
-  "core/annotation-geometry-shapes.json": {
-    "geomDragHandle/callout-below-callout-knee": [
-      "$.returned.callout"
-    ],
-    "geomDragHandle/callout-callout-knee": [
-      "$.returned.callout"
-    ],
-    "geomDragHandle/callout-inside-callout-knee": [
-      "$.returned.callout"
-    ],
-    "geomDragHandle/callout-none-callout-knee": [
-      "$.returned.callout"
-    ]
-  },
-  "core/annotation-groups.json": {
-    "linkChildrenOf/p": [
-      "$.returned[]"
-    ]
-  },
-  "core/annotation-measurement-model.json": {
-    "runs/0-distance-create": [
-      "$.returned[].steps[].draft.measure",
-      "$.returned[].model.byId.tmp:1.measure",
-      "$.returned[].model.draft.measure",
-      "$.returned[].model.byId.tmp:1"
-    ],
-    "runs/1-poly-area-invalid": [
-      "$.returned[].model.byId.dist.measure"
-    ],
-    "runs/2-caption-drag-area": [
-      "$.returned[].model.byId.dist.measure",
-      "$.returned[].model.byId.dist-close.measure",
-      "$.returned[].model.byId.dist-free.measure"
-    ],
-    "runs/3-draft-group-perimeter": [
-      "$.returned[].model.byId.dist.measure"
-    ],
-    "runs/4-rotate-perimeter": [
-      "$.returned[].steps[].draft.measure",
-      "$.returned[].model.draft.measure"
-    ],
-    "runs/5-distance-create-at-min-drag": [
-      "$.returned[].steps[].draft.measure",
-      "$.returned[].model.draft.measure"
-    ],
-    "runs/7-draft-leader-baked": [
-      "$.returned[].model.byId.dist.measure"
-    ],
-    "scene/distance-dashed": [
-      "$.returned[].paint"
-    ],
-    "viewMany/measured-0": [
-      "$.returned[].pageItems[].measure"
-    ],
-    "viewMany/measured-1": [
-      "$.returned[].pageItems[].measure"
-    ],
-    "viewMany/measured-2": [
-      "$.returned[].pageItems[].measure",
-      "$.returned[].pageItems[]"
-    ],
-    "viewMany/measured-3": [
-      "$.returned[].pageItems[].measure",
-      "$.returned[].pageItems[]"
-    ]
-  },
-  "core/annotation-measurement.json": {
-    "distanceScene/diagonal-rot": [
-      "$.returned[].paint"
-    ],
-    "distanceScene/horizontal": [
-      "$.returned[].paint"
-    ],
-    "distanceScene/reversed": [
-      "$.returned[].paint"
-    ],
-    "distanceScene/short": [
-      "$.returned[].paint"
-    ],
-    "distanceScene/vertical-down": [
-      "$.returned[].paint"
-    ]
-  },
   "core/annotation-richtext.json": {
     "applyStyleToRange/bold-across-paragraphs": [
       "$.returned.paragraphs[]"
@@ -132,38 +49,6 @@
     ],
     "normalizeRuns/doc": [
       "$.returned.paragraphs[]"
-    ]
-  },
-  "core/annotation-scene.json": {
-    "scene/ink-cloudy": [
-      "$.returned[].paint"
-    ],
-    "scene/ink-dot-cloudy": [
-      "$.returned[].paint"
-    ],
-    "scene/ink-rot20-cloudy": [
-      "$.returned[].paint"
-    ],
-    "scene/ink-two-cloudy": [
-      "$.returned[].paint"
-    ]
-  },
-  "core/annotation-update.json": {
-    "runs/create-10-create-square-rotation-no-upright": [
-      "$.returned[].steps[].draft.flags"
-    ],
-    "runs/created-51-created-relationships": [
-      "$.returned[].model.byId.r-group",
-      "$.returned[].model.byId.r-both"
-    ],
-    "runs/hydrated-36-hydrated-reaps": [
-      "$.returned[].model.byId.child"
-    ],
-    "runs/set-23-set-props-empty-selection": [
-      "$.returned[].model.byId.note"
-    ],
-    "runs/set-28-set-defaults": [
-      "$.returned[].model.defaults.line.lineEndings"
     ]
   },
   "core/ui-schema.json": {
