@@ -43,7 +43,36 @@ side by side. `SelectionHostCapability` is an alias for it. A public verb takes 
 index (`impl Into<PageTarget>`), as the TypeScript's `PageRef | number`. Segments, endpoints and
 anchors carry named quads (`epdf_geometry::Quad`) and page-space `Rect`s. `text_layout` is public
 for search and redaction, which build the same layout (Ruling13.15). `harness::Selection` is public
-so a downstream crate's tests can register it. The migration map is in `task-13.15-report.md`.
+so a downstream crate's tests can register it.
+
+### Migrating from the pre-13.15 API
+
+For annotation (Task 13.17), search (13.20), redaction (13.23), and the viewer host and `epdf-web`
+(13.33).
+
+| Old | New |
+|---|---|
+| engine path `page.geometry.read` (PDF space, `charStart`, `looseBox`, `flags`) | `page.text.layout`, answering `{"$textLayout": PageGeometrySnapshot<Page>}` or the bare page-space snapshot. 13.33 must route it in `translate.rs` and `JsDocumentHandle` |
+| engine path `page.text.read` | `page.text.get` |
+| `text_layout::{UprightGeometryRun, RotatedGeometryRun, PageGeometryGlyph{loose_box, flags, tight_box}}` | `PageGeometryRun<C>::{Upright{rect,start,font_size,glyphs}, Rotated{rect,start,rotation,ascent_flip,font_size,glyphs}}`, glyphs `{space, empty, loose, tight}`, `C` = `PageCoordinates` (default) or `PdfCoordinates` |
+| `build_page_text_layout` + `text_glyph_at`/`expand_*`/`text_glyph_quad`/`text_segments_for_range` on PDF space | `create_text_layout(PageGeometrySnapshot) -> TextLayout` with `char_at`, `word_at`/`line_at` (`TextAt` point or index, `-> Option<text_layout::TextRange{start,count}>`), `segments`, `char_quad`. The y-up functions stay public on `PageTextLayout` |
+| `slice_text_by_chars(snap, from, to)` | `slice_text(snap, start, count)` |
+| `geometry::{SelectionPageGeometry, build_selection_page_geometry, content_point_to_pdf, to_content_segment, to_content_text_quad}` | removed. `text_layout::{page_geometry_of, pdf_point_of, page_text_segment_of}` |
+| `SelectionSegment{quad: TextQuad, rect, advance}` | `PageTextSegment{quad: epdf_geometry::Quad, rect: Rect, advance: i32}` |
+| `SelectionEndpoint.glyph_quad: TextQuad`, `SelectionHandleEndpoint.glyph_quad: TextQuad` | `Quad` (`upper_left`..`lower_right`) |
+| `SnapshotPage.segments: Vec<_>` | `Rc<Vec<_>>` (iterates the same) |
+| `page_ref_json` on contract types | kernel `PageRef` serde |
+| `SelectionConfig { drag_threshold: Option<f64> }` | `{ drag_threshold, color: Option<Option<String>>, handles: Option<SelectionHandleConfig> }`, `to_json`/`from_json`. New `SelectionSettings`, `selection_defaults()`, `SelectionSettingsChanged`, and `get_settings`/`update_settings`/`reset_settings`/`on_settings_changed` |
+| `ChangeOrigin`, `ChangeTrigger`, `.origin` on changed and cleared events | removed. `SelectionChangedEvent{range, pages}`, `SelectionClearedEvent{}` |
+| `is_gesture_active()` | `is_selecting()` |
+| `select_page`, `select_word_at`, `select_line_at`, `extend_to`, `list_segments`, `list_rects` take `PageRef` | take `impl Into<PageTarget>` (`PageRef` or `usize`; `PageTarget::Index(f64)`) |
+| `GlyphPointer`, `SelectionAction`, `reduce_selection`, `SelectionState.{loaded, gesture_active}` | `GlyphPosition`; `model::{set_selection, clear_selection, set_highlight_hidden, set_selecting, content_changed_pages_of}`; `SelectionState{selection, segments, highlight_hidden, selecting}` |
+| `create_selection_controller` (pub) | crate-private |
+| `TextSelectHandlerOptions{drag_threshold: Option<f64>}` | `Option<Rc<dyn Fn() -> f64>>` |
+| new | `selection_state`/`SelectionStateView`, `SelectionHandleEndpoints`, `selection_handle_endpoints_of`, `arm_selection_handle`/`ArmedSelectionHandle`, `SelectionHandleStage`/`selection_handle_view_of` |
+| ffi `SelectionChangeTrigger`, `.trigger`, `SelectionClearedEvent`, `is_gesture_active` | removed; `SelectionEvent::Cleared` is a unit variant; `is_selecting`. Quads map onto `epdf_ffi::TextQuad` through `quad()` until 13.33 renames the mirror |
+
+Known call sites: `annotation/src/tools/markup_bridge.rs:43-46` and `annotation/src/write/markup.rs:102-130` (segment quads become `Quad`), `redaction/src/write/marks.rs:78-97` (only `has_selection`, unchanged), `epdf-viewer-host/tests/translate.rs:2657` (uses the removed `UprightGeometryRun` and `char_start`), `epdf-viewer-host/src/lib.rs:440` and the ffi handle, and `epdf-web/src/adapters.rs:26`. Search (13.20) and redaction (13.23) build the same layout from `epdf_plugin_selection::text_layout` (Ruling13.15).
 
 ## Where the port differs in shape
 
@@ -81,6 +110,12 @@ the capability drops `extend_to`'s for the same reason: `begin_gesture_at` answe
 A `page.text.layout` answer that is neither a `$textLayout` marker nor a page-space snapshot reads
 as a page with no geometry: the page is loaded and nothing on it hits. The TypeScript would hold
 whatever the engine answered and throw when a method is called on it. No vector answers one.
+
+The typed settings API only writes well-typed members, but a host can write any JSON through the
+kernel's settings store (`kernel.settings_of`). A member of the wrong type reads as its default in
+`get_settings` and `on_settings_changed`, where the TypeScript hands the value back, and the
+change listener's event reports `[selection] malformed settings` once its listeners have run
+(`a_malformed_setting_reads_as_its_default_and_is_reported` in `tests/api.rs`).
 
 The two TypeScript tokens (the public one from the package root, the host one from
 `/contract/host`) are the same runtime object with two static types. Rust has one token and one
