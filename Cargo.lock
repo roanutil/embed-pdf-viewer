@@ -892,6 +892,7 @@ dependencies = [
 name = "epdf-ui-core"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-kernel",
  "plugin-conformance",
  "serde",
