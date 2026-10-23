@@ -485,6 +485,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-form-core"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-fonts",
+ "epdf-geometry",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-geometry"
 version = "0.0.0"
 dependencies = [

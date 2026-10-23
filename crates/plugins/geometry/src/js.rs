@@ -140,9 +140,105 @@ pub fn number_to_string(x: f64) -> String {
     }
 }
 
+/// `x` as `m * 2^e` with an integer mantissa, for a positive finite `x`.
+fn decompose(x: f64) -> (u64, i32) {
+    let bits = x.to_bits();
+    let exponent = ((bits >> 52) & 0x7ff) as i32;
+    let fraction = bits & ((1u64 << 52) - 1);
+    if exponent == 0 { (fraction, -1074) } else { (fraction | (1u64 << 52), exponent - 1075) }
+}
+
+/// Whether `x * 10^digits` lies exactly halfway between two integers, for a
+/// positive finite `x`: `2 * x * 10^digits` is then an odd integer.
+fn exact_tie(x: f64, digits: u32) -> bool {
+    let (m, e) = decompose(x);
+    let t = u128::from(m) * 5u128.pow(digits);
+    // 2 * x * 10^digits = t * 2^(e + 1 + digits)
+    let shift = e + 1 + digits as i32;
+    match shift {
+        s if s > 0 => false,
+        0 => t % 2 == 1,
+        s => t != 0 && t.trailing_zeros() == (-s) as u32,
+    }
+}
+
+/// `Number.prototype.toFixed(digits)`, for up to 20 digits. The decimal is
+/// the exact value of the double rounded half away from zero; Rust's `{:.N}`
+/// breaks an exact tie to even, so a tie is written out one digit longer
+/// (exactly, ending in 5) and rounded up by hand. A magnitude of `1e21` or
+/// more prints as [`number_to_string`] does, and a negative number keeps its
+/// sign even when it rounds to zero (`(-0.0001).toFixed(3)` is `-0.000`).
+pub fn to_fixed(x: f64, digits: u32) -> String {
+    if x.is_nan() {
+        return "NaN".into();
+    }
+    if x.abs() >= 1e21 {
+        return number_to_string(x);
+    }
+    let negative = x < 0.0;
+    let y = x.abs();
+    let precision = digits as usize;
+    let body = if y != 0.0 && exact_tie(y, digits) {
+        round_up_tie(&format!("{:.*}", precision + 1, y))
+    } else {
+        format!("{:.*}", precision, y)
+    };
+    if negative { format!("-{body}") } else { body }
+}
+
+/// Drop the trailing `5` of an exact decimal and add one in the last place
+/// kept: `0.03125` to `0.0313`, `2.5` to `3`, `9.95` to `10.0`.
+fn round_up_tie(exact: &str) -> String {
+    let mut digits: Vec<u8> = exact[..exact.len() - 1].bytes().collect();
+    if digits.last() == Some(&b'.') {
+        digits.pop();
+    }
+    let mut i = digits.len();
+    loop {
+        if i == 0 {
+            digits.insert(0, b'1');
+            break;
+        }
+        i -= 1;
+        match digits[i] {
+            b'.' => continue,
+            b'9' => digits[i] = b'0',
+            d => {
+                digits[i] = d + 1;
+                break;
+            }
+        }
+    }
+    String::from_utf8(digits).expect("ASCII digits")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn to_fixed_matches_javascript() {
+        let cases: &[(f64, u32, &str)] = &[
+            (0.0625, 3, "0.063"),
+            (-0.0625, 3, "-0.063"),
+            (0.125, 2, "0.13"),
+            (2.5, 0, "3"),
+            (9.9995, 3, "9.999"),
+            (9.9375, 3, "9.938"),
+            (1.005, 2, "1.00"),
+            (-0.0001, 3, "-0.000"),
+            (-0.0, 3, "0.000"),
+            (123.456, 3, "123.456"),
+            (1e21, 3, "1e+21"),
+            (f64::NAN, 3, "NaN"),
+            (0.03125, 4, "0.0313"),
+            (99.9995, 3, "99.999"),
+            (99.99951, 3, "100.000"),
+        ];
+        for (x, digits, want) in cases {
+            assert_eq!(to_fixed(*x, *digits), *want, "{x}.toFixed({digits})");
+        }
+    }
 
     #[test]
     fn number_to_string_matches_javascript() {
