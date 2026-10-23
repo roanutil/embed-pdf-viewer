@@ -1,0 +1,26 @@
+(node:44713) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ all 76 original command occurrences and current reason comparisons call surviving shipping owners (0.683042ms)
+✔ command registry preserves insertion order and conflict refusal (652.48425ms)
+✔ all original equality cases have independently specified boolean answers (0.164833ms)
+✔ settings mutations preserve duplicate removal, no-op identity and registered configuration (1.361334ms)
+✔ all ten registration cases use current parsing and retain successful prefix on errors (0.610959ms)
+✔ registry removers own their replacement and resetSettings restores configured definitions (0.278333ms)
+✔ resolution, safe derivations, accents, categories and search produce literal successful values (5.425542ms)
+✔ labels follow locale and warn once; shell activity and routing are per document (8.013041ms)
+✔ execution guards, pending run, reentrancy, functions and shortcut precedence are meaningful (5.362167ms)
+✔ events forward literal args, preserve listener siblings and stop after unsubscribe (1.505834ms)
+✔ current contexts target explicit, active, pending and absent documents without a core lens (2.739ms)
+✔ late retained references are selected by the actual returned capability and have exact lifetime outcomes (2.762375ms)
+✔ permission and setting refusals preserve hidden/disabled distinction and segment boundaries (1.606833ms)
+✔ all current cases reproduce complete inputs and every diagnostic channel exactly (30.385666ms)
+✔ original definitions, complete occurrence accounting and every prior tooling file remain exact (135.62575ms)
+✔ all intentional step, settled, callback and report failures have exact named source outcomes (25.179791ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1227.732292

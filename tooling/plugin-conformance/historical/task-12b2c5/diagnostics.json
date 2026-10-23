@@ -1,0 +1,374 @@
+{
+  "count": 51,
+  "allocation": {
+    "src/suites/annotation-fixtures.ts": 3,
+    "src/suites/form-fixtures.ts": 12,
+    "src/suites/i18n.ts": 12,
+    "src/suites/link.ts": 1,
+    "src/suites/render-pure.ts": 2,
+    "src/suites/render.ts": 2,
+    "src/suites/shell.ts": 6,
+    "src/suites/signature-core.ts": 2,
+    "src/suites/signature-plugin.ts": 1,
+    "src/suites/stamp-fixtures.ts": 10
+  },
+  "rows": [
+    {
+      "path": "src/suites/annotation-fixtures.ts",
+      "line": "102",
+      "column": "5",
+      "code": "TS2352",
+      "message": "Conversion of type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' to type 'AnyPlugin' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+    },
+    {
+      "path": "src/suites/annotation-fixtures.ts",
+      "line": "118",
+      "column": "7",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'."
+    },
+    {
+      "path": "src/suites/annotation-fixtures.ts",
+      "line": "118",
+      "column": "20",
+      "code": "TS7006",
+      "message": "Parameter 'ctx' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "118",
+      "column": "7",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "118",
+      "column": "20",
+      "code": "TS7006",
+      "message": "Parameter 'ctx' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "130",
+      "column": "64",
+      "code": "TS2339",
+      "message": "Property 'read' does not exist on type 'DocumentActionsService'."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "131",
+      "column": "63",
+      "code": "TS7031",
+      "message": "Binding element 'action' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "136",
+      "column": "13",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'doc' does not exist in type 'FormScriptingControllerOptions'."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "138",
+      "column": "36",
+      "code": "TS18047",
+      "message": "'port' is possibly 'null'."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "139",
+      "column": "21",
+      "code": "TS18047",
+      "message": "'port' is possibly 'null'."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "144",
+      "column": "57",
+      "code": "TS2554",
+      "message": "Expected 3 arguments, but got 2."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "145",
+      "column": "60",
+      "code": "TS2554",
+      "message": "Expected 3 arguments, but got 2."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "146",
+      "column": "38",
+      "code": "TS2554",
+      "message": "Expected 1 arguments, but got 0."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "164",
+      "column": "7",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'."
+    },
+    {
+      "path": "src/suites/form-fixtures.ts",
+      "line": "164",
+      "column": "20",
+      "code": "TS7006",
+      "message": "Parameter 'ctx' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "79",
+      "column": "14",
+      "code": "TS2540",
+      "message": "Cannot assign to 'loaders' because it is a read-only property."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "80",
+      "column": "59",
+      "code": "TS2542",
+      "message": "Index signature in type 'DeepPartial<Readonly<Record<string, LocaleLoader>>>' only permits reading."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "107",
+      "column": "3",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dir' does not exist in type 'Locale'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "110",
+      "column": "49",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dir' does not exist in type 'Locale'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "111",
+      "column": "52",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'dir' does not exist in type 'Locale'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "117",
+      "column": "3",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'I18nState'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "184",
+      "column": "27",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "189",
+      "column": "27",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "195",
+      "column": "77",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "197",
+      "column": "27",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "311",
+      "column": "3",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'I18nState'."
+    },
+    {
+      "path": "src/suites/i18n.ts",
+      "line": "322",
+      "column": "35",
+      "code": "TS2345",
+      "message": "Argument of type 'I18nState' is not assignable to parameter of type 'TranslationSources'."
+    },
+    {
+      "path": "src/suites/link.ts",
+      "line": "62",
+      "column": "17",
+      "code": "TS2339",
+      "message": "Property 'origin' does not exist on type 'LinkActivatedEvent'."
+    },
+    {
+      "path": "src/suites/render-pure.ts",
+      "line": "289",
+      "column": "9",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fadeMs' does not exist in type 'DeepPartial<TilesOptions>'."
+    },
+    {
+      "path": "src/suites/render-pure.ts",
+      "line": "419",
+      "column": "3",
+      "code": "TS2561",
+      "message": "Object literal may only specify known properties, but 'annotatedEpochs' does not exist in type 'RenderState'. Did you mean to write 'annotationEpochs'?"
+    },
+    {
+      "path": "src/suites/render.ts",
+      "line": "89",
+      "column": "5",
+      "code": "TS2352",
+      "message": "Conversion of type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' to type 'AnyPlugin' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first."
+    },
+    {
+      "path": "src/suites/render.ts",
+      "line": "714",
+      "column": "32",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'fadeMs' does not exist in type 'DeepPartial<TilesOptions>'."
+    },
+    {
+      "path": "src/suites/shell.ts",
+      "line": "64",
+      "column": "5",
+      "code": "TS2741",
+      "message": "Property 'focusRequest' is missing in type '{ open: true; exclusive: string; }' but required in type 'SurfaceRecord'."
+    },
+    {
+      "path": "src/suites/shell.ts",
+      "line": "65",
+      "column": "5",
+      "code": "TS2741",
+      "message": "Property 'focusRequest' is missing in type '{ open: true; exclusive: string; props: { tab: number; }; }' but required in type 'SurfaceRecord'."
+    },
+    {
+      "path": "src/suites/shell.ts",
+      "line": "66",
+      "column": "5",
+      "code": "TS2741",
+      "message": "Property 'focusRequest' is missing in type '{ open: false; exclusive: string; }' but required in type 'SurfaceRecord'."
+    },
+    {
+      "path": "src/suites/shell.ts",
+      "line": "67",
+      "column": "5",
+      "code": "TS2741",
+      "message": "Property 'focusRequest' is missing in type '{ open: true; }' but required in type 'SurfaceRecord'."
+    },
+    {
+      "path": "src/suites/shell.ts",
+      "line": "68",
+      "column": "5",
+      "code": "TS2741",
+      "message": "Property 'focusRequest' is missing in type '{ open: true; exclusive: string; }' but required in type 'SurfaceRecord'."
+    },
+    {
+      "path": "src/suites/shell.ts",
+      "line": "108",
+      "column": "21",
+      "code": "TS2741",
+      "message": "Property 'focusRequest' is missing in type '{ open: false; exclusive: string; }' but required in type 'SurfaceRecord'."
+    },
+    {
+      "path": "src/suites/signature-core.ts",
+      "line": "236",
+      "column": "5",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'."
+    },
+    {
+      "path": "src/suites/signature-core.ts",
+      "line": "236",
+      "column": "18",
+      "code": "TS7006",
+      "message": "Parameter 'ctx' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/signature-plugin.ts",
+      "line": "161",
+      "column": "82",
+      "code": "TS2339",
+      "message": "Property 'signer' does not exist on type 'Partial<SignatureSettings>'."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "154",
+      "column": "28",
+      "code": "TS2322",
+      "message": "Type 'Engine' is not assignable to type '(() => LocalEngine | Promise<LocalEngine>) | DeepPartial<LocalEngine> | null | undefined'."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "155",
+      "column": "3",
+      "code": "TS2322",
+      "message": "Type '() => Engine | Promise<Engine>' is not assignable to type '(() => LocalEngine | Promise<LocalEngine>) | DeepPartial<LocalEngine> | null | undefined'."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "188",
+      "column": "7",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'effects' does not exist in type 'PluginDef<any, any, any>'."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "188",
+      "column": "17",
+      "code": "TS7006",
+      "message": "Parameter 'ctx' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "196",
+      "column": "23",
+      "code": "TS7006",
+      "message": "Parameter 'message' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "196",
+      "column": "32",
+      "code": "TS7006",
+      "message": "Parameter 'opts' implicitly has an 'any' type."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "230",
+      "column": "27",
+      "code": "TS2740",
+      "message": "Type '{ api: StampCapability; }' is missing the following properties from type 'StampCapability': listLibraries, getLibrary, listAssets, getAsset, and 34 more."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "230",
+      "column": "77",
+      "code": "TS2554",
+      "message": "Expected 1 arguments, but got 2."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "262",
+      "column": "7",
+      "code": "TS2353",
+      "message": "Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'."
+    },
+    {
+      "path": "src/suites/stamp-fixtures.ts",
+      "line": "262",
+      "column": "20",
+      "code": "TS7006",
+      "message": "Parameter 'ctx' implicitly has an 'any' type."
+    }
+  ]
+}

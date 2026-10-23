@@ -1,0 +1,1754 @@
+{
+  "base": "417838c1835da14c5f94164cbe3665bd0f35d29c",
+  "files": [
+    {
+      "path": "tooling/plugin-conformance/README.md",
+      "sha256": "790ccaa42e1aa40a6363b13a0dfeb4dbfc891979af49a3f92b0a5381c24d3ebf"
+    },
+    {
+      "path": "tooling/plugin-conformance/fixtures/annotation-core/measured-items.json",
+      "sha256": "d5a09c88a9f2f8c97ad474641b19d8aa39794c36298a60118203c454b7844e27"
+    },
+    {
+      "path": "tooling/plugin-conformance/fixtures/signature/fixtures.json",
+      "sha256": "d98d110fb9887b011a69af2fafb6a80e074924c3bd6946553a77b7be4740bb3a"
+    },
+    {
+      "path": "tooling/plugin-conformance/fixtures/signature/generate.ts",
+      "sha256": "4b5163335392ec65de0d04e404541f8ffb03ea3fdc4abd706bf21d59edc15d0a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2a-retired.json",
+      "sha256": "df3d9a4c6b8ff310185770dc31298bc6562362f1ea2f777006fc76f6da464e9e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1a/README.md",
+      "sha256": "9272b85b0c494ecb79f8c349bd785b8086731e3530dc55556239aa543b69e27f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1a/accounting.json",
+      "sha256": "8021eb69110aaabff314bae86ba0f364952236e076e9ae66a1e258b878fe169f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1a/annotation-pure.ts.txt",
+      "sha256": "251054047eecf69e1dbbd26f09549fa79e701be95ae3dcbdf130eab32d7aa418"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1a/annotation-repository.ts.txt",
+      "sha256": "47e1b771ad9fdc596bc0a406d5e416089ae4c7699ffe63f7e228192c26ecb7fd"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/README.md",
+      "sha256": "70a1d5dc32bffe065e058b6126c68cc4111a9b30bebddef0ac55f9301e2c5a3b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/accounting.json",
+      "sha256": "841d932cf291347f9fcfe8a0017024e5f165f7a087f41ca2398ac4421820f4dc"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-api.ts.txt",
+      "sha256": "a045dc8dec16fadad67df7ed8b61f642cc9d97b1936133decaf5cff118668690"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-crud.ts.txt",
+      "sha256": "4809c15f8aac6cf970079ba3ca0ec0a8d36a0454b679ef48bd2eebd9221c002e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-fixtures.ts.txt",
+      "sha256": "eb2d1b1d94a47b56716e2dd8c2184434a883a8d045c82ed95bbc276c97f19939"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/annotation-hydration.ts.txt",
+      "sha256": "e090eca9afc9acd653d070b2920ebda780e8a1b906bf133cc6b5b9e697f6f830"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-i/reconciliation.json",
+      "sha256": "51e72ed0a4723edf69341ab9240ca23803c25144ab5a1d06832d060ac619cdc5"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/README.md",
+      "sha256": "2bd91f735fe3e168452f7a959021a8087a49eeb19c12fddbbd685e7af237efa8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/accounting.json",
+      "sha256": "0000d2fae9d55c91cec755327785460cc004e68412be4cb4a23821df2c8a75a5"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-comments.ts.txt",
+      "sha256": "69ff53a49a2c53f0f1763aa8d271514f19fa6c57a2390785a82c9087d391db16"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-grouping.ts.txt",
+      "sha256": "7f1fc53cbd2e3aebbdcaa83a89f09030ae02ae1b55dc3f9616e377fb93834962"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-hover.ts.txt",
+      "sha256": "9e3f2975c67bc874c0dd57218b89a12d9e272ccc9a7c404d6b68816c733bc866"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-markup.ts.txt",
+      "sha256": "2bead95ececa1f20ac88533d1178a65623527f3aea9a2fe70019991a919116c2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/annotation-tools.ts.txt",
+      "sha256": "697c7b37f3f53e1fe1cf1758371472ae512d1589f44c26250cff5ca8e3ffd969"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b1b-ii/family.json",
+      "sha256": "9ee38d8935eb85a832f900f1b7d373ab029c9cbb0b29bc61de72961f56a17097"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/README.md",
+      "sha256": "b7862c1a13f3cb2020a45da95b981fb59bd3c97fe96fa9f151985acac47342fa"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/accounting.json",
+      "sha256": "fe7748b8dc7974b335c2cae92ffa72a4de1f148ef424f7fee53d4d4b0978da5e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/baseline.json",
+      "sha256": "e924c5cd382b9a0ecea72122f060bc1ebc7e645b8bbcb25a81ada9c672287e18"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/form-actions.ts.txt",
+      "sha256": "6a985195f3a8302c7c279127cdf41ca938e250d854b33336caa02a4137baad48"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/form-core.ts.txt",
+      "sha256": "aca8eb283d96b862322ee6f9633e32861fdbfe455411532bb2039be376a37d7d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/form-design.ts.txt",
+      "sha256": "750fae31cd54b7cfb81dd8ca712212dc6fc66174a1ecade23da4d65d6389af56"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/form-fill.ts.txt",
+      "sha256": "29dcfacbb47e5752378063513b0bfff19b2058ca6e78287238097ff2accd5993"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/form-fixtures.ts.txt",
+      "sha256": "1960ed040765711b256af7d9d1117471a05234f8441102eebfa73883c16c1b6a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/form-scripting.ts.txt",
+      "sha256": "44bc696e7702d9fa8e42d3d289cfb545c0c08ed8c1010f72d5cdf632a84262ca"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-i/original-inputs.json",
+      "sha256": "015bf666a2ade57389b152df9cd4436165d928077498e9f05f48d05e9c225ddb"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-ii/README.md",
+      "sha256": "165a79fecc11009b5d03e122ce64299418a0457886191ec273341b21969de39c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-ii/accounting.json",
+      "sha256": "e1a2222e0eb8e6da9b4c540dd958b9e39fa65c44b66427ddcd3699e65288174a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-ii/baseline.json",
+      "sha256": "853a4dd0fe40ef05fe8e5ff95a85c1bade7b3ca7dc6e96a4549daf43515a78cb"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-ii/form-design.ts.txt",
+      "sha256": "750fae31cd54b7cfb81dd8ca712212dc6fc66174a1ecade23da4d65d6389af56"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-ii/form-fill.ts.txt",
+      "sha256": "29dcfacbb47e5752378063513b0bfff19b2058ca6e78287238097ff2accd5993"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-ii/original-inputs.json",
+      "sha256": "613adf41f1d39a771c351bcf835a737694cba80ccc0d3402c031b0dc3ff032ee"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/README.md",
+      "sha256": "df4afa35e22efd53efd46a8e5eb4518eaadb2fe64c2ea16d59332567131e258a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/accounting.json",
+      "sha256": "a46770eb2692348d5d3c0ce4202f028420ebe88ffc3ca32c8409b2fdf9dc330d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/baseline.json",
+      "sha256": "2953ce3948723c0de93d85a936546bcbfc1cf40d573e6faabbeb708e6a8a0acd"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/family.json",
+      "sha256": "796c2a11c581a696c339ee818b1dea70313d911c07093491a3e50731aaf2721f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/form-actions.ts.txt",
+      "sha256": "6a985195f3a8302c7c279127cdf41ca938e250d854b33336caa02a4137baad48"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/form-scripting.ts.txt",
+      "sha256": "44bc696e7702d9fa8e42d3d289cfb545c0c08ed8c1010f72d5cdf632a84262ca"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b2-iii/original-inputs.json",
+      "sha256": "0e1a86b8dd2bb3387cc3e80f8d670ce7cbaede2431959410ae24d9fbc7e43469"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-i/README.md",
+      "sha256": "98336c92fd8f88d49e284e14b0894b66769b2713fa2fc56231e1e9bd32bcb78b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-i/accounting.json",
+      "sha256": "c24cc501a20a2a5a38ab3da8f68ac534b87c9c41a33f2b1f23ccc86632672eea"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-i/current-inputs.json",
+      "sha256": "28e4c75b60dad0d2508421e641eba537a1d193bb91d9fce7c6281233fe3256d2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-ii/README.md",
+      "sha256": "b9786fa2165d56956e72d47ffb4430771516bdb81e9629c6d1cd8bd5a37f6d63"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-ii/accounting.json",
+      "sha256": "25edf6a08142d6a53ce680108a2473e4a9856fcc6eee0c5ba973bb7fd3c7ddc3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-ii/current-inputs.json",
+      "sha256": "7b5dce31e6e01e6208a78cdd2b7200f477c9550b776f723a432c6b42d36e6bf3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-iii/README.md",
+      "sha256": "7a80c4a6bc36019ea2e037d1eccc4f74baf445dceeee235b1217fda866b415f2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-iii/accounting.json",
+      "sha256": "5e6004fcf9f3409b948fca7b0561a65ced7247f058b30bf21e52d845b29c9032"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-iii/current-inputs.json",
+      "sha256": "e41ed29fa0a7230096994fe693a356ca199add0559a266f2e9968b77d715442b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-iv/README.md",
+      "sha256": "6fb1826e8e765e42f9c607f47dc03b950f027fc3eb685ce6e4cc3b3dfc8e9af0"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-iv/accounting.json",
+      "sha256": "3b16e6a270ab2fb2548843dc3a2945b36a609442de469d346d6e398dcb028832"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-iv/current-inputs.json",
+      "sha256": "2226b7f14fbb1089600e46162bfa11b3c94526aecc644178ece378fc38a3e5ff"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-v/README.md",
+      "sha256": "2f3d7b761aa33f1d61f597298f8b627c227536a43b6f6ab273c0c54db3dabcd2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-v/accounting.json",
+      "sha256": "b4a4e69d833a7a5b4c09454162b31477e1a43698fd7faac61fcdd727a7701f79"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-v/aggregate-accounting.json",
+      "sha256": "086206b5f050448b83ed3fc3841161ad1e48b8d98f5b3f8b186901da8102bfae"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3-v/current-inputs.json",
+      "sha256": "9218ae96886c3974cbd4f16e028fdffb7920533e62409af761947712eb4d97e3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/README.md",
+      "sha256": "ea946fa234adc5502cb06b9b368bfa074fa1345f6cef2c29139a471845793435"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/archive-sha256.json",
+      "sha256": "5ede232cb99a54f213d815cfcf54bb2f877990bc250f82aadcaa6b5ab9dcfb67"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/c-signature-inputs.json",
+      "sha256": "23eb56e2869b165b142e7809f8f5cea29224321eca183839f2d7594a9eb6fb08"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/channels.json",
+      "sha256": "5e732e3e8736bee01ceb53357a0a6fb1735a73df06c024e91d4d09cef0e028f0"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/diagnostics.json",
+      "sha256": "8336d8d6c410aa31972e20a01c417a6c669bf08395b6da50e2fbb7586d516a1c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/inputs-runtime.json.gz",
+      "sha256": "fe96fcea32d25f64b15941256e552a9363cccec547e977b106b38047ee7928a9"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/measurement.ts.txt",
+      "sha256": "67abea55de6a7ea9f354044b84970eb9026736096d37e2014e8d67d956f3a538"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/original-inputs.json",
+      "sha256": "52a3f6171fc21d567e90fda9792839eef7f216b3cfc0ae0cdfd09853c90272ec"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/redaction.ts.txt",
+      "sha256": "f33e56cab373dbd4c788b068212f00a94f43a605c716bd397b92f3ef23464f31"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/stamp-api.ts.txt",
+      "sha256": "5d0b14af04188af4a0f931f318fbf353dfc347e0d250c884f77cb83d20f490be"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/stamp-assets.ts.txt",
+      "sha256": "ec322d02378e6223f8ee916ac16b4d78dfecd566e79f1ce622e765d25d4aa723"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/stamp-fixtures.ts.txt",
+      "sha256": "b7b4506be876d6d71da57c38040ec970c41bdf0982608ac867eaa270cc7dad86"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/stamp-functions.ts.txt",
+      "sha256": "9ec8a89ad7234310ba6694b6db47d1d85d63b7624992cd80cf11172c02d7d0a7"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/stamp-library.ts.txt",
+      "sha256": "066c918d96cf21fea6f4e77db24ffdff80f489bb05e1d19125649bea4eb5c4e6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/stamp-placement.ts.txt",
+      "sha256": "9db6a15b6a4113d9fff97900fef6a8b5f17250e57915cc30f520dba4b6ede58f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/summary.json",
+      "sha256": "ee68ab1ecd18b4eaaeb3682f7ea5f82e7e2daa224e716099e380022e1e95d60c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2b3/task11-stamp-drift.json",
+      "sha256": "7bf05853cd4d415d6dc3b8c868695ecb93e8b20a04fddcc91eaa63daad3f22fa"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/README.md",
+      "sha256": "4a88e31192f1497436a74dffadf7466fedc95999c8502d1b3c846d20f7eaf85b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/accounting.json",
+      "sha256": "11753033c5b0c022b9a7ceea9b072560ef4c96b888c9da868dda130ae6e931a6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/artifact-manifest.json",
+      "sha256": "5cd60bcbe7943a2ad9fd698c2a1657713914af36ca5d95fc8fc683776015dd7c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/current-inputs-runtime.json",
+      "sha256": "6a06e90943445594daf59ce77b4c304012bd6f36e28b329896060c7e0dc6caeb"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/deferred-inputs.json",
+      "sha256": "2bd907722ffda148bb5da6f8376fa950dcf3348385b81159f4fb74c6d05f9382"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/focused-tests.out",
+      "sha256": "a1abfa73016708cf0514295f1f9c2b1e6211af7f2498a037b20cb02a2c12cf2c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/full-typecheck.out",
+      "sha256": "ba04222caeaad3e2dcd0d853ff08a8c8eff83f8022c94ba606aaf6356afeb573"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/lifetime-red.out",
+      "sha256": "4167b663c819f35139356ce9b94d898a372e19dffb0ae6f9da63ad86c7cd0de1"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/original-acrojs.ts.txt",
+      "sha256": "bda6411c1a1485796e1a3cac95651d9376f17ca5d12fe888ae64b9dd60faeaea"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/original-inputs.json",
+      "sha256": "74e5afd06bcc4afb9b27d9e6e08659e3eeac6afd1385f63f71652126c93d23f0"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/original-pure-outcomes.json",
+      "sha256": "def378b5448210bcb650d7f4a4c9bbd8a74757b3199528ad59194d158b41ca38"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/owned-typecheck.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/prelude-import.diff",
+      "sha256": "fbbd413dc46637cbb91242cf5f642808070e4d43433d99717c1017bc5a150abf"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/prelude-restoration.json",
+      "sha256": "652ecc93cd650e1db7f01e2b47dc369ebc0da77349da78e7611203bcb41e71a2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/preservation-tests.out",
+      "sha256": "c0dd9fc3e66cd9bf3517cf14e2002ae9e11fad730a39455cc8bc42824dafadf8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/red.out",
+      "sha256": "a8c81e78f1d53e8e27aa5de72f0be7dd37bfd4d521a43b09d4a76913a9efda98"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/runtime-render.out",
+      "sha256": "6d387c327584d9b97213cfeee09ec17e656cc92becfae375241c7e3679de740e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/source-evidence.json",
+      "sha256": "8066a40914a2eefd2381849a7e84a5f78aadde66fd4fed4bd53f508927508a6a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/upstream-fields.out",
+      "sha256": "8a52c05ce0296f85f8410b404b593809f9248dbd98ca4ca1f6966f0fc629874e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/upstream-flags.out",
+      "sha256": "9ba250ac178410cdc22b9f976b3b4ed2eed684096cc0de90cd8b61460c17a941"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c1/upstream-identity.out",
+      "sha256": "30ca0d50a786ee7542d8f71d3c928810edcec6894661414b771bb9f9fbaa1e4a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/accounting.json",
+      "sha256": "706ab447fb71ada5ee6d614c3c8d5e81cac41c5bc4eed3f6792b4bc6c846bb02"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/current-fixture-typecheck.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/current-inputs-runtime.json",
+      "sha256": "f152c54c86e34ab21be7c56abc6d03adfefcd7c4860616a6e1b5fc5bad1f169b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/deferred-runtime.json",
+      "sha256": "c877b94482b0093398e712a08fab37c831b41fbd59e1cd1f82490458f89c8145"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/diagnostics.json",
+      "sha256": "d803c3d8ee2304d6a6e5d97552ea0bf4708149253c75cfd086cc773ef80f7149"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/earliest-direct-page-contract.out",
+      "sha256": "9a0ee6578b4d3bb5487d025a923448576daa093058a68a5fddae56d11a06b526"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/focused-tests.out",
+      "sha256": "4c129fdb162bbc356c06b27e36ca594d591d5fb4d668075f02d9173ce298014b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/format.out",
+      "sha256": "7603b908eafb4a9c9f2016097b046d7898785aca8852e96ce0d9089dcfed0803"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/full-typecheck.out",
+      "sha256": "2a4560ca8969a25c70fb721333f8a3f0fb7f8ce82589350b41b835f651cf9816"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/link-runtime.json",
+      "sha256": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/negative-channels.json",
+      "sha256": "c19c109ecec6b0d70d80ff9519f751e8a25b30092a6ad18ef58c6c98875b511e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/original-actions.ts.txt",
+      "sha256": "485f6b1a46fefab40221716135b412ebfef07fb3ee6df6b2005fb8af36d65e40"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/original-channels.json",
+      "sha256": "7a9cf5afca9d511efdf04a66aa279ca5dada58119e01ed64dce6403011cd8345"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/original-inputs.json",
+      "sha256": "4f3840c2b78b6c8b2848ffc6a41f36c7cfcf1ec352b8d53dc132d3a9738e0f3f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/original-runtime.json",
+      "sha256": "c37fe3ce6549233a0669ce4d2b2114179650d8660fc48cc0645030ee59cccef9"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/owned-typecheck.out",
+      "sha256": "fadfc4c7315d87f599bf12abf095f10647bf04f5d6e459c217111ab36ae71fab"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/prelude-import.diff",
+      "sha256": "fbbd413dc46637cbb91242cf5f642808070e4d43433d99717c1017bc5a150abf"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/prelude-restoration.json",
+      "sha256": "0473430fc247b429456ff4b688c9d2440e5574906c7e7761c6e05defe14b37f2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/preservation-tests.out",
+      "sha256": "5ac920916b95c1fcfd7d0c48a372445ea853f72c1c9e2a7caf09864121cf36b7"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/red.out",
+      "sha256": "f39041eb507acb6d95b7d283e107f5b51e31bfc2d280bb792b394b609d7b102a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/red.out.gz",
+      "sha256": "32ab246a065bad39e906f766d3da5e5287ced0559375f929ff274766fc0aee8e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/runtime-render.out",
+      "sha256": "f5d4a746f3d2fee7d6c30581521ebd8f5fe2f7ebe9cb63dcb936ab508695d732"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/source-evidence.json",
+      "sha256": "35bdcba43d1ac0eeb965a5e85a245efe34145f68ecf54ed2f1783c497c42a396"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-get.out",
+      "sha256": "0f50272c6da684cf80044a838480713be5a8a7cde9b09f7ade0db46f439df206"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-get.out.gz",
+      "sha256": "a2ff0ed134fe8ed9bae15267f5a04ca18983a1884a3f06e7685a540aa6182120"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-settings.out",
+      "sha256": "115f80252f654c3123141c76d32efebedc35abae1f501d8bf9ada1cf1adad184"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-actions-settings.out.gz",
+      "sha256": "648bd5725d49af417098bb4366e5a721e2ca6a312eb4a3c4c36017775f02e776"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-sink.out",
+      "sha256": "2350435799bf93fa1cfe1e5df350eb153563382e464c90e77b771b863dec1814"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-sink.out.gz",
+      "sha256": "2df930763d137f9febd41914ca275f0e62ce1ede6627c5514260b766aa15279a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-view.out",
+      "sha256": "cfe89f47ba31e1da3c86c383563fd580d5b49f5c897df8f7ea6afd7329477696"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c2/upstream-form-view.out.gz",
+      "sha256": "3dcfdacea1e8a8a57aaa474c7c5ebfb626d8ed900e51b26d83d74ff5268cb4cc"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/README.md",
+      "sha256": "9bf22a49bfde3f71a6b9520765354d782f12a87a31bd6f9cdae58379765f8f55"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/accounting.json",
+      "sha256": "4352e4d59312c4477150ce5a59ac2c23f2696d64f4d5a67059216bcc60323fd8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/current-inputs-runtime.json",
+      "sha256": "cefb5e7d3685a6f424c684d9b723a2e00e55a8c510ecc9e4c8813cf901332b51"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/diagnostics.json",
+      "sha256": "261eed049eb80546ff6928898d0764df54714bdb800b1041075d87a8fc8e2fd3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/format.out",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/full-typecheck.out",
+      "sha256": "7fcad814271f2f32dffcddfe3285d54658120911d9f128ecb137f1b7cda9ee40"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/green-initial.out",
+      "sha256": "954ca6435c3206b445682f46b6d874de2690de5d93d2a17c86ee4da82688d63c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/m14-final.out",
+      "sha256": "11073ec33d1061b1e8902c1bd9d2f9d402d0a5c981f11f2f0f2775b91d13f19d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/m14-work.out",
+      "sha256": "d580cf71f934bc0ea2adf5973a59595c5532f08b25c69485815d84e67a6819b3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/m14-work2.out",
+      "sha256": "33b38323a3b6cdd5c3e674e4faf0503f9d596f967fb94925a2b1aec5f565887b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/negative-channels.json",
+      "sha256": "18987ffc4f6a60e4886fd36c2da185816d23cfc137cef44958001d3955c6a08c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/original-actions.ts.txt",
+      "sha256": "97cd9cec9be24b508b9f4cdf495ea30bbc33db6067e7c120c24cb69243d9a47b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/original-inputs.json",
+      "sha256": "e1da723c3c51ea2c3feaf3d6395504064736d0845bbc52aeb7ec7d1ccdc3e748"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/original-runtime.json",
+      "sha256": "7ededd472fbff90ee2aca7c69a2943b8e75e71e42a2423887cf8c67eb3d263b0"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/owned-typecheck.out",
+      "sha256": "ab5c3a66dae309b27feef30f392f7b11316b3efdbd736c460414b2c9ad218ece"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/prelude-import.diff",
+      "sha256": "fbbd413dc46637cbb91242cf5f642808070e4d43433d99717c1017bc5a150abf"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/prelude-import.diff.gz",
+      "sha256": "c8f2583a21966b4154a6fcf676caf83f3f501d3dadb749107d9b861406c2bf56"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/prelude-restoration.json",
+      "sha256": "9371dc71b96b60193313910af6cb66744a9cf469014d628977ac584fcccec08d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/preservation-tests.out",
+      "sha256": "34cd89242162a11e3847e66bd6b472bd24f69a6ead4d0a761f4e6885f03e08d8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/preservation.json",
+      "sha256": "81c9b1c01affa9f94c3f9fc070ae56e49b933b3c89753a08ac540730e1e3cb4b"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/red.out",
+      "sha256": "486171da08961d835ca9b916432fe6cc8ac68793825a9a618df1babb2875f3fd"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/red.out.gz",
+      "sha256": "8665bcf2abcdfeab2a3c49f0b21bd82c126fcc9fd91be9ac84b52e7310a52938"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/runtime-render.out",
+      "sha256": "8cb5cba458c9583ec4d88294cca3a9a4db7ca3f1f5d034ef42148db23b4c2774"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/runtime-work.out",
+      "sha256": "8e091e05d550fbbed415271984dcc161c093df4558b562f5f1287c59fc150b9e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/runtime-work2.out",
+      "sha256": "9102770420908a47407113a520c91d422d9bdf8ff013653668fd425aba4257af"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/semantics-work.out",
+      "sha256": "c5b03ae4f5117ee8c13a90691646c8657944b53327a2b2424343ccb6bf838ae1"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/semantics-work.out.gz",
+      "sha256": "161bd273d734e52ecead7bed8423bd534c390a8c01fa2d2fbfb89728d85444b7"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/semantics-work2.out",
+      "sha256": "79dd490e8d13d11d2bb6c1d2717a1b333c1dc3d06e818dd6dedd1a9934b5ee87"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/semantics-work3.out",
+      "sha256": "131ab782a26950f0e2d562d8431439d8d6ac43e1526819d86aadae06a174e707"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/semantics-work4.out",
+      "sha256": "55960a9406a76760d74f8db7d5c68106c2a1f473118efd466374bf342a46882f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/semantics-work4.out.gz",
+      "sha256": "088c3db9145332fefa48ff7793fd5d5be151b42583e83b83ca2b20927075f53d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/source-evidence.json",
+      "sha256": "385a288fc08e346245ea3f546c34172e180455ec26e8f63391d6e0b509707731"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/typecheck-work.out",
+      "sha256": "f50beda1a73d20ecb7c709e07852f4daf0b999acd6a321523a667253d2ca48b9"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/typecheck-work2.out",
+      "sha256": "3efa8747c206bdfcbb98f341c1dd385c6df75f1f0c5a21ac37b0ff196ac92263"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c3/typecheck-work3.out",
+      "sha256": "5378b0ecff4000a9145339e9fc572d6733f4fe5d49eb8b153e35832be583a27e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/account.py",
+      "sha256": "2037181f82301a1177c6b45ae3b1fec1246ebd1d36a5a1acc5c9e53acd83c2b3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/accounting.json",
+      "sha256": "0a4357be842115808e706d83e8a177be90b4921bf9a78824ff0724b96fa1298d"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/accounting.out",
+      "sha256": "ed862f110e720283ea76d1956865b990c2d870e8a3eafd67e3af5154cbfea519"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/actions-aggregate160.json",
+      "sha256": "dc523c54b456c499b2bdc89b0bed5d1ab82f6d362895f4fca302d78efd87c271"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/current-inputs-runtime.json",
+      "sha256": "956229e96a321b6d8411aded7da3bd50e7f62d5914a891e45f0a8ef03ce6952e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/default-vm-pending-reproduction.json",
+      "sha256": "15d58f42b616aa32d90a7a06ddd178d16fc3f0be2e653ea32deb0129dd5f1343"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/diagnostics.json",
+      "sha256": "62e4804fabb4b5f4bf0d879d7627f248e3926b716474abf4f30fe12cd7a12ae8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-accounting.out",
+      "sha256": "b40538417c04bfb4752d195fb1d40dedd463eeb0aac150cdae291001bd06adc9"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-format-check.out",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-format.out",
+      "sha256": "baee84a746e932461019e487881530f62011602a448d044f6f7a4dbf7b395457"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-green.out",
+      "sha256": "cd6c8241661341620559150a183bbeed5dadffd1af4ef71c0bdadd55516ce0d8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-owned-typecheck.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-prelude-restoration.json",
+      "sha256": "bd5a52d2f5a521966b567955792a35d762eb6264a222e3b20fcae999a7d3d446"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-preservation.json",
+      "sha256": "31f601a58dfd354957cef4a91f46de247e44750412cbc356146c083e82f56cc1"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-red.out",
+      "sha256": "1749370fd488d0283a6e4d21f91748fa990eab146f75059c90cc12e97e096be9"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-red.out.gz",
+      "sha256": "0587504362822840387292c0b3efcbc79ae5cf1e922c92cc65fcbf97465020d2"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-runtime-render.out",
+      "sha256": "e53657f739487ea19c430118215e7a8bf5bbd95df50760aed4eece1ac3453ff6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/fix1-targeted-tests.out",
+      "sha256": "5d2fa82e3309d4312cfcb8ff3c3c650ef535e035d8b76295fcb6992263b3e2fd"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/focused-tests.out",
+      "sha256": "727055a818063382e5774b436a92058a5a9fe0c47d6c895e0e461ae582b1042e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/focused-work.out",
+      "sha256": "2f49f2c3f6294fc51d1a92d39f4d76e81b924b78a84547a8562b710802addc3c"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/focused-work.out.gz",
+      "sha256": "392d15aa28279cc6ea769abcafd41459dc54331ef61093753e2d03946dbe37d4"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/focused-work2.out",
+      "sha256": "67eed53b9404c9a0cb0da3e7e79be0b050288391ca387936889eff273e73c635"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/focused-work3.out",
+      "sha256": "9e8c4d363d82a808851eaff2df51abfc5aeb86b4a20fc250d1f5789f9511d732"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/focused-work4.out",
+      "sha256": "c6501dde364e650676e8e140215919cdd056923fd02626c0259a1ccb10c6807e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/format-check.out",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/format-final.out",
+      "sha256": "7de68a958d18a2b67eec9d2e3e7b85515ae074d0f7f516fbec8f00b458345321"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/format.out",
+      "sha256": "d7f4b2ec31638519341a0bf41d59ca4439405ed591f555dc7015cd0c58a095ea"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/full-typecheck.out",
+      "sha256": "4fc6da95ed5448002d48d76662d659b00192eaf71b58755991bec2f3d3418926"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/green-initial.out",
+      "sha256": "d71e79b17c53a38503531c8a4df4e5f22d8389c9f4593e03059b3d987eec24b8"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/negative-channels.json",
+      "sha256": "31a135ebd5a1e307267b8606e1f2f0b071a30ef613472b28fd7f8695d70c9a74"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/original-actions.ts.txt",
+      "sha256": "859be9c7a47199490194841575c1753384aa793c7a6b85527a9cf5ee3319d3b3"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/original-inputs.json",
+      "sha256": "4ba34e8d969162da429dd1fd0fdb7cb18790ad7828fd1d8debc75f791f1f7f99"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/original-runtime.json",
+      "sha256": "8250f07725770b74695f5465275ec8f44827505f5cdabc5c8597afa54cb58733"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/owned-typecheck-root-work.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/owned-typecheck.out",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/prelude-import.diff",
+      "sha256": "fbbd413dc46637cbb91242cf5f642808070e4d43433d99717c1017bc5a150abf"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/prelude-import.diff.gz",
+      "sha256": "712b905a4cfd76f2f56ab122d27bfa2accf76ca9ead6710d20123996108b6118"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/prelude-restoration.json",
+      "sha256": "68d0bce2cbf96901b0a6d0e23efe06273e0841607ff094bebc8dda38c4e67b63"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/preservation-tests.out",
+      "sha256": "dbf5f4ebffa22bc1f6eb2d8eb4eec581e48fa2f42d6f984db427ec15630fa2ab"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/preservation.json",
+      "sha256": "80da2429411a2888fd0ca6006b306bd204e2377e8719c2966d3727755f30a9c6"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/red.out",
+      "sha256": "0691d272719bd91da0f85a7ab20fb05d0bfb41605ab8d997a647655d4c08a59e"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/runtime-render.out",
+      "sha256": "930ca4c2f62f934d076f705727bb88f34daf433c47e04d53718ce45f99d0e6ad"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/runtime-work.out",
+      "sha256": "40b03d0ff78b00ec45816a2bed5130445f28ccf2f838f594cc2085cf773f232a"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/runtime-work2.out",
+      "sha256": "ca08c5c80377cc237c31915d8d8d8c8368769e60b28176a1049c24cc3bb5558f"
+    },
+    {
+      "path": "tooling/plugin-conformance/historical/task-12b2c4/source-evidence.json",
+      "sha256": "8254ae0f15b2f5fbacd6a28ca6b2fdd992c9b049bdb042a3e057276d0ddae6a4"
+    },
+    {
+      "path": "tooling/plugin-conformance/package.json",
+      "sha256": "9a99dda1d53fc320a33bf13261dfae66b1bdac6ffb1b99190d7c3948e692c522"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/canonical.ts",
+      "sha256": "28720fd87e574c9c05e9d5a328a5bec83c5bf86d2d790155f944acd1bb8f26ce"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/case-entropy.ts",
+      "sha256": "1def7ddd46b72931c6df45ce911c284a21537ac9c4b3a75f260e56104e7736bb"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/coverage.ts",
+      "sha256": "0777530bd6ad6d7b1af2a7ced75472f606df3053e8b350e245c476d2ebcf25a2"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/emit-one.ts",
+      "sha256": "a5598475a3f04224cb350f693d27684d459c621a49195de9ae6d399b48ee1553"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/fake-engine.ts",
+      "sha256": "19d3ac602286730a4eafbbd360dc6d77aea2ecd980a60df7b92fabcb89c1dc16"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/generate.ts",
+      "sha256": "e3f93b7c34fec2790f360c4251aaa51c97db1606a1488263e8c80dcc6d2446d4"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/loader/instance-hook.mjs",
+      "sha256": "9ea1c14d18884ee388c08dc829233f89ea63a53b0c60f36f7e8c69e13dfd708d"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/member-order-allow.ts",
+      "sha256": "6f8094f2bb857cc8e8e9a4473b8a79eb785c7da6a0396724dcc97a0f4fbc2daf"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/probe.ts",
+      "sha256": "425964045025f34d137f71707abd6219d5aacb86cf4dbd1e29c9fe876db4ab73"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/removed.ts",
+      "sha256": "65e30e286d4bb57688cdb763b2f2848202fb2d0713a4b12bd6d672e97cd7ee5d"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/scenario.ts",
+      "sha256": "3571a7f6654a010fca10b2f764394db557cc16042ee9b7787f4cde841057d354"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/staleness.ts",
+      "sha256": "7a57a127031839494ff0625ca7baba518cc042d35ab78755e456b28412dd270b"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/stamp-module-host.ts",
+      "sha256": "8a8618ec2417264320df2f0c31ad581124e4f698fa816943dd90b5a147d9c166"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/acrojs.ts",
+      "sha256": "c579ef2e705f4a5c1e27ff17cbcda612b29b5ef946dc473f809cfe5490c9137a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/actions-current-fixtures.ts",
+      "sha256": "30bd78268b44518e6296a5de239f2fbf67ff013d9afd2c9fdfc3519ae85037e0"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/actions.ts",
+      "sha256": "c0813c310dd4f315d22a34eaa7eda8ad2cfce48a9d24dec46758d135d8940fbd"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-api.ts",
+      "sha256": "a925c771ab0e30dca67cbf7ed0aed36fcbcbb2f1d9caf456da55622cec47f60b"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-comments.ts",
+      "sha256": "d519ee0cf555e2b2735d814ee92e8879b3650e8dc130fd71cb0bf3f3d40d1517"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-core-fixtures.ts",
+      "sha256": "9011958bf71cc8afd16f04aa72863d6cd8d42f3aa9694be46d0ccd1b760d435a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-core-geometry.ts",
+      "sha256": "277c81eb1a367d12a180061930d90be971fce93dfb5aa66c2a7e9f41b552d6e2"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-core-measurement.ts",
+      "sha256": "47f22754c36b68677ab9f1d78dd147e131a8bc15e7d5f1cabeb60e32a30dbc9a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-core-model.ts",
+      "sha256": "ddebcda234c2d342ffe39c2b8cfa2a22a70e4b5a8b697f1837dce3408829acb9"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-core-update.ts",
+      "sha256": "51f03c313616bd5d4b8576f3be37ff4d92754a79407170a7d324c25fa0470a90"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-core-view.ts",
+      "sha256": "009ff67f000cc0464772e10dbbadcfdeb65b88387143d422eae8fd7e16b39cdd"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-crud.ts",
+      "sha256": "378fee1e7c45111cbcb5ab9a8025d823009f9046276c798eba0a453f25b20b48"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-current-fixtures.ts",
+      "sha256": "1ed181373f993f80acfde740c3e0de3ca8fe2308b5d0827b77b63454887fd0ce"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-fixtures.ts",
+      "sha256": "eb2d1b1d94a47b56716e2dd8c2184434a883a8d045c82ed95bbc276c97f19939"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-grouping.ts",
+      "sha256": "dae9420371c1e90bbd03f0bf74c842b3d2059775ce0ef65ad9926b9f53dd8ebe"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-hover.ts",
+      "sha256": "07d7713aa86340de64e8534a17368ba82c871d763a95e7ac83a8f40155970c4e"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-hydration.ts",
+      "sha256": "867845d3744057a6698b7b9ea89f9c67c68aabee3fec63c7edb9f34dcba4a620"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-live-answers.ts",
+      "sha256": "5cc06f7dbcc0fe5a36bd3586dbb14e90129b49d10ed398814820a06233ecbee7"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-live-fixtures.ts",
+      "sha256": "98a0973fbac20a4aacc3425757c98b2a7197d1b83e458c03ffd205d918f3a270"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-live-inputs.ts",
+      "sha256": "37946b05ff85e459af8792c08fbd53d3a3aac9ba7d6e8d0d29d5ba20e9162cfa"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-markup.ts",
+      "sha256": "730870676a63e7e55ba7c7a98f66e619f74789ac1750cf6cac3f03fdd9caf078"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-pure.ts",
+      "sha256": "2fbfa54545f2af8d373ab1e2395e117e34f93454c065c77e5f814429be63c337"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-reconciliation.ts",
+      "sha256": "73ce7e5ca034fad9f14057c1870893ff2b7ea30fe3ae315060c3d64349e72240"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-repository.ts",
+      "sha256": "536dd11cdf4e549a5a0a11276f58d0642ffb4ba2391124342b4f3a250ab82eac"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/annotation-tools.ts",
+      "sha256": "b312f8fe1da8c87492dcf7f6b99626076ac420736a38ccf54a5f7fb0316b7a37"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/current-event-fixtures.ts",
+      "sha256": "50a3e34046f09fb62f78eedd34f9b5a0010fc3c3444d01db109572226a098c44"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-actions.ts",
+      "sha256": "d13bcb6c067550a2e5070cd57fac589661d178eaa88ba7943857a577bb9ffcda"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-core-lifecycle.ts",
+      "sha256": "339f54b4a942223cf09ca06860c24b5f6e8221f87591d1897a8b345a8c0a093a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-core.ts",
+      "sha256": "51d4194a4834a8e5f5c2ee402ba65c0b176477371422395bfad03d4c5375cb72"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-current-fixtures.ts",
+      "sha256": "628c0d3f23ac5b70890ed29739ad614583b50170a31af99ffc3957e216582e83"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-design.ts",
+      "sha256": "5e292fa6765715f5e73e9bafdf6064fe9c6dfaae42bcc383764d822be3cfe84c"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-fill.ts",
+      "sha256": "23da9a78fdcb074fcf125f9b5a07c7cee76451deef95e5f84f56e9010bea552b"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-fixtures.ts",
+      "sha256": "1960ed040765711b256af7d9d1117471a05234f8441102eebfa73883c16c1b6a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-live-fixtures.ts",
+      "sha256": "d61e7cb6ba508268851596f23a7cdad7fd9dbcade8aecfcd423b6848f7cf9638"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-script-fixtures.ts",
+      "sha256": "6fa3a72c95ad66f22d3b064765038ce38f55b3650141c1f51b5d1722197fc8e2"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/form-scripting.ts",
+      "sha256": "7a38673a28d6767c6eee1d14f4db5cf5e820f280ad766cefd08cbad75dc5189a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/geometry.ts",
+      "sha256": "2fa8ecd323db1eece546dd580aba105c031827d257eff02ecf4bb58dae2e7405"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/i18n.ts",
+      "sha256": "9f9a3aeab41526783de77bdbd59b48356b9eaa63e515bd51aa1c22a2a021d8f0"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/interaction.ts",
+      "sha256": "661f8c73dd6a0bbd0e14a2d31afa5c73b03984f5adc401b42cff9df2aec84c64"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/kernel-utils.ts",
+      "sha256": "8c9da83b5e7be82d143a365373e895ca3086c79c4ff29fa0dbe912aed5b84f00"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/kernel.ts",
+      "sha256": "98d1430bf7f9b6a1729d6d2b3dd26f36f3cc7f3d3dd3313c9921673f4faa3a76"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/link.ts",
+      "sha256": "1b93c7d7597cf50ee503b2be67a1769502880260456b353a666f69a9ed3bb29e"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/measurement-fixtures.ts",
+      "sha256": "5f3169b8abd2d07f00229b5fc64228204846907d1723562f6a448e4cd4509120"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/measurement.ts",
+      "sha256": "f3a32b13044492f969e547de0f10b686e5edff4e463dda994f85731bde24acc9"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/metadata.ts",
+      "sha256": "0c0d6ea232daf0b94904b8191dfd4f315fde19455cf7ee127fbfec11037c7d26"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/page-edit.ts",
+      "sha256": "36ed23435b8c209296c44a5db67c5bad1c64591f086e405ac533540d383f91cc"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/redaction-fixtures.ts",
+      "sha256": "b39c3f5a02f5cc42984988011e94ce49aabc8f38a55be677c19aaf535a220424"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/redaction-read-inputs.ts",
+      "sha256": "e718d9ee0bfc8351a55bc0fe3c03f1414d75414a293414921c1c4fb028d473da"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/redaction.ts",
+      "sha256": "b334e03d01d60bbd4f78140afa061211b9bc0e8eca7d65ab8bd024864022bdea"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/render-pure.ts",
+      "sha256": "ae57104e48a32eb56905bc740a5ca48b20d29177b2c774751f6e416d75a11cea"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/render.ts",
+      "sha256": "ff266d157b16361ec6d074bb47e41a44aba514cefe6ee336bf48c0b169e997f0"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/search-reducer.ts",
+      "sha256": "30e8ce6e1ce95e2b5455733b82624660ab66efb0e2cab5f1111273dea8e48e99"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/search.ts",
+      "sha256": "0f4792e67c765defaaaf6a1aac32b899cce29def3e151b96dc86b9621e93e3da"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/selection.ts",
+      "sha256": "747ee87407c87eba72654b4ed15f1210ae8ac7000389f049543768efa321332a"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/shell.ts",
+      "sha256": "5609b0a83e560df0cf5f70a103c8c1b79a2eaadbbceb5ac9af97d2d5f5b666ee"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/signature-core.ts",
+      "sha256": "9a87004e8b09d1e1dbe1b66c8c5fa433aca3089d550f39ab5caeb31156ad24a6"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/signature-plugin.ts",
+      "sha256": "ed1056a80c67c3060359f9e04fa0b5758946e25e51840d7b5631b48ce62c321f"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stage-plugin.ts",
+      "sha256": "4621c434c6587751dda0fd8d6ad7a6e7d986792112d341fb32f3effb8b574795"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stage-pure.ts",
+      "sha256": "efd6ae68a52331a305ec29d9f1b8d18fb95dfde92bac40bf653917e3b2d58e5d"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stage.ts",
+      "sha256": "d5dffbf12c08f3433e8be96d9899904f89e1b42209977d28eea26f560de36ad2"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-api.ts",
+      "sha256": "513e8e2c8fec32051780f3be63240445693e2ad16f04f0bf99df2a463f4aebe3"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-assets.ts",
+      "sha256": "b157fcb501063c69cb9caac1814381e97839b45662a2f5c9ecf3189b370db44f"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-current-fixtures.ts",
+      "sha256": "c3d74065b7432341019656a4203a37292f71bf3cb297f456cb3e0d4ff64f59b6"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-fixtures.ts",
+      "sha256": "b7b4506be876d6d71da57c38040ec970c41bdf0982608ac867eaa270cc7dad86"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-functions.ts",
+      "sha256": "2dec8c54a94548b521f2d52a70c00295cc490469152bb688120cc94f725833b9"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-library.ts",
+      "sha256": "276735388c4ed6c9b92d4db5e124d2df72e391b69863d5baa35a8d67573e89e4"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-mutation-fixtures.ts",
+      "sha256": "b39b0a1e1c24ca014b0a56dc6fe98f86048c535741192f60dd4d8ab02865f336"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-placement-fixtures.ts",
+      "sha256": "a632d43a9e31e711ddbd151c598ebb7fc4d6475876578ff7bdc5b07602947b1d"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/stamp-placement.ts",
+      "sha256": "434b4183945fb93d1845b1fae5f7c8006d5f045a48b27bf8d632f7f515bc8751"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/ui-core.ts",
+      "sha256": "5fd67aa20e4d5ecbb75cb996688470532ab078a45b270b0666621a0b09d34907"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/suites/view-manager.ts",
+      "sha256": "fc25627a0587d3fe6ad18d90d75424c04e42df2f500fa2db1752bd5c3709ef7e"
+    },
+    {
+      "path": "tooling/plugin-conformance/src/vectors.ts",
+      "sha256": "56381a25abba012c626ece0e70a98f1271a181a2dbd012a1b6f8a29fa5e77c7d"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/acrojs-current.test.ts",
+      "sha256": "3417d507c25b7104ee93c031f2278c8528a84d42ded2a5e67d64499a5cfe3b10"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/acrojs-evidence.ts",
+      "sha256": "df6649c7f5df46cf523d46bbfa4686ba7949539e2ff87de43461df0e0b9a35a1"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/actions-current.test.ts",
+      "sha256": "d1f1f8256d9efc7e6bf33f9443a1541ab3a021abfded473a323909c1ab706f0a"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/actions-evidence.ts",
+      "sha256": "ccb0905cabcd5fe2c81e541d4bc60c1c6b42d5c7d441e8f475b7d1753f83cfba"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/actions-lifecycle-current.test.ts",
+      "sha256": "0d6b0537482a109dcc016e9028d94e7c970e15a3493dc4ebba8e2080d5473d2b"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/actions-lifecycle-evidence.ts",
+      "sha256": "9d572ee8d10fd9cf3e156cd9c5059efec8ed8553bf356fa6938000b678e6899f"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/actions-script-current.test.ts",
+      "sha256": "c19808ca7b698c99b916a5e2cf5d0269d891af71132ae602b5914ce19431d9d8"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/actions-script-evidence.ts",
+      "sha256": "f55afad97fb85532d24fb4a217467019f6dbfe3804e68470f6ec5915d536e547"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/annotation-current-pure.test.ts",
+      "sha256": "4c90cfb6f72e993cf48ab4e7e65510080d6fcf085cba097c144f1864d2d31f65"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/annotation-live-ii-refusals.ts",
+      "sha256": "a6a16ab2cbfb8bb7f1489c561a1f113c13a8ebb2c28e4e383efc9b9e4ed963cd"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/annotation-live-ii.test.ts",
+      "sha256": "5c5bee29623cb1eed62319c5085ac44ebbf5f8531805a0a1f08541b3d7d43901"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/annotation-live-refusals.ts",
+      "sha256": "8532b8b8e2885426fc3c66555f6fb11cc0008ae4f4b27596aeb20fb2e05ff3a5"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/annotation-live.test.ts",
+      "sha256": "7e19c3972369b4d78c53a0b87c2ba0d2f32c29b3fe0acc8d8e65f9e5edbba2e1"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/audit-kernel.ts",
+      "sha256": "3744c0c8338cbd1cc53636d0570b2fb9302d6b12652eaefad5d5c01c7b504b1c"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/current-suite-refusals.ts",
+      "sha256": "14feedb677f935532fe249b7e1ade9cd73a9ec988837c1243752ebcc34315849"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/current-suites.test.ts",
+      "sha256": "6bd0da9ceed39efee11470cbf4d19ecafa1f82f5680d681e9132fecf701de40e"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/form-current.test.ts",
+      "sha256": "d40c7bd1f6ff2fe133a858130e28620739944ff41953931c5a707d6b38f4a921"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/form-live.test.ts",
+      "sha256": "2c1deab8fe187d3cecdea06e9189dbfd8e9c235e5bf22e26d0519458339e91ef"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/form-script.test.ts",
+      "sha256": "aa7b018f8cc2b098cc13df801e94cf95f61139e17b5a319262eebb28316e6891"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/harness.test.ts",
+      "sha256": "ee7cd443763086402d882eac173cb87dd3b075de30181579af1ebcbea38611d5"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/kernel-refusals.ts",
+      "sha256": "b01a3a8adbaf384400944e788a2185713db3e5ef4c24cf29ea68b39705499e46"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/measurement.test.ts",
+      "sha256": "b7c3907033f6c3650ddab7c9d2381a6f8b46a520f72e08d022f9305daa9ea579"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/redaction.test.ts",
+      "sha256": "c46d7aaf83625eeff4a698e785200eb8f59037e014210720edb7db637aad1567"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/stamp-current.test.ts",
+      "sha256": "977d9d51a85f45af72136dc83ac6127545e9701f1b9a881f65a23194188caf2c"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/stamp-mutations.test.ts",
+      "sha256": "cc11d11c5a006f86e625fbd3989a69299b9ee67d90064094e7a3530414608e13"
+    },
+    {
+      "path": "tooling/plugin-conformance/test/stamp-placement.test.ts",
+      "sha256": "ae3d80fb44d6e389bed37bd41723a476af742211cef46a77fb37c37c2675ead9"
+    },
+    {
+      "path": "tooling/plugin-conformance/tsconfig.json",
+      "sha256": "bd2996d137606148886fb7c86e294a1d8a06fc9552750003dcd536b1946072b5"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/acrojs-host.json",
+      "sha256": "c18b27352c6ac0c45764017cf9338e77fe63a7f52b9f50b2f0655e94384328f9"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/acrojs.json",
+      "sha256": "03998770506bcca08a23529abe7fa8efdb5285206177aab7a51a356f5049de68"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-anchor.json",
+      "sha256": "a428ee2862a9ac031a3315ec91c1a266f0f99e34bef804a5fa3077de2d2cabde"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-cloudy.json",
+      "sha256": "1baa463e52fad86f41213e6dcfaed660befdc42799a9950abe91e41a802ba1a3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-endings.json",
+      "sha256": "b5fe8dd453efef18d78b9f66372cc1d80d612c27e9317fae320d9b181e6f5ff6"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-flags.json",
+      "sha256": "ee0db291c7491ec0cfa26c7003c819cf6593bdd7655d15e7e046b85493bb835f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-geometry-basics.json",
+      "sha256": "b3b37110263925c46d2a3279946585692e552bc7ac9332d8c4b01145f65b1a1a"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-geometry-hit.json",
+      "sha256": "1a47133d1d116ea7ebe97d6af6523f6f04a20f747365f23cc4fc5691a1619bc1"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-geometry-shapes.json",
+      "sha256": "38710af8fdbb1c9934eb57d861239ff2d3ce824121248dff5dafb1db71c03228"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-geometry-text.json",
+      "sha256": "d47630d8fc72ddb428fd3162971cc16743a5bc55a7ed3cd8dcc78f5ebfb4ca7f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-groups.json",
+      "sha256": "0597caaf56eb64bde14207e79b6f8383383b8776a83c74dd0bc13e5576f8193c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-hit.json",
+      "sha256": "579b40e2b8c52721e377a0818738429304c2c9bf1addca214114dd6385ebaf2b"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-kinds.json",
+      "sha256": "786b7cdc8ffcac0e0c201400a4a59bfe3b76104fb0092a60202ac8b20649f89e"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-measurement-model.json",
+      "sha256": "532cab3fcf3e619b96a51d63276fc25aeed59888b9c0d1a0d1b5f915ce18fe28"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-measurement.json",
+      "sha256": "17253f0d1bfcf2a6cb1e5f8e8c9ea4cddb91e28847ab74c930910d17822d564c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-placement.json",
+      "sha256": "e720aeaad81f95a23f4e0cb33d92f35512fc77c30e064e43911fd7ba508784eb"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-props.json",
+      "sha256": "8cb9e42ec53dd93f1bd7732281bdded7a4476ed6464b8745348330f3c7fec2d3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-richtext.json",
+      "sha256": "98673026cd2c2e2bfceabf7cb0e26957bb1ec2a45a5fdfb430928cdbee8160a3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-scene.json",
+      "sha256": "f2b76fe28ddae1415afba6de360ee4932e2c956d2dd61a0bcf9369333ac85065"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-snap.json",
+      "sha256": "5e2f6efb70cbc21077a3b10149f3d62aeaa49a52098906f78a96e45d5b7e0d45"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-update.json",
+      "sha256": "3d0a2a3b074fde6fceb2d9d897673561ea254a4438683399c5b82fe42d8f267c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/annotation-view.json",
+      "sha256": "d5dd7a781ac0e2151e0ba4cdcaa3c4a97fff6d857361f35950583f3e1dbbfbdc"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/geometry-affine.json",
+      "sha256": "7a2923afc18acf5ddb8410f7a4a5ceb4a1436ffbbd890d276ca847c5f0338b05"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/geometry-basics.json",
+      "sha256": "b2817a881b8c98b6d98034aab786e2663096a5ec08f2228ccb8297bc7b200e8e"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/geometry-page.json",
+      "sha256": "46155a35a4181529dea63abff5c03d8ff05317b99a8bc1c321bd00a74fc1a478"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/geometry-text-quad.json",
+      "sha256": "4cd9bbe91f50d66a8643fa75051af453bbd4f4dd7fb4c8eb5c5f566eef822da3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/signature-document.json",
+      "sha256": "93763d6d7441853d426a1d85480ea741a8cfead7d8fc752350e292949f197a96"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/signature-parse.json",
+      "sha256": "38675df1f85fcf2d4fecddf5d6791440c450d0de99ad377e882b61a8e6d427aa"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/signature-signers.json",
+      "sha256": "37147676d5a0af681fa8f5614e41779dc4042960e63d14d578320cf0e1e8f2c5"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/signature-trust.json",
+      "sha256": "c8867145503d30dca403acaedf50c1f7a8b9afb52a3741b91f18e491608a2728"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/signature-verify.json",
+      "sha256": "e467e67f76e0c3747bfe5de5c11dd416bf0dbda6ae45f9cc4c9265ff0891dbf3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/stage-anchor.json",
+      "sha256": "3210594e59675d090dd1238cb3cc1bfda04ea87a087e9a79997bd056a3a74557"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/stage-camera.json",
+      "sha256": "317fa4badff8f8677211aebdc49ca568021acc51b31af9fa8ec353397a472a62"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/stage-layout.json",
+      "sha256": "6e5a55e0b8b87a8f80347b12e7f95a518451bdf77ab9958641c4b26a61dbd017"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/ui-helpers.json",
+      "sha256": "99cf17c4e243021061c6fbd36678344b7161c022311f4b312d41e372cc5361a4"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/ui-projection.json",
+      "sha256": "97d01e14d81613881a21ba01236eb4c2ad54d10e4337144b9efacf8176cc805b"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/ui-schema.json",
+      "sha256": "0377d7db8666c7ea25b53ea532191e4a8c27a49edd72c1949954cbca3bc8b84d"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/ui-shortcuts.json",
+      "sha256": "4454a487bee19c8f39fb8a45955e2c5a14e3be8f1849469404aadb3d0868d984"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/ui-solver.json",
+      "sha256": "bc3fb4920caeb875d7052055fc926e9182947ded032e405f86ca8eee334e71cb"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/core/ui-transforms.json",
+      "sha256": "a14abb72766fa9f410851665a64027486329520e8e0477b07e0b63539817a156"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/coverage.json",
+      "sha256": "acb8f447049b12e580a2a07230dde72eb8313ef9136c58b118303a250f37920d"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/environment.json",
+      "sha256": "201c8158559e4ec613c0fe2dcb282de5a90087b4f0786dd852a3c7d8c46e60d3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/kernel/lifecycle.json",
+      "sha256": "7eabeb2d1f8e9c9e8c13722167facedf2f33fb69e0c12fb04a211fbc9580bb59"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/kernel/turns.json",
+      "sha256": "d585f1aa98704ae81b36d1070af395b514f113508c42a8ff2da7e7a5eef6f126"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/kernel/utils.json",
+      "sha256": "70d6c0380a036e313a4ffd879048ab68fa67592ed51b48d0d148f2137fcebbef"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions-dispatcher.json",
+      "sha256": "4ee2e87952fa57fa3f493cbb1ce1df700d5dd0ebcb322a5c16bf2d8f4525cb8a"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions-hover.json",
+      "sha256": "a967a924b16ef7ef76c07feb41b091ba18d2e92a74648040b550d9eea6969782"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions-lifecycle.json",
+      "sha256": "cb46111c36a0254b58fa3583f1c4a177b6b8be6c8ae39fbc6de098186c34dd84"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions-script.json",
+      "sha256": "eabf1eca282cf3c0ab1bb9853a830553b914d48a4e72eaef7acb2e74f08b511f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions-submit.json",
+      "sha256": "a8b1b7df595f93e9ba321dce0a434849d34f4201a958eabb41a8c21d7192c20f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions-triggers.json",
+      "sha256": "13a17c9fad328eb07ec7bed030c93c4d92dd0a103106315cbd029559c7616d91"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/actions.json",
+      "sha256": "970c8cdd529b18a81781739f678cc4f7db75abe5aa5e931a982fe072a7fe7f1a"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-api.json",
+      "sha256": "ae395bcb0f8c9d4e5e8b2ec1cf085845887e1b9a77b089cbaab140cdcfa9d633"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-comments.json",
+      "sha256": "d2bc5c3cdc0bb76ae205f991c0a4536979381cbff0862bb0c96e04cfa22335c8"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-crud.json",
+      "sha256": "de0d5618907ea0452883a5376aff96f27f007ef58fa25583db0f8888697d065f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-grouping.json",
+      "sha256": "0a0da6872bb7f40d2436512af4ebbab64b3cd7aaaa78f3196f39bc5dbcc6fd88"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-hover.json",
+      "sha256": "c73270d39350e55a623bf296f5c4f9f25981bd892bd8fc1570342d94fe9fea37"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-hydration.json",
+      "sha256": "56ee18792aea729ecc73549ed5b3dda4031035f492b3bdf423d0f884b0b8b1ba"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-markup.json",
+      "sha256": "d591192774853a180057744ddb009a330bc144a72b1dfc12187e721e28f4f640"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-pure.json",
+      "sha256": "0eaa891140d8ed5a4276c8973f126bac124da75ace443de4fb554fdc4f19a842"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-repository.json",
+      "sha256": "d939360f0f4d87e318d3ba5764850d8e49b36aebefdeffd7ccca1c89e4aa288a"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/annotation-tools.json",
+      "sha256": "68cc7afb0c36aa9343ba3be13fb36d0655cca5e188f4524e706e0b94f94063ef"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/commands/functions.json",
+      "sha256": "ba73ad3482f20ae41f19a4bd275f0bb584b69b29f15c9951b9ad2783c2ff1128"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/commands/plugin.json",
+      "sha256": "986d8d5222bdbdae0eac8bab16495eded57adab1f0575fb6024ac52288b1452e"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/form-actions.json",
+      "sha256": "3a433f9aa681bc321f116cd59b6d544f15c1a360a2df31d4761de8d61396760b"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/form-core.json",
+      "sha256": "41f3565e4f425e3de7837b904e322deb40f95cdae765a6aec7349bd52f483334"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/form-design.json",
+      "sha256": "a1ae272ba1a8f99eaf1b8a368118b0915ceebee6e0fef0f5c8d37e056c6b6990"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/form-fill.json",
+      "sha256": "ccd8019f4f4953adf78009281d44fb869a1e6ff333ca1a1c50426134e6c1852f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/form-scripting.json",
+      "sha256": "34c3b38a7b6cf6dea056d4650d54e6bf0a78559793ffbcdcc027824becdb0a06"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/i18n/core.json",
+      "sha256": "993799838902ee40458396364aa08dfa01d64db78aa6426a218d728bcf8876cc"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/i18n/plugin.json",
+      "sha256": "2f5b4b7db71f4b3a59643a8b19c2ce78987601be18d1d8aa27a38217240cea7f"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/i18n/plurals.json",
+      "sha256": "093a88d5370cb44a32ba3d0ab1e3cf3dce1cd3ccdb2371304b6cef396aa52658"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/interaction-functions.json",
+      "sha256": "d9c7633922a6486dc8459b3f0fbc284751ccd54c966b18b763203138fae53c0c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/interaction.json",
+      "sha256": "6616ccef5b673dde4881f6c3a3218b69b1f867ed06ce41e0ff87217acade04e8"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/link-functions.json",
+      "sha256": "f0008ea1446d14d830a8e2b2cc2c42f6f64a08c6544550112ca122722825405c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/link.json",
+      "sha256": "2c974d13ff6da7e526af6b1aa89ac66e2ddd27e6970df2cb43d111880f6a195a"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/measurement-functions.json",
+      "sha256": "c3db510a2a4c54b262d2ccdfea9e7f47429fa1796a01dc85f528535489fac524"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/measurement.json",
+      "sha256": "8e695574ab813b216c24cd9db95dda86e20dbedb30eb3c8133f108fbe5c015a6"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/metadata.json",
+      "sha256": "def3683fdf70ac4495995e7bbacefc83e78b5229a2e3c20b778bd4962826a0a3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/page-edit.json",
+      "sha256": "ec23bffa1500b6e6ea4dc92f945b95cfe06bdfcab28e79425a4012fba92c5fa6"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/redaction-functions.json",
+      "sha256": "38002b1a3157a7402e8cd647dfcc917f0e2410ff3c1632eafac451d9a6282a90"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/redaction.json",
+      "sha256": "727091a412f8054f4d427c7b2094f817f8f8be25b0f0ae154d2dfd49a1da86b9"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/render-capability.json",
+      "sha256": "05c1838811827c2e261bf193f4c8eb64f8b121cae47a2c72a69e29deba516518"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/render-ledger.json",
+      "sha256": "4e98e0c679821463fbb9ab54e3eec6eb64494c2dc669278a877da748e00b68db"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/render-policy.json",
+      "sha256": "8fa9a20acc96b91066c81d669236ceb7a3260a43ac5810d8fb7d25a1c9a6d49a"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/render-strategy.json",
+      "sha256": "bbdb8e27e335f66a0f5ba0d87fa0609c003030f32376a85f421007c62e734f64"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/render-tile-plane.json",
+      "sha256": "9e71c3f2b2ca359f045042aa4d91059d2b103f2c6b4329a5744c8a9bb7d67a8b"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/render-tiles.json",
+      "sha256": "8d64e8273dd11624854d2e2b9331dba71d64146222bf6d7e69b5299bbde84a5e"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/search-find-all.json",
+      "sha256": "0e137194ed467f7a7b5452cd4b1c050f5fae2b7252801eb63c1e074929bc6a5e"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/search-reducer.json",
+      "sha256": "4cbe3a0e699576e1a439b801992510babc5c81764878a40b0cb6f95ea71e2c0d"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/search-stage.json",
+      "sha256": "ed82d9382f967f91d1bd1a1b266d6fd14c40e3f094ca6aa01ec19ae23c96eacd"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/search.json",
+      "sha256": "ccef0b0d98187a4ecdc5a14d29c0956638e88ec76482fb5c5559f87bfedd148c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/selection-geometry.json",
+      "sha256": "8e2b55395251ce0435d187c036e6c74686c83db34c8adca75c6992ee8c9cd813"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/selection-handles.json",
+      "sha256": "ec2075c0df52b815fb20b75ef190f03dfa52202df39f5b8e64e140d41a5bcb19"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/selection.json",
+      "sha256": "31aad843aed8a2e8688d27cc0f269b036eb2d5f59b358ff65e5cd1b84168d656"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/shell/plugin.json",
+      "sha256": "6bd560366de698e9b020a1ec6ca19a0ef4120743d015e956a7f9f5ab36d1abbc"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/shell/reducer.json",
+      "sha256": "bf09ceb87929e74fc9905fa3be9ce2a0b8bb1fa4c966062c231f4a0abca55aa1"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/signature-functions.json",
+      "sha256": "93a2af7fce8f21cc437b40b551c8184fe15b593cb8eae648cbc063f5cde3a4b9"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/signature.json",
+      "sha256": "8df7e005be1fab201bf0d2935562400c4f4249b133d9231b3f6910fb053c7054"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stage-capability.json",
+      "sha256": "7005d1d0933d4263ff010bb5761938795e06a7c377210db945938716d7251c89"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stage-destination.json",
+      "sha256": "b073a68a28e6ec0b60b5d74ee2f9fc0756c1fdaec0aa26c8d3726c950a47feba"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stage-events.json",
+      "sha256": "9aed8772fd68b549e90fa4550dc2a6463e94bc6ad39932885b4f7fe6717eab5e"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stage-feeds.json",
+      "sha256": "51a91be99a452094bc6a2750045c56ac30dc3bd57b9d0cca8074fe1bab5ae76d"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stage-motion.json",
+      "sha256": "2cd7dc6162e075f0b26e5f458878b30ae0162d00504b1cd53e5dcd243955bea3"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stage-pure.json",
+      "sha256": "067621b078701770cda08fb9198d96bdeb22bf3d7350d99070170385b1ae9e19"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stamp-api.json",
+      "sha256": "cdbf5e8a303c5738a77b0b6bfd5bfe5f7cd19fbd4f9c0ead55addc5882c66f2c"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stamp-assets.json",
+      "sha256": "01643b0534b06f171eb124a9edd6623527aa82f44ec1d935e0f923c6823649bd"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stamp-functions.json",
+      "sha256": "064b6c8437e3ce3320232f49898f2f844d8d2cd182ffbf78c8d27f956c9d78ec"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stamp-library.json",
+      "sha256": "65585a9255dea72f1ffb4803ee67a4e5b24d0f2e14e39791b477dc3dc1b97275"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/stamp-placement.json",
+      "sha256": "1f40dea0f8323ee0be61e0fa943ca5e0cb4c201f71b89830e443edee1dee42e4"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/view-manager/plugin.json",
+      "sha256": "c76709de100a5f4f2bb95f2b3d7f5a8bb9d578322eb077eb109f72b562469a96"
+    },
+    {
+      "path": "tooling/plugin-conformance/vectors/plugins/view-manager/reducer.json",
+      "sha256": "832b1b73b79c6cdcd344a03dcb559114819eeee2b91327f3e7558454678751a4"
+    }
+  ],
+  "preservedCount": 437
+}
