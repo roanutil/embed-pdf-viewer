@@ -17,7 +17,9 @@ type Publish = Rc<dyn Fn(&Value)>;
 
 /// Hydrate the canonical fixture at the consuming adapter boundary. The
 /// JSON service transport retains the marker; methods belong to the native
-/// engine TextLayout, never to an invented JSON approximation.
+/// engine TextLayout, never to an invented JSON approximation. Native only:
+/// the engine does not build for wasm32.
+#[cfg(not(target_arch = "wasm32"))]
 pub fn hydrate_text_layout(
     value: &Value,
 ) -> Result<epdf_engine::page_space::text::TextLayout, Error> {
@@ -548,12 +550,9 @@ impl DocumentHandle for FakeHandle {
         Ok(if numbers.is_empty() { None } else { Some(numbers.remove(0)) })
     }
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
-        if count == 0 {
-            return Promise::rejected(Error::engine(
-                "InvalidArg",
-                "cannot reserve 0 object numbers",
-            ));
-        }
+        // Logged first, then refused, as the TypeScript validates.
+        let validation =
+            (count == 0).then(|| Error::engine("InvalidArg", "cannot reserve 0 object numbers"));
         let numbers = self.numbers.clone();
         let sequence = self.next_number.clone();
         let map = Rc::new(move |value| {
@@ -576,7 +575,7 @@ impl DocumentHandle for FakeHandle {
                 Some(Box::new(|| Ok(undefined()))),
                 Some(map),
                 None,
-                None,
+                validation,
             )
             .convert(|_| Ok(()))
     }
@@ -642,6 +641,7 @@ impl DocumentHandle for FakeHandle {
             ("render.getPolicy", None) => Some(Box::new(|| Ok(json!({"kind": "continuous"})))),
             _ => None,
         };
+        #[cfg(not(target_arch = "wasm32"))]
         let map: Option<Rc<dyn Fn(Value) -> Result<Value, Error>>> = if path == "page.text.layout" {
             Some(Rc::new(|value| {
                 hydrate_text_layout(&value)?;
@@ -650,6 +650,8 @@ impl DocumentHandle for FakeHandle {
         } else {
             None
         };
+        #[cfg(target_arch = "wasm32")]
+        let map: Option<Rc<dyn Fn(Value) -> Result<Value, Error>>> = None;
         self.engine.call(
             Some(&self.id),
             self.table,

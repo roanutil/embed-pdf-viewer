@@ -39,7 +39,6 @@ pub struct DocumentMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub page_count: u32,
-
     /// `PageLayout[]`, as the engine reported it. Shared, because nearly
     /// every read of a document clones its meta, and a deep copy of every
     /// page's layout per read made those reads O(pages).

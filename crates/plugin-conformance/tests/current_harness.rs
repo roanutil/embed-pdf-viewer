@@ -59,6 +59,14 @@ fn reserved_numbers_are_per_open_and_never_reused_after_take() {
     assert_eq!(doc.take_object_number().unwrap(), Some(9));
     doc.reserve_object_numbers(1);
     assert_eq!(doc.take_object_number().unwrap(), Some(10));
+    let logged = fake.log_since(0).len();
+    let refused = doc.reserve_object_numbers(0);
+    rt::run_until_stalled();
+    assert_eq!(refused.peek().unwrap().unwrap_err().message, "cannot reserve 0 object numbers");
+    let calls = fake.log_since(logged);
+    assert_eq!(calls.len(), 1);
+    assert_eq!(calls[0]["path"], "objectNumbers.reserve");
+    assert_eq!(calls[0]["args"], json!([0]));
     let reopened = AsEngine(fake).open(json!({"id":"a"}), None).peek().unwrap().unwrap();
     assert_eq!(reopened.take_object_number().unwrap(), Some(7));
 }
@@ -201,9 +209,9 @@ fn case_entropy_is_shared_across_uuid_versions_and_restored_on_unwind() {
         assert_eq!(generate_uuid_v7(Some(256.0)), "00000000-0100-7000-8000-000000000002");
         {
             let _nested = plugin_conformance::scenario::install_case_entropy();
-            assert_eq!(generate_uuid(), "00000000-0000-4000-8000-000000000001");
+            assert_eq!(generate_uuid(), "00000000-0000-4000-8000-000000000003");
         }
-        assert_eq!(generate_uuid(), "00000000-0000-4000-8000-000000000003");
+        assert_eq!(generate_uuid(), "00000000-0000-4000-8000-000000000004");
         panic!("unwind case");
     }));
     assert!(failed.is_err());

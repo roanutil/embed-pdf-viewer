@@ -1339,12 +1339,11 @@ impl Inner {
         let OpenOptions { activate, name, engine: mut engine_options } = options;
         let viewer = self.viewer_settings.get();
         for key in ["scope", "identity"] {
-            if engine_options.get(key).is_none_or(|v| v.is_null() || crate::is_undefined(v)) {
-                if let Some(value) =
+            if engine_options.get(key).is_none_or(|v| v.is_null() || crate::is_undefined(v))
+                && let Some(value) =
                     viewer.get(key).filter(|v| !v.is_null() && !crate::is_undefined(v))
-                {
-                    engine_options.insert(key.into(), value.clone());
-                }
+            {
+                engine_options.insert(key.into(), value.clone());
             }
         }
         let requested_id = reuse_id.unwrap_or_else(|| match &input {
@@ -2118,13 +2117,16 @@ impl Documents {
         out
     }
 
+    /// [`unlock`](Self::unlock) with the caller's signal: TS has one
+    /// `unlockDocument` taking it as an option, so the errors and the turn
+    /// the promise settles on are the same.
     pub fn unlock_with_signal(&self, id: &str, password: &str, signal: AbortSignal) -> Promise<()> {
         match self
             .inner()
             .and_then(|inner| inner.unlock_document_sync(id, password.into(), Some(signal)))
         {
-            Ok(p) => document_errors(p),
-            Err(e) => Promise::rejected(crate::error::to_plugin_error("documents", &e)),
+            Ok(promise) => promise,
+            Err(error) => Promise::rejected(error),
         }
     }
 

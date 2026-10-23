@@ -251,6 +251,13 @@ impl HarnessPlugin for DocumentsAdapter {
                 )
                 .unwrap_or(Value::Null),
             ),
+            // re-port (kernel print, owner pending in task-13-ledger-carries.md):
+            // the Rust kernel has no printer or print API. TS answers
+            // `printer !== null && allowsOn(id, 'doc.print')` (kernel.ts:738);
+            // the replayed vectors pass no printer, so false is that answer,
+            // not a check of the permission. preparePrint, print and
+            // getPrintQuality are listed members with no handler for the same
+            // reason.
             "canPrint" => Outcome::Returned(json!(false)),
             "canDownload" => {
                 Outcome::Returned(json!(docs.allows("doc.download", str_arg(&args, 0))))
@@ -476,10 +483,31 @@ impl epdf_kernel::clock::HostClock for ScenarioClock {
     }
 }
 
+thread_local! {
+    static CASE_ENTROPY: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
+/// Restores the UUID source on drop; a nested install holds none, so the
+/// outer case's sequence continues, as `installCaseEntropy` returns early
+/// when one is installed (case-entropy.ts:11).
+pub struct CaseEntropy(Option<epdf_kernel::identity::UuidSourceGuard>);
+
+impl Drop for CaseEntropy {
+    fn drop(&mut self) {
+        if let Some(guard) = self.0.take() {
+            drop(guard);
+            CASE_ENTROPY.with(|installed| installed.set(false));
+        }
+    }
+}
+
 /// One sequence shared by factories and kernel changes, restored on every exit.
-pub fn install_case_entropy() -> epdf_kernel::identity::UuidSourceGuard {
+pub fn install_case_entropy() -> CaseEntropy {
+    if CASE_ENTROPY.with(|installed| installed.replace(true)) {
+        return CaseEntropy(None);
+    }
     let sequence = std::cell::Cell::new(0_u32);
-    epdf_kernel::identity::with_uuid_source(
+    CaseEntropy(Some(epdf_kernel::identity::with_uuid_source(
         Rc::new(move |bytes| {
             let next = sequence.get().wrapping_add(1);
             sequence.set(next);
@@ -487,7 +515,7 @@ pub fn install_case_entropy() -> epdf_kernel::identity::UuidSourceGuard {
             bytes[12..].copy_from_slice(&next.to_be_bytes());
         }),
         Rc::new(rt::now),
-    )
+    )))
 }
 
 /// Replay one case.
@@ -569,8 +597,8 @@ pub fn run_case(case: &Value, registry: &Registry) -> Run {
         }
     };
 
-    // The TypeScript starts every step with a blank entry, so whatever the
-    // plugins logged while the kernel was being built is not in any step.
+    // Whatever the plugins logged while the kernel was being built stays in
+    // the first step's entry, as the TypeScript's first entry holds it.
     let snapshot_keys = case.get("snapshot");
     let mut trace = Vec::new();
     let mut logged = 0;

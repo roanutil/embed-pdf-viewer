@@ -234,6 +234,40 @@ fn wrong_password_parks_open_then_unlock_refreshes_security() {
     run(kernel.destroy()).unwrap();
 }
 #[test]
+fn unlock_with_signal_matches_unlock_errors_and_ts_settle_turns() {
+    fn turns(p: &Promise<()>) -> usize {
+        let count = Rc::new(Cell::new(0));
+        let (watched, counter) = (p.clone(), count.clone());
+        rt::spawn(async move {
+            while !watched.is_settled() {
+                counter.set(counter.get() + 1);
+                rt::tick().await;
+            }
+        });
+        rt::run_until_stalled();
+        count.get()
+    }
+    rt::reset();
+    let kernel = Kernel::new(Rc::new(TestEngine(doc(true))), vec![], options()).unwrap();
+    run(kernel.start()).unwrap();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    let plain = kernel.documents().unlock("doc", "wrong");
+    let plain_turns = turns(&plain);
+    let signal = epdf_kernel::signal::AbortSignal::new();
+    let signalled = kernel.documents().unlock_with_signal("doc", "wrong", signal.clone());
+    // TS `cancellable` re-settles a signalled call from `task.then`
+    // (cancellable.ts:31), one turn later than the bare call.
+    assert_eq!(turns(&signalled), plain_turns + 1);
+    assert_eq!(
+        signalled.peek().unwrap().unwrap_err().to_canonical(),
+        plain.peek().unwrap().unwrap_err().to_canonical()
+    );
+    run(kernel.destroy()).unwrap();
+    let plain = run(kernel.documents().unlock("doc", "right")).unwrap_err();
+    let signalled = run(kernel.documents().unlock_with_signal("doc", "right", signal)).unwrap_err();
+    assert_eq!(signalled.to_canonical(), plain.to_canonical());
+}
+#[test]
 fn close_revokes_retained_state_mirror_and_pending_change() {
     use epdf_kernel::{
         changes::StagedChange,

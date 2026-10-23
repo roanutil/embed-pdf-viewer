@@ -406,12 +406,17 @@ impl ProbeController {
                     .and_then(|s| s.downcast_ref::<Value>().cloned())
                     .unwrap_or(Value::Null),
             ),
-            "replaceState" | "mergeState" | "sameState" => {
-                if method != "sameState" {
-                    let value = arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined);
-                    let next = if method == "mergeState" { merge_state(cx, &value) } else { value };
-                    cx.lease().write(Rc::new(next));
-                }
+            "replaceState" | "mergeState" => {
+                let value = arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined);
+                let next = if method == "mergeState" { merge_state(cx, &value) } else { value };
+                cx.lease().write(Rc::new(next));
+                Outcome::undefined()
+            }
+            // `ctx.state.update(s => s)`: a write of the same state, which
+            // still reports a closed instance.
+            "sameState" => {
+                let lease = cx.lease();
+                lease.write(lease.read());
                 Outcome::undefined()
             }
             "document" => Outcome::Returned(cx.document().map_or(Value::Null, |d| json!(d))),
