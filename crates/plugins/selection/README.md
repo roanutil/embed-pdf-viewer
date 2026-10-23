@@ -7,15 +7,24 @@ and the `canSelect` / `canCopy` twins. Every case in the three vector files repl
 
 | File | Cases | Covers |
 |---|---|---|
-| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events with their origins, registry and content invalidation, permissions, the `dragThreshold` option |
-| `vectors/plugins/selection-geometry.json` | 290 | the coordinate seam, the engine-core text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceTextByChars`, the reducer |
+| `vectors/plugins/selection.json` | 34 | the handler through the hub, the gesture verbs, `select`, `selectPage`, `selectAll`, `readText` and `readTextInRange` with their batching and abort checks, the change, commit and clear events, registry and content invalidation, permissions, the `dragThreshold` setting |
+| `vectors/plugins/selection-geometry.json` | 288 | `pageGeometryOf`, `pdfPointOf`, `pageQuadOf`, `pageTextSegmentOf`, the page-space text layout (with sweeps over hit tests, ranges, line merges, char maps and frame handedness), `sliceText`, the model's transitions |
 | `vectors/plugins/selection-handles.json` | 43 | `selectionHandleGeom`, the handle drag session, the handle constants |
 
-Geometry and text reach the plugin from the fake engine's response table in the `engine-core`
-shapes (`PageGeometrySnapshot` with upright and rotated runs, `PageTextSnapshot` with a char map).
+Geometry and text reach the plugin from the fake engine's response table: `page.text.layout`
+answers a `$textLayout` marker holding a page-space `PageGeometrySnapshot` (Ruling 13.2), which
+the plugin builds into its own `TextLayout`, and `page.text.get` answers a `PageTextSnapshot` with a
+char map.
+
+As of Task 13.15 the selection replay passes only with one extra handle subscription standing in
+for the kernel's page mirror: `PageMirror` listens on the session's event fan-out, where the
+TypeScript mirror subscribes to `doc.events` itself (`packages/core/main/src/context.ts:216`), so
+every case's `engineState.a.subscribers` reads 3 where the vector has 4. The kernel repair is
+reported in `task-13.15-report.md`; this crate does not paper over it.
 
 ## Coverage
 
+Stale since Task 13.15 re-ported the controller (refreshed with the coverage metadata in Task 14).
 The generators reach 1,446 of the package's 1,447 statements and 287 of its 296 branches. None of
 the 9 missing branches, nor the one statement, is reachable from the public surface:
 
@@ -31,26 +40,39 @@ the 9 missing branches, nor the one statement, is reachable from the public surf
 
 ## The downstream API
 
-Annotation markup and redaction use the `/contract/host` and `/internal` entries. Here those are
-one type, `SelectionCapability`, resolved with `SELECTION`: the public methods (`select`,
-`get_snapshot`, `read_text`, `on_changed`, `on_committed`, `list_selected_pages`, `list_segments`,
-...) and the host ones (`ensure_loaded`, `begin_gesture`, `begin_gesture_at`, `extend_to`,
-`end_gesture`, `set_highlight_visible`, ...) sit side by side. `SelectionHostCapability` is an alias
-for it. `create_selection_controller`, `create_text_select_handler`, the model and the seam
-(`geometry`) are public, as `/internal` exports them. `harness::Selection` is public so a
-downstream crate's tests can register it. Those two downstream crates are not on v3 yet and do not
-build against this one.
+Annotation markup, redaction and the viewer host use the public contract and `/contract/host`.
+Here those are one type, `SelectionCapability`, resolved with `SELECTION`: the settings
+(`get_settings`, `update_settings`, `reset_settings`, `on_settings_changed`), the public methods
+(`select`, `get_snapshot`, `is_selecting`, `read_text`, `on_changed`, `list_segments`, ...) and the
+host ones (`ensure_loaded`, `begin_gesture_at`, `end_gesture`, `set_highlight_visible`, ...) sit
+side by side. `SelectionHostCapability` is an alias for it. A public verb takes a `PageRef` or an
+index (`impl Into<PageTarget>`), as the TypeScript's `PageRef | number`. Segments, endpoints and
+anchors carry named quads (`epdf_geometry::Quad`) and page-space `Rect`s. `text_layout` is public
+for search and redaction, which build the same layout (Ruling13.15). `harness::Selection` is public
+so a downstream crate's tests can register it. The migration map is in `task-13.15-report.md`.
 
 ## Where the port differs in shape
 
-`text_layout` is a second transcription of `engine-core`'s `text/layout.ts` and the
-`sliceTextByChars` half of `text/charmap.ts`. That is still true under v3, and for the same reason:
-`crates/epdf-engine` has the first copy in `src/features/text/layout.rs`, and that crate depends on
-`pdfium` unconditionally, which the plugin layer must not link. The cost is two Rust copies of one
-algorithm to keep in step. `selection-geometry.json` pins this one against the TypeScript,
-including every run variant (rotated, mirrored, sheared, all-empty, RTL). Glyph indices and range
-bounds are `i64`, because `selectAll` parks its open end at `Number.MAX_SAFE_INTEGER` and `select`
-accepts a negative start.
+`text_layout` is a second transcription of `engine-core`'s `text/layout.ts`, its page-space
+wrapper `createTextLayout` (`pageSpace/text.ts`) and `sliceText` (`text/charmap.ts`). The first is
+`crates/epdf-engine`'s (`src/features/text/layout.rs`, `src/page_space/text.rs`), and that crate
+links PDFium, which the plugins' wasm32 build must not (Ruling13.15, the same call as
+`annotation-core`'s `src/engine` and `form-core`). The cost is two copies of one algorithm to keep
+in step. Two things hold them there: `selection-geometry.json` pins this copy against the
+TypeScript, and `tests/engine_cross_check.rs` runs every page-space layout the selection vectors
+carry, plus a shared-edge tie, empty text and rotated and mirrored runs, through both copies on
+native hosts and asserts they agree within the vectors' one part in 10^12. The shared-edge
+tie-break (`dx + dy < best - EDGE_EPSILON`, `text/layout.ts:362`) is in both. The engine is a
+dev-dependency gated to non-wasm32 targets, so
+`cargo tree -p epdf-web --target wasm32-unknown-unknown -e normal -i pdfium-sys` still prints
+nothing.
+
+The copies differ in two places, both on input PDFium never produces. Glyph indices and range
+bounds are `i64` here, because `selectAll` parks its open end at `Number.MAX_SAFE_INTEGER` and a
+caller can start a range before the page. And runs whose `start`s don't tile the glyphs are read
+without indexing past them (S2): the engine's copy panics on the vector layouts
+`rotated-all-empty` and `char-start-past-the-glyphs`, so the cross-check skips those two and pins
+that it does.
 
 `read_text_in_range` slices UTF-16 code units, as `String.prototype.slice` does, so a
 supplementary-plane character behind a char map comes out whole. Its page reads mirror the
@@ -62,9 +84,9 @@ The selection writes return `Result`. `select_word_at`, `select_line_at`, `exten
 `can_select()` has answered true, so it drops those `Result`s. The `SelectionHandleTarget` impl on
 the capability drops `extend_to`'s for the same reason: `begin_gesture_at` answers false first.
 
-A page whose crop box has no area has no selection geometry here. The TypeScript's `pageGeometry`
-throws on it, and the throw would surface from `isOverText`, a hover, or `select`. No vector opens
-such a page.
+A `page.text.layout` answer that is neither a `$textLayout` marker nor a page-space snapshot reads
+as a page with no geometry: the page is loaded and nothing on it hits. The TypeScript would hold
+whatever the engine answered and throw when a method is called on it. No vector answers one.
 
 The two TypeScript tokens (the public one from the package root, the host one from
 `/contract/host`) are the same runtime object with two static types. Rust has one token and one
@@ -72,6 +94,7 @@ type.
 
 ## Mutation testing
 
+Stale since Task 13.15 rewrote `controller.rs`, `model.rs` and `text_layout.rs`; Task 14 reruns it.
 `scripts/mutants.sh -p epdf-plugin-selection --test-package epdf-plugin-selection --file <file>`,
 file by file over every module but `harness.rs`, catches 699 of 716 viable mutants (693 caught, 6
 timeouts; 79 unviable). Sixteen of those are killed by new cases, each checked by applying the
