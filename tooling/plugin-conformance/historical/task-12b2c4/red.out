@@ -1,0 +1,26 @@
+wrote crates/plugins/acrojs/prelude.js
+(node:30392) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✖ current hover driver calls the shipping pump with paired exit and enter triggers (577.759542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1363.149667
+
+✖ failing tests:
+
+test at test/actions-script-current.test.ts:1:822
+✖ current hover driver calls the shipping pump with paired exit and enter triggers (577.759542ms)
+  Error: [scenario] nothing pending as "d1"
+      at runSyncStep (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/scenario.ts:506:15)
+      at runStep (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/scenario.ts:492:3)
+      at runInstalled (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/scenario.ts:340:11)
+      at async runScenarioRaw (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/scenario.ts:208:12)
+      at async runScenario (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/scenario.ts:192:32)
+      at async TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/actions-script-current.test.ts:16:18)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3)

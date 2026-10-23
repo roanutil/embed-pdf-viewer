@@ -1,0 +1,49 @@
+(node:33478) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current hover driver calls the shipping pump with paired exit and enter triggers (668.3115ms)
+✔ script cases pin complete successful, inert, failed and budget outcomes independently (35.558792ms)
+✔ hover coalesces only intermediate targets and releases paired work atomically (7.402917ms)
+✖ hover compares stable object and base-index addresses and preserves current scope and source (4.287208ms)
+✔ scripts commit typed current form effects before annotation effects and skip failed streams (4.228ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 4
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2105.0525
+
+✖ failing tests:
+
+test at test/actions-script-current.test.ts:1:5735
+✖ hover compares stable object and base-index addresses and preserves current scope and source (4.287208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  ... Skipped lines
+
+    [
+      [
+        {
+          name: 'show',
+          next: [],
+  ...
+            },
+  +         kind: 'link',
+  -         kind: 'annotation',
+            page: {
+              kind: 'objectNumber',
+              objectNumber: 1
+            }
+          }
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/actions-script-current.test.ts:88:9)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ [ [Object], [Object] ], [ [Object], [Object] ], [ [Object], [Object] ] ],
+    expected: [ [ [Object], [Object] ], [ [Object], [Object] ], [ [Object], [Object] ] ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

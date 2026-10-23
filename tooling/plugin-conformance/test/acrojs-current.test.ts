@@ -571,7 +571,7 @@ test('shared scripted exports and complete deferred consumer inputs remain uncha
       );
     }
     const module = await import('../src/suites/' + saved.source + '.ts');
-    // C2 owns these three actions suites; the complete deferred 84 stay frozen.
+    // All actions suites use current inputs; other deferred consumers stay frozen.
     const deferred = (entry: { file: string }) =>
       saved.source !== 'actions' ||
       ![
@@ -580,6 +580,8 @@ test('shared scripted exports and complete deferred consumer inputs remain uncha
         'plugins/actions-submit.json',
         'plugins/actions-triggers.json',
         'plugins/actions-lifecycle.json',
+        'plugins/actions-script.json',
+        'plugins/actions-hover.json',
       ].includes(entry.file);
     assert.deepEqual(
       (module.suites ?? [])

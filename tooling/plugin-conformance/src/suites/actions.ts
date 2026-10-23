@@ -16,13 +16,19 @@
  * generator pins TZ=UTC), and the Rust port takes it as an input whose
  * default is zero.
  *
- * `javascript.sandbox: null` is the configuration of a host that has no
- * sandbox: the TypeScript runs with scripting disabled, and the Rust port
- * runs with `enabled: true` and no factory, which must behave identically.
+ * The actions registration preserves its link-consumer configuration.
+ * Active actions cases use the current fixture: enabled scripting with no
+ * factory override exposes the default realm. Default VM execution needs
+ * a loader outside the microtask-only scenario runner.
  */
 import { definePlugin, type AnyPlugin, type DocumentMeta } from '@embedpdf/core';
 import type { Annotation, AnnotationRef, DocumentActionsSnapshot, DocumentEvent, FormSubmissionEntry } from '@embedpdf/engine-core/runtime';
-import type { ScriptWorldInput } from '../../../../packages/core/acrojs/src/index';
+import { square as scriptSquare, stamp as scriptStamp, link as scriptLink, widget as scriptWidget } from './annotation-current-fixtures';
+import { combobox, placed }  from './form-current-fixtures';
+import type { FormEffect } from '@embedpdf/engine-core/runtime';
+import type { ScriptSurfaceResult, ScriptCommitSurface, ActionsHostCapability } from '../../../../packages/plugin/actions/src/host-contract';
+import type { FormFieldRef, Identity } from '@embedpdf/engine-core/runtime';
+import type { ScriptOutput, ScriptAnnotEffect, ScriptWorldInput } from '../../../../packages/core/acrojs/src/index';
 
 import { actionsPlugin } from '../../../../packages/plugin/actions/src/actions.plugin';
 import { createHoverPump, type HoverTarget } from '../../../../packages/plugin/actions/src/hover-pump';
@@ -35,6 +41,7 @@ import {
   type ActionTrigger,
   type ActionTriggerResult,
   type ActionSource,
+  type ActionContext,
   type PdfAnnotationEventKind,
   type DocumentTriggerEvent,
 } from '../../../../packages/plugin/actions/src/contract';
@@ -53,7 +60,7 @@ const UNSNAPSHOTTED_ACTIONS_DISPATCHER = {
 } as const;
 const UNSNAPSHOTTED_ACTIONS_HOVER = {
   snapshot: 'none',
-  reason: "The hover pump keeps its target in a closure and dispatches no actions. These cases compare the transitions it submits, logged as callbacks or as the actions engine calls they cause.",
+  reason: "The hover pump keeps its target in a closure. These cases compare submitted transitions, callback order and the actual actions dispatcher outcomes.",
 } as const;
 const UNSNAPSHOTTED_ACTIONS_SCRIPT = {
   snapshot: 'none',
@@ -153,7 +160,7 @@ function hoverPumpDriver(config: HoverPumpConfig, env: PluginEnv): AnyPlugin {
     token,
     scope: 'document',
     ...(config.dispatch === 'actions' ? { requires: [ActionsToken] } : {}),
-    capability: (ctx) => {
+    create: (ctx) => {
       const dispatch =
         config.dispatch === 'actions'
           ? (trigger: ActionTrigger) => ctx.get(ActionsToken).dispatch(trigger)
@@ -161,12 +168,20 @@ function hoverPumpDriver(config: HoverPumpConfig, env: PluginEnv): AnyPlugin {
               trigger: ActionTrigger,
             ) => Promise<ActionTriggerResult>);
       const pump = createHoverPump(dispatch);
-      return { hover: (target: HoverTarget | null) => pump.hover(target), reset: () => pump.reset() };
+      ctx.cleanup(() => pump.reset());
+      return {
+        api: {
+          hover: (target: HoverTarget | null) => pump.hover(target),
+          reset: () => pump.reset(),
+        },
+      };
     },
   });
 }
 
-registerPlugin('hover-pump', { factory: (config, env) => hoverPumpDriver(config as HoverPumpConfig, env) });
+registerPlugin('hover-pump', {
+  factory: (config, env) => hoverPumpDriver(config as HoverPumpConfig, env),
+});
 
 /** A sibling that mints a DETACHED realm for its own document from the
  *  actions plugin of `owner` (default `a`), as the stamp plugin does for an
@@ -189,23 +204,38 @@ registerPlugin('detached-realm', {
       token: env.token('detached-realm'),
       scope: 'document',
       optional: [ActionsToken],
-      capability: (ctx) => {
+      create: (ctx) => {
         let realm: DetachedScriptRealm | null = null;
+        const documentRealm = ctx.tryGet(ActionsToken)?.scriptRealm;
+        ctx.cleanup(() => realm?.dispose());
         return {
-          mint: () => {
-            const mintRealm = ctx.tryForDocument(ActionsToken, owner)?.createDetachedScriptRealm;
-            if (!mintRealm) return null;
-            realm = mintRealm({
-              doc: ctx.doc!,
-              document: () => (meta === undefined ? ctx.document() : meta),
-              bootSources: bootSources
-                ? (scriptedCallback(bootSources.$fn, bootSources, env) as () => Promise<string[]>)
-                : async () => [],
-            });
-            return realm;
+          api: {
+            transaction: () => documentRealm?.transaction(async () => 'body-result'),
+            transactionThrows: () =>
+              documentRealm?.transaction(async () => {
+                throw new Error('body threw');
+              }),
+            detachedTransaction: () => realm?.transaction(async () => 'body-result'),
+            dispose: () => realm?.dispose(),
+            mint: () => {
+              const mintRealm = ctx.tryForDocument(ActionsToken, owner)?.createDetachedScriptRealm;
+              if (!mintRealm) return null;
+              realm?.dispose();
+              realm = mintRealm({
+                doc: ctx.doc!,
+                document: () => (meta === undefined ? ctx.document() : meta),
+                bootSources: bootSources
+                  ? (scriptedCallback(bootSources.$fn, bootSources, env) as () => Promise<string[]>)
+                  : async () => [],
+              });
+              return realm;
+            },
+            run: (program: string) =>
+              realm!.transaction(async (txn) => ({
+                boot: await txn.boot(EMPTY_WORLD),
+                run: await txn.run(program, EMPTY_WORLD),
+              })),
           },
-          run: (program: string) =>
-            realm!.transaction(async (txn) => ({ boot: await txn.boot(EMPTY_WORLD), run: await txn.run(program, EMPTY_WORLD) })),
         };
       },
     });
@@ -2015,126 +2045,212 @@ const docEventCases: ScenarioCase[] = [
 
 // ── scripting ─────────────────────────────────────────────────────────────────
 
-const JS_OFF = (over: Partial<HarnessJavaScript> = {}): HarnessConfig => ({
+const realmCall = (method: string, document = 'b'): Step => ({
+  op: 'call',
+  target: { token: 'detached-realm', doc: document },
+  method,
+  args: [],
+});
+const JS_OFF = (over: Partial<current.CurrentJavaScript> = {}): current.CurrentConfig => ({
   openSequence: 'off',
   javascript: { enabled: true, sandbox: {}, ...over },
 });
-const scriptAnnots = [
-  annot(1, 6, undefined, {
+const scriptAnnots: Annotation[] = [
+  scriptSquare(6, {
     nm: 'tip',
     contents: 'hello',
     author: 'Ada',
     subject: 'Note',
-    color: { r: 255, g: 0, b: 51 },
+    color: '#ff0033',
     interiorColor: null,
     opacity: 0.5,
     strokeWidth: 2,
     borderStyle: 'dashed',
     dashArray: [3, 1],
-    flags: { hidden: true, print: false, readOnly: true, locked: true, noView: false, toggleNoView: true },
+    hidden: true,
+    print: false,
+    readOnly: true,
+    locked: true,
+    noView: false,
+    toggleNoView: true,
   }),
-  annot(1, 7, undefined, { subtype: 'link' }),
-  annot(1, 8, undefined, { subtype: 'widget-text' }),
-  annot(1, 9, undefined, { subtype: 'stamp', interiorColor: { r: 0, g: 128, b: 255 } }),
+  scriptLink(7),
+  scriptWidget(8, 'text'),
+  scriptStamp(9),
 ];
 const scriptFields = [
-  formField('name', 100, [41]),
-  formField('choice', 101, [42], { family: 'combobox', options: [{ label: 'One', value: '1' }], valueEntry: { kind: 'array', values: ['1'] } }),
-  formField('empty', 102, [43], { valueEntry: { kind: 'none' } }),
+  current.formField('name', 100, [41]),
+  combobox(101, 'choice', '1', {
+    widgets: [placed(42)],
+    options: [{ label: 'One', value: '1', selected: true }],
+    valueEntry: { kind: 'array', values: ['1'] },
+  }),
+  current.formField('empty', 102, [43], { valueEntry: { kind: 'none' } }),
 ];
-const scriptEngine = (over: Partial<FakeDocumentSpec> = {}, catalogOver: Record<string, unknown> = {}) =>
-  engineWith({
+const scriptEngine = (
+  over: Partial<FakeDocumentSpec> = {},
+  catalogOver: Partial<DocumentActionsSnapshot> = {},
+) =>
+  current.engineWith({
     services: ['actions', 'forms.submit'],
-    security: { allows: '*', identity: { user_id: 'u-1', display_name: 'Ada', group_id: 'g-1' } },
+    security: {
+      allows: '*',
+      identity: { userId: 'u-1', displayName: 'Ada', groupId: 'g-1' } satisfies Identity,
+    },
     ...over,
     responses: [
       ...(over.responses ?? []),
-      forms(scriptFields),
-      annotations(1, scriptAnnots),
-      catalog({ nameTreeScripts: [{ name: 'lib', action: tree(js('function lib() {}', [js('var x = 1;')])) }], ...catalogOver }),
-      { path: 'forms.submit', value: { submissionId: 's', receivedAt: 'now' } },
+      current.forms(scriptFields),
+      current.annotations(1, scriptAnnots),
+      current.catalog({
+        nameTreeScripts: [
+          {
+            name: 'lib',
+            action: current.tree(current.js('function lib() {}', [current.js('var x = 1;')])),
+          },
+        ],
+        ...catalogOver,
+      }),
+      { path: 'forms.submit', value: current.receipt('s') },
     ],
   });
-const widgetCtx = (field: unknown, event: unknown = { scope: 'activate' }) => ({
+const widgetCtx = (
+  field: FormFieldRef,
+  event: ActionContext['event'] = { scope: 'activate' },
+): ActionContext => ({
   origin: 'user',
-  source: { kind: 'widget', field, annotation: aref(1, 41), page: pr(1) },
+  source: { kind: 'widget', field, annotation: current.aref(1, 41), page: current.pr(1) },
   event,
 });
-const out = (over: Record<string, unknown>) => ({ output: over });
+const out = (over: Partial<ScriptOutput>) => ({ output: over });
 const sinks = [
-  cap('registerFormCommitSink', fnSpec('sink.form', FORM_OK(1))),
-  cap('registerAnnotCommitSink', fnSpec('sink.annot', ANNOT_OK([6]))),
+  cap('registerFormCommitSink', fnSpec('sink.form', current.FORM_OK())),
+  cap('registerAnnotCommitSink', fnSpec('sink.annot', current.ANNOT_OK([6]))),
 ];
-const formEffect = { kind: 'setValue', ref: { kind: 'objectNumber', fieldObjectNumber: 100 }, value: 'x' };
-const annotEffect = (ref: unknown = aref(1, 6)) => ({ ref, patch: { strokeColor: ['RGB', 0.1, 0.2, 0.3], contents: 'Annot:Mouse Enter' } });
+const formEffect: FormEffect = {
+  kind: 'setValue',
+  ref: { kind: 'objectNumber', objectNumber: 100 },
+  value: { value: 'x' },
+};
+const annotEffect = (ref: AnnotationRef = current.aref(1, 6)): ScriptAnnotEffect => ({
+  ref,
+  patch: { strokeColor: ['RGB', 0.1, 0.2, 0.3], contents: 'Annot:Mouse Enter' },
+});
 
 const scriptCases: ScenarioCase[] = [
   {
     name: 'a-script-node-is-one-transaction',
     covers:
       'The javascript executor prefetches the page world (fields, script-addressable annots with their styles and defaults), boots the name tree once, runs the node with Field x Mouse Up and the target value, and commits form effects then annotation effects.',
-    plugins: plugins(JS_OFF({ identity: { email: 'ada@x.test' }, fileName: fnSpec('fileName', { returns: 'report.pdf' }) })),
+    plugins: current.plugins(
+      JS_OFF({
+        identity: { email: 'ada@x.test' },
+        fileName: fnSpec('fileName', { returns: 'report.pdf' }),
+      }),
+    ),
     engine: scriptEngine(),
     steps: [
       start,
       open('a', { name: 'Named.pdf' }),
       ...sinks,
-      listen(),
-      listen('onScriptDiagnostic'),
+      listen('onDiagnosticReported'),
+      listen('onScriptDiagnosticReported'),
       cap(
         'execute',
-        tree(js('event.value')),
-        widgetCtx({ kind: 'objectNumber', fieldObjectNumber: 100 }),
+        current.tree(current.js('event.value')),
+        widgetCtx({ kind: 'objectNumber', objectNumber: 100 }),
       ),
     ],
     snapshot: snap,
   },
   {
     name: 'script-effects-commit',
-    covers: 'Form effects reach the form sink and annotation effects the annotation sink (object-number refs with their page, other refs as -1 without one).',
-    plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [out({ formEffects: [formEffect], annotEffects: [annotEffect(), annotEffect(nmRef(1, 'tip'))] })] }] } })),
+    covers:
+      'Form effects reach the form sink and annotation effects the annotation sink (object-number refs with their page, other refs as -1 without one).',
+    plugins: current.plugins(
+      JS_OFF({
+        sandbox: {
+          builds: [
+            {
+              run: [
+                out({
+                  formEffects: [formEffect],
+                  annotEffects: [
+                    annotEffect(),
+                    annotEffect({ kind: 'baseIndex', page: current.pr(1), baseIndex: 0 }),
+                  ],
+                }),
+              ],
+            },
+          ],
+        },
+      }),
+    ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
-    steps: [...boot, ...sinks, listen(), cap('execute', tree(js('commit()')), USER)],
+    steps: [
+      ...boot,
+      ...sinks,
+      listen('onDiagnosticReported'),
+      cap('execute', current.tree(current.js('commit()')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'script-commit-failures',
     covers:
       'No form sink drops form effects with no-commit-sink; a form failure skips the annotation effects; no annotation sink drops them; an annotation failure fails the node.',
-    plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [out({ formEffects: [formEffect], annotEffects: [annotEffect()] })] }] } })),
+    plugins: current.plugins(
+      JS_OFF({
+        sandbox: {
+          builds: [{ run: [out({ formEffects: [formEffect], annotEffects: [annotEffect()] })] }],
+        },
+      }),
+    ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
     steps: [
       ...boot,
-      listen(),
-      cap('execute', tree(js('a()')), USER),
+      listen('onDiagnosticReported'),
+      cap('execute', current.tree(current.js('a()')), current.USER),
       cap(
         'registerFormCommitSink',
         fnSpec('sink.form', {
+          seq: [current.formFailure('value refused'), current.formFailure(), current.FORM_OK()],
+        }),
+      ),
+      cap('execute', current.tree(current.js('b()')), current.USER),
+      cap('execute', current.tree(current.js('c()')), current.USER),
+      cap('execute', current.tree(current.js('d()')), current.USER),
+      cap(
+        'registerAnnotCommitSink',
+        fnSpec('sink.annot', {
           seq: [
-            { returns: { results: [{ index: 0, status: 'failed', error: { message: 'value refused' } }], changedWidgets: [], meta: null } },
-            { returns: { results: [{ index: 0, status: 'rejected' }], changedWidgets: [], meta: null } },
-            FORM_OK(1),
+            { returns: { results: [{ annotObjectNumber: 6, status: 'failed', error: 'locked' }] } },
+            { returns: { results: [{ annotObjectNumber: 6, status: 'failed' }] } },
           ],
         }),
       ),
-      cap('execute', tree(js('b()')), USER),
-      cap('execute', tree(js('c()')), USER),
-      cap('execute', tree(js('d()')), USER),
-      cap('registerAnnotCommitSink', fnSpec('sink.annot', { seq: [{ returns: { results: [{ annotObjectNumber: 6, status: 'failed', error: 'locked' }] } }, { returns: { results: [{ annotObjectNumber: 6, status: 'failed' }] } }] })),
-      cap('execute', tree(js('e()')), USER),
-      cap('execute', tree(js('f()')), USER),
+      cap('execute', current.tree(current.js('e()')), current.USER),
+      cap('execute', current.tree(current.js('f()')), current.USER),
     ],
     snapshot: snap,
   },
   {
     name: 'boot-effects-and-a-refetched-world',
-    covers: 'A boot that stages effects commits them in the first transaction, surfaces its UI effects as phase boot, and the run sees a refetched world; later nodes do not boot again.',
-    plugins: plugins(
+    covers:
+      'A boot that stages effects commits them in the first transaction, surfaces its UI effects as phase boot, and the run sees a refetched world; later nodes do not boot again.',
+    plugins: current.plugins(
       JS_OFF({
         sandbox: {
           builds: [
             {
-              boot: [out({ formEffects: [formEffect], uiEffects: [{ kind: 'alert', message: 'booted', icon: 3 }], diagnostics: [{ code: 'unsupported-api', message: 'app.beep' }], error: { kind: 'exception', message: 'boot threw', stack: 'at boot' } })],
+              boot: [
+                out({
+                  formEffects: [formEffect],
+                  uiEffects: [{ kind: 'alert', message: 'booted', icon: 3 }],
+                  diagnostics: [{ code: 'unsupported-api', message: 'app.beep' }],
+                  error: { kind: 'exception', message: 'boot threw', stack: 'at boot' },
+                }),
+              ],
             },
           ],
         },
@@ -2145,30 +2261,47 @@ const scriptCases: ScenarioCase[] = [
       ...boot,
       ...sinks,
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert') })),
-      listen('onScriptDiagnostic'),
-      listen('onScriptError'),
-      cap('execute', tree(js('a()', [js('b()')])), USER),
+      listen('onScriptDiagnosticReported'),
+      listen('onScriptFailed'),
+      cap('execute', current.tree(current.js('a()', [current.js('b()')])), current.USER),
     ],
     snapshot: snap,
   },
   {
     name: 'boot-without-effects',
     covers: 'A boot output with nothing to commit does not refetch the world.',
-    plugins: plugins(JS_OFF({ sandbox: { builds: [{ boot: [out({ diagnostics: [{ code: 'script-error', message: 'boot warned' }] })] }] } })),
+    plugins: current.plugins(
+      JS_OFF({
+        sandbox: {
+          builds: [
+            { boot: [out({ diagnostics: [{ code: 'script-error', message: 'boot warned' }] })] },
+          ],
+        },
+      }),
+    ),
     engine: scriptEngine(),
-    steps: [...boot, listen('onScriptDiagnostic'), cap('execute', tree(js('a()')), USER)],
+    steps: [
+      ...boot,
+      listen('onScriptDiagnosticReported'),
+      cap('execute', current.tree(current.js('a()')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'run-errors-and-diagnostics',
-    covers: 'A run error fails the node with its message, after its diagnostics and error reach the script hooks; its effects are not committed.',
-    plugins: plugins(
+    covers:
+      'A run error fails the node with its message, after its diagnostics and error reach the script hooks; its effects are not committed.',
+    plugins: current.plugins(
       JS_OFF({
         sandbox: {
           builds: [
             {
               run: [
-                out({ formEffects: [formEffect], diagnostics: [{ code: 'blocked-network', message: 'fetch refused' }], error: { kind: 'budget', message: 'interrupted: time budget' } }),
+                out({
+                  formEffects: [formEffect],
+                  diagnostics: [{ code: 'blocked-network', message: 'fetch refused' }],
+                  error: { kind: 'budget', message: 'interrupted: time budget' },
+                }),
                 out({ error: { kind: 'invalid-output', message: 'output too large' } }),
               ],
             },
@@ -2177,13 +2310,22 @@ const scriptCases: ScenarioCase[] = [
       }),
     ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
-    steps: [...boot, ...sinks, listen(), listen('onScriptDiagnostic'), listen('onScriptError'), cap('execute', tree(js('a()')), USER), cap('execute', tree(js('b()')), USER)],
+    steps: [
+      ...boot,
+      ...sinks,
+      listen('onDiagnosticReported'),
+      listen('onScriptDiagnosticReported'),
+      listen('onScriptFailed'),
+      cap('execute', current.tree(current.js('a()')), current.USER),
+      cap('execute', current.tree(current.js('b()')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'external-effects-run-after-the-transaction',
-    covers: 'print and submitForm UI effects from boot and run are held back and fired after the transaction (print through will-print/adapter/did-print, submit through the sink chain); alert and gotoPage surface inline.',
-    plugins: plugins(
+    covers:
+      'print and submitForm UI effects from boot and run are held back and fired after the transaction (print through will-print/adapter/did-print, submit through the sink chain); alert and gotoPage surface inline.',
+    plugins: current.plugins(
       JS_OFF({
         sandbox: {
           builds: [
@@ -2193,7 +2335,14 @@ const scriptCases: ScenarioCase[] = [
                 out({
                   uiEffects: [
                     { kind: 'gotoPage', page: 2 },
-                    { kind: 'submitForm', url: 'https://s.test/', fieldNames: ['name', 'choice'], includeEmpty: true, format: 'xfdf', method: 'get' },
+                    {
+                      kind: 'submitForm',
+                      url: 'https://s.test/',
+                      fieldNames: ['name', 'choice'],
+                      includeEmpty: true,
+                      format: 'xfdf',
+                      method: 'get',
+                    },
                     { kind: 'alert', message: 'hi', icon: 1, title: 'T' },
                     { kind: 'print' },
                   ],
@@ -2208,93 +2357,188 @@ const scriptCases: ScenarioCase[] = [
     steps: [
       ...boot,
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
-      cap('registerSubmitResolver', resolverEcho()),
+      cap('registerSubmitResolver', current.resolverEcho()),
       cap('setSubmitHandler', fnSpec('handler')),
-      cap('execute', tree(js('a()')), USER),
+      cap('execute', current.tree(current.js('a()')), current.USER),
     ],
     snapshot: snap,
   },
   {
     name: 'script-print-obeys-the-print-policy',
-    covers: "A script's print() is gated by the print policy row for the dispatch origin: under the defaults a lifecycle script's print is blocked before the adapter, and a user script's still prints.",
-    plugins: plugins(
+    covers:
+      "A script's print() is gated by the print policy row for the dispatch origin: under the defaults a lifecycle script's print is blocked before the adapter, and a user script's still prints.",
+    plugins: current.plugins(
       JS_OFF({ sandbox: { builds: [{ run: [out({ uiEffects: [{ kind: 'print' }] })] }] } }),
     ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
     steps: [
       ...boot,
-      listen(),
+      listen('onDiagnosticReported'),
       cap('setUiAdapter', adapter()),
-      cap('execute', tree(js('this.print()')), LIFECYCLE),
-      cap('execute', tree(js('this.print()')), USER),
+      cap('execute', current.tree(current.js('this.print()')), current.LIFECYCLE),
+      cap('execute', current.tree(current.js('this.print()')), current.USER),
     ],
     snapshot: snap,
   },
   {
     name: 'script-node-budget',
-    covers: 'maxScriptNodesPerDispatch caps JS nodes per dispatch: the rest are inert with the budget reason, and the next dispatch starts a fresh count.',
-    plugins: plugins(JS_OFF({ maxScriptNodesPerDispatch: 2 })),
+    covers:
+      'maxScriptNodesPerDispatch caps JS nodes per dispatch: the rest are inert with the budget reason, and the next dispatch starts a fresh count.',
+    plugins: current.plugins(JS_OFF({ maxScriptNodesPerDispatch: 2 })),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
-    steps: [...boot, listen(), cap('execute', tree(js('1', [js('2', [js('3', [js('4')])])])), USER), cap('execute', tree(js('5')), USER)],
+    steps: [
+      ...boot,
+      listen('onDiagnosticReported'),
+      cap(
+        'execute',
+        current.tree(current.js('1', [current.js('2', [current.js('3', [current.js('4')])])])),
+        current.USER,
+      ),
+      cap('execute', current.tree(current.js('5')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'script-event-provenance',
     covers:
       'event.type and event.name from the trigger provenance: Field, Link, Annot, Page, Doc, and every annotation, page and document event name; a widget target by object number or name, with a value only for a scalar.',
-    plugins: plugins(JS_OFF()),
+    plugins: current.plugins(JS_OFF()),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
     steps: [
       ...boot,
-      ...[
-        widgetCtx({ kind: 'objectNumber', fieldObjectNumber: 101 }),
-        widgetCtx({ kind: 'fqn', name: 'name' }, { scope: 'annotation', name: 'focus' }),
-        widgetCtx({ kind: 'fqn', name: 'ghost' }),
-        widgetCtx({ kind: 'objectNumber', fieldObjectNumber: 102 }),
-        widgetCtx({ kind: 'fqn', name: 'empty' }),
-        { origin: 'hover', source: { kind: 'link', annotation: aref(1, 7), page: pr(1) }, event: { scope: 'annotation', name: 'cursorEnter' } },
-        { origin: 'hover', source: { kind: 'link', annotation: aref(2, 7), page: pr(2) }, event: { scope: 'annotation', name: 'cursorEnter' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(2, 6), page: pr(2) }, event: { scope: 'annotation', name: 'mouseDown' } },
-        { origin: 'hover', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'cursorExit' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'mouseDown' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'mouseUp' } },
-        { origin: 'user', source: { kind: 'annotation', annotation: aref(1, 6), page: pr(1) }, event: { scope: 'annotation', name: 'blur' } },
-        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'open' } },
-        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'close' } },
-        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'visible' } },
-        { origin: 'lifecycle', source: { kind: 'page', page: pr(2) }, event: { scope: 'page', name: 'invisible' } },
-        { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'open' } },
-        { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'will-save' } },
-        { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'did-save' } },
-        { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'will-print' } },
-        { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'did-print' } },
-        { origin: 'lifecycle', source: { kind: 'document' }, event: { scope: 'document', name: 'will-close' } },
-        { origin: 'user', source: { kind: 'link' }, event: { scope: 'activate' } },
-        { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
-      ].map((ctx) => cap('execute', tree(js('probe()')), ctx)),
+      ...(
+        [
+          widgetCtx({ kind: 'objectNumber', objectNumber: 101 }),
+          widgetCtx({ kind: 'fqn', name: 'name' }, { scope: 'annotation', name: 'focus' }),
+          widgetCtx({ kind: 'fqn', name: 'ghost' }),
+          widgetCtx({ kind: 'objectNumber', objectNumber: 102 }),
+          widgetCtx({ kind: 'fqn', name: 'empty' }),
+          {
+            origin: 'hover',
+            source: { kind: 'link', annotation: current.aref(1, 7), page: current.pr(1) },
+            event: { scope: 'annotation', name: 'cursorEnter' },
+          },
+          {
+            origin: 'hover',
+            source: { kind: 'link', annotation: current.aref(2, 7), page: current.pr(2) },
+            event: { scope: 'annotation', name: 'cursorEnter' },
+          },
+          {
+            origin: 'user',
+            source: { kind: 'annotation', annotation: current.aref(2, 6), page: current.pr(2) },
+            event: { scope: 'annotation', name: 'mouseDown' },
+          },
+          {
+            origin: 'hover',
+            source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
+            event: { scope: 'annotation', name: 'cursorExit' },
+          },
+          {
+            origin: 'user',
+            source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
+            event: { scope: 'annotation', name: 'mouseDown' },
+          },
+          {
+            origin: 'user',
+            source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
+            event: { scope: 'annotation', name: 'mouseUp' },
+          },
+          {
+            origin: 'user',
+            source: { kind: 'annotation', annotation: current.aref(1, 6), page: current.pr(1) },
+            event: { scope: 'annotation', name: 'blur' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'page', page: current.pr(2) },
+            event: { scope: 'page', name: 'open' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'page', page: current.pr(2) },
+            event: { scope: 'page', name: 'close' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'page', page: current.pr(2) },
+            event: { scope: 'page', name: 'visible' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'page', page: current.pr(2) },
+            event: { scope: 'page', name: 'invisible' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'document' },
+            event: { scope: 'document', name: 'open' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'document' },
+            event: { scope: 'document', name: 'will-save' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'document' },
+            event: { scope: 'document', name: 'did-save' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'document' },
+            event: { scope: 'document', name: 'will-print' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'document' },
+            event: { scope: 'document', name: 'did-print' },
+          },
+          {
+            origin: 'lifecycle',
+            source: { kind: 'document' },
+            event: { scope: 'document', name: 'will-close' },
+          },
+          { origin: 'user', source: { kind: 'link' }, event: { scope: 'activate' } },
+          { origin: 'user', source: { kind: 'api' }, event: { scope: 'activate' } },
+        ] satisfies ActionContext[]
+      ).map((ctx) => cap('execute', current.tree(current.js('probe()')), ctx)),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'no-page-to-anchor',
     covers: 'A document with no pages has nothing to anchor the world on: the node is inert.',
-    plugins: plugins(JS_OFF()),
+    plugins: current.plugins(JS_OFF()),
     engine: scriptEngine({ pages: [] }),
-    steps: [...boot, listen(), cap('execute', tree(js('a()')), USER)],
+    steps: [
+      ...boot,
+      listen('onDiagnosticReported'),
+      cap('execute', current.tree(current.js('a()')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'an-unknown-page-fails-the-node',
-    covers: 'A source page that is not in the document makes the world read throw; the transaction rejects and the node fails.',
-    plugins: plugins(JS_OFF()),
+    covers:
+      'A source page that is not in the document makes the world read throw; the transaction rejects and the node fails.',
+    plugins: current.plugins(JS_OFF()),
     engine: scriptEngine(),
-    steps: [...boot, listen(), cap('execute', tree(js('a()')), { origin: 'lifecycle', source: { kind: 'page', page: pr(42) }, event: { scope: 'page', name: 'open' } })],
+    steps: [
+      ...boot,
+      listen('onDiagnosticReported'),
+      cap('execute', current.tree(current.js('a()')), {
+        origin: 'lifecycle',
+        source: { kind: 'page', page: current.pr(42) },
+        event: { scope: 'page', name: 'open' },
+      }),
+    ],
     snapshot: snap,
   },
   {
     name: 'environment-inputs',
-    covers: 'Configured now, UTC offset, seed, file name and a function identity reach every input; the defaults are the clock, zero, the FNV seed and the open name.',
-    plugins: plugins(
+    covers:
+      'Configured now, UTC offset, seed, file name and a function identity reach every input; the defaults are the clock, zero, the FNV seed and the open name.',
+    plugins: current.plugins(
       JS_OFF({
         now: fnSpec('now', { returns: 1720000000000 }),
         utcOffsetMinutes: fnSpec('utcOffsetMinutes', { returns: 180 }),
@@ -2303,168 +2547,292 @@ const scriptCases: ScenarioCase[] = [
       }),
     ),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER)],
+    steps: [...boot, cap('execute', current.tree(current.js('a()')), current.USER)],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'environment-defaults',
-    covers: 'With nothing configured: Date.now() from the clock, a zero offset, seedFrom(documentId, sequence), the name the document was opened with, and the engine identity.',
-    plugins: plugins(JS_OFF()),
+    covers:
+      'With nothing configured: Date.now() from the clock, a zero offset, seedFrom(documentId, sequence), the name the document was opened with, and the engine identity.',
+    plugins: current.plugins(JS_OFF()),
     engine: scriptEngine(),
-    steps: [start, open('a', { name: 'Opened.pdf' }), { op: 'advance', ms: 2500 }, cap('execute', tree(js('a()', [js('b()')])), USER)],
+    steps: [
+      start,
+      open('a', { name: 'Opened.pdf' }),
+      { op: 'advance', ms: 2500 },
+      cap('execute', current.tree(current.js('a()', [current.js('b()')])), current.USER),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'environment-file-name-fallback',
     covers: 'A document opened without a name is document.pdf to scripts.',
-    plugins: plugins(JS_OFF()),
+    plugins: current.plugins(JS_OFF()),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER)],
+    steps: [...boot, cap('execute', current.tree(current.js('a()')), current.USER)],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'a-fault-rebuilds-the-realm',
     covers: 'A sandbox that faults during a run is rebuilt and booted again for the next node.',
-    plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [{ dispose: true }] }, {}] } })),
+    plugins: current.plugins(JS_OFF({ sandbox: { builds: [{ run: [{ dispose: true }] }, {}] } })),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER), cap('execute', tree(js('b()')), USER)],
+    steps: [
+      ...boot,
+      cap('execute', current.tree(current.js('a()')), current.USER),
+      cap('execute', current.tree(current.js('b()')), current.USER),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'a-throwing-sandbox-fails-the-node',
     covers: 'A sandbox run that throws rejects the transaction; the node fails with the message.',
-    plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [{ throws: { message: 'vm exploded' } }] }] } })),
+    plugins: current.plugins(
+      JS_OFF({ sandbox: { builds: [{ run: [{ throws: { message: 'vm exploded' } }] }] } }),
+    ),
     engine: scriptEngine({}, { nameTreeScripts: [] }),
-    steps: [...boot, listen(), cap('execute', tree(js('a()')), USER)],
+    steps: [
+      ...boot,
+      listen('onDiagnosticReported'),
+      cap('execute', current.tree(current.js('a()')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'budget-reaches-the-sandbox',
     covers: 'A configured budget is the host default for every boot and run.',
-    plugins: plugins(JS_OFF({ budget: { maxExecutionMs: 5, maxMemoryBytes: 1024, maxStackBytes: 256, maxEffects: 2, maxOutputBytes: 64 } })),
+    plugins: current.plugins(
+      JS_OFF({
+        budget: {
+          maxExecutionMs: 5,
+          maxMemoryBytes: 1024,
+          maxStackBytes: 256,
+          maxEffects: 2,
+          maxOutputBytes: 64,
+        },
+      }),
+    ),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER)],
+    steps: [...boot, cap('execute', current.tree(current.js('a()')), current.USER)],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'no-sandbox-host',
-    covers: 'A host with no sandbox (the TypeScript with scripting disabled): javascript nodes are inert, scripting unavailable, and the capability has no scriptRealm member.',
-    plugins: plugins({ openSequence: 'off', javascript: { enabled: true, sandbox: null } }),
+    covers:
+      'Enabled scripting without a factory override exposes the default realm and actual settings. Close disposes it and refuses a new transaction; default-VM execution requires a host loader outside this runner.',
+    plugins: [
+      ...current.plugins({ openSequence: 'off', javascript: { enabled: true, sandbox: null } }),
+      { factory: 'detached-realm' },
+    ],
     engine: scriptEngine(),
-    steps: [...boot, listen(), cap('execute', tree(js('a()')), USER), { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'actions' }, 'a'] }],
+    steps: [
+      ...boot,
+      cap('isScriptingEnabled'),
+      cap('getSettings'),
+      {
+        op: 'call',
+        target: 'kernel',
+        method: 'capability',
+        args: [{ $token: 'detached-realm' }, 'a'],
+      },
+      close(),
+      callRef(0),
+    ],
     snapshot: snap,
   },
   {
     name: 'script-transaction-port',
-    covers: 'With scripting on, the host lens has scriptRealm.transaction: a body shares the realm queue with the executor and resolves with the body result.',
-    plugins: plugins(JS_OFF({ sandbox: { builds: [{ run: [{}] }] } })),
+    covers:
+      'With scripting on, the host lens has scriptRealm.transaction: a body shares the realm queue with the executor and resolves with the body result.',
+    plugins: [
+      ...current.plugins(JS_OFF({ sandbox: { builds: [{ run: [{}] }] } })),
+      { factory: 'detached-realm' },
+    ],
     engine: scriptEngine(),
     steps: [
       ...boot,
       { op: 'call', target: 'kernel', method: 'capability', args: [{ $token: 'actions' }, 'a'] },
-      cap('execute', tree(js('a()')), USER),
-      // ref 8 is `scriptRealm.transaction` in the capability read above.
-      callRef(8, fnSpec('body', { resolves: 'body-result' })),
-      callRef(8, fnSpec('body.throws', { throws: { message: 'body threw' } })),
+      cap('execute', current.tree(current.js('a()')), current.USER),
+      realmCall('transaction', 'a'),
+      realmCall('transactionThrows', 'a'),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'closing-the-document-disposes-the-realm',
     covers: 'Closing the document disposes the script realm and releases the event subscription.',
-    plugins: plugins(JS_OFF()),
+    plugins: current.plugins(JS_OFF()),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER), close()],
+    steps: [...boot, cap('execute', current.tree(current.js('a()')), current.USER), close()],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'script-boot-without-a-catalog',
-    covers: 'A scripted document without the actions service, or whose catalog has no name-tree scripts, boots nothing.',
-    plugins: plugins(JS_OFF()),
+    covers:
+      'Both required actions catalogs return an empty name-tree script list, so neither document boots a program.',
+    plugins: current.plugins(JS_OFF()),
     engine: {
       documents: {
-        a: doc({ responses: [forms(scriptFields)] }),
-        b: doc({ services: ['actions'], responses: [forms(scriptFields), { path: 'actions.read', value: { openAction: null } }] }),
+        a: current.doc({ responses: [current.forms(scriptFields)] }),
+        b: current.doc({
+          services: ['actions'],
+          responses: [current.forms(scriptFields), current.catalog()],
+        }),
       },
     },
-    steps: [start, open('a'), open('b'), cap('execute', tree(js('a()')), USER), { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'execute', args: [tree(js('b()')), USER] }],
+    steps: [
+      start,
+      open('a'),
+      open('b'),
+      cap('execute', current.tree(current.js('a()')), current.USER),
+      {
+        op: 'call',
+        target: { token: 'actions', doc: 'b' },
+        method: 'execute',
+        args: [current.tree(current.js('b()')), current.USER],
+      },
+    ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'detached-script-realm',
     covers:
-      'createDetachedScriptRealm mints a realm for another document under this document\'s environment: a fresh sandbox from the same factory, the target\'s id and metadata, the owner\'s identity, a seed from the target id, the target\'s boot sources, and the configured budget. The caller owns it: the transaction port queues bodies, and dispose ends the realm.',
+      "createDetachedScriptRealm mints a realm for another document under this document's environment: a fresh sandbox from the same factory, the target's id and metadata, the owner's identity, a seed from the target id, the target's boot sources, and the configured budget. The caller owns it: the transaction port queues bodies, and dispose ends the realm.",
     plugins: [
-      { factory: 'actions', config: JS_OFF({ sandbox: { builds: [{}, { run: [{ output: { uiEffects: [{ kind: 'alert', message: 'hi', icon: 0 }] } }] }] }, budget: { maxExecutionMs: 9, maxMemoryBytes: 1024, maxStackBytes: 256, maxEffects: 2, maxOutputBytes: 64 } }) },
-      { factory: 'detached-realm', config: { bootSources: fnSpec('asset.boot', { resolves: ['var asset = 1;'] }) } },
+      {
+        factory: 'actions-current',
+        config: JS_OFF({
+          sandbox: {
+            builds: [
+              {},
+              { run: [{ output: { uiEffects: [{ kind: 'alert', message: 'hi', icon: 0 }] } }] },
+            ],
+          },
+          budget: {
+            maxExecutionMs: 9,
+            maxMemoryBytes: 1024,
+            maxStackBytes: 256,
+            maxEffects: 2,
+            maxOutputBytes: 64,
+          },
+        }),
+      },
+      {
+        factory: 'detached-realm',
+        config: { bootSources: fnSpec('asset.boot', { resolves: ['var asset = 1;'] }) },
+      },
     ],
-    engine: { documents: { a: scriptEngine().documents.a, b: doc() } },
+    engine: { documents: { a: scriptEngine().documents.a, b: current.doc() } },
     steps: [
       start,
       open('a'),
       open('b', { name: 'Asset.pdf' }),
       cap('isScriptingEnabled'),
-      cap('execute', tree(js('own()')), USER),
+      cap('execute', current.tree(current.js('own()')), current.USER),
       { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] },
-      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['stamp()'] },
-      callRef(0, fnSpec('body', { resolves: 'body-result' })),
-      callRef(1),
-      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['again()'] },
+      {
+        op: 'call',
+        target: { token: 'detached-realm', doc: 'b' },
+        method: 'run',
+        args: ['stamp()'],
+      },
+      realmCall('detachedTransaction'),
+      realmCall('dispose'),
+      {
+        op: 'call',
+        target: { token: 'detached-realm', doc: 'b' },
+        method: 'run',
+        args: ['again()'],
+      },
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'detached-script-realm-without-metadata',
-    covers: 'A target with no document metadata runs as document.pdf with zero pages; with scripting off there is nothing to mint.',
+    covers:
+      'A target with no document metadata runs as document.pdf with zero pages; with scripting off there is nothing to mint.',
     plugins: [
-      { factory: 'actions', config: JS_OFF() },
+      { factory: 'actions-current', config: JS_OFF() },
       { factory: 'detached-realm', config: { meta: null } },
     ],
-    engine: { documents: { a: scriptEngine().documents.a, b: doc(), c: doc() } },
+    engine: { documents: { a: scriptEngine().documents.a, b: current.doc(), c: current.doc() } },
     steps: [
       start,
       open('a'),
       open('b'),
       { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] },
-      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'run', args: ['stamp()'] },
+      {
+        op: 'call',
+        target: { token: 'detached-realm', doc: 'b' },
+        method: 'run',
+        args: ['stamp()'],
+      },
+      close('b'),
+      callRef(0, fnSpec('after-close', { resolves: 'unreachable' })),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'no-detached-realm-without-scripting',
-    covers: 'With scripting off the host lens has no createDetachedScriptRealm, so a sibling mints nothing.',
+    covers:
+      'With scripting off the host lens has no createDetachedScriptRealm, so a sibling mints nothing.',
     plugins: [
-      { factory: 'actions', config: { openSequence: 'off', javascript: { enabled: false } } },
+      {
+        factory: 'actions-current',
+        config: { openSequence: 'off', javascript: { enabled: false } },
+      },
       { factory: 'detached-realm' },
     ],
-    engine: { documents: { a: doc(), b: doc() } },
-    steps: [start, open('a'), open('b'), { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] }],
+    engine: { documents: { a: current.doc(), b: current.doc() } },
+    steps: [
+      start,
+      open('a'),
+      open('b'),
+      { op: 'call', target: { token: 'detached-realm', doc: 'b' }, method: 'mint', args: [] },
+    ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'scripting-disabled',
     covers: 'javascript.enabled false: no realm, javascript nodes inert.',
-    plugins: plugins({ openSequence: 'off', javascript: { enabled: false } }),
+    plugins: current.plugins({ openSequence: 'off', javascript: { enabled: false } }),
     engine: scriptEngine(),
-    steps: [...boot, cap('execute', tree(js('a()')), USER), cap('isScriptingEnabled')],
+    steps: [
+      ...boot,
+      cap('execute', current.tree(current.js('a()')), current.USER),
+      cap('isScriptingEnabled'),
+    ],
     snapshot: snap,
   },
 ];
 
 // ── the surface door ──────────────────────────────────────────────────────────
 
-const surface = (result: Record<string, unknown>) =>
-  cap('surfaceScriptResult', { uiEffects: [], diagnostics: [], origin: 'user', phase: 'user', ...result });
+const surfaceResult = (result: Partial<ScriptSurfaceResult>): ScriptSurfaceResult => ({
+  uiEffects: [],
+  diagnostics: [],
+  origin: 'user',
+  phase: 'user',
+  realm: 'document',
+  ...result,
+});
+const surface = (result: Partial<ScriptSurfaceResult>) =>
+  cap('surfaceScriptResult', surfaceResult(result));
+const surfaceCommit = (
+  result: ScriptCommitSurface,
+  options: Parameters<ActionsHostCapability['surfaceScriptCommit']>[1],
+): Step => cap('surfaceScriptCommit', result, options);
 const surfaceCases: ScenarioCase[] = [
   {
     name: 'surface-ui-effects',
-    covers: 'alert (with and without a title), gotoPage and print reach the adapter with the origin and phase; an adapter without alert or gotoPage ignores them; diagnostics and the error reach the script hooks.',
-    plugins: plugins(OFF),
-    engine: engineWith(),
+    covers:
+      'alert (with and without a title), gotoPage and print reach the adapter with the origin and phase; an adapter without alert or gotoPage ignores them; diagnostics and the error reach the script hooks.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith(),
     steps: [
       ...boot,
-      listen('onScriptDiagnostic'),
-      listen('onScriptError'),
+      listen('onScriptDiagnosticReported'),
+      listen('onScriptFailed'),
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
       surface({
         uiEffects: [
@@ -2479,43 +2847,100 @@ const surfaceCases: ScenarioCase[] = [
         phase: 'boot',
       }),
       cap('setUiAdapter', adapter()),
-      surface({ uiEffects: [{ kind: 'alert', message: 'm3', icon: 1 }, { kind: 'gotoPage', page: 1 }] }),
+      surface({
+        uiEffects: [
+          { kind: 'alert', message: 'm3', icon: 1 },
+          { kind: 'gotoPage', page: 1 },
+        ],
+      }),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'surface-refusals',
-    covers: 'No adapter is a no-adapter diagnostic; a print without doc.print is withheld with ui-effect-suppressed; a print during a document print event is suppressed as reentrant.',
-    plugins: plugins(OFF),
-    engine: { documents: { a: doc({ services: ['actions'], security: { allows: ['doc.render'] }, responses: [catalog()] }), b: doc({ services: ['actions'], responses: [catalog()] }) } },
+    covers:
+      'No adapter is a no-adapter diagnostic; a print without doc.print is withheld with ui-effect-suppressed; a print during a document print event is suppressed as reentrant.',
+    plugins: current.plugins(OFF),
+    engine: {
+      documents: {
+        a: current.doc({
+          services: ['actions'],
+          security: { allows: ['doc.render'] },
+          responses: [current.catalog()],
+        }),
+        b: current.doc({ services: ['actions'], responses: [current.catalog()] }),
+      },
+    },
     steps: [
       start,
       open('a'),
       open('b'),
-      listen(),
-      listen('onScriptDiagnostic'),
+      listen('onDiagnosticReported'),
+      listen('onScriptDiagnosticReported'),
       surface({ uiEffects: [{ kind: 'alert', message: 'm', icon: 0 }, { kind: 'print' }] }),
-      { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'onScriptDiagnostic', args: [fnSpec('b.onScriptDiagnostic')] },
-      { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'setUiAdapter', args: [adapter()] },
-      { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'runDocumentVerb', args: ['print', fnSpec('op.print', { defer: 'printing' })] },
-      { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'surfaceScriptResult', args: [{ uiEffects: [{ kind: 'print' }], diagnostics: [], origin: 'user', phase: 'user' }] },
+      {
+        op: 'call',
+        target: { token: 'actions', doc: 'b' },
+        method: 'onScriptDiagnosticReported',
+        args: [fnSpec('b.onScriptDiagnosticReported')],
+      },
+      {
+        op: 'call',
+        target: { token: 'actions', doc: 'b' },
+        method: 'setUiAdapter',
+        args: [adapter()],
+      },
+      {
+        op: 'call',
+        target: { token: 'actions', doc: 'b' },
+        method: 'runDocumentVerb',
+        args: ['print', fnSpec('op.print', { defer: 'printing' })],
+      },
+      {
+        op: 'call',
+        target: { token: 'actions', doc: 'b' },
+        method: 'surfaceScriptResult',
+        args: [surfaceResult({ uiEffects: [{ kind: 'print' }] })],
+      },
       settle('printing', 'done'),
-      { op: 'call', target: { token: 'actions', doc: 'b' }, method: 'surfaceScriptResult', args: [{ uiEffects: [{ kind: 'print' }], diagnostics: [], origin: 'user', phase: 'user' }] },
+      {
+        op: 'call',
+        target: { token: 'actions', doc: 'b' },
+        method: 'surfaceScriptResult',
+        args: [surfaceResult({ uiEffects: [{ kind: 'print' }] })],
+      },
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
   {
     name: 'surface-submit',
-    covers: 'A scripted submitForm from the form pipeline is detached through the same submit door (api source, activate event), with format fdf and method post by default and include-mode names.',
-    plugins: plugins(OFF),
-    engine: engineWith(),
+    covers:
+      'A scripted submitForm from the form pipeline is detached through the same submit door (api source, activate event), with format fdf and method post by default and include-mode names.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith(),
     steps: [
       ...boot,
-      listen(),
-      cap('registerSubmitResolver', resolverEcho()),
+      listen('onDiagnosticReported'),
+      cap('registerSubmitResolver', current.resolverEcho()),
       cap('setSubmitHandler', fnSpec('handler')),
-      surface({ uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }, { kind: 'submitForm', url: 'https://x.test', fieldNames: ['a'], includeEmpty: true, format: 'html', method: 'get' }], origin: 'lifecycle' }),
-      surface({ uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }], origin: 'user' }),
+      surface({
+        uiEffects: [
+          { kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false },
+          {
+            kind: 'submitForm',
+            url: 'https://x.test',
+            fieldNames: ['a'],
+            includeEmpty: true,
+            format: 'html',
+            method: 'get',
+          },
+        ],
+        origin: 'lifecycle',
+      }),
+      surface({
+        uiEffects: [{ kind: 'submitForm', url: null, fieldNames: null, includeEmpty: false }],
+        origin: 'user',
+      }),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
@@ -2523,13 +2948,13 @@ const surfaceCases: ScenarioCase[] = [
     name: 'surface-a-detached-realm',
     covers:
       'A detached realm has no document surface: its print, gotoPage and submitForm requests are suppressed with ui-effect-suppressed, and only alerts reach the adapter.',
-    plugins: plugins(OFF),
-    engine: engineWith(),
+    plugins: current.plugins(OFF),
+    engine: current.engineWith(),
     steps: [
       ...boot,
-      listen(),
-      listen('onScriptDiagnostic'),
-      cap('registerSubmitResolver', resolverEcho()),
+      listen('onDiagnosticReported'),
+      listen('onScriptDiagnosticReported'),
+      cap('registerSubmitResolver', current.resolverEcho()),
       cap('setSubmitHandler', fnSpec('handler')),
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
       surface({
@@ -2549,15 +2974,14 @@ const surfaceCases: ScenarioCase[] = [
     name: 'surface-script-commit',
     covers:
       'surfaceScriptCommit splits a K/V/C/F commit into its boot-phase effects (only when there are any) and its user-phase effects, which carry the diagnostics and the error even with no user effects; the realm kind rides both.',
-    plugins: plugins(OFF),
-    engine: engineWith(),
+    plugins: current.plugins(OFF),
+    engine: current.engineWith(),
     steps: [
       ...boot,
-      listen('onScriptDiagnostic'),
-      listen('onScriptError'),
+      listen('onScriptDiagnosticReported'),
+      listen('onScriptFailed'),
       cap('setUiAdapter', adapter({ alert: fnSpec('ui.alert'), gotoPage: fnSpec('ui.gotoPage') })),
-      cap(
-        'surfaceScriptCommit',
+      surfaceCommit(
         {
           uiEffects: [
             { kind: 'alert', message: 'boot', icon: 0, phase: 'boot' },
@@ -2569,15 +2993,23 @@ const surfaceCases: ScenarioCase[] = [
         },
         { origin: 'user', realm: 'document' },
       ),
-      cap('surfaceScriptCommit', { uiEffects: [], diagnostics: [] }, { origin: 'hover', realm: 'document' }),
-      cap(
-        'surfaceScriptCommit',
-        { uiEffects: [], diagnostics: [{ code: 'unsupported-api', message: 'no effects' }], error: { kind: 'exception', message: 'no effects' } },
+      surfaceCommit({ uiEffects: [], diagnostics: [] }, { origin: 'hover', realm: 'document' }),
+      surfaceCommit(
+        {
+          uiEffects: [],
+          diagnostics: [{ code: 'unsupported-api', message: 'no effects' }],
+          error: { kind: 'exception', message: 'no effects' },
+        },
         { origin: 'user', realm: 'document' },
       ),
-      cap(
-        'surfaceScriptCommit',
-        { uiEffects: [{ kind: 'print', phase: 'boot' }, { kind: 'alert', message: 'asset', icon: 0, phase: 'user' }], diagnostics: [] },
+      surfaceCommit(
+        {
+          uiEffects: [
+            { kind: 'print', phase: 'boot' },
+            { kind: 'alert', message: 'asset', icon: 0, phase: 'user' },
+          ],
+          diagnostics: [],
+        },
         { origin: 'user', realm: 'detached' },
       ),
     ],
@@ -2585,14 +3017,20 @@ const surfaceCases: ScenarioCase[] = [
   },
   {
     name: 'script-hooks-isolate-observers',
-    covers: 'A throwing onScriptDiagnostic or onScriptError observer is reported to the host sink.',
-    plugins: plugins(OFF),
-    engine: engineWith(),
+    covers:
+      'Throwing script diagnostic and failure observers are reported to the host sink without blocking sibling listeners.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith(),
     steps: [
       ...boot,
-      cap('onScriptDiagnostic', fnSpec('bad.diag', { throws: { message: 'diag broke' } })),
-      cap('onScriptError', fnSpec('bad.error', { throws: { message: 'error broke' } })),
-      surface({ diagnostics: [{ code: 'script-error', message: 'd' }], error: { kind: 'exception', message: 'e' } }),
+      cap('onScriptDiagnosticReported', fnSpec('bad.diag', { throws: { message: 'diag broke' } })),
+      cap('onScriptFailed', fnSpec('bad.error', { throws: { message: 'error broke' } })),
+      listen('onScriptDiagnosticReported', 'good.diag'),
+      listen('onScriptFailed', 'good.error'),
+      surface({
+        diagnostics: [{ code: 'script-error', message: 'd' }],
+        error: { kind: 'exception', message: 'e' },
+      }),
     ],
     ...UNSNAPSHOTTED_ACTIONS_SCRIPT,
   },
@@ -2602,56 +3040,118 @@ const surfaceCases: ScenarioCase[] = [
 
 const pumpPlugins = (dispatchSpec: 'actions' | Scripted) =>
   dispatchSpec === 'actions'
-    ? [{ factory: 'actions', config: OFF }, { factory: 'hover-pump', config: { dispatch: 'actions' } }]
+    ? [
+        { factory: 'actions-current', config: OFF },
+        { factory: 'hover-pump', config: { dispatch: 'actions' } },
+      ]
     : [{ factory: 'hover-pump', config: { dispatch: dispatchSpec } }];
-const hover = (target: unknown) => ({ op: 'call', target: { token: 'hover-pump', doc: 'a' }, method: 'hover', args: [target] }) as Step;
-const pumpReset: Step = { op: 'call', target: { token: 'hover-pump', doc: 'a' }, method: 'reset', args: [] };
-const hoverTarget = (objectNumber: number, events?: unknown, ref?: unknown, pon = 1) => ({
-  ref: ref ?? aref(pon, objectNumber),
-  page: pr(pon),
+const hover = (target: HoverTarget | null) =>
+  ({
+    op: 'call',
+    target: { token: 'hover-pump', doc: 'a' },
+    method: 'hover',
+    args: [target],
+  }) as Step;
+const pumpReset: Step = {
+  op: 'call',
+  target: { token: 'hover-pump', doc: 'a' },
+  method: 'reset',
+  args: [],
+};
+const hoverTarget = (
+  objectNumber: number,
+  events?: HoverTarget['events'],
+  ref?: AnnotationRef,
+  pon = 1,
+): HoverTarget => ({
+  ref: ref ?? current.aref(pon, objectNumber),
+  page: current.pr(pon),
   ...(events === undefined ? {} : { events }),
 });
-const scriptedDispatch = (labels: string[]) => fnSpec('dispatch', { seq: labels.map((label) => ({ defer: label })) });
-const done = { status: 'executed', steps: [], diagnostics: [] };
+const scriptedDispatch = (labels: string[]) =>
+  fnSpec('dispatch', { seq: labels.map((label) => ({ defer: label })) });
+const done: ActionTriggerResult = { status: 'executed', steps: [], diagnostics: [] };
 
+const rawHover = (): Step => ({
+  op: 'call',
+  target: { token: 'hover-pump', doc: 'a' },
+  method: 'hover',
+  args: [{ ref: { kind: 'mystery' }, page: current.pr(1) }],
+});
 const hoverCases: ScenarioCase[] = [
   {
     name: 'pairs-are-submitted-back-to-back',
-    covers: 'Enter(A); then A to B while idle submits Exit(A) and Enter(B) together, synchronously.',
+    covers:
+      'Enter(A); then A to B while idle submits Exit(A) and Enter(B) together, synchronously.',
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
-    engine: engineWith(),
-    steps: [...boot, hover(hoverTarget(1)), settle('d1', done), hover(hoverTarget(2)), settle('d2', done), settle('d3', done)],
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      hover(hoverTarget(1)),
+      settle('d1', done),
+      hover(hoverTarget(2)),
+      settle('d2', done),
+      settle('d3', done),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'a-slow-transition-is-never-split',
-    covers: 'While a transition is in flight nothing else is submitted; after it settles the pump delivers the latest target.',
+    covers:
+      'While a transition is in flight nothing else is submitted; after it settles the pump delivers the latest target.',
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
-    engine: engineWith(),
-    steps: [...boot, hover(hoverTarget(1)), hover(hoverTarget(2)), settle('d1', done), settle('d2', done), settle('d3', done)],
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      hover(hoverTarget(1)),
+      hover(hoverTarget(2)),
+      settle('d1', done),
+      settle('d2', done),
+      settle('d3', done),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'intermediate-targets-are-skipped',
     covers: 'A to B to C to nothing to D while A is in flight delivers Exit(A) then Enter(D).',
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
-    engine: engineWith(),
-    steps: [...boot, hover(hoverTarget(1)), hover(hoverTarget(2)), hover(hoverTarget(3)), hover(null), hover(hoverTarget(4)), settle('d1', done), settle('d2', done), settle('d3', done)],
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      hover(hoverTarget(1)),
+      hover(hoverTarget(2)),
+      hover(hoverTarget(3)),
+      hover(null),
+      hover(hoverTarget(4)),
+      settle('d1', done),
+      settle('d2', done),
+      settle('d3', done),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'same-target-is-free-and-exit-happens-once',
-    covers: 'Hovering the same target submits nothing; leaving to nothing exits once, and nothing again stays silent.',
+    covers:
+      'Hovering the same target submits nothing; leaving to nothing exits once, and nothing again stays silent.',
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2'])),
-    engine: engineWith(),
-    steps: [...boot, hover(hoverTarget(1)), settle('d1', done), hover(hoverTarget(1)), hover(null), settle('d2', done), hover(null)],
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      hover(hoverTarget(1)),
+      settle('d1', done),
+      hover(hoverTarget(1)),
+      hover(null),
+      settle('d2', done),
+      hover(null),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'event-flags-skip-tree-less-halves',
-    covers: 'events.enter false and events.exit false skip their half; a transition with nothing to submit settles on the next turn.',
+    covers:
+      'events.enter false and events.exit false skip their half; a transition with nothing to submit settles on the next turn.',
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2'])),
-    engine: engineWith(),
+    engine: current.engineWith(),
     steps: [
       ...boot,
       hover(hoverTarget(1, { enter: false })),
@@ -2659,7 +3159,7 @@ const hoverCases: ScenarioCase[] = [
       settle('d1', done),
       settle('d2', done),
       hover(null),
-      hover(hoverTarget(3, {})),
+      hover(hoverTarget(3, { enter: false, exit: false })),
     ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
@@ -2667,59 +3167,82 @@ const hoverCases: ScenarioCase[] = [
     name: 'reset-forgets-without-dispatching',
     covers: 'reset drops the delivered target, so the next hover enters without an exit.',
     plugins: pumpPlugins(scriptedDispatch(['d1', 'd2'])),
-    engine: engineWith(),
-    steps: [...boot, hover(hoverTarget(1)), settle('d1', done), pumpReset, hover(hoverTarget(2)), settle('d2', done)],
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      hover(hoverTarget(1)),
+      settle('d1', done),
+      pumpReset,
+      hover(hoverTarget(2)),
+      settle('d2', done),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'target-identity',
-    covers: 'Targets compare by ref kind and page: object numbers, /NM, and index plus revision; a different kind or page is a new target.',
+    covers:
+      'Targets compare by page and current annotationKey: object numbers and stable base indices; repeated positions stay silent and different pages produce a new target.',
     plugins: pumpPlugins(fnSpec('dispatch', { resolves: done })),
-    engine: engineWith(),
+    engine: current.engineWith(),
     steps: [
       ...boot,
-      hover(hoverTarget(1, undefined, nmRef(1, 'tip'))),
-      hover(hoverTarget(1, undefined, nmRef(1, 'tip'))),
-      hover(hoverTarget(1, undefined, nmRef(1, 'other'))),
-      hover(hoverTarget(1, undefined, indexRef(1, 2, 'r1'))),
-      hover(hoverTarget(1, undefined, indexRef(1, 2, 'r1'))),
-      hover(hoverTarget(1, undefined, indexRef(1, 2, 'r2'))),
-      hover(hoverTarget(1, undefined, indexRef(1, 3, 'r2'))),
-      hover(hoverTarget(1, undefined, aref(1, 1))),
-      hover(hoverTarget(1, undefined, aref(2, 1), 2)),
-      hover(hoverTarget(1, undefined, aref(2, 1), 2)),
-      hover(hoverTarget(1, undefined, aref(2, 2), 2)),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 0 })),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 0 })),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 1 })),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 2 })),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 2 })),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 2 })),
+      hover(hoverTarget(1, undefined, { kind: 'baseIndex', page: current.pr(1), baseIndex: 3 })),
+      hover(hoverTarget(1, undefined, current.aref(1, 1))),
+      hover(hoverTarget(1, undefined, current.aref(2, 1), 2)),
+      hover(hoverTarget(1, undefined, current.aref(2, 1), 2)),
+      hover(hoverTarget(1, undefined, current.aref(2, 2), 2)),
     ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'a-rejected-dispatch-still-releases',
     covers: 'allSettled: a rejected dispatch releases the pump like a resolved one.',
-    plugins: pumpPlugins(fnSpec('dispatch', { seq: [{ rejects: { message: 'no' } }, { resolves: done }] })),
-    engine: engineWith(),
+    plugins: pumpPlugins(
+      fnSpec('dispatch', { seq: [{ rejects: { message: 'no' } }, { resolves: done }] }),
+    ),
+    engine: current.engineWith(),
     steps: [...boot, hover(hoverTarget(1)), hover(hoverTarget(2))],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
-    name: 'an-unknown-ref-kind-never-matches-itself',
-    covers: 'sameTarget is false for a ref kind it does not know, even against itself, so every settle delivers the same target again.',
-    plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
-    engine: engineWith(),
-    steps: [...boot, hover(hoverTarget(1, undefined, { kind: 'mystery' })), settle('d1', done), hover(hoverTarget(1, undefined, { kind: 'mystery' }))],
+    name: 'an-unknown-ref-kind-has-no-key-and-matches-itself',
+    covers:
+      'An intentionally malformed ref has no annotationKey; two identical unknown keys compare equal, so repeated input does not dispatch again.',
+    plugins: pumpPlugins(fnSpec('dispatch', { resolves: done })),
+    engine: current.engineWith(),
+    steps: [...boot, rawHover(), rawHover()],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },
   {
     name: 'drives-the-real-dispatcher',
-    covers: 'Over the actions capability: the pump forwards the source hint, and the /E and /X trees run as hover-origin steps.',
+    covers:
+      'Over the actions capability: the pump forwards the source hint, and the /E and /X trees run as hover-origin steps.',
     plugins: pumpPlugins('actions'),
-    engine: engineWith({
-      responses: [annotations(1, [annot(1, 5, { cursorEnter: tree(named('show')), cursorExit: tree(named('hide')) }), annot(1, 6, { cursorEnter: tree(named('show-6')) })])],
+    engine: current.engineWith({
+      responses: [
+        current.annotations(1, [
+          current.annot(1, 5, {
+            cursorEnter: current.tree(current.named('show')),
+            cursorExit: current.tree(current.named('hide')),
+          }),
+          current.annot(1, 6, { cursorEnter: current.tree(current.named('show-6')) }),
+        ]),
+      ],
     }),
     steps: [
       ...boot,
       reg('named'),
       listen('onExecuted'),
-      hover({ ...hoverTarget(5), source: { kind: 'link', annotation: aref(1, 5), page: pr(1) } }),
+      hover({
+        ...hoverTarget(5),
+        source: { kind: 'link', annotation: current.aref(1, 5), page: current.pr(1) },
+      }),
       hover(hoverTarget(6)),
       hover(null),
     ],

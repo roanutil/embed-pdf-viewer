@@ -1,0 +1,19 @@
+(node:36144) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current hover driver calls the shipping pump with paired exit and enter triggers (826.163541ms)
+✔ script cases pin complete successful, inert, failed and budget outcomes independently (26.097541ms)
+✔ hover coalesces only intermediate targets and releases paired work atomically (3.203ms)
+✔ hover compares stable object and base-index addresses and preserves current scope and source (1.686125ms)
+✔ scripts commit typed current form effects before annotation effects and skip failed streams (4.559ms)
+✔ script world preserves current form values, page-space annotation conversion, identity and event refs (0.94425ms)
+✔ script provenance retains all 24 field/link/annotation/page/document event inputs (3.0835ms)
+✔ configured and default environment inputs use owner claims, target seed, host clock and exact budgets (3.061167ms)
+✔ script realm faults rebuild and caller/document cleanup disposes actual resources (2.545958ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3017.876375

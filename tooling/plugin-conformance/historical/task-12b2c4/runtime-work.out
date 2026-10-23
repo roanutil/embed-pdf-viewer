@@ -1,0 +1,44 @@
+(node:30579) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+a-script-node-is-one-transaction {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+script-effects-commit {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+script-commit-failures {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+boot-effects-and-a-refetched-world {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptError\" is not a function"}}}],"unmatched":[],"rejected":[]}
+boot-without-effects {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+run-errors-and-diagnostics {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptError\" is not a function"}}}],"unmatched":[],"rejected":[]}
+external-effects-run-after-the-transaction {"throws":[],"unmatched":[],"rejected":[]}
+script-print-obeys-the-print-policy {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+script-node-budget {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+script-event-provenance {"throws":[],"unmatched":[],"rejected":[]}
+no-page-to-anchor {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+an-unknown-page-fails-the-node {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+environment-inputs {"throws":[],"unmatched":[],"rejected":[]}
+environment-defaults {"throws":[],"unmatched":[],"rejected":[]}
+environment-file-name-fallback {"throws":[],"unmatched":[],"rejected":[]}
+a-fault-rebuilds-the-realm {"throws":[],"unmatched":[],"rejected":[]}
+a-throwing-sandbox-fails-the-node {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+budget-reaches-the-sandbox {"throws":[],"unmatched":[],"rejected":[]}
+no-sandbox-host {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+script-transaction-port {"throws":[],"unmatched":[],"rejected":[{"promise":4,"rejected":{"$error":{"name":"Error","message":"body threw"}}}]}
+closing-the-document-disposes-the-realm {"throws":[],"unmatched":[],"rejected":[]}
+script-boot-without-a-current.catalog {"throws":[],"unmatched":[],"rejected":[]}
+detached-script-realm {"throws":[],"unmatched":[],"rejected":[{"promise":6,"rejected":{"$error":{"name":"Error","message":"script host is disposed"}}}]}
+detached-script-realm-without-metadata {"throws":[],"unmatched":[],"rejected":[]}
+no-detached-realm-without-scripting {"throws":[],"unmatched":[],"rejected":[]}
+scripting-disabled {"throws":[],"unmatched":[],"rejected":[]}
+surface-ui-effects {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptError\" is not a function"}}}],"unmatched":[],"rejected":[]}
+surface-refusals {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+surface-submit {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+surface-a-detached-realm {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}}],"unmatched":[],"rejected":[]}
+surface-script-commit {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptError\" is not a function"}}}],"unmatched":[],"rejected":[]}
+script-hooks-isolate-observers {"throws":[{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptDiagnostic\" is not a function"}}},{"threw":{"$error":{"name":"Error","message":"[scenario] \"onScriptError\" is not a function"}}}],"unmatched":[],"rejected":[]}
+pairs-are-submitted-back-to-back {"throws":[],"unmatched":[],"rejected":[]}
+a-slow-transition-is-never-split {"throws":[],"unmatched":[],"rejected":[]}
+intermediate-targets-are-skipped {"throws":[],"unmatched":[],"rejected":[]}
+same-target-is-free-and-exit-happens-once {"throws":[],"unmatched":[],"rejected":[]}
+event-flags-skip-current.tree-less-halves {"throws":[],"unmatched":[],"rejected":[]}
+reset-forgets-without-dispatching {"throws":[],"unmatched":[],"rejected":[]}
+target-identity {"throws":[],"unmatched":[],"rejected":[]}
+a-rejected-dispatch-still-releases {"throws":[],"unmatched":[],"rejected":[]}
+an-unknown-ref-kind-never-matches-itself {"throws":[],"unmatched":[],"rejected":[]}
+drives-the-real-dispatcher {"throws":[],"unmatched":[],"rejected":[]}

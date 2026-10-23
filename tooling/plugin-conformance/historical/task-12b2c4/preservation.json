@@ -1,0 +1,13 @@
+{
+  "base": "2f9e038a248a8667e8ce679b238904230a5d4a89",
+  "exactSourceChecks": {
+    "// ── the observer-error host input": true,
+    "// ── builders": true,
+    "// ── the dispatcher": true,
+    "tooling/plugin-conformance/src/suites/actions-current-fixtures.ts": true,
+    "tooling/plugin-conformance/src/suites/acrojs.ts": true
+  },
+  "priorCurrent118": "C2 exact full guard in actions-lifecycle-current + C3 exact full guard in actions-script-current",
+  "legacyLink29": "C2 link-runtime exact input/outcome guard retained",
+  "historicalSnapshots": "C1/C2/C3 unchanged; git diff scope verified"
+}
