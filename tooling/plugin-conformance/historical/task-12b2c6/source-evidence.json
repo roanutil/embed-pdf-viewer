@@ -1,0 +1,85 @@
+{
+  "removedModelCommit": "4fc1a32af6d6ece9022a08139ac721e5c6fa8411",
+  "currentOwners": [
+    {
+      "owner": "controller",
+      "path": "packages/plugin/link/src/controller.ts",
+      "sha256": "56d25afc47f8476493f480d38cdd45b043a29bf7698b99576d535afd5023727c"
+    },
+    {
+      "owner": "source",
+      "path": "packages/plugin/link/src/source.ts",
+      "sha256": "24f70f2c77b00e94af48503a77472250ccd160de3572ddccc15c2d4293455fea"
+    },
+    {
+      "owner": "contract",
+      "path": "packages/plugin/link/src/contract.ts",
+      "sha256": "0dcc5478565ee9457ee65b8e0084f09642c04ec35b76ac472e132d34b366793a"
+    },
+    {
+      "owner": "connect",
+      "path": "packages/plugin/link/src/connect.ts",
+      "sha256": "e48aa25ba314ff5b4f476d0028b1d9a99449df86d4fe33d5cb0c0e75d3f5ee28"
+    },
+    {
+      "owner": "mirror",
+      "path": "packages/core/main/src/page-mirror.ts",
+      "sha256": "58e5073456ef1c4be7fd9ce14e010b929f5d0c180e3d349e1e74bad03526245d"
+    },
+    {
+      "owner": "eventHook",
+      "path": "packages/core/main/src/event-hook.ts",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+    },
+    {
+      "owner": "destinations",
+      "path": "packages/engine/core/src/dto/PdfDestination.ts",
+      "sha256": "d568f7824094d0d04310a8e4b9c518eb8d5da4b8ffee54aedfebc0bd9e24d8d3"
+    },
+    {
+      "owner": "annotation",
+      "path": "packages/plugin/annotation/src/controller.ts",
+      "sha256": "e0944837950f58d378beb48db834759621ea8458f98aced831af2fe7bf21e967"
+    },
+    {
+      "owner": "pageRef",
+      "path": "packages/engine/core/src/identity/PageRef.ts",
+      "sha256": "14b0278760d50aa1c0eb121902b271e3c7555854e9ea54ee80dc462484f69da9"
+    },
+    {
+      "owner": "annotationRef",
+      "path": "packages/engine/core/src/identity/AnnotationRef.ts",
+      "sha256": "a86b50f7ccb02b0e82d3378fe8ef4323285bc2cbaf20c8e055664f6e5ff19b1b"
+    },
+    {
+      "owner": "changes",
+      "path": "packages/engine/core/src/mutation/Change.ts",
+      "sha256": "0b8fcb5edd0a2b2b360b86994b6944fff036e16cbba116309430994229adc09c"
+    },
+    {
+      "owner": "actions",
+      "path": "packages/plugin/actions/src/contract.ts",
+      "sha256": "6175763fc13ca3d3d2819a82ad387077abbfc52c7ae38816e4e053157b0d8a69"
+    }
+  ],
+  "partialRetirements": {
+    "viewer-only-page-cache": "Old loadLinksPage PDF rect conversion, nm/index refs and null/omitted target distinction retire: current linksOf consumes complete page-space Annotation and annotationKey refs. Missing page now rejects not-found, rather than silently no-op.",
+    "viewer-only-malformed-lists": "Whole malformed-record subcontract retires: incomplete flags/ref/rect/index, invalid action trees and NaN PDF edge conversion are outside Annotation DTO. Retain six distinct engine read refusal/error/retry paths; original full malformed definitions remain immutable.",
+    "viewer-only-refetch-on-events": "annotation.moved and empty-move payload retire; current annotations.updated/reordered facts replace them. Even empty order refreshes. Event page is current fact page, and uncached pages do not fetch.",
+    "annotation-backed-source": "Old folded reducer hydration shape retires; current whole-document Annotation snapshot plus confirmed current apply results/events owns the same links. Add explicit local update/delete operations and remote delete.",
+    "activate-reveals-smoothly": "Old link-owned forced-smooth reveal retires; controller delegates goToDestination to the stage configured scrollBehavior. Explicit current smooth plus host frames preserves animation coverage.",
+    "activate-destination-that-cannot-invert": "Old link-owned PDF geometry inversion and its singular-userUnit throw retire. PageDestination is already page space; current stage reveal succeeds and emits both callbacks.",
+    "a-throwing-listener-throws-out-of-activate": "The original case text expected throw propagation but was already stale: pre-4fc1a32af controller.ts uses an isolated createEventHook and console error reporter. Current ctx.events owns isolation/reporting, reports exactly once through ctx.report after reveal, and returns successful activation. Retire only stale expectation/console shim, not an actual former throwing shipping contract.",
+    "list-all-links-annotation-backed": "Invalid-page isLoaded no longer unconditionally true with annotation present; ctx.getPage validates first. Existing page remains ready without reads.",
+    "labels-and-resolution": "Old resolved reveal options and missing-page destination retire; current resolveLinkTarget returns destination only for an existing page and reports absent target verbatim.",
+    "initial-state": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.",
+    "set-a-first-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.",
+    "set-another-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains. Original action page2 carried an item ref naming page1; current engine Annotation/ref consistently name page2. Original bounds, URI, activate u and hover-enter payload survive.",
+    "set-replaces-a-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.",
+    "set-an-empty-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains. Original objectNumber 0 is not a valid PDF page object; use the actual existing first page to exercise cached-empty ownership.",
+    "drop-a-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.",
+    "drop-an-empty-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.",
+    "drop-an-absent-page": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.",
+    "drop-from-empty": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains."
+  }
+}

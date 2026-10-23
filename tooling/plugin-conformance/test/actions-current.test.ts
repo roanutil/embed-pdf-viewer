@@ -1024,7 +1024,23 @@ test('current factory preserves actual scripting enablement with null or omitted
 
 const historical = new URL('../historical/task-12b2c2/', import.meta.url);
 const readHistory = (name: string) => JSON.parse(readFileSync(new URL(name, historical), 'utf8'));
-test('all 29 link inputs and exact outcomes remain frozen', async () => {
+test('deferred actions remain frozen and original link29 has complete current ownership', async () => {
+  // C6 owns the current link inputs; C2's original authority stays immutable.
+  const linkAuthority = readHistory('link-runtime.json') as {
+    file: string;
+    name: string;
+    input: unknown;
+  }[];
+  const mapping = JSON.parse(
+    readFileSync(new URL('../historical/task-12b2c6/accounting.json', import.meta.url), 'utf8'),
+  ) as { mappings: { file: string; name: string; originalInput: unknown }[] };
+  assert.equal(linkAuthority.length, 29);
+  assert.equal(mapping.mappings.length, 29);
+  for (const [i, original] of linkAuthority.entries()) {
+    assert.equal(mapping.mappings[i].file, original.file);
+    assert.equal(mapping.mappings[i].name, original.name);
+    assert.deepEqual(mapping.mappings[i].originalInput, original.input);
+  }
   const { suites: links } = await import('../src/suites/link');
   const available = [...suites, ...links];
   for (const saved of [
@@ -1037,7 +1053,6 @@ test('all 29 link inputs and exact outcomes remain frozen', async () => {
           'plugins/actions-hover.json',
         ].includes(entry.file),
     ),
-    ...readHistory('link-runtime.json'),
   ] as {
     file: string;
     name: string;

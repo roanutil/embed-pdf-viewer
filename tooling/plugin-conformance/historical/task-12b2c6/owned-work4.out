@@ -1,0 +1,15 @@
+test/link-current.test.ts(45,58): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(45,100): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(45,106): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(52,58): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(52,99): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(60,53): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(60,94): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(69,54): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(70,54): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(71,26): error TS2571: Object is of type 'unknown'.
+test/link-current.test.ts(72,26): error TS2571: Object is of type 'unknown'.
+test/link-current.test.ts(123,268): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(133,196): error TS18046: 'x' is of type 'unknown'.
+test/link-current.test.ts(164,93): error TS2353: Object literal may only specify known properties, and 'onError' does not exist in type '{ engine: Engine; plugins: AnyPlugin[]; settings?: DeepPartial<ViewerSettings> | undefined; report?: ((error: unknown) => void) | undefined; clock?: HostClock | undefined; printer?: HostPrinter | undefined; }'.
+test/link-current.test.ts(164,101): error TS7006: Parameter 'error' implicitly has an 'any' type.

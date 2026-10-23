@@ -563,7 +563,7 @@ test('shared scripted exports and complete deferred consumer inputs remain uncha
       new URL('../src/suites/' + saved.source + '.ts', import.meta.url),
       'utf8',
     );
-    if (saved.source !== 'actions') {
+    if (saved.source !== 'actions' && saved.source !== 'link') {
       assert.equal(
         createHash('sha256').update(source).digest('hex'),
         saved.sourceSha256,
@@ -571,10 +571,11 @@ test('shared scripted exports and complete deferred consumer inputs remain uncha
       );
     }
     const module = await import('../src/suites/' + saved.source + '.ts');
-    // All actions suites use current inputs; other deferred consumers stay frozen.
+    // C6 owns links and C2–C4 own actions; stage and legacy stamp stay frozen.
     const deferred = (entry: { file: string }) =>
-      saved.source !== 'actions' ||
       ![
+        'plugins/link.json',
+        'plugins/link-functions.json',
         'plugins/actions.json',
         'plugins/actions-dispatcher.json',
         'plugins/actions-submit.json',

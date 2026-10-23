@@ -1,0 +1,22 @@
+[
+  {
+    "path": "tooling/plugin-conformance/src/suites/link.ts",
+    "archive": "base-link.ts.txt",
+    "sha256": "1b93c7d7597cf50ee503b2be67a1769502880260456b353a666f69a9ed3bb29e"
+  },
+  {
+    "path": "tooling/plugin-conformance/test/acrojs-current.test.ts",
+    "archive": "base-acrojs-current.test.ts.txt",
+    "sha256": "3417d507c25b7104ee93c031f2278c8528a84d42ded2a5e67d64499a5cfe3b10"
+  },
+  {
+    "path": "tooling/plugin-conformance/test/actions-current.test.ts",
+    "archive": "base-actions-current.test.ts.txt",
+    "sha256": "d1f1f8256d9efc7e6bf33f9443a1541ab3a021abfded473a323909c1ab706f0a"
+  },
+  {
+    "path": "tooling/plugin-conformance/test/commands-current.test.ts",
+    "archive": "base-commands-current.test.ts.txt",
+    "sha256": "98819b93b3948551321c7e89c69a2cb492d563ea06285bd8ed7d37dceb3bfe53"
+  }
+]
