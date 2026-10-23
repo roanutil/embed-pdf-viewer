@@ -332,11 +332,17 @@ export interface AssetDocumentInput {
   readonly responses?: readonly ResponseSpec[];
   readonly download?: string;
 }
-/** Translate an explicitly authored current patch into its engine read snapshot, without domain policy. */
-function writtenPieceInfo(patch: PieceInfoPatch): PieceInfoSnapshot {
-  const entries: Record<string, PieceInfoEntry> = {};
+/** Prepare the complete merge-write answer from explicitly authored initial entries and a static patch. */
+function writtenPieceInfo(
+  patch: PieceInfoPatch,
+  initial: Record<string, PieceInfoEntry> = {},
+): PieceInfoSnapshot {
+  const entries: Record<string, PieceInfoEntry> = { ...initial };
   for (const [key, value] of Object.entries(patch)) {
-    if (value === null) continue;
+    if (value === null) {
+      delete entries[key];
+      continue;
+    }
     if (typeof value === 'string') entries[key] = { type: 'string', value };
     else if (typeof value === 'number') entries[key] = { type: 'number', value };
     else if (typeof value === 'boolean') entries[key] = { type: 'boolean', value };
@@ -383,21 +389,25 @@ export function assetDoc(pages: PageLayout[], input: AssetDocumentInput = {}): F
           >,
         }),
       ),
-      ...nameWrites.map(
-        (write, index): ResponseSpec => ({
+      ...nameWrites.map((write, index): ResponseSpec => {
+        const registry = new Map(currentLayout.namedPages.map((entry) => [entry.name, entry]));
+        for (const entry of nameWrites.slice(0, index + 1))
+          registry.set(entry.name, {
+            name: entry.name,
+            target: { kind: 'page', page: entry.page },
+          });
+        const namedPages = [...registry.values()].sort((left, right) =>
+          left.name < right.name ? -1 : left.name > right.name ? 1 : 0,
+        );
+        return {
           path: 'pages.setName',
           args: [write],
           value: {
-            layout: {
-              ...currentLayout,
-              namedPages: nameWrites
-                .slice(0, index + 1)
-                .map((entry) => ({ name: entry.name, target: { kind: 'page', page: entry.page } })),
-            },
+            layout: { ...currentLayout, namedPages },
             meta: mutationMeta([pages[index]]),
           } satisfies Awaited<ReturnType<LocalDocumentHandle['pages']['setName']>>,
-        }),
-      ),
+        };
+      }),
       { path: 'pieceInfo.get', value: catalog },
       ...pages.map(
         (page): ResponseSpec => ({
@@ -413,9 +423,10 @@ export function assetDoc(pages: PageLayout[], input: AssetDocumentInput = {}): F
         return {
           path: 'pieceInfo.update',
           args: ['EMBD_StampLibrary', patch],
-          value: { pieceInfo: writtenPieceInfo(patch), meta: mutationMeta() } satisfies Awaited<
-            ReturnType<LocalDocumentHandle['pieceInfo']['update']>
-          >,
+          value: {
+            pieceInfo: writtenPieceInfo(patch, input.catalog),
+            meta: mutationMeta(),
+          } satisfies Awaited<ReturnType<LocalDocumentHandle['pieceInfo']['update']>>,
         };
       }),
       ...pages.map((page): ResponseSpec => {
@@ -426,7 +437,7 @@ export function assetDoc(pages: PageLayout[], input: AssetDocumentInput = {}): F
           pon: page.ref.objectNumber,
           args: ['EMBD_Stamp', patch],
           value: {
-            pieceInfo: writtenPieceInfo(patch),
+            pieceInfo: writtenPieceInfo(patch, input.page?.[page.ref.objectNumber]),
             meta: mutationMeta([page]),
           } satisfies Awaited<
             ReturnType<ReturnType<LocalDocumentHandle['page']>['pieceInfo']['update']>

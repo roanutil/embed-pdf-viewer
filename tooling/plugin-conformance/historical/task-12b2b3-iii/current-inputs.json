@@ -2678,13 +2678,13 @@
                         "type": "string",
                         "value": "review-library"
                       },
-                      "Kind": {
-                        "type": "name",
-                        "value": "StampLibrary"
-                      },
                       "Categories": {
                         "type": "string-array",
                         "value": ["Team", "Legal"]
+                      },
+                      "Kind": {
+                        "type": "name",
+                        "value": "StampLibrary"
                       }
                     },
                     "modifiedAt": null
@@ -2716,9 +2716,9 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
+                      "Id": {
+                        "type": "string",
+                        "value": "review-library:Approved"
                       },
                       "Kind": {
                         "type": "name",
@@ -2727,6 +2727,10 @@
                       "Categories": {
                         "type": "string-array",
                         "value": ["Review"]
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -2763,13 +2767,17 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
+                      "Id": {
+                        "type": "string",
+                        "value": ""
                       },
                       "Kind": {
                         "type": "name",
                         "value": "Initials"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -2806,13 +2814,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Kind": {
                         "type": "name",
                         "value": "Stamp"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -2849,13 +2857,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Kind": {
                         "type": "name",
                         "value": "Stamp"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -3048,7 +3056,7 @@
         }
       ]
     },
-    "inputSha256": "3e49b2c5403e8df71bdfd5e82e801d6f653d983a4ef40f98caff15898de989cb"
+    "inputSha256": "11f8c86fa16815c7bbba0f7fe43be32a9688abaa352a4127c1810390a6ea4378"
   },
   {
     "source": "stamp-library",
@@ -3739,13 +3747,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Kind": {
                         "type": "name",
                         "value": "Stamp"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -3782,13 +3790,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Kind": {
                         "type": "name",
                         "value": "Stamp"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -3921,7 +3929,7 @@
         }
       ]
     },
-    "inputSha256": "c245bd4426d4cf3334502adcf339109c4526d0131bb18e06fd306dd4485d71e5"
+    "inputSha256": "26ff4dc1896b0d4aa52f8babc133169d2036759f05418b9edd588e18ca960922"
   },
   {
     "source": "stamp-library",
@@ -4692,22 +4700,22 @@
                     ],
                     "namedPages": [
                       {
-                        "name": "Stamp1=First",
-                        "target": {
-                          "kind": "page",
-                          "page": {
-                            "kind": "objectNumber",
-                            "objectNumber": 100
-                          }
-                        }
-                      },
-                      {
                         "name": "From PDF=From PDF",
                         "target": {
                           "kind": "page",
                           "page": {
                             "kind": "objectNumber",
                             "objectNumber": 101
+                          }
+                        }
+                      },
+                      {
+                        "name": "Stamp1=First",
+                        "target": {
+                          "kind": "page",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 100
                           }
                         }
                       }
@@ -4903,22 +4911,22 @@
                     ],
                     "namedPages": [
                       {
-                        "name": "Stamp1=First",
-                        "target": {
-                          "kind": "page",
-                          "page": {
-                            "kind": "objectNumber",
-                            "objectNumber": 100
-                          }
-                        }
-                      },
-                      {
                         "name": "From PDF=From PDF",
                         "target": {
                           "kind": "page",
                           "page": {
                             "kind": "objectNumber",
                             "objectNumber": 101
+                          }
+                        }
+                      },
+                      {
+                        "name": "Stamp1=First",
+                        "target": {
+                          "kind": "page",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 100
                           }
                         }
                       },
@@ -5008,6 +5016,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Categories": {
+                        "type": "string-array",
+                        "value": []
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -5019,10 +5031,6 @@
                       "Kind": {
                         "type": "name",
                         "value": "StampLibrary"
-                      },
-                      "Categories": {
-                        "type": "string-array",
-                        "value": []
                       }
                     },
                     "modifiedAt": null
@@ -5097,13 +5105,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Kind": {
                         "type": "name",
                         "value": "Initials"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -5324,7 +5332,7 @@
         }
       ]
     },
-    "inputSha256": "f6046708421fd1201cf4972669e0bd8b2417629f52806c5ff9ad75b52e700f6f"
+    "inputSha256": "949675b5a3dcd597d6fb94c0064fbb72bc299431dfc97ef99717f4c907e9c9e8"
   },
   {
     "source": "stamp-library",
@@ -12412,13 +12420,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "shared-library"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -12453,13 +12461,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "stamp-lib-0-2"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -12494,13 +12502,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "stamp-lib-0-6"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -12536,6 +12544,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Id": {
+                        "type": "string",
+                        "value": "shared-library:Stamp1"
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -12897,13 +12909,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "stamp-lib-0-5"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -12939,6 +12951,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Id": {
+                        "type": "string",
+                        "value": "stamp-lib-0-5:Stamp1"
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -13105,7 +13121,7 @@
         }
       ]
     },
-    "inputSha256": "de79e12969c801621b8dc46466e655b4b72da1b3558d79f54fe1f9033e0d4a4d"
+    "inputSha256": "a715ef7491f52f57122973add178d314c326b2d462dc3c2a38181f8a283d773f"
   },
   {
     "source": "stamp-library",
@@ -13871,13 +13887,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "lib-a"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -13913,6 +13929,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Id": {
+                        "type": "string",
+                        "value": "shared"
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -14274,13 +14294,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "lib-b"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -14316,6 +14336,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Id": {
+                        "type": "string",
+                        "value": "shared"
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -14681,13 +14705,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "lib-c"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -14723,6 +14747,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Id": {
+                        "type": "string",
+                        "value": "other"
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -15084,13 +15112,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "lib-c"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -15126,6 +15154,10 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
+                      "Id": {
+                        "type": "string",
+                        "value": "other"
+                      },
                       "Version": {
                         "type": "number",
                         "value": 2
@@ -15382,7 +15414,7 @@
         }
       ]
     },
-    "inputSha256": "aad7e700b8f8cc7fc5a8304c1ee9d79bc93e3eb8ed25678eb3e34b05bbd5e26a"
+    "inputSha256": "40ed658046001c9668e6bf3c16f498ebe120f7e12c993527c47c97ba5cf38a0f"
   },
   {
     "source": "stamp-library",
@@ -17584,16 +17616,6 @@
                   ],
                   "namedPages": [
                     {
-                      "name": "Later=Second",
-                      "target": {
-                        "kind": "page",
-                        "page": {
-                          "kind": "objectNumber",
-                          "objectNumber": 101
-                        }
-                      }
-                    },
-                    {
                       "name": "First=Approved",
                       "target": {
                         "kind": "page",
@@ -17608,6 +17630,16 @@
                       "target": {
                         "kind": "template",
                         "objectNumber": 333
+                      }
+                    },
+                    {
+                      "name": "Later=Second",
+                      "target": {
+                        "kind": "page",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 101
+                        }
                       }
                     }
                   ]
@@ -17778,6 +17810,33 @@
                     ],
                     "namedPages": [
                       {
+                        "name": "First=Approved",
+                        "target": {
+                          "kind": "page",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 100
+                          }
+                        }
+                      },
+                      {
+                        "name": "Hidden",
+                        "target": {
+                          "kind": "template",
+                          "objectNumber": 333
+                        }
+                      },
+                      {
+                        "name": "Later=Second",
+                        "target": {
+                          "kind": "page",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 101
+                          }
+                        }
+                      },
+                      {
                         "name": "Stamp1=Stamp1",
                         "target": {
                           "kind": "page",
@@ -17926,6 +17985,33 @@
                     ],
                     "namedPages": [
                       {
+                        "name": "First=Approved",
+                        "target": {
+                          "kind": "page",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 100
+                          }
+                        }
+                      },
+                      {
+                        "name": "Hidden",
+                        "target": {
+                          "kind": "template",
+                          "objectNumber": 333
+                        }
+                      },
+                      {
+                        "name": "Later=Second",
+                        "target": {
+                          "kind": "page",
+                          "page": {
+                            "kind": "objectNumber",
+                            "objectNumber": 101
+                          }
+                        }
+                      },
+                      {
                         "name": "Stamp1=Stamp1",
                         "target": {
                           "kind": "page",
@@ -18024,10 +18110,6 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "registered"
@@ -18039,6 +18121,10 @@
                       "Locale": {
                         "type": "string",
                         "value": "en-GB"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -18070,10 +18156,6 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Kind": {
                         "type": "name",
                         "value": "Signature"
@@ -18085,6 +18167,10 @@
                       "Categories": {
                         "type": "string-array",
                         "value": ["Legal"]
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       }
                     },
                     "modifiedAt": null
@@ -19139,7 +19225,7 @@
         }
       ]
     },
-    "inputSha256": "3d7d98447dbc3633713be603ae9bfdb34849c4a9502dcd87709a1c1268e44594"
+    "inputSha256": "998acbe282eae5f2ae42b4b5c18582daca1274df004aa7938d19d9a107bf0339"
   },
   {
     "source": "stamp-library",
@@ -19480,13 +19566,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "persisted"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -19875,13 +19961,13 @@
                 "value": {
                   "pieceInfo": {
                     "entries": {
-                      "Version": {
-                        "type": "number",
-                        "value": 2
-                      },
                       "Id": {
                         "type": "string",
                         "value": "fresh"
+                      },
+                      "Version": {
+                        "type": "number",
+                        "value": 2
                       },
                       "Kind": {
                         "type": "name",
@@ -20104,7 +20190,7 @@
         }
       ]
     },
-    "inputSha256": "a44cb2ffb55b2f1f40808d04965cdc389e51f326b950ead99d86d1072e787fa6"
+    "inputSha256": "63e2bfdd778d838b1aa16440e04d7386b30ab8683ef072a35549b67ace56d5fa"
   },
   {
     "source": "stamp-functions",

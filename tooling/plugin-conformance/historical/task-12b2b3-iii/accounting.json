@@ -47,7 +47,7 @@
       "after": {
         "file": "plugins/stamp-library.json",
         "name": "reads-ids-and-display-metadata-from-pieceinfo",
-        "inputSha256": "3e49b2c5403e8df71bdfd5e82e801d6f653d983a4ef40f98caff15898de989cb"
+        "inputSha256": "11f8c86fa16815c7bbba0f7fe43be32a9688abaa352a4127c1810390a6ea4378"
       },
       "target": "current stampPlugin workspace controller APIs",
       "disposition": "mapped",
@@ -69,7 +69,7 @@
       "after": {
         "file": "plugins/stamp-library.json",
         "name": "a-name-kind-and-stamp-kinds-read-back",
-        "inputSha256": "c245bd4426d4cf3334502adcf339109c4526d0131bb18e06fd306dd4485d71e5"
+        "inputSha256": "26ff4dc1896b0d4aa52f8babc133169d2036759f05418b9edd588e18ca960922"
       },
       "target": "current stampPlugin workspace controller APIs",
       "disposition": "mapped",
@@ -91,7 +91,7 @@
       "after": {
         "file": "plugins/stamp-library.json",
         "name": "import-options-override-the-pdf",
-        "inputSha256": "f6046708421fd1201cf4972669e0bd8b2417629f52806c5ff9ad75b52e700f6f"
+        "inputSha256": "949675b5a3dcd597d6fb94c0064fbb72bc299431dfc97ef99717f4c907e9c9e8"
       },
       "target": "current stampPlugin workspace controller APIs",
       "disposition": "mapped",
@@ -289,7 +289,7 @@
       "after": {
         "file": "plugins/stamp-library.json",
         "name": "a-second-import-allocates-fresh-ids",
-        "inputSha256": "de79e12969c801621b8dc46466e655b4b72da1b3558d79f54fe1f9033e0d4a4d"
+        "inputSha256": "a715ef7491f52f57122973add178d314c326b2d462dc3c2a38181f8a283d773f"
       },
       "target": "current stampPlugin workspace controller APIs",
       "disposition": "mapped",
@@ -333,7 +333,7 @@
       "after": {
         "file": "plugins/stamp-library.json",
         "name": "concurrent-imports-read-the-store-before-either-lands",
-        "inputSha256": "aad7e700b8f8cc7fc5a8304c1ee9d79bc93e3eb8ed25678eb3e34b05bbd5e26a"
+        "inputSha256": "40ed658046001c9668e6bf3c16f498ebe120f7e12c993527c47c97ba5cf38a0f"
       },
       "target": "current stampPlugin workspace controller APIs",
       "disposition": "mapped",
@@ -800,7 +800,7 @@
     {
       "file": "plugins/stamp-library.json",
       "name": "named-registry-order-filters-and-preview-cache",
-      "inputSha256": "3d7d98447dbc3633713be603ae9bfdb34849c4a9502dcd87709a1c1268e44594",
+      "inputSha256": "998acbe282eae5f2ae42b4b5c18582daca1274df004aa7938d19d9a107bf0339",
       "target": "current shipping stamp/persistence APIs",
       "source": [
         "packages/plugin/stamp/src/write/libraries.ts",
@@ -812,7 +812,7 @@
     {
       "file": "plugins/stamp-library.json",
       "name": "persistence-restores-canonical-bytes-and-unsubscribes",
-      "inputSha256": "a44cb2ffb55b2f1f40808d04965cdc389e51f326b950ead99d86d1072e787fa6",
+      "inputSha256": "63e2bfdd778d838b1aa16440e04d7386b30ab8683ef072a35549b67ace56d5fa",
       "target": "current shipping stamp/persistence APIs",
       "source": [
         "packages/plugin/stamp/src/write/libraries.ts",

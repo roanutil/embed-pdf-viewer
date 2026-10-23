@@ -1213,3 +1213,231 @@ test('named-page write answers describe the exact postwrite registry requested b
     answers.map((answer) => answer.args),
   );
 });
+
+import type { PieceInfoSnapshot, PageNameResult } from '@embedpdf/engine-core/runtime';
+test('PieceInfo merge answers preserve literal sibling ids and explicitly delete Name and Subject', async () => {
+  const examples: [string, string, number, string][] = [
+    ['reads-ids-and-display-metadata-from-pieceinfo', 'lib', 100, 'review-library:Approved'],
+    ['reads-ids-and-display-metadata-from-pieceinfo', 'lib', 101, ''],
+    ['a-second-import-allocates-fresh-ids', 'lib', 100, 'shared-library:Stamp1'],
+    ['a-second-import-allocates-fresh-ids', 'clash', 100, 'stamp-lib-0-5:Stamp1'],
+    ['concurrent-imports-read-the-store-before-either-lands', 'first', 100, 'shared'],
+    ['concurrent-imports-read-the-store-before-either-lands', 'second', 100, 'shared'],
+    ['concurrent-imports-read-the-store-before-either-lands', 'again', 100, 'other'],
+    ['concurrent-imports-read-the-store-before-either-lands', 'same', 100, 'other'],
+  ];
+  for (const [name, document, pon, id] of examples) {
+    const response = input(name).engine?.documents?.[document].responses?.find(
+      (row) => row.path === 'page.pieceInfo.update' && row.pon === pon,
+    );
+    assert.ok(response, name + '/' + document);
+    const snapshot = (response.value as { pieceInfo: PieceInfoSnapshot }).pieceInfo;
+    assert.deepEqual(
+      snapshot.entries.Id,
+      { type: 'string', value: id },
+      name + '/' + document + '/' + pon,
+    );
+    assert.equal(Object.hasOwn(snapshot.entries, 'Name'), false);
+    assert.equal(Object.hasOwn(snapshot.entries, 'Subject'), false);
+    assert.equal(
+      Object.hasOwn(response.args?.[1] as object, 'Id'),
+      false,
+      'the current patch never deletes Id',
+    );
+  }
+  const review = input('reads-ids-and-display-metadata-from-pieceinfo').engine!.documents!.lib
+    .responses!;
+  const first = review.find((row) => row.path === 'page.pieceInfo.update' && row.pon === 100)!;
+  assert.deepEqual((first.value as { pieceInfo: PieceInfoSnapshot }).pieceInfo.entries, {
+    Id: { type: 'string', value: 'review-library:Approved' },
+    Version: { type: 'number', value: 2 },
+    Kind: { type: 'name', value: 'Signature' },
+    Categories: { type: 'string-array', value: ['Review'] },
+  });
+  const second = review.find((row) => row.path === 'page.pieceInfo.update' && row.pon === 101)!;
+  assert.deepEqual((second.value as { pieceInfo: PieceInfoSnapshot }).pieceInfo.entries, {
+    Id: { type: 'string', value: '' },
+    Version: { type: 'number', value: 2 },
+    Kind: { type: 'name', value: 'Initials' },
+  });
+});
+
+test('catalog and page merge snapshots retain authored unknown siblings and match actual import patches', async () => {
+  const document = assetDoc([assetPage(0, 100)], {
+    catalog: {
+      Id: { type: 'string', value: 'postwrite' },
+      Name: { type: 'string', value: 'My library' },
+      Vendor: { type: 'string-array', value: ['keep', 'both'] },
+      Unreadable: { type: 'unknown' },
+    },
+    catalogWrites: [{ id: 'postwrite' }],
+    metadataTitles: ['My library'],
+    pageNames: ['Initial name=Initial subject'],
+    page: {
+      100: {
+        Id: { type: 'string', value: 'page-sibling' },
+        Name: { type: 'string', value: 'Initial name' },
+        Subject: { type: 'string', value: 'Initial subject' },
+        Vendor: { type: 'boolean', value: true },
+      },
+    },
+  });
+  const catalog = document.responses!.find((row) => row.path === 'pieceInfo.update')!;
+  const page = document.responses!.find((row) => row.path === 'page.pieceInfo.update')!;
+  assert.deepEqual((catalog.value as { pieceInfo: PieceInfoSnapshot }).pieceInfo.entries, {
+    Id: { type: 'string', value: 'postwrite' },
+    Vendor: { type: 'string-array', value: ['keep', 'both'] },
+    Unreadable: { type: 'unknown' },
+    Version: { type: 'number', value: 2 },
+    Kind: { type: 'name', value: 'StampLibrary' },
+  });
+  assert.deepEqual((page.value as { pieceInfo: PieceInfoSnapshot }).pieceInfo.entries, {
+    Id: { type: 'string', value: 'page-sibling' },
+    Vendor: { type: 'boolean', value: true },
+    Version: { type: 'number', value: 2 },
+    Kind: { type: 'name', value: 'Stamp' },
+  });
+  const result = await runScenario({
+    name: 'postwrite-siblings',
+    covers:
+      'A static current import preserves untouched PieceInfo entries while null patch keys disappear.',
+    plugins: STAMP(),
+    engine: { documents: { lib: document }, responses: opens('lib') },
+    steps: [start, stamp('importLibrary', [PDF])],
+  });
+  assert.deepEqual(result.unmatched, []);
+  assert.deepEqual(
+    result.trace.flatMap((entry) => entry.settled.filter((settled) => 'rejected' in settled)),
+    [],
+  );
+  const calls = engineCalls(result.trace);
+  assert.deepEqual(calls.find((call) => call.path === 'pieceInfo.update')!.args, [
+    'EMBD_StampLibrary',
+    {
+      Version: 2,
+      Id: 'postwrite',
+      Kind: { name: 'StampLibrary' },
+      Name: null,
+      Categories: null,
+      Locale: null,
+    },
+  ]);
+  assert.deepEqual(calls.find((call) => call.path === 'page.pieceInfo.update')!.args, [
+    'EMBD_Stamp',
+    {
+      Version: 2,
+      Kind: { name: 'Stamp' },
+      Name: null,
+      Subject: null,
+      SubjectOverride: null,
+      Categories: null,
+    },
+  ]);
+  assert.deepEqual(catalog.args, calls.find((call) => call.path === 'pieceInfo.update')!.args);
+  assert.deepEqual(page.args, calls.find((call) => call.path === 'page.pieceInfo.update')!.args);
+});
+
+test('mixed named-page answers are literal key-sorted registries with existing entries preserved', async () => {
+  const authoredInitial = input(
+    'named-registry-order-filters-and-preview-cache',
+  ).engine!.documents!.lib.responses!.find((row) => row.path === 'pages.list')!;
+  assert.deepEqual(
+    (authoredInitial.value as { namedPages: { name: string }[] }).namedPages.map(
+      (entry) => entry.name,
+    ),
+    ['First=Approved', 'Hidden', 'Later=Second'],
+  );
+  const options = input('import-options-override-the-pdf');
+  const answers = options.engine!.documents!.lib.responses!.filter(
+    (row) => row.path === 'pages.setName',
+  );
+  const first = {
+    name: 'Stamp1=First',
+    target: { kind: 'page', page: { kind: 'objectNumber', objectNumber: 100 } },
+  };
+  const fromPdf = {
+    name: 'From PDF=From PDF',
+    target: { kind: 'page', page: { kind: 'objectNumber', objectNumber: 101 } },
+  };
+  const third = {
+    name: 'Stamp3=Stamp3',
+    target: { kind: 'page', page: { kind: 'objectNumber', objectNumber: 102 } },
+  };
+  assert.deepEqual((answers[0].value as PageNameResult).layout.namedPages, [first]);
+  assert.deepEqual((answers[1].value as PageNameResult).layout.namedPages, [fromPdf, first]);
+  assert.deepEqual((answers[2].value as PageNameResult).layout.namedPages, [fromPdf, first, third]);
+  const calls = engineCalls((await run(options.name)).trace).filter(
+    (call) => call.path === 'pages.setName',
+  );
+  assert.deepEqual(
+    calls.map((call) => call.args),
+    answers.map((answer) => answer.args),
+  );
+  const initial = {
+    name: 'Existing=Kept',
+    target: { kind: 'template' as const, objectNumber: 333 },
+  };
+  const alpha = {
+    name: 'Alpha=First',
+    target: { kind: 'page' as const, page: { kind: 'objectNumber' as const, objectNumber: 101 } },
+  };
+  const zed = {
+    name: 'Zed=Last',
+    target: { kind: 'page' as const, page: { kind: 'objectNumber' as const, objectNumber: 100 } },
+  };
+  const document = assetDoc([assetPage(0, 100), assetPage(1, 101)], {
+    namedPages: [initial],
+    pageNames: ['Zed=Last', 'Alpha=First'],
+    page: {
+      100: { Name: { type: 'string', value: 'Zed' }, Subject: { type: 'string', value: 'Last' } },
+      101: {
+        Name: { type: 'string', value: 'Alpha' },
+        Subject: { type: 'string', value: 'First' },
+      },
+    },
+  });
+  const writes = document.responses!.filter((row) => row.path === 'pages.setName');
+  assert.deepEqual((writes[0].value as PageNameResult).layout.namedPages, [initial, zed]);
+  assert.deepEqual((writes[1].value as PageNameResult).layout.namedPages, [alpha, initial, zed]);
+  const result = await runScenario({
+    name: 'existing-names',
+    covers:
+      'Hidden initial registrations survive each authored write and final tree ordering differs from page order.',
+    plugins: STAMP(),
+    engine: { documents: { lib: document }, responses: opens('lib') },
+    steps: [start, stamp('importLibrary', [PDF]), stamp('listAssets')],
+  });
+  assert.deepEqual(result.unmatched, []);
+  assert.deepEqual(
+    engineCalls(result.trace)
+      .filter((call) => call.path === 'pages.setName')
+      .map((call) => call.args),
+    [
+      [{ name: 'Zed=Last', page: { kind: 'objectNumber', objectNumber: 100 } }],
+      [{ name: 'Alpha=First', page: { kind: 'objectNumber', objectNumber: 101 } }],
+    ],
+  );
+  assert.deepEqual(
+    value<StampAsset[]>(result.trace, 2).map((asset) => asset.name),
+    ['Zed', 'Alpha'],
+  );
+  const registered = assetDoc([assetPage(0, 100), assetPage(1, 101)], {
+    namedPages: [alpha, initial, zed],
+  });
+  const imported = await runScenario({
+    name: 'key-order-versus-page-order',
+    covers: 'A correctly key-sorted initial tree is imported in page order.',
+    plugins: STAMP(),
+    engine: { documents: { lib: registered }, responses: opens('lib') },
+    steps: [start, stamp('importLibrary', [PDF]), stamp('listAssets')],
+  });
+  assert.deepEqual(imported.unmatched, []);
+  assert.deepEqual(
+    value<StampAsset[]>(imported.trace, 2).map((asset) => asset.name),
+    ['Zed', 'Alpha'],
+  );
+  assert.deepEqual(
+    engineCalls(imported.trace).filter((call) => call.path === 'pages.setName'),
+    [],
+  );
+});

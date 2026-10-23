@@ -558,9 +558,9 @@ const current: ScenarioCase[] = [
           pageWrites: { 100: { kind: 'signature', subject: 'Override', categories: ['Legal'] } },
           catalog: { Id: str('registered'), Kind: nm('SignatureLibrary'), Locale: str('en-GB') },
           namedPages: [
-            { name: 'Later=Second', target: { kind: 'page', page: TWO[1].ref } },
             { name: 'First=Approved', target: { kind: 'page', page: TWO[0].ref } },
             { name: 'Hidden', target: { kind: 'template', objectNumber: 333 } },
+            { name: 'Later=Second', target: { kind: 'page', page: TWO[1].ref } },
           ],
           page: {
             100: {
