@@ -1,0 +1,850 @@
+[
+  {
+    "file": "core/acrojs.json",
+    "name": "rgb-transparent",
+    "inputSha256": "33e2dc729b9ca7995afbd3aaed6ffb57b3cd02ef5ebb7056614a704967a26e2c",
+    "outcome": {
+      "returned": null
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "rgb-gray",
+    "inputSha256": "ddf9ecd029c2993c4974f21d509f140a166a3e64ebcd1828582a26cbe5607e50",
+    "outcome": {
+      "returned": {
+        "r": 0.25,
+        "g": 0.25,
+        "b": 0.25
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "rgb-rgb",
+    "inputSha256": "1ff36e648fd54c4d5a619b3ab9ce93862ca03a1e9d36d3d1f7319271eb2ebbce",
+    "outcome": {
+      "returned": {
+        "r": 0.1,
+        "g": 0.2,
+        "b": 0.3
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "rgb-cmyk",
+    "inputSha256": "54087df3a5b58c6ee52ec54ec184fc2a6b5fd229eef787034a5d81c925d263e1",
+    "outcome": {
+      "returned": {
+        "r": 0.5,
+        "g": 0.3999999999999999,
+        "b": 0.30000000000000004
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "rgb-cmyk-saturates",
+    "inputSha256": "7c614575433838318bd635f1bb0410421bf274147f91f43ff0cd4256a2d98851",
+    "outcome": {
+      "returned": {
+        "r": 0,
+        "g": 0.30000000000000004,
+        "b": 0
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-transparent",
+    "inputSha256": "08fb7b35842e09a60046ccce26fc8bc88b0559bb913f36607c7ad288065c3a86",
+    "outcome": {
+      "returned": null
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-gray",
+    "inputSha256": "c4d0a46cf5708156a5fd4b4f7b2d4cbfa62ec3e1ea98f81cde9ee66353d0f963",
+    "outcome": {
+      "returned": "#808080"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-rgb-rounds-half-up",
+    "inputSha256": "aa53699f561150bc6cd7d9fbc7b8ffbdf0f4b3c73a52bc0127756bcff6593101",
+    "outcome": {
+      "returned": "#80ff00"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-clamps",
+    "inputSha256": "1a514a7cdce9f72ef2082f8be90237dd4b8ac0618cfb8720320f4088af4d06b5",
+    "outcome": {
+      "returned": "#00ff01"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-cmyk",
+    "inputSha256": "c46b445bfd9a3c09cb6ba11c5d83407efe4d5ee8a0d0e601220d61f37e78eb79",
+    "outcome": {
+      "returned": "#bf0040"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-infinity-clamps",
+    "inputSha256": "a43ac9315e1b24a392a7148f2a714ab22e7328d743bac2dc34c3e82f7b14ab9a",
+    "outcome": {
+      "returned": "#ff0000"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "css-nan-propagates",
+    "inputSha256": "ddfae7cfbf61f99eb6255fbbea9f01737ad461452a5192db6361ccd5f8c2fdcc",
+    "outcome": {
+      "returned": "#NaNNaNNaN"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-null",
+    "inputSha256": "34aa49b245c0c2f670e6a2115d9ba4e34f94ba44c360a39d2a63052ed9731a9b",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-undefined",
+    "inputSha256": "f710693c8f7ec82361c0a4cba878155c085c9263680dc657270d79264beb3d7f",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-empty",
+    "inputSha256": "46230e7de6bb7147352aee0daf0228108a6e46bc89448e817a6a523f8097929e",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-short",
+    "inputSha256": "bd574d84522248fc5596949287c09fc7d71ed86009d2a9538a6f683c0446bd06",
+    "outcome": {
+      "returned": [
+        "RGB",
+        0.6666666666666666,
+        0.7333333333333333,
+        0.8
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-short-no-hash",
+    "inputSha256": "c25caa396777d54ed97e860ce9db885645cf977358ad6597463222cedbaa69af",
+    "outcome": {
+      "returned": [
+        "RGB",
+        1,
+        0,
+        0.6666666666666666
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-long",
+    "inputSha256": "092af41a318d7f055610fefe15a0ce206e93cc0a7a6fcc086c231085616e9b41",
+    "outcome": {
+      "returned": [
+        "RGB",
+        1,
+        0.5019607843137255,
+        0
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-trims",
+    "inputSha256": "e9967d1ef3d4f353f2ecd330486b9a9bcc2ec5fab492254771394d10c57d3682",
+    "outcome": {
+      "returned": [
+        "RGB",
+        0,
+        1,
+        0.4980392156862745
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-trims-js-whitespace",
+    "inputSha256": "b7c08e2f1ca6a1441579d95e838f4a9cfdee9147a8ff83e07e86820755e897b6",
+    "outcome": {
+      "returned": [
+        "RGB",
+        0.07058823529411765,
+        0.20392156862745098,
+        0.33725490196078434
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-keeps-nel",
+    "inputSha256": "49c860c4bb96ad9dc5894fc0d9324b78570797f96af13f0589bad71bc01f01f0",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-one-hash-only",
+    "inputSha256": "80e338ea19900be8e76592f6650e6fa9c0cb8f7fd77f4a170cb1b7b60063be81",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-bad-digit",
+    "inputSha256": "2184f8004402667cd47e19ef0fe7cf0a3bc86d1d9fffa3f8b6239260f98dbf74",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-bad-length",
+    "inputSha256": "f7ba122c3e32041fefaaefd5b8fb059f6d873bc7e9efbb75cb91f49da5903993",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-three-non-ascii",
+    "inputSha256": "2f11ee6358aec5cdb20173b1508ef74d236e240871a7eca48f585707f69ab250",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "from-css-astral",
+    "inputSha256": "41afcc841ddded8518b077dce44448312390964bb2908993fd0eedee64c2cde1",
+    "outcome": {
+      "returned": [
+        "T"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-not-array",
+    "inputSha256": "c4bfdacb753bac2efc87f1a1846d3c980f558005305cc949f8cddc3095506ff5",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-empty",
+    "inputSha256": "0a61a260d1d9e48b9cd78fc048aacc8fe51aa83a60f96fa8cff421fb6a047a81",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-t",
+    "inputSha256": "24a13342211111f3cd856b58d40a40b5a69aed157821de593a35243648e4b6b7",
+    "outcome": {
+      "returned": true
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-t-extra",
+    "inputSha256": "a8afe281de216d5aab39c6424c7bf4af27f60852b29189f085759d4b127abe36",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-g",
+    "inputSha256": "39497ed9d63cc3b3496c9df1e814a6ab2d31ab419d8f335a678ed526476a1f21",
+    "outcome": {
+      "returned": true
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-g-string",
+    "inputSha256": "0520e1285a917ec0bc8f7e1b893990a914d01cbcb731d6d92675905ab92c6ad5",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-g-nan",
+    "inputSha256": "8737c60717959c33c0bb0fb112095ad5bdc82e3fd70a7e6390ff0cc2673e7357",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-g-infinity",
+    "inputSha256": "bf43a4817428881b76573722980e6311ecac135d0643990601933777e8948bc1",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-rgb",
+    "inputSha256": "8364661949024d389e5df3dbf9b8333561315a9216b63472825b8054cfd6b088",
+    "outcome": {
+      "returned": true
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-rgb-short",
+    "inputSha256": "fea28438bb28fabcb479424954c1f21fbffc14eabb9187d47c42f5db5a1d27ca",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-cmyk",
+    "inputSha256": "cf3413307eef1f8799209e1e94d836b0f08057032131508012513409a1a7537a",
+    "outcome": {
+      "returned": true
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-unknown-space",
+    "inputSha256": "538e973f6e7a53439043451815da394be443bd354f98bb482c2629d67e081658",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-lowercase-space",
+    "inputSha256": "368112bd4d94a7c48de5d674cb81aa86bcc74574ba646003576180b8b4a40caf",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-space-coerced",
+    "inputSha256": "a38012cd4d8e009f5c17f7a8f6c7544ae6ca53e0ec35814e30c0b459ad0697ec",
+    "outcome": {
+      "returned": true
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-space-null",
+    "inputSha256": "e89e218d84dd11893b3257a813b3005d69a34b9dcf1c000a7955abf23f7bf625",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-space-number",
+    "inputSha256": "ee7eb157dca698b38f987c015313eb89af539846727a1e30a101b5bb2cca5aa5",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-space-prototype-member",
+    "inputSha256": "d09ee93574a72dd203eed9db39f094717de4b0717ade0a45436fce2494a32de4",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-space-proto",
+    "inputSha256": "173908c71447693a3ed7f1fa1222b5f9ac2381ceddf7608b2b48dbb478d6cc4e",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "is-color-part-null",
+    "inputSha256": "be1baa1db98d9051f1372c78b4a8cf0e83110955110124dbd2b34c2dfa794520",
+    "outcome": {
+      "returned": false
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-incomplete-throws",
+    "inputSha256": "d2af25a51b25c73bb8b55f925933a7cc43dfecfc260c258c2573c469d412297d",
+    "outcome": {
+      "threw": {
+        "$error": {
+          "name": "Error",
+          "message": "Refusing to execute an incomplete PDF action tree"
+        }
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-rootless",
+    "inputSha256": "f325b1b673bde579e7fec139765df32eb8881dfb5b3fd3fe758510fcf4169570",
+    "outcome": {
+      "returned": []
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-depth-first",
+    "inputSha256": "75d47475ebba9883dd0ebbe0ba49a8b397876a7dff2b40f98ef099f9300747eb",
+    "outcome": {
+      "returned": [
+        "a()",
+        "b()",
+        "c()"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-incomplete-is-truthiness",
+    "inputSha256": "69dd824aadc256c270831493e8d8ed60ea4b393ab8de03ea981b0429d3ab144b",
+    "outcome": {
+      "threw": {
+        "$error": {
+          "name": "Error",
+          "message": "Refusing to execute an incomplete PDF action tree"
+        }
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-incomplete-zero",
+    "inputSha256": "c4272f8f29c9fd7b004b64d1422b58fa50f37172e2743fafdaa38782e0af61c9",
+    "outcome": {
+      "returned": [
+        "zero()"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-incomplete-string",
+    "inputSha256": "93be3e87791b0d19a1087f3a538a5797814b1d78466fe95497505424f034df44",
+    "outcome": {
+      "threw": {
+        "$error": {
+          "name": "Error",
+          "message": "Refusing to execute an incomplete PDF action tree"
+        }
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-incomplete-empty-string",
+    "inputSha256": "527fa94fa266eb447959f5c4b156f3b71f70ce771abb86e42a50e8f7118ea1c2",
+    "outcome": {
+      "returned": [
+        "e()"
+      ]
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "sources-root-zero",
+    "inputSha256": "d6afeb4e6168f89e6f29a63f2a674c3c101c66d5e01e898befb10d7fff2bd96a",
+    "outcome": {
+      "returned": []
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "program-joins",
+    "inputSha256": "0ac14ead994f13ce8425d80e190e4e1401dc64f3fcb74adc7092b6780f6b69ca",
+    "outcome": {
+      "returned": "a()\n;\nb()"
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "program-empty",
+    "inputSha256": "b713694c433172c37b4fc302e99fe92db89af68b0f23c12ddb4b4c5f9ef32160",
+    "outcome": {
+      "returned": ""
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "program-incomplete-throws",
+    "inputSha256": "68112e760a4bebc186cdde42d10357306e8ff29cccde18383b6dc15eefaba70d",
+    "outcome": {
+      "threw": {
+        "$error": {
+          "name": "Error",
+          "message": "Refusing to execute an incomplete PDF action tree"
+        }
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "fields-from-snapshot",
+    "inputSha256": "e9813a96b298419d69dd678ffa6df8e018baa309f6722f55be7e63c6b9d3b5f6",
+    "outcome": {
+      "threw": {
+        "$error": {
+          "name": "TypeError",
+          "message": "Cannot read properties of undefined (reading 'map')"
+        }
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "fields-empty",
+    "inputSha256": "d5766d43385ee55d9dba6f6b28c39e93609331a07bb0b604d07bd140b3e25fb8",
+    "outcome": {
+      "threw": {
+        "$error": {
+          "name": "TypeError",
+          "message": "Cannot read properties of undefined (reading 'map')"
+        }
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "seed-basic",
+    "inputSha256": "b94613db1f830b53385e294e6f99ce7384be6f8f6b41b509f48bcea21ad7f178",
+    "outcome": {
+      "returned": 1983485049
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "seed-next",
+    "inputSha256": "10a07fae07b82ac2482a54ceb51a0e642218b1c7bc8060ae9beec657b3d1edd9",
+    "outcome": {
+      "returned": 1966707430
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "seed-empty-id",
+    "inputSha256": "e88b9f1e5230d74a7c07bf542905fb2e4246300c89f8493d8e448c669b5e6d76",
+    "outcome": {
+      "returned": 2651208295
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "seed-large-sequence",
+    "inputSha256": "db942621887979df394658f0dafbf53e3c8b28f0ee80f6bd59a603b4597985b5",
+    "outcome": {
+      "returned": 1968361604
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "seed-non-ascii",
+    "inputSha256": "56cdce820d007e738a844b6ea7fb58ee6e80f903385e5fc85e632a5b197c0c36",
+    "outcome": {
+      "returned": 863276817
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "seed-astral-hashes-the-high-surrogate",
+    "inputSha256": "de8d77c917cdbda7f5a27e16a16712f6904cfa310888ffacc602cb34dbb8268f",
+    "outcome": {
+      "returned": 1779380123
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "identity-from-claims",
+    "inputSha256": "9f0c9a4873432d97cb60b43ee5f55c2693863bb867015ca2cac31db71699e78c",
+    "outcome": {
+      "returned": {
+        "name": "",
+        "loginName": "",
+        "corporation": "",
+        "email": ""
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "identity-no-claims",
+    "inputSha256": "883d4ed3b00ee4b5f921ce55d802060ca7467a16351e3bb0773232e7d6ded717",
+    "outcome": {
+      "returned": {
+        "name": "",
+        "loginName": "",
+        "corporation": "",
+        "email": ""
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "identity-user-id-fallback",
+    "inputSha256": "ae1bfbcbef0fbe9a4363f0c1622d793265ee5de87591b30f2bef41def3c4b57e",
+    "outcome": {
+      "returned": {
+        "name": "",
+        "loginName": "",
+        "corporation": "",
+        "email": ""
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "identity-overrides",
+    "inputSha256": "64839ee147a0f20570200ec16707e324dbaec8a32cf2ee59644d248f6a0166fd",
+    "outcome": {
+      "returned": {
+        "name": "Grace",
+        "loginName": "",
+        "corporation": "",
+        "email": "g@x.test"
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "identity-override-null-falls-through",
+    "inputSha256": "b01af43331ed4e3d39bf5527165e1af580209596d7879ae3ccda14b609b1874f",
+    "outcome": {
+      "returned": {
+        "name": "",
+        "loginName": "root",
+        "corporation": "Acme",
+        "email": ""
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "identity-override-function",
+    "inputSha256": "9cc7be9051cf03a1fb3d9a0548229b112142fbe61c298756d581b30e3dc6c244",
+    "outcome": {
+      "returned": {
+        "name": "",
+        "loginName": "",
+        "corporation": "Fn Inc",
+        "email": ""
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "annot-writable-keys",
+    "inputSha256": "a8ff1d2d78a444faee3a3a53834140520b16c3f329c723ab9f50f18a489594c8",
+    "outcome": {
+      "returned": {
+        "square": [
+          "strokeColor",
+          "fillColor",
+          "opacity",
+          "width",
+          "borderStyle",
+          "dash",
+          "rect"
+        ],
+        "circle": [
+          "strokeColor",
+          "fillColor",
+          "opacity",
+          "width",
+          "borderStyle",
+          "dash",
+          "rect"
+        ],
+        "polygon": [
+          "strokeColor",
+          "fillColor",
+          "opacity",
+          "width",
+          "borderStyle",
+          "dash",
+          "rect"
+        ],
+        "polyline": [
+          "strokeColor",
+          "fillColor",
+          "opacity",
+          "width",
+          "borderStyle",
+          "dash",
+          "rect"
+        ],
+        "line": [
+          "strokeColor",
+          "fillColor",
+          "opacity",
+          "width",
+          "borderStyle",
+          "dash",
+          "rect"
+        ],
+        "ink": [
+          "strokeColor",
+          "opacity",
+          "width",
+          "rect"
+        ],
+        "free-text": [
+          "strokeColor",
+          "fillColor",
+          "opacity",
+          "rect"
+        ],
+        "highlight": [
+          "strokeColor",
+          "opacity"
+        ],
+        "underline": [
+          "strokeColor",
+          "opacity"
+        ],
+        "squiggly": [
+          "strokeColor",
+          "opacity"
+        ],
+        "strikeout": [
+          "strokeColor",
+          "opacity"
+        ],
+        "caret": [
+          "strokeColor",
+          "opacity"
+        ],
+        "text": [
+          "strokeColor",
+          "opacity",
+          "rect"
+        ],
+        "stamp": [
+          "rect"
+        ],
+        "file-attachment": [
+          "strokeColor",
+          "opacity"
+        ]
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "default-script-budget",
+    "inputSha256": "4ac4a7179eb717721ac123ab08d5813bf9d264e5db47bc80edc410780f4d5055",
+    "outcome": {
+      "returned": {
+        "maxExecutionMs": 50,
+        "maxMemoryBytes": 16777216,
+        "maxStackBytes": 524288,
+        "maxEffects": 256,
+        "maxOutputBytes": 1048576
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "default-script-security-policy",
+    "inputSha256": "3d96bc881a45f534a445c6e3d4ca0be2b4bd4796688f4a7a35de740ad0f541d2",
+    "outcome": {
+      "returned": {
+        "enabled": false,
+        "executionOwner": "originating-client-only",
+        "nameTreeBoot": "lazy-first-transaction",
+        "submitForm": "sink-chain",
+        "openAction": "execute-lifecycle",
+        "pageActions": "execute-lifecycle",
+        "catalogLifecycleActions": "execute-on-verb",
+        "annotationActions": "execute-full-matrix"
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "script-event-matrix",
+    "inputSha256": "eaa3f96cd6e37e3ce3ae14e9b48da4a5f6fa6a4c2cbfce484184ca4843b04448",
+    "outcome": {
+      "returned": {
+        "nameTree": "lazy-first-originating-field-transaction",
+        "field": {
+          "keystroke": "execute-on-commit",
+          "validate": "execute",
+          "calculate": "execute-in-calculation-order",
+          "format": "execute-after-value-calculation"
+        },
+        "openAction": "execute-lifecycle",
+        "page": "execute-lifecycle",
+        "catalogLifecycle": "execute-on-verb",
+        "annotation": {
+          "widgetActivate": "execute-on-originating-client",
+          "other": "execute-full-matrix"
+        },
+        "submitForm": "sink-chain"
+      }
+    }
+  },
+  {
+    "file": "core/acrojs.json",
+    "name": "prelude-source",
+    "inputSha256": "ef3f3560b7b52482917b9f1bdb3ba11ebdb5a53884a255f0af9885d6a28ca4c7",
+    "outcome": {
+      "returned": "(function installAcroJs(globalObject) {\n    const host = globalObject;\n    const NativeDate = Date;\n    let state = null;\n    const cloneValue = (value) => Array.isArray(value) ? value.map((item) => String(item)) : value;\n    const sameValue = (left, right) => {\n        if (Array.isArray(left) && Array.isArray(right)) {\n            return left.length === right.length && left.every((item, index) => item === right[index]);\n        }\n        return left === right;\n    };\n    const refKey = (ref) => {\n        const value = ref;\n        return value?.kind === 'objectNumber'\n            ? `obj:${String(value.objectNumber)}`\n            : `fqn:${String(value?.name ?? '')}`;\n    };\n    const diagnostic = (code, message) => {\n        state?.diagnostics.push({ code, message });\n    };\n    const blocked = (api) => {\n        diagnostic('blocked-network', `${api} is blocked by the scripting policy`);\n        return undefined;\n    };\n    const numberValue = (value) => {\n        if (typeof value === 'number')\n            return Number.isFinite(value) ? value : 0;\n        const parsed = Number(String(value ?? '').replace(/[^0-9+\\-.]/g, ''));\n        return Number.isFinite(parsed) ? parsed : 0;\n    };\n    const displayToCode = (display) => display === 'hidden' ? 1 : display === 'noPrint' ? 2 : display === 'noView' ? 3 : 0;\n    const codeToDisplay = (code) => Number(code) === 1\n        ? 'hidden'\n        : Number(code) === 2\n            ? 'noPrint'\n            : Number(code) === 3\n                ? 'noView'\n                : 'visible';\n    const eventName = (kind) => kind === 'widget-activate'\n        ? 'Mouse Up'\n        : kind === 'field-keystroke'\n            ? 'Keystroke'\n            : kind === 'field-validate'\n                ? 'Validate'\n                : kind === 'field-calculate'\n                    ? 'Calculate'\n                    : kind === 'field-format'\n                        ? 'Format'\n                        : 'Open';\n    const doc = {};\n    const makeField = (record) => {\n        const input = record.input;\n        const wrapper = {};\n        Object.defineProperties(wrapper, {\n            name: { enumerable: true, get: () => input.name },\n            type: { enumerable: true, get: () => input.family },\n            value: {\n                enumerable: true,\n                get: () => cloneValue(record.value),\n                set: (value) => {\n                    record.value = cloneValue(value);\n                },\n            },\n            valueAsString: {\n                enumerable: true,\n                get: () => Array.isArray(record.value) ? record.value.join(',') : String(record.value ?? ''),\n            },\n            defaultValue: { enumerable: true, get: () => cloneValue(input.defaultValue) },\n            readonly: {\n                enumerable: true,\n                get: () => Boolean(input.readOnly),\n                set: () => {\n                    diagnostic('unsupported-api', 'Field.readonly writes are not supported in v1');\n                },\n            },\n            required: {\n                enumerable: true,\n                get: () => Boolean(input.required),\n                set: () => {\n                    diagnostic('unsupported-api', 'Field.required writes are not supported in v1');\n                },\n            },\n            display: {\n                enumerable: true,\n                get: () => displayToCode(record.display),\n                set: (value) => {\n                    record.display = codeToDisplay(value);\n                },\n            },\n            source: { enumerable: false, get: () => doc },\n        });\n        wrapper.setFocus = () => diagnostic('unsupported-api', 'Field.setFocus is not supported in v1');\n        return wrapper;\n    };\n    const getField = (name) => state?.fieldsByName.get(String(name))?.wrapper ?? null;\n    // \u2500\u2500 the annots plane (curated; self-contained twins of src/color.ts and\n    //    types.ts ANNOT_WRITABLE_KEYS \u2014 parity tests pin them) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    const ANNOT_WRITABLE = {\n        square: ['strokeColor', 'fillColor', 'opacity', 'width', 'borderStyle', 'dash', 'rect'],\n        circle: ['strokeColor', 'fillColor', 'opacity', 'width', 'borderStyle', 'dash', 'rect'],\n        polygon: ['strokeColor', 'fillColor', 'opacity', 'width', 'borderStyle', 'dash', 'rect'],\n        polyline: ['strokeColor', 'fillColor', 'opacity', 'width', 'borderStyle', 'dash', 'rect'],\n        line: ['strokeColor', 'fillColor', 'opacity', 'width', 'borderStyle', 'dash', 'rect'],\n        ink: ['strokeColor', 'opacity', 'width', 'rect'],\n        'free-text': ['strokeColor', 'fillColor', 'opacity', 'rect'],\n        highlight: ['strokeColor', 'opacity'],\n        underline: ['strokeColor', 'opacity'],\n        squiggly: ['strokeColor', 'opacity'],\n        strikeout: ['strokeColor', 'opacity'],\n        caret: ['strokeColor', 'opacity'],\n        text: ['strokeColor', 'opacity', 'rect'],\n        stamp: ['rect'],\n        'file-attachment': ['strokeColor', 'opacity'],\n    };\n    const ANNOT_FLAG_KEYS = ['hidden', 'print', 'readOnly', 'locked', 'noView', 'toggleNoView'];\n    const ACROBAT_TYPE = {\n        square: 'Square',\n        circle: 'Circle',\n        line: 'Line',\n        polygon: 'Polygon',\n        polyline: 'PolyLine',\n        ink: 'Ink',\n        'free-text': 'FreeText',\n        highlight: 'Highlight',\n        underline: 'Underline',\n        squiggly: 'Squiggly',\n        strikeout: 'StrikeOut',\n        text: 'Text',\n        stamp: 'Stamp',\n        caret: 'Caret',\n        'file-attachment': 'FileAttachment',\n    };\n    const isColorArray = (value) => {\n        if (!Array.isArray(value) || value.length === 0)\n            return false;\n        const counts = { T: 0, G: 1, RGB: 3, CMYK: 4 };\n        const expected = counts[String(value[0])];\n        return (expected !== undefined &&\n            value.length === expected + 1 &&\n            value.slice(1).every((part) => typeof part === 'number' && isFinite(Number(part))));\n    };\n    const colorToRgbTriple = (value) => {\n        const color = value;\n        const space = String(color[0]);\n        if (space === 'T')\n            return null;\n        if (space === 'G')\n            return [Number(color[1]), Number(color[1]), Number(color[1])];\n        if (space === 'RGB')\n            return [Number(color[1]), Number(color[2]), Number(color[3])];\n        const cyan = Number(color[1]);\n        const magenta = Number(color[2]);\n        const yellow = Number(color[3]);\n        const black = Number(color[4]);\n        return [\n            1 - Math.min(1, cyan + black),\n            1 - Math.min(1, magenta + black),\n            1 - Math.min(1, yellow + black),\n        ];\n    };\n    const sameAnnotValue = (left, right) => {\n        if (Array.isArray(left) && Array.isArray(right)) {\n            return left.length === right.length && left.every((item, index) => item === right[index]);\n        }\n        return left === right;\n    };\n    const cloneAnnotValue = (value) => (Array.isArray(value) ? [...value] : value);\n    const makeAnnot = (record) => {\n        const input = record.input;\n        const subtype = String(input.subtype);\n        const writable = ANNOT_WRITABLE[subtype] ?? [];\n        const wrapper = {};\n        const stage = (key, value, validate) => {\n            // Flags and contents are writable on every script-addressable subtype;\n            // appearance keys follow the per-subtype matrix.\n            if (key !== 'contents' && ANNOT_FLAG_KEYS.indexOf(key) < 0 && writable.indexOf(key) < 0) {\n                diagnostic('unsupported-api', `Annot.${key} is not writable on subtype '${subtype}' (write ignored)`);\n                return;\n            }\n            if (input.opaqueBody && ANNOT_FLAG_KEYS.indexOf(key) < 0 && key !== 'contents') {\n                diagnostic('unsupported-api', `Annot.${key}: '${subtype}' has an opaque appearance (write ignored)`);\n                return;\n            }\n            if (!validate(value)) {\n                diagnostic('invalid-field-value', `Annot.${key}: invalid value (write ignored)`);\n                return;\n            }\n            record.current[key] = cloneAnnotValue(value);\n        };\n        const prop = (key, validate) => ({\n            enumerable: true,\n            get: () => cloneAnnotValue(record.current[key]),\n            set: (value) => stage(key, value, validate),\n        });\n        const isNum = (value) => typeof value === 'number' && isFinite(value);\n        const isBool = (value) => typeof value === 'boolean';\n        Object.defineProperties(wrapper, {\n            name: { enumerable: true, get: () => String(input.name ?? '') },\n            type: { enumerable: true, get: () => ACROBAT_TYPE[subtype] ?? subtype },\n            page: { enumerable: true, get: () => Number(input.page ?? 0) },\n            author: { enumerable: true, get: () => String(input.author ?? '') },\n            subject: { enumerable: true, get: () => String(input.subject ?? '') },\n            strokeColor: prop('strokeColor', isColorArray),\n            fillColor: prop('fillColor', isColorArray),\n            opacity: prop('opacity', (value) => isNum(value) && Number(value) >= 0 && Number(value) <= 1),\n            width: prop('width', (value) => isNum(value) && Number(value) >= 0),\n            style: prop('borderStyle', (value) => value === 'S' || value === 'D'),\n            dash: prop('dash', (value) => Array.isArray(value) && value.every(isNum)),\n            rect: prop('rect', (value) => Array.isArray(value) && value.length === 4 && value.every(isNum)),\n            contents: prop('contents', (value) => typeof value === 'string'),\n            hidden: prop('hidden', isBool),\n            print: prop('print', isBool),\n            readOnly: prop('readOnly', isBool),\n            lock: prop('locked', isBool),\n            noView: prop('noView', isBool),\n            toggleNoView: prop('toggleNoView', isBool),\n            doc: { enumerable: false, get: () => doc },\n        });\n        wrapper.getProps = () => {\n            const out = {};\n            for (const key of Object.keys(record.current))\n                out[key] = cloneAnnotValue(record.current[key]);\n            return out;\n        };\n        wrapper.setProps = (props) => {\n            const source = (props ?? {});\n            for (const key of Object.keys(source)) {\n                const alias = key === 'style' ? 'borderStyle' : key === 'lock' ? 'locked' : key;\n                void alias;\n                wrapper[key] = source[key];\n            }\n        };\n        return wrapper;\n    };\n    const getAnnots = (spec) => {\n        if (!state)\n            return null;\n        const nPage = spec?.nPage;\n        if (nPage === undefined || nPage === null) {\n            if (!state.annotsCoverDocument) {\n                diagnostic('unsupported-api', 'getAnnots: whole-document search is limited to the prefetched pages (compatibility deviation)');\n            }\n            return state.annots.length ? state.annots.map((record) => record.wrapper) : null;\n        }\n        const page = Math.trunc(Number(nPage));\n        if (!state.annotPages.has(page)) {\n            diagnostic('unsupported-api', `getAnnots: page ${page} is outside the prefetched annots plane (compatibility deviation)`);\n            return null;\n        }\n        const records = state.annotsByPage.get(page) ?? [];\n        return records.length ? records.map((record) => record.wrapper) : null;\n    };\n    const getAnnot = (nPage, name) => {\n        const records = getAnnots({ nPage });\n        if (!records)\n            return null;\n        for (const wrapper of records) {\n            if (String(wrapper.name) === String(name))\n                return wrapper;\n        }\n        return null;\n    };\n    doc.getAnnots = getAnnots;\n    doc.getAnnot = getAnnot;\n    Object.defineProperties(doc, {\n        documentFileName: {\n            enumerable: true,\n            get: () => String(state?.input.document?.fileName ?? ''),\n        },\n        numFields: { enumerable: true, get: () => state?.fields.length ?? 0 },\n        pageNum: {\n            enumerable: true,\n            get: () => Number(state?.input.document?.pageNumber ?? 0),\n            set: (value) => {\n                const page = Math.trunc(Number(value));\n                if (Number.isFinite(page))\n                    state?.uiEffects.push({ kind: 'gotoPage', page });\n            },\n        },\n    });\n    doc.getField = getField;\n    doc.getNthFieldName = (index) => String(state?.fields[Math.trunc(Number(index))]?.input.name ?? '');\n    doc.resetForm = (names) => {\n        if (!state)\n            return;\n        const requested = names === undefined\n            ? state.fields\n            : (Array.isArray(names) ? names : [names])\n                .map((name) => state.fieldsByName.get(String(name)))\n                .filter((field) => field !== undefined);\n        for (const field of requested) {\n            field.value = cloneValue(field.input.defaultValue);\n            const key = refKey(field.input.ref);\n            if (!state.resetKeys.has(key)) {\n                state.resetKeys.add(key);\n                state.resetRefs.push(field.input.ref);\n            }\n        }\n    };\n    doc.print = () => state?.uiEffects.push({ kind: 'print' });\n    // Acrobat's doc.submitForm: positional (cURL, bFDF, bEmpty, aFields) or a\n    // single argument object ({cURL, aFields, bEmpty, cSubmitAs, bGet}). It\n    // emits a submit intent \u2014 resolution (Table 239/240 semantics) and the\n    // sink chain (embedder handler \u2192 the document's home \u2192 blocked) live\n    // outside the VM; nothing here touches a network.\n    doc.submitForm = (cUrlOrArgs, bFDF, bEmpty, aFields) => {\n        if (!state)\n            return;\n        const args = cUrlOrArgs !== null && typeof cUrlOrArgs === 'object'\n            ? cUrlOrArgs\n            : { cURL: cUrlOrArgs, bFDF, bEmpty, aFields };\n        const names = Array.isArray(args.aFields)\n            ? args.aFields.map((name) => String(name))\n            : null;\n        const submitAs = args.cSubmitAs === undefined ? undefined : String(args.cSubmitAs).toUpperCase();\n        const format = submitAs === 'FDF'\n            ? 'fdf'\n            : submitAs === 'XFDF'\n                ? 'xfdf'\n                : submitAs === 'HTML'\n                    ? 'html'\n                    : submitAs === 'PDF'\n                        ? 'pdf'\n                        : args.bFDF === false\n                            ? 'html'\n                            : undefined;\n        state.uiEffects.push({\n            kind: 'submitForm',\n            url: args.cURL === undefined || args.cURL === null ? null : String(args.cURL),\n            fieldNames: names,\n            includeEmpty: Boolean(args.bEmpty),\n            ...(format === undefined ? {} : { format }),\n            ...(args.bGet === undefined ? {} : { method: args.bGet ? 'get' : 'post' }),\n        });\n    };\n    doc.mailDoc = () => blocked('mailDoc');\n    doc.getURL = () => blocked('getURL');\n    const app = {\n        // Viewer identity \u2014 the properties Adobe's ubiquitous version-check\n        // boilerplate (`!ADBE::\u2026VersChk\u2026` name-tree scripts) branches on. Honest\n        // values for an emulated modern-Reader-level environment, so those\n        // scripts take their \"viewer is current\" paths instead of tripping over\n        // `undefined`. Deliberately no `xfa_installed`: we never claim XFA.\n        platform: 'WIN',\n        language: 'ENU',\n        viewerType: 'Reader',\n        viewerVariation: 'Reader',\n        viewerVersion: 21,\n        formsVersion: 21,\n        alert: (message, icon, _type, title) => {\n            state?.uiEffects.push({\n                kind: 'alert',\n                message: String(message),\n                icon: Number.isFinite(Number(icon)) ? Number(icon) : 0,\n                ...(title === undefined ? {} : { title: String(title) }),\n            });\n            return 1;\n        },\n        beep: () => diagnostic('unsupported-api', 'app.beep is not supported in v1'),\n        response: () => {\n            diagnostic('unsupported-api', 'app.response is not supported in v1');\n            return null;\n        },\n        launchURL: () => blocked('app.launchURL'),\n        // Acrobat's contract when a viewer component (e.g. the XFA plugin) is not\n        // available is `undefined` \u2014 never a throw. A web viewer has no\n        // installable components, so \"not available\" is always the truthful\n        // answer; Adobe's XFA-check boilerplate calls this after its upgrade nag.\n        findComponent: () => {\n            diagnostic('unsupported-api', 'app.findComponent: no installable components in this viewer');\n            return undefined;\n        },\n    };\n    const pad = (value, length = 2) => String(value).padStart(length, '0');\n    const monthShort = [\n        'Jan',\n        'Feb',\n        'Mar',\n        'Apr',\n        'May',\n        'Jun',\n        'Jul',\n        'Aug',\n        'Sep',\n        'Oct',\n        'Nov',\n        'Dec',\n    ];\n    const monthLong = [\n        'January',\n        'February',\n        'March',\n        'April',\n        'May',\n        'June',\n        'July',\n        'August',\n        'September',\n        'October',\n        'November',\n        'December',\n    ];\n    const printd = (format, inputDate) => {\n        const environment = (state?.input.environment ?? {});\n        const date = inputDate && typeof inputDate.getTime === 'function'\n            ? new NativeDate(Number(inputDate.getTime()))\n            : new NativeDate(Number(environment.nowMs ?? 0));\n        const local = new NativeDate(date.getTime() + Number(environment.utcOffsetMinutes ?? 0) * 60000);\n        const year = local.getUTCFullYear();\n        const month = local.getUTCMonth();\n        const day = local.getUTCDate();\n        const hour = local.getUTCHours();\n        const minute = local.getUTCMinutes();\n        const second = local.getUTCSeconds();\n        const hour12 = hour % 12 === 0 ? 12 : hour % 12;\n        const tokens = {\n            yyyy: String(year),\n            yy: pad(year % 100),\n            mmmm: monthLong[month],\n            mmm: monthShort[month],\n            mm: pad(month + 1),\n            m: String(month + 1),\n            dd: pad(day),\n            d: String(day),\n            HH: pad(hour),\n            hh: pad(hour12),\n            h: String(hour12),\n            H: String(hour),\n            MM: pad(minute),\n            M: String(minute),\n            ss: pad(second),\n            tt: hour < 12 ? 'am' : 'pm',\n        };\n        // Single pass, longest tokens first; replacements are never re-scanned, so\n        // an emitted 'am'/'pm' cannot collide with the month token.\n        return String(format).replace(/yyyy|mmmm|mmm|yy|mm|dd|HH|hh|MM|ss|tt|m|d|H|h|M/g, (token) => tokens[token]);\n    };\n    const util = {\n        printd,\n        printf: (format, ...values) => {\n            let index = 0;\n            return String(format).replace(/%(?:,?\\d*(?:\\.\\d+)?)?[dfs]/g, (token) => {\n                const value = values[index++];\n                if (token.endsWith('s'))\n                    return String(value ?? '');\n                if (token.endsWith('d'))\n                    return String(Math.trunc(numberValue(value)));\n                const precision = /\\.(\\d+)/.exec(token)?.[1];\n                return numberValue(value).toFixed(precision ? Number(precision) : 0);\n            });\n        },\n    };\n    const begin = (input, budget) => {\n        const fields = (input.fields ?? []).map((field) => {\n            const record = {\n                input: field,\n                originalValue: cloneValue(field.value),\n                value: cloneValue(field.value),\n                originalDisplay: String(field.display ?? 'visible'),\n                display: String(field.display ?? 'visible'),\n                wrapper: {},\n            };\n            record.wrapper = makeField(record);\n            return record;\n        });\n        const fieldsByName = new Map(fields.map((field) => [String(field.input.name), field]));\n        const fieldsByRef = new Map(fields.map((field) => [refKey(field.input.ref), field]));\n        const annots = (input.annots ?? []).map((annotation) => {\n            const writableSnapshot = () => ({\n                strokeColor: cloneAnnotValue(annotation.strokeColor ?? ['T']),\n                fillColor: cloneAnnotValue(annotation.fillColor ?? ['T']),\n                opacity: Number(annotation.opacity ?? 1),\n                width: Number(annotation.width ?? 1),\n                borderStyle: String(annotation.borderStyle ?? 'S'),\n                dash: cloneAnnotValue(annotation.dash ?? []),\n                rect: cloneAnnotValue(annotation.rect ?? [0, 0, 0, 0]),\n                contents: String(annotation.contents ?? ''),\n                hidden: Boolean(annotation.hidden),\n                print: Boolean(annotation.print),\n                readOnly: Boolean(annotation.readOnly),\n                locked: Boolean(annotation.locked),\n                noView: Boolean(annotation.noView),\n                toggleNoView: Boolean(annotation.toggleNoView),\n            });\n            const record = {\n                input: annotation,\n                original: writableSnapshot(),\n                current: writableSnapshot(),\n                wrapper: {},\n            };\n            record.wrapper = makeAnnot(record);\n            return record;\n        });\n        const annotsByPage = new Map();\n        for (const record of annots) {\n            const page = Number(record.input.page ?? 0);\n            const bucket = annotsByPage.get(page);\n            if (bucket)\n                bucket.push(record);\n            else\n                annotsByPage.set(page, [record]);\n        }\n        const eventInput = (input.event ?? {});\n        const target = fieldsByRef.get(refKey(eventInput.target));\n        const source = fieldsByRef.get(refKey(eventInput.source));\n        const initialValue = eventInput.value !== undefined\n            ? cloneValue(eventInput.value)\n            : cloneValue(target?.value ?? null);\n        const eventType = eventInput.type !== undefined\n            ? String(eventInput.type)\n            : eventInput.kind === 'name-tree-boot'\n                ? 'Doc'\n                : 'Field';\n        const event = {\n            // Explicit type/name (action-driven runs, from trigger provenance)\n            // beat the kind-derived defaults (the K/V/C/F pipeline path).\n            name: eventInput.name !== undefined\n                ? String(eventInput.name)\n                : eventName(String(eventInput.kind ?? '')),\n            type: eventType,\n            // Doc-typed events target the Doc object (Acrobat's WillSave\n            // boilerplate does `event.target.getField(...)`); field targets win\n            // when present (a widget-anchored run).\n            target: target?.wrapper ?? (eventType === 'Doc' ? doc : null),\n            targetName: String(target?.input.name ?? ''),\n            source: source?.wrapper ?? { source: doc },\n            value: initialValue,\n            change: String(eventInput.change ?? ''),\n            selStart: Math.max(0, Math.trunc(Number(eventInput.selStart ?? 0))),\n            selEnd: Math.max(0, Math.trunc(Number(eventInput.selEnd ?? 0))),\n            willCommit: Boolean(eventInput.willCommit),\n            modifier: Boolean(eventInput.modifier),\n            shift: Boolean(eventInput.shift),\n            rc: true,\n        };\n        state = {\n            input,\n            fields,\n            fieldsByName,\n            fieldsByRef,\n            annots,\n            annotsByPage,\n            annotPages: new Set((input.annotPages ?? []).map((page) => Math.trunc(Number(page)))),\n            annotsCoverDocument: Boolean(input.annotsCoverDocument),\n            event,\n            resetRefs: [],\n            resetKeys: new Set(),\n            uiEffects: [],\n            diagnostics: [],\n            randomState: Number(input.environment?.randomSeed ?? 1) >>> 0,\n            maxEffects: Math.max(1, Math.trunc(Number(budget?.maxEffects ?? 256))),\n        };\n        host.event = event;\n        host.identity = { ...(input.identity ?? {}) };\n    };\n    const formValue = (field, value) => {\n        const family = String(field.input.family);\n        if (family === 'text')\n            return { value: String(value ?? '') };\n        if (family === 'checkbox' || family === 'radio') {\n            // A toggle's script value is its export value, 'Off' when clear.\n            return {\n                value: value === null || value === undefined || String(value) === 'Off' ? null : String(value),\n            };\n        }\n        if (family === 'combobox') {\n            const selected = Array.isArray(value) ? value[0] : value;\n            const text = selected === null || selected === undefined ? '' : String(selected);\n            return { value: text === '' ? null : text };\n        }\n        if (family === 'listbox') {\n            if (Array.isArray(value))\n                return { selectedValues: value.map(String) };\n            return {\n                selectedValues: value === null || value === undefined || value === '' ? [] : [String(value)],\n            };\n        }\n        diagnostic('invalid-field-value', `field '${String(field.input.name)}' cannot accept a scripted value`);\n        return null;\n    };\n    const eventOutput = () => ({\n        rc: Boolean(state?.event.rc),\n        value: cloneValue(state?.event.value ?? null),\n        change: String(state?.event.change ?? ''),\n        selStart: Math.max(0, Math.trunc(Number(state?.event.selStart ?? 0))),\n        selEnd: Math.max(0, Math.trunc(Number(state?.event.selEnd ?? 0))),\n    });\n    const finish = () => {\n        if (!state)\n            throw new Error('AcroJS run state was not initialized');\n        const eventInput = state.input.event;\n        const target = state.fieldsByRef.get(refKey(eventInput.target));\n        const kind = String(eventInput.kind ?? '');\n        if (target && kind === 'field-calculate')\n            target.value = cloneValue(state.event.value);\n        const formEffects = [];\n        if (state.resetRefs.length > 0)\n            formEffects.push({ kind: 'reset', refs: [...state.resetRefs] });\n        for (const field of state.fields) {\n            const key = refKey(field.input.ref);\n            // A reset effect is replayed before the value effects below, so reset\n            // fields start from their default rather than the transaction input.\n            // This preserves reset -> rewrite-to-original sequences.\n            const valueBaseline = state.resetKeys.has(key)\n                ? field.input.defaultValue\n                : field.originalValue;\n            if (!sameValue(field.value, valueBaseline)) {\n                const value = formValue(field, field.value);\n                if (value)\n                    formEffects.push({ kind: 'setValue', ref: field.input.ref, value });\n            }\n            if (field.display !== field.originalDisplay) {\n                formEffects.push({ kind: 'setDisplay', ref: field.input.ref, display: field.display });\n            }\n        }\n        if (target && kind === 'field-format') {\n            formEffects.push({\n                kind: 'setAppearanceText',\n                ref: target.input.ref,\n                text: String(state.event.value ?? ''),\n            });\n        }\n        // Annot effects: the canonical per-annot diff, exactly the fields model \u2014\n        // last write wins per key, ordered by the input plane's annot order.\n        const annotEffects = [];\n        for (const record of state.annots) {\n            const patch = {};\n            const flags = {};\n            for (const key of Object.keys(record.current)) {\n                if (sameAnnotValue(record.current[key], record.original[key]))\n                    continue;\n                if (ANNOT_FLAG_KEYS.indexOf(key) >= 0)\n                    flags[key] = record.current[key];\n                else\n                    patch[key] = cloneAnnotValue(record.current[key]);\n            }\n            if (Object.keys(flags).length > 0)\n                patch.flags = flags;\n            if (Object.keys(patch).length > 0)\n                annotEffects.push({ ref: record.input.ref, patch });\n        }\n        const totalEffects = formEffects.length + annotEffects.length + state.uiEffects.length;\n        if (totalEffects > state.maxEffects) {\n            return {\n                event: eventOutput(),\n                formEffects: [],\n                annotEffects: [],\n                uiEffects: [],\n                diagnostics: [...state.diagnostics],\n                error: {\n                    kind: 'budget',\n                    message: `script produced ${totalEffects} effects; limit is ${state.maxEffects}`,\n                },\n            };\n        }\n        return {\n            event: eventOutput(),\n            formEffects,\n            annotEffects,\n            uiEffects: [...state.uiEffects],\n            diagnostics: [...state.diagnostics],\n        };\n    };\n    const failed = (error) => ({\n        event: eventOutput(),\n        formEffects: [],\n        annotEffects: [],\n        uiEffects: [],\n        diagnostics: [...(state?.diagnostics ?? [])],\n        error: {\n            kind: 'exception',\n            message: error instanceof Error ? error.message : String(error),\n            ...(error instanceof Error && error.stack ? { stack: error.stack } : {}),\n        },\n    });\n    const evaluate = (source) => {\n        // Indirect eval is deliberate: name-tree declarations must persist in the\n        // isolated realm's global scope for later field events.\n        return (0, eval)(source);\n    };\n    const boot = (sources, input, budget) => {\n        begin(input, budget);\n        try {\n            for (const source of sources ?? [])\n                evaluate(String(source));\n            return finish();\n        }\n        catch (error) {\n            return failed(error);\n        }\n    };\n    const run = (source, input, budget) => {\n        begin(input, budget);\n        try {\n            evaluate(String(source));\n            return finish();\n        }\n        catch (error) {\n            return failed(error);\n        }\n    };\n    // PDF scripts share this realm, but they must not replace the host-owned\n    // transaction boundary for later events in the same document.\n    Object.defineProperties(host, {\n        __acrojsBoot: { configurable: false, writable: false, value: boot },\n        __acrojsRun: { configurable: false, writable: false, value: run },\n    });\n    host.app = app;\n    host.util = util;\n    host.display = Object.freeze({ visible: 0, hidden: 1, noPrint: 2, noView: 3 });\n    // The standard Acrobat color object: constants + convert/equal with the\n    // documented G/RGB/CMYK vectors (self-contained twin of src/color.ts).\n    host.color = Object.freeze({\n        transparent: Object.freeze(['T']),\n        black: Object.freeze(['G', 0]),\n        white: Object.freeze(['G', 1]),\n        gray: Object.freeze(['G', 0.5]),\n        ltGray: Object.freeze(['G', 0.75]),\n        dkGray: Object.freeze(['G', 0.25]),\n        red: Object.freeze(['RGB', 1, 0, 0]),\n        green: Object.freeze(['RGB', 0, 1, 0]),\n        blue: Object.freeze(['RGB', 0, 0, 1]),\n        cyan: Object.freeze(['CMYK', 1, 0, 0, 0]),\n        magenta: Object.freeze(['CMYK', 0, 1, 0, 0]),\n        yellow: Object.freeze(['CMYK', 0, 0, 1, 0]),\n        convert: (value, space) => {\n            if (!isColorArray(value))\n                return ['T'];\n            const target = String(space);\n            const rgb = colorToRgbTriple(value);\n            if (target === 'T' || rgb === null)\n                return ['T'];\n            if (target === 'G')\n                return ['G', 0.3 * rgb[0] + 0.59 * rgb[1] + 0.11 * rgb[2]];\n            if (target === 'RGB')\n                return ['RGB', rgb[0], rgb[1], rgb[2]];\n            if (target === 'CMYK') {\n                const black = 1 - Math.max(rgb[0], rgb[1], rgb[2]);\n                return ['CMYK', 1 - rgb[0] - black, 1 - rgb[1] - black, 1 - rgb[2] - black, black];\n            }\n            return ['T'];\n        },\n        equal: (left, right) => {\n            if (!isColorArray(left) || !isColorArray(right))\n                return false;\n            const leftRgb = colorToRgbTriple(left);\n            const rightRgb = colorToRgbTriple(right);\n            if (leftRgb === null || rightRgb === null)\n                return leftRgb === rightRgb;\n            return leftRgb.every((component, index) => Math.abs(component - rightRgb[index]) < 1e-6);\n        },\n    });\n    host.getField = getField;\n    host.getAnnots = getAnnots;\n    host.getAnnot = getAnnot;\n    host.resetForm = doc.resetForm;\n    host.print = doc.print;\n    host.submitForm = doc.submitForm;\n    host.mailDoc = doc.mailDoc;\n    host.getURL = doc.getURL;\n    Object.defineProperties(host, {\n        documentFileName: { configurable: true, get: () => doc.documentFileName },\n        numFields: { configurable: true, get: () => doc.numFields },\n        pageNum: {\n            configurable: true,\n            get: () => doc.pageNum,\n            set: (value) => {\n                doc.pageNum = value;\n            },\n        },\n    });\n    class FixedDate extends NativeDate {\n        constructor(...args) {\n            if (args.length === 0) {\n                super(Number((state?.input.environment ?? {}).nowMs ?? 0));\n            }\n            else if (args.length === 1) {\n                super(args[0]);\n            }\n            else {\n                super(Number(args[0]), Number(args[1]), Number(args[2] ?? 1), Number(args[3] ?? 0), Number(args[4] ?? 0), Number(args[5] ?? 0), Number(args[6] ?? 0));\n            }\n        }\n        static now() {\n            return Number((state?.input.environment ?? {}).nowMs ?? 0);\n        }\n    }\n    host.Date = FixedDate;\n    const math = host.Math;\n    if (math) {\n        math.random = () => {\n            if (!state)\n                return 0;\n            state.randomState = (1664525 * state.randomState + 1013904223) >>> 0;\n            return state.randomState / 0x100000000;\n        };\n    }\n    host.AFSimple_Calculate = (operation, names) => {\n        const requested = Array.isArray(names) ? names : String(names).split(',');\n        const values = requested.map((name) => numberValue(getField(String(name).trim())?.value));\n        const op = String(operation).toUpperCase();\n        const value = values.length === 0\n            ? 0\n            : op === 'PRD'\n                ? values.reduce((left, right) => left * right, 1)\n                : op === 'AVG'\n                    ? values.reduce((left, right) => left + right, 0) / values.length\n                    : op === 'MIN'\n                        ? Math.min(...values)\n                        : op === 'MAX'\n                            ? Math.max(...values)\n                            : values.reduce((left, right) => left + right, 0);\n        if (state)\n            state.event.value = value;\n    };\n    host.AFNumber_Format = (decimals, separatorStyle, _negativeStyle, _currencyStyle, currency, prepend) => {\n        if (!state)\n            return;\n        const places = Math.max(0, Math.min(10, Math.trunc(Number(decimals))));\n        let formatted = numberValue(state.event.value).toFixed(places);\n        if (Number(separatorStyle) === 0 || Number(separatorStyle) === 2) {\n            const [whole, fraction] = formatted.split('.');\n            formatted = `${whole.replace(/\\B(?=(\\d{3})+(?!\\d))/g, ',')}${fraction === undefined ? '' : `.${fraction}`}`;\n        }\n        const symbol = String(currency ?? '');\n        state.event.value = prepend ? `${symbol}${formatted}` : `${formatted}${symbol}`;\n    };\n    host.AFPercent_Format = (decimals) => {\n        if (!state)\n            return;\n        const places = Math.max(0, Math.min(10, Math.trunc(Number(decimals))));\n        state.event.value = `${(numberValue(state.event.value) * 100).toFixed(places)}%`;\n    };\n    // \u2500\u2500 Acrobat AF support library \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n    // Deterministic subset of Acrobat's AFxxx forms helpers. Everything reads\n    // only the injected environment; keystroke helpers validate the committed\n    // value (this pipeline runs K once, on commit, as a full replacement).\n    const DATE_FORMATS = [\n        'm/d',\n        'm/d/yy',\n        'mm/dd/yy',\n        'mm/yy',\n        'd-mmm',\n        'd-mmm-yy',\n        'dd-mmm-yy',\n        'yy-mm-dd',\n        'mmm-yy',\n        'mmmm-yy',\n        'mmm d, yyyy',\n        'mmmm d, yyyy',\n        'm/d/yy h:MM tt',\n        'm/d/yy HH:MM',\n    ];\n    const TIME_FORMATS = ['HH:MM', 'h:MM tt', 'HH:MM:ss', 'h:MM:ss tt'];\n    const rejectWithAlert = (message) => {\n        if (!state)\n            return;\n        state.uiEffects.push({ kind: 'alert', message, icon: 0 });\n        state.event.rc = false;\n    };\n    const formatMismatch = () => rejectWithAlert(`The value entered does not match the format of the field [ ${String(state?.event.targetName ?? '')} ]`);\n    const dateMismatch = (format) => rejectWithAlert(`Invalid date/time: please ensure that the date/time exists. Field [ ${String(state?.event.targetName ?? '')} ] should match format ${String(format ?? '')}`);\n    const mergeChange = (eventObject) => {\n        const event = (eventObject ?? state?.event ?? {});\n        const value = String(event.value ?? '');\n        if (event.willCommit)\n            return value;\n        const start = Math.max(0, Math.trunc(Number(event.selStart ?? 0)));\n        const end = Math.max(start, Math.trunc(Number(event.selEnd ?? 0)));\n        return value.slice(0, start) + String(event.change ?? '') + value.slice(end);\n    };\n    host.AFMergeChange = mergeChange;\n    const makeNumber = (value) => {\n        if (typeof value === 'number')\n            return Number.isFinite(value) ? value : null;\n        let text = String(value ?? '').trim();\n        if (text === '')\n            return null;\n        text = text.replace(/[^0-9,.\\-+eE]/g, '');\n        if (text.includes(',') && text.includes('.')) {\n            // The last separator is the decimal: \"1,234.56\" vs \"1.234,56\".\n            text =\n                text.lastIndexOf(',') > text.lastIndexOf('.')\n                    ? text.replace(/\\./g, '').replace(',', '.')\n                    : text.replace(/,/g, '');\n        }\n        else if (text.includes(',')) {\n            // A single comma reads as the decimal separator; several are thousands.\n            text =\n                (text.match(/,/g) ?? []).length === 1 ? text.replace(',', '.') : text.replace(/,/g, '');\n        }\n        const parsed = Number(text);\n        return text !== '' && Number.isFinite(parsed) ? parsed : null;\n    };\n    host.AFMakeNumber = makeNumber;\n    host.AFExtractNums = (value) => {\n        const matches = String(value ?? '').match(/\\d+/g);\n        return matches && matches.length > 0 ? [...matches] : null;\n    };\n    const validNumberText = (text, separatorStyle) => {\n        const trimmed = text.trim();\n        if (trimmed === '')\n            return true;\n        const decimalComma = separatorStyle === 2 || separatorStyle === 3;\n        const pattern = decimalComma\n            ? /^[+-]?(\\d+|\\d{1,3}(\\.\\d{3})+)?(,\\d*)?$/\n            : /^[+-]?(\\d+|\\d{1,3}(,\\d{3})+)?(\\.\\d*)?$/;\n        return pattern.test(trimmed) && /\\d/.test(trimmed);\n    };\n    host.AFNumber_Keystroke = (_decimals, separatorStyle, _negativeStyle, _currencyStyle, currency) => {\n        if (!state || !state.event.willCommit)\n            return;\n        const proposed = mergeChange(state.event);\n        const cleaned = currency ? proposed.split(String(currency)).join('') : proposed;\n        if (!validNumberText(cleaned, Math.trunc(Number(separatorStyle))))\n            formatMismatch();\n    };\n    host.AFPercent_Keystroke = (_decimals, separatorStyle) => {\n        if (!state || !state.event.willCommit)\n            return;\n        const cleaned = mergeChange(state.event).replace(/%\\s*$/, '');\n        if (!validNumberText(cleaned, Math.trunc(Number(separatorStyle))))\n            formatMismatch();\n    };\n    const digitsOf = (value) => String(value ?? '').replace(/\\D/g, '');\n    const afSpecialFormat = (psf) => {\n        if (!state)\n            return;\n        const digits = digitsOf(state.event.value);\n        const kind = Math.trunc(Number(psf));\n        let formatted = String(state.event.value ?? '');\n        if (kind === 0)\n            formatted = digits.slice(0, 5);\n        else if (kind === 1)\n            formatted = `${digits.slice(0, 5)}-${digits.slice(5, 9)}`;\n        else if (kind === 2)\n            formatted =\n                digits.length >= 10\n                    ? `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`\n                    : `${digits.slice(0, 3)}-${digits.slice(3, 7)}`;\n        else if (kind === 3)\n            formatted = `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5, 9)}`;\n        state.event.value = formatted;\n    };\n    host.AFSpecial_Format = afSpecialFormat;\n    host.AFSpecial_Keystroke = (psf) => {\n        if (!state || !state.event.willCommit)\n            return;\n        const merged = mergeChange(state.event);\n        if (merged.trim() === '')\n            return;\n        const digits = digitsOf(merged).length;\n        const kind = Math.trunc(Number(psf));\n        const valid = kind === 0\n            ? digits === 5\n            : kind === 1\n                ? digits === 9\n                : kind === 2\n                    ? digits === 7 || digits === 10\n                    : digits === 9;\n        if (!valid)\n            formatMismatch();\n    };\n    host.AFRange_Validate = (useGreater, greaterThan, useLess, lessThan) => {\n        if (!state)\n            return;\n        const value = makeNumber(state.event.value);\n        if (value === null)\n            return;\n        const hasGreater = Boolean(useGreater);\n        const hasLess = Boolean(useLess);\n        const low = Number(greaterThan);\n        const high = Number(lessThan);\n        if ((!hasGreater || value >= low) && (!hasLess || value <= high))\n            return;\n        rejectWithAlert(hasGreater && hasLess\n            ? `Invalid value: must be greater than or equal to ${low} and less than or equal to ${high}.`\n            : hasGreater\n                ? `Invalid value: must be greater than or equal to ${low}.`\n                : `Invalid value: must be less than or equal to ${high}.`);\n    };\n    const nowWall = () => {\n        const env = (state?.input.environment ?? {});\n        const local = new NativeDate(Number(env.nowMs ?? 0) + Number(env.utcOffsetMinutes ?? 0) * 60000);\n        return {\n            y: local.getUTCFullYear(),\n            m: local.getUTCMonth() + 1,\n            d: local.getUTCDate(),\n            H: 0,\n            M: 0,\n            S: 0,\n        };\n    };\n    /** printd adds the environment offset itself, so a wall time converts back. */\n    const wallDate = (parts) => {\n        const env = (state?.input.environment ?? {});\n        return new NativeDate(NativeDate.UTC(parts.y, parts.m - 1, parts.d, parts.H, parts.M, parts.S) -\n            Number(env.utcOffsetMinutes ?? 0) * 60000);\n    };\n    /** Lenient scand-style parse: numbers mapped by the format's token order,\n     *  month names accepted, missing parts defaulted like Acrobat's scand. */\n    const parseDateLoose = (raw, format) => {\n        const text = String(raw ?? '').trim();\n        if (text === '')\n            return null;\n        const lower = text.toLowerCase();\n        let namedMonth = null;\n        for (let index = 0; index < 12; index += 1) {\n            if (lower.indexOf(monthShort[index].toLowerCase()) >= 0) {\n                namedMonth = index + 1;\n                break;\n            }\n        }\n        const timeMatch = /(\\d{1,2}):(\\d{2})(?::(\\d{2}))?\\s*(am|pm)?/i.exec(text);\n        let hours = 0;\n        let minutes = 0;\n        let seconds = 0;\n        if (timeMatch) {\n            hours = Number(timeMatch[1]);\n            minutes = Number(timeMatch[2]);\n            seconds = Number(timeMatch[3] ?? 0);\n            const marker = String(timeMatch[4] ?? '').toLowerCase();\n            if (marker === 'pm' && hours < 12)\n                hours += 12;\n            if (marker === 'am' && hours === 12)\n                hours = 0;\n            if (hours > 23 || minutes > 59 || seconds > 59)\n                return null;\n        }\n        const dateText = timeMatch\n            ? text.slice(0, timeMatch.index) + text.slice(timeMatch.index + timeMatch[0].length)\n            : text;\n        const numbers = (dateText.match(/\\d+/g) ?? []).map((token) => Number(token));\n        const order = [];\n        for (const token of String(format ?? '').match(/yyyy|mmmm|mmm|yy|mm|dd|m|d/g) ?? []) {\n            const kind = (token[0] === 'y' ? 'y' : token[0] === 'm' ? 'm' : 'd');\n            if (order.indexOf(kind) < 0)\n                order.push(kind);\n        }\n        let year = null;\n        let month = namedMonth;\n        let day = null;\n        let cursor = 0;\n        for (const kind of order) {\n            if (kind === 'm' && namedMonth !== null)\n                continue;\n            if (cursor >= numbers.length)\n                break;\n            const value = numbers[cursor];\n            cursor += 1;\n            if (kind === 'y')\n                year = value;\n            else if (kind === 'm')\n                month = value;\n            else\n                day = value;\n        }\n        if (year === null && month === null && day === null && !timeMatch)\n            return null;\n        const today = nowWall();\n        if (year === null)\n            year = today.y;\n        else if (year < 100)\n            year = year < 50 ? 2000 + year : 1900 + year;\n        if (month === null)\n            month = today.m;\n        if (day === null)\n            day = 1;\n        if (month < 1 || month > 12 || day < 1 || day > 31)\n            return null;\n        const probe = new NativeDate(NativeDate.UTC(year, month - 1, day));\n        if (probe.getUTCFullYear() !== year ||\n            probe.getUTCMonth() !== month - 1 ||\n            probe.getUTCDate() !== day) {\n            return null;\n        }\n        return { y: year, m: month, d: day, H: hours, M: minutes, S: seconds };\n    };\n    const afDateFormatEx = (format) => {\n        if (!state)\n            return;\n        const raw = String(state.event.value ?? '');\n        if (raw.trim() === '')\n            return;\n        let date = new FixedDate(raw);\n        if (Number.isNaN(date.getTime())) {\n            const parts = parseDateLoose(raw, format);\n            if (!parts)\n                return; // unparsable: leave the value untouched\n            date = wallDate(parts);\n        }\n        state.event.value = printd(format, date);\n    };\n    host.AFDate_FormatEx = afDateFormatEx;\n    host.AFDate_Format = (index) => afDateFormatEx(DATE_FORMATS[Math.trunc(Number(index))] ?? 'm/d/yy');\n    const afDateKeystrokeEx = (format) => {\n        if (!state || !state.event.willCommit)\n            return;\n        const merged = mergeChange(state.event);\n        if (merged.trim() === '')\n            return;\n        if (!parseDateLoose(merged, format))\n            dateMismatch(format);\n    };\n    host.AFDate_KeystrokeEx = afDateKeystrokeEx;\n    host.AFDate_Keystroke = (index) => afDateKeystrokeEx(DATE_FORMATS[Math.trunc(Number(index))] ?? 'm/d/yy');\n    const afTimeFormatEx = (format) => {\n        if (!state)\n            return;\n        const raw = String(state.event.value ?? '');\n        if (raw.trim() === '')\n            return;\n        const parts = parseDateLoose(raw, format);\n        if (!parts)\n            return;\n        state.event.value = printd(format, wallDate(parts));\n    };\n    host.AFTime_FormatEx = afTimeFormatEx;\n    host.AFTime_Format = (index) => afTimeFormatEx(TIME_FORMATS[Math.trunc(Number(index))] ?? 'HH:MM');\n    host.AFTime_Keystroke = (index) => {\n        if (!state || !state.event.willCommit)\n            return;\n        const merged = mergeChange(state.event);\n        if (merged.trim() === '')\n            return;\n        if (!parseDateLoose(merged, TIME_FORMATS[Math.trunc(Number(index))] ?? 'HH:MM')) {\n            dateMismatch(TIME_FORMATS[Math.trunc(Number(index))] ?? 'HH:MM');\n        }\n    };\n    // QuickJS does not provide browser networking, but explicitly shadow these\n    // names so a future adapter cannot accidentally inject ambient authority.\n    host.fetch = undefined;\n    host.XMLHttpRequest = undefined;\n    host.WebSocket = undefined;\n})(globalThis);"
+    }
+  }
+]
