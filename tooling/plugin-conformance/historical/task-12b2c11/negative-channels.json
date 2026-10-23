@@ -1,0 +1,131 @@
+[
+  {
+    "name": "a-failed-open",
+    "step": 2,
+    "channel": "rejections",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "bad file",
+        "code": "operation-failed",
+        "capability": "documents",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "bad file",
+            "code": "Format"
+          }
+        }
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/kernel.ts",
+      "line": 385,
+      "symbol": "openFailed",
+      "sha256": "7d9d0a102fec2eeea0c1cb782f96d3e4865a31bc0ed16d46d11208ab6e7a203b"
+    }
+  },
+  {
+    "name": "events",
+    "step": 6,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/event-hook.ts",
+      "line": 57,
+      "symbol": "listener(event)",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+    }
+  },
+  {
+    "name": "events",
+    "step": 7,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/event-hook.ts",
+      "line": 57,
+      "symbol": "listener(event)",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+    }
+  },
+  {
+    "name": "events",
+    "step": 8,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/event-hook.ts",
+      "line": 57,
+      "symbol": "listener(event)",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+    }
+  },
+  {
+    "name": "events",
+    "step": 11,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/event-hook.ts",
+      "line": 57,
+      "symbol": "listener(event)",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+    }
+  },
+  {
+    "name": "events",
+    "step": 12,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/event-hook.ts",
+      "line": 57,
+      "symbol": "listener(event)",
+      "sha256": "9639c839a0eef779a7e61d88ed77cefe6bb35568411a345962528c2e6a914508"
+    }
+  },
+  {
+    "name": "destroy",
+    "step": 3,
+    "channel": "stepThrows",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"view-manager\") on a destroyed kernel"
+      }
+    },
+    "source": {
+      "path": "packages/core/main/src/kernel.ts",
+      "line": 418,
+      "symbol": "${what} on a ${status} kernel",
+      "sha256": "7d9d0a102fec2eeea0c1cb782f96d3e4865a31bc0ed16d46d11208ab6e7a203b"
+    }
+  }
+]

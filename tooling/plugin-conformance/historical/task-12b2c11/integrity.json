@@ -1,0 +1,17 @@
+{
+  "current-inputs-runtime.json": "acf930d598b66f075ead5e7b3d689c03e46a19812f87e99390d4e33c15d73643",
+  "before-named-transitions.ts.txt": "f746d8f3372e289ac8ce55e2d09c5c4fe4b250aecdadd6e9d3acc8ad1203dadf",
+  "runtime-summary.json": "5f977b13c786c68a2d0e6c855fc8982d77a02f96920ec67ab5973a1614275a85",
+  "original-runtime.json": "4e9022d68b118f65d04ef820051a7c9834c3c94cc2c9aaca3de40804aa1bc4bd",
+  "preservation.json": "099892315b129cf730604c32c17af861660598392b388c60b74029952a3c28dc",
+  "named-transitions.patch.txt": "b8128c9ec88e61fbd6bf5db86b15462cf8916a28f292ce11d400d437396ed662",
+  "diagnostics.json": "c14bee809af5a9c1279dbc281007500813d1069ed40b122bf50022c677b45add",
+  "negative-channels.json": "6bcdec046f3c73d62b9dd4e87c460f3379f0191244a505a050c201988820cb1a",
+  "accounting.json": "d322786cf212687caec2cd2f76e0e9a5882c36e85d78018cb76911f850b62a0f",
+  "source-evidence.json": "5ffc0f9d0a382b41d1f9a6e6c63b03fb5ec0edceda10f201d335c67153ca4383",
+  "original-commands-current.test.ts.txt": "ebdae5bfb70dcb30be961ea79e6ae63367322f01cb6a89d466cacb9bce7cdb36",
+  "task11-current-drift.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+  "prelude-restoration.json": "abf6fc76bb92560c65f014fa964bffeb5d54c4d65491bf91ff2b793a6276f2de",
+  "original-view-manager.ts.txt": "fc25627a0587d3fe6ad18d90d75424c04e42df2f500fa2db1752bd5c3709ef7e",
+  "current-contract.patch.txt": "6758203265e120d0b7a417d628db48d889349139c2d90706a9ca901c62e91eb5"
+}
