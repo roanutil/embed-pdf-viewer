@@ -3,11 +3,8 @@
 `packages/plugin/interaction` in Rust, at upstream `b456ee4fd`: the pointer hub (tools with their
 own page-space pointer members, a tool stack, prioritized handlers, gesture capture and gesture
 events, cursor claims, touch pre-flight), its settings, and the feedback plugin. All 19 cases in
-`vectors/plugins/interaction-functions.json` replay identically. Of the 27 in
-`vectors/plugins/interaction.json`, 15 do; the other 12 differ only in `stateChanges`, because
-`crates/plugin-conformance/src/scenario.rs:420` prints a slice that isn't a JSON `Value` as
-`undefined`. With that line printing through the plugin's `to_json`, all 27 replay (Task 13.11
-report).
+`vectors/plugins/interaction-functions.json` and all 27 in `vectors/plugins/interaction.json`
+replay identically, with no member-order allowance (`cargo test -p epdf-plugin-interaction`).
 
 The modules follow the TypeScript files: `contract.rs`, `model.rs`, `controller.rs`, `state.rs`
 and `feedback.rs`. The plugin is document-scoped, built through `create` with no reducer, and
@@ -23,7 +20,18 @@ declares its settings (`defaultTool`, `tools`) as `definePlugin({ settings })` d
 
 A tool given to `update_settings` can carry callbacks, which the kernel's JSON settings store can't
 hold. `settings.rs` stores it as a handle into a table that belongs to the registration, so it keeps
-its identity; a tool written as plain JSON reads as one without callbacks.
+its identity; a tool written as plain JSON reads as one without callbacks. Every change to the store
+prunes the handles neither the current nor the registered settings name, a JSON write through
+`kernel.settings_of` included (`a_json_settings_write_releases_earlier_typed_tools`).
+
+Settings tools compare by identity, which is a Rust-only divergence. `encode` in `settings.rs:58-68`
+writes each tool as its handle, so two distinct tools with equal data and no callbacks are a change.
+The TypeScript's `sameValue` (`packages/core/main/src/settings.ts:187-222`) deep-compares a plain
+tool given without `enables` and calls that no change; one with an `enables` set it compares by
+identity, as Rust does. Rust can't follow the first case because `Tool.enables` can't tell a tool
+given without `enables` from one given an empty set. Where the two differ, Rust fires
+`on_settings_changed` and swaps the tools, and the swap's removers drop those ids'
+`set_tool_cursor` entries. `distinct_equal_settings_tools_count_as_a_change` pins it.
 
 ## Coverage
 
@@ -96,9 +104,7 @@ objects through.
 These counts predate Task 13.11's re-port and are stale until Task 14 runs the table again.
 `scripts/mutants.sh -p epdf-plugin-interaction --test-package epdf-plugin-interaction --file
 <file>`, file by file over every module but `harness.rs`, catches 87 of 90 viable mutants (87 caught,
-0 timeouts; 26 unviable). One of those is killed by `a_nullable_page_ref_round_trips` in
-`tests/api.rs`, checked by applying it by hand: `page_ref_json::nullable::deserialize` replaced with
-`Ok(None)`. Only `GestureEvent` uses that module, and it only serializes, so no vector decodes one.
+0 timeouts; 26 unviable).
 
 The three survivors are all in `src/controller.rs:197`, the `Greater` arm of the priority
 comparator in `eligible`: `>` becoming `==`, `<` or `>=`. `sort_by` is a stable sort that only asks
