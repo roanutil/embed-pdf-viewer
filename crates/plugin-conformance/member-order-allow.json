@@ -111,26 +111,6 @@
       "$.actions[].action.model.byId.obj:50"
     ]
   },
-  "plugins/interaction.json": {
-    "gesture-events": [
-      "$.callbacks[].args[]"
-    ],
-    "register-tool": [
-      "$.outcome.returned[]"
-    ],
-    "sample-shape": [
-      "$.callbacks[].args[]"
-    ],
-    "source-filtering": [
-      "$.callbacks[].args[]"
-    ],
-    "unregister-scoped-handler": [
-      "$.callbacks[].args[]"
-    ],
-    "would-claim-touch": [
-      "$.callbacks[].args[]"
-    ]
-  },
   "plugins/link-functions.json": {
     "set-another-page": [
       "$.returned.state.pages.2[]"
