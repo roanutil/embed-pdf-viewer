@@ -1,280 +1,69 @@
-//! `destination.ts`: PDF destination to reveal, the pure translator
-//! between the PDF protocol's navigation vocabulary (ISO 32000-1
-//! §12.3.2.2) and the stage's arrival primitive. Outline clicks, link
-//! annotations and `/OpenAction` all resolve engine-side to an explicit
-//! [`PdfDestination`]; this maps it onto one `reveal(page_index, options)`.
+//! `destination.ts`: a destination as a reveal. A destination (ISO 32000-1
+//! §12.3.2.2) says where on a page to look and how close; the stage's
+//! reveal takes the same three knobs:
 //!
-//! This is the `/destination` entry: link and search use it without the
-//! capability.
+//! - `rect`: what to look at, a point for `xyz`, a rect for `fitR`, the page
+//!   for `fit` and the `fitB*` kinds;
+//! - `zoom`: `'keep'`, `{level}`, `'fit'`, `'fit-width'` or `'fit-height'`;
+//! - `anchor`: where it lands; `'keep'` is the specification's `null`, keep
+//!   the current value on that axis.
+//!
+//! Destinations are in page space, the stage's own space, so nothing
+//! converts. The `fitB*` kinds fit the page's content bounding box; the
+//! whole page stands in for it.
 
-use epdf_geometry::{
-    CropBox, NonInvertible, PageGeometryInput, PageRotation, Point, Rect, Size, apply_point, js,
-    page_geometry,
-};
-use epdf_kernel::geometry::PageRef;
-use epdf_plugin_actions::page_ref_json;
-use serde::{Deserialize, Serialize};
+use epdf_geometry::{Rect, Size};
 
 use crate::contract::*;
 
-/// `PageBoxes`: the PDF page boundary boxes in user space (y-up edges).
-/// `bleed`, `trim` and `art` are not read here.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PageBoxes {
-    pub media: CropBox,
-    pub crop: CropBox,
+fn keep_or_start(value: Option<f64>) -> RevealAnchorValue {
+    RevealAnchorValue::Word(if value.is_some() { RevealWord::Start } else { RevealWord::Keep })
 }
 
-/// `PageLayout`: one page as the engine reports it (`pages.list`). Page
-/// actions and the optional boxes are not read by the stage.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageLayout {
-    /// Display order at read time.
-    pub index: usize,
-    /// Durable identity.
-    #[serde(rename = "ref", with = "page_ref_json")]
-    pub page_ref: PageRef,
-    #[serde(default)]
-    pub label: Option<String>,
-    /// Un-rotated crop dimensions in PDF points.
-    pub size: Size,
-    #[serde(default)]
-    pub rotation: PageRotation,
-    /// `/UserUnit`. The TypeScript reads an absent one as 1 where it
-    /// defaults it (`?? 1`).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub user_unit: Option<f64>,
-    #[serde(default)]
-    pub boxes: PageBoxes,
-}
-
-/// `PdfDestination`: an explicit destination. Coordinates are PDF user
-/// space (y-up, absolute); `None` means "retain the current value", and an
-/// `/XYZ` zoom of 0 means the same.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase")]
-pub enum PdfDestination {
-    #[serde(rename = "xyz", rename_all = "camelCase")]
-    Xyz {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-        #[serde(default)]
-        left: Option<f64>,
-        #[serde(default)]
-        top: Option<f64>,
-        #[serde(default)]
-        zoom: Option<f64>,
-    },
-    #[serde(rename = "fit", rename_all = "camelCase")]
-    Fit {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-    },
-    #[serde(rename = "fitH", rename_all = "camelCase")]
-    FitH {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-        #[serde(default)]
-        top: Option<f64>,
-    },
-    #[serde(rename = "fitV", rename_all = "camelCase")]
-    FitV {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-        #[serde(default)]
-        left: Option<f64>,
-    },
-    #[serde(rename = "fitR", rename_all = "camelCase")]
-    FitR {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-        left: f64,
-        bottom: f64,
-        right: f64,
-        top: f64,
-    },
-    #[serde(rename = "fitB", rename_all = "camelCase")]
-    FitB {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-    },
-    #[serde(rename = "fitBH", rename_all = "camelCase")]
-    FitBh {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-        #[serde(default)]
-        top: Option<f64>,
-    },
-    #[serde(rename = "fitBV", rename_all = "camelCase")]
-    FitBv {
-        #[serde(with = "page_ref_json")]
-        page: PageRef,
-        #[serde(default)]
-        left: Option<f64>,
-    },
-}
-
-impl PdfDestination {
-    /// The target page.
-    pub fn page(&self) -> PageRef {
-        match *self {
-            PdfDestination::Xyz { page, .. }
-            | PdfDestination::Fit { page }
-            | PdfDestination::FitH { page, .. }
-            | PdfDestination::FitV { page, .. }
-            | PdfDestination::FitR { page, .. }
-            | PdfDestination::FitB { page }
-            | PdfDestination::FitBh { page, .. }
-            | PdfDestination::FitBv { page, .. } => page,
-        }
-    }
-}
-
-/// Drop the members a JSON value carries as `undefined` (the kernel's
-/// `{"$undefined": true}`), as a JavaScript object read would see them:
-/// absent. Engine DTOs reach the stage as JSON and may carry the marker.
-pub fn without_undefined(value: &serde_json::Value) -> serde_json::Value {
-    use serde_json::Value;
-    match value {
-        Value::Object(map) => Value::Object(
-            map.iter()
-                .filter(|(_, v)| !epdf_kernel::is_undefined(v))
-                .map(|(k, v)| (k.clone(), without_undefined(v)))
-                .collect(),
-        ),
-        Value::Array(items) => Value::Array(items.iter().map(without_undefined).collect()),
-        other => other.clone(),
-    }
-}
-
-/// A destination translated for `reveal`.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DestinationReveal {
-    /// Display index, from the layout row.
-    pub page_index: usize,
-    pub options: RevealOptions,
-}
-
-fn anchor_word(present: bool, word: RevealWord) -> RevealAnchorValue {
-    RevealAnchorValue::Word(if present { word } else { RevealWord::Keep })
-}
-
-/// Translate one explicit destination against its target page's layout.
-/// `bbox` is the page's content bounding box in content space, for the
-/// `/FitB*` kinds; the page is the fallback until the engine exposes it.
-///
-/// Fails where the TypeScript throws: `pageGeometry` inverts the page's
-/// PDF-to-view matrix, which a `userUnit` of 0 makes singular.
-pub fn destination_to_reveal(
-    dest: &PdfDestination,
-    layout: &PageLayout,
-    bbox: Option<Rect>,
-) -> Result<DestinationReveal, NonInvertible> {
-    let crop = layout.boxes.crop;
-    // An absent `userUnit` multiplies to NaN, as `zoom * undefined` does.
-    let geo = page_geometry(
-        PageGeometryInput {
-            crop,
-            rotation: layout.rotation,
-            user_unit: layout.user_unit.unwrap_or(f64::NAN),
+/// `revealOfDestination(destination, size)`: the reveal that goes where the
+/// destination says, on a page of `size` points.
+pub fn reveal_of_destination(destination: &PageDestination, size: Size) -> RevealOptions {
+    let Size { width, height } = size;
+    match *destination {
+        PageDestination::Xyz { x, y, zoom, .. } => RevealOptions {
+            behavior: None,
+            // A null axis keeps the current camera value; the number fed in
+            // for it is never read (the 'keep' anchor).
+            rect: Some(Rect { x: x.unwrap_or(0.0), y: y.unwrap_or(0.0), width: 0.0, height: 0.0 }),
+            anchor: Some(RevealAnchor { x: Some(keep_or_start(x)), y: Some(keep_or_start(y)) }),
+            // A zoom of 0 means the same as null: keep the current zoom.
+            zoom: Some(match zoom {
+                Some(level) if level != 0.0 => RevealZoom::Level { level },
+                _ => RevealZoom::Word(RevealZoomWord::Keep),
+            }),
         },
-        1.0,
-    )?;
-    let pdf_to_content = geo.pdf_to_content;
-    let to_content = |x: f64, y: f64| apply_point(pdf_to_content, Point { x, y });
-    let page = Rect { x: 0.0, y: 0.0, width: layout.size.width, height: layout.size.height };
-    let bx = bbox.unwrap_or(page);
-    let point = |p: Point| Rect { x: p.x, y: p.y, width: 0.0, height: 0.0 };
-
-    let options = match *dest {
-        PdfDestination::Xyz { left, top, zoom, .. } => {
-            let p = to_content(left.unwrap_or(crop.left), top.unwrap_or(crop.top));
-            RevealOptions {
-                rect: Some(point(p)),
-                anchor: Some(RevealAnchor {
-                    x: Some(anchor_word(left.is_some(), RevealWord::Start)),
-                    y: Some(anchor_word(top.is_some(), RevealWord::Start)),
-                }),
-                zoom: Some(match zoom {
-                    Some(level) if level != 0.0 => RevealZoom::Level { level },
-                    _ => RevealZoom::Word(RevealZoomWord::Keep),
-                }),
-                behavior: None,
-            }
-        }
-        PdfDestination::Fit { .. } => RevealOptions {
+        PageDestination::Fit { .. } => RevealOptions {
             zoom: Some(RevealZoom::Word(RevealZoomWord::Fit)),
             ..Default::default()
         },
-        PdfDestination::FitH { top, .. } => {
-            let y = top.map_or(0.0, |top| to_content(crop.left, top).y);
+        PageDestination::FitB { .. } => RevealOptions {
+            rect: Some(Rect { x: 0.0, y: 0.0, width, height }),
+            zoom: Some(RevealZoom::Word(RevealZoomWord::Fit)),
+            ..Default::default()
+        },
+        PageDestination::FitH { y, .. } | PageDestination::FitBh { y, .. } => RevealOptions {
+            rect: Some(Rect { x: 0.0, y: y.unwrap_or(0.0), width, height: 0.0 }),
+            zoom: Some(RevealZoom::Word(RevealZoomWord::FitWidth)),
+            anchor: Some(RevealAnchor { x: None, y: Some(keep_or_start(y)) }),
+            behavior: None,
+        },
+        PageDestination::FitV { x, .. } | PageDestination::FitBv { x, .. } => RevealOptions {
+            rect: Some(Rect { x: x.unwrap_or(0.0), y: 0.0, width: 0.0, height }),
+            zoom: Some(RevealZoom::Word(RevealZoomWord::FitHeight)),
+            anchor: Some(RevealAnchor { x: Some(keep_or_start(x)), y: None }),
+            behavior: None,
+        },
+        PageDestination::FitR { x, y, width: rect_width, height: rect_height, .. } => {
             RevealOptions {
-                rect: Some(Rect { x: 0.0, y, width: page.width, height: 0.0 }),
-                zoom: Some(RevealZoom::Word(RevealZoomWord::FitWidth)),
-                anchor: Some(RevealAnchor {
-                    x: None,
-                    y: Some(anchor_word(top.is_some(), RevealWord::Start)),
-                }),
-                behavior: None,
-            }
-        }
-        PdfDestination::FitV { left, .. } => {
-            let x = left.map_or(0.0, |left| to_content(left, crop.top).x);
-            RevealOptions {
-                rect: Some(Rect { x, y: 0.0, width: 0.0, height: page.height }),
-                zoom: Some(RevealZoom::Word(RevealZoomWord::FitHeight)),
-                anchor: Some(RevealAnchor {
-                    x: Some(anchor_word(left.is_some(), RevealWord::Start)),
-                    y: None,
-                }),
-                behavior: None,
-            }
-        }
-        PdfDestination::FitR { left, bottom, right, top, .. } => {
-            let tl = to_content(left, top);
-            let br = to_content(right, bottom);
-            RevealOptions {
-                rect: Some(Rect {
-                    x: js::min(tl.x, br.x),
-                    y: js::min(tl.y, br.y),
-                    width: (br.x - tl.x).abs(),
-                    height: (br.y - tl.y).abs(),
-                }),
+                rect: Some(Rect { x, y, width: rect_width, height: rect_height }),
                 zoom: Some(RevealZoom::Word(RevealZoomWord::Fit)),
                 ..Default::default()
             }
         }
-        PdfDestination::FitB { .. } => RevealOptions {
-            rect: Some(bx),
-            zoom: Some(RevealZoom::Word(RevealZoomWord::Fit)),
-            ..Default::default()
-        },
-        PdfDestination::FitBh { top, .. } => {
-            let y = top.map_or(bx.y, |top| to_content(crop.left, top).y);
-            RevealOptions {
-                rect: Some(Rect { x: bx.x, y, width: bx.width, height: 0.0 }),
-                zoom: Some(RevealZoom::Word(RevealZoomWord::FitWidth)),
-                anchor: Some(RevealAnchor {
-                    x: None,
-                    y: Some(anchor_word(top.is_some(), RevealWord::Start)),
-                }),
-                behavior: None,
-            }
-        }
-        PdfDestination::FitBv { left, .. } => {
-            let x = left.map_or(bx.x, |left| to_content(left, crop.top).x);
-            RevealOptions {
-                rect: Some(Rect { x, y: bx.y, width: 0.0, height: bx.height }),
-                zoom: Some(RevealZoom::Word(RevealZoomWord::FitHeight)),
-                anchor: Some(RevealAnchor {
-                    x: Some(anchor_word(left.is_some(), RevealWord::Start)),
-                    y: None,
-                }),
-                behavior: None,
-            }
-        }
-    };
-    Ok(DestinationReveal { page_index: layout.index, options })
+    }
 }

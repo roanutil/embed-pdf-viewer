@@ -1,36 +1,36 @@
 //! `controller.ts`: the composition root. It builds the plugin's services
-//! once (the diffing dispatch and its change hooks, the timing seam, the
-//! scene model) and assembles the capability from the areas.
+//! once (the events, the host's clock, the placement latch, the scene
+//! model) and assembles the host capability from the areas.
 //!
 //! The TypeScript builds one closure object per area and spreads their
 //! `api` slices into one capability with `composeApi`. The areas call each
 //! other in a cycle (arrivals re-place after settings changes, settings
 //! re-anchor through arrivals), so here they are `impl StageCapability`
 //! blocks over one shared state, one file per TypeScript area:
-//! `services/{scheduler,events,scene}`, `read/pages`,
-//! `camera/{write,animation,gestures}`, `navigation/{arrive,reveal,zoom}`,
-//! `settings/area` (the TypeScript's `settings/settings.ts`) and
-//! `view/lifecycle`.
+//! `services/{events,scene}`, `read/pages`, `camera/{write,animation,
+//! gestures}`, `navigation/{arrive,reveal,zoom}`, `settings/area` (the
+//! TypeScript's `settings/settings.ts`) and `view/lifecycle`.
 //!
 //! The pure spatial math is `epdf-stage-core`; this is the impure shell. It
-//! dispatches, caches the scene, and owns the camera tween, the rest
-//! detector and the momentum physics, whose frames come through the
-//! [`Scheduler`] the host passes (see the README's host inputs).
+//! writes state, caches the scene, and drives motion, and time enters only
+//! through the host's clock (`ctx.clock`), whose frames and timers the
+//! kernel cancels when the document closes.
 //!
 //! Every camera move is defined by what it holds fixed: gestures hold the
-//! pointer, pointer-less zooms the `zoomAlign` point, reframes the
-//! `anchorAlign` point, arrivals nothing prior (a fresh landing at
-//! `arrivalAlign`), explicit reveals whatever the call says. `fitAlign` is
-//! the clamp's rest constraint on an axis with no travel.
+//! pointer, navigation lands at the arrivalAlign point, positioned reveals
+//! and restored viewpoints hold what the call specifies, pointer-less zooms
+//! hold the zoomAlign point, reframes hold the anchorAlign point, and an
+//! axis the camera cannot travel rests at fitAlign.
 //!
-//! The order of reads, dispatches and scheduler calls follows the
-//! TypeScript line by line, because the vectors record every dispatch. No
-//! `RefCell` borrow is held across a dispatch: a dispatch runs the effects'
-//! watches and the change hooks, and both read back into this capability.
+//! The order of reads, state writes and clock calls follows the TypeScript
+//! line by line, because the vectors record every state change. No
+//! `RefCell` borrow is held across a state write: a write runs the store's
+//! watchers and the change hooks, and both read back into this capability.
 
 use epdf_kernel::Controller;
+use epdf_kernel::clock::{Cancel, PluginClock};
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::plugin::ConnectFn;
+use serde_json::Value;
 
 use crate::prelude::*;
 
@@ -61,18 +61,14 @@ pub(crate) fn serde_str<T: serde::Serialize>(value: &T) -> String {
     }
 }
 
-pub(crate) const REST_MS: f64 = 150.0;
-pub(crate) const TWEEN_MS: f64 = 240.0;
-
 pub(crate) struct Grouping {
-    pub(crate) key: (usize, sc::SpreadMode),
     pub(crate) grouping: Rc<Vec<Vec<usize>>>,
     pub(crate) first_pages: Rc<Vec<usize>>,
 }
 
-type Provider = Rc<dyn Fn() -> Option<StageViewState>>;
+type Provider = Rc<dyn Fn() -> Option<StageViewPatch>>;
 
-/// The six change hooks (`services/events.ts`).
+/// The six events (`services/events.ts`).
 pub(crate) struct Events {
     pub(crate) page_changed: EventHookSource<StagePageChangedEvent>,
     pub(crate) zoom_changed: EventHookSource<StageZoomChangedEvent>,
@@ -82,35 +78,71 @@ pub(crate) struct Events {
     pub(crate) viewport_changed: EventHookSource<StageViewportChangedEvent>,
 }
 
+/// `services/placement-latch.ts`: flips when initial placement starts,
+/// while `state.placed` flips only after it finishes. `pending` is the last
+/// navigation asked for before placement; placement applies it last.
+pub(crate) struct PlacementLatch {
+    pub(crate) started: Cell<bool>,
+    pub(crate) pending: RefCell<Option<Box<dyn FnOnce(&StageCapability)>>>,
+}
+
+/// `camera/write.ts`'s gesture bracket.
+#[derive(Default)]
+pub(crate) struct Gesture {
+    pub(crate) depth: Cell<u32>,
+    pub(crate) zoomed: Cell<bool>,
+    pub(crate) elastic: Cell<bool>,
+    /// The elastic gesture's unclamped, finger-integrated camera.
+    pub(crate) raw: Cell<Option<Camera>>,
+}
+
+/// The visible pages' memo inputs (`read/pages.ts`), compared with
+/// `Object.is` element by element.
+#[derive(Clone, PartialEq)]
+pub(crate) struct VisibleInputs {
+    pub(crate) scene_key: String,
+    pub(crate) flow: FlowMode,
+    pub(crate) numbers: [JsNumber; 6],
+    pub(crate) resting: bool,
+}
+
+/// A number compared as `Object.is` compares it.
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct JsNumber(pub(crate) f64);
+
+impl PartialEq for JsNumber {
+    fn eq(&self, other: &Self) -> bool {
+        crate::model::object_is(self.0, other.0)
+    }
+}
+
 pub(crate) struct Inner {
-    pub(crate) scheduler: Option<Rc<dyn Scheduler>>,
     pub(crate) events: Events,
-    /// Set for the one CAMERA write whose camera is the object already in
-    /// state (`setCam(cam())` on an unbounded stage, where `clampCamera`
-    /// returns its input): the TypeScript's `before.camera !== after.camera`
-    /// is false then, and no camera event fires.
-    pub(crate) camera_kept: Cell<bool>,
-    pub(crate) grouping_cache: RefCell<Option<Rc<Grouping>>>,
+    /// `ctx.clock`: frames and timers, cancelled when the document closes.
+    pub(crate) clock: PluginClock,
+    pub(crate) placement: PlacementLatch,
+    // services/scene
+    pub(crate) grouping_memo: RefCell<Option<((u32, sc::SpreadMode), Rc<Grouping>)>>,
     pub(crate) scene_cache: RefCell<Option<(String, Rc<Scene>)>>,
     /// One entry per registry row, `None` for a row that does not parse,
     /// so display indexes stay aligned with the document's.
-    pub(crate) registry_cache: RefCell<Option<((u32, u64), Rc<Vec<Option<PageLayout>>>)>>,
-    /// `services/placement-latch.ts`: flips when initial placement starts,
-    /// while `state.placed` flips only after it finishes.
-    pub(crate) placement_started: Cell<bool>,
-    pub(crate) gesture_depth: Cell<u32>,
-    pub(crate) gesture_zoomed: Cell<bool>,
-    pub(crate) gesture_elastic: Cell<bool>,
-    pub(crate) gesture_raw: Cell<Option<Camera>>,
-    pub(crate) rest_raf: Cell<u64>,
-    pub(crate) raf: Cell<u64>,
-    pub(crate) scroll_memo: Cell<Option<ScrollMetrics>>,
-    pub(crate) vis: RefCell<(String, Rc<Vec<VisiblePage>>)>,
+    pub(crate) registry_cache: RefCell<Option<(Rc<Value>, Rc<Vec<Option<PageRow>>>)>>,
+    // camera/write
+    pub(crate) gesture: Gesture,
+    pub(crate) cancel_rest: RefCell<Option<Cancel>>,
+    // camera/animation: the frame the running motion waits for
+    pub(crate) cancel_frame: RefCell<Option<Cancel>>,
+    // read/pages
+    pub(crate) last_metrics: Cell<Option<ScrollMetrics>>,
+    pub(crate) visible_memo: RefCell<Option<(VisibleInputs, Rc<Vec<VisiblePage>>)>>,
+    /// `noVisiblePages`: the one empty list read before placement.
+    pub(crate) no_visible_pages: Rc<Vec<VisiblePage>>,
+    // settings/settings
     pub(crate) base: RefCell<StageSettings>,
     pub(crate) initial_base: StageSettings,
     pub(crate) rules: RefCell<Rc<Vec<ResponsiveRule>>>,
     pub(crate) last_effective: RefCell<StageSettings>,
-    /// Registration id, priority and provider.
+    // view/lifecycle: registration id, priority and provider
     pub(crate) providers: RefCell<Vec<(u64, f64, Provider)>>,
     pub(crate) next_provider: Cell<u64>,
 }
@@ -120,43 +152,40 @@ pub(crate) struct Inner {
 /// typed wider). Cheap to clone; clones are the same lens.
 #[derive(Clone)]
 pub struct StageCapability {
-    pub(crate) ctx: Controller<StageState, StageAction>,
+    pub(crate) ctx: Controller<StageState, Value>,
     pub(crate) inner: Rc<Inner>,
 }
 
-/// `createStageController(ctx, config)`: the capability and the connect
-/// half. `connect` registers the navigation executors (main lens only).
-pub fn create_stage_controller(
-    ctx: Controller<StageState, StageAction>,
+/// `createStageController(ctx, config)`: the capability. `connect` (see
+/// [`crate::connect`]) runs once every dependency exists.
+pub(crate) fn create_stage_controller(
+    ctx: Controller<StageState, Value>,
     config: StageConfig,
 ) -> StageCapability {
     let base = ctx.state().settings.clone();
     let rules = config.responsive.unwrap_or_else(default_responsive);
     let events = Events {
-        page_changed: EventHookSource::new(None),
-        zoom_changed: EventHookSource::new(None),
-        camera_changed: EventHookSource::new(None),
-        motion_ended: EventHookSource::new(None),
-        settings_changed: EventHookSource::new(None),
-        viewport_changed: EventHookSource::new(None),
+        page_changed: ctx.event_source(),
+        zoom_changed: ctx.event_source(),
+        camera_changed: ctx.event_source(),
+        motion_ended: ctx.event_source(),
+        settings_changed: ctx.event_source(),
+        viewport_changed: ctx.event_source(),
     };
     let stage = StageCapability {
         inner: Rc::new(Inner {
-            scheduler: config.scheduler,
             events,
-            camera_kept: Cell::new(false),
-            grouping_cache: RefCell::new(None),
+            clock: ctx.clock(),
+            placement: PlacementLatch { started: Cell::new(false), pending: RefCell::new(None) },
+            grouping_memo: RefCell::new(None),
             scene_cache: RefCell::new(None),
             registry_cache: RefCell::new(None),
-            placement_started: Cell::new(false),
-            gesture_depth: Cell::new(0),
-            gesture_zoomed: Cell::new(false),
-            gesture_elastic: Cell::new(false),
-            gesture_raw: Cell::new(None),
-            rest_raf: Cell::new(0),
-            raf: Cell::new(0),
-            scroll_memo: Cell::new(None),
-            vis: RefCell::new((String::new(), Rc::new(Vec::new()))),
+            gesture: Gesture::default(),
+            cancel_rest: RefCell::new(None),
+            cancel_frame: RefCell::new(None),
+            last_metrics: Cell::new(None),
+            visible_memo: RefCell::new(None),
+            no_visible_pages: Rc::new(Vec::new()),
             last_effective: RefCell::new(base.clone()),
             initial_base: base.clone(),
             base: RefCell::new(base),
@@ -166,46 +195,24 @@ pub fn create_stage_controller(
         }),
         ctx,
     };
+    stage.connect_events();
     let inner = Rc::downgrade(&stage.inner);
     stage.ctx.cleanup_fn(move || {
         if let Some(inner) = inner.upgrade() {
-            let e = &inner.events;
-            e.page_changed.dispose();
-            e.zoom_changed.dispose();
-            e.camera_changed.dispose();
-            e.motion_ended.dispose();
-            e.settings_changed.dispose();
-            e.viewport_changed.dispose();
-            // Rust only: an initial-view provider or a rule predicate can
-            // hold this capability, and so this `Inner`. Let go of them at
-            // close, as a garbage collector would reclaim the cycle (the
-            // interaction hub does the same with its handlers).
+            // Rust only: an initial-view provider, a rule predicate or a
+            // pending navigation can hold this capability, and so this
+            // `Inner`. Let go of them at close, as a garbage collector
+            // would reclaim the cycle (the interaction hub does the same
+            // with its handlers). The clock's frames and timers the kernel
+            // cancels with the instance lifetime.
             inner.providers.borrow_mut().clear();
             *inner.rules.borrow_mut() = Rc::new(Vec::new());
-            // Rust only: the TypeScript leaves a tween, fling or rest
-            // countdown ticking after the close. Each tick's camera write is
-            // then a dispatch on a closed instance, which a native host
-            // reports through a sink that outlives the document. Cancel the
-            // frames instead.
-            if let Some(scheduler) = &inner.scheduler {
-                for frame in [inner.raf.replace(0), inner.rest_raf.replace(0)] {
-                    if frame != 0 {
-                        scheduler.caf(frame);
-                    }
-                }
-            }
+            inner.placement.pending.borrow_mut().take();
+            inner.cancel_frame.borrow_mut().take();
+            inner.cancel_rest.borrow_mut().take();
         }
     });
     stage
-}
-
-/// `create(ctx)`'s return for [`crate::stage_plugin`]: the api, and a
-/// connect that runs `register`.
-pub(crate) fn created(
-    stage: StageCapability,
-    register: impl Fn() -> Result<(), Error> + 'static,
-) -> (StageCapability, Option<ConnectFn>) {
-    (stage, Some(Rc::new(register)))
 }
 
 impl StageCapability {
@@ -221,5 +228,15 @@ impl StageCapability {
     #[doc(hidden)]
     pub fn lifetime(&self) -> &epdf_kernel::signal::AbortSignal {
         self.ctx.lifetime()
+    }
+
+    /// `ctx.state.get()`.
+    pub(crate) fn st(&self) -> Rc<StageState> {
+        self.ctx.state()
+    }
+
+    /// `ctx.state.update(transition)`.
+    pub(crate) fn update(&self, transition: impl FnOnce(&Rc<StageState>) -> Rc<StageState>) {
+        self.ctx.update_state(|state| transition(&state));
     }
 }
