@@ -44,3 +44,25 @@ pub fn truthy(value: Option<&Value>) -> bool {
         Some(other) => !epdf_kernel::is_undefined(other),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    /// `actions.ts`: a poisoned native snapshot is never partially executed,
+    /// whichever entry point reads it.
+    #[test]
+    fn an_incomplete_tree_yields_no_script_at_all() {
+        let leaf = json!({ "type": "javascript", "script": "deep()", "next": [] });
+        let tree = json!({
+            "root": { "type": "javascript", "script": "first()", "next": [leaf] },
+            "incomplete": true,
+        });
+        let message = "Refusing to execute an incomplete PDF action tree";
+        assert_eq!(java_script_sources_from_action_tree(&tree).unwrap_err().message, message);
+        assert_eq!(java_script_program_from_action_tree(&tree).unwrap_err().message, message);
+        let complete = json!({ "root": tree["root"], "incomplete": false });
+        assert_eq!(java_script_program_from_action_tree(&complete).unwrap(), "first()\n;\ndeep()");
+    }
+}

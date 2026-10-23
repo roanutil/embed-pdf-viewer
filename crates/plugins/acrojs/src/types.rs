@@ -57,6 +57,10 @@ pub struct ScriptFieldInput {
     pub required: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub options: Option<Vec<ScriptFieldOption>>,
+    /// A checkbox's or radio group's widget export values, in widget order
+    /// (Acrobat `exportValues`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub export_values: Option<Vec<String>>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
