@@ -16,12 +16,6 @@ answers a `$textLayout` marker holding a page-space `PageGeometrySnapshot` (Ruli
 the plugin builds into its own `TextLayout`, and `page.text.get` answers a `PageTextSnapshot` with a
 char map.
 
-As of Task 13.15 the selection replay passes only with one extra handle subscription standing in
-for the kernel's page mirror: `PageMirror` listens on the session's event fan-out, where the
-TypeScript mirror subscribes to `doc.events` itself (`packages/core/main/src/context.ts:216`), so
-every case's `engineState.a.subscribers` reads 3 where the vector has 4. The kernel repair is
-reported in `task-13.15-report.md`; this crate does not paper over it.
-
 ## Coverage
 
 Stale since Task 13.15 re-ported the controller (refreshed with the coverage metadata in Task 14).
