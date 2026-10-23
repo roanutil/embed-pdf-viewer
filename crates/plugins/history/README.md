@@ -34,13 +34,7 @@ conformance adapter uses those.
 The suite needs a plugin that stages changes, so `history.ts` registers `history-actor`, and
 `harness.rs` builds its twin. It is test scaffolding, not part of the package.
 
-## Open
+## Close order
 
-`close-with-a-step-on-its-way` fails until the kernel stops closing the change queue ahead of the
-session scope. `close_session` in `crates/epdf-kernel/src/kernel.rs:638` calls
-`s.changes.close()` right after revoking the leases; the TypeScript `closeSession`
-(`packages/core/main/src/kernel.ts:550-570`) does not, and closes the queue only in its scope
-teardown (`kernel.ts:509`), after the plugins' event sources are gone. Rust therefore rejects the
-pending undo early enough for `on_undo_failed` to reach a listener the TypeScript has already
-disposed. Deleting that one line makes all 26 cases pass, with the kernel and harness suites still
-green.
+`close-with-a-step-on-its-way` replays since the kernel stopped closing the change queue ahead of
+the session scope (Ruling13.13, `36dcfaef3`).

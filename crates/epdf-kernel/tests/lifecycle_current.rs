@@ -727,3 +727,42 @@ fn caller_cancel_during_read_preserves_dirty_state_and_ignores_late_bytes() {
     assert_eq!(caller.listener_count(), 0);
     run(kernel.destroy()).unwrap();
 }
+#[test]
+fn close_rejects_pending_changes_only_after_the_plugins_event_sources_are_gone() {
+    use epdf_kernel::changes::StagedChange;
+    rt::reset();
+    let document = doc(false);
+    // The engine never answers: only the close settles the change.
+    let (never, _keep) = Promise::<Value>::pending();
+    *document.apply_answer.borrow_mut() = Some(never);
+    let (plugin, token) = controller_plugin();
+    let kernel = Kernel::new(Rc::new(TestEngine(document)), vec![plugin], options()).unwrap();
+    run(kernel.start()).unwrap();
+    run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
+    let ctx = kernel.capability(&token, Some("doc")).unwrap();
+    let source = ctx.event_source::<String>();
+    let heard = Rc::new(RefCell::new(Vec::new()));
+    let log = heard.clone();
+    let _off = source.on(move |e| {
+        log.borrow_mut().push(e.clone());
+        Ok(())
+    });
+    let change = ctx
+        .changes()
+        .unwrap()
+        .stage(StagedChange::ops(json!({"key":"x"}), vec![json!({"type":"metadata.set"})]))
+        .unwrap();
+    // `change.result.then(null, () => source.emit(...))`, as the history plugin does.
+    let result = change.result();
+    rt::spawn(async move {
+        if let Err(error) = result.reaction().await {
+            source.emit(&error.code().unwrap_or("").to_string());
+        }
+    });
+    run(kernel.documents().close("doc")).unwrap();
+    // TS closeSession (kernel.ts:550-570) closes the queue only in its scope
+    // teardown (kernel.ts:509), after the instance's event sources.
+    assert_eq!(change.result().peek().unwrap().unwrap_err().code(), Some("instance-closed"));
+    assert!(heard.borrow().is_empty(), "heard {:?}", heard.borrow());
+    run(kernel.destroy()).unwrap();
+}

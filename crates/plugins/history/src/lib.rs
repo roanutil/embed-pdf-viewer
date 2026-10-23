@@ -1,12 +1,13 @@
 //! `packages/plugin/history` in Rust: undo and redo, one history per open
 //! document, built on the document's change queue (`ctx.changes`).
 //!
-//! The file split follows the TypeScript package: [`contract`], [`model`],
-//! [`controller`], [`state`], and the wiring in [`history_plugin`].
+//! The file split follows the TypeScript package: [`contract`], `model`,
+//! `controller`, [`state`], and the wiring in [`history_plugin`]. The model
+//! and the controller are private: consumers use [`HistoryCapability`].
 
 pub mod contract;
-pub mod controller;
-pub mod model;
+pub(crate) mod controller;
+pub(crate) mod model;
 pub mod state;
 
 #[cfg(feature = "harness")]
@@ -16,9 +17,10 @@ use epdf_kernel::settings::SettingsDeclaration;
 use epdf_kernel::{AnyPlugin, define};
 use serde_json::Value;
 
+use crate::model::{History, empty_history};
+
 pub use contract::*;
 pub use controller::HistoryCapability;
-pub use model::{History, HistoryEntry, HistoryPart, empty_history};
 pub use state::{HistoryStateView, history_state};
 
 /// `historyPlugin(config)`: undo and redo, one history per open document, of

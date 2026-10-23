@@ -260,6 +260,8 @@ impl Inner {
                 Err(_) => break,
             }
         }
+        // The first stage either succeeded or returned its error above.
+        debug_assert!(!staged.is_empty(), "a step stages at least one part");
         let op_ids: HashMap<String, String> = staged
             .iter()
             .map(|(part, change)| (part.id.clone(), change.op_id().to_string()))
