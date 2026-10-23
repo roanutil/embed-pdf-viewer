@@ -303,6 +303,62 @@ test('dynamic setting, absent actions and unselected fields skip sandbox constru
     'a-stamp-without-fields-on-its-page-arms-the-template',
   ]) {
     const { trace } = await run(name);
+    const raster = name === 'a-raster-asset-is-never-evaluated';
+    assert.deepEqual(
+      value(trace, 4),
+      raster
+        ? { width: 100, height: 50, name: 'Logo', subject: 'Logo' }
+        : { width: 200, height: 100, name: 'Stamp1', subject: 'Stamp1' },
+    );
+    const templateDocument = raster ? 'append' : 'lib';
+    const templatePage = raster ? 900 : 100;
+    assert.deepEqual(
+      calls(trace)
+        .filter((c) => c.doc === templateDocument && c.path === 'pages.extract')
+        .map((c) => c.args),
+      name === 'a-stamp-without-fields-on-its-page-arms-the-template'
+        ? [[[pr(100)]], [[pr(101)]]]
+        : [[[pr(templatePage)]]],
+    );
+    const extraction = input(name).engine?.documents?.[templateDocument]?.responses?.find(
+      (response) =>
+        response.path === 'pages.extract' &&
+        JSON.stringify(response.args) === JSON.stringify([[pr(templatePage)]]),
+    );
+    assert.ok(extraction);
+    assert.deepEqual(extraction.value, canonical(pdf(raster ? 'page-900' : 'page-100')));
+    if (raster)
+      assert.deepEqual(resolved(trace, 2), {
+        asset: {
+          id: 'stamp-lib-0-0:Logo',
+          libraryId: 'stamp-lib-0-0',
+          kind: 'stamp',
+          name: 'Logo',
+          label: 'Logo',
+          size: { width: 100, height: 50 },
+          page: pr(900),
+        },
+      });
+    else
+      assert.deepEqual(resolved(trace, 2), {
+        library: {
+          id: 'stamp-lib-0-1',
+          name: 'Stamps',
+          kind: 'stamps',
+          assetIds:
+            name === 'a-stamp-without-fields-on-its-page-arms-the-template'
+              ? ['stamp-lib-0-1:Stamp1', 'stamp-lib-0-1:Stamp2']
+              : ['stamp-lib-0-1:Stamp1'],
+        },
+      });
+    assert.deepEqual(
+      calls(trace).filter(
+        (c) =>
+          c.doc === 'copy' &&
+          ['apply', 'pages.flatten', 'pages.extract', 'page.render.image'].includes(c.path),
+      ),
+      [],
+    );
     assert.deepEqual(
       trace.flatMap((t) => t.callbacks),
       [],
@@ -487,6 +543,21 @@ test('failed script channels and throwing observers follow the actual actions su
   assert.equal(value(observed, 7), null);
   assert.equal(calls(observed).filter((c) => c.doc === 'copy' && c.path === 'close').length, 1);
 });
+test('dynamic refusals close every temporary copy and leave both public arms empty', async () => {
+  const { trace } = await run('dynamic-stamp-refusals');
+  assert.deepEqual(trace[3].engine, []);
+  assert.deepEqual(
+    calls(trace).filter((c) => c.path === 'close'),
+    [
+      { doc: 'lib', path: 'close', args: [] },
+      { doc: 'moved', path: 'close', args: [] },
+      { doc: 'noFlatten', path: 'close', args: [] },
+      { doc: 'noExtract', path: 'close', args: [] },
+    ],
+  );
+  assert.equal(value(trace, 7), null);
+  assert.equal(value(trace, 8), null);
+});
 test('flatten refusal closes the first realm and unchanged flatten allows the next arm', async () => {
   const { trace } = await run('a-flatten-that-fails-or-skips');
   assert.equal(value(trace, 4), null);
@@ -522,7 +593,9 @@ test('missing canonical bytes use extracted page and malformed missing asset byt
       { kind: 'bytes', id: 'stamp-import-0-3', bytes: canonical(new Uint8Array()) },
     ],
   );
-  assert.equal(value(trace, 6), null);
+  assert.deepEqual(value(trace, 4), { width: 200, height: 100, name: 'Stamp1', subject: 'Stamp1' });
+  assert.deepEqual(resolved(trace, 3), { $undefined: true });
+  assert.equal(value(trace, 7), null);
 });
 test('dynamic direct and batch placement use exact resources, reserved refs, operation ids, facts and public reads', async () => {
   const { trace } = await run('dynamic-placement-writes-materialized-bytes-and-batch-facts');

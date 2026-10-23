@@ -5100,7 +5100,7 @@
     {
       "slice": "v",
       "path": "tooling/plugin-conformance/historical/task-12b2b3-v/accounting.json",
-      "sha256": "a6b62ee914f8c00988d363ee34af601d3fa5cbba2ea4d9e0b5a1ef4467debfcc",
+      "sha256": "b4a4e69d833a7a5b4c09454162b31477e1a43698fd7faac61fcdd727a7701f79",
       "original": 19,
       "current": 22,
       "mappings": [
@@ -5487,7 +5487,7 @@
           "after": {
             "file": "plugins/stamp-placement.json",
             "name": "a-library-without-canonical-bytes",
-            "inputSha256": "9388ac54a61209842dd4d7c54f94f3d1f58d888d3a33c43ff103589d0e20db10"
+            "inputSha256": "ff8f6179f09c76edcf61473a113f7da33a2b51958c7d2a18a748b066d6fb5f07"
           },
           "disposition": "mapped",
           "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",

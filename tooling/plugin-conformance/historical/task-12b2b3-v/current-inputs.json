@@ -34851,6 +34851,15 @@
         {
           "op": "call",
           "target": {
+            "token": "annotation",
+            "doc": "a"
+          },
+          "method": "getArmedStamp",
+          "args": []
+        },
+        {
+          "op": "call",
+          "target": {
             "token": "stamp"
           },
           "method": "disarm",
@@ -34880,7 +34889,7 @@
         }
       ]
     },
-    "inputSha256": "9388ac54a61209842dd4d7c54f94f3d1f58d888d3a33c43ff103589d0e20db10"
+    "inputSha256": "ff8f6179f09c76edcf61473a113f7da33a2b51958c7d2a18a748b066d6fb5f07"
   },
   {
     "source": "stamp-placement",

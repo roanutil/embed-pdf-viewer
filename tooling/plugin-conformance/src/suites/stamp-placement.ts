@@ -452,7 +452,7 @@ const dynamic: ScenarioCase[] = [
       },
       ['a', 'lib', 'copy', 'copy'],
     ),
-    steps: [...boot, arm(), stamp('disarm', ['a']), arm('stamp-lib-0-1:Stamp2'), armed],
+    steps: [...boot, arm(), armed, stamp('disarm', ['a']), arm('stamp-lib-0-1:Stamp2'), armed],
   },
   {
     name: 'teardown-destroys-a-factory-engine-once',

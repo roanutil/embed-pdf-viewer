@@ -393,7 +393,7 @@
       "after": {
         "file": "plugins/stamp-placement.json",
         "name": "a-library-without-canonical-bytes",
-        "inputSha256": "9388ac54a61209842dd4d7c54f94f3d1f58d888d3a33c43ff103589d0e20db10"
+        "inputSha256": "ff8f6179f09c76edcf61473a113f7da33a2b51958c7d2a18a748b066d6fb5f07"
       },
       "disposition": "mapped",
       "target": "Current StampCapability / AnnotationHostCapability / ActionsHostCapability",
@@ -808,7 +808,7 @@
   "currentSourceHashes": [
     {
       "path": "tooling/plugin-conformance/src/suites/stamp-placement.ts",
-      "sha256": "780c2f797aa885097af08712cae9ef11d3f0cd680d90a22d8ca07434685608c7"
+      "sha256": "434b4183945fb93d1845b1fae5f7c8006d5f045a48b27bf8d632f7f515bc8751"
     },
     {
       "path": "tooling/plugin-conformance/src/suites/stamp-placement-fixtures.ts",
