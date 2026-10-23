@@ -1,0 +1,327 @@
+use epdf_kernel::error::{Error, to_plugin_error};
+use serde_json::{Value, json};
+
+#[test]
+fn current_engine_errors_keep_permission_and_conflict_details() {
+    for (engine, plugin) in [
+        ("WireFormat", "operation-failed"),
+        ("PayloadTooLarge", "invalid-input"),
+        ("ObjectNumberUnavailable", "conflict"),
+        ("LayerFull", "conflict"),
+        ("ChangeConflict", "conflict"),
+        ("UndoUnavailable", "conflict"),
+        ("IdempotencyKeyReused", "invalid-input"),
+    ] {
+        assert_eq!(
+            to_plugin_error("test", &Error::engine(engine, "refused")).code(),
+            Some(plugin),
+            "{engine}"
+        );
+    }
+    let error = to_plugin_error(
+        "test",
+        &Error::engine("Forbidden", "refused")
+            .with("details", json!({"required":"annotations:update"})),
+    );
+    assert_eq!(error.plugin_error_info()["permission"], "annotations:update");
+}
+
+use epdf_kernel::{
+    Promise,
+    changes::{DocumentChanges, StagedChange},
+    event_hook::EventHookSource,
+    mirror::{Fold, Loaded, Mirror, MirrorEnvironment, MirrorSpec},
+    rt,
+    signal::AbortSignal,
+};
+use std::rc::Rc;
+
+#[test]
+fn pending_refusal_preserves_remote_truth_and_close_revokes() {
+    rt::reset();
+    let (answer, reject) = Promise::pending();
+    let q = DocumentChanges::new(
+        Rc::new(move |_, _| answer.clone()),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let events = EventHookSource::new(None);
+    let life = AbortSignal::new();
+    let spec = MirrorSpec::new(
+        "counter",
+        json!(0),
+        Rc::new(|_, _| Promise::resolved(Loaded { value: json!(0), cursor: None })),
+        Rc::new(|_, event| Ok(Fold::Value(Rc::new(event["value"].clone())))),
+    );
+    let mut spec = spec;
+    spec.predict = Some(Rc::new(|_, op| Ok(Rc::new(op["value"].clone()))));
+    let mirror =
+        Mirror::new(spec, MirrorEnvironment::detached(events.clone(), life.clone(), q.clone()));
+    let change = q
+        .for_plugin("test")
+        .stage(StagedChange::ops(
+            json!({"key":"edit"}),
+            vec![json!({"type":"metadata.set", "value":1})],
+        ))
+        .unwrap();
+    assert_eq!(*mirror.view(), json!(1));
+    events.emit(&json!({"type":"metadata.changed","value":2,"origin":{"kind":"remote"}}));
+    assert_eq!(*mirror.get(), json!(2));
+    reject.reject(Error::engine("ChangeConflict", "stale"));
+    rt::run_until_stalled();
+    assert_eq!(*mirror.view(), json!(2));
+    assert!(change.result().peek().unwrap().is_err());
+    life.abort(Error::new("closed"));
+    events.emit(&json!({"type":"metadata.changed","value":3}));
+    assert_eq!(*mirror.get(), json!(2));
+    q.close();
+    assert!(
+        q.for_plugin("test")
+            .stage(StagedChange::ops(json!({"key":"edit"}), vec![json!({"type":"metadata.set"})]))
+            .is_err()
+    );
+}
+
+#[test]
+fn own_fact_folds_before_settlement_and_every_origin_uses_same_fold() {
+    rt::reset();
+    let events = EventHookSource::new(None);
+    let publish = events.clone();
+    let q = DocumentChanges::new(
+        Rc::new(move |_, options| {
+            publish.emit(&json!({"type":"metadata.changed","value":4,"origin":{"kind":"local","tx":{"id": options["opId"], "index":0,"count":1}}}));
+            Promise::resolved(json!({"applied":true}))
+        }),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let mut spec = MirrorSpec::new(
+        "counter",
+        json!(0),
+        Rc::new(|_, _| Promise::resolved(Loaded { value: json!(0), cursor: None })),
+        Rc::new(|_, event| Ok(Fold::Value(Rc::new(event["value"].clone())))),
+    );
+    spec.predict = Some(Rc::new(|_, op| Ok(Rc::new(op["value"].clone()))));
+    let mirror = Mirror::new(
+        spec,
+        MirrorEnvironment::detached(events.clone(), AbortSignal::new(), q.clone()),
+    );
+    let staged = q
+        .for_plugin("test")
+        .stage(StagedChange::ops(json!({"key":"edit"}), vec![json!({"value":9})]))
+        .unwrap();
+    assert_eq!(*mirror.view(), json!(4));
+    assert!(staged.result().peek().is_none());
+    events.emit(&json!({"type":"metadata.changed","value":5,"origin":{"kind":"remote"}}));
+    assert_eq!(*mirror.get(), json!(5));
+    rt::run_until_stalled();
+    assert!(staged.result().peek().unwrap().is_ok());
+}
+
+#[test]
+fn registration_settings_merge_reset_and_dispose_instance_listener() {
+    use epdf_kernel::{
+        scope::Scope,
+        settings::{Settings, SettingsDeclaration},
+    };
+    let settings = Settings::new(
+        SettingsDeclaration {
+            defaults: json!({"person":{"name":"a","id":1},"nested":{"x":1,"y":2}}),
+            registered: Some(json!({"nested":{"x":3}})),
+            whole: vec!["person".into()],
+        },
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let scope = Scope::new(Rc::new(|e| panic!("{e}")));
+    let instance = settings.for_instance(&scope);
+    let called = Rc::new(std::cell::Cell::new(0));
+    let count = called.clone();
+    instance.events.on(move |_| {
+        count.set(count.get() + 1);
+        Ok(())
+    });
+    let same = settings.get();
+    settings.update_settings(&json!({"nested":{"x":3}}));
+    assert!(Rc::ptr_eq(&same, &settings.get()));
+    settings.update_settings(&json!({"person":{"name":"b"},"nested":{"y":8}}));
+    assert_eq!(*instance.get(), json!({"person":{"name":"b"},"nested":{"x":3,"y":8}}));
+    scope.dispose();
+    rt::run_until_stalled();
+    settings.reset_settings();
+    assert_eq!(called.get(), 1);
+    assert_eq!(settings.get()["nested"]["x"], 3);
+}
+
+#[test]
+fn current_refs_have_object_numbers_and_stable_inline_annotation_names() {
+    use epdf_kernel::geometry::{AnnotationRef, PageRef};
+    let page = PageRef::new(42);
+    assert_eq!(page.to_json(), json!({"kind":"objectNumber","objectNumber":42}));
+    assert!(PageRef::from_json(&json!({"kind":"objectNumber","pageObjectNumber":42})).is_none());
+    let inline = json!({"kind":"baseIndex","page":page.to_json(),"baseIndex":0});
+    let reference: AnnotationRef = serde_json::from_value(inline.clone()).unwrap();
+    assert_eq!(serde_json::to_value(reference).unwrap(), inline);
+}
+
+#[test]
+fn page_load_epochs_and_delete_prevent_stale_replacement() {
+    use epdf_kernel::page_mirror::{Affected, PageMirror, PageMirrorSpec};
+    rt::reset();
+    let events = EventHookSource::new(None);
+    let q = DocumentChanges::new(
+        Rc::new(|_, _| Promise::resolved(json!({}))),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let (first, a) = Promise::pending();
+    let (second, b) = Promise::pending();
+    let loads = Rc::new(std::cell::RefCell::new(vec![first, second]));
+    let source = loads.clone();
+    let page = json!({"kind":"objectNumber","objectNumber":3});
+    let mirror = PageMirror::new(
+        PageMirrorSpec {
+            name: "page".into(),
+            load: Rc::new(move |_, _, _| source.borrow_mut().remove(0)),
+            affected: Rc::new(|_| Affected::All),
+            fold: Some(Rc::new(|_, e, _| Ok(Fold::Value(Rc::new(e["value"].clone()))))),
+            predict: None,
+            changed: None,
+        },
+        MirrorEnvironment::detached(events.clone(), AbortSignal::new(), q),
+    );
+    let load = mirror.ensure_loaded(page.clone());
+    let shared = mirror.ensure_loaded(page.clone());
+    assert!(load.same(&shared));
+    let reload = mirror.refresh(Some(page.clone()));
+    b.resolve(json!(2));
+    rt::run_until_stalled();
+    assert!(reload.peek().unwrap().is_ok());
+    a.resolve(json!(1));
+    rt::run_until_stalled();
+    assert_eq!(*mirror.get(&page).unwrap(), json!(2));
+    events.emit(&json!({"type":"updated","value":4,"origin":{"kind":"remote"}}));
+    assert_eq!(*mirror.get(&page).unwrap(), json!(4));
+    events.emit(&json!({"type":"pages.deleted","pages":[page]}));
+    assert!(mirror.get(&page).is_none());
+}
+
+#[test]
+fn pending_holds_groups_and_dependency_refusal_keep_staging_order() {
+    rt::reset();
+    let sent = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let calls = sent.clone();
+    let (answer, reject) = Promise::pending();
+    let q = DocumentChanges::new(
+        Rc::new(move |change, _| {
+            calls.borrow_mut().push(change);
+            answer.clone()
+        }),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let queue = q.for_plugin("test");
+    let held = queue.hold(json!({"key":"typing"}), Some("text".into())).unwrap();
+    held.set(vec![json!({"type":"annotations.create","objectNumber":42})], vec![]);
+    assert!(sent.borrow().is_empty());
+    let first = held.change().unwrap();
+    let later=queue.stage(StagedChange::ops(json!({"key":"edit"}),vec![json!({"type":"annotations.update","ref":{"kind":"objectNumber","objectNumber":42}})])).unwrap();
+    assert_eq!(sent.borrow().len(), 2);
+    assert!(!held.open());
+    reject.reject(Error::engine("Forbidden", "no"));
+    rt::run_until_stalled();
+    assert_eq!(first.result().peek().unwrap().unwrap_err().code(), Some("permission-denied"));
+    assert_eq!(
+        later.result().peek().unwrap().unwrap_err().member("details").unwrap()["reason"],
+        "dependency-refused"
+    );
+    assert!(!queue.has_pending());
+    let before = sent.borrow().len();
+    let failed = queue.group(json!({"key":"group"}), || {
+        queue.stage(StagedChange::ops(
+            json!({"key":"part"}),
+            vec![json!({"type":"metadata.set"})],
+        ))?;
+        Err::<(), _>(Error::new("stop"))
+    });
+    assert!(failed.is_err());
+    assert_eq!(sent.borrow().len(), before);
+    assert!(!queue.has_pending());
+}
+
+#[test]
+fn full_load_replays_only_events_after_cursor_and_keeps_prediction_until_reload() {
+    rt::reset();
+    let events = EventHookSource::new(None);
+    let (applied, resolve) = Promise::pending();
+    let q = DocumentChanges::new(
+        Rc::new(move |_, _| applied.clone()),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let (loaded, land) = Promise::pending();
+    let mut spec = MirrorSpec::new(
+        "value",
+        json!(0),
+        Rc::new(move |_, _| loaded.clone()),
+        Rc::new(|_, event| {
+            if event["reload"] == true {
+                Ok(Fold::Reload)
+            } else {
+                Ok(Fold::Value(Rc::new(event["value"].clone())))
+            }
+        }),
+    );
+    spec.predict = Some(Rc::new(|_, op| Ok(Rc::new(op["value"].clone()))));
+    let mirror = Mirror::new(
+        spec,
+        MirrorEnvironment::detached(events.clone(), AbortSignal::new(), q.clone()),
+    );
+    let c = q
+        .for_plugin("test")
+        .stage(StagedChange::ops(json!({"key":"x"}), vec![json!({"value":7})]))
+        .unwrap();
+    events.emit(&json!({"type":"metadata.changed","reload":true,"origin":{"tx":{"id":c.op_id(),"index":0,"count":1}}}));
+    resolve.resolve(json!({}));
+    rt::run_until_stalled();
+    assert!(q.shown().is_empty());
+    assert_eq!(*mirror.view(), json!(7));
+    events.emit(&json!({"type":"metadata.changed","value":3,"origin":{"serverId":2}}));
+    events.emit(&json!({"type":"metadata.changed","value":9,"origin":{"serverId":4}}));
+    land.resolve(Loaded { value: json!(7), cursor: Some(3) });
+    rt::run_until_stalled();
+    assert_eq!(*mirror.get(), json!(9));
+    assert_eq!(*mirror.view(), json!(9));
+}
+
+#[test]
+fn instance_clock_cancels_pending_and_refuses_new_timers_after_close() {
+    use epdf_kernel::clock::{PluginClock, TimerClock};
+    rt::reset();
+    let life = AbortSignal::new();
+    let clock = PluginClock::new(Rc::new(TimerClock), life.clone());
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let count = calls.clone();
+    clock.after(10.0, move || count.set(count.get() + 1));
+    assert_eq!(rt::pending_timers(), 1);
+    life.abort(Error::new("closed"));
+    assert_eq!(rt::pending_timers(), 0);
+    clock.after(1.0, || panic!("closed"));
+    rt::advance(20.0);
+    assert_eq!(calls.get(), 0);
+}
+
+#[test]
+fn caller_cancel_keeps_its_code_and_detaches_listener_when_answer_arrives() {
+    use epdf_kernel::cancellable::cancellable;
+    rt::reset();
+    let signal = AbortSignal::new();
+    let (task, answer) = Promise::<Value>::pending();
+    let call = cancellable("test", Some(signal.clone()), task);
+    signal.abort(Error::new("caller stopped"));
+    assert_eq!(call.peek().unwrap().unwrap_err().code(), Some("operation-cancelled"));
+    answer.resolve(json!(9));
+    rt::run_until_stalled();
+    assert_eq!(call.peek().unwrap().unwrap_err().code(), Some("operation-cancelled"));
+    assert_eq!(signal.listener_count(), 0);
+}

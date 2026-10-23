@@ -175,6 +175,11 @@ fn collect_hosts(value: &Value, out: &mut Vec<Value>) {
 type Recorded = (OpenSource, OpenOptions, Option<Rc<HostHold>>);
 
 struct Session {
+    burst: RefCell<Option<(String, crate::store::StoreHold)>>,
+    changes: crate::changes::DocumentChanges,
+    events: EventHookSource<Value>,
+    mirror_starts: RefCell<Vec<(String, Rc<dyn Fn()>)>>,
+    constructing: RefCell<Vec<*const PluginDef>>,
     id: RefCell<String>,
     instance_id: String,
     name: RefCell<Option<String>>,
@@ -200,6 +205,15 @@ struct Session {
 }
 
 impl SessionView for Session {
+    fn changes(&self) -> crate::changes::DocumentChanges {
+        self.changes.clone()
+    }
+    fn events(&self) -> EventHookSource<Value> {
+        self.events.clone()
+    }
+    fn add_mirror(&self, id: &str, start: Rc<dyn Fn()>) {
+        self.mirror_starts.borrow_mut().push((id.into(), start));
+    }
     fn id(&self) -> String {
         self.id.borrow().clone()
     }
@@ -251,8 +265,10 @@ impl Sessions {
 struct Inner {
     this: Weak<Inner>,
     engine: Rc<dyn Engine>,
+    clock: Rc<dyn crate::clock::HostClock>,
     store: Rc<Store>,
     plan: PluginPlan,
+    settings: RefCell<std::collections::HashMap<String, crate::settings::Settings>>,
     document_plugins: Vec<AnyPlugin>,
     workspace_capabilities: RefCell<Vec<(AnyToken, Rc<dyn Any>)>>,
     workspace_leases: RefCell<Vec<(*const PluginDef, SliceLease)>>,
@@ -374,25 +390,71 @@ impl Inner {
 
     fn create_session(&self, id: String, name: Option<String>) -> Rc<Session> {
         self.instance_counter.set(self.instance_counter.get() + 1);
-        Rc::new(Session {
-            instance_id: format!("{id}#{}", self.instance_counter.get()),
-            id: RefCell::new(id),
-            name: RefCell::new(name),
-            source: RefCell::new(None),
-            produced: RefCell::new(None),
-            held: RefCell::new(None),
-            phase: Cell::new(Phase::Opening),
-            handle: RefCell::new(None),
-            staged_meta: RefCell::new(None),
-            scope: Scope::new(self.report.clone()),
-            operation: RefCell::new(None),
-            engine_op: RefCell::new(None),
-            cancel: AbortSignal::new(),
-            capabilities: RefCell::new(Vec::new()),
-            connectors: RefCell::new(Vec::new()),
-            leases: RefCell::new(Vec::new()),
-            closing: RefCell::new(None),
-        })
+        let session = Rc::new_cyclic(|weak: &Weak<Session>| {
+            let w = weak.clone();
+            let store = Rc::downgrade(&self.store);
+            let changes = crate::changes::DocumentChanges::new(
+                Rc::new(move |change, options| match w.upgrade().and_then(|s| s.handle()) {
+                    Some(handle) => handle.call("apply", None, vec![change, options]),
+                    None => Promise::rejected(crate::error::plugin_error(
+                        "not-ready",
+                        "documents",
+                        "the document has not opened yet",
+                        None,
+                        None,
+                    )),
+                }),
+                Rc::new(move || {
+                    if let Some(store) = store.upgrade() {
+                        store.notify();
+                    }
+                }),
+                self.report.clone(),
+            );
+            Session {
+                burst: RefCell::new(None),
+                changes,
+                events: EventHookSource::new(Some(self.report.clone())),
+                mirror_starts: RefCell::new(Vec::new()),
+                constructing: RefCell::new(Vec::new()),
+                instance_id: format!("{id}#{}", self.instance_counter.get()),
+                id: RefCell::new(id),
+                name: RefCell::new(name),
+                source: RefCell::new(None),
+                produced: RefCell::new(None),
+                held: RefCell::new(None),
+                phase: Cell::new(Phase::Opening),
+                handle: RefCell::new(None),
+                staged_meta: RefCell::new(None),
+                scope: Scope::new(self.report.clone()),
+                operation: RefCell::new(None),
+                engine_op: RefCell::new(None),
+                cancel: AbortSignal::new(),
+                capabilities: RefCell::new(Vec::new()),
+                connectors: RefCell::new(Vec::new()),
+                leases: RefCell::new(Vec::new()),
+                closing: RefCell::new(None),
+            }
+        });
+        let weak = Rc::downgrade(&session);
+        let reserve = weak.clone();
+        session.changes.set_object_numbers(
+            Rc::new(move || {
+                weak.upgrade()
+                    .and_then(|s| s.handle())
+                    .ok_or_else(|| Error::new("document not ready"))?
+                    .take_object_number()
+            }),
+            Rc::new(move |count| match reserve.upgrade().and_then(|s| s.handle()) {
+                Some(h) => h.reserve_object_numbers(count),
+                None => Promise::rejected(Error::new("document not ready")),
+            }),
+        );
+        let changes = session.changes.clone();
+        session.scope.defer_fn(move || changes.close());
+        let events = session.events.clone();
+        session.scope.defer_fn(move || events.dispose());
+        session
     }
 
     /// `engineCall`: await an engine or network call under the session's
@@ -530,6 +592,9 @@ impl Inner {
                 lease.revoke();
             }
             let reason = cancelled(&format!("closed while opening: {}", s.id()));
+            s.burst.borrow_mut().take();
+            s.mirror_starts.borrow_mut().clear();
+            s.changes.close();
             s.cancel.abort(reason.clone());
             let engine_op = s.engine_op.borrow().clone();
             if let Some(abort) = engine_op {
@@ -748,7 +813,16 @@ impl Inner {
                     session.cancel.clone(),
                     session.scope.clone(),
                 )?;
-                let created = create(cx)?;
+                if session.constructing.borrow().contains(&key) {
+                    return Err(Error::new(format!(
+                        "[kernel] plugin {} is still being created",
+                        plugin.id
+                    )));
+                }
+                session.constructing.borrow_mut().push(key);
+                let created = create(cx);
+                session.constructing.borrow_mut().retain(|p| *p != key);
+                let created = created?;
                 if let Some(connect) = created.connect {
                     session.connectors.borrow_mut().push((key, connect));
                 }
@@ -876,6 +950,7 @@ impl Inner {
             instance_id: session.instance_id.clone(),
             name: session.name.borrow().clone(),
             page_count,
+            has_unsaved_changes: false,
             // `snapshot.pages`: absent stays undefined, as the TypeScript copies it.
             pages: Rc::new(snapshot.get("pages").cloned().unwrap_or_else(crate::undefined)),
             revision: 0,
@@ -886,10 +961,59 @@ impl Inner {
         let s = Rc::downgrade(&session);
         let unsubscribe = handle.subscribe(Rc::new(move |event: &Value| {
             let (Some(this), Some(session)) = (weak.upgrade(), s.upgrade()) else { return };
-            let Some(layout) = layout_from_event(event) else { return };
+            let tx = event.pointer("/origin/tx");
+            let id = tx.and_then(|t| t["id"].as_str());
+            let old = if session
+                .burst
+                .borrow()
+                .as_ref()
+                .is_some_and(|(open, _)| Some(open.as_str()) != id)
+            {
+                session.burst.borrow_mut().take()
+            } else {
+                None
+            };
+            drop(old);
+            if session.burst.borrow().is_none()
+                && tx.is_some_and(|t| t["index"] == 0 && t["count"].as_u64().is_some_and(|n| n > 1))
+            {
+                if let Some(id) = id {
+                    *session.burst.borrow_mut() = Some((id.into(), this.store.hold()));
+                }
+            }
+            if session.handle().is_some_and(|h| h.is_local())
+                && !matches!(
+                    event["type"].as_str(),
+                    Some(
+                        "stream.desynced"
+                            | "document.versioned"
+                            | "signatures.prepared"
+                            | "signatures.cancelled"
+                    )
+                )
+            {
+                let id = session.id();
+                if this.store.core().documents.contains_key(&id) {
+                    this.set_core(
+                        |core| {
+                            if let Some(meta) = core.documents.get_mut(&id) {
+                                meta.has_unsaved_changes = true;
+                            }
+                        },
+                        &core_action("@@core/document-changed"),
+                    );
+                }
+            }
+            let Some(layout) = layout_from_event(event) else {
+                session.events.emit(event);
+                return;
+            };
             let id = session.id();
             let core = this.store.core();
-            let Some(existing) = core.documents.get(&id).cloned() else { return };
+            let Some(existing) = core.documents.get(&id).cloned() else {
+                session.events.emit(event);
+                return;
+            };
             let updated = DocumentMeta {
                 page_count: layout.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
                 pages: Rc::new(layout.get("pages").cloned().unwrap_or_else(crate::undefined)),
@@ -908,6 +1032,7 @@ impl Inner {
                 "revision": revision,
                 "pages": pages,
             }));
+            session.events.emit(event);
         }));
         session.scope.defer_fn(move || unsubscribe.call());
 
@@ -925,6 +1050,9 @@ impl Inner {
             session.scope.defer_fn(move || lease.revoke()); // LIFO: reverse dependency order
         }
         for plugin in &this.document_plugins {
+            if plugin.create.is_some() {
+                continue;
+            }
             if let Some(init) = &plugin.init {
                 let ctx = PluginContext::new(
                     this.services(),
@@ -940,6 +1068,7 @@ impl Inner {
             }
             Self::checkpoint(&session)?;
         }
+        let hold = this.store.hold();
         for plugin in &this.document_plugins {
             if let Some(effects) = &plugin.effects {
                 let ctx = PluginContext::new(
@@ -962,8 +1091,32 @@ impl Inner {
                 if let Some(connect) = connect {
                     connect()?;
                 }
+                let starts: Vec<_> = session
+                    .mirror_starts
+                    .borrow()
+                    .iter()
+                    .filter(|(id, _)| id == &plugin.id)
+                    .map(|(_, f)| f.clone())
+                    .collect();
+                for start in starts {
+                    start();
+                }
             }
         }
+        drop(hold);
+        let weak = Rc::downgrade(&session);
+        let off = handle.subscribe(Rc::new(move |event| {
+            if let Some(session) = weak.upgrade() {
+                if let Some(id) = crate::mirror::last_event_of(event) {
+                    let close = session.burst.borrow().as_ref().is_some_and(|(open, _)| open == id);
+                    if close {
+                        let held = session.burst.borrow_mut().take();
+                        drop(held);
+                    }
+                }
+            }
+        }));
+        session.scope.defer_fn(move || off.call());
         Self::checkpoint(&session)
     }
 
@@ -1010,7 +1163,24 @@ impl Inner {
         let run = async move {
             let result = Self::open_steps(this.clone(), s.clone(), input, engine_options).await;
             match result {
-                Ok(id) => Ok(Value::String(id)),
+                Ok(id) => {
+                    let core = this.store.core();
+                    let document = core
+                        .documents
+                        .get(&id)
+                        .map(DocInfo::from_meta)
+                        .or_else(|| core.pending.get(&id).map(DocInfo::from_pending))
+                        .ok_or_else(|| {
+                            crate::error::plugin_error(
+                                "instance-closed",
+                                "documents",
+                                format!("{id} was closed"),
+                                None,
+                                None,
+                            )
+                        })?;
+                    Ok(serde_json::json!({"document":document}))
+                }
                 Err(error) => {
                     if is_cancelled(&error) {
                         return Err(error);
@@ -1076,10 +1246,8 @@ impl Inner {
 
         let prompt = handle.security().password_prompt();
         if prompt.get("state").and_then(Value::as_str) == Some("required") {
-            // `password != null`: neither `null` nor `undefined`.
-            let given = |p: &Value| !p.is_null() && !crate::is_undefined(p);
-            let password_provided = engine_options.get("password").is_some_and(given)
-                || source.get("password").is_some_and(given);
+            let password_provided =
+                prompt.get("incorrect").and_then(Value::as_bool).unwrap_or(false);
             session.phase.set(Phase::Locked);
             this.publish_locked(&session, password_provided);
             return Ok(session.id());
@@ -1098,24 +1266,41 @@ impl Inner {
     }
 
     fn unlock_document(&self, id: &str, password: String) -> Promise<()> {
-        match self.unlock_document_sync(id, password) {
+        match self.unlock_document_sync(id, password, None) {
             Ok(promise) => promise,
             Err(error) => Promise::rejected(error),
         }
     }
 
-    fn unlock_document_sync(&self, id: &str, password: String) -> Result<Promise<()>, Error> {
+    fn unlock_document_sync(
+        &self,
+        id: &str,
+        password: String,
+        signal: Option<AbortSignal>,
+    ) -> Result<Promise<()>, Error> {
         self.guard_usable("documents.unlock()")?;
         let session = self.sessions.borrow().get(id);
         let session = match session {
             Some(s) if s.phase.get() == Phase::Locked && s.handle().is_some() => s,
-            _ => return Err(Error::new(format!("[documents] document is not locked: {id}"))),
+            _ => {
+                return Err(crate::error::plugin_error(
+                    "invalid-input",
+                    "documents",
+                    format!("document is not locked: {id}"),
+                    None,
+                    None,
+                ));
+            }
         };
         let handle = session.handle().expect("handle");
         let this = self.this.upgrade().expect("kernel");
         let s = session.clone();
         let run = async move {
-            let unlock = handle.security().unlock(serde_json::json!({ "password": password }));
+            let unlock = crate::cancellable::cancellable(
+                "documents",
+                signal,
+                handle.security().unlock(serde_json::json!({ "password": password })),
+            );
             if let Err(error) = rt::returned(Self::engine_call(&s, unlock, None)).await {
                 if s.phase.get() == Phase::Closing || is_abort_like(&error) {
                     return Err(cancelled(&format!("closed while opening: {}", s.id())));
@@ -1174,6 +1359,12 @@ impl Inner {
 }
 
 impl Services for Inner {
+    fn clock(&self) -> Rc<dyn crate::clock::HostClock> {
+        self.clock.clone()
+    }
+    fn settings(&self, id: &str) -> Option<crate::settings::Settings> {
+        self.settings.borrow().get(id).cloned()
+    }
     fn engine(&self) -> Rc<dyn Engine> {
         self.engine.clone()
     }
@@ -1211,12 +1402,37 @@ impl Services for Inner {
 }
 
 impl Kernel {
+    pub fn settings_of(&self, token: &AnyToken) -> Result<crate::settings::Settings, Error> {
+        let plugin = self
+            .0
+            .plan
+            .ordered
+            .iter()
+            .find(|p| p.token.as_ref() == Some(token))
+            .ok_or_else(|| Error::new("[kernel] unknown settings token"))?;
+        self.0
+            .settings
+            .borrow()
+            .get(&plugin.id)
+            .cloned()
+            .ok_or_else(|| Error::new("[kernel] plugin declares no settings"))
+    }
+
     /// `createKernel`. Fails where the TypeScript throws: a bad plugin list,
     /// or a workspace capability whose constructor throws.
     pub fn new(
         engine: Rc<dyn Engine>,
         plugins: Vec<AnyPlugin>,
         options: KernelOptions,
+    ) -> Result<Kernel, Error> {
+        Self::new_with_clock(engine, plugins, options, Rc::new(crate::clock::TimerClock))
+    }
+
+    pub fn new_with_clock(
+        engine: Rc<dyn Engine>,
+        plugins: Vec<AnyPlugin>,
+        options: KernelOptions,
+        clock: Rc<dyn crate::clock::HostClock>,
     ) -> Result<Kernel, Error> {
         let report = options
             .report
@@ -1235,8 +1451,10 @@ impl Kernel {
         let inner = Rc::new_cyclic(|this| Inner {
             this: this.clone(),
             engine,
+            clock,
             store,
             plan,
+            settings: RefCell::new(std::collections::HashMap::new()),
             document_plugins,
             workspace_capabilities: RefCell::new(Vec::new()),
             workspace_leases: RefCell::new(Vec::new()),
@@ -1258,6 +1476,21 @@ impl Kernel {
         inner.workspace_capabilities.borrow_mut().push((DOCUMENTS.any().clone(), documents));
 
         for plugin in &inner.plan.ordered {
+            if let Some(declaration) = &plugin.settings {
+                let store = Rc::downgrade(&inner.store);
+                let settings = crate::settings::Settings::new(
+                    declaration.clone(),
+                    Rc::new(move || {
+                        if let Some(store) = store.upgrade() {
+                            store.notify();
+                        }
+                    }),
+                    inner.report.clone(),
+                );
+                let dispose = settings.clone();
+                inner.workspace_scope.defer_fn(move || dispose.dispose());
+                inner.settings.borrow_mut().insert(plugin.id.clone(), settings);
+            }
             if plugin.scope != PluginScope::Document {
                 let lease = inner.store.lease_with_text(
                     &plugin.id,
@@ -1561,14 +1794,69 @@ async fn all_settled(promises: Vec<Promise<()>>) {
     let _ = all.await;
 }
 
+fn document_errors<T: Clone + 'static>(task: Promise<T>) -> Promise<T> {
+    let (out, resolver) = Promise::pending();
+    task.on_settle(move |result| {
+        resolver.settle(result.clone().map_err(|e| crate::error::to_plugin_error("documents", &e)))
+    });
+    out
+}
+
 impl Documents {
     fn inner(&self) -> Result<Rc<Inner>, Error> {
         self.0.upgrade().ok_or_else(|| Error::new("[kernel] used after the kernel was dropped"))
     }
 
+    pub fn open_with_signal(
+        &self,
+        input: OpenSource,
+        options: OpenOptions,
+        signal: AbortSignal,
+    ) -> Promise<Value> {
+        if signal.aborted() {
+            return Promise::rejected(crate::error::plugin_error(
+                "operation-cancelled",
+                "documents",
+                "the open was cancelled",
+                None,
+                None,
+            ));
+        }
+        let inner = match self.inner() {
+            Ok(i) => i,
+            Err(e) => return Promise::rejected(e),
+        };
+        let (id, done) = match inner.reserve_and_open(input, options, None) {
+            Ok(v) => v,
+            Err(e) => return Promise::rejected(crate::error::to_plugin_error("documents", &e)),
+        };
+        let cancel = inner.clone();
+        let registration = signal.on_abort(Rc::new(move |_| {
+            cancel.close_document(&id);
+        }));
+        let task = adopt(done);
+        let (out, resolver) = Promise::pending();
+        task.on_settle(move |result| {
+            signal.remove(registration);
+            resolver
+                .settle(result.clone().map_err(|e| crate::error::to_plugin_error("documents", &e)));
+        });
+        out
+    }
+
+    pub fn unlock_with_signal(&self, id: &str, password: &str, signal: AbortSignal) -> Promise<()> {
+        match self
+            .inner()
+            .and_then(|inner| inner.unlock_document_sync(id, password.into(), Some(signal)))
+        {
+            Ok(p) => document_errors(p),
+            Err(e) => Promise::rejected(crate::error::to_plugin_error("documents", &e)),
+        }
+    }
+
     pub fn open(&self, input: OpenSource, options: OpenOptions) -> Promise<Value> {
         match self.inner() {
-            Ok(inner) => inner.open_document(input, options, None),
+            Ok(inner) => document_errors(inner.open_document(input, options, None)),
             Err(error) => Promise::rejected(error),
         }
     }
@@ -1658,7 +1946,7 @@ impl Documents {
 
     pub fn unlock(&self, id: &str, password: &str) -> Promise<()> {
         match self.inner() {
-            Ok(inner) => inner.unlock_document(id, password.to_string()),
+            Ok(inner) => document_errors(inner.unlock_document(id, password.to_string())),
             Err(error) => Promise::rejected(error),
         }
     }

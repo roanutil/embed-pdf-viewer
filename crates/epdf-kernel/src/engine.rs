@@ -31,6 +31,16 @@ pub trait Engine {
 
 pub trait DocumentSecurity {
     fn allows(&self, capability: &str) -> bool;
+    fn allows_field(&self, _action: &str, _target: &Value) -> bool {
+        false
+    }
+    fn allows_annotation(&self, action: &str, target: &Value) -> bool {
+        if action == "create" {
+            self.allows_annotation_create()
+        } else {
+            self.allows_annotation_mutation(action, target)
+        }
+    }
     fn allows_annotation_create(&self) -> bool;
     fn allows_annotation_mutation(&self, action: &str, target: &Value) -> bool;
     fn allows_annotation_group_assignment(&self, group_id: &str) -> bool;
@@ -44,6 +54,16 @@ pub trait DocumentSecurity {
 }
 
 pub trait DocumentHandle {
+    /// Whether writes remain in this tab until downloaded. Cloud documents return false.
+    fn is_local(&self) -> bool {
+        false
+    }
+    fn take_object_number(&self) -> Result<Option<u32>, Error> {
+        Ok(None)
+    }
+    fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
+        self.call("objectNumbers.reserve", None, vec![Value::from(count)]).convert(|_| Ok(()))
+    }
     fn id(&self) -> String;
     /// `DocumentCapabilities`.
     fn capabilities(&self) -> Value;

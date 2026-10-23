@@ -107,6 +107,15 @@ struct GuardedHandle {
 }
 
 impl DocumentHandle for GuardedHandle {
+    fn is_local(&self) -> bool {
+        self.inner.is_local()
+    }
+    fn take_object_number(&self) -> Result<Option<u32>, Error> {
+        self.inner.take_object_number().map_err(|e| to_plugin_error(&self.guard.capability, &e))
+    }
+    fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
+        self.guard.promise(self.inner.reserve_object_numbers(count))
+    }
     fn id(&self) -> String {
         self.inner.id()
     }
@@ -151,8 +160,14 @@ struct GuardedSecurity {
 }
 
 impl DocumentSecurity for GuardedSecurity {
+    fn allows_field(&self, action: &str, target: &Value) -> bool {
+        self.inner.allows_field(action, target)
+    }
     fn allows(&self, capability: &str) -> bool {
         self.inner.allows(capability)
+    }
+    fn allows_annotation(&self, action: &str, target: &Value) -> bool {
+        self.inner.allows_annotation(action, target)
     }
     fn allows_annotation_create(&self) -> bool {
         self.inner.allows_annotation_create()

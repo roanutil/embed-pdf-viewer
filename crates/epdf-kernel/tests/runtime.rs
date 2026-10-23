@@ -738,7 +738,7 @@ fn an_action_downcasts_to_what_it_is() {
 #[test]
 fn a_page_ref_prints_as_an_object_number() {
     let value = PageRef::new(7).to_json();
-    assert_eq!(value, json!({ "kind": "objectNumber", "pageObjectNumber": 7 }));
+    assert_eq!(value, json!({ "kind": "objectNumber", "objectNumber": 7 }));
     assert_eq!(PageRef::from_json(&value), Some(PageRef::new(7)));
 }
 

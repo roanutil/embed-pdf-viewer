@@ -174,6 +174,22 @@ impl SliceLease {
         true
     }
 
+    /// Replace this instance's state. A revoked lease can never publish again.
+    pub fn write(&self, next: SliceState) -> bool {
+        if !self.live() {
+            return false;
+        }
+        if Rc::ptr_eq(&self.read(), &next) {
+            return true;
+        }
+        *self.0.state.borrow_mut() = next;
+        if let Some(store) = self.0.store.upgrade() {
+            self.0.revision.set(store.next_slice_revision());
+            store.notify();
+        }
+        true
+    }
+
     pub fn revoke(&self) {
         if !self.0.live.get() {
             return;
@@ -221,6 +237,8 @@ pub struct Store {
     change: Listeners<ChangeListener>,
     action: Listeners<ActionEntry>,
     emitting: Cell<bool>,
+    holds: Cell<u32>,
+    held_change: Cell<bool>,
     pending: Cell<bool>,
     report: Report,
     /// Moves on every change to core or to the set of slices or their
@@ -247,6 +265,8 @@ impl Store {
             change: Listeners::default(),
             action: Listeners::default(),
             emitting: Cell::new(false),
+            holds: Cell::new(0),
+            held_change: Cell::new(false),
             pending: Cell::new(false),
             report,
             revision: Cell::new(0),
@@ -282,7 +302,23 @@ impl Store {
         }
     }
 
+    /// Keep notifications together across one transaction or event burst.
+    pub fn hold(&self) -> StoreHold {
+        self.holds.set(self.holds.get() + 1);
+        StoreHold { store: self.this.clone() }
+    }
+
+    /// Wake readers of resources and pending views, without a reducer action.
+    pub fn notify(&self) {
+        self.bump();
+        self.emit_change();
+    }
+
     fn emit_change(&self) {
+        if self.holds.get() > 0 {
+            self.held_change.set(true);
+            return;
+        }
         if self.emitting.get() {
             self.pending.set(true);
             return;
@@ -577,5 +613,20 @@ impl Unsubscribe {
 impl From<Rc<dyn Fn()>> for Unsubscribe {
     fn from(remove: Rc<dyn Fn()>) -> Self {
         Unsubscribe::new(move || remove())
+    }
+}
+
+/// Releases the outermost store hold even when construction returns an error.
+pub struct StoreHold {
+    store: Weak<Store>,
+}
+impl Drop for StoreHold {
+    fn drop(&mut self) {
+        if let Some(store) = self.store.upgrade() {
+            store.holds.set(store.holds.get().saturating_sub(1));
+            if store.holds.get() == 0 && store.held_change.replace(false) {
+                store.emit_change();
+            }
+        }
     }
 }

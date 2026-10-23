@@ -17,6 +17,9 @@
 
 pub mod action;
 pub mod bytes;
+pub mod cancellable;
+pub mod changes;
+pub mod clock;
 pub mod compose;
 pub mod engine;
 pub mod error;
@@ -26,11 +29,14 @@ pub mod guarded;
 pub mod js;
 pub mod kernel;
 pub mod lanes;
+pub mod mirror;
+pub mod page_mirror;
 pub mod plan;
 pub mod plugin;
 pub mod rt;
 pub mod scope;
 pub mod serial_queue;
+pub mod settings;
 pub mod signal;
 pub mod store;
 pub mod token;

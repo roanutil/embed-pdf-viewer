@@ -199,6 +199,19 @@ pub fn plugin_error(
     let mut error = Error::named("PluginError", message)
         .with("code", code)
         .with("capability", capability)
+        .with(
+            "permission",
+            if code == code::PERMISSION_DENIED {
+                details
+                    .as_ref()
+                    .and_then(|d| d.get("required"))
+                    .filter(|v| v.is_string())
+                    .cloned()
+                    .unwrap_or(Value::Null)
+            } else {
+                Value::Null
+            },
+        )
         .of_class(ErrorClass::Plugin);
     if let Some(details) = details.filter(|d| !crate::is_undefined(d)) {
         error = error.with("details", details);
@@ -229,6 +242,7 @@ impl Error {
             "code": self.members.get("code").cloned().unwrap_or(Value::Null),
             "message": self.message,
             "capability": self.members.get("capability").cloned().unwrap_or(Value::Null),
+            "permission": self.members.get("permission").cloned().unwrap_or(Value::Null),
         })
     }
 }
@@ -236,7 +250,7 @@ impl Error {
 /// The engine codes `toPluginError` maps; anything else is `operation-failed`.
 fn engine_code(code: &str) -> Option<&'static str> {
     Some(match code {
-        "InvalidArg" | "MalformedPdf" | "WireFormat" => code::INVALID_INPUT,
+        "InvalidArg" | "MalformedPdf" | "PayloadTooLarge" => code::INVALID_INPUT,
         "DocNotOpen" => code::NOT_READY,
         "DocPasswordRequired"
         | "DocPasswordIncorrect"
@@ -244,10 +258,14 @@ fn engine_code(code: &str) -> Option<&'static str> {
         | "Unauthenticated"
         | "Forbidden"
         | "ProtectedDocument" => code::PERMISSION_DENIED,
-        "NotFound" | "InvalidReference" => code::NOT_FOUND,
+        "NotFound" => code::NOT_FOUND,
         "NotImplemented" => code::UNSUPPORTED,
+        "IdempotencyKeyReused" => code::INVALID_INPUT,
         "Aborted" => code::OPERATION_CANCELLED,
-        "WeakAnnotationSessionConflict"
+        "ObjectNumberUnavailable"
+        | "LayerFull"
+        | "ChangeConflict"
+        | "UndoUnavailable"
         | "LayerVersionConflict"
         | "StaleBase"
         | "SigningPending"

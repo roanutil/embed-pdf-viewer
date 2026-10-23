@@ -49,6 +49,7 @@ pub struct Created {
 pub type CreateFn = Rc<dyn Fn(ControllerContext) -> Result<Created, Error>>;
 
 pub struct PluginDef {
+    pub settings: Option<crate::settings::SettingsDeclaration>,
     pub id: String,
     pub token: Option<AnyToken>,
     pub scope: PluginScope,
@@ -72,6 +73,8 @@ pub type AnyPlugin = Rc<PluginDef>;
 // ── what a context needs from the kernel ──────────────────────────────────────
 
 pub(crate) trait Services {
+    fn clock(&self) -> Rc<dyn crate::clock::HostClock>;
+    fn settings(&self, plugin_id: &str) -> Option<crate::settings::Settings>;
     fn engine(&self) -> Rc<dyn Engine>;
     fn store(&self) -> Rc<Store>;
     fn workspace_scope(&self) -> Scope;
@@ -89,6 +92,9 @@ pub(crate) trait Services {
 
 /// The slice of a document session a context needs.
 pub(crate) trait SessionView {
+    fn changes(&self) -> crate::changes::DocumentChanges;
+    fn events(&self) -> EventHookSource<Value>;
+    fn add_mirror(&self, plugin_id: &str, start: Rc<dyn Fn()>);
     fn id(&self) -> String;
     /// Unique per open; a reopened id gets a new one.
     fn instance_id(&self) -> String;
@@ -470,6 +476,7 @@ struct ControllerInner {
     guarded: RefCell<Option<Rc<dyn DocumentHandle>>>,
     queues: RefCell<HashMap<String, SerialQueue>>,
     lanes: RefCell<HashMap<String, LatestLane>>,
+    clock: crate::clock::PluginClock,
 }
 
 impl std::ops::Deref for ControllerContext {
@@ -495,9 +502,13 @@ impl ControllerContext {
         };
         Ok(ControllerContext(Rc::new(ControllerInner {
             ctx,
-            services,
+            services: services.clone(),
             instance_id,
             capability: plugin.id.clone(),
+            clock: crate::clock::PluginClock::new(
+                services.upgrade().ok_or_else(gone)?.clock(),
+                lifetime.clone(),
+            ),
             lifetime,
             scope,
             session,
@@ -561,6 +572,147 @@ impl ControllerContext {
                 )
             })
             .clone())
+    }
+
+    pub fn clock(&self) -> crate::clock::PluginClock {
+        self.0.clock.clone()
+    }
+
+    pub fn allows(&self, permission: &str) -> bool {
+        self.doc().is_ok_and(|d| {
+            if permission == "annotations:create" {
+                d.security().allows_annotation_create()
+            } else {
+                d.security().allows(permission)
+            }
+        })
+    }
+    pub fn assert_allowed(&self, permission: &str, operation: &str) -> Result<(), Error> {
+        if self.allows(permission) {
+            Ok(())
+        } else {
+            Err(plugin_error(
+                "permission-denied",
+                &self.0.capability,
+                format!("{operation} requires {permission}"),
+                None,
+                None,
+            )
+            .with("permission", permission))
+        }
+    }
+    pub fn allows_field(&self, action: &str, field: &Value) -> bool {
+        self.doc().is_ok_and(|d| {
+            d.security().allows_field(action, &serde_json::json!({"groupId":field["groupId"]}))
+        })
+    }
+    pub fn assert_allowed_field(
+        &self,
+        action: &str,
+        field: &Value,
+        operation: &str,
+    ) -> Result<(), Error> {
+        if self.allows_field(action, field) {
+            return Ok(());
+        }
+        let permission = if let Some(group) = field["groupId"].as_str() {
+            format!("fields:{action}:group={group}")
+        } else if action == "fill" {
+            "doc.forms.fill".into()
+        } else {
+            "doc.sign".into()
+        };
+        Err(plugin_error(
+            "permission-denied",
+            &self.0.capability,
+            format!("{operation} requires {permission}"),
+            None,
+            None,
+        )
+        .with("permission", permission))
+    }
+
+    pub fn notify(&self) {
+        if self.0.ctx.lease.live() {
+            if let Some(s) = self.0.services.upgrade() {
+                s.store().notify();
+            }
+        }
+    }
+
+    pub fn settings(&self) -> Result<crate::settings::InstanceSettings, Error> {
+        self.0
+            .services
+            .upgrade()
+            .and_then(|s| s.settings(&self.0.capability))
+            .map(|s| s.for_instance(&self.0.scope))
+            .ok_or_else(|| {
+                Error::new(format!(
+                    "[kernel] plugin \"{}\" declares no settings",
+                    self.0.capability
+                ))
+            })
+    }
+
+    pub fn changes(&self) -> Result<crate::changes::ChangeQueue, Error> {
+        self.0
+            .session
+            .as_ref()
+            .map(|s| s.changes().for_plugin(&self.0.capability))
+            .ok_or_else(|| Error::new("[kernel] workspace plugin has no document changes"))
+    }
+
+    fn mirror_environment(&self) -> Result<crate::mirror::MirrorEnvironment, Error> {
+        let doc = self.doc()?;
+        let session = self.0.session.as_ref().ok_or_else(gone)?;
+        let services = self.0.services.upgrade().ok_or_else(gone)?;
+        let store = services.store();
+        let prefix = self.0.ctx.slice_key().to_string();
+        let scope = self.0.scope.clone();
+        let lifetime = self.0.lifetime.clone();
+        let instance = self.0.instance_id.clone();
+        let notify = self.clone();
+        Ok(crate::mirror::MirrorEnvironment {
+            doc: Some(doc),
+            lifetime: lifetime.clone(),
+            changes: session.changes(),
+            events: session.events(),
+            cell: Rc::new(move |name, initial| {
+                let lease = store.lease(
+                    &format!("{prefix}/{name}"),
+                    Rc::new(|_, _| None),
+                    Rc::new(initial),
+                    Rc::new(|v| v.downcast_ref::<Value>().unwrap().clone()),
+                    Some(instance.clone()),
+                );
+                let revoke = lease.clone();
+                scope.defer_fn(move || revoke.revoke());
+                if lifetime.aborted() {
+                    lease.revoke();
+                }
+                lease
+            }),
+            notify: Rc::new(move || notify.notify()),
+            report: services.report(),
+        })
+    }
+
+    pub fn mirror(&self, spec: crate::mirror::MirrorSpec) -> Result<crate::mirror::Mirror, Error> {
+        let mirror = crate::mirror::Mirror::new(spec, self.mirror_environment()?);
+        let start = mirror.clone();
+        self.0
+            .session
+            .as_ref()
+            .unwrap()
+            .add_mirror(&self.0.capability, Rc::new(move || start.start()));
+        Ok(mirror)
+    }
+
+    pub fn page_mirror(
+        &self,
+        spec: crate::page_mirror::PageMirrorSpec,
+    ) -> Result<crate::page_mirror::PageMirror, Error> {
+        Ok(crate::page_mirror::PageMirror::new(spec, self.mirror_environment()?))
     }
 
     /// `ctx.events.source()`: a capability event, disposed with the instance.
@@ -799,6 +951,31 @@ impl<S: 'static, A: Action> Controller<S, A> {
             .unwrap_or_else(|| panic!("[{}] state is not the type its plugin names", self.cx.id()))
     }
 
+    /// Apply a pure session transition without dispatching a reducer action.
+    pub fn update_state(&self, transition: impl FnOnce(Rc<S>) -> Rc<S>) -> bool {
+        self.cx.lease().write(transition(self.state()))
+    }
+
+    pub fn on_state_change(
+        &self,
+        listener: impl Fn(Rc<S>, Rc<S>) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        let state = self.state();
+        let previous = Rc::new(RefCell::new(state));
+        let cx = self.clone();
+        let off = self.cx.subscribe(Rc::new(move || {
+            let next = cx.state();
+            let before = previous.borrow().clone();
+            if !Rc::ptr_eq(&before, &next) {
+                *previous.borrow_mut() = next.clone();
+                listener(next, before)?;
+            }
+            Ok(())
+        }));
+        self.cx.listen(off.clone());
+        off
+    }
+
     pub fn dispatch(&self, action: A) {
         self.cx.dispatch_any(&action);
     }
@@ -902,6 +1079,7 @@ pub struct PluginBuilder<S, A> {
     init: Option<InitFn>,
     effects: Option<EffectsFn>,
     create: Option<CreateFn>,
+    settings: Option<crate::settings::SettingsDeclaration>,
 }
 
 pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
@@ -918,10 +1096,16 @@ pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
         init: None,
         effects: None,
         create: None,
+        settings: None,
     }
 }
 
 impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
+    pub fn settings(mut self, declaration: crate::settings::SettingsDeclaration) -> Self {
+        self.settings = Some(declaration);
+        self
+    }
+
     pub fn scope(mut self, scope: PluginScope) -> Self {
         self.scope = scope;
         self
@@ -1044,6 +1228,7 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
                 as SliceText
         });
         Rc::new(PluginDef {
+            settings: self.settings,
             id: self.id,
             token: self.token,
             scope: self.scope,
