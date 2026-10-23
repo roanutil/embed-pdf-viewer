@@ -474,6 +474,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-fonts"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-geometry"
 version = "0.0.0"
 dependencies = [
