@@ -286,13 +286,5 @@
       "$.actions[].action.camera",
       "$.state.plugins.stage::a.camera"
     ]
-  },
-  "plugins/selection.json": {
-    "down-off-text-and-over-gaps": [
-      "$.callbacks[].args[]"
-    ],
-    "handler-priority": [
-      "$.callbacks[].args[]"
-    ]
   }
 }
