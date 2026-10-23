@@ -3,7 +3,9 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::schema::{GroupRole, NormalizedBar, NormalizedGroup, NormalizedUnit};
+use crate::schema::{
+    GroupRole, NormalizedBar, NormalizedGroup, NormalizedUnit, command_of_unit, filter_bar,
+};
 use crate::solver::{FitResult, UnitAssignment};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -43,16 +45,18 @@ pub struct MenuTarget {
 pub trait ResolveMenuTarget: Fn(&str) -> Option<MenuTarget> {}
 impl<F: Fn(&str) -> Option<MenuTarget>> ResolveMenuTarget for F {}
 
+/// A unit's menu form; a custom item's is its terminal command's. A
+/// standalone item has none.
 fn project_unit(
     unit: &NormalizedUnit,
     resolve: &dyn Fn(&str) -> Option<MenuTarget>,
-) -> OverflowRow {
-    let command = unit.menu_command().to_string();
+) -> Option<OverflowRow> {
+    let command = command_of_unit(unit)?.to_string();
     // `menu ? submenu : command`: an empty menu id is falsy.
-    match resolve(&command).and_then(|t| t.menu).filter(|m| !m.is_empty()) {
+    Some(match resolve(&command).and_then(|t| t.menu).filter(|m| !m.is_empty()) {
         Some(menu) => OverflowRow::Submenu { command, menu },
         None => OverflowRow::Command { command },
-    }
+    })
 }
 
 fn assigned(fit: &FitResult, unit: &NormalizedUnit, want: fn(&UnitAssignment) -> bool) -> bool {
@@ -73,7 +77,7 @@ pub fn project_overflow(
                 .units
                 .iter()
                 .filter(|u| assigned(fit, u, |a| matches!(a, UnitAssignment::Overflow)))
-                .map(|u| project_unit(u, &resolve))
+                .filter_map(|u| project_unit(u, &resolve))
                 .collect();
             if rows.is_empty() {
                 continue;
@@ -98,7 +102,7 @@ pub fn project_shed(
         .units
         .iter()
         .filter(|u| assigned(fit, u, |a| matches!(a, UnitAssignment::Shed)))
-        .map(|u| project_unit(u, &resolve))
+        .filter_map(|u| project_unit(u, &resolve))
         .collect()
 }
 
@@ -112,22 +116,20 @@ pub struct StripGroup {
     pub commands: Vec<String>,
 }
 
-/// A bar projected for un-measured rendering: hidden commands drop out and
-/// groups that empty out vanish.
+/// A bar projected for un-measured rendering: `visible` decides which
+/// commands show, groups that empty out vanish, and a bar with only dependent
+/// groups left projects to nothing ([`filter_bar`]). Custom units project
+/// through their `terminal` command.
 pub fn project_strip(
     bar: &NormalizedBar,
     mut visible: impl FnMut(&str) -> bool,
 ) -> Vec<StripGroup> {
+    let shown = filter_bar(bar, |unit| command_of_unit(unit).is_some_and(&mut visible));
     let mut groups = Vec::new();
-    for section in &bar.sections {
+    for section in &shown.sections {
         for group in &section.groups {
-            let commands: Vec<String> = group
-                .units
-                .iter()
-                .map(|u| u.menu_command())
-                .filter(|c| visible(c))
-                .map(str::to_string)
-                .collect();
+            let commands: Vec<String> =
+                group.units.iter().filter_map(command_of_unit).map(str::to_string).collect();
             if commands.is_empty() {
                 continue;
             }

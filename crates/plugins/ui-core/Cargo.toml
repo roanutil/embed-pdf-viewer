@@ -3,7 +3,7 @@ name = "epdf-ui-core"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/core/ui in Rust: the chrome schema vocabulary, the toolbar fit solver, the overflow projection, the schema transforms and the shortcut parser."
+description = "packages/core/ui in Rust: the bar schema, the toolbar fit solver, the overflow projection, the viewer layout with its edits and validation, and the shortcut parser."
 
 [lib]
 crate-type = ["rlib"]

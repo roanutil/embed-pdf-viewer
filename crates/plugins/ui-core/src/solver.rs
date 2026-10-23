@@ -1,8 +1,12 @@
-//! `solver.ts`: the fit solver. Given a normalized bar, measured widths and
+//! `solver.ts`: the fit solver. Given a normalized bar, measured lengths and
 //! the container budget, decide what every unit renders as.
 //!
+//! A length is a size along the bar: a width in a horizontal bar, a height in
+//! a vertical one. The solver never knows which; the host measures the axis
+//! its bar runs along.
+//!
 //! The policy, the two-pass trigger fixpoint and the tie-breaking are the
-//! TypeScript's, step for step; see that file's header. Widths are summed in
+//! TypeScript's, step for step; see that file's header. Lengths are summed in
 //! the same order, so a fractional result is the same `f64`.
 
 use serde::{Deserialize, Serialize};
@@ -10,20 +14,20 @@ use serde::{Deserialize, Serialize};
 use crate::js::{self, JsMap};
 use crate::schema::{NormalizedBar, NormalizedGroup, NormalizedUnit, PINNED, SectionName};
 
-/// Widths the solver consults. `None` is a measurement not yet taken: it
+/// Lengths the solver consults. `None` is a measurement not yet taken: it
 /// counts as 0 and makes the result incomplete.
 pub trait FitMetrics {
-    /// Width of unit `key` rendered at `variant`.
+    /// Length of unit `key` rendered at `variant`.
     fn unit(&self, key: &str, variant: &str) -> Option<f64>;
-    /// Width of group `id` in its collapsed form.
+    /// Length of group `id` in its collapsed form.
     fn group_collapsed(&self, group_id: &str) -> Option<f64>;
-    /// Width of group `id`'s disclosure trigger.
+    /// Length of group `id`'s disclosure trigger.
     fn group_trigger(&self, group_id: &str) -> Option<f64>;
-    /// Width of the overflow trigger button.
+    /// Length of the overflow trigger button.
     fn overflow_trigger(&self) -> f64;
     /// Gap between adjacent visible units.
     fn gap(&self) -> f64;
-    /// Width of a derived separator between adjacent visible groups.
+    /// Length of a derived separator between adjacent visible groups.
     fn separator(&self) -> f64;
 }
 
@@ -55,9 +59,9 @@ pub struct FitResult {
     pub units: JsMap<UnitAssignment>,
     pub groups: JsMap<GroupAssignment>,
     pub has_overflow: bool,
-    /// Total visible width at this assignment.
+    /// Total visible length at this assignment.
     #[serde(with = "js::number")]
-    pub width: f64,
+    pub length: f64,
     /// False when any consulted measurement was missing.
     pub complete: bool,
 }
@@ -233,15 +237,15 @@ fn apply_step(groups: &mut [GroupState<'_>], step: Step) {
 }
 
 struct Measured {
-    width: f64,
+    length: f64,
     complete: bool,
 }
 
-/// Visible width: unit widths, then the overflow trigger, then gaps between
+/// Visible length: unit lengths, then the overflow trigger, then gaps between
 /// all adjacent visible units, then separators per section, in the order
 /// sections were first seen (a `Map` keyed by section name).
 fn measure(groups: &[GroupState<'_>], metrics: &dyn FitMetrics, has_trigger: bool) -> Measured {
-    let mut width = 0.0;
+    let mut length = 0.0;
     let mut complete = true;
     let mut visible_units = 0usize;
     let mut visible_by_section: Vec<(SectionName, usize)> = Vec::new();
@@ -260,7 +264,7 @@ fn measure(groups: &[GroupState<'_>], metrics: &dyn FitMetrics, has_trigger: boo
             if w.is_none() {
                 complete = false;
             }
-            width += w.unwrap_or(0.0);
+            length += w.unwrap_or(0.0);
             visible_units += 1;
             bump(gs.section);
             continue;
@@ -285,7 +289,7 @@ fn measure(groups: &[GroupState<'_>], metrics: &dyn FitMetrics, has_trigger: boo
             if w.is_none() {
                 complete = false;
             }
-            width += w.unwrap_or(0.0);
+            length += w.unwrap_or(0.0);
             visible_units += 1;
             group_visible = true;
         }
@@ -294,7 +298,7 @@ fn measure(groups: &[GroupState<'_>], metrics: &dyn FitMetrics, has_trigger: boo
             if w.is_none() {
                 complete = false;
             }
-            width += w.unwrap_or(0.0);
+            length += w.unwrap_or(0.0);
             visible_units += 1;
             group_visible = true;
         }
@@ -304,18 +308,18 @@ fn measure(groups: &[GroupState<'_>], metrics: &dyn FitMetrics, has_trigger: boo
     }
 
     if has_trigger {
-        width += metrics.overflow_trigger();
+        length += metrics.overflow_trigger();
         visible_units += 1;
     }
     if visible_units > 1 {
-        width += metrics.gap() * (visible_units - 1) as f64;
+        length += metrics.gap() * (visible_units - 1) as f64;
     }
     for (_, count) in visible_by_section {
         if count > 1 {
-            width += metrics.separator() * (count - 1) as f64;
+            length += metrics.separator() * (count - 1) as f64;
         }
     }
-    Measured { width, complete }
+    Measured { length, complete }
 }
 
 fn any_overflow(groups: &[GroupState<'_>]) -> bool {
@@ -330,7 +334,7 @@ fn solve_pass<'a>(
 ) -> (Vec<GroupState<'a>>, Measured) {
     let mut groups = build_state(bar);
     let mut measured = measure(&groups, metrics, has_trigger);
-    while measured.width > budget {
+    while measured.length > budget {
         let Some(step) = next_step(&groups) else { break };
         apply_step(&mut groups, step);
         measured = measure(&groups, metrics, has_trigger);
@@ -338,10 +342,11 @@ fn solve_pass<'a>(
     (groups, measured)
 }
 
-pub fn solve(bar: &NormalizedBar, metrics: &dyn FitMetrics, container_width: f64) -> FitResult {
-    let mut pass = solve_pass(bar, metrics, container_width, false);
+/// Fit `bar` into `container_length`, the room along its axis.
+pub fn solve(bar: &NormalizedBar, metrics: &dyn FitMetrics, container_length: f64) -> FitResult {
+    let mut pass = solve_pass(bar, metrics, container_length, false);
     if any_overflow(&pass.0) {
-        pass = solve_pass(bar, metrics, container_width, true);
+        pass = solve_pass(bar, metrics, container_length, true);
     }
     let (groups, measured) = pass;
 
@@ -373,7 +378,7 @@ pub fn solve(bar: &NormalizedBar, metrics: &dyn FitMetrics, container_width: f64
         units,
         groups: group_assignments,
         has_overflow: any_overflow(&groups),
-        width: measured.width,
+        length: measured.length,
         complete: measured.complete,
     }
 }

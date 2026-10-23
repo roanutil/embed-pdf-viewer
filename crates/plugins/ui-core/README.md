@@ -1,17 +1,21 @@
 # epdf-ui-core
 
-`packages/core/ui` in Rust: the chrome schema, the fit solver, the overflow projection, the schema
-transforms and the shortcut parser. All 1,299 cases in `vectors/core/ui-*.json` replay identically
-(`cargo test -p epdf-ui-core`).
+`packages/core/ui` in Rust: the bar schema, the fit solver, the overflow projection, the viewer's
+layout with its edits and its validation, and the shortcut parser. All 1,238 cases in
+`vectors/core/ui-*.json` replay identically (`cargo test -p epdf-ui-core`).
 
 | Vector file | Cases | Module |
 |---|---|---|
-| `core/ui-schema.json` | 61 | `schema.rs` |
+| `core/ui-schema.json` | 48 | `schema.rs`, `layout.rs`, `layout_validate.rs` |
 | `core/ui-solver.json` | 303 | `solver.rs` |
 | `core/ui-projection.json` | 28 | `projection.rs` |
-| `core/ui-transforms.json` | 53 | `transforms.rs` |
+| `core/ui-transforms.json` | 13 | `layout.rs` |
 | `core/ui-shortcuts.json` | 843 | `shortcuts.rs` |
-| `core/ui-helpers.json` | 11 | `helpers.rs` |
+| `core/ui-helpers.json` | 3 | `layout.rs` |
+
+The package's own layout, validation and suggestion tests run as Rust in `tests/behavior.rs`. Where
+the TypeScript asserts `toBe`, the test asserts `Rc::ptr_eq`: an edit keeps every bar, menu, panel
+and group it didn't touch as the same allocation, as the TypeScript keeps the reference.
 
 The generator is `tooling/plugin-conformance/src/suites/ui-core.ts`. Callbacks cross as tables:
 `FitMetrics` is a width table with per-variant and per-group defaults, `ResolveMenuTarget` is a map
@@ -26,14 +30,22 @@ just the points the package's own tests check.
 ## JavaScript semantics
 
 `js.rs` holds what the TypeScript gets for free. `Record` iterates as `Object.entries` does
-(integer-like keys first, then insertion order), which `validateChrome`'s problem list and
-`defineChrome`'s first error depend on. `JsMap` is a `Map` and prints as `{"$map": ...}`, which is
+(integer-like keys first, then insertion order), which `validateLayout`'s problem list depends on. `JsMap` is a `Map` and prints as `{"$map": ...}`, which is
 what `FitResult.units` and `FitResult.groups` are. `trim` uses the ECMAScript whitespace set, which
 differs from `char::is_whitespace` on U+FEFF and U+0085. Lengths are UTF-16 code units, and
 `capitalize` leaves a string whose first character is outside the BMP alone, because `charAt(0)`
-takes half a surrogate pair. `splice_start` is `splice`'s start index for `addItem`'s `at`, `NaN`
-and the infinities included. The solver sums widths in the TypeScript's order, so fractional widths
+takes half a surrogate pair. The solver sums widths in the TypeScript's order, so fractional widths
 come out as the same `f64`.
+
+The layout is plain data from people, so it is a `JsValue` (`value.rs`), not typed structs. It
+keeps JavaScript's member order through spreads (a section added to a bar goes last), and it reads a
+member of the wrong type the way the TypeScript does: skipped by the edits and named by
+`validate_layout`. The layout cases match the TypeScript's member order with no entry in
+`crates/plugin-conformance/member-order-allow.json`
+(`layout_cases_keep_member_order_with_no_allowance` in `tests/conformance.rs`). Its entry for
+`core/ui-transforms.json` `replace-everywhere` is no longer needed. The two `core/ui-schema.json`
+entries still are: `group` returns a typed `BarGroup`, whose members print in one order where the
+TypeScript prints the caller's options in theirs.
 
 Case folding is Rust's `to_lowercase` and `to_uppercase`. They agree with V8 on every string the
 vectors try, final sigma, `İ`, `ß` and `ŉ` included. A character added in a Unicode version one side
@@ -41,11 +53,16 @@ has and the other lacks would fold differently.
 
 ## Coverage
 
+Stale as of Task 13.10: the counts below are for the package before the layout replaced the chrome
+schema, and Task 14 re-measures them.
+
 The generators reach all 1,207 lines of the package and 336 of its 337 branches. The miss is
 `shortcuts.ts:65`, the `empty key` throw in `parseShortcut`. An empty last token becomes `+`, and
 lowercasing a non-empty string never empties it, so no input reaches it. The Rust keeps the check.
 
 ## Mutation testing
+
+Stale as of Task 13.10, for the same reason; Task 14 reruns it.
 
 `cargo mutants -p epdf-ui-core --test-package epdf-ui-core` catches 279 of 284 viable mutants and
 times out on 3, each of which makes the solver loop forever. Two survive, and both are equivalent:
@@ -65,6 +82,22 @@ shape the solver could meet at runtime is a hand-built unit with an empty ladder
 `normalizeBar` rejects. The TypeScript measures it at variant `undefined` and assigns `{kind:
 'variant'}` with no variant; Rust treats it as unmeasured and assigns an empty string.
 
-`chromeHelpers` is a struct of function pointers, `CHROME_HELPERS`, with the member names in
-`CHROME_HELPER_KEYS`. The `identity` case asserts that each member is the module's own function,
-which the struct satisfies by construction.
+Three files of the package are not ported, and no vector covers them: most of `layout-compile.ts`
+(`compileBar`, the edge and float stacks, `menuOf`, `omittedCommandsOf`), `toolbar-layout.ts` and
+`tree-keys.ts`. They turn a layout into the toolbars and trees a viewer draws, and no Rust host draws
+one yet. `layout_compile.rs` holds only what `validate_layout` reads: `edge_of`, `host_of`,
+`modes_of` and the command names.
+
+Three Rust-only divergences, each pinned by a test (`tests/behavior.rs`, and `value.rs` for the
+third):
+
+- Members are own members. `bars['constructor']` finds `Object.prototype`'s function in the
+  TypeScript, which then edits it as a bar; Rust reads no bar there. `formatShortcut('Ctrl+constructor')`
+  prints `Ctrl+` in the TypeScript, which finds a function in `KEY_NAMES`, and `Ctrl+Constructor` in
+  Rust. The same choice as `epdf-annotation-core`'s kind names and `epdf-fonts`' face names.
+- A `null` bar or panel is skipped. The TypeScript throws a `TypeError` reading a member of one in
+  `validateLayout` (beside a bar placed `before` or `after` another), `replace`, `removePanel` and
+  `panels`.
+- A string spread into an object splits into UTF-16 units in the TypeScript. Rust can't hold half
+  a surrogate pair, so each half of one reads as U+FFFD. Only a bars, menus or panels record that is
+  a string reaches this.
