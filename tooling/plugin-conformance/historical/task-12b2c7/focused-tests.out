@@ -1,0 +1,33 @@
+(node:60601) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ metadata opens idle, loads both mirrors on demand and returns complete current fields (578.893458ms)
+✔ lazy load stays pending until both mirrors resync and loaded ensureLoaded does no extra work (1.741708ms)
+✔ standard write has an exact patch/result and confirmed previous/keys/local origin (1.36875ms)
+✔ custom deferred write retains old value until confirmation and leaves standard data intact (1.127959ms)
+✔ unconfirmed write results cannot mutate the mirror or emit updated (1.0265ms)
+✔ loads emit only resynced; facts keep both origins, shallow keys, and unsubscribe silence (1.241625ms)
+✔ custom comparison preserves equal/changed values and witnesses added and removed keys (0.723667ms)
+✔ concurrent loads deduplicate and explicit in-flight refresh queues exactly one re-read (0.959084ms)
+✔ both newer confirmed values win over stale load answers (0.86175ms)
+✔ close suppresses late reads and all callbacks; reopen starts fresh idle mirrors (2.391333ms)
+✔ permissions are synchronous selectors and local refusal never reaches either write service (1.435667ms)
+✔ failed reads/refusals preserve snapshots and refresh recovers each independent mirror (3.026875ms)
+wrote crates/plugins/acrojs/prelude.js
+✔ every negative channel is an exact named rejection; all other throws, reports and error data fail (11.725959ms)
+✔ confirmed standard/custom callbacks see new snapshots before their immediate/deferred writes resolve (0.323458ms)
+✔ pre-aborted writes refuse locally and permission refusal precedes cancellation for both surfaces (0.42ms)
+✔ cancelled lazy waiter rejects while a second waiter receives both eventual reads (0.190666ms)
+✔ caller cancellation rejects both deferred writes without projecting their unconfirmed results (0.256083ms)
+✔ closing rejects in-flight writes and releases subscriptions before late confirmations (0.217291ms)
+✔ prior current actions160, commands79 and link37 keep their complete actual inputs and every output channel (635.626292ms)
+✔ all current metadata inputs and complete schema2 outcomes remain exact (13.79ms)
+✔ fourteen immutable occurrences retain full definitions, outcomes and one current mapping each (2.959708ms)
+✔ immutable source and runtime evidence retain fixed hashes without guarding future active owners (21.941666ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 22
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1607.379833
