@@ -15,7 +15,7 @@
     "packages/engine/core/src/forms/effects.ts": "6c3b5fde1d926bbb6c802f42ca54277e944e2c9faec34f92d48a37030fceb83c",
     "packages/engine/core/src/forms/value.ts": "1e017d08eeb716c13c66fff30f9b2472493bacbcda4860dd631829f5bb53b8a7",
     "packages/engine/core/src/auth/scope/types.ts": "cc23b81bf7bbab1490ccb1982edbbec9e789c8c1cfccb69f051c6b205bd2cdd1",
-    "tooling/plugin-conformance/src/suites/actions.ts": "c63a2f6f1bd79b6b5c11da8663facd9b9b21bedbbd8e521de5a8802b619381aa",
+    "tooling/plugin-conformance/src/suites/actions.ts": "c0813c310dd4f315d22a34eaa7eda8ad2cfce48a9d24dec46758d135d8940fbd",
     "tooling/plugin-conformance/src/suites/actions-current-fixtures.ts": "30bd78268b44518e6296a5de239f2fbf67ff013d9afd2c9fdfc3519ae85037e0",
     "tooling/plugin-conformance/src/suites/acrojs.ts": "c579ef2e705f4a5c1e27ff17cbcda612b29b5ef946dc473f809cfe5490c9137a"
   },
@@ -23,11 +23,11 @@
     "original-actions.ts.txt": "859be9c7a47199490194841575c1753384aa793c7a6b85527a9cf5ee3319d3b3",
     "original-inputs.json": "4ba34e8d969162da429dd1fd0fdb7cb18790ad7828fd1d8debc75f791f1f7f99",
     "original-runtime.json": "8250f07725770b74695f5465275ec8f44827505f5cdabc5c8597afa54cb58733",
-    "current-inputs-runtime.json": "1f166de8ada5e44d24945ce3c2f9d6f686976ca755e3a3edfde3df9c1870b657",
-    "accounting.json": "ad1b14eb8a8bfaaed2eb18fe3d24f3c7df70c4b3eea7e5aa1c93c0b5cc5cb375",
+    "current-inputs-runtime.json": "956229e96a321b6d8411aded7da3bd50e7f62d5914a891e45f0a8ef03ce6952e",
+    "accounting.json": "0a4357be842115808e706d83e8a177be90b4921bf9a78824ff0724b96fa1298d",
     "negative-channels.json": "31a135ebd5a1e307267b8606e1f2f0b071a30ef613472b28fd7f8695d70c9a74",
     "default-vm-pending-reproduction.json": "15d58f42b616aa32d90a7a06ddd178d16fc3f0be2e653ea32deb0129dd5f1343",
-    "actions-aggregate160.json": "48f836cbfdc8e880bdb4f5ce10fa3cff7cd359b3a7e9f7cd143c4dbf30ea3671"
+    "actions-aggregate160.json": "dc523c54b456c499b2bdc89b0bed5d1ab82f6d362895f4fca302d78efd87c271"
   },
   "upstream": {
     "getRefs": "83f6598d22d86e454e7f9110b078d8e0124cbba1",

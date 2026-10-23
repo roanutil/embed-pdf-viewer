@@ -3098,16 +3098,19 @@ const hoverCases: ScenarioCase[] = [
   {
     name: 'a-slow-transition-is-never-split',
     covers:
-      'While a transition is in flight nothing else is submitted; after it settles the pump delivers the latest target.',
-    plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3'])),
+      'C waits while Exit(A)/Enter(B) are pending: settling only Exit(A) submits nothing; settling Enter(B) submits Exit(B)/Enter(C) together.',
+    plugins: pumpPlugins(scriptedDispatch(['d1', 'd2', 'd3', 'd4', 'd5'])),
     engine: current.engineWith(),
     steps: [
       ...boot,
       hover(hoverTarget(1)),
       hover(hoverTarget(2)),
       settle('d1', done),
+      hover(hoverTarget(3)),
       settle('d2', done),
       settle('d3', done),
+      settle('d4', done),
+      settle('d5', done),
     ],
     ...UNSNAPSHOTTED_ACTIONS_HOVER,
   },

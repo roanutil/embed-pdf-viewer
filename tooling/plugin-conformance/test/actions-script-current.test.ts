@@ -132,6 +132,8 @@ const hoverExpectations: Record<string, unknown[]> = {
     trigger('cursorEnter', 1),
     trigger('cursorExit', 1),
     trigger('cursorEnter', 2),
+    trigger('cursorExit', 2),
+    trigger('cursorEnter', 3),
   ],
   'intermediate-targets-are-skipped': [
     trigger('cursorEnter', 1),
@@ -164,7 +166,18 @@ test('hover coalesces only intermediate targets and releases paired work atomica
     if (name === 'a-slow-transition-is-never-split') {
       assert.deepEqual(result.trace[3]!.callbacks, []);
       assert.equal(result.trace[4]!.callbacks.filter((c) => c.fn === 'dispatch').length, 2);
-      assert.deepEqual(result.trace[5]!.callbacks, []);
+      assert.deepEqual(result.trace[5]!.callbacks, [], 'queuing C cannot split Exit(A)/Enter(B)');
+      assert.deepEqual(result.trace[6]!.callbacks, [], 'settling Exit(A) leaves Enter(B) pending');
+      assert.deepEqual(
+        result.trace[7]!.callbacks,
+        [
+          { fn: 'dispatch', args: [trigger('cursorExit', 2)] },
+          { fn: 'dispatch', args: [trigger('cursorEnter', 3)] },
+        ],
+        'settling Enter(B) submits Exit(B)/Enter(C) back to back',
+      );
+      assert.deepEqual(result.trace[8]!.callbacks, []);
+      assert.deepEqual(result.trace[9]!.callbacks, []);
     }
     if (name === 'pairs-are-submitted-back-to-back')
       assert.equal(result.trace[4]!.callbacks.filter((c) => c.fn === 'dispatch').length, 2);
@@ -961,4 +974,51 @@ test('source provenance, frozen archives and aggregate authority hashes remain e
     ...evidence.immutableAuthorities,
   }))
     assert.equal(hash(readFileSync(new URL(path, history))), digest, path);
+});
+test('transaction ports return literal body and detached boot/run outputs', async () => {
+  const output = (uiEffects: unknown[] = []) => ({
+    event: { rc: true, value: null, change: '', selStart: 0, selEnd: 0 },
+    formEffects: [],
+    annotEffects: [],
+    uiEffects,
+    diagnostics: [],
+  });
+  const own = await run('script-transaction-port');
+  assert.deepEqual(own.trace[4]!.settled, [{ promise: 3, resolved: 'body-result' }]);
+  const detached = await run('detached-script-realm');
+  assert.deepEqual(detached.trace[6]!.settled, [
+    {
+      promise: 4,
+      resolved: {
+        boot: output(),
+        run: output([{ kind: 'alert', message: 'hi', icon: 0 }]),
+      },
+    },
+  ]);
+  assert.deepEqual(detached.trace[7]!.settled, [{ promise: 5, resolved: 'body-result' }]);
+  const noMetadata = await run('detached-script-realm-without-metadata');
+  assert.deepEqual(noMetadata.trace[4]!.settled, [
+    { promise: 3, resolved: { boot: null, run: output() } },
+  ]);
+});
+test('boot without effects reads the world once and failed runs never invoke either commit sink', async () => {
+  const boot = await run('boot-without-effects');
+  assert.deepEqual(
+    boot.trace
+      .flatMap((step) => step.engine)
+      .map(object)
+      .filter((call) =>
+        ['forms.list', 'page.annotations.list', 'actions.get'].includes(String(call.path)),
+      ),
+    [
+      { doc: 'a', path: 'forms.list', args: [] },
+      { doc: 'a', path: 'page.annotations.list', pon: 1, args: [] },
+      { doc: 'a', path: 'actions.get', args: [] },
+    ],
+  );
+  const failed = await run('run-errors-and-diagnostics');
+  assert.deepEqual(
+    callbacks(failed).filter((call) => call.fn.startsWith('sink.')),
+    [],
+  );
 });

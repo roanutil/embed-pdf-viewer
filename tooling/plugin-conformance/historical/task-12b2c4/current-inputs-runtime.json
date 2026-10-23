@@ -44484,7 +44484,7 @@
     "index": 1,
     "input": {
       "name": "a-slow-transition-is-never-split",
-      "covers": "While a transition is in flight nothing else is submitted; after it settles the pump delivers the latest target.",
+      "covers": "C waits while Exit(A)/Enter(B) are pending: settling only Exit(A) submits nothing; settling Enter(B) submits Exit(B)/Enter(C) together.",
       "plugins": [
         {
           "factory": "hover-pump",
@@ -44500,6 +44500,12 @@
                 },
                 {
                   "defer": "d3"
+                },
+                {
+                  "defer": "d4"
+                },
+                {
+                  "defer": "d5"
                 }
               ]
             }
@@ -44727,6 +44733,30 @@
           }
         },
         {
+          "op": "call",
+          "target": {
+            "token": "hover-pump",
+            "doc": "a"
+          },
+          "method": "hover",
+          "args": [
+            {
+              "ref": {
+                "kind": "objectNumber",
+                "page": {
+                  "kind": "objectNumber",
+                  "objectNumber": 1
+                },
+                "objectNumber": 3
+              },
+              "page": {
+                "kind": "objectNumber",
+                "objectNumber": 1
+              }
+            }
+          ]
+        },
+        {
           "op": "settle",
           "label": "d2",
           "value": {
@@ -44738,6 +44768,24 @@
         {
           "op": "settle",
           "label": "d3",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d4",
+          "value": {
+            "status": "executed",
+            "steps": [],
+            "diagnostics": []
+          }
+        },
+        {
+          "op": "settle",
+          "label": "d5",
           "value": {
             "status": "executed",
             "steps": [],
@@ -44944,6 +44992,96 @@
                       "objectNumber": 1
                     },
                     "objectNumber": 2
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          },
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 2
+            }
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorExit",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 2
+                  },
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  }
+                }
+              ]
+            },
+            {
+              "fn": "dispatch",
+              "args": [
+                {
+                  "scope": "annotation",
+                  "event": "cursorEnter",
+                  "ref": {
+                    "kind": "objectNumber",
+                    "page": {
+                      "kind": "objectNumber",
+                      "objectNumber": 1
+                    },
+                    "objectNumber": 3
                   },
                   "page": {
                     "kind": "objectNumber",
