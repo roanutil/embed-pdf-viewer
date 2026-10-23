@@ -1,0 +1,470 @@
+[
+  {
+    "name": "no-config",
+    "step": 0,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[scenario] \"capability-check-is-not-a-member\" is not a function"
+      }
+    }
+  },
+  {
+    "name": "no-config",
+    "step": 5,
+    "channel": "callback.console.warn",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"a.b\" (locale: en)"
+      ]
+    }
+  },
+  {
+    "name": "no-config",
+    "step": 7,
+    "channel": "callback.console.warn",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"c\" (locale: en)"
+      ]
+    }
+  },
+  {
+    "name": "alive-before-start-and-across-documents",
+    "step": 12,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a destroyed kernel"
+      }
+    }
+  },
+  {
+    "name": "translate-through-the-capability",
+    "step": 7,
+    "channel": "callback.console.warn",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"pages\" (locale: ar)"
+      ]
+    }
+  },
+  {
+    "name": "translate-through-the-capability",
+    "step": 12,
+    "channel": "callback.console.warn",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"missing.key\" (locale: ar)"
+      ]
+    }
+  },
+  {
+    "name": "translate-through-the-capability",
+    "step": 16,
+    "channel": "callback.console.warn",
+    "value": {
+      "fn": "console.warn",
+      "args": [
+        "[i18n] missing translation \"another\" (locale: es)"
+      ]
+    }
+  },
+  {
+    "name": "set-locale-unknown-warns-once",
+    "step": 1,
+    "channel": "settled.rejected",
+    "promise": 1,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale 'de': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "set-locale-unknown-warns-once",
+    "step": 2,
+    "channel": "settled.rejected",
+    "promise": 2,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale 'de': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "set-locale-unknown-warns-once",
+    "step": 3,
+    "channel": "settled.rejected",
+    "promise": 3,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale 'it': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "set-locale-unknown-warns-once",
+    "step": 4,
+    "channel": "settled.rejected",
+    "promise": 4,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale '': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "lazy-switch",
+    "step": 6,
+    "channel": "settled.rejected",
+    "promise": 1,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "switching to 'ar' was replaced",
+        "code": "operation-cancelled",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "lazy-switch-superseded",
+    "step": 2,
+    "channel": "settled.rejected",
+    "promise": 1,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "switching to 'ar' was replaced",
+        "code": "operation-cancelled",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "lazy-switch-superseded",
+    "step": 9,
+    "channel": "settled.rejected",
+    "promise": 4,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale 'fr': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "lazy-switch-superseded",
+    "step": 10,
+    "channel": "settled.rejected",
+    "promise": 3,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "switching to 'he' was replaced",
+        "code": "operation-cancelled",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "lazy-two-in-flight",
+    "step": 2,
+    "channel": "settled.rejected",
+    "promise": 1,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "switching to 'ar' was replaced",
+        "code": "operation-cancelled",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "lazy-failure",
+    "step": 1,
+    "channel": "settled.rejected",
+    "promise": 1,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "locale 'ar' failed to load",
+        "code": "operation-failed",
+        "capability": "i18n",
+        "permission": null,
+        "details": {
+          "code": "operation-failed",
+          "message": "offline",
+          "capability": "i18n",
+          "permission": null
+        }
+      }
+    }
+  },
+  {
+    "name": "lazy-failure",
+    "step": 7,
+    "channel": "settled.rejected",
+    "promise": 2,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "switching to 'he' was replaced",
+        "code": "operation-cancelled",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "loader-throws-in-the-watch",
+    "step": 1,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "no loader today"
+      }
+    }
+  },
+  {
+    "name": "loader-throws-at-startup",
+    "step": 0,
+    "channel": "settled.rejected",
+    "promise": 0,
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "no loader today"
+      }
+    }
+  },
+  {
+    "name": "loader-throws-at-startup",
+    "step": 1,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a failed kernel"
+      }
+    }
+  },
+  {
+    "name": "loader-throws-at-startup",
+    "step": 2,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a failed kernel"
+      }
+    }
+  },
+  {
+    "name": "loader-throws-at-startup",
+    "step": 3,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a failed kernel"
+      }
+    }
+  },
+  {
+    "name": "loader-throws-at-startup",
+    "step": 4,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a failed kernel"
+      }
+    }
+  },
+  {
+    "name": "add-translations-and-has-key",
+    "step": 12,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale 'xx': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "locale-events",
+    "step": 8,
+    "channel": "settled.rejected",
+    "promise": 4,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "locale 'he' failed to load",
+        "code": "operation-failed",
+        "capability": "i18n",
+        "permission": null,
+        "details": {
+          "code": "operation-failed",
+          "message": "offline",
+          "capability": "i18n",
+          "permission": null
+        }
+      }
+    }
+  },
+  {
+    "name": "locale-events",
+    "step": 8,
+    "channel": "callback.failed",
+    "value": {
+      "fn": "failed",
+      "args": [
+        {
+          "locale": "he",
+          "error": {
+            "code": "operation-failed",
+            "message": "offline",
+            "capability": "i18n",
+            "permission": null
+          }
+        }
+      ]
+    }
+  },
+  {
+    "name": "locale-events",
+    "step": 10,
+    "channel": "settled.rejected",
+    "promise": 5,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "switching to 'he' was replaced",
+        "code": "operation-cancelled",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "locale-events",
+    "step": 12,
+    "channel": "settled.rejected",
+    "promise": 7,
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "unknown locale 'xx': not loaded and not in loaders",
+        "code": "not-found",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "destroy-releases-the-watch",
+    "step": 3,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "a state update after the instance closed (i18n#2); dropped",
+        "code": "instance-closed",
+        "capability": "i18n",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "destroy-releases-the-watch",
+    "step": 4,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a destroyed kernel"
+      }
+    }
+  },
+  {
+    "name": "destroy-releases-the-watch",
+    "step": 5,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a destroyed kernel"
+      }
+    }
+  },
+  {
+    "name": "destroy-releases-the-watch",
+    "step": 6,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a destroyed kernel"
+      }
+    }
+  },
+  {
+    "name": "destroy-releases-the-watch",
+    "step": 7,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a destroyed kernel"
+      }
+    }
+  },
+  {
+    "name": "destroy-releases-the-watch",
+    "step": 8,
+    "channel": "outcome.threw",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "[kernel] capability(\"i18n\") on a destroyed kernel"
+      }
+    }
+  }
+]
