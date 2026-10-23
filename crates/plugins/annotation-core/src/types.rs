@@ -1028,13 +1028,19 @@ js_object! {
     pub struct Handle {
         "id" => pub id: String,
         "at" => pub at: Point,
-        "cursor" => pub cursor: Cursor,
+        /// Absent where the TypeScript's cursor table has none (a box turned
+        /// by a non-finite angle).
+        "cursor" => pub cursor: Option<Cursor>,
     }
 }
 
 impl Handle {
     pub fn new(id: impl Into<String>, at: Point, cursor: impl Into<String>) -> Self {
-        Handle { id: id.into(), at, cursor: cursor.into(), order: Default::default() }
+        Handle::maybe(id, at, Some(cursor.into()))
+    }
+    /// A handle whose cursor may be absent.
+    pub fn maybe(id: impl Into<String>, at: Point, cursor: Option<Cursor>) -> Self {
+        Handle { id: id.into(), at, cursor, order: Default::default() }
     }
 }
 
@@ -1298,7 +1304,7 @@ js_object! {
 js_object! {
     pub struct HandleNode {
         "at" => pub at: Point,
-        "cursor" => pub cursor: Cursor,
+        "cursor" => pub cursor: Option<Cursor>,
         "rot" => pub rot: Option<f64>,
         "role" => pub role: String,
         "active" => pub active: bool,
@@ -1466,7 +1472,7 @@ js_object! {
     pub struct HandleTarget {
         "id" => pub id: Id,
         "handle" => pub handle: String,
-        "cursor" => pub cursor: Cursor,
+        "cursor" => pub cursor: Option<Cursor>,
     }
 }
 
@@ -1481,7 +1487,7 @@ js_object! {
     pub struct GroupHandleTarget {
         "ids" => pub ids: Vec<Id>,
         "handle" => pub handle: String,
-        "cursor" => pub cursor: Cursor,
+        "cursor" => pub cursor: Option<Cursor>,
         "box" => pub box_: Rect,
     }
 }

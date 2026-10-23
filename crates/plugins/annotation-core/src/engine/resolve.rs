@@ -866,6 +866,11 @@ fn set_or_drop(object: &mut Object, name: &str, value: Option<Value>) {
     }
 }
 
+/// A measure's `subtype`, `None` when absent or `undefined`.
+fn defined_subtype(measure: &Value) -> Option<&Value> {
+    measure.get("subtype").filter(|v| !json::undefined(Some(v)))
+}
+
 /// `measurementFollows(current, patch)`.
 pub fn measurement_follows(current: &Object, patch: &Object) -> CoreResult<Object> {
     let subtype = json::get_str(current, "subtype").unwrap_or("");
@@ -876,11 +881,14 @@ pub fn measurement_follows(current: &Object, patch: &Object) -> CoreResult<Objec
     next.insert("subtype".into(), Value::String(subtype.into()));
     validate_dimension(subtype, &next)?;
     if let Some(measure) = json::get(&next, "measure").cloned() {
-        let ms = measure.get("subtype").cloned().unwrap_or(Value::Null);
-        if ms.as_str() != Some("rectilinear") {
-            let current_ms = current.get("measure").and_then(|m| m.get("subtype")).cloned();
-            if current_ms.as_ref() != Some(&ms) {
-                return Err(foreign_measure(&ms));
+        // `measure.subtype` and `current.measure?.subtype`, an absent or
+        // `undefined` member as `None`, so `null` and `undefined` differ as
+        // `!==` tells them apart.
+        let ms = defined_subtype(&measure);
+        if ms.and_then(Value::as_str) != Some("rectilinear") {
+            let current_ms = json::get(current, "measure").and_then(defined_subtype);
+            if current_ms != ms {
+                return Err(foreign_measure(ms.unwrap_or(&Value::Null)));
             }
             next.shift_remove("measure");
         }

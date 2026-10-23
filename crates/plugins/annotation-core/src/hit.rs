@@ -256,7 +256,7 @@ pub fn hit_test(
                     return Target::Handle(HandleTarget {
                         id: record.id.clone(),
                         handle: "caption".into(),
-                        cursor: "move".into(),
+                        cursor: Some("move".into()),
                         order: Default::default(),
                     });
                 }
@@ -266,7 +266,7 @@ pub fn hit_test(
                             id: record.id.clone(),
                             handle: handle.id.clone(),
                             cursor: cursor_on_screen(
-                                &handle.cursor,
+                                handle.cursor.as_deref(),
                                 view.map_or(0.0, |v| v.rotation),
                             ),
                             order: Default::default(),
@@ -306,7 +306,10 @@ pub fn hit_test(
                     return Target::GroupHandle(GroupHandleTarget {
                         ids: ids_on_page(model, page),
                         handle: handle.id.clone(),
-                        cursor: cursor_on_screen(&handle.cursor, view.map_or(0.0, |v| v.rotation)),
+                        cursor: cursor_on_screen(
+                            handle.cursor.as_deref(),
+                            view.map_or(0.0, |v| v.rotation),
+                        ),
                         box_: union,
                         order: Default::default(),
                     });
@@ -352,8 +355,8 @@ pub fn cursor_at(
     view: Option<&ViewEnv>,
 ) -> Option<Cursor> {
     match hit_test(model, page, point, chrome, stroke_margin, page_box, inert, view) {
-        Target::Handle(t) => Some(t.cursor),
-        Target::GroupHandle(t) => Some(t.cursor),
+        Target::Handle(t) => t.cursor,
+        Target::GroupHandle(t) => t.cursor,
         Target::Rotate(_) => Some("grab".into()),
         Target::Annot(t) => Some(
             if model.is_selected(&t.id) && can_move(model, &t.id) { "move" } else { "pointer" }

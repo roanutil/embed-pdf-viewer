@@ -443,3 +443,95 @@ fn a_snap_patch_that_does_not_read_changes_nothing() {
         .expect("an update");
     assert!(!good.session.same(&m.session()) && !good.session.snap.alignment);
 }
+
+// ── a foreign measure marker sent back ──────────────────────────────────────
+
+#[test]
+fn a_measure_marker_without_a_subtype_is_sent_back_as_the_typescript_compares_it() {
+    use epdf_annotation_core::engine::resolve::measurement_follows;
+    let obj = |v: Value| v.as_object().cloned().expect("an object");
+    let line = |measure: Value| obj(json!({ "subtype": "line", "measure": measure }));
+    // `undefined !== undefined` is false: the marker is the current one, dropped.
+    let next =
+        measurement_follows(&line(json!({})), &obj(json!({ "measure": {} }))).expect("taken");
+    assert!(!next.contains_key("measure"), "{next:?}");
+    // `null !== undefined`, both ways round: refused.
+    for (current, sent) in
+        [(json!({ "subtype": null }), json!({})), (json!({}), json!({ "subtype": null }))]
+    {
+        let error = measurement_follows(&line(current.clone()), &obj(json!({ "measure": sent })))
+            .expect_err("refused");
+        assert_eq!(
+            (error.code, error.message.as_str()),
+            (Some("InvalidArg"), "A foreign measure can't be written; leave measure out"),
+            "{current} {sent}"
+        );
+    }
+}
+
+// ── a handle on a box turned by a non-finite angle has no cursor ────────────
+
+#[test]
+fn a_handle_at_a_non_finite_rotation_has_no_cursor_member() {
+    use epdf_annotation_core::geometry::geom_handles;
+    for rotation in [json!({ "$number": "NaN" }), json!({ "$number": "Infinity" })] {
+        let shape = Shape::read(&json!({
+            "kind": "box", "box": { "x": 0, "y": 0, "width": 10, "height": 10 }, "rotation": rotation, "ellipse": false,
+        }))
+        .expect("a shape");
+        let handles = geom_handles(&shape);
+        assert_eq!(handles.len(), 8);
+        for handle in handles {
+            let printed = handle.json();
+            assert!(printed.get("cursor").is_none(), "{printed}");
+        }
+    }
+    let upright = Shape::read(&json!({ "kind": "box", "box": { "x": 0, "y": 0, "width": 10, "height": 10 }, "rotation": 0, "ellipse": false })).expect("a shape");
+    assert_eq!(geom_handles(&upright)[0].json()["cursor"], "nwse-resize");
+}
+
+// ── a destination not given in page space ───────────────────────────────────
+
+#[test]
+fn a_page_space_fit_rect_destination_without_its_size_is_refused() {
+    use epdf_annotation_core::engine::space::to_pdf;
+    let obj = |v: Value| v.as_object().cloned().expect("an object");
+    let fit_r = |dest: Value| {
+        json!({ "kind": "fitR", "page": page() })
+            .as_object()
+            .cloned()
+            .map(|mut d| {
+                d.extend(dest.as_object().cloned().expect("members"));
+                Value::Object(d)
+            })
+            .expect("a destination")
+    };
+    let whole = fit_r(json!({ "x": 1, "y": 2, "width": 3, "height": 4 }));
+    let sizeless = fit_r(json!({ "x": 1, "y": 2 }));
+    // On a link target.
+    assert!(
+        to_pdf(&obj(
+            json!({ "subtype": "link", "target": { "kind": "goto", "destination": whole } })
+        ))
+        .is_ok()
+    );
+    let error = to_pdf(&obj(
+        json!({ "subtype": "link", "target": { "kind": "goto", "destination": sizeless } }),
+    ))
+    .expect_err("refused");
+    assert_eq!(
+        error.message,
+        "field 'target': expected page space, points as { x, y } from the page's top-left"
+    );
+    // Inside an action tree, a level down.
+    let tree = json!({ "activate": { "root": { "type": "uri", "uri": "x", "next": [{ "type": "goto", "destination": sizeless, "next": [] }] } } });
+    let error = to_pdf(&obj(json!({ "subtype": "link", "actions": tree }))).expect_err("refused");
+    assert_eq!(
+        error.message,
+        "field 'actions': expected page space, points as { x, y } from the page's top-left"
+    );
+    // An xyz destination may leave out either axis.
+    let xyz =
+        json!({ "kind": "goto", "destination": { "kind": "xyz", "page": page(), "zoom": 1 } });
+    assert!(to_pdf(&obj(json!({ "subtype": "link", "target": xyz }))).is_ok());
+}

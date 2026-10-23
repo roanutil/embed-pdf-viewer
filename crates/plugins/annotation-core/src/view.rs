@@ -822,7 +822,7 @@ pub fn chrome(
             for handle in handles {
                 nodes.push(ChromeNode::Handle(HandleNode {
                     at: handle.at,
-                    cursor: cursor_on_screen(&handle.cursor, screen),
+                    cursor: cursor_on_screen(handle.cursor.as_deref(), screen),
                     rot: (rot != 0.0 && !rot.is_nan()).then_some(rot),
                     role: handle_role(&handle.id).into(),
                     active: dragged.as_deref() == Some(handle.id.as_str()),
@@ -844,7 +844,7 @@ pub fn chrome(
             for handle in rect_handles_for(union) {
                 nodes.push(ChromeNode::Handle(HandleNode {
                     at: handle.at,
-                    cursor: cursor_on_screen(&handle.cursor, screen),
+                    cursor: cursor_on_screen(handle.cursor.as_deref(), screen),
                     rot: None,
                     role: handle_role(&handle.id).into(),
                     active: dragged.as_deref() == Some(handle.id.as_str()),

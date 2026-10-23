@@ -57,13 +57,15 @@ pub fn rotated_handle_cursor(handle: &str, rot: f64) -> Option<&'static str> {
     sector_cursor(js::round(normalize_deg(handle_base_angle(handle) + rot) / 45.0) % 8.0)
 }
 
-/// `cursorOnScreen(cursor, rotation)`.
-pub fn cursor_on_screen(cursor: &str, rotation: f64) -> String {
+/// `cursorOnScreen(cursor, rotation)`: `None` for an absent cursor, or
+/// where the TypeScript reads past its table.
+pub fn cursor_on_screen(cursor: Option<&str>, rotation: f64) -> Option<String> {
+    let cursor = cursor?;
     match SECTOR_CURSORS.iter().position(|c| *c == cursor) {
-        None => cursor.to_string(),
+        None => Some(cursor.to_string()),
         Some(sector) => {
             let index = (sector as f64 + js::round(normalize_deg(rotation) / 45.0)) % 8.0;
-            sector_cursor(index).map_or_else(|| "undefined".into(), str::to_string)
+            sector_cursor(index).map(str::to_string)
         }
     }
 }

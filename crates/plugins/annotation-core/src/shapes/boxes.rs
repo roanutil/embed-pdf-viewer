@@ -146,10 +146,10 @@ pub fn box_handles(rect: Rect, rotation: f64) -> Vec<Handle> {
     RECT_HANDLES
         .iter()
         .map(|h| {
-            Handle::new(
+            Handle::maybe(
                 *h,
                 rotate_point(rect_handle_point(rect, h), middle, rotation),
-                rotated_handle_cursor(h, rotation).unwrap_or("undefined"),
+                rotated_handle_cursor(h, rotation).map(str::to_string),
             )
         })
         .collect()
