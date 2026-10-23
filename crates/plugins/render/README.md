@@ -117,9 +117,12 @@ answer (`close-with-a-render-in-flight`).
 `renderPages` sorts its results by each entry's own input index, so a page listed twice keeps both
 places (`render-pages-batch`).
 
-The TypeScript asks the engine for every render with `priority: 'high'` and the view it is for
-(`ctx.doc.with({priority, view})`). The Rust `DocumentHandle` has no such hint, so the port sends
-neither; the vectors' fake engine does not record them. The host handles are Task 13.33's.
+Every render asks the engine with `priority: 'high'` and, when the caller names one, the view it is
+for, as `ctx.doc.with({priority, view})` does: `DocumentHandle::call_with` with `CallFacts`
+(Ruling13.16). The host door passes `RenderSourceOptions.view`, tiles pass their view, and the
+public door names none. The facts change queue order, never an answer, so the vectors' fake ignores
+them as the TypeScript fake's `with` does; `every_render_carries_high_priority_and_its_view` checks
+they reach the handle. Forwarding them in the web and native handles is Task 13.33's.
 
 Not ported: inputs outside the TypeScript's types, which crash it. A handle that isn't an object, an
 invalidate scope other than `content`, `annotations` or `fields`, and a render policy this port
@@ -137,11 +140,16 @@ Each is on a path no vector reaches, and each is registered in
   in `conform_viewport`) or a NaN level, where `list[len - 1]` would panic.
 - R7: a zero tile span yields no tiles, where the TypeScript's loop runs out of memory
   (`a_zero_tile_span_yields_no_tiles_instead_of_looping`).
-- An event missing the member `pixelChangeOf` reads (an annotation fact with no `page`) names no page
-  for it, where the TypeScript throws a `TypeError` in the event listener.
+- An event missing or mistyping a member `pixelChangeOf` reads names no page for it: an annotation
+  or flatten fact with no `page`, a result with no `page`, `widgets`, `results` or
+  `meta.changedWidgets` that is not an array, and an `objectNumber` that is not a non-negative
+  integer within `u32`. The TypeScript throws a `TypeError` in the event listener or keys the ledger
+  with the value as given.
 - A settings value this port cannot decode (a member of the wrong type, written past the typed API
-  through `Kernel::settings_of`) resolves as the defaults, where the TypeScript resolves whatever is
-  there.
+  through `Kernel::settings_of`) reads as `render_defaults()` in all three places that read it: the
+  resolved options (`Core::resolved`), `get_settings`, and the `on_settings_changed` payload. The
+  first such read warns once through `RenderHost::warn`. The TypeScript resolves whatever is there
+  (`a_malformed_setting_reads_as_the_defaults_and_warns_once`).
 
 ## Migrating from the pre-13.16 API
 
@@ -167,16 +175,30 @@ For annotation (13.17), form (13.18), page-edit (13.19) and viewer-host and epdf
 | `TilesSetting` in `paint_plan` | in `contract`, and serializes (`false` or the options) |
 | `create_render_controller(cx, &config, host)` | `create_render_controller(cx, host)`; the config is the registered settings |
 | tile request `target.rect` as PDF edges via `pageRectToPdf` | page space `{x, y, width, height}`, as `render.image` takes it |
+| `DocumentHandle::call` for renders | `DocumentHandle::call_with(&CallFacts { priority: High, view }, ..)`, defaulting to `call` (kernel, Ruling13.16) |
 | new | `render_defaults`, `RenderSettingsChanged`, `get_layer_rights`, `render_appearances`, `kept_appearances`, `get_appearance_scale`, `AppearanceStore`, `RecentPictures`, `same_page_view_demand`, `resolve_page_layers`, `layers_key_of`, `render_epoch_of` |
 | ffi `RenderPaintSettings.fade_ms` | removed. The ffi doors add an `include_form_fields` argument beside `include_annotations`, and `RenderInvalidateScope` adds `Fields`. `src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds (13.33) |
 
-Known call sites: `crates/epdf-viewer-host/src/session.rs` (`RenderHost { request_frame, .. }`,
-`render_plugin_with_host`), `crates/epdf-viewer-host/src/lib.rs` and `api.rs` (the ffi handle and
-config), `crates/epdf-manual-bridge/src/render.rs` (`start_render_page`), and
+Known call sites: `crates/epdf-viewer-host/src/session.rs` builds `RenderHost { release_image,
+..RenderHost::default() }`, which still compiles, but its comment about the default 16 ms frame
+timer (`session.rs:68-70`) is stale now that frames are the kernel clock's. Its
+`render_plugin_with_host(render.into(), host)` keeps its shape and waits on the ffi build (13.33).
+`crates/epdf-viewer-host/src/lib.rs` and `api.rs` use the ffi handle and config, `crates/epdf-manual-bridge/src/render.rs` (`start_render_page`), and
 `crates/epdf-web/src/adapters.rs` (the harness, whose live `host` drops `requestFrame`).
 `crates/plugins/annotation/src/read/render.rs` uses only `policy`, which is unchanged. Appearance
 paths are `page.annotations.renderAppearances` and `page.forms.renderAppearances`; a native or web
 handle must route them (13.33).
+
+Annotation (13.17): the TypeScript annotation plugin draws its pictures through render
+(`packages/plugin/annotation/src/read/render.ts:257` `renderAppearances`, `:271`
+`keptAppearances`). Port that onto `RenderCapability::render_appearances`, `kept_appearances` and
+`get_appearance_scale` (family `Annotations`), in place of its own
+`page.annotations.renderAppearanceImages` call and its local `snap_appearance_scale`.
+
+Form (13.18): the TypeScript form plugin's widget pictures come from render too
+(`packages/plugin/form/src/services/pictures.ts:56` `renderer.renderAppearances`). Draw them through
+`render_appearances`, `kept_appearances` and `get_appearance_scale` with family `Widgets`, which
+needs `doc.forms.read`.
 
 ## Coverage
 
