@@ -212,7 +212,10 @@ impl SignerInfo {
 }
 
 struct SignedData {
+    e_content_type: String,
     has_econtent: bool,
+    /// The element inside `[0]`, when it carries one.
+    e_content: Option<Node>,
     certificates: Vec<Certificate>,
     signer_infos: Vec<SignerInfo>,
 }
@@ -229,11 +232,11 @@ impl SignedData {
             AlgId::read(d)?;
         }
         let encap = members.next().filter(|n| n.is_sequence())?;
-        encap.children.first()?.oid()?;
-        let has_econtent = match encap.children.get(1) {
-            Some(n) if n.is_context(0) && n.constructed => true,
+        let e_content_type = encap.children.first()?.oid()?;
+        let (has_econtent, e_content) = match encap.children.get(1) {
+            Some(n) if n.is_context(0) && n.constructed => (true, n.children.first().cloned()),
             Some(_) => return None,
-            None => false,
+            None => (false, None),
         };
         let mut certificates = Vec::new();
         if members.peek().is_some_and(|n| n.is_context(0) && n.constructed) {
@@ -251,7 +254,7 @@ impl SignedData {
         let infos = members.next().filter(|n| n.is_set())?;
         let signer_infos =
             infos.children.iter().map(SignerInfo::read).collect::<Option<Vec<_>>>()?;
-        Some(SignedData { has_econtent, certificates, signer_infos })
+        Some(SignedData { e_content_type, has_econtent, e_content, certificates, signer_infos })
     }
 }
 
@@ -264,6 +267,19 @@ pub struct Internal {
     /// Signer first.
     pub certificates: Vec<Certificate>,
     pub ess_cert_hash: Option<Vec<u8>>,
+    /// A timestamp token's encapsulated TSTInfo (`CmsContent::TstInfo`);
+    /// `None` for a detached CMS.
+    pub e_content: Option<Vec<u8>>,
+}
+
+/// `CmsContent`: what the CMS carries. Nothing (a detached PDF signature
+/// over the `/ByteRange`), or an RFC 3161 TSTInfo (a document timestamp's
+/// token, whose message imprint is the `/ByteRange` digest).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum CmsContent {
+    #[default]
+    Detached,
+    TstInfo,
 }
 
 /// `parseDetachedCms`.
@@ -271,8 +287,13 @@ pub fn parse_detached_cms(cms: &[u8]) -> Result<ParsedCms, ParseError> {
     parse_cms_internal(cms).map(|i| i.parsed)
 }
 
-/// `parseCmsInternal`.
+/// `parseCmsInternal(cms)`: a detached CMS.
 pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
+    parse_cms_content(cms, CmsContent::Detached)
+}
+
+/// `parseCmsInternal(cms, content)`.
+pub fn parse_cms_content(cms: &[u8], content_kind: CmsContent) -> Result<Internal, ParseError> {
     if cms.is_empty() {
         return Err(ParseError::malformed("empty CMS"));
     }
@@ -299,10 +320,37 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
         )));
     }
     let signed_data = SignedData::read(content).ok_or_else(|| wrap("SignedData"))?;
-    if signed_data.has_econtent {
-        return Err(ParseError::unsupported(
-            "CMS carries encapsulated content; a PDF signature is detached",
-        ));
+    let (expected_content_type, expected_name) = match content_kind {
+        CmsContent::Detached => (oids::DATA, "id-data"),
+        CmsContent::TstInfo => (oids::TST_INFO, "id-ct-TSTInfo"),
+    };
+    let mut e_content = None;
+    match content_kind {
+        CmsContent::Detached => {
+            if signed_data.has_econtent {
+                return Err(ParseError::unsupported(
+                    "CMS carries encapsulated content; a PDF signature is detached",
+                ));
+            }
+        }
+        CmsContent::TstInfo => {
+            let Some(node) = signed_data
+                .e_content
+                .as_ref()
+                .filter(|_| signed_data.e_content_type == oids::TST_INFO)
+            else {
+                return Err(ParseError::malformed("a timestamp token must carry a TSTInfo"));
+            };
+            // pkijs keeps an OCTET STRING (joining a constructed one); any
+            // other element has no `getValue`.
+            if !node.is_octet_string() {
+                return Err(ParseError::Other(Error::named(
+                    "TypeError",
+                    "encapsulated.eContent.getValue is not a function",
+                )));
+            }
+            e_content = Some(node.octets());
+        }
     }
     if signed_data.signer_infos.len() != 1 {
         return Err(ParseError::unsupported(format!(
@@ -333,8 +381,10 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
 
     if let Some(content_type) = attr(oids::CONTENT_TYPE) {
         let first = content_type.first()?;
-        if first.and_then(Node::oid).as_deref() != Some(oids::DATA) {
-            return Err(ParseError::unsupported("CMS content-type attribute is not id-data"));
+        if first.and_then(Node::oid).as_deref() != Some(expected_content_type) {
+            return Err(ParseError::unsupported(format!(
+                "CMS content-type attribute is not {expected_name}"
+            )));
         }
     }
     let message_digest = match attr(oids::MESSAGE_DIGEST) {
@@ -407,6 +457,7 @@ pub fn parse_cms_internal(cms: &[u8]) -> Result<Internal, ParseError> {
         signer_certificate,
         certificates: ordered,
         ess_cert_hash,
+        e_content,
     })
 }
 

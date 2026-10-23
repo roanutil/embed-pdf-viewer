@@ -23,7 +23,7 @@ use crate::cms::{
     BuildInput, Profile, RawAlgorithm, RawSigner, build_detached_cms, verify_cms_signature,
 };
 use crate::der;
-use crate::gate::{Prepared, verify_for_completion};
+use crate::gate::{CompletionProfile, Prepared, verify_for_completion};
 use crate::oids::Digest;
 use crate::parse::{bytes_json, parse_detached_cms};
 use crate::sign::{CmsSignRequest, CmsSigner, SignerPort, profile_for, sign};
@@ -58,7 +58,7 @@ pub fn functions() -> FunctionTable {
             parse_detached_cms(&bytes(&a[0])).map(|p| p.to_json()).map_err(|e| e.to_error())
         }),
         ("profileFor", |a: &[Value]| -> Out {
-            Ok(json!(profile_for(a[0].as_str().unwrap_or_default()).name()))
+            Ok(json!(profile_for(a[0].as_str().unwrap_or_default())?.name()))
         }),
         ("certificateCommonName", |a: &[Value]| -> Out {
             Ok(certificate_common_name(&bytes(&a[0]))?.map_or(Value::Null, Value::String))
@@ -429,8 +429,10 @@ impl SignatureCapability {
                         algorithm: prepared["algorithm"].as_str().unwrap_or_default().to_string(),
                         contents_size: prepared["contentsSize"].as_f64().unwrap_or(f64::NAN),
                     },
-                    Profile::from_name(input["profile"].as_str().unwrap_or_default())
-                        .unwrap_or(Profile::CadesB),
+                    // An unknown profile is neither `cades-b` nor `timestamp`,
+                    // so the TypeScript checks it as `pkcs7`.
+                    CompletionProfile::from_name(input["profile"].as_str().unwrap_or_default())
+                        .unwrap_or(CompletionProfile::Signature(Profile::Pkcs7)),
                 );
                 spawn(async move { Ok(gate.to_json()) })
             }
@@ -445,8 +447,8 @@ impl SignatureCapability {
             "sign" => {
                 let doc = self.ctx.document_handle(arg(0).as_str());
                 let mut input = arg(1).as_object().cloned().unwrap_or_default();
-                let signer = input.remove("signer").unwrap_or(Value::Null);
-                let port = signer_port(&h, &signer);
+                let key = input.remove("key").unwrap_or(Value::Null);
+                let port = signer_port(&h, &key);
                 spawn(async move {
                     let doc = doc.ok_or_else(|| Error::new("[signature-core] no document"))?;
                     sign(doc, input, port?).await
@@ -667,6 +669,7 @@ impl HarnessPlugin for SignatureHarness {
             init: None,
             effects: None,
             create: None,
+            settings: None,
         }))
     }
 
