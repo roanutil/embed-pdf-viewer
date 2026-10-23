@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/core/signature: sign() and validateSignatures() over a document handle's signatures service.",
   "cases": [
@@ -19,7 +19,24 @@
           "d": {
             "pages": [],
             "services": [],
-            "responses": []
+            "responses": [
+              {
+                "path": "signatures.prepare",
+                "error": {
+                  "name": "EngineError",
+                  "code": "Unsupported",
+                  "message": "unsupported"
+                }
+              },
+              {
+                "path": "signatures.list",
+                "error": {
+                  "name": "EngineError",
+                  "code": "Unsupported",
+                  "message": "unsupported"
+                }
+              }
+            ]
           }
         }
       },
@@ -57,10 +74,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -83,7 +100,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -95,7 +113,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -106,20 +125,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -142,6 +176,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -149,7 +188,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -162,20 +201,37 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "Error",
-                  "message": "this engine does not implement signatures"
+                  "name": "EngineError",
+                  "message": "unsupported",
+                  "code": "Unsupported"
                 }
               }
             }
           ],
-          "actions": [],
-          "engine": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "d",
+              "path": "signatures.prepare",
+              "args": [
+                {
+                  "field": {
+                    "kind": "fqn",
+                    "name": "Sig1"
+                  },
+                  "subFilter": "ETSI.CAdES.detached",
+                  "digest": "sha256"
+                }
+              ]
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -278,10 +334,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "raw",
                 "certificateChain": [
                   {
@@ -314,7 +370,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -326,7 +383,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -337,20 +395,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -373,6 +446,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -380,7 +458,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -404,7 +482,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -412,7 +491,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -451,7 +530,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -554,11 +633,11 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
               "subFilter": "adbe.pkcs7.detached",
-              "signer": {
+              "key": {
                 "kind": "raw",
                 "certificateChain": [
                   {
@@ -591,7 +670,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -603,7 +683,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -614,20 +695,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -650,6 +746,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -657,7 +758,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -681,7 +782,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -689,7 +791,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "adbe.pkcs7.detached",
@@ -728,7 +830,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -831,10 +933,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "raw",
                 "certificateChain": [
                   {
@@ -867,7 +969,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -879,7 +982,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -890,20 +994,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -926,6 +1045,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -933,7 +1057,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -957,7 +1081,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -965,7 +1090,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -1004,7 +1129,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1107,11 +1232,11 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
               "contentsSize": 16384,
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -1134,7 +1259,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1146,7 +1272,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1157,20 +1284,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1193,6 +1335,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1200,7 +1347,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1224,7 +1371,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -1232,7 +1380,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "contentsSize": 16384,
@@ -1276,7 +1424,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1379,11 +1527,11 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
               "digest": "sha512",
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -1406,7 +1554,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1418,7 +1567,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1429,20 +1579,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1465,6 +1630,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1472,7 +1642,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1496,7 +1666,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -1504,7 +1675,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "digest": "sha512",
@@ -1547,7 +1718,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1599,7 +1770,7 @@
                 }
               },
               {
-                "path": "signatures.abort",
+                "path": "signatures.cancel",
                 "value": {
                   "status": "aborted"
                 }
@@ -1642,10 +1813,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -1668,7 +1839,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1680,7 +1852,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1691,20 +1864,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1727,6 +1915,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1734,7 +1927,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1747,14 +1940,18 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "SigningError",
+                  "name": "EngineError",
                   "message": "signing refused (algorithm-mismatch): the CMS digests with sha384, the document was prepared with sha256",
-                  "reason": "algorithm-mismatch"
+                  "code": "SignatureRefused",
+                  "details": {
+                    "reason": "algorithm-mismatch"
+                  }
                 }
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -1762,7 +1959,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -1772,7 +1969,7 @@
             },
             {
               "doc": "d",
-              "path": "signatures.abort",
+              "path": "signatures.cancel",
               "args": [
                 "signing-1"
               ]
@@ -1796,7 +1993,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1848,7 +2045,7 @@
                 }
               },
               {
-                "path": "signatures.abort",
+                "path": "signatures.cancel",
                 "value": {
                   "status": "aborted"
                 }
@@ -1891,10 +2088,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -1918,7 +2115,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1930,7 +2128,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1941,20 +2140,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1977,6 +2191,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1984,7 +2203,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2003,7 +2222,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -2011,7 +2231,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -2021,7 +2241,7 @@
             },
             {
               "doc": "d",
-              "path": "signatures.abort",
+              "path": "signatures.cancel",
               "args": [
                 "signing-1"
               ]
@@ -2045,7 +2265,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2105,7 +2325,7 @@
                 }
               },
               {
-                "path": "signatures.abort",
+                "path": "signatures.cancel",
                 "value": {
                   "status": "already-completed"
                 }
@@ -2148,10 +2368,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -2174,7 +2394,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2186,7 +2407,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2197,20 +2419,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2233,6 +2470,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2240,7 +2482,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2260,7 +2502,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -2268,7 +2511,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -2294,7 +2537,7 @@
             },
             {
               "doc": "d",
-              "path": "signatures.abort",
+              "path": "signatures.cancel",
               "args": [
                 "signing-1"
               ]
@@ -2318,7 +2561,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2370,7 +2613,7 @@
                 }
               },
               {
-                "path": "signatures.abort",
+                "path": "signatures.cancel",
                 "error": {
                   "message": "gone"
                 }
@@ -2413,10 +2656,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -2439,7 +2682,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2451,7 +2695,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2462,20 +2707,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2498,6 +2758,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2505,7 +2770,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2518,14 +2783,18 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "SigningError",
+                  "name": "EngineError",
                   "message": "signing refused (malformed): CMS has 2 signers; exactly one is expected",
-                  "reason": "malformed"
+                  "code": "SignatureRefused",
+                  "details": {
+                    "reason": "malformed"
+                  }
                 }
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -2533,7 +2802,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -2543,7 +2812,7 @@
             },
             {
               "doc": "d",
-              "path": "signatures.abort",
+              "path": "signatures.cancel",
               "args": [
                 "signing-1"
               ]
@@ -2567,7 +2836,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2641,10 +2910,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "cms",
                 "sign": {
                   "$fn": "cms.sign",
@@ -2667,7 +2936,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2679,7 +2949,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2690,20 +2961,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2726,6 +3012,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2733,7 +3024,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2753,7 +3044,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -2761,7 +3053,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -2775,7 +3067,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2827,7 +3119,7 @@
                 }
               },
               {
-                "path": "signatures.abort",
+                "path": "signatures.cancel",
                 "value": {
                   "status": "aborted"
                 }
@@ -2870,10 +3162,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "raw",
                 "certificateChain": [
                   {
@@ -2906,7 +3198,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2918,7 +3211,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2929,20 +3223,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2965,6 +3274,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2972,7 +3286,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2991,7 +3305,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -2999,7 +3314,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -3009,7 +3324,7 @@
             },
             {
               "doc": "d",
-              "path": "signatures.abort",
+              "path": "signatures.cancel",
               "args": [
                 "signing-1"
               ]
@@ -3020,7 +3335,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3072,7 +3387,7 @@
                 }
               },
               {
-                "path": "signatures.abort",
+                "path": "signatures.cancel",
                 "value": {
                   "status": "aborted"
                 }
@@ -3115,10 +3430,10 @@
             "d",
             {
               "field": {
-                "kind": "name",
+                "kind": "fqn",
                 "name": "Sig1"
               },
-              "signer": {
+              "key": {
                 "kind": "raw",
                 "certificateChain": [],
                 "algorithm": "RSA-PKCS1-v1_5",
@@ -3144,7 +3459,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3156,7 +3472,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3167,20 +3484,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3203,6 +3535,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3210,7 +3547,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3229,7 +3566,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -3237,7 +3575,7 @@
               "args": [
                 {
                   "field": {
-                    "kind": "name",
+                    "kind": "fqn",
                     "name": "Sig1"
                   },
                   "subFilter": "ETSI.CAdES.detached",
@@ -3247,7 +3585,7 @@
             },
             {
               "doc": "d",
-              "path": "signatures.abort",
+              "path": "signatures.cancel",
               "args": [
                 "signing-1"
               ]
@@ -3258,7 +3596,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3283,7 +3621,24 @@
           "d": {
             "pages": [],
             "services": [],
-            "responses": []
+            "responses": [
+              {
+                "path": "signatures.prepare",
+                "error": {
+                  "name": "EngineError",
+                  "code": "Unsupported",
+                  "message": "unsupported"
+                }
+              },
+              {
+                "path": "signatures.list",
+                "error": {
+                  "name": "EngineError",
+                  "code": "Unsupported",
+                  "message": "unsupported"
+                }
+              }
+            ]
           }
         }
       },
@@ -3332,7 +3687,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3344,7 +3700,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3355,20 +3712,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3391,6 +3763,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3398,7 +3775,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3411,20 +3788,28 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "Error",
-                  "message": "this engine does not implement signatures"
+                  "name": "EngineError",
+                  "message": "unsupported",
+                  "code": "Unsupported"
                 }
               }
             }
           ],
-          "actions": [],
-          "engine": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "d",
+              "path": "signatures.list",
+              "args": []
+            }
+          ],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3514,7 +3899,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3526,7 +3912,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3537,20 +3924,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3573,6 +3975,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3580,7 +3987,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3594,7 +4001,8 @@
               "resolved": []
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -3607,7 +4015,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3648,7 +4056,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -3678,7 +4086,7 @@
                     {
                       "index": 1,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Empty",
@@ -3710,13 +4118,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -3770,7 +4178,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3782,7 +4191,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3793,20 +4203,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3829,6 +4254,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3836,7 +4266,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3852,7 +4282,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -3916,7 +4346,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -3925,20 +4356,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -3950,7 +4381,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -3991,7 +4422,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -4023,13 +4454,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -4095,7 +4526,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4107,7 +4539,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4118,20 +4551,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4154,6 +4602,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4161,7 +4614,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4177,7 +4630,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -4240,7 +4693,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -4249,20 +4703,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -4279,7 +4733,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4320,7 +4774,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -4352,13 +4806,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -4424,7 +4878,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4436,7 +4891,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4447,20 +4903,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4483,6 +4954,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4490,7 +4966,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4506,7 +4982,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -4570,7 +5046,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -4579,20 +5056,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -4609,7 +5086,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4650,7 +5127,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -4682,13 +5159,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "CRAXHiUsMzpBSE9WXWRrcnmAh46VnKOqsbi/xs3U2+I="
                 }
@@ -4742,7 +5219,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4754,7 +5232,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4765,20 +5244,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4801,6 +5295,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4808,7 +5307,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4824,7 +5323,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -4888,7 +5387,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -4897,20 +5397,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -4922,7 +5422,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4963,7 +5463,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -4995,13 +5495,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -5055,7 +5555,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5067,7 +5568,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5078,20 +5580,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5114,6 +5631,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -5121,7 +5643,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5137,7 +5659,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -5201,7 +5723,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -5210,20 +5733,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -5235,7 +5758,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5276,7 +5799,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5356,7 +5879,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5368,7 +5892,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5379,20 +5904,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5415,6 +5955,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -5422,7 +5967,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5438,7 +5983,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -5481,7 +6026,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -5494,7 +6040,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5535,7 +6081,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5565,7 +6111,7 @@
                     {
                       "index": 1,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5595,7 +6141,7 @@
                     {
                       "index": 2,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5625,7 +6171,7 @@
                     {
                       "index": 3,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5655,7 +6201,7 @@
                     {
                       "index": 4,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5685,7 +6231,7 @@
                     {
                       "index": 5,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5715,7 +6261,7 @@
                     {
                       "index": 6,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -5795,7 +6341,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5807,7 +6354,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5818,20 +6366,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5854,6 +6417,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -5861,7 +6429,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5877,7 +6445,7 @@
                   "signature": {
                     "index": 3,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -5921,7 +6489,7 @@
                   "signature": {
                     "index": 4,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -5965,7 +6533,7 @@
                   "signature": {
                     "index": 5,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -6009,7 +6577,7 @@
                   "signature": {
                     "index": 6,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -6052,7 +6620,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -6065,7 +6634,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6106,7 +6675,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -6186,7 +6755,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -6198,7 +6768,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -6209,20 +6780,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -6245,6 +6831,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -6252,7 +6843,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6268,7 +6859,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -6311,7 +6902,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -6324,7 +6916,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6365,7 +6957,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -6397,7 +6989,7 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
@@ -6451,7 +7043,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -6463,7 +7056,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -6474,20 +7068,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -6510,6 +7119,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -6517,7 +7131,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6533,7 +7147,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -6576,7 +7190,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -6585,10 +7200,10 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
@@ -6599,7 +7214,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6640,7 +7255,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -6672,7 +7287,7 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "MIICfQYJKoZIhvcNAQcCoIICbjCCAmoCAQExDTALBglghkgBZQMEAgEwCwYJKoZIhvcNAQcBMYICRzCCAkMCAQEwSDBDMUEwGwYDVQQKExRFbWJlZFBERiBDb25mb3JtYW5jZTAiBgNVBAMMG0NvbmZvcm1hbmNlIEludGVybWVkaWF0ZSBDQQIBAzALBglghkgBZQMEAgGggdMwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAvBgkqhkiG9w0BCQQxIgQgAwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dwwgYUGCyqGSIb3DQEJEAIvMXYwdDByMHAEIG8G3IyB7EJd/O2Tt+cAfhRBNRBY38mIY9lkIPB0i3oOMEwwR6RFMEMxQTAbBgNVBAoTFEVtYmVkUERGIENvbmZvcm1hbmNlMCIGA1UEAwwbQ29uZm9ybWFuY2UgSW50ZXJtZWRpYXRlIENBAgEDMA0GCSqGSIb3DQEBCwUABIIBAE6t/AWXwLIHmTp0wop2GNrQ9wMWJRbDQz5Gb+s8fdZFEhAEtzVJdjsdzO52yMeF6DzSp/fvY+wJIJitTZRTQglyKVHjQY/bdWkizKYe8jav/Rz3GRRTU5C7P58CpNOZ0xz0ATM5LZnGHEfi7cCS7ge7Z+cgq3q7PYQRUrc1m7s0G40O5a8+10DSmutNnpF7/ZcTxwRL+9Hcq7IJjKpzKefxH6NIKXDs1W9KYjCf9cz5kQbQGs6y8Q4JIEcz3SGj/d1Gs05EZTqiOgaqo2QchyVPsTALLmafkTs/7KY0dRBYF/6GOJNCzbUPSKw0xkvIGxmseHymvAYd4oHAyYvkugQ="
                 }
@@ -6726,7 +7341,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -6738,7 +7354,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -6749,20 +7366,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -6785,6 +7417,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -6792,7 +7429,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6808,7 +7445,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -6851,7 +7488,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -6860,10 +7498,10 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
@@ -6874,7 +7512,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -6915,7 +7553,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -6947,7 +7585,7 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "error": {
                   "name": "EngineError",
                   "message": "io",
@@ -7003,7 +7641,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7015,7 +7654,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7026,20 +7666,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -7062,6 +7717,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -7069,7 +7729,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7085,7 +7745,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -7128,7 +7788,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -7137,10 +7798,10 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
@@ -7151,7 +7812,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7192,7 +7853,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -7224,13 +7885,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -7284,7 +7945,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7296,7 +7958,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7307,20 +7970,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -7343,6 +8021,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -7350,7 +8033,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7366,7 +8049,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -7430,7 +8113,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -7439,20 +8123,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -7464,7 +8148,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7505,7 +8189,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -7537,13 +8221,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "MIIEPQYJKoZIhvcNAQcCoIIELjCCBCoCAQExDTALBglghkgBZQMEAgEwCwYJKoZIhvcNAQcBoIICejCCAnYwggFgoAMCAQICASwwCwYJKoZIhvcNAQELMEMxQTAbBgNVBAoTFEVtYmVkUERGIENvbmZvcm1hbmNlMCIGA1UEAwwbQ29uZm9ybWFuY2UgSW50ZXJtZWRpYXRlIENBMB4XDTIwMDEwMTAwMDAwMFoXDTQ1MDEwMTAwMDAwMFowSDFGMBsGA1UEChMURW1iZWRQREYgQ29uZm9ybWFuY2UwJwYDVQQDDCBDb25mb3JtYW5jZSBVbmtub3duIEN1cnZlIFNpZ25lcjBWMBAGByqGSM49AgEGBSuBBAAKA0IABJ93JJUIZdk6SbOV2XJF1DI9HV80dkRN17O/dFgRtWkc3xJJKuiAires+ekABaiI47lkdGf4j+y08fx+57awXXKjQjBAMB0GA1UdDgQWBBTcnOfeT9TvPX4jJG81X1mHKO2rHTAfBgNVHSMEGDAWgBTirliUBZGrAQHyeoyueVhEujJbxzALBgkqhkiG9w0BAQsDggEBAGssvS+EwKHLG1pu1DjtwXSzkH+simJfnpIMsi3e7ytuv8td2AlkrET4CK4qyXU+CuJACxI90gXpoFNTLEdMap8akZjgCLJHlBb7rBSlAOqMJnJbXYLMN/wefWefcJbYDO4JjohwmLwCGVssUrGsP3t+f6ejfMmP9IiUcKZzShXfv+qtkTwh7jwavEotpFXeNWQ+jq8D6YkT0TFOh3fF0VxpWq24PCY/xLlfBzNDCp9VX1Z3lQf+L2mZbqq5Qg+l3jt4XNMll2c1YgIDc1gwdWgPd1AOsr6pZLohnAS4aWm6i0gK5oUt0KuoQdzqXydz3c8fOPw5EmsaSRvQB+fEyPkxggGJMIIBhQIBATBIMEMxQTAbBgNVBAoTFEVtYmVkUERGIENvbmZvcm1hbmNlMCIGA1UEAwwbQ29uZm9ybWFuY2UgSW50ZXJtZWRpYXRlIENBAgEsMAsGCWCGSAFlAwQCAaCB0zAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMC8GCSqGSIb3DQEJBDEiBCADChEYHyYtNDtCSVBXXmVsc3qBiI+WnaSrsrnAx87V3DCBhQYLKoZIhvcNAQkQAi8xdjB0MHIwcAQgD9eJ82wa9ReIUXkd5lcQIU5mu3+/Enujcnvv6WBYHUswTDBHpEUwQzFBMBsGA1UEChMURW1iZWRQREYgQ29uZm9ybWFuY2UwIgYDVQQDDBtDb25mb3JtYW5jZSBJbnRlcm1lZGlhdGUgQ0ECASwwCgYIKoZIzj0EAwIERzBFAiAr6HOk/CVXjZ2A5tiPRZa5pJavpukcSjinY0hDevaAwgIhANg5eyN8AfM+ybiLLZR/d4j2ISVND1Y3NWrO7UW9U+ln"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -7597,7 +8281,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7609,7 +8294,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7620,20 +8306,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -7656,6 +8357,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -7663,7 +8369,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7679,7 +8385,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -7740,7 +8446,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -7749,20 +8456,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -7774,7 +8481,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7815,7 +8522,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -7847,13 +8554,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -7907,7 +8614,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7919,7 +8627,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -7930,20 +8639,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -7966,6 +8690,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -7973,7 +8702,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -7989,7 +8718,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -8054,7 +8783,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -8063,20 +8793,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -8088,7 +8818,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8132,7 +8862,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -8164,13 +8894,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -8245,7 +8975,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -8257,7 +8988,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -8268,20 +9000,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -8304,6 +9051,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -8311,7 +9063,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8327,7 +9079,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -8393,7 +9145,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -8402,20 +9155,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -8439,7 +9192,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8483,7 +9236,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -8515,13 +9268,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -8595,7 +9348,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -8607,7 +9361,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -8618,20 +9373,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -8654,6 +9424,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -8661,7 +9436,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8677,7 +9452,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -8742,7 +9517,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -8751,20 +9527,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -8788,7 +9564,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -8832,7 +9608,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -8864,13 +9640,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -8944,7 +9720,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -8956,7 +9733,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -8967,20 +9745,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -9003,6 +9796,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -9010,7 +9808,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9026,7 +9824,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -9091,7 +9889,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -9100,20 +9899,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -9137,7 +9936,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9181,7 +9980,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -9213,13 +10012,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -9292,7 +10091,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -9304,7 +10104,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -9315,20 +10116,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -9351,6 +10167,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -9358,7 +10179,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9374,7 +10195,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -9439,7 +10260,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -9448,20 +10270,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -9485,7 +10307,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9526,7 +10348,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -9558,13 +10380,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -9647,7 +10469,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -9659,7 +10482,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -9670,20 +10494,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -9706,6 +10545,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -9713,7 +10557,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9729,7 +10573,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -9799,7 +10643,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -9808,20 +10653,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -9845,7 +10690,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -9889,7 +10734,7 @@
                     {
                       "index": 0,
                       "field": {
-                        "kind": "name",
+                        "kind": "fqn",
                         "name": "Sig1"
                       },
                       "fieldName": "Sig1",
@@ -9921,13 +10766,13 @@
                 }
               },
               {
-                "path": "signatures.contents",
+                "path": "signatures.getContents",
                 "value": {
                   "$bytes": "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"
                 }
               },
               {
-                "path": "signatures.digest",
+                "path": "signatures.getDigest",
                 "value": {
                   "$bytes": "AwoRGB8mLTQ7QklQV15lbHN6gYiPlp2kq7K5wMfO1dw="
                 }
@@ -9987,7 +10832,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -9999,7 +10845,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -10010,20 +10857,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "d"
+              "resolved": {
+                "document": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "d",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "d",
+                "info": {
+                  "id": "d",
+                  "status": "ready",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -10046,6 +10908,11 @@
               "doc": "d",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "d",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -10053,7 +10920,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -10069,7 +10936,7 @@
                   "signature": {
                     "index": 0,
                     "field": {
-                      "kind": "name",
+                      "kind": "fqn",
                       "name": "Sig1"
                     },
                     "fieldName": "Sig1",
@@ -10134,7 +11001,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "d",
@@ -10143,20 +11011,20 @@
             },
             {
               "doc": "d",
-              "path": "signatures.contents",
+              "path": "signatures.getContents",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 }
               ]
             },
             {
               "doc": "d",
-              "path": "signatures.digest",
+              "path": "signatures.getDigest",
               "args": [
                 {
-                  "kind": "name",
+                  "kind": "fqn",
                   "name": "Sig1"
                 },
                 "sha256"
@@ -10180,7 +11048,7 @@
           "status": "started",
           "engineState": {
             "d": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {

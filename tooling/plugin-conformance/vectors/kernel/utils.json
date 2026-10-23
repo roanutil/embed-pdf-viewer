@@ -1,11 +1,11 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/core/main: docInfoEquals, docInfoListEquals, createEventHook, composeApi and the plugin error vocabulary.",
+  "describes": "packages/core/main: shallowEqual, createEventHook, composeApi and the plugin error vocabulary.",
   "cases": [
     {
       "name": "equal",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -24,7 +24,7 @@
     },
     {
       "name": "id-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -43,7 +43,7 @@
     },
     {
       "name": "name-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -64,7 +64,7 @@
     },
     {
       "name": "name-absent-vs-present",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -84,7 +84,7 @@
     },
     {
       "name": "status-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -103,7 +103,7 @@
     },
     {
       "name": "page-count-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -122,7 +122,7 @@
     },
     {
       "name": "password-provided-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -143,7 +143,7 @@
     },
     {
       "name": "password-provided-absent-vs-false",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -163,7 +163,7 @@
     },
     {
       "name": "lists-equal",
-      "fn": "docInfoListEquals",
+      "fn": "shallowEqual",
       "args": [
         [
           {
@@ -191,12 +191,12 @@
         ]
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     },
     {
       "name": "lists-empty",
-      "fn": "docInfoListEquals",
+      "fn": "shallowEqual",
       "args": [
         [],
         []
@@ -207,7 +207,7 @@
     },
     {
       "name": "lists-length-differs",
-      "fn": "docInfoListEquals",
+      "fn": "shallowEqual",
       "args": [
         [
           {
@@ -235,7 +235,7 @@
     },
     {
       "name": "lists-order-differs",
-      "fn": "docInfoListEquals",
+      "fn": "shallowEqual",
       "args": [
         [
           {
@@ -268,7 +268,7 @@
     },
     {
       "name": "lists-one-member-differs",
-      "fn": "docInfoListEquals",
+      "fn": "shallowEqual",
       "args": [
         [
           {
@@ -291,7 +291,7 @@
     },
     {
       "name": "list-is-itself",
-      "fn": "docInfoListEqualsItself",
+      "fn": "shallowEqualItself",
       "args": [
         [
           {
@@ -307,7 +307,7 @@
     },
     {
       "name": "error-code-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -336,7 +336,7 @@
     },
     {
       "name": "error-message-differs",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -364,8 +364,8 @@
       }
     },
     {
-      "name": "error-capability-is-not-compared",
-      "fn": "docInfoEquals",
+      "name": "error-object-identity-differs",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -389,12 +389,12 @@
         }
       ],
       "outcome": {
-        "returned": true
+        "returned": false
       }
     },
     {
       "name": "error-absent-vs-present",
-      "fn": "docInfoEquals",
+      "fn": "shallowEqual",
       "args": [
         {
           "id": "a",
@@ -788,6 +788,7 @@
             "message": "engine said InvalidArg",
             "code": "invalid-input",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -816,6 +817,7 @@
             "message": "engine said MalformedPdf",
             "code": "invalid-input",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -842,8 +844,9 @@
           "$error": {
             "name": "PluginError",
             "message": "engine said WireFormat",
-            "code": "invalid-input",
+            "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -872,6 +875,7 @@
             "message": "engine said DocNotOpen",
             "code": "not-ready",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -900,6 +904,7 @@
             "message": "engine said DocPasswordRequired",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -928,6 +933,7 @@
             "message": "engine said DocPasswordIncorrect",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -956,6 +962,7 @@
             "message": "engine said SharePasswordRequired",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -984,6 +991,7 @@
             "message": "engine said Unauthenticated",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1012,6 +1020,7 @@
             "message": "engine said Forbidden",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1040,6 +1049,7 @@
             "message": "engine said ProtectedDocument",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1068,6 +1078,7 @@
             "message": "engine said NotFound",
             "code": "not-found",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1094,8 +1105,9 @@
           "$error": {
             "name": "PluginError",
             "message": "engine said InvalidReference",
-            "code": "not-found",
+            "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1124,6 +1136,7 @@
             "message": "engine said NotImplemented",
             "code": "unsupported",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1152,6 +1165,7 @@
             "message": "engine said Aborted",
             "code": "operation-cancelled",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1178,8 +1192,9 @@
           "$error": {
             "name": "PluginError",
             "message": "engine said WeakAnnotationSessionConflict",
-            "code": "conflict",
+            "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1208,6 +1223,7 @@
             "message": "engine said LayerVersionConflict",
             "code": "conflict",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1236,6 +1252,7 @@
             "message": "engine said StaleBase",
             "code": "conflict",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1264,6 +1281,7 @@
             "message": "engine said SigningPending",
             "code": "conflict",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1292,6 +1310,7 @@
             "message": "engine said SigningExpired",
             "code": "conflict",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1320,6 +1339,7 @@
             "message": "engine said SigningVersionMismatch",
             "code": "conflict",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1348,6 +1368,7 @@
             "message": "engine said Format",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1379,6 +1400,7 @@
             "message": "gone",
             "code": "not-found",
             "capability": "probe",
+            "permission": null,
             "details": {
               "pon": 3
             },
@@ -1412,6 +1434,7 @@
             "message": "no code",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "EngineError",
@@ -1438,6 +1461,7 @@
             "message": "permission denied: doc.print",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": "doc.print",
             "details": {
               "required": "doc.print"
             },
@@ -1445,6 +1469,10 @@
               "$error": {
                 "name": "PermissionDenied",
                 "message": "permission denied: doc.print",
+                "code": "Forbidden",
+                "details": {
+                  "required": "doc.print"
+                },
                 "required": "doc.print"
               }
             }
@@ -1469,6 +1497,7 @@
             "message": "permission denied (print): doc.print",
             "code": "permission-denied",
             "capability": "probe",
+            "permission": "doc.print",
             "details": {
               "required": "doc.print",
               "context": "print"
@@ -1477,6 +1506,11 @@
               "$error": {
                 "name": "PermissionDenied",
                 "message": "permission denied (print): doc.print",
+                "code": "Forbidden",
+                "details": {
+                  "required": "doc.print",
+                  "context": "print"
+                },
                 "required": "doc.print",
                 "context": "print"
               }
@@ -1502,6 +1536,7 @@
             "message": "looks like one",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "PermissionDenied",
@@ -1528,6 +1563,7 @@
             "message": "operation cancelled",
             "code": "operation-cancelled",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "CancelledError",
@@ -1554,6 +1590,7 @@
             "message": "looks like one",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "CancelledError",
@@ -1580,6 +1617,7 @@
             "message": "operation cancelled",
             "code": "operation-cancelled",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "AbortError",
@@ -1610,6 +1648,7 @@
             "message": "stale",
             "code": "conflict",
             "capability": "origin",
+            "permission": null,
             "details": {
               "at": 1
             }
@@ -1632,6 +1671,7 @@
             "message": "broke",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "Error",
@@ -1658,6 +1698,7 @@
             "message": "x is not a function",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": {
               "$error": {
                 "name": "TypeError",
@@ -1684,6 +1725,7 @@
             "message": "a string was thrown",
             "code": "operation-failed",
             "capability": "probe",
+            "permission": null,
             "cause": "a string was thrown"
           }
         }
@@ -1762,7 +1804,8 @@
         "returned": {
           "code": "not-found",
           "message": "m",
-          "capability": "origin"
+          "capability": "origin",
+          "permission": null
         }
       }
     },
@@ -1852,50 +1895,6 @@
             "name": "Error",
             "message": "[probe] api member 'a' is defined twice"
           }
-        }
-      }
-    },
-    {
-      "name": "origin-local",
-      "fn": "originOf",
-      "args": [
-        {
-          "type": "metadata.updated",
-          "origin": {
-            "kind": "local",
-            "sessionId": "s1",
-            "sub": "u1"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "locality": "local",
-          "trigger": "unknown",
-          "sessionId": "s1",
-          "actorId": "u1"
-        }
-      }
-    },
-    {
-      "name": "origin-remote-without-actor",
-      "fn": "originOf",
-      "args": [
-        {
-          "type": "metadata.updated",
-          "origin": {
-            "kind": "remote",
-            "sessionId": "s2",
-            "sub": null
-          }
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "locality": "remote",
-          "trigger": "unknown",
-          "sessionId": "s2",
-          "actorId": null
         }
       }
     }

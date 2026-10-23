@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "engine-core render-policy snaps (DocumentRenderService.ts), ported into epdf-plugin-render.",
   "cases": [

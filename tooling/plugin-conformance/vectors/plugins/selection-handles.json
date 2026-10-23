@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/plugin/selection: selection handle geometry and the handle drag session.",
   "cases": [
@@ -46,22 +46,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -111,22 +111,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -176,22 +176,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -241,22 +241,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -306,22 +306,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -371,22 +371,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -427,22 +427,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -465,22 +465,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -512,22 +512,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -577,22 +577,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -642,22 +642,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -707,22 +707,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -772,22 +772,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -837,22 +837,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -893,22 +893,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -931,22 +931,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -978,22 +978,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1043,22 +1043,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1108,22 +1108,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1173,22 +1173,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1238,22 +1238,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1303,22 +1303,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1359,22 +1359,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1397,22 +1397,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1444,22 +1444,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1509,22 +1509,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1574,22 +1574,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1639,22 +1639,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1704,22 +1704,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1769,22 +1769,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1825,22 +1825,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -1863,22 +1863,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -1910,22 +1910,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 5,
               "y": 5
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 5,
               "y": 5
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 5,
               "y": 5
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 5,
               "y": 5
             }
@@ -1957,22 +1957,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -2022,22 +2022,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -2087,22 +2087,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 2
+            "objectNumber": 2
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -2135,22 +2135,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -2198,22 +2198,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 20,
               "y": 40
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 20,
               "y": 34
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 32,
               "y": 40
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 32,
               "y": 34
             }
@@ -2246,7 +2246,7 @@
             "beginGestureAt": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 26,
@@ -2259,7 +2259,7 @@
             "extendTo": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 40,
@@ -2271,7 +2271,7 @@
             "extendTo": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2
+                "objectNumber": 2
               },
               {
                 "x": 50,
@@ -2283,7 +2283,7 @@
             "extendTo": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 2
+                "objectNumber": 2
               },
               {
                 "x": 50,
@@ -2317,22 +2317,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -2367,7 +2367,7 @@
             "beginGestureAt": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 13,
@@ -2380,7 +2380,7 @@
             "beginGestureAt": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 13,
@@ -2393,7 +2393,7 @@
             "extendTo": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 2,
@@ -2405,7 +2405,7 @@
             "extendTo": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 3,
@@ -2429,22 +2429,22 @@
         {
           "page": {
             "kind": "objectNumber",
-            "pageObjectNumber": 1
+            "objectNumber": 1
           },
           "glyphQuad": {
-            "upperStart": {
+            "upperLeft": {
               "x": 10,
               "y": 20
             },
-            "upperEnd": {
+            "upperRight": {
               "x": 16,
               "y": 20
             },
-            "lowerStart": {
+            "lowerLeft": {
               "x": 10,
               "y": 32
             },
-            "lowerEnd": {
+            "lowerRight": {
               "x": 16,
               "y": 32
             }
@@ -2469,7 +2469,7 @@
             "beginGestureAt": [
               {
                 "kind": "objectNumber",
-                "pageObjectNumber": 1
+                "objectNumber": 1
               },
               {
                 "x": 13,

@@ -1,70 +1,79 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/plugin/commands: commandsReducer and initialCommandsState (`same` is reference identity), resolvedCommandsEqual, registerCommand, and what commandsPlugin(config) builds.",
+  "describes": "packages/plugin/commands: current settings mutations (`same` is disabled-category list identity), resolvedCommandsEqual, current controller registration and command definition settings.",
   "cases": [
     {
       "name": "initial-state",
-      "fn": "initialCommandsState",
-      "args": [],
+      "fn": "commandSettings",
+      "args": [
+        {},
+        "read"
+      ],
       "outcome": {
         "returned": {
-          "disabledCategories": []
+          "same": true,
+          "settings": {
+            "commands": [],
+            "disabledCategories": [],
+            "disabledCommands": [],
+            "notAllowed": "hide"
+          }
         }
       }
     },
     {
       "name": "disable-new",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/DISABLE_CATEGORY",
-          "category": "b"
-        }
+        "disableCategory",
+        "b"
       ],
       "outcome": {
         "returned": {
           "same": false,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "a",
               "b"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "disable-into-empty",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
-        {
-          "disabledCategories": []
-        },
-        {
-          "type": "COMMANDS/DISABLE_CATEGORY",
-          "category": "a"
-        }
+        {},
+        "disableCategory",
+        "a"
       ],
       "outcome": {
         "returned": {
           "same": false,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "a"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "disable-existing-is-ignored",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
@@ -72,26 +81,27 @@
             "b"
           ]
         },
-        {
-          "type": "COMMANDS/DISABLE_CATEGORY",
-          "category": "b"
-        }
+        "disableCategory",
+        "b"
       ],
       "outcome": {
         "returned": {
           "same": true,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "a",
               "b"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "enable-removes-every-copy",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
@@ -100,172 +110,178 @@
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/ENABLE_CATEGORY",
-          "category": "a"
-        }
+        "enableCategory",
+        "a"
       ],
       "outcome": {
         "returned": {
           "same": false,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "b"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "enable-missing-is-ignored",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/ENABLE_CATEGORY",
-          "category": "z"
-        }
+        "enableCategory",
+        "z"
       ],
       "outcome": {
         "returned": {
           "same": true,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "a"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "enable-last",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/ENABLE_CATEGORY",
-          "category": "a"
-        }
+        "enableCategory",
+        "a"
       ],
       "outcome": {
         "returned": {
           "same": false,
-          "next": {
-            "disabledCategories": []
+          "settings": {
+            "commands": [],
+            "disabledCategories": [],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "set-replaces",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
-          "categories": [
-            "b",
-            "b",
-            "c"
-          ]
-        }
+        "setDisabledCategories",
+        [
+          "b",
+          "b",
+          "c"
+        ]
       ],
       "outcome": {
         "returned": {
           "same": false,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "b",
               "b",
               "c"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "set-equal-is-a-new-state",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
-          "categories": [
-            "a"
-          ]
-        }
+        "setDisabledCategories",
+        [
+          "a"
+        ]
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
+          "same": true,
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "a"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "set-empty",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/SET_DISABLED_CATEGORIES",
-          "categories": []
-        }
+        "setDisabledCategories",
+        []
       ],
       "outcome": {
         "returned": {
           "same": false,
-          "next": {
-            "disabledCategories": []
+          "settings": {
+            "commands": [],
+            "disabledCategories": [],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
     },
     {
       "name": "unknown-action-is-ignored",
-      "fn": "commandsReducer",
+      "fn": "commandSettings",
       "args": [
         {
           "disabledCategories": [
             "a"
           ]
         },
-        {
-          "type": "COMMANDS/NOPE",
-          "category": "a"
-        }
+        "read"
       ],
       "outcome": {
         "returned": {
           "same": true,
-          "next": {
+          "settings": {
+            "commands": [],
             "disabledCategories": [
               "a"
-            ]
+            ],
+            "disabledCommands": [],
+            "notAllowed": "hide"
           }
         }
       }
@@ -1327,6 +1343,107 @@
       }
     },
     {
+      "name": "disabled-reason-differs",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ]
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ],
+          "disabledReason": "No permission"
+        }
+      ],
+      "outcome": {
+        "returned": false
+      }
+    },
+    {
+      "name": "disabled-reason-equal",
+      "fn": "resolvedCommandsEqual",
+      "args": [
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ],
+          "disabledReason": "No permission"
+        },
+        {
+          "id": "zoom:in",
+          "label": "Zoom In",
+          "icon": "zoomIn",
+          "iconAccent": {
+            "primary": "#000",
+            "secondary": "#fff"
+          },
+          "shortcuts": [
+            "Mod+=",
+            "Mod+Plus"
+          ],
+          "menu": "zoom",
+          "enabled": true,
+          "active": false,
+          "visible": true,
+          "categories": [
+            "zoom"
+          ],
+          "disabledReason": "No permission"
+        }
+      ],
+      "outcome": {
+        "returned": true
+      }
+    },
+    {
       "name": "categories-are-not-compared",
       "fn": "resolvedCommandsEqual",
       "args": [
@@ -1378,7 +1495,7 @@
     },
     {
       "name": "none",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         []
       ],
@@ -1390,7 +1507,7 @@
     },
     {
       "name": "no-shortcut",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1413,7 +1530,7 @@
     },
     {
       "name": "one-shortcut",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1448,7 +1565,7 @@
     },
     {
       "name": "many-shortcuts",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1525,7 +1642,7 @@
     },
     {
       "name": "empty-shortcut-list",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1549,7 +1666,7 @@
     },
     {
       "name": "empty-shortcut-is-plus",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1584,7 +1701,7 @@
     },
     {
       "name": "insertion-order",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1655,7 +1772,7 @@
     },
     {
       "name": "duplicate-throws-and-keeps-the-first",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1708,7 +1825,8 @@
               "name": "PluginError",
               "message": "duplicate command 'a'",
               "code": "conflict",
-              "capability": "commands"
+              "capability": "commands",
+              "permission": null
             }
           }
         }
@@ -1716,7 +1834,7 @@
     },
     {
       "name": "bad-modifier-throws-and-registers-nothing",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1757,7 +1875,7 @@
     },
     {
       "name": "bad-modifier-in-a-string",
-      "fn": "registerCommand",
+      "fn": "registerCurrentCommands",
       "args": [
         [
           {
@@ -1787,9 +1905,16 @@
         "returned": {
           "id": "commands",
           "scope": "workspace",
-          "initialState": {
-            "disabledCategories": []
-          }
+          "settings": {
+            "defaults": {
+              "commands": [],
+              "disabledCategories": [],
+              "disabledCommands": [],
+              "notAllowed": "hide"
+            }
+          },
+          "hasState": false,
+          "resolvesAnyCapability": true
         }
       }
     },
@@ -1803,9 +1928,17 @@
         "returned": {
           "id": "commands",
           "scope": "workspace",
-          "initialState": {
-            "disabledCategories": []
-          }
+          "settings": {
+            "defaults": {
+              "commands": [],
+              "disabledCategories": [],
+              "disabledCommands": [],
+              "notAllowed": "hide"
+            },
+            "registered": {}
+          },
+          "hasState": false,
+          "resolvesAnyCapability": true
         }
       }
     },
@@ -1825,13 +1958,23 @@
         "returned": {
           "id": "commands",
           "scope": "workspace",
-          "initialState": {
-            "disabledCategories": [
-              "pro",
-              "beta",
-              "pro"
-            ]
-          }
+          "settings": {
+            "defaults": {
+              "commands": [],
+              "disabledCategories": [],
+              "disabledCommands": [],
+              "notAllowed": "hide"
+            },
+            "registered": {
+              "disabledCategories": [
+                "pro",
+                "beta",
+                "pro"
+              ]
+            }
+          },
+          "hasState": false,
+          "resolvesAnyCapability": true
         }
       }
     },
@@ -1857,9 +2000,29 @@
         "returned": {
           "id": "commands",
           "scope": "workspace",
-          "initialState": {
-            "disabledCategories": []
-          }
+          "settings": {
+            "defaults": {
+              "commands": [],
+              "disabledCategories": [],
+              "disabledCommands": [],
+              "notAllowed": "hide"
+            },
+            "registered": {
+              "commands": [
+                {
+                  "id": "a",
+                  "labelKey": "a",
+                  "shortcut": "Mod+A"
+                },
+                {
+                  "id": "b",
+                  "labelKey": "b"
+                }
+              ]
+            }
+          },
+          "hasState": false,
+          "resolvesAnyCapability": true
         }
       }
     },
@@ -1884,9 +2047,28 @@
         "returned": {
           "id": "commands",
           "scope": "workspace",
-          "initialState": {
-            "disabledCategories": []
-          }
+          "settings": {
+            "defaults": {
+              "commands": [],
+              "disabledCategories": [],
+              "disabledCommands": [],
+              "notAllowed": "hide"
+            },
+            "registered": {
+              "commands": [
+                {
+                  "id": "a",
+                  "labelKey": "a"
+                },
+                {
+                  "id": "a",
+                  "labelKey": "a"
+                }
+              ]
+            }
+          },
+          "hasState": false,
+          "resolvesAnyCapability": true
         }
       }
     },
@@ -1908,9 +2090,25 @@
         "returned": {
           "id": "commands",
           "scope": "workspace",
-          "initialState": {
-            "disabledCategories": []
-          }
+          "settings": {
+            "defaults": {
+              "commands": [],
+              "disabledCategories": [],
+              "disabledCommands": [],
+              "notAllowed": "hide"
+            },
+            "registered": {
+              "commands": [
+                {
+                  "id": "a",
+                  "labelKey": "a",
+                  "shortcut": "Super+A"
+                }
+              ]
+            }
+          },
+          "hasState": false,
+          "resolvesAnyCapability": true
         }
       }
     }

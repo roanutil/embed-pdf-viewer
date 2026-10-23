@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/plugin/actions: the submit intent, resolver and sink chain.",
   "cases": [
@@ -8,7 +8,7 @@
       "covers": "An older-runtime SubmitForm with no payload is recognized-inert with its own diagnostic.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -22,7 +22,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -31,18 +31,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -50,7 +75,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -59,18 +84,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -82,9 +132,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -92,6 +143,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -124,10 +183,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -174,7 +233,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -191,20 +251,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -227,6 +302,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -234,31 +314,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -267,12 +343,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -298,22 +369,19 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "submit-payload-unavailable",
-                  "message": "submit-form: payload unavailable (older runtime extraction) — node inert"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -322,19 +390,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
@@ -344,7 +407,7 @@
       "covers": "Without a dataset resolver every submit blocks with no-submit-resolver.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -358,7 +421,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -367,18 +430,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -386,7 +474,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -395,18 +483,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -418,9 +531,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -428,6 +542,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -460,10 +582,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -528,7 +650,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -545,20 +668,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -581,6 +719,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -588,31 +731,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -621,12 +760,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -652,22 +786,19 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "no-submit-resolver",
-                  "message": "submit-form: no dataset resolver registered (form plugin missing?)"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -676,19 +807,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
@@ -698,7 +824,7 @@
       "covers": "A resolver that throws or rejects fails the node with the dataset-resolution diagnostic.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -712,7 +838,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -721,18 +847,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -740,7 +891,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -749,18 +900,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -772,9 +948,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -782,6 +959,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -814,10 +999,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -954,7 +1139,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -971,20 +1157,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1007,6 +1208,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1014,31 +1220,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1047,24 +1249,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1073,12 +1271,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -1104,14 +1297,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1141,11 +1328,14 @@
               ]
             },
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "executor-failed",
-                  "message": "submit-form: dataset resolution: no fields"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -1154,19 +1344,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -1192,14 +1377,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1229,11 +1408,14 @@
               ]
             },
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "executor-failed",
-                  "message": "submit-form: dataset resolution: field plane gone"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -1242,19 +1424,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 3
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 2,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
@@ -1264,7 +1441,7 @@
       "covers": "With a resolver but no handler and no submit-capable home, the submit blocks with no-submit-sink.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -1278,7 +1455,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -1287,18 +1464,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -1306,7 +1508,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -1315,18 +1517,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -1338,9 +1565,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -1348,6 +1576,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -1380,10 +1616,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -1487,7 +1723,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1504,20 +1741,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1540,6 +1792,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1547,31 +1804,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1580,24 +1833,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1606,12 +1855,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -1637,14 +1881,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1684,11 +1922,14 @@
               ]
             },
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "no-submit-sink",
-                  "message": "submit-form: no handler installed and the document has no submit-capable home"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -1697,29 +1938,24 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
     },
     {
       "name": "the-document-home",
-      "covers": "The home is awaited with the request shape it expects (charSet only when present, the clock for clientTimeMs); a refusal fails the node.",
+      "covers": "The home is awaited with the request shape it expects (charSet only when present, the clock for ISO sentAt); a refusal fails the node.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -1733,7 +1969,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -1742,18 +1978,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -1761,7 +2022,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -1770,18 +2031,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -1798,7 +2084,7 @@
                 "times": 1,
                 "value": {
                   "submissionId": "s-1",
-                  "receivedAt": "now"
+                  "receivedAt": "1970-01-01T00:00:02.000Z"
                 }
               },
               {
@@ -1812,9 +2098,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -1822,6 +2109,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -1854,10 +2149,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -2025,7 +2320,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2042,20 +2338,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2078,6 +2389,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2085,31 +2401,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2118,24 +2430,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2144,33 +2452,24 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -2190,14 +2489,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
@@ -2217,7 +2510,7 @@
                     "flagsRaw": 0
                   },
                   "origin": "user",
-                  "clientTimeMs": 1500
+                  "sentAt": "1970-01-01T00:00:01.500Z"
                 }
               ]
             }
@@ -2254,19 +2547,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -2292,14 +2580,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
@@ -2320,7 +2602,7 @@
                     "charSet": "latin1"
                   },
                   "origin": "user",
-                  "clientTimeMs": 1500
+                  "sentAt": "1970-01-01T00:00:01.500Z"
                 }
               ]
             }
@@ -2353,11 +2635,14 @@
               ]
             },
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "executor-failed",
-                  "message": "document home refused submit: permission denied: doc.forms.submit"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -2366,29 +2651,24 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 3
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 2,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
     },
     {
       "name": "the-home-uses-the-configured-clock",
-      "covers": "clientTimeMs comes from javascript.now when configured, even with scripting disabled.",
+      "covers": "ISO sentAt comes from javascript.now when configured, even with scripting disabled.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off",
             "javascript": {
@@ -2409,7 +2689,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2418,18 +2698,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -2437,7 +2742,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -2446,18 +2751,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2473,15 +2803,16 @@
                 "path": "forms.submit",
                 "value": {
                   "submissionId": "s",
-                  "receivedAt": "now"
+                  "receivedAt": "1970-01-01T00:00:02.000Z"
                 }
               },
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -2489,6 +2820,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -2605,7 +2944,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2622,20 +2962,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2658,6 +3013,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2665,31 +3025,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2698,12 +3054,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -2723,14 +3074,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
@@ -2750,7 +3095,7 @@
                     "flagsRaw": 0
                   },
                   "origin": "user",
-                  "clientTimeMs": 1234
+                  "sentAt": "1970-01-01T00:00:01.234Z"
                 }
               ]
             }
@@ -2791,19 +3136,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
@@ -2813,7 +3153,7 @@
       "covers": "An installed handler receives the request and a home delegate (or null without a home); synchronous acceptance executes and the home never auto-fires.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -2827,7 +3167,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2836,18 +3176,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -2855,7 +3220,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -2864,18 +3229,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2890,9 +3280,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -2900,6 +3291,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -2910,7 +3309,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2919,18 +3318,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -2938,7 +3362,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -2947,18 +3371,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2970,9 +3419,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -2980,6 +3430,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -3210,7 +3668,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3224,20 +3683,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3260,6 +3734,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3267,7 +3746,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3278,20 +3757,35 @@
           "settled": [
             {
               "promise": 2,
-              "resolved": "b"
+              "resolved": {
+                "document": {
+                  "id": "b",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "b",
+                "previousDocumentId": "a"
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "b",
+                "info": {
+                  "id": "b",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3314,6 +3808,11 @@
               "doc": "b",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "b",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3321,10 +3820,10 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3333,17 +3832,18 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3354,17 +3854,18 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3390,14 +3891,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3453,10 +3948,10 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3465,17 +3960,18 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3486,17 +3982,18 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3522,14 +4019,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::b",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3587,10 +4078,10 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             },
             "b": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3604,7 +4095,7 @@
       "covers": "A synchronous throw fails the node; a returned promise is detached: resolving says nothing, rejecting emits a diagnostic later and never rewrites the node.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -3618,7 +4109,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -3627,18 +4118,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -3646,7 +4162,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -3655,18 +4171,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -3678,9 +4219,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -3688,6 +4230,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -3720,10 +4270,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -3944,7 +4494,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3961,20 +4512,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3997,6 +4563,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4004,31 +4575,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4037,24 +4604,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4063,24 +4626,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4089,12 +4648,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -4120,14 +4674,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4181,11 +4729,14 @@
               ]
             },
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "executor-failed",
-                  "message": "submit handler threw: sync refuse"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -4194,19 +4745,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -4226,14 +4772,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4291,19 +4831,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 3
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 2,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -4323,14 +4858,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4388,32 +4917,31 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 4
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 3,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "executor-failed",
-                  "message": "submit handler rejected (detached): late network error"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -4422,16 +4950,11 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 3,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
@@ -4441,7 +4964,7 @@
       "covers": "A lifecycle submit is blocked by default; a policy row of allow or adapter admits it, and report or block refuse.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off",
             "policy": {
@@ -4462,7 +4985,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -4471,18 +4994,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -4490,7 +5038,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -4499,18 +5047,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -4522,9 +5095,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -4532,6 +5106,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -4564,10 +5146,10 @@
             "token": "actions",
             "doc": "a"
           },
-          "method": "onDiagnostic",
+          "method": "onDiagnosticReported",
           "args": [
             {
-              "$fn": "onDiagnostic"
+              "$fn": "onDiagnosticReported"
             }
           ]
         },
@@ -4770,7 +5352,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4787,20 +5370,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4823,6 +5421,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4830,31 +5433,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4863,24 +5462,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4889,24 +5484,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4915,12 +5506,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -4945,22 +5531,19 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
-              "fn": "onDiagnostic",
+              "fn": "onDiagnosticReported",
               "args": [
                 {
                   "code": "blocked",
-                  "message": "submit-form: policy 'report' for origin 'user'"
+                  "action": "submit-form",
+                  "source": {
+                    "kind": "api"
+                  }
                 }
               ]
             }
@@ -4969,19 +5552,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -5001,14 +5579,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -5067,19 +5639,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 3
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 2,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -5099,14 +5666,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -5165,19 +5726,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 4
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 3,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]
@@ -5187,7 +5743,7 @@
       "covers": "A submit before a failing document node never fires.",
       "plugins": [
         {
-          "factory": "actions",
+          "factory": "actions-current",
           "config": {
             "openSequence": "off"
           }
@@ -5201,7 +5757,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -5210,18 +5766,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               },
@@ -5229,7 +5810,7 @@
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 2
+                  "objectNumber": 2
                 },
                 "label": null,
                 "size": {
@@ -5238,18 +5819,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -5261,9 +5867,10 @@
               {
                 "path": "forms.list",
                 "value": {
-                  "formKind": "none",
+                  "formKind": "acroform",
                   "needsAppearances": false,
                   "fields": [],
+                  "widgets": [],
                   "calculationOrder": []
                 }
               },
@@ -5271,6 +5878,14 @@
                 "path": "page.annotations.list",
                 "value": {
                   "annotations": []
+                }
+              },
+              {
+                "path": "actions.get",
+                "value": {
+                  "nameTreeScripts": [],
+                  "openAction": null,
+                  "openDestination": null
                 }
               }
             ]
@@ -5425,7 +6040,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5442,20 +6058,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 2,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5478,6 +6109,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -5485,31 +6121,27 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 1
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5518,24 +6150,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5544,24 +6172,20 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5570,12 +6194,7 @@
             }
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 0,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         },
         {
@@ -5608,14 +6227,8 @@
               }
             }
           ],
-          "actions": [
-            {
-              "slice": "actions::a",
-              "action": {
-                "type": "ACTIONS_DISPATCHED"
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -5643,19 +6256,14 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
             "promise": 2
           },
           "state": {
-            "plugins": {
-              "actions::a": {
-                "seq": 1,
-                "policyRevision": 0
-              }
-            }
+            "plugins": {}
           }
         }
       ]

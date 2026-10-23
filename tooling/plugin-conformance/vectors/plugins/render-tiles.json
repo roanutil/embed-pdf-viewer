@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/plugin/render/src/tiles.ts: the aligned tile grid, paint and engine rects, bleed, coverage, the prefetch ring.",
   "cases": [
