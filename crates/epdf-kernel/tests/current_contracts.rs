@@ -360,3 +360,110 @@ fn settings_instance_reports_once_continues_siblings_and_disposes_all_listeners(
     assert_eq!(calls.get(), 1);
     assert_eq!(errors.borrow().len(), 1);
 }
+
+/// A handle that records the facts each `call_with` carried.
+struct RecordsFacts(Rc<std::cell::RefCell<Vec<(epdf_kernel::engine::CallFacts, String)>>>);
+
+impl epdf_kernel::engine::DocumentHandle for RecordsFacts {
+    fn id(&self) -> String {
+        "a".into()
+    }
+    fn capabilities(&self) -> serde_json::Value {
+        serde_json::json!({})
+    }
+    fn security(&self) -> Rc<dyn epdf_kernel::engine::DocumentSecurity> {
+        unimplemented!()
+    }
+    fn has(&self, _: &str) -> bool {
+        true
+    }
+    fn call(
+        &self,
+        _: &str,
+        _: Option<u32>,
+        _: Vec<serde_json::Value>,
+    ) -> epdf_kernel::engine::EngineCall<serde_json::Value> {
+        epdf_kernel::Promise::resolved(serde_json::json!("plain"))
+    }
+    fn call_with(
+        &self,
+        facts: &epdf_kernel::engine::CallFacts,
+        path: &str,
+        _: Option<u32>,
+        _: Vec<serde_json::Value>,
+    ) -> epdf_kernel::engine::EngineCall<serde_json::Value> {
+        self.0.borrow_mut().push((facts.clone(), path.to_string()));
+        epdf_kernel::Promise::resolved(serde_json::json!("with")).with_abort(|_| {})
+    }
+    fn page_index(&self, _: u32) -> Result<u32, epdf_kernel::Error> {
+        Ok(0)
+    }
+    fn subscribe(&self, _: Rc<dyn Fn(&serde_json::Value)>) -> epdf_kernel::Unsubscribe {
+        epdf_kernel::Unsubscribe::noop()
+    }
+}
+
+/// `doc.with(facts)` (Ruling13.16): the guarded handle hands the facts to the
+/// handle under the same guard as `call`, and a handle that does not rank
+/// work answers `call_with` as `call`.
+#[test]
+fn call_facts_reach_the_handle_through_the_guard() {
+    use epdf_kernel::engine::{CallFacts, CallPriority, DocumentHandle};
+    use epdf_kernel::guarded::{GuardedLifetime, guard_handle};
+    use epdf_kernel::signal::AbortSignal;
+
+    epdf_kernel::rt::reset();
+    let seen = Rc::new(std::cell::RefCell::new(Vec::new()));
+    let lifetime = GuardedLifetime { signal: AbortSignal::new(), instance_id: "a#1".into() };
+    let guarded = guard_handle(Rc::new(RecordsFacts(seen.clone())), lifetime.clone(), "render");
+    let facts = CallFacts { priority: Some(CallPriority::High), view: Some("stage".into()) };
+    let call = guarded.call_with(&facts, "page.render.image", Some(11), Vec::new());
+    assert!(call.has_abort(), "guarded like call");
+    epdf_kernel::rt::run_until_stalled();
+    assert_eq!(call.peek().unwrap().unwrap(), serde_json::json!("with"));
+    assert_eq!(*seen.borrow(), vec![(facts.clone(), "page.render.image".to_string())]);
+    assert_eq!(
+        serde_json::to_value(&facts).unwrap(),
+        serde_json::json!({ "priority": "high", "view": "stage" })
+    );
+
+    // After close the guard refuses it as it refuses `call`.
+    lifetime.signal.abort(epdf_kernel::Error::new("closed"));
+    let refused =
+        guarded.call_with(&CallFacts::default(), "page.render.image", Some(11), Vec::new());
+    epdf_kernel::rt::run_until_stalled();
+    assert_eq!(refused.peek().unwrap().unwrap_err().plugin_code(), Some("instance-closed"));
+
+    // The default: a handle that ignores facts answers as `call`.
+    struct Plain;
+    impl DocumentHandle for Plain {
+        fn id(&self) -> String {
+            "a".into()
+        }
+        fn capabilities(&self) -> serde_json::Value {
+            serde_json::json!({})
+        }
+        fn security(&self) -> Rc<dyn epdf_kernel::engine::DocumentSecurity> {
+            unimplemented!()
+        }
+        fn has(&self, _: &str) -> bool {
+            true
+        }
+        fn call(
+            &self,
+            path: &str,
+            _: Option<u32>,
+            _: Vec<serde_json::Value>,
+        ) -> epdf_kernel::engine::EngineCall<serde_json::Value> {
+            epdf_kernel::Promise::resolved(serde_json::json!(path))
+        }
+        fn page_index(&self, _: u32) -> Result<u32, epdf_kernel::Error> {
+            Ok(0)
+        }
+        fn subscribe(&self, _: Rc<dyn Fn(&serde_json::Value)>) -> epdf_kernel::Unsubscribe {
+            epdf_kernel::Unsubscribe::noop()
+        }
+    }
+    let plain = Plain.call_with(&facts, "pages.list", None, Vec::new());
+    assert_eq!(plain.peek().unwrap().unwrap(), serde_json::json!("pages.list"));
+}

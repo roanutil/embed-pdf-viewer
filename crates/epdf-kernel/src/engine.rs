@@ -24,6 +24,29 @@ use crate::store::Unsubscribe;
 /// An engine call in flight: an `AbortablePromise`.
 pub type EngineCall<T> = Promise<T>;
 
+/// `CallPriority`: how much a call matters, with `fetch`'s words. `High` is
+/// the main thing a view shows of a page (its picture), `Auto` everything
+/// else (the default), `Low` background work about nothing the views show.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum CallPriority {
+    High,
+    Auto,
+    Low,
+}
+
+/// `CallFacts`: what is true about a call for as long as it waits
+/// (`doc.with(facts)`). `view` names the view whose own result the call is
+/// (a render layer's pixels), so the engine ranks it by where its page is in
+/// that view; absent, the result is shared by every view.
+#[derive(Clone, Debug, Default, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct CallFacts {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub priority: Option<CallPriority>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view: Option<String>,
+}
+
 pub trait Engine {
     fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>>;
     fn destroy(&self) -> EngineCall<()>;
@@ -82,6 +105,20 @@ pub trait DocumentHandle {
     /// An asynchronous service call on the document, or on one of its pages
     /// when `pon` is given.
     fn call(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Value>;
+    /// `doc.with(facts)` then the call: [`call`](Self::call), carrying the
+    /// facts the engine ranks queued work by. They change the queue order,
+    /// never the answer, so a host that does not rank work (the cloud
+    /// engine, the conformance fake, whose `with` returns the handle
+    /// unchanged) keeps this default and ignores them.
+    fn call_with(
+        &self,
+        _facts: &CallFacts,
+        path: &str,
+        pon: Option<u32>,
+        args: Vec<Value>,
+    ) -> EngineCall<Value> {
+        self.call(path, pon, args)
+    }
     /// [`call`](Self::call), with the answer as the host has it, for a caller
     /// that reads it into its own type with [`Answer::decode`]. Settles in
     /// the turn `call` would, and keeps its abort. A host whose answers
