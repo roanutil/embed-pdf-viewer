@@ -102,7 +102,7 @@ registerPlugin('annotation-signals', {
     ({
       id: 'annotation-test/signals',
       token: SignalsToken,
-      capability: () => ({ abort: (name: string) => controllerNamed(name).abort() }),
+      create: () => ({ api: { abort: (name: string) => controllerNamed(name).abort() } }),
     }) as AnyPlugin,
   tokens: [SignalsToken],
 });
@@ -115,16 +115,17 @@ registerPlugin('annotation-lens', {
       token: LensToken,
       scope: 'document',
       requires: [AnnotationToken],
-      capability: (ctx) => {
+      create: (ctx) => {
         const a = () => ctx.get(AnnotationToken);
         // The v3 names of the comments and links verbs. Hydration and
         // rehydration moved from the comments lens to the annotation
         // capability (getHydration, refresh); the lens keeps them so the
         // cases read the same.
         return {
+          api: {
           listThreads: () => a().comments.listThreads(),
           getThread: (ref: never) => a().comments.getThread(ref),
-          getHydration: () => ctx.get(AnnotationToken).getHydration(),
+            getStatus: () => ctx.get(AnnotationToken).getStatus(),
           refresh: () => a().refresh(),
           reply: (ref: never, text: string) => a().comments.reply(ref, text),
           setText: (ref: never, text: string) => a().comments.setText(ref, text),
@@ -132,11 +133,12 @@ registerPlugin('annotation-lens', {
           setMarked: (ref: never, marked: boolean) => a().comments.setMarked(ref, marked),
           delete: (ref: never) => a().comments.delete(ref),
           deleteThread: (ref: never) => a().comments.deleteThread(ref),
-          getPermissions: (ref: never) => a().comments.getPermissions(ref),
+            canReply: (ref: never) => a().comments.canReply(ref),
           linksGet: (ref: never) => a().links.get(ref),
           linksSet: (ref: never, target: never) => a().links.set(ref, target),
           linksClear: (ref: never) => a().links.clear(ref),
           onThreadChanged: (listener: never) => a().comments.onThreadChanged(listener),
+        },
         };
       },
     }) as AnyPlugin,
@@ -148,7 +150,7 @@ registerPlugin('annotation-lens', {
 export const CROP = { left: 0, bottom: 0, right: 600, top: 800 };
 export const CROP2 = { left: 10, bottom: 20, right: 410, top: 520 };
 /** A page address. */
-export const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+export const pr = (pon: number) => ({ kind: 'objectNumber', objectNumber: pon });
 /** Where a confirmed engine event came from. */
 export const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
 export const REMOTE = { kind: 'remote', sessionId: 's2', sub: 'u-9' };

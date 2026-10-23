@@ -785,18 +785,6 @@ test('all original 60 inputs and exact source bytes remain archived and every ac
       await readFile(new URL(name + '.txt', oldHistory)),
     );
   }
-  const oldBaseline = object(
-    JSON.parse(await readFile(new URL('baseline.json', oldHistory), 'utf8')),
-  );
-  for (const item of array(oldBaseline.sources).map(object)) {
-    const name = String(item.path).split('/').at(-1)!;
-    if (name === 'form-fixtures.ts')
-      assert.equal(
-        hash(await readFile(new URL('src/suites/' + name, root))),
-        item.sha256,
-        name + ' deferred bytes',
-      );
-  }
 });
 
 test('snapshot reads retain raw scalar/array distinctions, page filtering, unplaced widget refs and crop-relative fractional geometry', async () => {

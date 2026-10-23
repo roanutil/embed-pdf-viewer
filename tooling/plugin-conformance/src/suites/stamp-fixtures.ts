@@ -35,7 +35,8 @@
  *     options to build. The QuickJS default does not port, so `enabled`
  *     without a sandbox spec is refused.
  */
-import { register } from 'node:module';
+import { withStampModuleIsolation } from '../stamp-module-host';
+import { localAssetEngine } from './stamp-current-fixtures';
 
 import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 import type { Engine } from '@embedpdf/engine-core/runtime';
@@ -47,7 +48,10 @@ import {
 } from '../../../../packages/plugin/stamp/src/persistence';
 import { stampPlugin } from '../../../../packages/plugin/stamp/src/stamp.plugin';
 import { StampToken } from '../../../../packages/plugin/stamp/src/contract';
-import type { StampConfig } from '../../../../packages/plugin/stamp/src/contract';
+import type { StampConfig,
+  StampSettings,
+  StampAssetEngine,
+} from '../../../../packages/plugin/stamp/src/contract';
 import { ActionsToken as ActionsHostToken } from '../../../../packages/plugin/actions/src/host-contract';
 
 import { makeError, type ErrorSpec, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
@@ -65,14 +69,16 @@ export const suites: Suite[] = [];
 // reaches through several imports. A resolve hook carries the instance query
 // from the controller down the whole stamp source tree, so each instance is
 // a private copy of it, counter included.
-register(new URL('../loader/instance-hook.mjs', import.meta.url));
 
 type ControllerModule = typeof import('../../../../packages/plugin/stamp/src/controller');
 
 const CONTROLLER = new URL('../../../../packages/plugin/stamp/src/controller.ts', import.meta.url).href;
 const POOL_SIZE = 160;
-const pool: ControllerModule[] = await Promise.all(
-  Array.from({ length: POOL_SIZE }, (_, i) => import(`${CONTROLLER}?stamp-instance=${i}`) as Promise<ControllerModule>),
+const pool: ControllerModule[] = await withStampModuleIsolation(() =>
+  Promise.all(
+  Array.from({ length: POOL_SIZE }, (_, i) => import(`${CONTROLLER}?stamp-instance=legacy-${i}`) as Promise<ControllerModule>,
+    ),
+  ),
 );
 let nextInstance = 0;
 const freshCapability = (): ControllerModule => {
@@ -150,18 +156,18 @@ export interface StampSpec {
   readonly scripting?: StampScriptingSpec;
 }
 
-function assetEngineOf(spec: AssetEngineSpec, engine: Engine, env: PluginEnv): StampConfig['assetEngine'] {
-  if (spec === 'instance') return engine;
+function assetEngineOf(spec: AssetEngineSpec, engine: Engine, env: PluginEnv): StampAssetEngine {
+  if (spec === 'instance') return localAssetEngine(engine);
   return () => {
     env.log('assetEngine', []);
-    if (spec === 'factory') return engine;
-    if (spec === 'async-factory') return Promise.resolve(engine);
+    if (spec === 'factory') return localAssetEngine(engine);
+    if (spec === 'async-factory') return Promise.resolve(localAssetEngine(engine));
     if ('throws' in spec) throw makeError(spec.throws);
     return Promise.reject(makeError(spec.rejects));
   };
 }
 
-function configOf(spec: StampSpec, engine: Engine, env: PluginEnv): StampConfig {
+function configOf(spec: StampSpec, engine: Engine, env: PluginEnv): Partial<StampSettings> {
   return {
     ...(spec.assetEngine !== undefined ? { assetEngine: assetEngineOf(spec.assetEngine, engine, env) } : {}),
     ...(spec.previewWidth !== undefined ? { previewWidth: spec.previewWidth } : {}),
@@ -185,7 +191,9 @@ registerPlugin('stamp-observers', {
       id: 'stamp-observers',
       scope: 'document',
       requires: [ActionsHostToken],
-      effects: (ctx) => {
+      create: (ctx) => ({
+        api: {},
+        connect: () => {
         const actions = ctx.get(ActionsHostToken);
         if (spec.onUiEffect) {
           const onUiEffect = fn(spec.onUiEffect);
@@ -197,9 +205,10 @@ registerPlugin('stamp-observers', {
             }),
           );
         }
-        if (spec.onDiagnostic) ctx.cleanup(actions.onScriptDiagnostic(fn(spec.onDiagnostic)));
-        if (spec.onError) ctx.cleanup(actions.onScriptError(fn(spec.onError)));
+        if (spec.onDiagnostic) ctx.cleanup(actions.onScriptDiagnosticReported(fn(spec.onDiagnostic)));
+        if (spec.onError) ctx.cleanup(actions.onScriptFailed(fn(spec.onError)));
       },
+      }),
     }) as AnyPlugin;
   },
 });
@@ -227,7 +236,13 @@ registerPlugin('stamp', {
     const shipped = stampPlugin();
     return {
       ...shipped,
-      create: (ctx) => ({ api: instance.createStampController(ctx as never, configOf(spec, ctx.engine, env)) }),
+      create: (ctx) =>
+        instance.createStampController({
+          ...ctx,
+          settings: () => ({
+            ...ctx.settings(),
+            get: () => ({ ...ctx.settings().get(), ...configOf(spec, ctx.engine, env) }),
+          }) }),
     } satisfies typeof shipped as AnyPlugin;
   },
   tokens: [StampToken],
@@ -259,16 +274,18 @@ registerPlugin('stamp-persistence', {
       token: env.token('stamp-persistence'),
       scope: 'workspace',
       requires: [StampToken],
-      capability: (ctx) => {
+      create: (ctx) => {
         const memory = memoryStampStore();
         const reject = (call: string) => Promise.reject(new Error(fail[call]));
         const store = {
           list: () => (fail.list ? reject('list') : memory.list()),
-          put: (id: string, bytes: Uint8Array) => (fail.put ? reject('put') : memory.put(id, bytes)),
+          put: (id: string, bytes: Uint8Array) =>
+            fail.put ? reject('put') : memory.put(id, bytes),
           delete: (id: string) => (fail.delete ? reject('delete') : memory.delete(id)),
         };
         let stop: (() => void) | null = null;
         return {
+          api: {
           seed: (rows: { id: string; bytes: Uint8Array }[]) =>
             Promise.all(rows.map((row) => memory.put(row.id, row.bytes))).then(() => undefined),
           rows: () => memory.list(),
@@ -277,6 +294,7 @@ registerPlugin('stamp-persistence', {
             stop = persistStampLibraries(ctx.get(StampToken), store, opts);
           },
           stop: () => stop?.(),
+        },
         };
       },
     }) as AnyPlugin;
@@ -378,13 +396,13 @@ export const assetDoc = (pages: readonly ReturnType<typeof assetPage>[], o: Asse
     { path: 'pieceInfo.read', value: o.catalog ? pieceInfo(o.catalog) : null },
     ...pages.map((p) => ({
       path: 'page.pieceInfo.read',
-      pon: p.ref.pageObjectNumber,
-      value: o.page?.[p.ref.pageObjectNumber] ? pieceInfo(o.page[p.ref.pageObjectNumber]) : null,
+      pon: p.ref.objectNumber,
+      value: o.page?.[p.ref.objectNumber] ? pieceInfo(o.page[p.ref.objectNumber]) : null,
     })),
     { path: 'pieceInfo.update' },
     { path: 'page.pieceInfo.update' },
-    ...pages.map((p) => ({ path: 'pages.extract', args: [[{ kind: 'objectNumber', pageObjectNumber: p.ref.pageObjectNumber }]], value: pdf(`page-${p.ref.pageObjectNumber}`) })),
-    ...pages.map((p) => ({ path: 'page.render.image', pon: p.ref.pageObjectNumber, value: image(p.ref.pageObjectNumber) })),
+    ...pages.map((p) => ({ path: 'pages.extract', args: [[{ kind: 'objectNumber', pageObjectNumber: p.ref.objectNumber }]], value: pdf(`page-${p.ref.objectNumber}`) })),
+    ...pages.map((p) => ({ path: 'page.render.image', pon: p.ref.objectNumber, value: image(p.ref.objectNumber) })),
     { path: 'download', value: pdf(o.download ?? 'canonical') },
   ],
 });

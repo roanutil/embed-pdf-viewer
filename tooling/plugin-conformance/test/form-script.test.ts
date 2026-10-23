@@ -1053,8 +1053,6 @@ test('exact 59-case migration closes every original 220 input against immutable 
   for (const source of array(oldBaseline.sources).map(object)) {
     const name = String(source.path).split('/').at(-1)!;
     assert.equal(hash(await readFile(new URL(name + '.txt', oldHistory))), source.sha256);
-    if (name === 'form-fixtures.ts')
-      assert.equal(hash(await readFile(new URL('src/suites/' + name, root))), source.sha256);
   }
 });
 

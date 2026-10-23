@@ -43,3 +43,5 @@ registerPlugin('annotation-live-selection', {
   factory: () => selectionPlugin(),
   tokens: [SelectionToken],
 });
+
+export const suites = [];

@@ -123,3 +123,5 @@ export const hook = (
 });
 export const emit = (event: DocumentEvent): Step => ({ op: 'emit', doc: 'a', event });
 export const settle = (label: string, value: unknown): Step => ({ op: 'settle', label, value });
+
+export const suites = [];

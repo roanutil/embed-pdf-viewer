@@ -20,6 +20,13 @@
  * entry and not `Object.prototype`'s member.
  */
 import {
+  createLayout,
+  validateLayout,
+  isLayout,
+  type LayoutData,
+  type LayoutItem,
+  type AddItemOptions,
+  type RemoveItemOptions,
   DEFAULT_IMPORTANCE,
   PINNED,
   custom as upstreamCustom,
@@ -44,33 +51,19 @@ import {
   type ResolveMenuTarget,
 } from '../../../../packages/core/ui/src/index';
 
-import { removedUpstream } from '../removed';
 import type { FunctionCase, Suite } from '../vectors';
 
-// d65fe1380 replaced the chrome schema with the layout model ("The chrome
-// schema helpers are removed"): `defineChrome`, `validateChrome`, `addItem`,
-// `removeItems`, `replaceItem` and the `chromeHelpers` bundle are gone. The
-// cases keep their schema inputs.
-type ChromeSchema = Record<string, unknown>;
-const defineChrome = removedUpstream('defineChrome', 'd65fe1380');
-const validateChrome = removedUpstream('validateChrome', 'd65fe1380');
-const addItem = removedUpstream('addItem', 'd65fe1380');
-const removeItems = removedUpstream('removeItems', 'd65fe1380');
-const replaceItem = removedUpstream('replaceItem', 'd65fe1380');
-const chromeHelpers = removedUpstream('chromeHelpers', 'd65fe1380');
-
-// cdf4586c7 reordered the builders: `group(id, items, options?)` and
-// `custom(slot, terminal?, options?)`, where they took `(id, options, items?)`
-// and `(slot, options)`. The cases' bars are built with the old builders,
-// copied here as they were, and the `group` and `custom` cases reach
-// upstream's.
+// Fixture builders translate authored options to the current builder argument order.
 type GroupOptions = Record<string, unknown> & { items?: readonly unknown[] };
-function group(id: string, optsOrItems: readonly unknown[] | GroupOptions, items?: readonly unknown[]): never {
-  if (Array.isArray(optsOrItems)) return { id, items: optsOrItems } as never;
+function group(id: string, optsOrItems: readonly unknown[] | GroupOptions, items?: readonly unknown[]): ReturnType<typeof upstreamGroup> {
+  if (Array.isArray(optsOrItems)) return upstreamGroup(id, optsOrItems as Parameters<typeof upstreamGroup>[1]);
   const { items: optItems, ...opts } = optsOrItems as GroupOptions;
-  return { id, ...opts, items: items ?? optItems ?? [] } as never;
+  return upstreamGroup(id, (items ?? optItems ?? []) as Parameters<typeof upstreamGroup>[1], opts);
 }
-const custom = (slot: string, opts: Record<string, unknown>): never => ({ slot, ...opts }) as never;
+function custom(slot: string, opts: Record<string, unknown>): ReturnType<typeof upstreamCustom> {
+  const { terminal, ...options } = opts;
+  return upstreamCustom(slot, terminal as string | undefined, options);
+}
 
 // ── callback tables ──────────────────────────────────────────────────────────
 
@@ -116,13 +109,14 @@ const resolveFrom =
 const schemaFunctions = {
   constants: () => ({ PINNED, DEFAULT_IMPORTANCE }),
   item,
-  custom: upstreamCustom,
-  group: upstreamGroup,
+  custom,
+  group,
   normalizeBar,
   filterBar: (bar: NormalizedBar, keepKeys: readonly string[]) =>
     filterBar(bar, (unit) => keepKeys.includes(unit.key)),
-  defineChrome,
-  validateChrome,
+  createLayout: (data: LayoutData) => createLayout(data).toJSON(),
+  validateLayout: (data: LayoutData, commands: string[]) =>
+    validateLayout(createLayout(data), { commands }),
 };
 
 const solverFunctions = {
@@ -154,7 +148,21 @@ const projectionFunctions = {
   },
 };
 
-const transformFunctions = { addItem, removeItems, replaceItem };
+const transformFunctions = {
+  add: (data: LayoutData, item: LayoutItem, options: AddItemOptions) => {
+    const base = createLayout(data),
+      edited = base.add(item, options);
+    return {
+      before: base.toJSON(),
+      after: edited.toJSON(),
+      warnings: validateLayout(edited, { commands: ['a', 'b', 'c', 'x'] }),
+    };
+  },
+  remove: (data: LayoutData, ids: string[], options: RemoveItemOptions) =>
+    createLayout(data).remove(ids, options).toJSON(),
+  replace: (data: LayoutData, id: string, item: LayoutItem) =>
+    createLayout(data).replace(id, item).toJSON(),
+};
 
 const shortcutFunctions = {
   parseShortcut,
@@ -167,12 +175,14 @@ const shortcutFunctions = {
 };
 
 const helperFunctions = {
-  /** The bundle's member names, in order: it is public API. */
-  keys: chromeHelpers,
-  /** Each member is the module's own function, not a copy. */
-  identity: chromeHelpers,
-  /** Call a member by name, as a `chrome: (base, h) => …` transform would. */
-  call: chromeHelpers,
+  isLayout: (data: LayoutData) => ({ raw: isLayout(data), created: isLayout(createLayout(data)) }),
+  chain: (data: LayoutData) =>
+    createLayout(data)
+      .addBar('new', { place: 'bottom', end: ['x'] })
+      .tabs('never')
+      .toJSON(),
+  missingEdit: (data: LayoutData) =>
+    validateLayout(createLayout(data).place('missing', 'top'), { commands: ['a', 'b', 'c'] }),
 };
 
 // ── shared fixtures ──────────────────────────────────────────────────────────
@@ -271,33 +281,6 @@ function sweep(name: string, bar: BarSchema, metrics: MetricsSpec, ws: readonly 
 
 // ── schema ───────────────────────────────────────────────────────────────────
 
-const chromeBase: ChromeSchema = {
-  bars: {
-    main: {
-      id: 'main',
-      sections: {
-        start: [group('zoom', [custom('zoom-controls', { terminal: 'zoom:menu' })])],
-        center: [group('modes', { role: 'tabs' }, [item('mode:view', { variants: ['label'] })])],
-        end: [group('panels', ['panel:search', 'panel:comment'])],
-      },
-    },
-  },
-  modeBars: {
-    'mode:annotate': { id: 'annotate', sections: { center: [group('markup', ['annotation:add-highlight', 'annotation:add-ink'])] } },
-    'mode:shapes': { id: 'shapes', sections: { start: [group('shape', [item('shape:square', { variants: IL })])], end: [] } },
-  },
-  menus: {
-    document: { id: 'document', sections: [{ items: ['document:download', 'document:print'] }, { labelKey: 'more', items: ['document:close'] }] },
-    empty: { id: 'empty', sections: [] },
-  },
-  strips: {
-    annotation: { id: 'annotation-strip', sections: { center: [group('actions', ['annotation:delete', custom('color', { terminal: 'annotation:color' })])] } },
-  },
-  frame: { toolbar: 'bottom', tabs: 'multiple', header: false },
-};
-
-const known = (...ids: string[]) => ({ $set: ids });
-
 const schemaCases: FunctionCase[] = [
   { name: 'constants', fn: 'constants', args: [] },
   // authoring sugar
@@ -359,40 +342,15 @@ const schemaCases: FunctionCase[] = [
   { name: 'filter-keeps-none', fn: 'filterBar', args: [normalizeBar(barCollapse), []] },
   { name: 'filter-keeps-all', fn: 'filterBar', args: [normalizeBar(barShed), normalizeBar(barShed).sections.flatMap((s) => s.groups.flatMap((g) => g.units.map((u) => u.key)))] },
   { name: 'filter-empty-bar', fn: 'filterBar', args: [{ id: 'x', sections: [] }, ['a']] },
-  // defineChrome
-  { name: 'define-returns-input', fn: 'defineChrome', args: [chromeBase] },
-  { name: 'define-bars-only', fn: 'defineChrome', args: [{ bars: {} }] },
-  { name: 'define-rejects-bar', fn: 'defineChrome', args: [{ bars: { main: { id: 'main', sections: { start: [group('g', ['a', 'a'])] } } } }] },
-  { name: 'define-rejects-mode-bar', fn: 'defineChrome', args: [{ bars: {}, modeBars: { 'mode:x': { id: 'x', sections: { end: [group('g', ['a']), group('g', ['b'])] } } } }] },
-  { name: 'define-rejects-strip', fn: 'defineChrome', args: [{ bars: {}, strips: { s: { id: 's', sections: { center: [group('g', [item('a', { variants: [] })])] } } } }] },
-  { name: 'define-ignores-menus', fn: 'defineChrome', args: [{ bars: {}, menus: { m: { id: 'm', sections: [{ items: ['a', 'a'] }] } } }] },
+  { name: 'layout-empty', fn: 'createLayout', args: [{}] },
+  { name: 'layout-bars', fn: 'createLayout', args: [{ bars: { main: { place: 'top', start: ['a'] } } }] },
   {
-    name: 'define-first-bad-bar-in-key-order',
-    fn: 'defineChrome',
-    args: [{ bars: { zeta: { id: 'z', sections: { start: [group('g', ['z', 'z'])] } }, alpha: { id: 'a', sections: { start: [group('g', ['a', 'a'])] } } } }],
-  },
-  {
-    name: 'define-integer-keys-first',
-    fn: 'defineChrome',
-    args: [{ bars: { zeta: { id: 'z', sections: { start: [group('g', ['z', 'z'])] } }, 10: { id: 'ten', sections: { start: [group('g', ['t', 't'])] } }, 9: { id: 'nine', sections: { start: [group('g', ['n', 'n'])] } } } }],
-  },
-  {
-    name: 'define-bars-before-mode-bars',
-    fn: 'defineChrome',
-    args: [{ strips: { s: { id: 's', sections: { start: [group('g', ['s', 's'])] } } }, modeBars: { m: { id: 'm', sections: { start: [group('g', ['m', 'm'])] } } }, bars: { b: { id: 'b', sections: { start: [group('g', ['b', 'b'])] } } } }],
-  },
-  // validateChrome
-  { name: 'validate-all-known', fn: 'validateChrome', args: [chromeBase, known('zoom:menu', 'mode:view', 'panel:search', 'panel:comment', 'annotation:add-highlight', 'annotation:add-ink', 'shape:square', 'document:download', 'document:print', 'document:close', 'annotation:delete', 'annotation:color')] },
-  { name: 'validate-nothing-known', fn: 'validateChrome', args: [chromeBase, known()] },
-  { name: 'validate-slots-are-not-commands', fn: 'validateChrome', args: [chromeBase, known('zoom-controls', 'color', 'mode:view')] },
-  { name: 'validate-bars-only', fn: 'validateChrome', args: [{ bars: { main: { id: 'main', sections: { start: [group('g', ['a', 'b'])] } } } }, known('b')] },
-  { name: 'validate-empty-chrome', fn: 'validateChrome', args: [{ bars: {} }, known()] },
-  { name: 'validate-duplicates-report-each', fn: 'validateChrome', args: [{ bars: { x: { id: 'x', sections: { start: [group('g', ['a'])], end: [group('h', ['a'])] } } }, menus: { m: { id: 'm', sections: [{ items: ['a', 'a'] }] } } }, known()] },
-  { name: 'validate-key-order', fn: 'validateChrome', args: [{ bars: { zeta: { id: 'z', sections: { start: [group('g', ['z'])] } }, 2: { id: 'two', sections: { start: [group('g', ['two'])] } }, alpha: { id: 'a', sections: { start: [group('g', ['a'])] } }, 1: { id: 'one', sections: { start: [group('g', ['one'])] } } } }, known()] },
-  { name: 'validate-throws-on-bad-bar', fn: 'validateChrome', args: [{ bars: { ok: { id: 'ok', sections: { start: [group('g', ['a'])] } }, bad: { id: 'bad', sections: { start: [group('g', ['b', 'b'])] } } } }, known()] },
-  { name: 'validate-throws-on-bad-strip', fn: 'validateChrome', args: [{ bars: {}, strips: { s: { id: 's', sections: { start: [group('g', [custom('c', { variants: [], terminal: 't' })])] } } } }, known()] },
-  { name: 'validate-unicode', fn: 'validateChrome', args: [{ bars: { 'бар': { id: 'b', sections: { start: [group('g', ['命令', 'known'])] } } }, menus: { 'мен': { id: 'm', sections: [{ items: ['🔍'] }] } } }, known('known')] },
-  { name: 'validate-case-sensitive', fn: 'validateChrome', args: [{ bars: { b: { id: 'b', sections: { start: [group('g', ['Doc:Print'])] } } } }, known('doc:print')] },
+    name: 'layout-known',
+    fn: 'validateLayout', args: [{ bars: { main: { place: 'top', start: ['a'] } } }, ['a']] },
+  { name: 'layout-unknown-command', fn: 'validateLayout', args: [{ bars: { main: { place: 'top', start: ['aa'] } } }, ['a']] },
+  { name: 'layout-missing-host', fn: 'validateLayout', args: [{ bars: { main: { place: { with: 'missing' } } } }, []] },
+  { name: 'layout-custom-terminal', fn: 'validateLayout', args: [{ bars: { main: { place: 'top', start: [{ custom: 'slot', command: 'a' }] } } }, ['a']] },
+  { name: 'layout-unicode', fn: 'validateLayout', args: [{ bars: { бар: { place: 'top', start: ['命令'] } } }, ['命令']] },
 ];
 
 // ── solver ───────────────────────────────────────────────────────────────────
@@ -642,68 +600,28 @@ const projectionCases: FunctionCase[] = [
 
 // ── transforms ───────────────────────────────────────────────────────────────
 
-const ambiguous: ChromeSchema = {
-  bars: { main: { id: 'x', sections: {} }, x: { id: 'y', sections: {} } },
-  strips: { s: { id: 'x', sections: {} } },
+const currentLayout: LayoutData = {
+  bars: { main: { place: 'top', start: [{ id: 'g', items: ['a', 'b'] }], end: ['c'] },
+    other: { place: 'bottom', end: ['a'] } },
+  menus: { menu: [['a', 'b']] },
 };
 
 const transformCases: FunctionCase[] = [
-  // addItem
-  { name: 'add-append', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'acme:send' }] },
-  { name: 'add-at-start', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'acme:send', at: 0 }] },
-  { name: 'add-at-middle', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: item('acme:send', { variants: IL }), at: 1 }] },
-  { name: 'add-at-past-end', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: 99 }] },
-  { name: 'add-at-negative', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: -1 }] },
-  { name: 'add-at-very-negative', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: -99 }] },
-  { name: 'add-at-fraction', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: 1.9 }] },
-  { name: 'add-at-negative-fraction', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: -0.5 }] },
-  { name: 'add-at-nan', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: { $number: 'NaN' } }] },
-  { name: 'add-at-infinity', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: { $number: 'Infinity' } }] },
-  { name: 'add-at-negative-infinity', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: { $number: '-Infinity' } }] },
-  { name: 'add-at-undefined', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'x', at: { $undefined: true } }] },
-  { name: 'add-new-group', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'start', group: 'acme', item: custom('acme-slot', { terminal: 'acme:go' }), at: 5 }] },
-  { name: 'add-new-group-new-section', fn: 'addItem', args: [chromeBase, { bar: 'annotate', section: 'end', group: 'acme', item: 'acme:go' }] },
-  { name: 'add-to-empty-section', fn: 'addItem', args: [chromeBase, { bar: 'shapes', section: 'end', group: 'acme', item: 'acme:go' }] },
-  { name: 'add-by-mode-bar-key', fn: 'addItem', args: [chromeBase, { bar: 'mode:annotate', section: 'center', group: 'markup', item: 'annotation:add-arrow', at: 1 }] },
-  { name: 'add-by-mode-bar-id', fn: 'addItem', args: [chromeBase, { bar: 'annotate', section: 'center', group: 'markup', item: 'annotation:add-arrow' }] },
-  { name: 'add-by-strip-id', fn: 'addItem', args: [chromeBase, { bar: 'annotation-strip', section: 'center', group: 'actions', item: 'annotation:copy' }] },
-  { name: 'add-by-strip-key', fn: 'addItem', args: [chromeBase, { bar: 'annotation', section: 'center', group: 'actions', item: 'annotation:copy' }] },
-  { name: 'add-duplicate-item-allowed', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'panel:search' }] },
-  { name: 'add-no-bar', fn: 'addItem', args: [chromeBase, { bar: 'nope', section: 'end', group: 'g', item: 'x' }] },
-  { name: 'add-no-bar-empty-chrome', fn: 'addItem', args: [{ bars: {} }, { bar: 'main', section: 'end', group: 'g', item: 'x' }] },
-  { name: 'add-ambiguous', fn: 'addItem', args: [ambiguous, { bar: 'x', section: 'start', group: 'g', item: 'i' }] },
-  { name: 'add-ambiguous-same-collection', fn: 'addItem', args: [{ bars: { a: { id: 'b', sections: {} }, b: { id: 'c', sections: {} } } }, { bar: 'b', section: 'start', group: 'g', item: 'i' }] },
-  { name: 'add-key-matches-own-id', fn: 'addItem', args: [{ bars: { main: { id: 'main', sections: {} } } }, { bar: 'main', section: 'center', group: 'g', item: 'i' }] },
-  { name: 'add-group-in-other-section', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'start', group: 'panels', item: 'x' }] },
-  { name: 'add-group-in-other-section-center', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'end', group: 'modes', item: 'x' }] },
-  { name: 'add-group-in-other-section-start', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'center', group: 'zoom', item: 'x' }] },
-  { name: 'add-keeps-group-options', fn: 'addItem', args: [chromeBase, { bar: 'main', section: 'center', group: 'modes', item: item('mode:new', { variants: ['label'] }) }] },
-  { name: 'add-first-of-two-same-id-groups', fn: 'addItem', args: [{ bars: { b: { id: 'b', sections: { start: [group('g', ['a']), group('g', ['b'])] } } } }, { bar: 'b', section: 'start', group: 'g', item: 'x' }] },
-  // removeItems
-  { name: 'remove-commands', fn: 'removeItems', args: [chromeBase, ['panel:search', 'document:print']] },
-  { name: 'remove-slot', fn: 'removeItems', args: [chromeBase, ['zoom-controls']] },
-  { name: 'remove-terminal-keeps-slot', fn: 'removeItems', args: [chromeBase, ['zoom:menu']] },
-  { name: 'remove-empties-groups-and-sections', fn: 'removeItems', args: [chromeBase, ['mode:view', 'annotation:add-highlight', 'annotation:add-ink']] },
-  { name: 'remove-empties-menus-keeps-key', fn: 'removeItems', args: [chromeBase, ['document:download', 'document:print', 'document:close']] },
-  { name: 'remove-nothing', fn: 'removeItems', args: [chromeBase, []] },
-  { name: 'remove-unknown', fn: 'removeItems', args: [chromeBase, ['nope']] },
-  { name: 'remove-drops-empty-arrays', fn: 'removeItems', args: [{ bars: { b: { id: 'b', sections: { start: [], center: [group('g', [])] } } } }, []] },
-  { name: 'remove-bars-only', fn: 'removeItems', args: [{ bars: { b: { id: 'b', sections: { start: [group('g', ['a', item('b'), custom('c', { terminal: 'a' })])] } } } }, ['a', 'c']] },
-  { name: 'remove-object-items', fn: 'removeItems', args: [{ bars: { b: { id: 'b', sections: { end: [group('g', { shed: true }, [item('a', { importance: 1 }), 'b'])] } } } }, ['a']] },
-  { name: 'remove-keeps-frame', fn: 'removeItems', args: [{ bars: {}, frame: { toolbar: 'top' } }, ['x']] },
-  { name: 'remove-duplicate-ids', fn: 'removeItems', args: [chromeBase, ['panel:search', 'panel:search']] },
-  // replaceItem
-  { name: 'replace-with-command', fn: 'replaceItem', args: [chromeBase, 'panel:search', 'acme:search'] },
-  { name: 'replace-with-item', fn: 'replaceItem', args: [chromeBase, 'document:print', item('acme:print', { variants: IL })] },
-  { name: 'replace-with-custom-skips-menus', fn: 'replaceItem', args: [chromeBase, 'document:print', custom('acme', { terminal: 'acme:print' })] },
-  { name: 'replace-object-item', fn: 'replaceItem', args: [chromeBase, 'mode:view', 'mode:read'] },
-  { name: 'replace-does-not-touch-slots', fn: 'replaceItem', args: [chromeBase, 'zoom-controls', 'x'] },
-  { name: 'replace-does-not-touch-terminals', fn: 'replaceItem', args: [chromeBase, 'zoom:menu', 'x'] },
-  { name: 'replace-unknown', fn: 'replaceItem', args: [chromeBase, 'nope', 'x'] },
-  { name: 'replace-everywhere', fn: 'replaceItem', args: [{ bars: { a: { id: 'a', sections: { start: [group('g', ['x', 'x'])], end: [] } } }, strips: { s: { id: 's', sections: { center: [group('h', [item('x', { importance: 2 })])] } } }, menus: { m: { id: 'm', sections: [{ items: ['x', 'y', 'x'] }] } } }, 'x', 'z'] },
-  { name: 'replace-bars-only', fn: 'replaceItem', args: [{ bars: { a: { id: 'a', sections: { start: [group('g', ['x'])] } } } }, 'x', 'y'] },
-  { name: 'replace-custom-without-menus', fn: 'replaceItem', args: [{ bars: { a: { id: 'a', sections: { start: [group('g', ['x'])] } } } }, 'x', custom('c', { terminal: 'x' })] },
-  { name: 'replace-with-itself', fn: 'replaceItem', args: [chromeBase, 'panel:search', 'panel:search'] },
+  { name: 'add-to-group', fn: 'add', args: [currentLayout, 'x', { to: 'main', group: 'g' }] },
+  { name: 'add-before', fn: 'add', args: [currentLayout, 'x', { to: 'main', before: 'b' }] },
+  { name: 'add-after', fn: 'add', args: [currentLayout, 'x', { to: 'main', after: 'a' }] },
+  { name: 'add-new-group', fn: 'add', args: [
+      currentLayout, { custom: 'slot', command: 'x' },
+      { to: 'main', group: 'new', section: 'center' }] },
+  { name: 'add-menu', fn: 'add', args: [currentLayout, 'x', { to: 'menu' }] },
+  { name: 'add-missing-place', fn: 'add', args: [currentLayout, 'x', { to: 'missing' }] },
+  { name: 'remove-scoped-to-bar', fn: 'remove', args: [currentLayout, ['a'], { from: 'main' }] },
+  { name: 'remove-empty-group', fn: 'remove', args: [currentLayout, ['a', 'b'], { from: 'main' }] },
+  { name: 'remove-menu', fn: 'remove', args: [currentLayout, ['a'], { from: 'menu' }] },
+  { name: 'remove-unknown', fn: 'remove', args: [currentLayout, ['missing'], { from: 'main' }] },
+  { name: 'replace-everywhere', fn: 'replace', args: [currentLayout, 'a', 'x'] },
+  { name: 'replace-custom', fn: 'replace', args: [currentLayout, 'a', { custom: 'slot', command: 'x' }] },
+  { name: 'replace-unknown', fn: 'replace', args: [currentLayout, 'missing', 'x'] },
 ];
 
 // ── shortcuts ────────────────────────────────────────────────────────────────
@@ -792,24 +710,17 @@ const shortcutCases: FunctionCase[] = [
 // ── helpers ──────────────────────────────────────────────────────────────────
 
 const helperCases: FunctionCase[] = [
-  { name: 'keys', fn: 'keys', args: [] },
-  { name: 'identity', fn: 'identity', args: [] },
-  { name: 'call-item', fn: 'call', args: ['item', 'x', { importance: 1 }] },
-  { name: 'call-group', fn: 'call', args: ['group', 'g', ['x']] },
-  { name: 'call-group-opts', fn: 'call', args: ['group', 'g', { shed: true }, ['x']] },
-  { name: 'call-custom', fn: 'call', args: ['custom', 's', { terminal: 't' }] },
-  { name: 'call-define', fn: 'call', args: ['defineChrome', chromeBase] },
-  { name: 'call-define-rejects', fn: 'call', args: ['defineChrome', { bars: { b: { id: 'b', sections: { start: [group('g', ['a', 'a'])] } } } }] },
-  { name: 'call-add', fn: 'call', args: ['addItem', chromeBase, { bar: 'main', section: 'end', group: 'panels', item: 'acme:send' }] },
-  { name: 'call-remove', fn: 'call', args: ['removeItems', chromeBase, ['panel:search']] },
-  { name: 'call-replace', fn: 'call', args: ['replaceItem', chromeBase, 'panel:search', 'acme:search'] },
+  { name: 'layout-identity', fn: 'isLayout', args: [currentLayout] },
+  { name: 'immutable-edit-chain', fn: 'chain', args: [currentLayout] },
+  { name: 'missing-edit-warning', fn: 'missingEdit', args: [currentLayout] },
 ];
 
 export const suites: Suite[] = [
-  { kind: 'function', file: 'core/ui-schema.json', describes: 'packages/core/ui/src/schema.ts: authoring sugar, normalizeBar, filterBar, defineChrome, validateChrome.', functions: schemaFunctions, cases: schemaCases },
+  { kind: 'function', file: 'core/ui-schema.json', describes:
+      'packages/core/ui/src/schema.ts: authoring sugar, normalizeBar, filterBar, createLayout, validateLayout.', functions: schemaFunctions, cases: schemaCases },
   { kind: 'function', file: 'core/ui-solver.json', describes: 'packages/core/ui/src/solver.ts: the fit solver over table-driven FitMetrics.', functions: solverFunctions, cases: solverCases },
   { kind: 'function', file: 'core/ui-projection.json', describes: 'packages/core/ui/src/projection.ts: overflow, shed and strip projections over table-driven resolvers.', functions: projectionFunctions, cases: projectionCases },
-  { kind: 'function', file: 'core/ui-transforms.json', describes: 'packages/core/ui/src/transforms.ts: addItem, removeItems, replaceItem.', functions: transformFunctions, cases: transformCases },
+  { kind: 'function', file: 'core/ui-transforms.json', describes: 'packages/core/ui/src/layout.ts: immutable add, scoped remove and replace.', functions: transformFunctions, cases: transformCases },
   { kind: 'function', file: 'core/ui-shortcuts.json', describes: 'packages/core/ui/src/shortcuts.ts: parse, match and format, isMac as an input.', functions: shortcutFunctions, cases: shortcutCases },
-  { kind: 'function', file: 'core/ui-helpers.json', describes: 'packages/core/ui/src/helpers.ts: the chromeHelpers bundle.', functions: helperFunctions, cases: helperCases },
+  { kind: 'function', file: 'core/ui-helpers.json', describes: 'packages/core/ui/src/layout.ts: layout identity, edit chains and warnings.', functions: helperFunctions, cases: helperCases },
 ];

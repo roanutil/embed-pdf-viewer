@@ -115,7 +115,7 @@ registerPlugin('form-scripting', {
       token,
       scope: 'document',
       requires: [ActionsHostToken],
-      capability: (ctx) => {
+      create: (ctx) => {
         const doc = ctx.doc as DocumentHandle;
         let realm: ReturnType<NonNullable<ActionsHostCapability['createDetachedScriptRealm']>> | null = null;
         let controller: ReturnType<typeof createFormScriptingController> | null = null;
@@ -127,13 +127,12 @@ registerPlugin('form-scripting', {
             doc,
             document: () => ctx.document(),
             bootSources: async () => {
-              const snapshot = doc.actions ? await doc.actions.read() : null;
+              const snapshot = doc.actions ? await doc.actions.get() : null;
               return (snapshot?.nameTreeScripts ?? []).map(({ action }) => javaScriptProgramFromActionTree(action));
             },
           });
           const port = realm;
           controller = createFormScriptingController({
-            doc,
             document: () => ctx.document(),
             transaction: (body) => port.transaction(body),
             budget: port.budget,
@@ -141,12 +140,16 @@ registerPlugin('form-scripting', {
           return controller;
         };
         return {
-          commit: (ref: never, value: never) => ready().commit(ref, value),
-          activate: (ref: never, action: never) => ready().activate(ref, action),
-          recalculate: () => ready().recalculate(),
+          api: {
+            commit: (ref: never, value: never) =>
+              ctx.doc.forms.list().then((form) => ready().commit(form, ref, value)),
+          activate: (ref: never, action: never) =>
+              ctx.doc.forms.list().then((form) => ready().activate(form, ref, action)),
+          recalculate: () => ctx.doc.forms.list().then((form) => ready().recalculate(form)),
           dispose: () => {
             ready().dispose();
             realm?.dispose();
+            },
           },
         };
       },
@@ -161,9 +164,11 @@ registerPlugin('form-probe', {
       token: env.token('form-probe'),
       scope: 'document',
       requires: [AnnotationHostToken],
-      capability: (ctx) => ({
+      create: (ctx) => ({
+        api: {
         behaviorFor: (subtype: string) =>
           ctx.get(AnnotationHostToken).getBehaviorFor({ subtype } as never)?.id ?? null,
+        },
       }),
     }),
 });
@@ -191,12 +196,14 @@ type Dto = Record<string, unknown>;
  *  v3 `formWidget` record, keeping its other members. */
 export const v3Widget = (w: Dto): Dto => {
   if (!('pageObjectNumber' in w)) return w;
-  const { annotObjectNumber, pageObjectNumber, ...rest } = w as { annotObjectNumber: number; pageObjectNumber: number | null };
+  const { annotObjectNumber, pageObjectNumber, ...rest } = w as { annotObjectNumber: number; pageObjectNumber: number | null;
+  };
   // Page 0 is the v2 spelling of an unplaced widget, which v3 writes as null.
   return { ...formWidget(annotObjectNumber, pageObjectNumber || null), ...rest };
 };
-export const ref = (fieldObjectNumber: number) => ({ kind: 'objectNumber', fieldObjectNumber });
-export const fqn = (name: string) => ({ kind: 'fqn', name });
+export const ref = (fieldObjectNumber: number) => ({ kind: 'objectNumber' as const,
+  objectNumber: fieldObjectNumber });
+export const fqn = (name: string) => ({ kind: 'fqn' as const, name });
 export const FLAGS = (over: Record<string, unknown> = {}) => ({ readOnly: false, required: false, noExport: false, raw: 0, ...over });
 
 /** Common members of every family; `widgets` are `[annot, pon]` pairs or

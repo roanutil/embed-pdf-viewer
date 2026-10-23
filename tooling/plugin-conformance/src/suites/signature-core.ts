@@ -233,7 +233,8 @@ function signaturePlugin(env: PluginEnv): AnyPlugin {
   return {
     id: 'signature-core',
     token: env.token('signature-core'),
-    capability: (ctx) => ({
+    create: (ctx) => ({
+      api: {
       verifyCmsSignature: (cms: Uint8Array) => verifyCmsSignature(cms),
       buildDetachedCms: (input: Parameters<typeof buildDetachedCms>[0] & { signingTime?: number }) =>
         buildDetachedCms({ ...input, signingTime: toDate(input.signingTime) }),
@@ -243,7 +244,8 @@ function signaturePlugin(env: PluginEnv): AnyPlugin {
       sign: (documentId: string, input: Parameters<typeof sign>[1]) => sign(ctx.documentHandle(documentId)!, input),
       validateSignatures: (
         documentId: string,
-        options?: Parameters<typeof validateSignatures>[1] & { at?: { kind: string; genTime?: number } },
+        options?: Parameters<typeof validateSignatures>[1] & { at?: { kind: string; genTime?: number };
+          },
       ) =>
         validateSignatures(
           ctx.documentHandle(documentId)!,
@@ -301,7 +303,8 @@ function signaturePlugin(env: PluginEnv): AnyPlugin {
           return data === undefined ? described : { ...described, signature: await signer.sign(data) };
         }),
       personalSigner: (
-        input: Omit<Parameters<typeof personalSigner>[0], 'store'> & { store?: Parameters<typeof personalSigner>[0]['store'] },
+        input: Omit<Parameters<typeof personalSigner>[0], 'store'> & { store?: Parameters<typeof personalSigner>[0]['store'];
+          },
         times = 1,
       ) =>
         withWebCrypto(env.log, async () => {
@@ -313,6 +316,7 @@ function signaturePlugin(env: PluginEnv): AnyPlugin {
           }
           return out;
         }),
+      },
     }),
   };
 }
@@ -357,7 +361,7 @@ const parseCases: FunctionCase[] = [
   })),
   {
     name: 'common-name-not-der',
-    covers: 'A certificate that is not BER throws pkijs\'s AsnError.',
+    covers: "A certificate that is not BER throws pkijs's AsnError.",
     fn: 'certificateCommonName',
     args: [$b('AQID')],
   },
@@ -544,7 +548,8 @@ const buildCases: ScenarioCase[] = [
     'Signing times across the UTCTime range: leap days, era and month edges, and a time of day.',
     SIGNING_TIMES.map((signingTime) => call('buildDetachedCms', { ...PKCS7_NO_SIGNATURE, signingTime })),
   ),
-  scenario('build-bad-certificate', 'A chain entry that is not a certificate throws pkijs\'s error.', [
+  scenario('build-bad-certificate',
+    "A chain entry that is not a certificate throws pkijs's error.", [
     call('buildDetachedCms', {
       ...(await buildInput({ answer: { resolves: $b('') } })),
       signer: { kind: 'raw', certificateChain: [$b('AQID')], algorithm: 'RSA-PKCS1-v1_5', hash: 'sha256', sign: { $fn: 'raw.sign', resolves: $b('') } },
@@ -573,7 +578,8 @@ const gateCases: ScenarioCase[] = [
   scenario('gate-cades-ok', 'A CAdES CMS over the prepared digest passes.', [gate(cmsArg('rsaCades'), 'cades-b')]),
   scenario('gate-pkcs7-ok', 'A PKCS#7 CMS passes the PKCS#7 profile, signing-time and all.', [gate(cmsArg('rsaPkcs7'), 'pkcs7')]),
   scenario('gate-too-large', 'A CMS bigger than the reserved /Contents is refused first.', [gate(cmsArg('rsaCades'), 'cades-b', { contentsSize: 100 })]),
-  scenario('gate-malformed', 'A CMS that does not parse is `malformed`, with the parser\'s message.', [gate(cmsArg('twoSigners'), 'cades-b')]),
+  scenario('gate-malformed',
+    "A CMS that does not parse is `malformed`, with the parser's message.", [gate(cmsArg('twoSigners'), 'cades-b')]),
   scenario('gate-malformed-type-error', 'A parser failure that is not a CmsError reports its text.', [gate(cmsArg('contentTypeEmpty'), 'cades-b')]),
   scenario('gate-algorithm-mismatch', 'A CMS digesting with another algorithm than prepared.', [gate(cmsArg('rsaSha384'), 'cades-b')]),
   scenario('gate-digest-mismatch', 'A CMS whose message digest is not the prepared digest.', [
@@ -609,7 +615,8 @@ const trustCases: ScenarioCase[] = [
   scenario('trust-bad-anchor', 'An anchor that is not a certificate rejects the validation.', [
     chain('rsaCades', { anchors: { $fn: 'trust.anchors', resolves: [$b('AQID')] } }),
   ]),
-  scenario('trust-unparseable-cms', 'A CMS that does not parse is `untrusted` with the parser\'s message.', [chain('twoSigners', anchors('root'))]),
+  scenario('trust-unparseable-cms',
+    "A CMS that does not parse is `untrusted` with the parser's message.", [chain('twoSigners', anchors('root'))]),
   scenario('trust-root', 'The chain engine starts from the LAST certificate the CMS carries (the intermediate here) and reaches the root.', [
     chain('rsaCades', anchors('root')),
   ]),
@@ -631,7 +638,7 @@ const trustCases: ScenarioCase[] = [
   scenario('trust-by-issuer-name', 'A signer without an authority key identifier finds its issuer by name.', [chain('noAkiLeaf', anchors('inter'))]),
   scenario('trust-expired-intermediate', 'An expired certificate on the path.', [chain('interExpired', anchors('root'))]),
   scenario('trust-expired-signer', 'An expired lone signer.', [chain('expiredLeaf', anchors('inter'))]),
-  scenario('trust-not-yet-valid', 'A validation time before every certificate\'s notBefore.', [
+  scenario('trust-not-yet-valid', "A validation time before every certificate's notBefore.", [
     chain('rsaCades', anchors('root'), { kind: 'timestamp', genTime: Date.UTC(2005, 0, 1), tokenVerified: true }),
   ]),
   scenario('trust-at-timestamp', 'A validation time inside the validity window.', [
@@ -685,7 +692,8 @@ trustCases.push(
   scenario('trust-sha1-certificate', 'A certificate signed with sha1WithRSAEncryption verifies against its issuer.', [chain('leafSha1Signed', anchors('inter'))]),
   scenario('trust-sha384-certificate', 'A certificate signed with sha384WithRSAEncryption.', [chain('leafSha384Signed', anchors('inter'))]),
   scenario('trust-sha512-certificate', 'A certificate signed with sha512WithRSAEncryption.', [chain('leafSha512Signed', anchors('inter'))]),
-  scenario('trust-ec-issuer', 'An RSA signer issued by an EC CA: the issuer key\'s curve comes from its parameters.', [
+  scenario('trust-ec-issuer',
+    "An RSA signer issued by an EC CA: the issuer key's curve comes from its parameters.", [
     chain('leafUnderEc', anchors('selfSignedP256')),
   ]),
   scenario('trust-ca-path-length-only', 'BasicConstraints with a path length and no cA is no CA.', [
@@ -696,27 +704,41 @@ trustCases.push(
     chain('leafLastCarried', anchors('root', 'interSelfSigned')),
   ]),
   scenario('trust-policy-two-certificates', 'A two-certificate path still runs the policy checks.', [chain('leafInhibitsOwnMapping', anchors('inter'))]),
-  scenario('trust-anchor-constraints-ignored', 'The anchor\'s own name constraints are not applied.', [chain('leafOnly', anchors('interExcludingLeaf'))]),
+  scenario('trust-anchor-constraints-ignored',
+    "The anchor's own name constraints are not applied.", [chain('leafOnly', anchors('interExcludingLeaf'))]),
 );
 
 // ── sign ─────────────────────────────────────────────────────────────────────
 
 const signDoc = (responses: ResponseSpec[], services = ['signatures']): Record<string, FakeDocumentSpec> => ({
-  d: { pages: [], services, responses },
+  d: { pages: [], services, responses: services.length
+      ? responses
+      : [
+          ...responses,
+          ...['prepare', 'list'].map((method) => ({
+            path: `signatures.${method}`,
+            error: { name: 'EngineError', code: 'Unsupported', message: 'unsupported' },
+          })),
+        ],
+  },
 });
 const completed = { status: 'completed', signature: { index: 0, fieldName: 'Sig1' }, version: { sha256: 'new', byteLength: 10 } };
-const field = { kind: 'name', name: 'Sig1' };
+const field = { kind: 'fqn', name: 'Sig1' };
 const rsaAnswer = async (profile: 'pkcs7' | 'cades-b', signingTime?: number, digest = digestBytes(32, 3), hash: RawSigner['hash'] = 'sha256') => ({
   resolves: $b(await signatureFor({ key: 'leaf', chain: leafChain, algorithm: 'RSA-PKCS1-v1_5', hash, profile, digest, signingTime })),
 });
-const signCall = (input: Record<string, unknown>) => call('sign', 'd', { field, ...input });
+const signCall = (input: Record<string, unknown>) => {
+  const { signer, ...rest } = input;
+  return call('sign', 'd', { field, ...rest, key: signer });
+};
 const cmsSigner = (answer: unknown) => ({ kind: 'cms', sign: { $fn: 'cms.sign', ...(answer as object) } });
 
 const signCases: ScenarioCase[] = [
   scenario('sign-no-service', 'An engine without signatures refuses at once.', [
     signCall({ signer: cmsSigner({ resolves: cmsArg('rsaCades') }) }),
   ], signDoc([], [])),
-  scenario('sign-raw-cades', 'prepare with CAdES and the signer\'s hash, build, gate, complete.', [
+  scenario('sign-raw-cades',
+    "prepare with CAdES and the signer's hash, build, gate, complete.", [
     signCall({ signer: rawSignerArg(leafChain, 'RSA-PKCS1-v1_5', 'sha256', await rsaAnswer('cades-b')) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
@@ -731,7 +753,8 @@ const signCases: ScenarioCase[] = [
     { path: 'signatures.prepare', value: prepared({ subFilter: 'adbe.pkcs7.detached' }) },
     { path: 'signatures.complete', value: completed },
   ])),
-  scenario('sign-raw-sha384', 'A raw signer\'s hash is the prepared digest when none is asked for.', [
+  scenario('sign-raw-sha384',
+    "A raw signer's hash is the prepared digest when none is asked for.", [
     signCall({
       signer: rawSignerArg(leafChain, 'RSA-PKCS1-v1_5', 'sha384', await rsaAnswer('cades-b', undefined, digestBytes(48, 3), 'sha384')),
     }),
@@ -755,26 +778,26 @@ const signCases: ScenarioCase[] = [
     signCall({ signer: cmsSigner({ resolves: cmsArg('rsaSha384') }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
-    { path: 'signatures.abort', value: { status: 'aborted' } },
+    { path: 'signatures.cancel', value: { status: 'aborted' } },
   ])),
   scenario('sign-signer-rejects', 'A signer failure aborts and rethrows.', [
     signCall({ signer: cmsSigner({ rejects: { name: 'NetworkError', message: 'signing service down' } }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
-    { path: 'signatures.abort', value: { status: 'aborted' } },
+    { path: 'signatures.cancel', value: { status: 'aborted' } },
   ])),
   scenario('sign-complete-rejects', 'A failed complete aborts and rethrows the engine error.', [
     signCall({ signer: cmsSigner({ resolves: cmsArg('rsaCades') }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
     { path: 'signatures.complete', error: { name: 'EngineError', message: 'stale base', code: 'StaleBase' } },
-    { path: 'signatures.abort', value: { status: 'already-completed' } },
+    { path: 'signatures.cancel', value: { status: 'already-completed' } },
   ])),
   scenario('sign-abort-rejects', 'An abort that fails is swallowed; the original error wins.', [
     signCall({ signer: cmsSigner({ resolves: cmsArg('twoSigners') }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
-    { path: 'signatures.abort', error: { message: 'gone' } },
+    { path: 'signatures.cancel', error: { message: 'gone' } },
   ])),
   scenario('sign-prepare-rejects', 'A failed prepare rejects without an abort.', [
     signCall({ signer: cmsSigner({ resolves: cmsArg('rsaCades') }) }),
@@ -783,13 +806,13 @@ const signCases: ScenarioCase[] = [
     signCall({ signer: rawSignerArg(leafChain, 'RSA-PKCS1-v1_5', 'sha256', { resolves: $b('') }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared({ algorithm: 'sha1' }) },
-    { path: 'signatures.abort', value: { status: 'aborted' } },
+    { path: 'signatures.cancel', value: { status: 'aborted' } },
   ])),
   scenario('sign-build-throws', 'A raw signer whose build throws aborts.', [
     signCall({ signer: rawSignerArg([], 'RSA-PKCS1-v1_5', 'sha256', { resolves: $b('') }) }),
   ], signDoc([
     { path: 'signatures.prepare', value: prepared() },
-    { path: 'signatures.abort', value: { status: 'aborted' } },
+    { path: 'signatures.cancel', value: { status: 'aborted' } },
   ])),
 ];
 
@@ -830,9 +853,10 @@ const analysis = (current: Record<string, unknown>, over: Record<string, unknown
   ...over,
 });
 const goodDigest = $b(b64(digestBytes(32, 3)));
-const validate = (options?: unknown) => (options === undefined ? call('validateSignatures', 'd') : call('validateSignatures', 'd', options));
-const contentsOf = (cms: string): ResponseSpec => ({ path: 'signatures.contents', value: cmsArg(cms) });
-const digestAnswer: ResponseSpec = { path: 'signatures.digest', value: goodDigest };
+const validate = (options?: unknown) =>
+  options === undefined ? call('validateSignatures', 'd') : call('validateSignatures', 'd', options);
+const contentsOf = (cms: string): ResponseSpec => ({ path: 'signatures.getContents', value: cmsArg(cms) });
+const digestAnswer: ResponseSpec = { path: 'signatures.getDigest', value: goodDigest };
 
 const validateCases: ScenarioCase[] = [
   scenario('validate-no-service', 'An engine without signatures refuses.', [validate()], signDoc([], [])),
@@ -855,7 +879,7 @@ const validateCases: ScenarioCase[] = [
   scenario('validate-digest-mismatch', 'Bytes that do not hash to the message digest: integrity invalid.', [validate()], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto()]) },
     contentsOf('rsaCades'),
-    { path: 'signatures.digest', value: $b(b64(digestBytes(32, 9))) },
+    { path: 'signatures.getDigest', value: $b(b64(digestBytes(32, 9))) },
   ])),
   scenario('validate-partial-coverage', 'Partial coverage is invalid even when the digest matches.', [validate()], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto({ coverage: 'partial' })]) },
@@ -889,7 +913,7 @@ const validateCases: ScenarioCase[] = [
   ])),
   scenario('validate-contents-rejects', 'An engine failure reading the CMS is indeterminate.', [validate()], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto()]) },
-    { path: 'signatures.contents', error: { name: 'EngineError', message: 'io', code: 'Io' } },
+    { path: 'signatures.getContents', error: { name: 'EngineError', message: 'io', code: 'Io' } },
   ])),
   scenario('validate-crypto-invalid', 'A signature that does not verify is invalid.', [validate()], signDoc([
     { path: 'signatures.list', value: snapshot([sigDto()]) },
@@ -1012,7 +1036,8 @@ const signerCases: ScenarioCase[] = [
   scenario('self-signed-rsa', 'A self-signed certificate over an RSA key: serial from getRandomValues, a day back to a year ahead.', [
     call('selfSignedCertificate', { key: rsaKey(), commonName: 'Ada Lovelace', hash: 'sha256' }),
   ]),
-  scenario('self-signed-rsa-sha512-days', 'The key\'s own hash wins over the one passed; a custom validity.', [
+  scenario('self-signed-rsa-sha512-days',
+    "The key's own hash wins over the one passed; a custom validity.", [
     call('selfSignedCertificate', { key: rsaKey('SHA-512'), commonName: 'Grace Hopper', hash: 'sha256', validityDays: 30 }),
   ]),
   scenario('self-signed-rsa-sha1', 'An RSA key hashing with SHA-1 signs its certificate with sha1WithRSAEncryption.', [
@@ -1086,13 +1111,14 @@ export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'core/signature-trust.json',
-    describes: 'packages/core/signature: validateChain over pkijs\'s chain engine.',
+    describes: "packages/core/signature: validateChain over pkijs's chain engine.",
     cases: trustCases,
   },
   {
     kind: 'scenario',
     file: 'core/signature-document.json',
-    describes: 'packages/core/signature: sign() and validateSignatures() over a document handle\'s signatures service.',
+    describes:
+      "packages/core/signature: sign() and validateSignatures() over a document handle's signatures service.",
     cases: [...signCases, ...validateCases],
   },
   {

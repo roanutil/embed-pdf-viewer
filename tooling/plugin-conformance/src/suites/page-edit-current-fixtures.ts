@@ -219,3 +219,5 @@ export function bindTransactions(c: ScenarioCase): ScenarioCase {
   );
   return { ...c, engine: { ...c.engine, documents }, steps };
 }
+
+export const suites = [];

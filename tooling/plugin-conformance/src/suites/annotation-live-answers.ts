@@ -1869,3 +1869,5 @@ export const LIVE_ANSWERS: Readonly<Record<string, ResponseSpec[]>> = {
   'behaviors-make-annotations-inert': [],
   'placement-declines': [],
 };
+
+export const suites = [];
