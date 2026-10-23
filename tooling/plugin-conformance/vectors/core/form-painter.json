@@ -25609,6 +25609,474 @@
       }
     },
     {
+      "name": "widgetDrawing/text/negative box",
+      "fn": "widgetDrawing",
+      "args": [
+        {
+          "subtype": "widget",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": -40,
+            "height": -12
+          },
+          "box": {
+            "x": 20,
+            "y": 20,
+            "width": -40,
+            "height": -12
+          },
+          "rotation": null,
+          "appearanceState": null,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "fontFamily": "helvetica",
+          "fontSize": 10,
+          "textAlign": "left",
+          "caption": null,
+          "checkStyle": null,
+          "color": "#1f6feb",
+          "interiorColor": "#f6f8fa",
+          "fontColor": "#0d1117"
+        },
+        {
+          "family": "text",
+          "value": "Inverted",
+          "defaultValue": "",
+          "maxLength": null,
+          "multiline": false,
+          "password": false,
+          "comb": false
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": -40,
+          "height": -12,
+          "ops": [
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": 0,
+                  "y": 0,
+                  "width": -40,
+                  "height": -12
+                }
+              ],
+              "color": [
+                0.9647058823529412,
+                0.9725490196078431,
+                0.9803921568627451
+              ],
+              "evenOdd": true
+            },
+            {
+              "kind": "stroke",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": -39.5,
+                  "y": -11.5,
+                  "width": 39,
+                  "height": 11
+                }
+              ],
+              "color": [
+                0.12156862745098039,
+                0.43529411764705883,
+                0.9215686274509803
+              ],
+              "width": 1,
+              "dash": null
+            },
+            {
+              "kind": "clip",
+              "rect": {
+                "left": -39,
+                "bottom": -11,
+                "right": -1,
+                "top": -1
+              },
+              "ops": [
+                {
+                  "kind": "text",
+                  "font": "helvetica",
+                  "size": 10,
+                  "color": [
+                    0.050980392156862744,
+                    0.06666666666666667,
+                    0.09019607843137255
+                  ],
+                  "runs": [
+                    {
+                      "x": -38,
+                      "y": -9.605000495910645,
+                      "text": "Inverted",
+                      "advances": [
+                        2.7800002098083496,
+                        5.560000419616699,
+                        5,
+                        5.560000419616699,
+                        3.330000162124634,
+                        2.7800002098083496,
+                        5.560000419616699,
+                        5.560000419616699
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "approximate": null
+        }
+      }
+    },
+    {
+      "name": "widgetDrawing/checkbox/negative box",
+      "fn": "widgetDrawing",
+      "args": [
+        {
+          "subtype": "widget",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": -18,
+            "height": -18
+          },
+          "box": {
+            "x": 20,
+            "y": 20,
+            "width": -18,
+            "height": -18
+          },
+          "rotation": null,
+          "appearanceState": null,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "fontFamily": "helvetica",
+          "fontSize": 10,
+          "textAlign": "left",
+          "caption": null,
+          "checkStyle": null,
+          "color": "#1f6feb",
+          "interiorColor": "#f6f8fa",
+          "fontColor": "#0d1117"
+        },
+        {
+          "family": "checkbox",
+          "widgets": []
+        },
+        {
+          "checked": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": -18,
+          "height": -18,
+          "ops": [
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": -17.5,
+                  "y": -17.5,
+                  "width": 17,
+                  "height": 17
+                }
+              ],
+              "color": [
+                0.9647058823529412,
+                0.9725490196078431,
+                0.9803921568627451
+              ],
+              "evenOdd": true
+            },
+            {
+              "kind": "stroke",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": -17.5,
+                  "y": -17.5,
+                  "width": 17,
+                  "height": 17
+                }
+              ],
+              "color": [
+                0.12156862745098039,
+                0.43529411764705883,
+                0.9215686274509803
+              ],
+              "width": 1,
+              "dash": null
+            },
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "move",
+                  "x": -12.520000457763672,
+                  "y": -8.680000305175781
+                },
+                {
+                  "op": "curve",
+                  "x1": -12.608366012573242,
+                  "y1": -9.033462524414062,
+                  "x2": -12.288365364074707,
+                  "y2": -11.101441383361816,
+                  "x": -12.199999809265137,
+                  "y": -11.719999313354492
+                },
+                {
+                  "op": "curve",
+                  "x1": -12.111634254455566,
+                  "y1": -12.07346248626709,
+                  "x2": -11.466924667358398,
+                  "y2": -12.520000457763672,
+                  "x": -10.760000228881836,
+                  "y": -12.520000457763672
+                },
+                {
+                  "op": "curve",
+                  "x1": -9.876344680786133,
+                  "y1": -12.431634902954102,
+                  "x2": -4.75163459777832,
+                  "y2": -6.208365440368652,
+                  "x": -4.840000152587891,
+                  "y": -6.119999885559082
+                },
+                {
+                  "op": "curve",
+                  "x1": -4.66326904296875,
+                  "y1": -6.031634330749512,
+                  "x2": -4.840000152587891,
+                  "y2": -5,
+                  "x": -4.840000152587891,
+                  "y": -5
+                },
+                {
+                  "op": "curve",
+                  "x1": -5.105096817016602,
+                  "y1": -4.558172225952148,
+                  "x2": -6.119999885559082,
+                  "y2": -5.071634292602539,
+                  "x": -6.119999885559082,
+                  "y": -5.159999847412109
+                },
+                {
+                  "op": "curve",
+                  "x1": -6.119999885559082,
+                  "y1": -5.159999847412109,
+                  "x2": -10.031634330749512,
+                  "y2": -9.479999542236328,
+                  "x": -10.119999885559082,
+                  "y": -9.479999542236328
+                },
+                {
+                  "op": "curve",
+                  "x1": -10.385096549987793,
+                  "y1": -9.479999542236328,
+                  "x2": -10.511634826660156,
+                  "y2": -7.576731204986572,
+                  "x": -10.600000381469727,
+                  "y": -7.399999618530273
+                },
+                {
+                  "op": "curve",
+                  "x1": -11.66038703918457,
+                  "y1": -6.869806289672852,
+                  "x2": -12.343269348144531,
+                  "y2": -8.3265380859375,
+                  "x": -12.520000457763672,
+                  "y": -8.680000305175781
+                }
+              ],
+              "color": [
+                0.050980392156862744,
+                0.06666666666666667,
+                0.09019607843137255
+              ],
+              "evenOdd": false
+            }
+          ],
+          "approximate": null
+        }
+      }
+    },
+    {
+      "name": "widgetDrawing/combo/negative box",
+      "fn": "widgetDrawing",
+      "args": [
+        {
+          "subtype": "widget",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": -140,
+            "height": -22
+          },
+          "box": {
+            "x": 20,
+            "y": 20,
+            "width": -140,
+            "height": -22
+          },
+          "rotation": null,
+          "appearanceState": null,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "fontFamily": "helvetica",
+          "fontSize": 10,
+          "textAlign": "left",
+          "caption": null,
+          "checkStyle": null,
+          "color": "#1f6feb",
+          "interiorColor": "#f6f8fa",
+          "fontColor": "#0d1117"
+        },
+        {
+          "family": "combobox",
+          "value": "b",
+          "defaultValue": "",
+          "edit": false,
+          "options": [
+            {
+              "label": "Alpha",
+              "value": "a",
+              "selected": false
+            },
+            {
+              "label": "Beta",
+              "value": "b",
+              "selected": false
+            }
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": -140,
+          "height": -22,
+          "ops": [
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": 0,
+                  "y": 0,
+                  "width": -140,
+                  "height": -22
+                }
+              ],
+              "color": [
+                0.9647058823529412,
+                0.9725490196078431,
+                0.9803921568627451
+              ],
+              "evenOdd": false
+            },
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": 0,
+                  "y": 0,
+                  "width": -140,
+                  "height": -22
+                },
+                {
+                  "op": "rect",
+                  "x": -139,
+                  "y": -21,
+                  "width": 138,
+                  "height": 20
+                }
+              ],
+              "color": [
+                0.12156862745098039,
+                0.43529411764705883,
+                0.9215686274509803
+              ],
+              "evenOdd": true
+            },
+            {
+              "kind": "clip",
+              "rect": {
+                "left": -135,
+                "bottom": -21,
+                "right": -18,
+                "top": -1
+              },
+              "ops": [
+                {
+                  "kind": "text",
+                  "font": "helvetica",
+                  "size": 10,
+                  "color": [
+                    0.050980392156862744,
+                    0.06666666666666667,
+                    0.09019607843137255
+                  ],
+                  "runs": [
+                    {
+                      "x": -135,
+                      "y": -14.605000495910645,
+                      "text": "b",
+                      "advances": [
+                        5.560000419616699
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "move",
+                  "x": -10.5,
+                  "y": -9.5
+                },
+                {
+                  "op": "line",
+                  "x": -4.5,
+                  "y": -9.5
+                },
+                {
+                  "op": "line",
+                  "x": -7.5,
+                  "y": -12.5
+                },
+                {
+                  "op": "line",
+                  "x": -10.5,
+                  "y": -9.5
+                }
+              ],
+              "color": [
+                0,
+                0,
+                0
+              ],
+              "evenOdd": false
+            }
+          ],
+          "approximate": null
+        }
+      }
+    },
+    {
       "name": "widgetDrawing/text/rect without box",
       "fn": "widgetDrawing",
       "args": [
@@ -38759,6 +39227,177 @@
               ],
               "width": 1,
               "dash": null
+            }
+          ],
+          "approximate": null
+        }
+      }
+    },
+    {
+      "name": "widgetDrawing/checkbox/state absent",
+      "fn": "widgetDrawing",
+      "args": [
+        {
+          "subtype": "widget",
+          "rect": {
+            "x": 20,
+            "y": 20,
+            "width": 18,
+            "height": 18
+          },
+          "box": {
+            "x": 20,
+            "y": 20,
+            "width": 18,
+            "height": 18
+          },
+          "rotation": null,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "fontFamily": "helvetica",
+          "fontSize": 10,
+          "textAlign": "left",
+          "caption": null,
+          "checkStyle": null,
+          "color": "#1f6feb",
+          "interiorColor": "#f6f8fa",
+          "fontColor": "#0d1117"
+        },
+        {
+          "family": "checkbox",
+          "widgets": []
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "width": 18,
+          "height": 18,
+          "ops": [
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": 0.5,
+                  "y": 0.5,
+                  "width": 17,
+                  "height": 17
+                }
+              ],
+              "color": [
+                0.9647058823529412,
+                0.9725490196078431,
+                0.9803921568627451
+              ],
+              "evenOdd": true
+            },
+            {
+              "kind": "stroke",
+              "path": [
+                {
+                  "op": "rect",
+                  "x": 0.5,
+                  "y": 0.5,
+                  "width": 17,
+                  "height": 17
+                }
+              ],
+              "color": [
+                0.12156862745098039,
+                0.43529411764705883,
+                0.9215686274509803
+              ],
+              "width": 1,
+              "dash": null
+            },
+            {
+              "kind": "fill",
+              "path": [
+                {
+                  "op": "move",
+                  "x": 5.480000019073486,
+                  "y": 9.319999694824219
+                },
+                {
+                  "op": "curve",
+                  "x1": 5.391634464263916,
+                  "y1": 8.966537475585938,
+                  "x2": 5.711634635925293,
+                  "y2": 6.898559093475342,
+                  "x": 5.800000190734863,
+                  "y": 6.28000020980835
+                },
+                {
+                  "op": "curve",
+                  "x1": 5.888365745544434,
+                  "y1": 5.92653751373291,
+                  "x2": 6.533075332641602,
+                  "y2": 5.480000019073486,
+                  "x": 7.239999771118164,
+                  "y": 5.480000019073486
+                },
+                {
+                  "op": "curve",
+                  "x1": 8.123655319213867,
+                  "y1": 5.568365573883057,
+                  "x2": 13.24836540222168,
+                  "y2": 11.791634559631348,
+                  "x": 13.15999984741211,
+                  "y": 11.880000114440918
+                },
+                {
+                  "op": "curve",
+                  "x1": 13.33673095703125,
+                  "y1": 11.968365669250488,
+                  "x2": 13.15999984741211,
+                  "y2": 13,
+                  "x": 13.15999984741211,
+                  "y": 13
+                },
+                {
+                  "op": "curve",
+                  "x1": 12.894903182983398,
+                  "y1": 13.441827774047852,
+                  "x2": 11.880000114440918,
+                  "y2": 12.928365707397461,
+                  "x": 11.880000114440918,
+                  "y": 12.84000015258789
+                },
+                {
+                  "op": "curve",
+                  "x1": 11.880000114440918,
+                  "y1": 12.84000015258789,
+                  "x2": 7.968365669250488,
+                  "y2": 8.520000457763672,
+                  "x": 7.880000114440918,
+                  "y": 8.520000457763672
+                },
+                {
+                  "op": "curve",
+                  "x1": 7.614903450012207,
+                  "y1": 8.520000457763672,
+                  "x2": 7.488365650177002,
+                  "y2": 10.423269271850586,
+                  "x": 7.400000095367432,
+                  "y": 10.600000381469727
+                },
+                {
+                  "op": "curve",
+                  "x1": 6.339613437652588,
+                  "y1": 11.130193710327148,
+                  "x2": 5.656731128692627,
+                  "y2": 9.6734619140625,
+                  "x": 5.480000019073486,
+                  "y": 9.319999694824219
+                }
+              ],
+              "color": [
+                0.050980392156862744,
+                0.06666666666666667,
+                0.09019607843137255
+              ],
+              "evenOdd": false
             }
           ],
           "approximate": null

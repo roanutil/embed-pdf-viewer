@@ -7,6 +7,8 @@
 //!
 //! [`SceneNode`] and [`Paint`] are the part of `core-annotation`'s types this
 //! function makes: a `path` and a `glyphs` node, each optionally clipped.
+//! Task 13.7 ports the `glyphs` node and `clip` into annotation-core's
+//! `SceneNode`; this crate then re-exports those types in place of these.
 
 use epdf_fonts::{FontProgram, FontStyle, standard_font_css, standard_font_program};
 use epdf_geometry::{Point, Rect, js};

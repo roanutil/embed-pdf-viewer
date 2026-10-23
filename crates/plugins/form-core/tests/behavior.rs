@@ -318,3 +318,36 @@ fn a_comb_splitting_a_surrogate_pair_writes_replacement_characters() {
     assert_eq!(codes, [0xd83d, 0xde00]);
     assert!(layout.approximate);
 }
+
+/// `drawing/index.ts:107`: `appearanceState !== null && !== 'Off'`. An absent
+/// member is `undefined`, so a check box without one shows checked.
+#[test]
+fn an_absent_appearance_state_reads_as_on_and_null_as_off() {
+    let checkbox = field_of(json!({ "family": "checkbox" }));
+    let symbols = |patch: Value| {
+        let mut widget = json!({
+            "rect": { "x": 0, "y": 0, "width": 18, "height": 18 },
+            "color": "#000000",
+        });
+        for (key, value) in patch.as_object().expect("patch") {
+            widget[key] = value.clone();
+        }
+        let row = row_of(widget);
+        widget_drawing(&row, &checkbox, &ShownValue::default()).expect("drawn").ops.len()
+    };
+    let box_only = symbols(json!({ "appearanceState": "Off" }));
+    assert_eq!(symbols(json!({})), box_only + 1, "absent");
+    assert_eq!(symbols(json!({ "appearanceState": null })), box_only, "null");
+    assert_eq!(symbols(json!({ "appearanceState": "Yes" })), box_only + 1, "named");
+    assert_eq!(
+        row_of(json!({ "rect": { "x": 0, "y": 0, "width": 1, "height": 1 } })).appearance_state,
+        None
+    );
+    assert_eq!(
+        row_of(
+            json!({ "rect": { "x": 0, "y": 0, "width": 1, "height": 1 }, "appearanceState": null })
+        )
+        .appearance_state,
+        Some(None)
+    );
+}

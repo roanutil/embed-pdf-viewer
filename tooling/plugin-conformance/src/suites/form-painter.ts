@@ -288,6 +288,9 @@ add('widgetDrawing', 'text/font not standard, missing glyphs', widget({ fontFami
 add('widgetDrawing', 'text/no font', widget({ fontFamily: null }), text('Plain'));
 add('widgetDrawing', 'text/tiny box', widget({}, 2, 2), text('Hidden'));
 add('widgetDrawing', 'text/zero box', widget({}, 0, 0), text('Hidden'));
+add('widgetDrawing', 'text/negative box', widget({}, -40, -12), text('Inverted'));
+add('widgetDrawing', 'checkbox/negative box', widget({}, -18, -18), toggle('checkbox'), { checked: true });
+add('widgetDrawing', 'combo/negative box', widget({}, -140, -22), combo('b'));
 add('widgetDrawing', 'text/rect without box', { ...widget({}, 90, 30), box: undefined }, text('From rect'));
 add('widgetDrawing', 'text/turned', widget({ rotation: 90 }, 30, 100), text('Turned'));
 
@@ -339,6 +342,7 @@ for (const checkStyle of ['check', 'cross', 'star', 'circle', 'square', 'diamond
 add('widgetDrawing', 'checkbox/state on', widget({ appearanceState: 'Yes' }, 18, 18), toggle('checkbox'));
 add('widgetDrawing', 'checkbox/state off', widget({ appearanceState: 'Off' }, 18, 18), toggle('checkbox'));
 add('widgetDrawing', 'checkbox/no state', widget({}, 18, 18), toggle('checkbox'));
+add('widgetDrawing', 'checkbox/state absent', widget({ appearanceState: undefined }, 18, 18), toggle('checkbox'));
 add('widgetDrawing', 'checkbox/shown over state', widget({ appearanceState: 'Yes' }, 18, 18), toggle('checkbox'), { checked: false });
 add('widgetDrawing', 'checkbox/no colours', widget({ ...NO_LOOK }, 18, 18), toggle('checkbox'), { checked: true });
 add('widgetDrawing', 'checkbox/cross, no border colour', widget({ checkStyle: 'cross', color: null, strokeWidth: 3 }, 18, 18), toggle('checkbox'), { checked: true });

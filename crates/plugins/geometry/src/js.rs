@@ -162,13 +162,15 @@ fn exact_tie(x: f64, digits: u32) -> bool {
     }
 }
 
-/// `Number.prototype.toFixed(digits)`, for up to 20 digits. The decimal is
+/// `Number.prototype.toFixed(digits)`, for up to 20 digits (the exact tie
+/// test overflows `u128` past about 32, so more panics). The decimal is
 /// the exact value of the double rounded half away from zero; Rust's `{:.N}`
 /// breaks an exact tie to even, so a tie is written out one digit longer
 /// (exactly, ending in 5) and rounded up by hand. A magnitude of `1e21` or
 /// more prints as [`number_to_string`] does, and a negative number keeps its
 /// sign even when it rounds to zero (`(-0.0001).toFixed(3)` is `-0.000`).
 pub fn to_fixed(x: f64, digits: u32) -> String {
+    assert!(digits <= 20, "to_fixed takes at most 20 digits, got {digits}");
     if x.is_nan() {
         return "NaN".into();
     }
@@ -215,6 +217,12 @@ fn round_up_tie(exact: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn to_fixed_takes_up_to_20_digits() {
+        assert_eq!(to_fixed(0.1, 20), "0.10000000000000000555");
+        assert!(std::panic::catch_unwind(|| to_fixed(0.1, 21)).is_err());
+    }
 
     #[test]
     fn to_fixed_matches_javascript() {

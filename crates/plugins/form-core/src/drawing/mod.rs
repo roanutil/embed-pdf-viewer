@@ -73,8 +73,11 @@ pub struct WidgetRow {
     /// absent.
     #[serde(rename = "box")]
     pub box_: Option<Rect>,
-    /// The state a toggle shows; `None` reads as off, as `null` does.
-    pub appearance_state: Option<String>,
+    /// The state a toggle shows: `Some(None)` for `null`, `None` when the
+    /// member is absent. As in the TypeScript (`undefined !== null`), an
+    /// absent state reads as on and `null` as off.
+    #[serde(default, deserialize_with = "present")]
+    pub appearance_state: Option<Option<String>>,
     /// `#rrggbb`.
     pub color: Option<String>,
     pub interior_color: Option<String>,
@@ -87,6 +90,13 @@ pub struct WidgetRow {
     pub text_align: Option<TextAlign>,
     pub caption: Option<String>,
     pub check_style: Option<WidgetCheckStyle>,
+}
+
+/// A member that is present, `null` included: `Some` of what it holds.
+fn present<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error> {
+    Option::<String>::deserialize(deserializer).map(Some)
 }
 
 impl WidgetRow {
@@ -253,9 +263,10 @@ pub fn widget_drawing(
             symbol_color: color_of(&row.font_color),
             check_style: row.check_style,
         };
-        let checked = shown
-            .checked
-            .unwrap_or_else(|| row.appearance_state.as_deref().is_some_and(|state| state != "Off"));
+        let checked = shown.checked.unwrap_or_else(|| match &row.appearance_state {
+            None => true,
+            Some(state) => state.as_deref().is_some_and(|state| state != "Off"),
+        });
         let ops = if let FieldFacts::Checkbox = field {
             checkbox_ops(&look, checked)
         } else {
