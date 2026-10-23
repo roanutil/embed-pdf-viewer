@@ -1131,6 +1131,8 @@ Branch `research/catchup-plugins`.
 
 ### Task 12: Regenerate plugin vectors and plan the re-port
 
+Execution amendment (2026-10-23): B3-iv and B3-v are complete. Combine all remaining 12b2c and 12b2d work into one bounded task: the plugin conformance staleness probe reports zero `no-import` and zero `throws`, and the package typecheck is clean. Do not split this work further. Do not create new historical archives, digest guards, or byte-preservation tests. Existing guards may be removed or revised when they obstruct the authorized migration; retain useful behavioral tests. Restore `crates/plugins/acrojs/prelude.js` before every commit. Once these gates pass, proceed directly to the vector regeneration, diff report and Task 13 expansion below.
+
 - [ ] `pnpm --filter @embedpdf/tooling-plugin-conformance run vectors`; commit.
 - [ ] Write `docs/research/catchup-plugin-vector-diffs.md` as in Task 5.
 - [ ] Append Tasks 13.1 to 13.N: one per crate in dependency order (kernel, core libraries, `core/fonts`, `core/form`, interaction and actions, `plugin/history`, stage, selection, annotation with H3, form, page-edit, the other plugins, `plugin/outline`, `plugin/attachment`), each naming its vector files and TS reference; the M14 check goes with actions. Commit.
@@ -1139,7 +1141,483 @@ Branch `research/catchup-plugins`.
 
 Each sub-task ends with its crate's `cargo test` replaying its vector files, and its kept divergences re-checked.
 
+#### Task 13 execution contract (expanded by Task 12c, 2026-10-23)
+
+The current checked-in TypeScript is the oracle (upstream `b456ee4fd` plus the reviewed migration at `b029e3d78`), not retired generators or historical aliases. See `docs/research/catchup-plugin-vector-diffs.md`. Run on `research/catchup-plugins`; no Rust changes were made in Task 12c. Each numbered task below has exactly one owning crate. Actual production Cargo edges determine the order; already-ported engine/FFI/manual-bridge crates are external foundations. `plugin-conformance` is downstream of the kernel, so kernel unit tests establish the API before its replay task. Existing Cargo dev-dependencies on the replay harness do not reverse that ownership.
+
+All vector paths below are relative to `tooling/plugin-conformance/vectors/`. Every one of the 112 generated suites has one owner. `environment.json` and `coverage.json` belong to 13.2; neither is a replay suite. The five new packages have explicit new generators and vectors in their own tasks. `plugins/form-core.json` belongs to the form plugin, not the new widget painter. Current Rust tests name 110 suites but still expect schema 1; a name is not a passing replay.
+
+Each task follows this bounded test cycle: first add or update the listed behavioral/replay assertions and observe the current failure; implement current source behavior in the owning crate; run the listed cargo command with no failures; then commit explicit owning paths. For an existing crate, modify its `src/` and its existing replay tests under `tests/`; for a new crate, create `Cargo.toml`, `src/lib.rs`, `tests/conformance.rs`, add its workspace member and named TS suite. Kernel replays live in `crates/plugin-conformance/tests/kernel.rs`. Include only necessary dependency registration at consuming boundaries. Do not change shipping TS behavior or weaken vectors/comparison to fit Rust. For kept safe Rust divergences against TS exceptions, retain focused Rust safety tests and explicitly documented existing comparison exceptions; do not silently change the oracle. Every report lists kept/obsolete/converged findings with source evidence.
+
+Shared interfaces are the current TS contracts: `PluginContext` create/connect/state/settings, guarded `DocumentHandle`, mirror/pageMirror load/fold, `ctx.changes` reserved refs and pending changes, `DocumentEvent` before settlement with opId/origin.tx, `PluginError` codes and HostClock. Task 13.1 owns these APIs; 13.2 owns canonical replay reconstruction. Feature tasks expose the public capability in their listed `contract.ts`/index entry to later consumers; optional capabilities stay optional. H3 uses current stable IDs and synchronous forget; M14’s check belongs to actions. No new archives, digest guards or byte-preservation tests. Restore `crates/plugins/acrojs/prelude.js` after importing commands before every commit. All cargo commands use `CARGO_BUILD_JOBS=6`.
+
+#### Task 13.1: epdf-kernel
+
+**Files:** `crates/epdf-kernel/src/`, `crates/epdf-kernel/tests/`, `crates/epdf-kernel/Cargo.toml`. **Needs:** none (engine port already complete).
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/core/main/src/{kernel,context,state,mirror,page-mirror,changes,guarded-handle,clock,settings,errors}.ts`.
+
+**Behavior and interface:** Port create/state/connect planning and transactional document bring-up; per-session events, flat current DTOs and objectNumber/baseIndex refs, guarded current handles, settings, mirror/page-mirror folds and reserved-number pending changes. Publish facts with opId/origin.tx before settlement; retain caller cancellation and instance-close distinctions. Locked tabs refresh security after unlock, including wrong-password parked opens. Replace old event listeners/error-code maps, and supply authority on writes. Export these contracts to every downstream crate; do not copy the native translation shims into the kernel.
+
+- [ ] Add the failing behavioral/replay assertions: Add unit tests for create/connect failure rollback, close revoking pending state, local/remote same fold, pending rejection preserving a remote write, own fact before settlement, and password rejection then successful unlock. Preserve M1–M3 turn behavior and run kernel unit tests; the next task owns the three kernel JSON replays.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-kernel`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M1–M6, M8–M10 and K1–K9 fixes unless current TS supersedes them; record the disposition. Native wrong-password shim removal belongs to host task, after this contract works.
+
+#### Task 13.2: plugin-conformance
+
+**Files:** `crates/plugin-conformance/src/`, `crates/plugin-conformance/tests/`, `crates/plugin-conformance/Cargo.toml`. **Needs:** 13.1.
+
+**Vectors:** `kernel/lifecycle.json`, `kernel/turns.json`, `kernel/utils.json`
+
+**Current TS reference:** `tooling/plugin-conformance/src/{vectors,scenario,fake-engine,probe,canonical,case-entropy}.ts`.
+
+**Behavior and interface:** Advance SCHEMA_VERSION 1→2 and reconstruct stateChanges/documentEvents, per-session fake handles, current DTOs and origin, current factory registries, dotted getter resolution at invocation with bound receiver, $textLayout hydration, callable callback specs, deferred labels and promise turn accounting. Use real 16ms HostClock frames with lifetime cancellation and canonical number/undefined/byte/map semantics. Preserve shared per-case UUID entropy and descriptor cleanup without porting loader scaffolding as product API. Own environment.json and the coverage.json metadata refresh after all owners land.
+
+- [ ] Add the failing behavioral/replay assertions: Replay kernel lifecycle/turns/utils through tests/kernel.rs. Assert named duplicate-compose refusals, dependency failure order, callback receiver binding, cancellation, event-before-settlement and exact member order. Keep the current comparator and narrow justified allow-list; do not disable schema or member-order checking.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p plugin-conformance`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep conformance C1–C9 and turn-meter behavior. Existing coverage.json is pre-migration coverage, not evidence of current behavioral coverage; refresh with the existing coverage commands at final Task 13 integration.
+
+#### Task 13.3: epdf-geometry
+
+**Files:** `crates/plugins/geometry/src/`, `crates/plugins/geometry/tests/`, `crates/plugins/geometry/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `core/geometry-affine.json`, `core/geometry-basics.json`, `core/geometry-page.json`, `core/geometry-text-quad.json`
+
+**Current TS reference:** `packages/core/geometry/src/index.ts; packages/engine/core/src/geometry/{convert,pageSpace}.ts`.
+
+**Behavior and interface:** Port page-space coordinates, current PageRef and named quad corners, transform/conversion inputs and current geometry helpers; remove retired helper dispatches.
+
+- [ ] Add the failing behavioral/replay assertions: Replay all four files; assert singular transforms refuse and rotation/crop/userUnit round trips preserve coordinates.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-geometry`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.4: epdf-fonts
+
+**Files:** `crates/plugins/fonts/src/`, `crates/plugins/fonts/tests/`, `crates/plugins/fonts/Cargo.toml`. **Needs:** 13.2.
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/core/fonts/src/{index,base64}.ts; packages/core/fonts/src/standard/{metrics,programs,css,types}.ts`.
+
+**Behavior and interface:** Create the core/fonts crate and expose standardFontMetrics, standardFontProgram, fontProgramFamily and standardFontCss equivalents using the same fourteen generated standard faces. Add src/suites/fonts.ts and core/fonts.json; port program bytes and metrics without a browser dependency.
+
+- [ ] Add the failing behavioral/replay assertions: Add TS-generated cases for all fourteen names, glyph advances, family/style mapping, program byte decoding and invalid names. Register and replay core/fonts.json; compare actual returned bytes/metrics, not a hash-only substitute.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-fonts`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. No existing divergence. New crate and vector generator belong here, including Cargo workspace registration.
+
+#### Task 13.5: epdf-form-core
+
+**Files:** `crates/plugins/form-core/src/`, `crates/plugins/form-core/tests/`, `crates/plugins/form-core/Cargo.toml`. **Needs:** 13.3, 13.4.
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/core/form/src/{index,font,editor,scene}.ts; packages/core/form/src/{layout,drawing}/`.
+
+**Behavior and interface:** Create core/form with paints/widgetDrawing, textEditorLayout, layoutFontOf, widgetScene and layoutVariableText equivalents. Add src/suites/form-painter.ts and core/form-painter.json. This is widget drawing/layout, distinct from plugins/form-core.json, which tests the form plugin.
+
+- [ ] Add the failing behavioral/replay assertions: Generate/replay text, multiline/comb, password, clipping, alignment, checkbox/radio, border and rotated widget placement cases; assert empty text and missing font fallback from current TS.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-form-core`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. No existing divergence. Depend on fonts before form layout; no DOM or runtime engine in this pure crate.
+
+#### Task 13.6: epdf-stage-core
+
+**Files:** `crates/plugins/stage-core/src/`, `crates/plugins/stage-core/tests/`, `crates/plugins/stage-core/Cargo.toml`. **Needs:** 13.3, 13.1, 13.2.
+
+**Vectors:** `core/stage-anchor.json`, `core/stage-camera.json`, `core/stage-layout.json`
+
+**Current TS reference:** `packages/core/stage/src/index.ts`.
+
+**Behavior and interface:** Port current camera/layout/anchor inputs and page-space geometry, retaining input member order where it is contractual.
+
+- [ ] Add the failing behavioral/replay assertions: Replay the three files and check empty scene, unreadable page row, singular/NaN viewport and grid column inputs without a native panic.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-stage-core`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M26/M27 and R5 guards: empty scene for NaN columns/unreadable page row where TS throws. Record divergence explicitly rather than changing TS vectors to make Rust agree.
+
+#### Task 13.7: epdf-annotation-core
+
+**Files:** `crates/plugins/annotation-core/src/`, `crates/plugins/annotation-core/tests/`, `crates/plugins/annotation-core/Cargo.toml`. **Needs:** 13.3, 13.1, 13.2.
+
+**Vectors:** `core/annotation-anchor.json`, `core/annotation-cloudy.json`, `core/annotation-endings.json`, `core/annotation-flags.json`, `core/annotation-geometry-basics.json`, `core/annotation-geometry-hit.json`, `core/annotation-geometry-shapes.json`, `core/annotation-geometry-text.json`, `core/annotation-groups.json`, `core/annotation-hit.json`, `core/annotation-kinds.json`, `core/annotation-measurement-model.json`, `core/annotation-measurement.json`, `core/annotation-placement.json`, `core/annotation-props.json`, `core/annotation-richtext.json`, `core/annotation-scene.json`, `core/annotation-snap.json`, `core/annotation-update.json`, `core/annotation-view.json`
+
+**Current TS reference:** `packages/core/annotation/src/{types,measurement}.ts; packages/core/annotation/src/record/{shape,style}.ts; packages/core/annotation/src/update/; packages/core/annotation/src/shapes/; packages/engine/core/src/measure/`.
+
+**Behavior and interface:** Port current full model/session/Shape and record/draft/patch/value DTOs, named quads, styles, canonical IDs, link defaults, scene and direct update messages. Use current shared engine measurement labels instead of the older RL formatter. H3 is stable reserved identities plus synchronous forget cleanup; do not resurrect temp-id reconciliation APIs.
+
+- [ ] Add the failing behavioral/replay assertions: Replay all 20 files; assert mid-gesture disappearance clears drafts, create-before-ack remains editable, current measurement captions/shape updates, and malformed kind/property negatives. Plugin-level H3 ordering belongs to annotation task.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-annotation-core`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M20 curl bound and applicable N fixes; preserve safe unknown-ref rejection (N6). H3 follows the superseding Task 10 ruling, no shipping TS patch.
+
+#### Task 13.8: epdf-acrojs
+
+**Files:** `crates/plugins/acrojs/src/`, `crates/plugins/acrojs/tests/`, `crates/plugins/acrojs/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `core/acrojs-host.json`, `core/acrojs.json`
+
+**Current TS reference:** `packages/core/acrojs/src/{host,prelude,index}.ts; packages/core/js-sandbox/src/`.
+
+**Behavior and interface:** Port current worlds/Identity/field value-entry unions and full FormSnapshot widgets/calculation order; boot/run/wait/throw transaction arrays, seedFrom environment, output and UTF-16/UTF-8 budgets, boot latch, disposal and rebuilding. Preserve the observed admitted transaction creating a second sandbox after the pending first factory was disposed.
+
+- [ ] Add the failing behavioral/replay assertions: Replay core/acrojs.json and core/acrojs-host.json; assert incomplete action-tree refusals, pending factory/dispose/run ordering and repeated disposal cleanup. Test actual default VM execution separately from scripted sandbox replay; record tsx serialized __name loader gap honestly. Restore prelude.js after every importing command and before every commit.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-acrojs`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M9/M12/M13 and A findings as recorded. Default-VM loader gap and post-dispose admitted rebuild remain Task 14 decision carries, not evidence of successful default VM execution.
+
+#### Task 13.9: epdf-signature-core
+
+**Files:** `crates/plugins/signature-core/src/`, `crates/plugins/signature-core/tests/`, `crates/plugins/signature-core/Cargo.toml`. **Needs:** 13.3, 13.1, 13.2.
+
+**Vectors:** `core/signature-document.json`, `core/signature-parse.json`, `core/signature-signers.json`, `core/signature-trust.json`, `core/signature-verify.json`
+
+**Current TS reference:** `packages/core/signature/src/index.ts and its parsing, trust, verify and document helpers`.
+
+**Behavior and interface:** Port current signer/document request shapes and typed byte/certificate/verification results, preserving the parsing and trust semantics.
+
+- [ ] Add the failing behavioral/replay assertions: Replay five files; retain malformed CMS, unsupported SHA algorithm, chain/time, ASN.1 depth and oversized RSA-PSS salt checks.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-signature-core`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep H1 depth bound and H2 salt range guard; retain G1/G4 findings where applicable.
+
+#### Task 13.10: epdf-ui-core
+
+**Files:** `crates/plugins/ui-core/src/`, `crates/plugins/ui-core/tests/`, `crates/plugins/ui-core/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `core/ui-helpers.json`, `core/ui-projection.json`, `core/ui-schema.json`, `core/ui-shortcuts.json`, `core/ui-solver.json`, `core/ui-transforms.json`
+
+**Current TS reference:** `packages/core/ui/src/{layout,solver,projection,shortcuts,index}.ts`.
+
+**Behavior and interface:** Replace removed global chrome/bundle transforms with current typed layout validation, immutable add/replace, scoped remove, edit chains, identity and warnings. Keep solver/projection/shortcut semantics.
+
+- [ ] Add the failing behavioral/replay assertions: Replay six files; assert duplicate units/invalid modifiers refuse, immutable edits preserve unaffected structures and current warnings/order match.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-ui-core`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.11: epdf-plugin-interaction
+
+**Files:** `crates/plugins/interaction/src/`, `crates/plugins/interaction/tests/`, `crates/plugins/interaction/Cargo.toml`. **Needs:** 13.3, 13.1, 13.2.
+
+**Vectors:** `plugins/interaction-functions.json`, `plugins/interaction.json`
+
+**Current TS reference:** `packages/plugin/interaction/src/{controller,model,interaction.plugin}.ts`.
+
+**Behavior and interface:** Port create/connect, current tool registration, session transitions, page-space input routing and lifetime-owned lending/disposal.
+
+- [ ] Add the failing behavioral/replay assertions: Replay both files; assert dispatch/registration replacement, pointer ownership and closed document behavior.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-interaction`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.12: epdf-plugin-actions
+
+**Files:** `crates/plugins/actions/src/`, `crates/plugins/actions/tests/`, `crates/plugins/actions/Cargo.toml`. **Needs:** 13.8, 13.1, 13.2.
+
+**Vectors:** `plugins/actions-dispatcher.json`, `plugins/actions-hover.json`, `plugins/actions-lifecycle.json`, `plugins/actions-script.json`, `plugins/actions-submit.json`, `plugins/actions-triggers.json`, `plugins/actions.json`
+
+**Current TS reference:** `packages/plugin/actions/src/{controller,settings}.ts; packages/plugin/actions/src/{lifecycle/document-events,scripting/executor}.ts; packages/plugin/actions/src/{dispatch,submit}/`.
+
+**Behavior and interface:** Port current PdfActionTree/SubmitFormPayload, typed destinations, document/annotation/widget triggers, settings policy rows, current adapter/executor/sink contracts and commit/submit receipts. Preserve deferred queue ordering, exact diagnostics/refusals and script/hover budgets. M14: test script print under blocking policy against the actual executor and non-user-origin lifecycle guard; adopt stricter upstream rule only where it subsumes M14.
+
+- [ ] Add the failing behavioral/replay assertions: Replay seven files; assert incomplete-tree refusal, policy-matrix/defaults/live settings, print-refusals, source/adapter failures, deferred submit and identity-safe replacements. Add distinct script print tests for checked action executor and form pipeline; do not claim the form-pipeline gap is fixed by M14.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-actions`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep A1/A5/A6 and M14 decision rule. Form pipeline print gap remains Task 14 carry; no unrelated TS behavior patch.
+
+#### Task 13.13: epdf-plugin-history
+
+**Files:** `crates/plugins/history/src/`, `crates/plugins/history/tests/`, `crates/plugins/history/Cargo.toml`. **Needs:** 13.2.
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/plugin/history/src/{history.plugin,controller,model,contract}.ts`.
+
+**Behavior and interface:** Create plugin/history around ctx.changes, pending change labels and engine undo. Port emptyHistory/recorded/nextOf and the remaining current transitions, merged typing entries, sequence ordering, refusal reinsertion and undo/redo opId replacement. Add src/suites/history.ts and plugins/history.json.
+
+- [ ] Add the failing behavioral/replay assertions: Generate/replay record→undo→redo, merge-key changes, limit trimming, refused original and refused undo, interleaved pending changes, clear, close and canUndo/canRedo. Assert getters and events after confirmed engine result, not a local snapshot restore.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-history`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. No existing divergence; registration, vector generation and replay are owned here.
+
+#### Task 13.14: epdf-plugin-stage
+
+**Files:** `crates/plugins/stage/src/`, `crates/plugins/stage/tests/`, `crates/plugins/stage/Cargo.toml`. **Needs:** 13.6, 13.11, 13.12, 13.1, 13.3, 13.2.
+
+**Vectors:** `plugins/stage-capability.json`, `plugins/stage-destination.json`, `plugins/stage-events.json`, `plugins/stage-feeds.json`, `plugins/stage-motion.json`, `plugins/stage-pure.json`
+
+**Current TS reference:** `packages/plugin/stage/src/{controller,model}.ts and destination/motion/feed helpers`.
+
+**Behavior and interface:** Port document views/settings, page-space XYZ destinations, camera feeds and host-clock motion/lifetime cancellation.
+
+- [ ] Add the failing behavioral/replay assertions: Replay six files; assert motion cancellation, current destination semantics, viewport feed ordering and paged-empty camera behavior.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-stage`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M26/M27 and R5; paged-empty camera TypeError remains explicit TS limitation, not permission to panic in Rust. Keep existing safe guard and report its exact divergence.
+
+#### Task 13.15: epdf-plugin-selection
+
+**Files:** `crates/plugins/selection/src/`, `crates/plugins/selection/tests/`, `crates/plugins/selection/Cargo.toml`. **Needs:** 13.11, 13.1, 13.3, 13.2.
+
+**Vectors:** `plugins/selection-geometry.json`, `plugins/selection-handles.json`, `plugins/selection.json`
+
+**Current TS reference:** `packages/plugin/selection/src/{controller,model}.ts and geometry/handles helpers; packages/engine/core/src/pageSpace/text.ts`.
+
+**Behavior and interface:** Port explicit page-space text layouts/$textLayout marker, current selection cells and named quads. Replace the crate’s old text layout copy with the shared-edge tie-break semantics already ported in engine text layout.
+
+- [ ] Add the failing behavioral/replay assertions: Replay three files; assert edge hits, multi-page selection, handle drag, permissions, lifetime cancellation and empty text.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-selection`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M21/M22 and S fixes. Native PDF-space back-conversion disappears only in the final host task.
+
+#### Task 13.16: epdf-plugin-render
+
+**Files:** `crates/plugins/render/src/`, `crates/plugins/render/tests/`, `crates/plugins/render/Cargo.toml`. **Needs:** 13.3, 13.1, 13.2.
+
+**Vectors:** `plugins/render-capability.json`, `plugins/render-ledger.json`, `plugins/render-policy.json`, `plugins/render-strategy.json`, `plugins/render-tile-plane.json`, `plugins/render-tiles.json`
+
+**Current TS reference:** `packages/plugin/render/src/{controller,model,appearance-store,raster-store}.ts and policy/tile helpers`.
+
+**Behavior and interface:** Port policy service, layer read rights, current annotation/field ledgers and fact payload paths, current invalidation transitions and tile work cancelled on close. Remove retired paint-version/reducer APIs.
+
+- [ ] Add the failing behavioral/replay assertions: Replay six files; assert content/annotation/field/no-op invalidation, late tile result disposal, close cancellation and 31 policy refusals.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-render`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep M23/M25 races/slot fixes and R7 zero tile-span guard; never replace TS oracle loops with invented vector outcomes.
+
+#### Task 13.17: epdf-plugin-annotation
+
+**Files:** `crates/plugins/annotation/src/`, `crates/plugins/annotation/tests/`, `crates/plugins/annotation/Cargo.toml`. **Needs:** 13.7, 13.8, 13.11, 13.15, 13.12, 13.16, 13.1, 13.3, 13.2.
+
+**Vectors:** `plugins/annotation-api.json`, `plugins/annotation-comments.json`, `plugins/annotation-crud.json`, `plugins/annotation-grouping.json`, `plugins/annotation-hover.json`, `plugins/annotation-hydration.json`, `plugins/annotation-markup.json`, `plugins/annotation-pure.json`, `plugins/annotation-reconciliation.json`, `plugins/annotation-repository.json`, `plugins/annotation-tools.json`
+
+**Current TS reference:** `packages/plugin/annotation/src/{controller,model}.ts; packages/plugin/annotation/src/services/store.ts; packages/plugin/annotation/src/sync/{records,confirmed}.ts; packages/engine/core/src/annotation/relationships.ts`.
+
+**Behavior and interface:** Port flat hydration, complete records, stable objectNumber/baseIndex annotationKey identity and comments relation keys/sort/thread classification, current nested nouns and atomic apply with resources. Delete thread replies/collateral records from the view on confirmation; do not keep post-delete stale replies or rename inline refs. Port all pending CRUD/grouping/markup/hover/tools and writable JS target lowering.
+
+- [ ] Add the failing behavioral/replay assertions: Replay all eleven files including NEW annotation-reconciliation.json (32 cases). Assert pending create-before-ack, confirmation-before-apply-resolution, gesture continuation, synchronous forget on disappearance and safe internal callback reentry residue/order; test 95 field-changing patch pairs and 12 missing-icon negatives through existing repository/pure suites.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-annotation`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep H3 current stable-identity/forget behavior, M15 safe divergence and N6 unknown-ref refusal; preserve current shared M16 hydration behavior unless upstream supersedes it. Never restore removed temp-id/reducer aliases.
+
+#### Task 13.18: epdf-plugin-form
+
+**Files:** `crates/plugins/form/src/`, `crates/plugins/form/tests/`, `crates/plugins/form/Cargo.toml`. **Needs:** 13.5, 13.13, 13.17, 13.12, 13.8, 13.11, 13.1, 13.3, 13.7, 13.2.
+
+**Vectors:** `plugins/form-actions.json`, `plugins/form-core-lifecycle.json`, `plugins/form-core.json`, `plugins/form-design.json`, `plugins/form-fill.json`, `plugins/form-scripting.json`
+
+**Current TS reference:** `packages/plugin/form/src/{controller,model}.ts; packages/plugin/form/src/sync/{fields,predict}.ts; packages/plugin/form/src/scripting/controller.ts; packages/plugin/form/src/tools/handlers.ts`.
+
+**Behavior and interface:** Port FieldIndex, full snapshots/widgets joins and current field authority, flat flags, values/projection/prediction/submission, native queue actions and addWidget in place of attachWidget. Keep empty session state and mirror-owned status, exact own-field forms.valueSet facts/tx before settlement, repair/bundle/refMap results and whole reset semantics. Reconstruct actual K/V/C/F controller phases/budgets and native sink staging before later refusal.
+
+- [ ] Add the failing behavioral/replay assertions: Replay six files including NEW form-core-lifecycle.json (3 cases); all 221 form cases must run. Assert whole reset only changes refs 1/3/4 when checkbox is already default; white/palette appearance survives. Add wall-clock H4 timeout test. Explicitly distinguish successful form-only placement, awaited refusal and palette early-return/unhandled refusal edge; no global rejection swallowing.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-form`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep H4 monotonic budget and A/M scripting fixes. Default QuickJS execution remains a separate loader gap; form-only palette unhandled refusal and form print gap go to Task 14 decision with exact source evidence. DoNotSpellCheck/Sort cannot be invented from removed flags.raw.
+
+#### Task 13.19: epdf-plugin-page-edit
+
+**Files:** `crates/plugins/page-edit/src/`, `crates/plugins/page-edit/tests/`, `crates/plugins/page-edit/Cargo.toml`. **Needs:** 13.3, 13.13, 13.1, 13.2.
+
+**Vectors:** `plugins/page-edit.json`
+
+**Current TS reference:** `packages/plugin/page-edit/src/{controller,model}.ts and operations`.
+
+**Behavior and interface:** Port current page refs, neighbor ListPosition mutations, named-page/layout facts and history-backed edits; remove old page event names and index-position conversions.
+
+- [ ] Add the failing behavioral/replay assertions: Replay page-edit.json; assert insert/move/delete/rotate permissions, atomic refusal, current layout facts and history labels.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-page-edit`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.20: epdf-plugin-search
+
+**Files:** `crates/plugins/search/src/`, `crates/plugins/search/tests/`, `crates/plugins/search/Cargo.toml`. **Needs:** 13.14, 13.12, 13.3, 13.1, 13.2.
+
+**Vectors:** `plugins/search-find-all.json`, `plugins/search-reducer.json`, `plugins/search-stage.json`, `plugins/search.json`
+
+**Current TS reference:** `packages/plugin/search/src/{controller,model}.ts and session/scan helpers`.
+
+**Behavior and interface:** Port current SearchSlice including pagesSearched, page-space bounds/snippets, permissions, latest-session cancellation, stage reveal and named state transitions.
+
+- [ ] Add the failing behavioral/replay assertions: Replay four files; assert snippets denial before state changes, superseded results do not land, empty scan, page reveal and find-all ordering.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-search`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep S findings and current cancellation behavior; do not port the removed reducer unknown-action case.
+
+#### Task 13.21: epdf-plugin-link
+
+**Files:** `crates/plugins/link/src/`, `crates/plugins/link/tests/`, `crates/plugins/link/Cargo.toml`. **Needs:** 13.17, 13.14, 13.12, 13.11, 13.1, 13.3, 13.7, 13.2.
+
+**Vectors:** `plugins/link-functions.json`, `plugins/link.json`
+
+**Current TS reference:** `packages/plugin/link/src/{controller,model}.ts and resolution helpers`.
+
+**Behavior and interface:** Port live annotation/actions capabilities, obj:n/base:page:n keys, page-space bounds/destinations, flat visibility and complete URI/group reply action trees. Preserve current cache/pending cancellation contracts.
+
+- [ ] Add the failing behavioral/replay assertions: Replay link.json (29) and link-functions.json (8); assert caller cancellation, close and in-flight shared cache behavior, hidden/grouped links and destination activation.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-link`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep applicable S findings; do not reconstruct retired reducer/identity-flag APIs.
+
+#### Task 13.22: epdf-plugin-measurement
+
+**Files:** `crates/plugins/measurement/src/`, `crates/plugins/measurement/tests/`, `crates/plugins/measurement/Cargo.toml`. **Needs:** 13.17, 13.11, 13.1, 13.3, 13.7, 13.2.
+
+**Vectors:** `plugins/measurement-functions.json`, `plugins/measurement.json`
+
+**Current TS reference:** `packages/plugin/measurement/src/{controller,model}.ts; packages/plugin/measurement/src/{sync/viewports,write/scale}.ts`.
+
+**Behavior and interface:** Port full PdfMeasure/PageScale/local viewports and mirror cache, required page.measure listViewports/setScale with pages.scaleSet/refetch; typed apply/resources/opId/tx and current engine labels for measured shapes/caption-only updates.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 64 cases; assert three pageScaleOf inputs, calibrate final move, finite-positive calibration refusals, close midflight page scale error and queued instance-closed. Audit defensive absent-service branches from source: current vectors test valid required service or engine refusal, not a malformed absent service.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-measurement`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Engine d8027c034 absent-measure refusal now matches upstream per Task 8.25; report convergence, do not reintroduce clear-on-absence.
+
+#### Task 13.23: epdf-plugin-redaction
+
+**Files:** `crates/plugins/redaction/src/`, `crates/plugins/redaction/tests/`, `crates/plugins/redaction/Cargo.toml`. **Needs:** 13.17, 13.20, 13.15, 13.11, 13.1, 13.3, 13.7, 13.2.
+
+**Vectors:** `plugins/redaction-functions.json`, `plugins/redaction.json`
+
+**Current TS reference:** `packages/plugin/redaction/src/{controller,model}.ts and createStore/pending-read helpers`.
+
+**Behavior and interface:** Port current marking/session transitions, guarded annotation.list({pages}) projection, source-owned pending/collateral policy, typed search/selection and named page-space quads. Use current atomic applied results and batch failures, not retired Failed/Skipped wire status variants.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 57 cases; assert per-page commits, unaffected-page ownership, close/rollback/permissions and separate batch failures/rejections/reports. Audit defensive missing-redaction-service branch and dormant page.text defaults without claiming active coverage.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-redaction`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep engine no-op redaction mutationSequence divergence (87b61b533); source required-service refusals do not prove malformed absent-service fallback.
+
+#### Task 13.24: epdf-plugin-stamp
+
+**Files:** `crates/plugins/stamp/src/`, `crates/plugins/stamp/tests/`, `crates/plugins/stamp/Cargo.toml`. **Needs:** 13.18, 13.17, 13.12, 13.8, 13.11, 13.1, 13.3, 13.7, 13.2.
+
+**Vectors:** `plugins/stamp-api.json`, `plugins/stamp-assets.json`, `plugins/stamp-functions.json`, `plugins/stamp-library.json`, `plugins/stamp-placement.json`
+
+**Current TS reference:** `packages/plugin/stamp/src/{controller,model}.ts and library/assets/placement helpers`.
+
+**Behavior and interface:** Port canonical/template/materialized bytes, resource ownership, typed LocalEngine services, full metadata/PieceInfo merge/null deletion, key-sorted named-page registries and surviving size/ref layouts. Port per-library queues/cache/persistence, reserved annotation refs/apply confirmations, script environment/budgets and current placement; remove obsolete flatten page-status checks.
+
+- [ ] Add the failing behavioral/replay assertions: Replay five files (106 cases): assert queue freshness/isolation/rollback/close, exact append/copy/move/update/delete/preview, library asset ownership, ghost width buckets, picker expiry, sandbox failures and atomic flatten refusal. Keep observed in-flight completion after teardown distinct from cancellation.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-stamp`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep G findings and current sandbox behavior. Required local service refusal is not absent-service coverage. Default VM execution gap remains explicit; no loose source-as-preview or hidden input adapters.
+
+#### Task 13.25: epdf-plugin-signature
+
+**Files:** `crates/plugins/signature/src/`, `crates/plugins/signature/tests/`, `crates/plugins/signature/Cargo.toml`. **Needs:** 13.9, 13.18, 13.24, 13.17, 13.11, 13.1, 13.2, 13.7.
+
+**Vectors:** `plugins/signature-functions.json`, `plugins/signature.json`
+
+**Current TS reference:** `packages/plugin/signature/src/{controller,model}.ts and signing/stamp helpers`.
+
+**Behavior and interface:** Port signing keys/services/authority args, current form/widget DTOs, nested stamp APIs and preparation/completion/cancellation facts. Use current connected-controller model transitions instead of removed capability-only constructor.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 53 cases; assert actual stamp fallback creates annotation 60, successful asset placement settles, imported marks reach field requests, refused fill and signer cleanup; retain annotation-hit precedence for armed gestures.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-signature`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep H1/H2 downstream safety and engine finalizeCandidate plain-document/signing envelope-event choices from dd2e1c290/517d0123d.
+
+#### Task 13.26: epdf-plugin-metadata
+
+**Files:** `crates/plugins/metadata/src/`, `crates/plugins/metadata/tests/`, `crates/plugins/metadata/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `plugins/metadata.json`
+
+**Current TS reference:** `packages/plugin/metadata/src/{controller,model}.ts and mirror sync helpers`.
+
+**Behavior and interface:** Port lazy separate standard/custom mirrors, ensureLoaded joining both and explicit per-mirror refresh, ISO createdAt/modifiedAt/trapped, current permission errors and confirmed events before settlement.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 17 cases; assert no eager connect read, null/idle initial values, one queued reread during refresh, exact previous/changedKeys/origin and custom remove/add/empty-string changes; no event on key order alone.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-metadata`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.27: epdf-plugin-i18n
+
+**Files:** `crates/plugins/i18n/src/`, `crates/plugins/i18n/tests/`, `crates/plugins/i18n/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `plugins/i18n/core.json`, `plugins/i18n/plugin.json`, `plugins/i18n/plurals.json`
+
+**Current TS reference:** `packages/plugin/i18n/src/{controller,model}.ts and locale/translation helpers`.
+
+**Behavior and interface:** Port workspace settings, script-aware negotiation, loading identity dedup, superseded waiters, late pack registration without switching and stable translation references.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 642 cases; assert missing-key warning once, fallback commands.save, mismatched loaded codes and close behavior. Keep ICU/Unicode environment fixed to recorded metadata.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-i18n`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. No invented fetch cancellation: current close rejects state updates; superseding rejects waiter without aborting fetch.
+
+#### Task 13.28: epdf-plugin-shell
+
+**Files:** `crates/plugins/shell/src/`, `crates/plugins/shell/tests/`, `crates/plugins/shell/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `plugins/shell/plugin.json`, `plugins/shell/reducer.json`
+
+**Current TS reference:** `packages/plugin/shell/src/{controller,model}.ts`.
+
+**Behavior and interface:** Port named transitions, snapshot restore (without public id/focusRequest; restore initializes focusRequest 0), current surface/menu events and scoped lifecycle.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 47 cases; assert repeated focus read identity with no open event, menu close-before-open, JS numeric key order and document close/reopen empty state. Retain exact inherited-member adversarial outcomes.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-shell`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.29: epdf-plugin-commands
+
+**Files:** `crates/plugins/commands/src/`, `crates/plugins/commands/tests/`, `crates/plugins/commands/Cargo.toml`. **Needs:** 13.10, 13.27, 13.28, 13.1, 13.2.
+
+**Vectors:** `plugins/commands/functions.json`, `plugins/commands/plugin.json`
+
+**Current TS reference:** `packages/plugin/commands/src/{controller,model}.ts and definition/run helpers`.
+
+**Behavior and interface:** Port stateless settings-backed definitions, runtime shadowing, identity-aware disposers, live derivations, scoped capability/context callbacks and {commandId,refusal} shortcuts.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 79 cases; assert no-op/reset settings events, category/permission refusals, missing-label fallback, deferred completion and reentrant snapshot traversal/teardown.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-commands`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep U1/U2/U4/U7/U8 as applicable, including weak downgrade escape hatch for callbacks; do not restore removed reducer state identity or configured-duplicate construction refusal.
+
+#### Task 13.30: epdf-plugin-view-manager
+
+**Files:** `crates/plugins/view-manager/src/`, `crates/plugins/view-manager/tests/`, `crates/plugins/view-manager/Cargo.toml`. **Needs:** 13.2, 13.1.
+
+**Vectors:** `plugins/view-manager/plugin.json`, `plugins/view-manager/reducer.json`
+
+**Current TS reference:** `packages/plugin/view-manager/src/{controller,model}.ts`.
+
+**Behavior and interface:** Port generated pane IDs/createPane(options.documentIds), positional movePane, split/focus/remove with live DocumentsToken and memoized PaneInfo.
+
+- [ ] Add the failing behavioral/replay assertions: Replay 95 cases; assert removal moves documents to explicit/focused/last valid target, unknown/self target no move, and intermediate created/removed/focus/holder events in current key order. Do not restore arbitrary pane-ID/reorder injection.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-view-manager`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Re-check the area’s fixed and shared findings in rust-plugins-branch-review.md, Status; retain all kept divergences.
+
+#### Task 13.31: epdf-plugin-outline
+
+**Files:** `crates/plugins/outline/src/`, `crates/plugins/outline/tests/`, `crates/plugins/outline/Cargo.toml`. **Needs:** 13.21, 13.15, 13.14, 13.12, 13.27.
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/plugin/outline/src/{outline.plugin,controller,model,contract}.ts; packages/plugin/outline/src/sync/tree.ts`.
+
+**Behavior and interface:** Create plugin/outline with lazy tree mirror, incomplete tree flag, expanded/selected session state, visible rows/current item, optional activation capabilities and permission-gated create/update/move/delete through doc.apply. Add src/suites/outline.ts and plugins/outline.json.
+
+- [ ] Add the failing behavioral/replay assertions: Generate/replay empty/incomplete tree, ensureLoaded/refresh, local and remote fold, selection/expand/reveal, activation with and without optional tokens, neighbor insertion/move, refused write, cancellation and close. Assert same event origin and mirror before promise settlement.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-outline`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. No existing divergence; optional token absence is valid and must be covered. No required dependency on the new attachment plugin.
+
+#### Task 13.32: epdf-plugin-attachment
+
+**Files:** `crates/plugins/attachment/src/`, `crates/plugins/attachment/tests/`, `crates/plugins/attachment/Cargo.toml`. **Needs:** 13.17, 13.14.
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/plugin/attachment/src/{attachment.plugin,controller,model,contract,names}.ts; packages/plugin/attachment/src/sync/files.ts`.
+
+**Behavior and interface:** Create plugin/attachment with lazy file mirror, attachment/page-file union and IDs, selected/pending reads, optional annotation/stage integration and add/remove/download/reveal capability. Add src/suites/attachment.ts and plugins/attachment.json.
+
+- [ ] Add the failing behavioral/replay assertions: Generate/replay document attachments plus annotation files, add/remove facts and bytes, names/selection, denied doc.download/doc.attachments.modify, annotation canDelete, optional token absence, remote change, cancellation and close. Assert permission gates issue no engine write.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-attachment`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. No existing divergence; generator/replay/Cargo registration belongs here.
+
+#### Task 13.33: epdf-viewer-host
+
+**Files:** `crates/epdf-viewer-host/src/`, `crates/epdf-viewer-host/tests/`, `crates/epdf-viewer-host/Cargo.toml`. **Needs:** 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 13.10, 13.11, 13.12, 13.13, 13.14, 13.15, 13.16, 13.17, 13.18, 13.19, 13.20, 13.21, 13.22, 13.23, 13.24, 13.25, 13.26, 13.27, 13.28, 13.29, 13.30, 13.31, 13.32.
+
+**Vectors:** New files named below; no existing suite assigned.
+
+**Current TS reference:** `packages/engine/core/src/engine/DocumentHandle.ts; packages/engine/core/src/events/DocumentEvent.ts; packages/engine/services/src/worker-host/WorkerHost.ts; packages/core/main/src/guarded-handle.ts`.
+
+**Behavior and interface:** Remove temporary kernel translations only after every caller uses current contracts: nm/index→baseIndex rewriting and revision loss, base_index_refs/kernel_annotations/CancelToken::never reads, kernel_ref_at, create/update/delete/draft conversion, raw flags reconstruction, kernel_forms status heuristic/attachWidget, export/import bundle labels and stamped values, page-space/quad back-conversion, page/event respelling and rejected-password shim. Require authority now supplied by current kernel, coordinating narrowly with epdf-engine if its session fallback still exists. Keep only genuine host wire adaptation.
+
+- [ ] Add the failing behavioral/replay assertions: Update tests/translate.rs and tests/viewer_host.rs to current DTOs, actual parked password→unlock flow, named quads, measured caption update, thread delete, forms/bundle and event-before-settlement; run host + engine + all plugin acceptance. Wire the five new crates into native host composition and factory dispatch. Final vectors:check must have zero stale/orphan/unreplayed files; refresh coverage with existing coverage/coverage:check and report any concrete gap.
+- [ ] Port the behavior above, then run `CARGO_BUILD_JOBS=6 cargo test -p epdf-viewer-host`. Acceptance: every owned suite and behavioral test passes, no skipped replay or swallowed unexpected error.
+- [ ] Record divergence dispositions and commit explicit paths. Keep engine divergences already ruled retained; explicitly mark obsolete shims removed and surviving transport adaptations. No .github, pushes, publication or Task 14 merge. Historical retention decision remains Task 14.
+
+Task 13.33 final integration acceptance: `CARGO_BUILD_JOBS=6 cargo test -p epdf-engine -p epdf-kernel -p plugin-conformance -p epdf-geometry -p epdf-fonts -p epdf-form-core -p epdf-stage-core -p epdf-annotation-core -p epdf-acrojs -p epdf-signature-core -p epdf-ui-core -p epdf-plugin-interaction -p epdf-plugin-actions -p epdf-plugin-history -p epdf-plugin-stage -p epdf-plugin-selection -p epdf-plugin-render -p epdf-plugin-annotation -p epdf-plugin-form -p epdf-plugin-page-edit -p epdf-plugin-search -p epdf-plugin-link -p epdf-plugin-measurement -p epdf-plugin-redaction -p epdf-plugin-stamp -p epdf-plugin-signature -p epdf-plugin-metadata -p epdf-plugin-i18n -p epdf-plugin-shell -p epdf-plugin-commands -p epdf-plugin-view-manager -p epdf-plugin-outline -p epdf-plugin-attachment -p epdf-viewer-host`; then `pnpm --filter @embedpdf/tooling-plugin-conformance run vectors:check`, `pnpm --filter @embedpdf/tooling-plugin-conformance run coverage`, and `pnpm --filter @embedpdf/tooling-plugin-conformance run coverage:check`. Expected: zero failed Rust tests and zero stale/orphaned/unreplayed suites. A coverage regression is reported and fixed in its owning task, never hidden by lowering the gate.
+
 ### Task 14: Close
+
+- [ ] Before merging into plugins, decide whether `tooling/plugin-conformance/historical/task-12b*/` should be kept or replaced with a short committed hash list. State the decision and rationale in the Task 14 report before the merge.
 
 - [ ] `coverage` regenerated; `vectors:check` and `coverage:check` clean; every engine `:check` current.
 - [ ] `scripts/mutants.sh` on every crate whose source changed, one `--file` at a time; triage survivors.
