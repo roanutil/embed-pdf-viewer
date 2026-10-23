@@ -32,6 +32,13 @@ grid whose column count comes out NaN (`RangeError: Invalid array length`). The 
 on `linear_layout`, `grid_layout` and the four anchor functions, all of which succeed on any input
 a viewer builds itself.
 
+The empty scene the stage plugin lays out instead of those throws (review findings M27 and R5) is
+not here. It lives in `crates/plugins/stage/src/services/scene.rs`, which turns an `Err` from
+either layout into `linear_layout(&[], &[], ..)`. The `edge_inputs` tests in
+`tests/conformance.rs` pin what that fallback needs from this crate: an empty layout succeeds, and
+a missing page or a NaN column count fails without a panic. They also pin the TypeScript's answers
+for zero, NaN and infinite viewports, zooms and column counts.
+
 Default parameters become explicit arguments: `place_camera` takes `padding`, `align` and
 `direction` (`0`, `AlignmentValue::default()`, `Direction::Ltr` in the TypeScript), and
 `reveal_camera` and `resolve_zoom` take `padding` (`0`).
