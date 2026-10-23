@@ -355,6 +355,63 @@ import {
 } from '../src/suites/page-edit-current-fixtures';
 const tick = () => new Promise<void>((resolve) => setImmediate(resolve));
 const harness = async (responses: ResponseSpec[] = [], allows: '*' | string[] = '*') => {
+  const delivered: unknown[] = [];
+  const prepared: ResponseSpec[] = [...responses];
+  const applyIndexes = responses.flatMap((r, i) => (r.path === 'apply' ? [i] : []));
+  const deferredIds = new Map<string, string>();
+  const bindResult = (value: unknown, id: string): ChangeResult => {
+    assert.ok(
+      typeof value === 'object' &&
+        value !== null &&
+        'items' in value &&
+        Array.isArray(value.items) &&
+        'meta' in value,
+    );
+    const result = value as ChangeResult;
+    return {
+      ...result,
+      meta: { ...result.meta, opId: id },
+      items: result.items.map((item) => {
+        switch (item.type) {
+          case 'pages.rotate':
+          case 'pages.reorder':
+          case 'pages.delete':
+          case 'pages.insert':
+          case 'pages.insertBlank':
+            return { ...item, meta: { ...item.meta, opId: id } };
+          default:
+            throw Error('expected page result');
+        }
+      }),
+    };
+  };
+  const bindEvent = (
+    event: DocumentEvent,
+    id: string,
+    index: number,
+    count: number,
+  ): DocumentEvent => {
+    switch (event.type) {
+      case 'pages.rotated':
+      case 'pages.reordered':
+      case 'pages.deleted':
+      case 'pages.inserted':
+        return {
+          ...event,
+          meta: { ...event.meta, opId: id },
+          origin: {
+            kind: 'local',
+            sessionId: 's1',
+            sub: null,
+            ts: 0,
+            serverId: null,
+            tx: { id, index, count },
+          },
+        };
+      default:
+        throw Error('expected page fact');
+    }
+  };
   const staged: PendingChange[] = [];
   const reports: unknown[] = [];
   const observer = definePlugin({
@@ -363,13 +420,33 @@ const harness = async (responses: ResponseSpec[] = [], allows: '*' | string[] = 
     create: (ctx) => ({
       api: {},
       connect: () => {
-        ctx.listen(ctx.changes.onStaged, (c) => staged.push(c));
+        ctx.listen(ctx.changes.onStaged, (c) => {
+          const responseIndex = applyIndexes[staged.length];
+          const raw = responses[responseIndex];
+          assert.ok(raw, 'each staged request has an explicit fixture response');
+          staged.push(c);
+          if (raw.defer) deferredIds.set(raw.defer, c.opId);
+          prepared[responseIndex] = {
+            ...raw,
+            ...(raw.value === undefined ? {} : { value: bindResult(raw.value, c.opId) }),
+            ...(raw.events
+              ? {
+                  events: raw.events.map((e, index) =>
+                    bindEvent(e, c.opId, index, raw.events!.length),
+                  ),
+                }
+              : {}),
+          };
+        });
       },
     }),
   });
   const fake = createFakeEngine(
-    { documents: { a: doc(responses, { security: { allows } }) } },
-    (v) => v,
+    { documents: { a: doc(prepared, { security: { allows } }) } },
+    (v) => {
+      if (typeof v === 'object' && v !== null && 'meta' in v) delivered.push(v);
+      return v;
+    },
   );
   const kernel = createKernel({
     engine: fake.engine,
@@ -378,7 +455,20 @@ const harness = async (responses: ResponseSpec[] = [], allows: '*' | string[] = 
   });
   await kernel.start();
   await kernel.documents.open({ kind: 'bytes', id: 'a', bytes: new Uint8Array() });
-  return { kernel, fake, staged, reports, api: kernel.capability(PageEditToken, 'a') };
+  const settle = (label: string, outcome: { value: ChangeResult }) => {
+    const id = deferredIds.get(label);
+    assert.ok(id, 'deferred fixture belongs to staged request');
+    return fake.settle(label, { value: bindResult(outcome.value, id) });
+  };
+  return {
+    kernel,
+    fake,
+    staged,
+    reports,
+    delivered,
+    settle,
+    api: kernel.capability(PageEditToken, 'a'),
+  };
 };
 const compact = (h: Awaited<ReturnType<typeof harness>>) =>
   h.kernel.documents.listPages('a').map((p) => [p.ref.objectNumber, p.rotation]);
@@ -438,10 +528,10 @@ test('two quick turns see pending rotation, retain undo predictions and label on
     });
     one.then(() => order.push('first-resolved'));
     two.then(() => order.push('second-resolved'));
-    assert.equal(h.fake.settle('one', { value: result(first) }), true);
+    assert.equal(h.settle('one', { value: result(first) }), true);
     await one;
     await tick();
-    assert.equal(h.fake.settle('two', { value: result(second) }), true);
+    assert.equal(h.settle('two', { value: result(second) }), true);
     await two;
     await tick();
     assert.deepEqual(order, ['fact:90', 'first-resolved', 'fact:180', 'second-resolved']);
@@ -453,7 +543,11 @@ test('two quick turns see pending rotation, retain undo predictions and label on
     assert.deepEqual(h.reports, []);
     assert.deepEqual(h.fake.unmatched, []);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
 });
 test('extract waits for earlier changes to settle; labels/counts distinguish all write verbs', async () => {
@@ -478,7 +572,7 @@ test('extract waits for earlier changes to settle; labels/counts distinguish all
     const copying = h.api.duplicate([pr(10)]);
     await tick();
     assert.equal(h.fake.log.filter((c) => 'path' in c && c.path === 'pages.extract').length, 0);
-    h.fake.settle('turn', { value: result(turned) });
+    h.settle('turn', { value: result(turned) });
     await turning;
     assert.deepEqual(await copying, { pages: [pr(77)] });
     await h.api.insertBlank();
@@ -501,7 +595,11 @@ test('extract waits for earlier changes to settle; labels/counts distinguish all
     assert.deepEqual(h.fake.unmatched, []);
     assert.deepEqual(h.reports, []);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
 });
 test('blank positions choose each anchor or edge size and explicit count/size wins', async () => {
@@ -563,7 +661,11 @@ test('blank positions choose each anchor or edge size and explicit count/size wi
       assert.deepEqual(h.reports, []);
       assert.deepEqual(h.fake.unmatched, []);
     } finally {
-      await h.kernel.destroy();
+      try {
+        assertDirectIdentity(h);
+      } finally {
+        await h.kernel.destroy();
+      }
     }
   }
 });
@@ -591,7 +693,11 @@ test('pre-aborted calls refuse before staging, permission refusal wins and dupli
     assert.deepEqual(h.fake.unmatched, []);
     assert.equal(h.fake.log.length, 3);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
   const denied = await harness([], ['doc.pages.assemble']);
   try {
@@ -609,7 +715,11 @@ test('pre-aborted calls refuse before staging, permission refusal wins and dupli
     );
     assert.deepEqual(denied.staged, []);
   } finally {
-    await denied.kernel.destroy();
+    try {
+      assertDirectIdentity(denied);
+    } finally {
+      await denied.kernel.destroy();
+    }
   }
 });
 test('cancelling staged write rejects caller while the change still confirms; deleting all pages is refused', async () => {
@@ -629,7 +739,7 @@ test('cancelling staged write rejects caller while the change still confirms; de
       [30, 270],
     ]);
     assert.equal(h.staged.length, 1);
-    h.fake.settle('turn', { value: result(turned) });
+    h.settle('turn', { value: result(turned) });
     await tick();
     assert.deepEqual(compact(h), [
       [10, 90],
@@ -640,7 +750,11 @@ test('cancelling staged write rejects caller while the change still confirms; de
     assert.deepEqual(h.fake.unmatched, []);
     assert.deepEqual(h.reports, []);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
 });
 test('closing rejects pending writes, removes subscribers and leaves late confirmation silent', async () => {
@@ -655,13 +769,17 @@ test('closing rejects pending writes, removes subscribers and leaves late confir
     await h.kernel.documents.close('a');
     await check;
     assert.deepEqual(h.fake.snapshot(), { a: { subscribers: 0 } });
-    h.fake.settle('turn', { value: result(turned) });
+    h.settle('turn', { value: result(turned) });
     await tick();
     assert.deepEqual(events, []);
     assert.deepEqual(h.reports, []);
     assert.deepEqual(h.fake.unmatched, []);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
 });
 test('selection drops deleted pages by registry read and remains stable for identical resolved selections', async () => {
@@ -676,7 +794,11 @@ test('selection drops deleted pages by registry read and remains stable for iden
     assert.deepEqual(h.reports, []);
     assert.deepEqual(h.fake.unmatched, []);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
 });
 const pluginError = (
@@ -902,7 +1024,11 @@ test('reorder and whole-PDF insert label the exact history scope, and returned a
     assert.deepEqual(h.reports, []);
     assert.deepEqual(h.fake.unmatched, []);
   } finally {
-    await h.kernel.destroy();
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
+    }
   }
 });
 const history = new URL('../historical/task-12b2c8/', import.meta.url);
@@ -996,6 +1122,256 @@ test('each staged fixture answer/event names its exact current request opId and 
           tx: { id, index: i, count: a.events!.length },
         });
       }
+    }
+  }
+});
+
+type LayoutRow = readonly [number, number, number, number, number];
+const assertLayout = (entry: TraceEntry, expected: readonly LayoutRow[]) => {
+  const pages = val(entry) as {
+    ref: { objectNumber: number };
+    index: number;
+    rotation: number;
+    size: { width: number; height: number };
+  }[];
+  assert.equal(pages.length, expected.length, 'complete registry count');
+  assert.deepEqual(
+    pages.map((p) => [p.ref.objectNumber, p.index, p.rotation, p.size.width, p.size.height]),
+    expected,
+  );
+};
+/** Extra read-only observations never replace serialized scenario inputs or outcomes. */
+const observedLayouts = async (name: string, source = false) => {
+  const original = cases.find((c) => c.name === name)!;
+  const observations: { step: number; doc: string }[] = [];
+  const steps: (typeof original.steps)[number][] = [];
+  let sourceOpen = false;
+  const observe = (doc: string) => {
+    observations.push({ step: steps.length, doc });
+    steps.push({ op: 'call', target: 'documents', method: 'listPages', args: [doc] });
+  };
+  for (const step of original.steps) {
+    steps.push(step);
+    if (step.op === 'call' && step.target === 'documents' && step.method === 'open') {
+      const id = (step.args?.[0] as { id: string }).id;
+      if (id === 'b') sourceOpen = true;
+      observe(id);
+    } else if (step.op === 'call' && typeof step.target === 'object' && 'token' in step.target) {
+      observe('a');
+      if (source && sourceOpen) observe('b');
+    }
+  }
+  const r = await runScenario({ ...original, steps });
+  assert.deepEqual(r.unmatched, []);
+  return observations.map((o) => ({ doc: o.doc, entry: r.trace[o.step] }));
+};
+const initialRows: LayoutRow[] = [
+  [10, 0, 0, 100, 200],
+  [20, 1, 90, 300, 400],
+  [30, 2, 270, 500, 600],
+];
+test('all blank/byte/empty/reorder/duplicate placements preserve complete registry geometry', async () => {
+  const blank = await observedLayouts('add-blank');
+  assertLayout(blank[0].entry, initialRows);
+  assertLayout(blank[1].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [30, 2, 270, 500, 600],
+    [99, 3, 0, 500, 600],
+  ]);
+  assertLayout(blank[2].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [30, 2, 270, 500, 600],
+    [99, 3, 0, 500, 600],
+    [98, 4, 0, 500, 600],
+  ]);
+  assertLayout(blank[3].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [97, 2, 0, 300, 400],
+    [30, 3, 270, 500, 600],
+    [99, 4, 0, 500, 600],
+    [98, 5, 0, 500, 600],
+  ]);
+  assertLayout(blank[4].entry, [
+    [10, 0, 0, 100, 200],
+    [96, 1, 0, 612, 792],
+    [95, 2, 0, 612, 792],
+    [94, 3, 0, 612, 792],
+    [20, 4, 90, 300, 400],
+    [97, 5, 0, 300, 400],
+    [30, 6, 270, 500, 600],
+    [99, 7, 0, 500, 600],
+    [98, 8, 0, 500, 600],
+  ]);
+  const bytes = await observedLayouts('insert');
+  assertLayout(bytes[0].entry, initialRows);
+  assertLayout(bytes[1].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [30, 2, 270, 500, 600],
+    [77, 3, 0, 50, 60],
+  ]);
+  assertLayout(bytes[2].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [78, 2, 0, 100, 200],
+    [30, 3, 270, 500, 600],
+    [77, 4, 0, 50, 60],
+  ]);
+  const empty = await observedLayouts('an-empty-registry');
+  assertLayout(empty[0].entry, []);
+  assertLayout(empty[1].entry, []);
+  assertLayout(empty[2].entry, [[99, 0, 0, 612, 792]]);
+  assertLayout(empty[3].entry, [
+    [77, 0, 0, 100, 200],
+    [99, 1, 0, 612, 792],
+  ]);
+  const moved = await observedLayouts('move-to-the-end');
+  assertLayout(moved[0].entry, initialRows);
+  assertLayout(moved[1].entry, [
+    [20, 0, 90, 300, 400],
+    [30, 1, 270, 500, 600],
+    [10, 2, 0, 100, 200],
+  ]);
+  for (const i of [2, 3])
+    assertLayout(moved[i].entry, [
+      [20, 0, 90, 300, 400],
+      [10, 1, 0, 100, 200],
+      [30, 2, 270, 500, 600],
+    ]);
+  const copied = await observedLayouts('duplicate');
+  assertLayout(copied[0].entry, initialRows);
+  assertLayout(copied[1].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [77, 2, 0, 100, 200],
+    [78, 3, 90, 300, 400],
+    [30, 4, 270, 500, 600],
+  ]);
+  assertLayout(copied[2].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [77, 2, 0, 100, 200],
+    [78, 3, 90, 300, 400],
+    [30, 4, 270, 500, 600],
+    [79, 5, 270, 500, 600],
+  ]);
+});
+test('subset and valid-index copies confirm complete destination layouts', async () => {
+  const subset = await observedLayouts('insert-a-subset-of-another-pdf');
+  assertLayout(subset[0].entry, initialRows);
+  const after: LayoutRow[] = [
+    [10, 0, 0, 100, 200],
+    [77, 1, 0, 50, 60],
+    [78, 2, 0, 10, 20],
+    [20, 3, 90, 300, 400],
+    [30, 4, 270, 500, 600],
+  ];
+  for (const o of subset.slice(1)) assertLayout(o.entry, after);
+  const valid = await observedLayouts('insert-a-subset-names-the-missing-index');
+  assertLayout(valid[0].entry, initialRows);
+  for (const o of valid.slice(1))
+    assertLayout(o.entry, [
+      [10, 0, 0, 100, 200],
+      [20, 1, 90, 300, 400],
+      [30, 2, 270, 500, 600],
+      [77, 3, 0, 30, 40],
+    ]);
+});
+test('both cross-document placements preserve every source page and confirm complete destination layouts', async () => {
+  const observations = await observedLayouts('insert-from-another-document', true);
+  const a = observations.filter((o) => o.doc === 'a');
+  const b = observations.filter((o) => o.doc === 'b');
+  assertLayout(a[0].entry, initialRows);
+  for (const o of b) assertLayout(o.entry, initialRows);
+  assertLayout(a[1].entry, [
+    [10, 0, 0, 100, 200],
+    [20, 1, 90, 300, 400],
+    [30, 2, 270, 500, 600],
+    [77, 3, 90, 300, 400],
+  ]);
+  for (const o of a.slice(2))
+    assertLayout(o.entry, [
+      [78, 0, 90, 300, 400],
+      [10, 1, 0, 100, 200],
+      [20, 2, 90, 300, 400],
+      [30, 3, 270, 500, 600],
+      [77, 4, 90, 300, 400],
+    ]);
+});
+import type { ChangeResult, DocumentEvent } from '@embedpdf/engine-core/runtime';
+/** Read actual delivered values independently from the binding metadata chosen by the fixture. */
+const assertDirectIdentity = (h: Awaited<ReturnType<typeof harness>>) => {
+  const requests = h.fake.log.filter(
+    (c): c is { doc: string; path: string; args: unknown[] } => 'path' in c && c.path === 'apply',
+  );
+  assert.equal(requests.length, h.staged.length);
+  for (const [i, request] of requests.entries())
+    assert.equal(
+      (request.args[1] as { opId: string }).opId,
+      h.staged[i].opId,
+      'staged id equals actual request',
+    );
+  const ids = requests.map((r) => (r.args[1] as { opId: string }).opId);
+  const resultIds: string[] = [];
+  const eventGroups = new Map<string, DocumentEvent[]>();
+  for (const value of h.delivered) {
+    assert.ok(typeof value === 'object' && value !== null && 'meta' in value);
+    if ('items' in value) {
+      const result = value as ChangeResult;
+      assert.ok(ids.includes(result.meta.opId), 'result belongs to actual request');
+      resultIds.push(result.meta.opId);
+      for (const item of result.items)
+        assert.equal(item.meta.opId, result.meta.opId, 'item belongs to result/request');
+    } else {
+      const event = value as DocumentEvent;
+      assert.ok('origin' in event && 'meta' in event);
+      assert.ok(ids.includes(event.meta.opId), 'fact belongs to actual request');
+      const group = eventGroups.get(event.meta.opId) ?? [];
+      group.push(event);
+      eventGroups.set(event.meta.opId, group);
+    }
+  }
+  assert.equal(new Set(resultIds).size, resultIds.length, 'one delivered result per request');
+  for (const [index, id] of resultIds.entries())
+    assert.equal(id, ids[index], 'delivered result follows its actual request');
+  for (const [id, events] of eventGroups) {
+    assert.ok(resultIds.includes(id), 'confirmed fact has delivered result');
+    for (const [index, event] of events.entries()) {
+      assert.ok('origin' in event);
+      assert.deepEqual(event.origin, {
+        kind: 'local',
+        sessionId: 's1',
+        sub: null,
+        ts: 0,
+        serverId: null,
+        tx: { id, index, count: events.length },
+      });
+    }
+  }
+};
+test('direct immediate and deferred multi-item confirmations belong to actual request ids and ordered local transactions', async () => {
+  const first = rotated([pr(10)], 90, [page(10, 0, 90), three[1], three[2]]);
+  const second = rotated([pr(20)], 180, [page(10, 0, 90), page(20, 1, 180, 300, 400), three[2]]);
+  const deletion = deleted([pr(20)], [page(10, 0, 90), { ...three[2], index: 1 }]);
+  const h = await harness([
+    answer(first, second),
+    { path: 'apply', defer: 'delete', events: [fact(deletion)] },
+  ]);
+  try {
+    await h.api.rotateBy([pr(10), pr(20)], 90);
+    const deleting = h.api.delete([pr(20)]);
+    await tick();
+    h.settle('delete', { value: result(deletion) });
+    await deleting;
+    assertDirectIdentity(h);
+  } finally {
+    try {
+      assertDirectIdentity(h);
+    } finally {
+      await h.kernel.destroy();
     }
   }
 });

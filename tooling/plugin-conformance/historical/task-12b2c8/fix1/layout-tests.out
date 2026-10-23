@@ -1,0 +1,42 @@
+(node:67353) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ relative rotation uses current refs and stages an actual apply transaction (576.323666ms)
+✔ permission selectors keep assemble/download independent and wildcard grants both (1.852625ms)
+✔ relative turns see confirmed rotations and remote layouts (2.9195ms)
+✔ absolute rotate, reorder and delete expose actual successful order/count and void results (1.171667ms)
+✔ deferred changes send in staging order and deliver confirmed document event before promise settlement (0.982209ms)
+✔ blank defaults use actual neighbour size, preserve explicit count/size and return new refs (1.630209ms)
+✔ bytes stay byte-exact; insert positions name current refs and public result names pages (1.123708ms)
+✔ empty registry inserts Letter; missing refs never become implicit zero rotation (0.801791ms)
+✔ mixed rotations group in first-seen order within one transaction and return void (1.517375ms)
+✔ reorder retains neighbour positions and final order (0.90675ms)
+✔ subset insertion uses scratch full scope, selected order, extraction bytes and guaranteed close (1.7015ms)
+✔ clock-named scratch sources close for each malformed source index (2.13425ms)
+✔ cross-document refs resolve in source registry, bytes insert in destination and only source extracts (1.406ms)
+✔ duplicate copies selected order after last page and extraction returns original bytes (1.22725ms)
+✔ scope absence and captured authority after close are distinct; selection resolves indexes and deduplicates (1.519917ms)
+✔ two quick turns see pending rotation, retain undo predictions and label one history step each (1.098208ms)
+✔ extract waits for earlier changes to settle; labels/counts distinguish all write verbs (0.409209ms)
+✔ blank positions choose each anchor or edge size and explicit count/size wins (0.876167ms)
+✔ pre-aborted calls refuse before staging, permission refusal wins and duplicate separately requires download (0.594209ms)
+✔ cancelling staged write rejects caller while the change still confirms; deleting all pages is refused (0.403166ms)
+✔ closing rejects pending writes, removes subscribers and leaves late confirmation silent (0.288625ms)
+✔ selection drops deleted pages by registry read and remains stable for identical resolved selections (0.181834ms)
+wrote crates/plugins/acrojs/prelude.js
+✔ every negative channel is exact and named; no unused promises, unmatched calls, diagnostics or reports are hidden (17.967083ms)
+✔ prior actions160, commands79, link37 and metadata17 retain complete inputs and every output channel (644.340375ms)
+✔ reorder and whole-PDF insert label the exact history scope, and returned answers alone cannot change registry (0.299833ms)
+✔ nineteen current inputs and complete schema2 outcomes remain exact and replayable (23.857375ms)
+✔ nineteen immutable original occurrences retain full definitions/outcomes, source hashes and exact mappings (9.788959ms)
+✔ each staged fixture answer/event names its exact current request opId and full transaction order (14.32675ms)
+✔ all blank/byte/empty/reorder/duplicate placements preserve complete registry geometry (6.679542ms)
+✔ subset and valid-index copies confirm complete destination layouts (3.000416ms)
+✔ both cross-document placements preserve every source page and confirm complete destination layouts (1.935291ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1629.967583
