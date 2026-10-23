@@ -9,14 +9,12 @@ use epdf_acrojs::harness::{
     answer_promise, scripted_callback, scripted_sandbox_factory, to_json, typed, untyped,
 };
 use epdf_acrojs::{
-    IdentityOverrides, PartialScriptIdentity, ScriptBudget, ScriptEventInput, ScriptEventKind,
-    ScriptInput, ScriptOutput, ScriptSandbox, ScriptSandboxFactory, ScriptTransaction,
-    ScriptWorldInput,
+    PartialScriptIdentity, ScriptBudget, ScriptEventInput, ScriptEventKind, ScriptInput,
+    ScriptOutput, ScriptSandbox, ScriptSandboxFactory, ScriptTransaction, ScriptWorldInput,
 };
 use epdf_kernel::engine::decode;
 use epdf_kernel::rt::Promise;
-use epdf_kernel::types::DocumentMeta;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Token, define, is_undefined};
+use epdf_kernel::{AnyPlugin, AnyToken, Controller, Error, Token, define, is_undefined, undefined};
 use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -178,26 +176,46 @@ impl ScriptSandbox for LiveSandbox {
     }
 }
 
-fn javascript_config(spec: &Value, h: &Harness) -> Result<JavaScriptConfig, Error> {
+/// A vector identity: fields, or a scripted function answering them.
+fn identity_of(identity: &Value, h: &Harness) -> Result<Option<ActionsScriptIdentity>, Error> {
+    if identity.is_null() {
+        return Ok(None);
+    }
+    if identity.get("$fn").is_some() {
+        let callback = scripted(identity, h);
+        return Ok(Some(ActionsScriptIdentity::Function(Rc::new(move || {
+            match callback.call(Vec::new()) {
+                Answer::Returns(value) => decode(value).unwrap_or_default(),
+                _ => PartialScriptIdentity::default(),
+            }
+        }))));
+    }
+    Ok(Some(ActionsScriptIdentity::Value(decode(identity.clone())?)))
+}
+
+/// The vector's `javascript` config. `current` is the current fixture
+/// (`actions-current-fixtures.ts`): `enabled` as given, and a `null` or
+/// absent sandbox leaves the default factory. The legacy `actions` factory
+/// (`actions.ts`) refuses scripting without a sandbox spec and turns it off
+/// for a `null` one.
+fn javascript_config(spec: &Value, h: &Harness, current: bool) -> Result<JavaScriptConfig, Error> {
     let enabled = spec.get("enabled").and_then(Value::as_bool).unwrap_or(false);
-    let sandbox_factory = match spec.get("sandbox") {
+    let sandbox = spec.get("sandbox").filter(|s| !is_undefined(s));
+    if !current && enabled && sandbox.is_none() {
+        return Err(Error::new(
+            "[actions suite] javascript.enabled needs a scripted sandbox: the QuickJS default does not port",
+        ));
+    }
+    let sandbox_factory = match sandbox {
         Some(sandbox) if h.is_live() && sandbox.get("$fn").is_some() => {
             Some(live_sandbox_factory(sandbox, h))
         }
         Some(sandbox) if !sandbox.is_null() => Some(scripted_sandbox_factory(sandbox, h)),
-        // `null`: a host with no sandbox at all.
         _ => None,
     };
-    let identity = match spec.get("identity") {
+    let identity = match spec.get("identity").filter(|v| !is_undefined(v)) {
         None => None,
-        Some(identity) if identity.get("$fn").is_some() => {
-            let callback = scripted(identity, h);
-            Some(IdentityOverrides::Function(Rc::new(move || match callback.call(Vec::new()) {
-                Answer::Returns(value) => decode(value).unwrap_or_default(),
-                _ => PartialScriptIdentity::default(),
-            })))
-        }
-        Some(identity) => Some(IdentityOverrides::Value(decode(identity.clone())?)),
+        Some(identity) => Some(identity_of(identity, h)?),
     };
     let text_fn = |key: &str| -> Option<Rc<dyn Fn() -> String>> {
         let callback = scripted(spec.get(key)?, h);
@@ -208,9 +226,13 @@ fn javascript_config(spec: &Value, h: &Harness) -> Result<JavaScriptConfig, Erro
     };
     let number = |key: &str| spec.get(key).map(|s| number_fn(scripted(s, h)));
     Ok(JavaScriptConfig {
-        enabled,
-        sandbox_factory,
+        enabled: Some(if current {
+            enabled
+        } else {
+            enabled && sandbox.is_some_and(|s| !s.is_null())
+        }),
         identity,
+        sandbox_factory,
         file_name: text_fn("fileName"),
         now: number("now"),
         utc_offset_minutes: number("utcOffsetMinutes"),
@@ -222,34 +244,65 @@ fn javascript_config(spec: &Value, h: &Harness) -> Result<JavaScriptConfig, Erro
         max_script_nodes_per_dispatch: spec
             .get("maxScriptNodesPerDispatch")
             .and_then(Value::as_f64),
+        host_utc_offset_minutes: None,
     })
 }
 
 /// The vector's plugin config as the plugin's.
-pub fn actions_config(config: &Value, h: &Harness) -> Result<ActionsConfig, Error> {
-    let log = h.clone();
-    let mut out = ActionsConfig {
-        observer_error: Some(Rc::new(move |message: &str, error: &Error| {
-            log.log("console.error", vec![json!(message), error.to_canonical()]);
-        })),
-        ..Default::default()
-    };
+pub fn actions_config(config: &Value, h: &Harness, current: bool) -> Result<ActionsConfig, Error> {
+    let mut out = ActionsConfig::default();
     if is_undefined(config) || config.is_null() {
         return Ok(out);
     }
-    if let Some(policy) = config.get("policy") {
+    if let Some(policy) = config.get("policy").filter(|v| !is_undefined(v)) {
         out.policy = Some(decode(policy.clone())?);
     }
-    if let Some(triggers) = config.get("triggers") {
+    if let Some(triggers) = config.get("triggers").filter(|v| !is_undefined(v)) {
         out.triggers = Some(decode(triggers.clone())?);
     }
-    if let Some(open_sequence) = config.get("openSequence") {
+    if let Some(open_sequence) = config.get("openSequence").filter(|v| !is_undefined(v)) {
         out.open_sequence = Some(decode(open_sequence.clone())?);
     }
-    if let Some(javascript) = config.get("javascript") {
-        out.javascript = Some(javascript_config(javascript, h)?);
+    if let Some(javascript) = config.get("javascript").filter(|v| !is_undefined(v)) {
+        out.javascript = Some(javascript_config(javascript, h, current)?);
     }
     Ok(out)
+}
+
+/// A `DeepPartial<ActionsSettings>` from the vector.
+fn settings_patch(value: &Value, h: &Harness) -> Result<ActionsSettingsPatch, Error> {
+    let member = |key: &str| value.get(key).filter(|v| !is_undefined(v));
+    let javascript = match member("javascript") {
+        None => None,
+        Some(js) => Some(JavaScriptSettingsPatch {
+            enabled: js.get("enabled").and_then(Value::as_bool),
+            identity: match js.get("identity").filter(|v| !is_undefined(v)) {
+                None => None,
+                Some(identity) => Some(identity_of(identity, h)?),
+            },
+        }),
+    };
+    Ok(ActionsSettingsPatch {
+        policy: member("policy").map(|p| decode(p.clone())).transpose()?,
+        triggers: member("triggers").map(|t| decode(t.clone())).transpose()?,
+        open_sequence: member("openSequence").map(|o| decode(o.clone())).transpose()?,
+        javascript,
+    })
+}
+
+/// The settings as the TypeScript prints them.
+fn settings_json(settings: &ActionsSettings) -> Value {
+    let identity = match &settings.javascript.identity {
+        None => Value::Null,
+        Some(ActionsScriptIdentity::Value(fields)) => to_json(fields),
+        Some(ActionsScriptIdentity::Function(_)) => function_marker(),
+    };
+    json!({
+        "policy": to_json(&settings.policy),
+        "triggers": to_json(&settings.triggers),
+        "openSequence": settings.open_sequence.as_str(),
+        "javascript": { "enabled": settings.javascript.enabled, "identity": identity },
+    })
 }
 
 fn ui_adapter(spec: &Value, h: &Harness) -> Option<Rc<ActionUiAdapter>> {
@@ -264,7 +317,7 @@ fn ui_adapter(spec: &Value, h: &Harness) -> Option<Rc<ActionUiAdapter>> {
     Some(Rc::new(ActionUiAdapter {
         open_uri: Rc::new(move |uri: &str, options: &UriOptions| match &open_uri {
             Some(callback) => ignored(callback.call(vec![json!(uri), to_json(options)])),
-            None => Err(Error::named("TypeError", "uiAdapter.openUri is not a function")),
+            None => Err(Error::named("TypeError", "ports.uiAdapter.openUri is not a function")),
         }),
         print: Rc::new(move |ctx: Option<&ActionUiContext>| match &print {
             Some(callback) => ignored(callback.call(ctx.map(to_json).into_iter().collect())),
@@ -311,14 +364,24 @@ fn submit_resolver(callback: Callback) -> SubmitResolver {
     )
 }
 
+fn form_reader(callback: Callback) -> FormReader {
+    Rc::new(move || match callback.call(Vec::new()) {
+        Answer::Returns(value) if !value.is_null() && !is_undefined(&value) => Some(Rc::new(value)),
+        _ => None,
+    })
+}
+
 /// The capability's members in the TypeScript `composeApi` order. The two
 /// realm members exist only with scripting on.
 const MEMBERS: &[&str] = &[
-    "getPolicy",
-    "updatePolicy",
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "registerExecutor",
     "registerAnnotCommitSink",
     "registerFormCommitSink",
+    "registerFormReader",
     "setSubmitHandler",
     "registerSubmitResolver",
     "isScriptingEnabled",
@@ -332,19 +395,27 @@ const MEMBERS: &[&str] = &[
     "execute",
     "canExecute",
     "executeNamed",
+    "canExecuteNamed",
     "getActionTree",
     "dispatch",
     "canDispatch",
     "prepareClose",
     "onExecuted",
-    "onDiagnostic",
-    "onScriptDiagnostic",
-    "onScriptError",
+    "onDiagnosticReported",
+    "onScriptDiagnosticReported",
+    "onScriptFailed",
     "onOpenSequenceCompleted",
 ];
 
 fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
+}
+
+fn partial_context(args: &[Value], i: usize) -> Result<Option<PartialActionContext>, Error> {
+    match arg(args, i) {
+        Some(context) => Ok(Some(decode(context.clone())?)),
+        None => Ok(None),
+    }
 }
 
 fn call_actions(
@@ -355,34 +426,52 @@ fn call_actions(
 ) -> Result<Outcome, Error> {
     let callback = |i: usize| h.callback(arg(args, i).unwrap_or(&Value::Null));
     Ok(match method {
-        "getPolicy" => Outcome::Returned(to_json(&cap.get_policy())),
-        "updatePolicy" => {
-            cap.update_policy(&decoded(args, 0)?);
+        "getSettings" => Outcome::Returned(settings_json(&cap.get_settings())),
+        "updateSettings" => {
+            cap.update_settings(&settings_patch(arg(args, 0).unwrap_or(&json!({})), h)?);
             Outcome::undefined()
+        }
+        "resetSettings" => {
+            cap.reset_settings();
+            Outcome::undefined()
+        }
+        "onSettingsChanged" => {
+            let listener = callback(0);
+            unsubscribe_ref(
+                h,
+                cap.on_settings_changed(move |event| {
+                    ignored(listener.call(vec![json!({
+                        "settings": settings_json(&event.settings),
+                        "changed": event.changed,
+                    })]))
+                }),
+            )
         }
         "isScriptingEnabled" => Outcome::Returned(json!(cap.is_scripting_enabled())),
         "executeNamed" => {
             let name = arg(args, 0).and_then(Value::as_str).unwrap_or_default().to_string();
-            let context = match arg(args, 1) {
-                Some(context) => Some(decode(context.clone())?),
-                None => None,
-            };
-            Outcome::Promise(untyped(cap.execute_named(&name, context)))
+            Outcome::Promise(untyped(cap.execute_named(&name, partial_context(args, 1)?, None)))
         }
-        "getActionTree" => Outcome::Promise(cap.get_action_tree(decoded(args, 0)?)),
+        "canExecuteNamed" => {
+            let name = arg(args, 0).and_then(Value::as_str).unwrap_or_default();
+            Outcome::Returned(json!(cap.can_execute_named(name, partial_context(args, 1)?)))
+        }
+        "getActionTree" => Outcome::Promise(cap.get_action_tree(decoded(args, 0)?, None)),
         "surfaceScriptCommit" => {
-            match cap.surface_script_commit(&decoded(args, 0)?, decoded(args, 1)?) {
+            match cap.surface_script_commit(&decoded(args, 0)?, &decoded(args, 1)?) {
                 Ok(()) => Outcome::undefined(),
                 Err(error) => Outcome::Threw(error),
             }
         }
-        "execute" => Outcome::Promise(untyped(
-            cap.execute(arg(args, 0).cloned().unwrap_or(Value::Null), decoded(args, 1)?),
-        )),
+        "execute" => Outcome::Promise(untyped(cap.execute(
+            arg(args, 0).cloned().unwrap_or(Value::Null),
+            decoded(args, 1)?,
+            None,
+        ))),
         "canExecute" => Outcome::Returned(json!(
             cap.can_execute(arg(args, 0).unwrap_or(&Value::Null), &decoded(args, 1)?)
         )),
-        "dispatch" => Outcome::Promise(untyped(cap.dispatch(decoded(args, 0)?))),
+        "dispatch" => Outcome::Promise(untyped(cap.dispatch(decoded(args, 0)?, None))),
         "canDispatch" => Outcome::Returned(json!(cap.can_dispatch(&decoded(args, 0)?))),
         "setUiAdapter" => {
             disposer_ref(h, cap.set_ui_adapter(ui_adapter(arg(args, 0).unwrap_or(&Value::Null), h)))
@@ -390,11 +479,13 @@ fn call_actions(
         "runDocumentVerb" => {
             let verb: DocumentVerb = decoded(args, 0)?;
             let operation = callback(1);
-            Outcome::Promise(
-                cap.run_document_verb(verb, move || answer_promise(operation.call(Vec::new()))),
-            )
+            Outcome::Promise(cap.run_document_verb(
+                verb,
+                move || answer_promise(operation.call(Vec::new())),
+                None,
+            ))
         }
-        "prepareClose" => Outcome::Promise(untyped(cap.prepare_close())),
+        "prepareClose" => Outcome::Promise(untyped(cap.prepare_close(None))),
         "setSubmitHandler" => {
             let handler =
                 arg(args, 0).filter(|v| !v.is_null()).map(|_| submit_handler(callback(0)));
@@ -404,9 +495,13 @@ fn call_actions(
         "onOpenSequenceCompleted" => {
             unsubscribe_ref(h, cap.on_open_sequence_completed(listener(callback(0))))
         }
-        "onDiagnostic" => unsubscribe_ref(h, cap.on_diagnostic(listener(callback(0)))),
-        "onScriptDiagnostic" => unsubscribe_ref(h, cap.on_script_diagnostic(listener(callback(0)))),
-        "onScriptError" => unsubscribe_ref(h, cap.on_script_error(listener(callback(0)))),
+        "onDiagnosticReported" => {
+            unsubscribe_ref(h, cap.on_diagnostic_reported(listener(callback(0))))
+        }
+        "onScriptDiagnosticReported" => {
+            unsubscribe_ref(h, cap.on_script_diagnostic_reported(listener(callback(0))))
+        }
+        "onScriptFailed" => unsubscribe_ref(h, cap.on_script_failed(listener(callback(0)))),
         "registerExecutor" => {
             let action_type = arg(args, 0).and_then(Value::as_str).unwrap_or_default().to_string();
             disposer_ref(h, cap.register_executor(&action_type, executor(callback(1))))
@@ -429,6 +524,7 @@ fn call_actions(
                 })),
             )
         }
+        "registerFormReader" => disposer_ref(h, cap.register_form_reader(form_reader(callback(0)))),
         "surfaceScriptResult" => match cap.surface_script_result(&decoded(args, 0)?) {
             Ok(()) => Outcome::undefined(),
             Err(error) => Outcome::Threw(error),
@@ -461,12 +557,13 @@ fn hover_pump_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         builder = builder.requires(ACTIONS.any());
     }
     Ok(builder
-        .capability(&token, move |ctx| {
+        .initial_state(undefined)
+        .create(&token, move |cx| {
             let pump = match &callback {
                 None => {
-                    let ctx = ctx.clone();
-                    create_hover_pump(move |trigger| match ctx.get(&ACTIONS) {
-                        Ok(actions) => actions.dispatch(trigger),
+                    let cx = cx.clone();
+                    create_hover_pump(move |trigger| match cx.get(&ACTIONS) {
+                        Ok(actions) => actions.dispatch(trigger, None),
                         Err(error) => Promise::rejected(error),
                     })
                 }
@@ -478,21 +575,24 @@ fn hover_pump_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
                     })
                 }
             };
-            Ok(HoverPumpDriver { pump })
+            let reset = pump.clone();
+            cx.cleanup_fn(move || reset.reset());
+            Ok((HoverPumpDriver { pump }, None))
         })
         .build())
 }
 
 impl HarnessPlugin for Actions {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["actions", "hover-pump", "detached-realm"]
+        vec!["actions", "actions-current", "hover-pump", "detached-realm"]
     }
 
     fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         match factory {
             "hover-pump" => hover_pump_plugin(config, h),
             "detached-realm" => detached_realm_plugin(config, h),
-            _ => Ok(actions_plugin(actions_config(config, h)?)),
+            "actions-current" => Ok(actions_plugin(actions_config(config, h, true)?)),
+            _ => Ok(actions_plugin(actions_config(config, h, false)?)),
         }
     }
 
@@ -530,17 +630,7 @@ impl HarnessPlugin for Actions {
             });
         }
         if let Some(driver) = capability.downcast_ref::<DetachedRealmDriver>() {
-            return Some(match method {
-                "mint" => Outcome::from_result(driver.mint(h)),
-                "run" => {
-                    let program = arg(&args, 0).and_then(Value::as_str).unwrap_or_default();
-                    match driver.run(program.to_string()) {
-                        Ok(promise) => Outcome::Promise(promise),
-                        Err(error) => Outcome::Threw(error),
-                    }
-                }
-                other => not_a_function(other),
-            });
+            return Some(driver.call(method, &args, h));
         }
         let cap = capability.downcast_ref::<ActionsCapability>()?;
         Some(call_actions(cap, method, &args, h).unwrap_or_else(Outcome::Threw))
@@ -551,7 +641,14 @@ impl HarnessPlugin for Actions {
             return Some(vec!["hover", "reset"]);
         }
         if capability.downcast_ref::<DetachedRealmDriver>().is_some() {
-            return Some(vec!["mint", "run"]);
+            return Some(vec![
+                "transaction",
+                "transactionThrows",
+                "detachedTransaction",
+                "dispose",
+                "mint",
+                "run",
+            ]);
         }
         let cap = capability.downcast_ref::<ActionsCapability>()?;
         let scripting = cap.is_scripting_enabled();
@@ -615,14 +712,20 @@ fn realm_json(
 // ── the detached-realm driver ─────────────────────────────────────────────────
 
 /// A sibling that mints a detached realm for its own document from the
-/// actions plugin of `owner`, as the stamp plugin does for an asset.
+/// actions plugin of `owner` (default `a`), as the stamp plugin does for an
+/// asset, and drives its own document's realm port. `meta` replaces the
+/// realm's document metadata (`null` is none); `bootSources` is a scripted
+/// callback (default: no programs). `run` boots and runs one program in a
+/// single transaction over an empty world.
 #[derive(Clone)]
 pub struct DetachedRealmDriver {
-    ctx: epdf_kernel::plugin::PluginContext,
+    cx: Controller<Value, Value>,
     owner: String,
     /// `undefined`: the document's own metadata; otherwise this (`null` is none).
-    meta: Option<Option<DocumentMeta>>,
+    meta: Option<Option<ScriptDocument>>,
     boot_sources: Option<Callback>,
+    /// `ctx.tryGet(ActionsToken)?.scriptRealm`, read at create.
+    document_realm: Option<ScriptRealmPort>,
     realm: Rc<RefCell<Option<DetachedScriptRealm>>>,
 }
 
@@ -637,17 +740,61 @@ fn empty_world() -> ScriptWorldInput {
     }
 }
 
+/// `realm?.transaction(...)` on an absent realm: `undefined`.
+fn transaction_on(
+    realm: Option<&ScriptRealmPort>,
+    body: impl FnOnce() -> Result<Promise<Value>, Error> + 'static,
+) -> Outcome {
+    match realm {
+        Some(realm) => Outcome::Promise(realm.transaction(move |_| body())),
+        None => Outcome::undefined(),
+    }
+}
+
 impl DetachedRealmDriver {
+    fn call(&self, method: &str, args: &[Value], h: &Harness) -> Outcome {
+        let detached = || self.realm.borrow().clone();
+        match method {
+            "transaction" => transaction_on(self.document_realm.as_ref(), || {
+                Ok(Promise::resolved(json!("body-result")))
+            }),
+            "transactionThrows" => transaction_on(self.document_realm.as_ref(), || {
+                Ok(Promise::rejected(Error::new("body threw")))
+            }),
+            "detachedTransaction" => transaction_on(detached().as_ref().map(|r| &r.port), || {
+                Ok(Promise::resolved(json!("body-result")))
+            }),
+            "dispose" => {
+                if let Some(realm) = detached() {
+                    realm.dispose();
+                }
+                Outcome::undefined()
+            }
+            "mint" => Outcome::from_result(self.mint(h)),
+            "run" => {
+                let program = arg(args, 0).and_then(Value::as_str).unwrap_or_default();
+                match self.run(program.to_string()) {
+                    Ok(promise) => Outcome::Promise(promise),
+                    Err(error) => Outcome::Threw(error),
+                }
+            }
+            other => not_a_function(other),
+        }
+    }
+
     fn mint(&self, h: &Harness) -> Result<Value, Error> {
-        let actions = self.ctx.try_for_document(&ACTIONS, &self.owner)?;
+        let actions = self.cx.try_for_document(&ACTIONS, &self.owner)?;
         let Some(actions) = actions.filter(|a| a.is_scripting_enabled()) else {
             return Ok(Value::Null);
         };
-        let doc = self.ctx.doc().ok_or_else(|| Error::new("[detached-realm] no document"))?;
-        let document: Rc<dyn Fn() -> Option<DocumentMeta>> = match &self.meta {
+        if let Some(previous) = self.realm.borrow_mut().take() {
+            previous.dispose();
+        }
+        let doc = self.cx.doc()?;
+        let document: Rc<dyn Fn() -> Option<ScriptDocument>> = match &self.meta {
             None => {
-                let ctx = self.ctx.clone();
-                Rc::new(move || ctx.document())
+                let cx = self.cx.clone();
+                Rc::new(move || cx.document().map(ScriptDocument::from))
             }
             Some(meta) => {
                 let meta = meta.clone();
@@ -689,35 +836,37 @@ impl DetachedRealmDriver {
 fn detached_realm_plugin(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
     let token: Token<DetachedRealmDriver> = Token::from_any(h.token("detached-realm", None));
     let owner = config.get("owner").and_then(Value::as_str).unwrap_or("a").to_string();
-    let meta: Option<Option<DocumentMeta>> = match config.get("meta") {
+    let meta: Option<Option<ScriptDocument>> = match config.get("meta") {
         None => None,
         Some(Value::Null) => Some(None),
-        Some(meta) => Some(Some(DocumentMeta {
-            id: meta.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
-            instance_id: meta
-                .get("instanceId")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string(),
+        Some(meta) => Some(Some(ScriptDocument {
             name: meta.get("name").and_then(Value::as_str).map(str::to_string),
             page_count: meta.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
-            pages: std::rc::Rc::new(meta.get("pages").cloned().unwrap_or(json!([]))),
-            revision: meta.get("revision").and_then(Value::as_u64).unwrap_or(0),
-            render_policy: meta.get("renderPolicy").cloned().unwrap_or(Value::Null),
+            pages: Rc::new(meta.get("pages").cloned().unwrap_or(json!([]))),
         })),
     };
     let boot_sources = config.get("bootSources").map(|spec| scripted(spec, h));
     Ok(define::<Value, Value>("detached-realm")
         .document_scoped()
         .optional(ACTIONS.any())
-        .capability(&token, move |ctx| {
-            Ok(DetachedRealmDriver {
-                ctx: ctx.ctx.clone(),
+        .initial_state(undefined)
+        .create(&token, move |cx| {
+            let document_realm = cx.try_get(&ACTIONS)?.and_then(|a| a.script_realm());
+            let driver = DetachedRealmDriver {
+                cx: cx.clone(),
                 owner: owner.clone(),
                 meta: meta.clone(),
                 boot_sources: boot_sources.clone(),
+                document_realm,
                 realm: Rc::default(),
-            })
+            };
+            let realm = driver.realm.clone();
+            cx.cleanup_fn(move || {
+                if let Some(realm) = realm.borrow().clone() {
+                    realm.dispose();
+                }
+            });
+            Ok((driver, None))
         })
         .build())
 }

@@ -5,18 +5,18 @@
 
 use epdf_kernel::rt;
 
-use super::intent::to_form_submission_request;
+use super::intent::{iso_string, to_form_submission_request};
 use crate::ActionsCapability;
 use crate::contract::{
     ActionContext, ActionDiagnostic, ActionDiagnosticCode, ActionNodeStatus, ActionPolicyDecision,
     SubmitHandlerContext, SubmitIntent, SubmitToDocumentHome,
 };
-use crate::services::Diagnose;
+use crate::services::{Diagnose, DiagnosticPlace};
 
 impl ActionsCapability {
-    /// `js?.now?.() ?? Date.now()`.
+    /// `environment.now?.() ?? Date.now()`.
     pub(crate) fn now_ms(&self) -> f64 {
-        match self.0.config.javascript.as_ref().and_then(|js| js.now.clone()) {
+        match &self.0.environment.now {
             Some(now) => now(),
             None => rt::now(),
         }
@@ -30,16 +30,18 @@ impl ActionsCapability {
         action_ctx: ActionContext,
         diagnose: Diagnose,
     ) -> (ActionNodeStatus, Option<String>) {
-        let decision = self.0.policy.borrow().submit_form.get(action_ctx.origin);
+        let decision = self.current_policy().submit_form.get(action_ctx.origin);
         if !matches!(decision, ActionPolicyDecision::Adapter | ActionPolicyDecision::Allow) {
-            diagnose(ActionDiagnostic::new(
-                ActionDiagnosticCode::Blocked,
-                format!(
-                    "submit-form: policy '{}' for origin '{}'",
-                    decision.as_str(),
-                    action_ctx.origin.as_str()
-                ),
-            ));
+            // `block` refuses quietly; `report` says so.
+            if decision == ActionPolicyDecision::Report {
+                diagnose(ActionDiagnostic::new(
+                    ActionDiagnosticCode::Blocked,
+                    format!(
+                        "submit-form: policy 'report' for origin '{}'",
+                        action_ctx.origin.as_str()
+                    ),
+                ));
+            }
             return (ActionNodeStatus::Blocked, None);
         }
         let resolver = self.0.ports.submit_resolver.borrow().clone();
@@ -69,7 +71,7 @@ impl ActionsCapability {
             Ok(doc) if doc.has("forms.submit") => {
                 let (this, request) = (self.clone(), request.clone());
                 Some(std::rc::Rc::new(move || {
-                    let body = to_form_submission_request(&request, this.now_ms());
+                    let body = to_form_submission_request(&request, &iso_string(this.now_ms())?);
                     // `Promise.resolve(guarded)` is the guarded promise itself.
                     Ok(doc.call("forms.submit", None, vec![body]))
                 }))
@@ -83,16 +85,22 @@ impl ActionsCapability {
                     if let Some(outcome) = outcome {
                         // Detached by contract: `executed` means handed to the
                         // embedder; a later rejection is observability only.
-                        let this = self.clone();
+                        let (this, source) = (self.clone(), action_ctx.source.clone());
                         rt::spawn(async move {
                             if let Err(error) = outcome.await {
-                                this.emit_diagnostic(ActionDiagnostic::new(
-                                    ActionDiagnosticCode::ExecutorFailed,
-                                    format!(
-                                        "submit handler rejected (detached): {}",
-                                        error.message
+                                this.report_diagnostic(
+                                    &ActionDiagnostic::new(
+                                        ActionDiagnosticCode::ExecutorFailed,
+                                        format!(
+                                            "submit handler rejected (detached): {}",
+                                            error.message
+                                        ),
                                     ),
-                                ));
+                                    &DiagnosticPlace::of(
+                                        Some("submit-form".into()),
+                                        source.clone(),
+                                    ),
+                                );
                             }
                         });
                     }

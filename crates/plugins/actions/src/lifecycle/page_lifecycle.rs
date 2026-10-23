@@ -13,6 +13,7 @@ use crate::contract::{
     ActionDiagnostic, ActionDiagnosticCode, ActionTrigger, OpenSequence, PageEventKind,
 };
 use crate::host_contract::{PageStateCause, PageStateReport};
+use crate::services::DiagnosticPlace;
 
 const CASCADE_CAP: f64 = 8.0;
 
@@ -24,7 +25,7 @@ pub(crate) struct LastEmitted {
 
 impl ActionsCapability {
     fn page_trigger(&self, event: PageEventKind, pon: u32) {
-        let _ = self.dispatch(ActionTrigger::Page { event, page: PageRef::new(pon) });
+        let _ = self.dispatch(ActionTrigger::Page { event, page: PageRef::new(pon) }, None);
     }
 
     fn emit_for_report(&self, report: &PageStateReport) {
@@ -55,14 +56,14 @@ impl ActionsCapability {
         if report.cause == PageStateCause::Programmatic {
             self.0.cascade_rounds.set(self.0.cascade_rounds.get() + 1.0);
             if self.0.cascade_rounds.get() > CASCADE_CAP {
-                self.emit_diagnostic(ActionDiagnostic::new(
+                self.report_diagnostic(&ActionDiagnostic::new(
                     ActionDiagnosticCode::CascadeBudget,
                     format!(
                         "page-lifecycle emission suppressed: {} consecutive programmatic rounds (cap {})",
                         num(self.0.cascade_rounds.get()),
                         num(CASCADE_CAP)
                     ),
-                ));
+                ), &DiagnosticPlace::default());
                 return;
             }
         }
@@ -105,7 +106,7 @@ impl ActionsCapability {
         if let Some(report) = report {
             self.emit_for_report(&report);
         } else if fire_fallback
-            && self.0.config.open_sequence == Some(OpenSequence::Headless)
+            && self.settings_now().open_sequence == OpenSequence::Headless
             && let Some(first) = self.first_pon()
         {
             // The first-page fallback only in declared-headless mode.

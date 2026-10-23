@@ -19,8 +19,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::contract::{
-    ActionContext, ActionDiagnostic, ActionOrigin, ActionSubmitRequest, FormEffect, ScriptPhase,
-    SubmitIntent, page_ref_json,
+    ActionContext, ActionDiagnostic, ActionOrigin, ActionSource, ActionSubmitRequest, FormEffect,
+    FormSnapshot, ScriptPhase, SubmitIntent, page_ref_json,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -83,29 +83,33 @@ pub struct AnnotCommitResult {
 pub type AnnotCommitSink =
     Rc<dyn Fn(Vec<AnnotCommitEntry>) -> Result<Promise<AnnotCommitResult>, Error>>;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FormCommitStatus {
+    Applied,
+    Failed,
+}
+
+/// What the form plugin's commit did: `applied`, the effects are one change
+/// on its way (shown at once; the engine's refusal comes through the change
+/// queue); `failed`, none of them is.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FormEffectError {
+pub struct FormCommitSinkResult {
+    pub status: FormCommitStatus,
+    /// Why the change couldn't be made, when it couldn't.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub message: Option<String>,
+    pub error: Option<String>,
 }
 
-/// One entry of `FormEffectsResult.results`: the members the dispatcher reads.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FormEffectResultEntry {
-    pub index: f64,
-    pub status: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub error: Option<FormEffectError>,
-}
+/// The form plugin's document commit: a script run's form effects, written
+/// as one change.
+pub type FormCommitSink =
+    Rc<dyn Fn(Vec<FormEffect>) -> Result<Promise<FormCommitSinkResult>, Error>>;
 
-/// `FormEffectsResult`, read for its per-effect results.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FormEffectsResult {
-    pub results: Vec<FormEffectResultEntry>,
-}
-
-/// The form plugin's document commit.
-pub type FormCommitSink = Rc<dyn Fn(Vec<FormEffect>) -> Result<Promise<FormEffectsResult>, Error>>;
+/// The form as the user sees it: the form plugin's fields and widgets with
+/// this session's pending fills, or `None` before it has read the form.
+/// Scripts and dispatch read it instead of the engine.
+pub type FormReader = Rc<dyn Fn() -> Option<Rc<FormSnapshot>>>;
 
 // ── script results ────────────────────────────────────────────────────────────
 
@@ -133,6 +137,10 @@ pub struct ScriptSurfaceResult {
     /// Absent reads as `document`: only `detached` changes the routing.
     #[serde(default)]
     pub realm: ScriptRealmKind,
+    /// What started the script, when an action did: `onScriptFailed` and
+    /// diagnostics carry it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<ActionSource>,
 }
 
 /// A UI effect tagged with the phase that produced it.
@@ -154,13 +162,30 @@ pub struct ScriptCommitSurface {
 }
 
 /// `surfaceScriptCommit`'s context.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ScriptCommitContext {
     pub origin: ActionOrigin,
     pub realm: ScriptRealmKind,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub source: Option<ActionSource>,
 }
 
 // ── script realms ─────────────────────────────────────────────────────────────
+
+/// `ScriptDocument`: what a script realm reads of the document it runs for,
+/// `Pick<DocumentMeta, 'name' | 'pageCount' | 'pages'>`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ScriptDocument {
+    pub name: Option<String>,
+    pub page_count: u32,
+    pub pages: Rc<Value>,
+}
+
+impl From<DocumentMeta> for ScriptDocument {
+    fn from(meta: DocumentMeta) -> Self {
+        ScriptDocument { name: meta.name, page_count: meta.page_count, pages: meta.pages }
+    }
+}
 
 /// What a realm is minted for. `doc` is the document the scripts operate on;
 /// `document()` the metadata scripts observe; `boot_sources()` the
@@ -169,7 +194,7 @@ pub struct ScriptCommitContext {
 #[derive(Clone)]
 pub struct ScriptRealmTarget {
     pub doc: Rc<dyn DocumentHandle>,
-    pub document: Rc<dyn Fn() -> Option<DocumentMeta>>,
+    pub document: Rc<dyn Fn() -> Option<ScriptDocument>>,
     pub boot_sources: Rc<dyn Fn() -> Result<Promise<Vec<String>>, Error>>,
 }
 

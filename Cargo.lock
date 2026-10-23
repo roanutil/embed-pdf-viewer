@@ -548,6 +548,7 @@ dependencies = [
 name = "epdf-plugin-actions"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-acrojs",
  "epdf-ffi",
  "epdf-kernel",

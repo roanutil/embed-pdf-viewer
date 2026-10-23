@@ -6,51 +6,63 @@
 //! [`Inner`] and gives each area its own `impl ActionsCapability` block in
 //! the module named after the TypeScript file (`dispatch/`, `lifecycle/`,
 //! `scripting/`, `submit/`, `services/`), so every verb still has one home.
+//! The plugin keeps no session state: its rules are its settings, and its
+//! live data (ports, queue, latches) belong to the areas.
 
 use std::cell::{Cell, RefCell};
 use std::rc::{Rc, Weak};
 
-use epdf_acrojs::{ScriptDiagnostic, ScriptExecutionError, ScriptHost};
+use epdf_acrojs::{ScriptDiagnostic, ScriptHost};
 use epdf_kernel::plugin::ConnectFn;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::serial_queue::SerialQueue;
+use epdf_kernel::settings::InstanceSettings;
 use epdf_kernel::{Controller, Error, Unsubscribe};
 use serde_json::Value;
 
 use crate::contract::{
-    ActionDiagnostic, ActionDispatchEvent, ActionPolicy, ActionsConfig, OpenSequenceCompletedEvent,
+    ActionDiagnosticReportedEvent, ActionExecutedEvent, ActionsConfig, ActionsSettings,
+    ActionsSettingsChanged, ActionsSettingsPatch, DocumentVerb, JavaScriptConfig,
+    OpenSequenceCompletedEvent, ScriptFailedEvent,
 };
-use crate::dispatch::triggers::LifecycleAnnot;
+use crate::dispatch::triggers::LifecycleReads;
 use crate::host_contract::PageStateReport;
 use crate::lifecycle::page_lifecycle::LastEmitted;
-use crate::model::{ActionsAction, ActionsState};
 use crate::scripting::environment::ScriptRealmFactory;
-use crate::services::policy::merge_policy;
 use crate::services::ports::Ports;
-use crate::services::{Events, policy::default_policy};
+use crate::services::{DocumentPrint, Events};
+use crate::settings::IdentityTable;
+
+/// The controller context: stateless, so its slice is `undefined`.
+pub(crate) type ActionsController = Controller<Value, Value>;
 
 pub(crate) struct Inner {
-    pub(crate) cx: Controller<ActionsState, ActionsAction>,
-    pub(crate) config: ActionsConfig,
+    pub(crate) cx: ActionsController,
+    /// The plugin's settings store as this instance sees it.
+    pub(crate) settings: InstanceSettings,
+    /// The registration's function identities (see `settings.rs`).
+    pub(crate) table: Rc<IdentityTable>,
+    /// The script environment, read from the config here and nowhere else.
+    pub(crate) environment: JavaScriptConfig,
     // ── services ──
     pub(crate) events: Events,
-    /// The live policy: read at decision time, never captured.
-    pub(crate) policy: RefCell<ActionPolicy>,
     pub(crate) ports: Ports,
     /// The one serial queue every dispatch, verb and open sequence rides.
     pub(crate) queue: SerialQueue,
-    /// D11's aggregate: JS nodes run in the current queue operation.
+    /// The JS nodes run in the current queue operation.
     pub(crate) script_nodes: Cell<f64>,
     /// The one memoized catalog-actions read; a rejected read is evicted.
     pub(crate) catalog: RefCell<Option<Promise<Option<Value>>>>,
-    /// The document-print latch: while a print event wrapper is active, a
-    /// nested print request is suppressed.
+    /// The kernel's print, when the host gave it a printer.
+    pub(crate) document_print: DocumentPrint,
+    /// The document-print latch: while a print wrapper is active, a nested
+    /// print request is suppressed.
     pub(crate) print_latch: Cell<bool>,
     // ── scripting/realm ──
     pub(crate) realms: Option<ScriptRealmFactory>,
     pub(crate) script_host: Option<ScriptHost>,
     // ── dispatch/triggers ──
-    pub(crate) lifecycle_cache: RefCell<Vec<(u32, Vec<LifecycleAnnot>)>>,
+    pub(crate) lifecycle_reads: RefCell<LifecycleReads>,
     // ── lifecycle/page-lifecycle ──
     pub(crate) barrier_open: Cell<bool>,
     pub(crate) buffered_report: RefCell<Option<PageStateReport>>,
@@ -62,8 +74,9 @@ pub(crate) struct Inner {
 }
 
 /// `ActionsCapability` and `ActionsHostCapability`: one runtime object. The
-/// host members (`register_*_commit_sink`, `register_submit_resolver`,
-/// `script_realm`, `create_detached_script_realm`, `surface_script_*`,
+/// host members (`register_*_commit_sink`, `register_form_reader`,
+/// `register_submit_resolver`, `script_realm`,
+/// `create_detached_script_realm`, `surface_script_*`,
 /// `report_page_state`) are for sibling plugins, not applications. Cheap to
 /// clone; clones are the same instance.
 #[derive(Clone)]
@@ -87,37 +100,75 @@ impl ActionsCapability {
         self.0.cx.lifetime()
     }
 
-    // ── the observability hooks ───────────────────────────────────────────
+    // ── the settings ──────────────────────────────────────────────────────
 
-    /// Every executed tree: dispatch-driven, verb-driven and lifecycle-driven.
+    /// The settings in effect, for every document of this registration.
+    pub fn get_settings(&self) -> ActionsSettings {
+        self.settings_now()
+    }
+
+    /// Merge `changes` into the settings, for every document: policy rows
+    /// merge origin by origin. Fires `on_settings_changed` once when a
+    /// setting changed.
+    pub fn update_settings(&self, changes: &ActionsSettingsPatch) {
+        self.0.settings.store.update_settings(&self.0.table.encode(changes));
+    }
+
+    /// Go back to what the app registered, not to the defaults.
+    pub fn reset_settings(&self) {
+        self.0.settings.store.reset_settings();
+    }
+
+    /// Fires once for each call that changed a setting. This instance's
+    /// listeners go when its document closes.
+    pub fn on_settings_changed(
+        &self,
+        listener: impl Fn(&ActionsSettingsChanged) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        let table = Rc::downgrade(&self.0.table);
+        self.0.settings.events.on(move |event| {
+            let Some(table) = table.upgrade() else { return Ok(()) };
+            listener(&ActionsSettingsChanged {
+                settings: table.decode(&event.settings),
+                changed: event.changed.clone(),
+            })
+        })
+    }
+
+    // ── the events ────────────────────────────────────────────────────────
+
+    /// Actions ran, whatever started them: one event per tree.
     pub fn on_executed(
         &self,
-        listener: impl Fn(&ActionDispatchEvent) -> Result<(), Error> + 'static,
+        listener: impl Fn(&ActionExecutedEvent) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        self.0.events.action_hook.on(listener)
+        self.0.events.executed.on(listener)
     }
 
-    pub fn on_diagnostic(
+    /// An action was blocked, reported or couldn't run; also dispatch, sink
+    /// and budget problems.
+    pub fn on_diagnostic_reported(
         &self,
-        listener: impl Fn(&ActionDiagnostic) -> Result<(), Error> + 'static,
+        listener: impl Fn(&ActionDiagnosticReportedEvent) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        self.0.events.diagnostic_hook.on(listener)
+        self.0.events.diagnostic_reported.on(listener)
     }
 
-    /// Script-plane observability, from dispatches and from the form
-    /// pipeline alike.
-    pub fn on_script_diagnostic(
+    /// A script was stopped from doing something, or used something the
+    /// viewer doesn't support.
+    pub fn on_script_diagnostic_reported(
         &self,
         listener: impl Fn(&ScriptDiagnostic) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        self.0.events.script_diagnostic_hook.on(listener)
+        self.0.events.script_diagnostic_reported.on(listener)
     }
 
-    pub fn on_script_error(
+    /// A script run ended with an error.
+    pub fn on_script_failed(
         &self,
-        listener: impl Fn(&ScriptExecutionError) -> Result<(), Error> + 'static,
+        listener: impl Fn(&ScriptFailedEvent) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        self.0.events.script_error_hook.on(listener)
+        self.0.events.script_failed.on(listener)
     }
 
     /// The document-open sequence ran (OpenAction, open destination).
@@ -125,33 +176,46 @@ impl ActionsCapability {
         &self,
         listener: impl Fn(&OpenSequenceCompletedEvent) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        self.0.events.open_sequence_hook.on(listener)
+        self.0.events.open_sequence_completed.on(listener)
     }
 }
 
-/// `createActionsController(ctx, config)`.
-pub fn create_actions_controller(
-    cx: Controller<ActionsState, ActionsAction>,
+/// `createActionsController(ctx, config)`. `config` is what the app
+/// registered; its settings reach the controller through the settings store,
+/// and only the script environment is read from it here.
+pub(crate) fn create_actions_controller(
+    cx: ActionsController,
     config: ActionsConfig,
+    table: Rc<IdentityTable>,
 ) -> Result<(ActionsCapability, Option<ConnectFn>), Error> {
-    let events = Events::new(&cx, &config);
-    let policy = merge_policy(&default_policy(), config.policy.as_ref());
+    let settings = cx.settings()?;
+    table.watch(&settings.store);
+    let events = Events::new(&cx);
+    let environment = config.javascript.clone().unwrap_or_default();
+    let queue = cx.serial_queue("actions");
+    // `javascript.enabled`, as it is when the document opens, decides
+    // whether a realm factory exists.
+    let enabled = table.decode(&settings.get()).javascript.enabled;
     let inner = Rc::new_cyclic(|weak: &Weak<Inner>| {
-        let realms = ScriptRealmFactory::for_config(&cx, &config);
+        let realms = enabled
+            .then(|| ScriptRealmFactory::new(&cx, &environment, table.clone(), settings.clone()))
+            .flatten();
         let script_host = realms.as_ref().map(|realms| realms.own_realm(&cx, weak.clone()));
         Inner {
             cx: cx.clone(),
-            config: config.clone(),
+            settings,
+            table,
+            environment,
             events,
-            policy: RefCell::new(policy),
             ports: Ports::default(),
-            queue: SerialQueue::new(),
+            queue,
             script_nodes: Cell::new(0.0),
             catalog: RefCell::new(None),
+            document_print: DocumentPrint::none(),
             print_latch: Cell::new(false),
             realms,
             script_host,
-            lifecycle_cache: RefCell::new(Vec::new()),
+            lifecycle_reads: RefCell::new(LifecycleReads::default()),
             barrier_open: Cell::new(false),
             buffered_report: RefCell::new(None),
             last_emitted: RefCell::new(LastEmitted::default()),
@@ -167,8 +231,42 @@ pub fn create_actions_controller(
             Ok(None)
         }));
     }
-    this.subscribe_lifecycle_cache();
     this.register_script_executor();
-    this.arm_open_sequence();
-    Ok((this, None))
+    let weak = this.weak();
+    let connect: ConnectFn = Rc::new(move || {
+        let Some(this) = ActionsCapability::upgrade(&weak) else { return Ok(()) };
+        this.connect()
+    });
+    Ok((this, Some(connect)))
+}
+
+impl ActionsCapability {
+    /// The `connect` half.
+    fn connect(&self) -> Result<(), Error> {
+        // Confirmed document events of every origin invalidate the per-page
+        // lifecycle-annotation cache.
+        let doc = self.doc()?;
+        let weak = self.weak();
+        let unsubscribe = doc.subscribe(Rc::new(move |event: &Value| {
+            if let Some(this) = ActionsCapability::upgrade(&weak) {
+                this.invalidate_lifecycle_reads(event);
+            }
+        }));
+        self.0.cx.listen(unsubscribe);
+        // Fires the open sequence at once for 'headless', releases the page
+        // barrier for 'off', and waits for an adapter or user activity for
+        // 'auto'.
+        self.arm_open_sequence();
+        // The document's save actions (/WS, /DS) run around every download
+        // of its file, so what WillSave changes is in the bytes.
+        let weak = self.weak();
+        self.0.cx.around_download(Rc::new(move |read| {
+            let Some(this) = ActionsCapability::upgrade(&weak) else { return Ok(read()) };
+            Ok(this.run_document_verb(DocumentVerb::Save, move || Ok(read()), None))
+        }))?;
+        // The TypeScript also wraps every kernel print in /WP and /DP
+        // (`ctx.aroundPrint`). The Rust kernel has no print yet; Task 13.33
+        // adds it and this wrap with it.
+        Ok(())
+    }
 }

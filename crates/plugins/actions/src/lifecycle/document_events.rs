@@ -1,14 +1,16 @@
 //! `lifecycle/document-events.ts`: the verb-shaped document events
 //! (WC/WS/DS/WP/DP) and the print door. One catalog lifecycle tree per
 //! event, run inside the current queue operation and never failing (a
-//! broken script must not cancel the user's save or print); the adapter
-//! print wrapped will-print, print, did-print under the one latch.
+//! broken script must not cancel the user's save or print), and a print
+//! request sent to the kernel's print, or, without a printer, to the
+//! adapter, wrapped will-print, print, did-print under the one latch.
 
 use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_kernel::Error;
 use epdf_kernel::rt::{self, Promise};
+use epdf_kernel::signal::AbortSignal;
 
 use crate::ActionsCapability;
 use crate::contract::{
@@ -16,9 +18,10 @@ use crate::contract::{
     ActionPolicyDecision, ActionSource, ActionStepResult, ActionTriggerEvent, ActionTriggerResult,
     ActionUiContext, DocumentTriggerEvent, DocumentVerb,
 };
+use crate::dispatch::dispatcher::cancelled;
 use crate::dispatch::fold::fold_steps;
 use crate::services::catalog::doc_event_tree_key;
-use crate::services::{Diagnose, get, truthy};
+use crate::services::{Diagnose, DiagnosticPlace, get, truthy};
 
 /// An `async` function's `return promise`: resolved through the promise's
 /// adoption, two turns after an already-settled promise.
@@ -35,7 +38,7 @@ impl ActionsCapability {
         event: DocumentTriggerEvent,
         diagnose: Diagnose,
     ) -> Option<ActionStepResult> {
-        if self.0.config.triggers.as_ref().and_then(|g| g.document) == Some(false) {
+        if !self.settings_now().triggers.document {
             return None;
         }
         let attempt: Result<Option<ActionStepResult>, Error> = async {
@@ -51,7 +54,7 @@ impl ActionsCapability {
                 source: ActionSource::Document,
                 event: ActionTriggerEvent::Document { name: event },
             };
-            let result = rt::returned(self.clone().run_and_emit(tree.clone(), ctx)).await?;
+            let result = rt::returned(self.clone().run_and_emit(tree.clone(), ctx, None)).await?;
             Ok(Some(ActionStepResult { source: ActionSource::Document, tree, result }))
         }
         .await;
@@ -78,27 +81,19 @@ impl ActionsCapability {
         fold_steps(step.into_iter().collect(), diagnostics.borrow().clone())
     }
 
-    /// Both adapter print invocations go through here: will-print, the
-    /// adapter exactly once, did-print, with the latch held throughout. An
-    /// adapter throw skips did-print; the latch still resets.
+    /// Both print paths (the Named Print verb, and script `print()` effects
+    /// from the actions plane) go through here. While the latch is held a
+    /// nested request is suppressed with `reentrant-print`.
+    ///
+    /// With the kernel's print, a user's request starts it and returns; a
+    /// hover or lifecycle request never opens the dialog. Without a printer:
+    /// will-print, the adapter exactly once, did-print, with the latch reset
+    /// on every path. An adapter throw skips did-print.
     pub(crate) async fn fire_print_through_adapter(
         self,
         ui_context: Option<ActionUiContext>,
         diagnose: Diagnose,
     ) -> Result<(ActionNodeStatus, Option<String>), Error> {
-        // A script's print() is not a dispatched node, so the print row has
-        // not been consulted yet; the dispatch path (no context) already was.
-        if let Some(ui) = &ui_context {
-            let decision = self.0.policy.borrow().print.get(ui.origin);
-            if matches!(decision, ActionPolicyDecision::Block | ActionPolicyDecision::Report) {
-                let decision = decision.as_str();
-                diagnose(ActionDiagnostic::new(
-                    ActionDiagnosticCode::Blocked,
-                    format!("print: policy '{decision}' for origin '{}'", ui.origin.as_str()),
-                ));
-                return Ok((ActionNodeStatus::Blocked, Some(format!("policy '{decision}'"))));
-            }
-        }
         if self.0.print_latch.get() {
             diagnose(ActionDiagnostic::new(
                 ActionDiagnosticCode::ReentrantPrint,
@@ -112,6 +107,44 @@ impl ActionsCapability {
                 "print: doc.print is not allowed",
             ));
             return Ok((ActionNodeStatus::Blocked, Some("doc.print is not allowed".into())));
+        }
+        let printer = self.0.document_print.clone();
+        if (printer.available)() {
+            if let Some(ui) = &ui_context
+                && ui.origin != ActionOrigin::User
+            {
+                let origin = ui.origin.as_str();
+                diagnose(ActionDiagnostic::new(
+                    ActionDiagnosticCode::Blocked,
+                    format!("print: a {origin} request never prints"),
+                ));
+                return Ok((ActionNodeStatus::Blocked, Some(format!("{origin} print request"))));
+            }
+            let started = (printer.start)();
+            let diagnose = diagnose.clone();
+            rt::spawn(async move {
+                if let Err(error) = started.reaction().await {
+                    diagnose(ActionDiagnostic::new(
+                        ActionDiagnosticCode::TriggerFailed,
+                        format!("print: {}", error.message),
+                    ));
+                }
+            });
+            return Ok((ActionNodeStatus::Executed, None));
+        }
+        // M14: a script's print() is not a dispatched node, so the print row
+        // has not been consulted yet; the dispatch path (no context) already
+        // was. The printer path above refuses every non-user request itself.
+        if let Some(ui) = &ui_context {
+            let decision = self.current_policy().print.get(ui.origin);
+            if matches!(decision, ActionPolicyDecision::Block | ActionPolicyDecision::Report) {
+                let decision = decision.as_str();
+                diagnose(ActionDiagnostic::new(
+                    ActionDiagnosticCode::Blocked,
+                    format!("print: policy '{decision}' for origin '{}'", ui.origin.as_str()),
+                ));
+                return Ok((ActionNodeStatus::Blocked, Some(format!("policy '{decision}'"))));
+            }
         }
         if self.0.ports.ui_adapter.borrow().is_none() {
             diagnose(ActionDiagnostic::new(
@@ -156,41 +189,59 @@ impl ActionsCapability {
         &self,
         verb: DocumentVerb,
         operation: impl FnOnce() -> Result<Promise<T>, Error> + 'static,
+        signal: Option<AbortSignal>,
     ) -> Promise<T> {
         let this = self.clone();
-        self.0.queue.run(move || {
-            Ok(Promise::spawn(async move {
-                this.0.script_nodes.set(0.0); // one aggregate for the whole verb op
-                let diagnose = this.emitter();
-                let (before, after) = match verb {
-                    DocumentVerb::Save => {
-                        (DocumentTriggerEvent::WillSave, DocumentTriggerEvent::DidSave)
+        let queued = signal.clone();
+        self.enqueue(
+            move || {
+                Ok(Promise::spawn(async move {
+                    this.0.script_nodes.set(0.0); // one script budget for the whole verb operation
+                    let diagnose = this.reporter(DiagnosticPlace::source(ActionSource::Document));
+                    let (before, after) = match verb {
+                        DocumentVerb::Save => {
+                            (DocumentTriggerEvent::WillSave, DocumentTriggerEvent::DidSave)
+                        }
+                        DocumentVerb::Print => {
+                            (DocumentTriggerEvent::WillPrint, DocumentTriggerEvent::DidPrint)
+                        }
+                    };
+                    let body = {
+                        let this = this.clone();
+                        async move {
+                            // A before-event failure never cancels the user's verb.
+                            rt::returned(
+                                this.clone().run_doc_event_tree_safe(before, diagnose.clone()),
+                            )
+                            .await;
+                            // The caller can still cancel here; once the
+                            // operation started, it finishes, and so does its
+                            // after-event.
+                            if signal.as_ref().is_some_and(AbortSignal::aborted) {
+                                let verb = match verb {
+                                    DocumentVerb::Save => "save",
+                                    DocumentVerb::Print => "print",
+                                };
+                                return Err(cancelled(verb, signal.as_ref()));
+                            }
+                            // `operation()` throwing skips the after-event.
+                            let value = operation()?.await?;
+                            rt::returned(this.clone().run_doc_event_tree_safe(after, diagnose))
+                                .await;
+                            Ok(value)
+                        }
+                    };
+                    if verb != DocumentVerb::Print {
+                        // `return body()`: the async function adopts it.
+                        return adopt(Promise::spawn(body)).await;
                     }
-                    DocumentVerb::Print => {
-                        (DocumentTriggerEvent::WillPrint, DocumentTriggerEvent::DidPrint)
-                    }
-                };
-                let body = {
-                    let this = this.clone();
-                    async move {
-                        rt::returned(
-                            this.clone().run_doc_event_tree_safe(before, diagnose.clone()),
-                        )
-                        .await;
-                        let value = operation()?.await?;
-                        rt::returned(this.clone().run_doc_event_tree_safe(after, diagnose)).await;
-                        Ok(value)
-                    }
-                };
-                if verb != DocumentVerb::Print {
-                    // `return body()`: the async function adopts it.
-                    return adopt(Promise::spawn(body)).await;
-                }
-                this.0.print_latch.set(true);
-                let value = rt::returned(body).await;
-                this.0.print_latch.set(false);
-                value
-            }))
-        })
+                    this.0.print_latch.set(true);
+                    let value = rt::returned(body).await;
+                    this.0.print_latch.set(false);
+                    value
+                }))
+            },
+            queued,
+        )
     }
 }
