@@ -3,8 +3,13 @@
 //! number-format cascade (`format.ts`), the readout a dimension's points
 //! give (`derive.ts`) and the checks a written scale passes (`validate.ts`).
 //!
-//! Measures are read straight off the annotation's JSON, so a malformed
-//! one reads the way the TypeScript reads it: a missing number is `NaN`.
+//! Measures are read straight off the annotation's JSON. A missing number
+//! reads as `NaN`, as in the TypeScript. Other malformed members don't throw
+//! where the TypeScript does: a format list entry that isn't an object is
+//! skipped, a missing `x` or `area` list reads as empty (no scale, or `NaN`),
+//! a missing `unit` prints as `""` where the TypeScript prints
+//! `"undefined"`, and a `fraction` that isn't a string reads as `decimal`.
+//! The README lists these as kept differences.
 
 use epdf_geometry::{Point, js};
 use serde_json::Value;

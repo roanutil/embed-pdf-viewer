@@ -85,7 +85,8 @@ the crate still builds for `wasm32-unknown-unknown`: the kind facts and defaults
 to file-space mirror, the predictor (`resolveAnnotationDraft`, `resolveAnnotationPatch`, the rect
 command, `annotationPatchBetween`, `mergeAnnotationPatch`), `appearanceChangeOf`, and the
 measurement readout and format. `src/engine/kind_facts.rs` is generated from the TypeScript tables
-by `node_modules/.bin/tsx crates/plugins/annotation-core/scripts/kind-facts.ts`. Destinations
+by `node_modules/.bin/tsx crates/plugins/annotation-core/scripts/kind-facts.ts | rustfmt --edition
+2024 --config-path rustfmt.toml`, run from the repository root. Destinations
 (`linkTarget`, `actions`) cross the mirror unchanged; `src/engine/space.rs` says why the result is
 the same. `epdf-engine` keeps its own copies on PDFium's side.
 
@@ -111,15 +112,26 @@ These inputs answer differently on purpose, each pinned by a test in `tests/`:
   reads it as an unknown kind that is only shown. The harness reproduces the TypeScript's answers
   for those names so the vectors still pin them, and `groupResizeAnchor`'s `center` is reproduced
   in the core because it changes only an answer.
-- A cloudy border with more than a million curls (review finding M20): the path and outline are
-  empty and the bounds are the box grown by half the stroke, where the TypeScript would allocate
-  until it runs out (`tests/hostile_geometry.rs`).
+- Hostile geometry (review finding M20), where the TypeScript would allocate until it runs out
+  or loop forever. A cloudy border with more than a million curls has an empty path and outline,
+  and its bounds are the box grown by half the stroke (`tests/hostile_geometry.rs`). A cloud
+  outline that would flatten to more than 4,000,000 points, from a hostile `/BE` intensity or
+  `/BS` width, is empty (`MAX_OUTLINE_POINTS` in `src/cloudy.rs`, same test file). A squiggly
+  underline whose baseline would take more than a million segments draws nothing (`src/scene.rs`
+  unit tests).
 - Sorting stays V8's TimSort (review finding N5), so an inconsistent comparator leaves elements
   where V8 does (`tests/js_sort.rs`).
 - A record id in `forget`'s list or a snap's ids that the view doesn't hold. Snapping skips it
   where the TypeScript reads `byId[id]` unguarded; a gesture whose record is forgotten ends
   (`tests/behavior.rs`). A move, resize or caption draft whose record is missing but not
   forgotten throws the TypeScript's own `TypeError`.
+- A `setSnap` patch the typed `SnapSettings` can't hold (`alignment: "yes"`): the TypeScript
+  spreads it in; the port returns the model unchanged (`tests/behavior.rs`).
+- A malformed `/Measure` (`src/engine/measure.rs`): a format list entry that isn't an object is
+  skipped where `validNumberFormat(null)` throws; a missing `x` or `area` list reads as empty
+  (no scale, or a `NaN` area) where the TypeScript throws a `TypeError`; a missing `unit` prints
+  `""` where the TypeScript prints `"undefined"`; a `fraction` that isn't a string reads as
+  `decimal`. No vector holds one.
 - `setRichText` on a free-text annotation with no `richText`: the TypeScript reads
   `richText.body` and throws a `TypeError`; the port takes the body as empty. No vector holds one.
 - A rich-text cut inside a surrogate pair. `slice` keeps the lone surrogate; a Rust string cannot,
@@ -147,8 +159,8 @@ threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 These counts are from the port before the re-port to the current `packages/core/annotation`
 layout, and the line numbers point into it: `measure.rs` and `update.rs` are gone (their code is
-now in `src/engine/` and `src/update/`), and `tests/api.rs` with them. The run has not been
-repeated on the current modules.
+now in `src/engine/` and `src/update/`), and `tests/api.rs` with them. The table is stale and the
+run has not been repeated on the current modules; Task 14 regenerates it.
 
 `scripts/mutants.sh -p epdf-annotation-core --test-package epdf-annotation-core --file <file>`,
 file by file over every module but `harness.rs`, catches 4,577 of 4,669 viable mutants (4,556

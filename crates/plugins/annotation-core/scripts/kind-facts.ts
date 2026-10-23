@@ -3,7 +3,10 @@
  * and its defaults table, so the Rust predictor reads the same tables:
  *
  *   pnpm exec tsx crates/plugins/annotation-core/scripts/kind-facts.ts \
+ *     | rustfmt --edition 2024 --config-path rustfmt.toml \
  *     > crates/plugins/annotation-core/src/engine/kind_facts.rs
+ *
+ * The output is unformatted; the checked-in file is rustfmt's.
  *
  * Run it again whenever `packages/engine/core/src/annotation/kind-facts.generated.ts`
  * or `annotation/defaults.ts` changes.

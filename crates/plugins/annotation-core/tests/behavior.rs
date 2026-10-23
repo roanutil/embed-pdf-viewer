@@ -324,7 +324,7 @@ fn without_record(model: &Model, id: &str) -> Model {
 }
 
 fn assert_type_error(result: CoreResult<UpdateResult>) {
-    let error = result.err().expect("the TypeScript throws");
+    let Err(error) = result else { panic!("the TypeScript throws") };
     assert_eq!(error.name, "TypeError");
     assert_eq!(error.message, "Cannot read properties of undefined (reading 'annotation')");
 }
