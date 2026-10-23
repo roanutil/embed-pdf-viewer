@@ -7,10 +7,9 @@
 //! source never waits on the kernel thread. A foreign handler runs on the
 //! kernel thread, synchronously, inside the dispatch.
 //!
-//! Payloads (`ActivateToolOptions.payload`, `ToolChangedEvent.payload`) do
-//! not cross: they are hand-offs between Rust plugins. `PointerSample`'s
-//! `project` does not cross either; a sample from a native source carries
-//! only its page hit.
+//! A tool's own pointer members and `PointerSample`'s `project` do not
+//! cross: a native tool is data (its tags drive handlers), and a sample from
+//! a native source carries only its page hit.
 
 use std::cell::RefCell;
 use std::collections::{BTreeMap, HashMap};
@@ -27,7 +26,7 @@ use epdf_kernel::{Error, Unsubscribe};
 
 use crate::{
     Feedback, ImpactWeight, InteractionCapability, NotifyKind, RegisterHandlerOptions,
-    RegisterToolOptions, Tool,
+    RegisterToolOptions, Tool, ToolTouch,
 };
 
 /// Where a foreign callback's failure goes: the kernel's report sink.
@@ -42,19 +41,44 @@ pub struct InteractionTool {
     pub gap_cursor: Option<String>,
     /// Behaviour tags (`text-select`, `scroll`, ...), each once, in order.
     pub enables: Vec<String>,
-    /// Arming this tool is consent to create with a finger.
+    /// What one finger does on a touch screen; `None` reads as `Tap`.
     #[uniffi(default = None)]
-    pub touch_direct: Option<bool>,
+    pub touch: Option<InteractionToolTouch>,
 }
 
-impl From<Tool> for InteractionTool {
-    fn from(tool: Tool) -> Self {
+/// `ToolTouch`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum InteractionToolTouch {
+    Draw,
+    Tap,
+}
+
+impl From<ToolTouch> for InteractionToolTouch {
+    fn from(touch: ToolTouch) -> Self {
+        match touch {
+            ToolTouch::Draw => InteractionToolTouch::Draw,
+            ToolTouch::Tap => InteractionToolTouch::Tap,
+        }
+    }
+}
+
+impl From<InteractionToolTouch> for ToolTouch {
+    fn from(touch: InteractionToolTouch) -> Self {
+        match touch {
+            InteractionToolTouch::Draw => ToolTouch::Draw,
+            InteractionToolTouch::Tap => ToolTouch::Tap,
+        }
+    }
+}
+
+impl From<&Tool> for InteractionTool {
+    fn from(tool: &Tool) -> Self {
         InteractionTool {
-            id: tool.id,
-            cursor: tool.cursor,
-            gap_cursor: tool.gap_cursor,
-            enables: tool.enables,
-            touch_direct: tool.touch_direct,
+            id: tool.id.clone(),
+            cursor: tool.cursor.clone(),
+            gap_cursor: tool.gap_cursor.clone(),
+            enables: tool.enables.clone(),
+            touch: tool.touch.map(Into::into),
         }
     }
 }
@@ -63,7 +87,7 @@ impl From<InteractionTool> for Tool {
     fn from(tool: InteractionTool) -> Self {
         let mut out = Tool::new(tool.id, tool.cursor, tool.enables.iter().map(String::as_str));
         out.gap_cursor = tool.gap_cursor;
-        out.touch_direct = tool.touch_direct;
+        out.touch = tool.touch.map(Into::into);
         out
     }
 }
@@ -72,12 +96,12 @@ impl From<InteractionTool> for Tool {
 pub struct InteractionToolChangedEvent {
     pub tool_id: String,
     pub previous_tool_id: String,
-    pub tool: InteractionTool,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct InteractionGestureEvent {
-    pub handler_id: String,
+    /// The tool that was active when the gesture began.
+    pub tool_id: String,
     pub page: Option<PageRef>,
     pub pointer_type: PointerKind,
 }
@@ -245,7 +269,7 @@ fn registration(post: KernelPost, off: crate::Unregister) -> Arc<RegistrationHan
 
 fn gesture_event(event: &crate::GestureEvent) -> InteractionGestureEvent {
     InteractionGestureEvent {
-        handler_id: event.handler_id.clone(),
+        tool_id: event.tool_id.clone(),
         page: event.page.map(Into::into),
         pointer_type: event.pointer_type.into(),
     }
@@ -292,7 +316,7 @@ impl crate::InteractionHandler for ForeignHandler {
         self.priority
     }
     fn enabled_for(&self, tool: &Tool) -> bool {
-        self.inner.enabled_for(tool.clone().into())
+        self.inner.enabled_for(tool.into())
     }
     fn on_down(&self, sample: &crate::PointerSample) -> bool {
         match self.inner.on_down(sample.into()) {
@@ -361,7 +385,7 @@ impl InteractionHandle {
     /// The armed tool. An id nobody registered reads back as a neutral tool
     /// with no tags.
     pub async fn active_tool(&self) -> Result<InteractionTool, ViewerError> {
-        self.bound.call(|b| Ok(open(&b.cap)?.get_active_tool().into())).await
+        self.bound.call(|b| Ok((&*open(&b.cap)?.get_active_tool()).into())).await
     }
 
     pub async fn active_tool_id(&self) -> Result<String, ViewerError> {
@@ -375,12 +399,12 @@ impl InteractionHandle {
 
     pub async fn tools(&self) -> Result<Vec<InteractionTool>, ViewerError> {
         self.bound
-            .call(|b| Ok(open(&b.cap)?.list_tools().into_iter().map(Into::into).collect()))
+            .call(|b| Ok(open(&b.cap)?.list_tools().iter().map(|t| (&**t).into()).collect()))
             .await
     }
 
     pub async fn tool(&self, id: String) -> Result<Option<InteractionTool>, ViewerError> {
-        self.bound.call(move |b| Ok(open(&b.cap)?.get_tool(&id).map(Into::into))).await
+        self.bound.call(move |b| Ok(open(&b.cap)?.get_tool(&id).map(|t| (&*t).into()))).await
     }
 
     pub async fn has_tool(&self, id: String) -> Result<bool, ViewerError> {
@@ -394,7 +418,7 @@ impl InteractionHandle {
 
     /// Rejects `not-found` for an id nobody registered.
     pub async fn activate_tool(&self, id: String) -> Result<(), ViewerError> {
-        self.bound.call(move |b| open(&b.cap)?.activate_tool(&id, None)).await
+        self.bound.call(move |b| open(&b.cap)?.activate_tool(&id)).await
     }
 
     pub async fn activate_default_tool(&self) -> Result<(), ViewerError> {
@@ -403,7 +427,7 @@ impl InteractionHandle {
 
     /// Arm a tool for now (hold to pan); `pop_tool` restores the last one.
     pub async fn push_tool(&self, id: String) -> Result<(), ViewerError> {
-        self.bound.call(move |b| open(&b.cap)?.push_tool(&id, None)).await
+        self.bound.call(move |b| open(&b.cap)?.push_tool(&id)).await
     }
 
     /// Nothing when the stack is empty.
@@ -411,16 +435,16 @@ impl InteractionHandle {
         self.bound.call(|b| open(&b.cap)?.pop_tool()).await
     }
 
-    /// Reskin a tool's cursor keywords; `None` removes the skin.
+    /// Replace a tool's cursors by name; `None` brings the tool's own back.
     pub async fn set_tool_cursor(
         &self,
         id: String,
-        skin: Option<HashMap<String, String>>,
+        cursors: Option<HashMap<String, String>>,
     ) -> Result<(), ViewerError> {
         self.bound
             .call(move |b| {
-                let skin = skin.map(|s| s.into_iter().collect::<BTreeMap<_, _>>());
-                open(&b.cap)?.set_tool_cursor(&id, skin);
+                let cursors = cursors.map(|s| s.into_iter().collect::<BTreeMap<_, _>>());
+                open(&b.cap)?.set_tool_cursor(&id, cursors);
                 Ok(())
             })
             .await
@@ -436,8 +460,8 @@ impl InteractionHandle {
         let post = self.post.clone();
         self.bound
             .call(move |b| {
-                let off =
-                    open(&b.cap)?.register_tool(tool.into(), RegisterToolOptions { replace })?;
+                let off = open(&b.cap)?
+                    .register_tool(Tool::from(tool), RegisterToolOptions { replace })?;
                 Ok(registration(post, off))
             })
             .await
@@ -488,6 +512,11 @@ impl InteractionHandle {
         self.bound.call(|b| Ok(open(&b.cap)?.get_cursor())).await
     }
 
+    /// Whether a hover claim holds the cursor.
+    pub async fn has_cursor_claim(&self) -> Result<bool, ViewerError> {
+        self.bound.call(|b| Ok(open(&b.cap)?.has_cursor_claim())).await
+    }
+
     /// Touch pre-flight: would any eligible handler claim this contact.
     pub async fn would_claim_touch(&self, sample: PointerSample) -> Result<bool, ViewerError> {
         self.bound.call(move |b| Ok(open(&b.cap)?.would_claim_touch(&sample.into()))).await
@@ -528,7 +557,6 @@ impl InteractionHandle {
                             event: InteractionToolChangedEvent {
                                 tool_id: e.tool_id.clone(),
                                 previous_tool_id: e.previous_tool_id.clone(),
-                                tool: e.tool.clone().into(),
                             },
                         }),
                         relay!(on_gesture_started, |e| InteractionEvent::GestureStarted {

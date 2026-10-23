@@ -6,8 +6,9 @@
 use std::rc::Rc;
 use std::sync::LazyLock;
 
-use epdf_kernel::{AnyPlugin, Token, define};
+use epdf_kernel::{AnyPlugin, Token, define, undefined};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -63,25 +64,14 @@ impl PlatformFeedback for Noop {
     fn notify(&self, _kind: NotifyKind) {}
 }
 
-/// The plugin is stateless: `{}`.
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct FeedbackState {}
-
-/// Exists only to satisfy the reducer contract; nothing dispatches it.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(tag = "type")]
-pub enum FeedbackAction {
-    #[serde(rename = "feedback/noop")]
-    Noop,
-}
-
-/// `feedbackPlugin(options)`.
+/// `feedbackPlugin(options)`: the workspace's one feedback provider.
+/// Stateless: the capability is the provider, or the no-op.
 pub fn feedback_plugin(options: FeedbackPluginOptions) -> AnyPlugin {
-    define::<FeedbackState, FeedbackAction>("feedback")
-        .initial_state(FeedbackState::default)
-        .reduce(|_, _| None)
-        .capability(&FEEDBACK, move |_| {
-            Ok(Feedback(options.provider.clone().unwrap_or_else(|| Rc::new(Noop))))
+    define::<Value, Value>("feedback")
+        .initial_state(undefined)
+        .create(&FEEDBACK, move |_| {
+            let provider = options.provider.clone().unwrap_or_else(|| Rc::new(Noop));
+            Ok((Feedback(provider), None))
         })
         .build()
 }
