@@ -43,7 +43,15 @@ fn main() {
         build_support::emit_rpath_only();
     }
     let manifest = PathBuf::from(std::env::var_os("CARGO_MANIFEST_DIR").expect("manifest dir"));
-    let standard = manifest.join("../../../packages/core/fonts/src/standard");
+    // The nearest ancestor holding the package, as `build_support::lib_root`
+    // finds `packages/engine/runtime`, so the crate's depth doesn't matter.
+    let standard = manifest
+        .ancestors()
+        .map(|dir| dir.join("packages/core/fonts/src/standard"))
+        .find(|dir| dir.is_dir())
+        .unwrap_or_else(|| {
+            panic!("no packages/core/fonts/src/standard above {}", manifest.display())
+        });
     let out = PathBuf::from(std::env::var_os("OUT_DIR").expect("OUT_DIR"));
     std::fs::write(out.join("faces.rs"), faces_rs(&standard)).expect("write faces.rs");
 }
