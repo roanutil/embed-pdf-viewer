@@ -861,6 +861,7 @@ name = "epdf-signature-core"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "build-support",
  "ecdsa",
  "epdf-geometry",
  "epdf-kernel",
