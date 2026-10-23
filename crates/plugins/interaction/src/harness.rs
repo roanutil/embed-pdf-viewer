@@ -113,6 +113,13 @@ thread_local! {
 
 /// A page ref from a vector. One the kernel can't read gets a stand-in
 /// numbered down from `u32::MAX`, which no page of a fixture has.
+///
+/// Stand-ins match only a ref spelled the same. In the TypeScript every
+/// such ref matches every other one (`undefined === undefined`), so a
+/// tool's own gesture that starts on `pageObjectNumber: 1` and moves over
+/// `pageObjectNumber: 2` with no projection gets the page-2 point there and
+/// the last event here. No vector does that today; Task 14's fix of the
+/// generator's refs (`suites/interaction.ts:88`) removes the stand-ins.
 pub fn page_ref_from_json(value: &Value) -> PageRef {
     if let Some(page) = PageRef::from_json(value) {
         return page;

@@ -11,7 +11,8 @@
 //! from a host that only has JSON) is read as a tool without callbacks.
 //!
 //! The table holds only the tools the current or the registered settings
-//! name: every typed change prunes the rest.
+//! name: every change to the store prunes the rest, a JSON write through
+//! `kernel.settings_of` included.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -30,6 +31,8 @@ pub(crate) struct ToolTable {
     registered: RefCell<Value>,
     /// The last decoded settings, by the identity of the JSON they came from.
     cache: RefCell<Option<(Rc<Value>, InteractionSettings)>>,
+    /// Whether the table listens to its store's changes yet.
+    watching: Cell<bool>,
 }
 
 impl ToolTable {
@@ -97,12 +100,27 @@ impl ToolTable {
         settings
     }
 
-    /// Forget every tool neither the store's current settings nor the
-    /// registered ones name.
-    pub(crate) fn prune(&self, store: &Settings) {
-        let current = store.get_settings();
+    /// Prune on every change of the registration's store, from the first
+    /// instance on: before one exists, nothing typed can reach the store.
+    pub(crate) fn watch(self: &Rc<Self>, store: &Settings) {
+        if self.watching.replace(true) {
+            return;
+        }
+        let table = Rc::downgrade(self);
+        // The store's events end with the kernel; the listener holds the
+        // table weakly, so dropping its unsubscribe keeps it for that long.
+        let _ = store.on_settings_changed().on(move |event| {
+            if let Some(table) = table.upgrade() {
+                table.prune(&event.settings);
+            }
+            Ok(())
+        });
+    }
+
+    /// Forget every tool neither `current` nor the registered settings name.
+    fn prune(&self, current: &Value) {
         let named = |n: u64| {
-            [&*current, &*self.registered.borrow()].iter().any(|settings| {
+            [current, &*self.registered.borrow()].iter().any(|settings| {
                 settings
                     .get("tools")
                     .and_then(Value::as_array)

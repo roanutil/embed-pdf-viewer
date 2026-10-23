@@ -120,6 +120,7 @@ pub(crate) fn create_interaction_controller(
         setting_tools: RefCell::default(),
     });
     let cap = InteractionCapability(hub.clone());
+    hub.table.watch(&hub.settings.store);
 
     let weak = Rc::downgrade(&hub);
     hub.cx.on_state_change(move |next, previous| {
@@ -392,16 +393,12 @@ impl InteractionCapability {
     /// replaces the list whole. Fires `on_settings_changed` once when a
     /// setting changed.
     pub fn update_settings(&self, changes: &InteractionConfig) {
-        let store = &self.0.settings.store;
-        store.update_settings(&self.0.table.encode(changes));
-        self.0.table.prune(store);
+        self.0.settings.store.update_settings(&self.0.table.encode(changes));
     }
 
     /// Go back to what the app registered, not to the defaults.
     pub fn reset_settings(&self) {
-        let store = &self.0.settings.store;
-        store.reset_settings();
-        self.0.table.prune(store);
+        self.0.settings.store.reset_settings();
     }
 
     /// Fires once for each call that changed a setting. This instance's

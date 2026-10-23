@@ -371,6 +371,61 @@ fn settings_tools_are_registered_and_swapped_for_every_document() {
     assert_eq!(settings["defaultTool"], "ink");
 }
 
+/// Kept divergence: a settings tool is compared by identity. Two distinct
+/// tools with equal data and no callbacks are a change here, so the swap
+/// runs and its removers drop the tools' `set_tool_cursor` entries. The
+/// TypeScript's `sameValue` (`packages/core/main/src/settings.ts:187-222`)
+/// deep-compares a plain tool given without `enables` and calls this no
+/// change; `Tool.enables` can't tell that input from an empty set.
+#[test]
+fn distinct_equal_settings_tools_count_as_a_change() {
+    let kernel = kernel();
+    let a = hub(&kernel, "a");
+    let changes = Log::default();
+    let c = changes.clone();
+    a.on_settings_changed(move |e| {
+        c.borrow_mut().push(format!("{:?}", e.changed));
+        Ok(())
+    });
+    let tool = || Rc::new(Tool::new("note", "cell", []));
+    let first = tool();
+    a.update_settings(&InteractionConfig { default_tool: None, tools: Some(vec![first.clone()]) });
+    a.update_settings(&InteractionConfig { default_tool: None, tools: Some(vec![first]) });
+    assert_eq!(*changes.borrow(), ["[\"tools\"]"], "the same tool is no change");
+
+    a.activate_tool("note").unwrap();
+    a.dispatch_pointer(&on(Phase::Move, Some(hit(1, 1.0, 1.0))));
+    a.set_tool_cursor("note", Some([("cell".to_string(), "url(n.svg), cell".to_string())].into()));
+    assert_eq!(a.get_cursor(), "url(n.svg), cell");
+
+    a.update_settings(&InteractionConfig { default_tool: None, tools: Some(vec![tool()]) });
+    assert_eq!(*changes.borrow(), ["[\"tools\"]", "[\"tools\"]"], "an equal tool is a change");
+    a.activate_tool("note").unwrap();
+    assert_eq!(a.get_cursor(), "cell", "the swap's remover dropped the tool's cursors");
+}
+
+/// A JSON write through the registration's store releases the typed tools
+/// earlier settings held, as a typed change does.
+#[test]
+fn a_json_settings_write_releases_earlier_typed_tools() {
+    let kernel = kernel();
+    let (a, b) = (hub(&kernel, "a"), hub(&kernel, "b"));
+    let typed = Rc::new(Tool::new("typed", "cell", []));
+    let weak = Rc::downgrade(&typed);
+    a.update_settings(&InteractionConfig { default_tool: None, tools: Some(vec![typed]) });
+    assert!(b.has_tool("typed"));
+    kernel
+        .settings_of(INTERACTION.any())
+        .unwrap()
+        .update_settings(&json!({ "tools": [{ "id": "plain", "cursor": "copy" }] }));
+    for hub in [&a, &b] {
+        assert!(!hub.has_tool("typed"));
+        assert_eq!(hub.get_tool("plain").unwrap().cursor, "copy");
+        hub.list_tools();
+    }
+    assert!(weak.upgrade().is_none(), "nothing keeps the earlier typed tool");
+}
+
 /// Kept divergence: the hub releases its handlers, their scopes, the
 /// gesture owner and the tools' own handlers when the document closes,
 /// which the TypeScript leaves to the garbage collector. A closed hub then
