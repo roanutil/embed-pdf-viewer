@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex};
 use epdf_ffi::{CancelToken, KernelThread, PageRef, Point, ViewerError};
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_selection::ffi::{
-    SelectionChangeTrigger, SelectionEvent, SelectionEventListener, SelectionHandle,
-    SelectionInput, SelectionTextPosition, SelectionTextRange,
+    SelectionEvent, SelectionEventListener, SelectionHandle, SelectionInput, SelectionTextPosition,
+    SelectionTextRange,
 };
 use epdf_plugin_selection::{
     SELECTION, SelectionConfig, SelectionRangeInput, TextRange, selection_plugin,
@@ -57,9 +57,7 @@ fn page_refs() -> Vec<PageRef> {
         .as_array()
         .unwrap()
         .iter()
-        .map(|p| PageRef {
-            page_object_number: p["ref"]["pageObjectNumber"].as_u64().unwrap() as u32,
-        })
+        .map(|p| PageRef { page_object_number: p["ref"]["objectNumber"].as_u64().unwrap() as u32 })
         .collect()
 }
 
@@ -195,10 +193,10 @@ fn select_and_clear_are_observed() {
     let seen = events.0.lock().unwrap();
     assert!(
         matches!(seen.first(), Some(SelectionEvent::Changed { event })
-        if event.range.is_some() && event.trigger == SelectionChangeTrigger::Api),
+        if event.range.is_some()),
         "{seen:?}"
     );
-    assert!(seen.iter().any(|e| matches!(e, SelectionEvent::Cleared { .. })), "{seen:?}");
+    assert!(seen.iter().any(|e| matches!(e, SelectionEvent::Cleared)), "{seen:?}");
 }
 
 #[test]
@@ -213,7 +211,7 @@ fn a_gesture_commits_on_end() {
     let left = Point { x: rect.x + 0.5, y: rect.y + rect.height / 2.0 };
     let right = Point { x: rect.x + rect.width - 0.5, y: left.y };
     assert!(block_on(selection.begin_gesture_at(pages[0], left)).unwrap());
-    assert!(block_on(selection.is_gesture_active()).unwrap());
+    assert!(block_on(selection.is_selecting()).unwrap());
     block_on(selection.extend_to(pages[0], right)).unwrap();
     block_on(selection.end_gesture()).unwrap();
     block_on(thread.call(|_| ())).unwrap();
@@ -253,7 +251,7 @@ fn a_read_cancelled_while_the_engine_reads_rejects_operation_cancelled() {
         doc["security"] = serde_json::json!({ "allows": "*" });
         doc["responses"].as_array_mut().unwrap().insert(
             0,
-            serde_json::json!({ "path": "page.text.read", "pon": 1, "defer": "text-1", "times": 1 }),
+            serde_json::json!({ "path": "page.text.get", "pon": 1, "defer": "text-1", "times": 1 }),
         );
         TestSpec::new(spec)
     });

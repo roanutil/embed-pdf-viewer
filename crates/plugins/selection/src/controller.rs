@@ -1,45 +1,46 @@
 //! `controller.ts`: the selection controller. One object is both the public
 //! lens and the host lens.
 //!
-//! The model holds the range and its derived page-space segments; the
-//! per-page caches live here, split by what invalidates them:
-//! `raw_geometry` (PDF-space snapshots, dropped when a page leaves the
-//! registry or its content changes), `derived` (the transform and layout,
-//! keyed by crop, rotation and `userUnit`, so a view rotation re-derives with
-//! no refetch) and `text_snapshots` (for `read_text`).
+//! State holds the range and its derived page-space segments. Engine data
+//! lives outside state:
 //!
-//! `publish` is the one place the selection changes and `on_changed` /
-//! `on_cleared` fire. `recompute` rebuilds the segments of every loaded page
-//! in the span, warms the rest (they recompute on arrival, with a `system`
-//! origin), and clamps stored endpoints once their page's geometry is known,
-//! which is how `select_all`'s open end settles.
+//! - text geometry is a page mirror (`geometry`): each page's
+//!   `page.text.layout` answer, loaded on demand, re-read when a confirmed
+//!   event changes a page's content (redaction apply, flatten) and dropped
+//!   when a page is deleted. The answer is the page-space geometry the
+//!   layout is built from (a `$textLayout` marker or the bare snapshot); the
+//!   built [`TextLayout`] is kept beside it, keyed by the answer's identity.
+//! - `text_snapshots` holds per-page text promises for `read_text`, dropped
+//!   on the same content changes and when a page leaves the registry.
+//!
+//! `recompute` rebuilds the segments of every loaded page in the span and
+//! warms the rest, which recompute when their geometry arrives. The change
+//! and clear events are derived from state changes in one place.
 
 use std::cell::{Cell, RefCell};
-use std::collections::{BTreeMap, HashMap, HashSet};
-use std::rc::Rc;
+use std::collections::{HashMap, HashSet};
+use std::rc::{Rc, Weak};
 
-use epdf_geometry::js::{self, number_to_string};
-use epdf_geometry::{PageRotation, Point, Rect, text_quad_bounds};
+use epdf_geometry::js::number_to_string;
+use epdf_geometry::{Point, Rect, bounds_of_rects, quad_bounds};
+use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
+use epdf_kernel::mirror::ResourceStatus;
+use epdf_kernel::page_mirror::{Affected, PageMirror, PageMirrorChange, PageMirrorSpec};
 use epdf_kernel::plugin::ConnectFn;
 use epdf_kernel::rt::{self, Promise};
+use epdf_kernel::settings::InstanceSettings;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Controller, Error, Unsubscribe};
-use serde::Deserialize;
 use serde_json::Value;
 
 use crate::contract::*;
-use crate::geometry::{
-    SelectionPageGeometry, SelectionSegment, build_selection_page_geometry, content_point_to_pdf,
-    to_content_segment, to_content_text_quad,
-};
 use crate::model::*;
 use crate::text_layout::{
-    DEFAULT_TOLERANCE_FACTOR, PageGeometrySnapshot, PageTextSnapshot, PdfRect,
-    expand_text_range_to_line, expand_text_range_to_word, slice_text_by_chars, text_glyph_at,
-    text_glyph_quad, text_segments_for_range,
+    PageGeometrySnapshot, PageTextSnapshot, TextLayout, TextRange as CharRange, create_text_layout,
+    slice_text,
 };
 
 const SELECT_SCOPE: &str = "doc.text.select";
@@ -56,65 +57,35 @@ pub struct OperationOptions {
     pub signal: Option<AbortSignal>,
 }
 
-/// The members of a `PageLayout` the controller reads.
-#[derive(Clone, Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PageLayout {
-    index: f64,
-    rotation: PageRotation,
-    user_unit: f64,
-    boxes: PageBoxes,
-}
-
-#[derive(Clone, Debug, Deserialize)]
-struct PageBoxes {
-    crop: PdfRect,
-}
-
-/// The page registry, decoded.
+/// The page registry, decoded once per page list.
 #[derive(Default)]
 struct Registry {
-    /// Each row's page, in order, `None` where its ref fails to decode
-    /// (`pages[i]?.ref.pageObjectNumber`). A malformed row costs only
-    /// itself, as in the TypeScript.
+    /// Each row's page, in order (`pages[i]?.ref`), `None` where its ref
+    /// fails to decode: a malformed row costs only itself.
     pons: Vec<Option<PageObjectNumber>>,
-    /// Each row on its own, `None` where it fails to decode.
-    rows: Vec<Option<PageLayout>>,
-    /// The first row naming each page, as a linear scan finds it.
-    by_pon: HashMap<PageObjectNumber, usize>,
+    /// The first row naming each page, as `pages.find` finds it, with that
+    /// row's `index` (`-1` when it has none, as `?.index ?? -1` reads).
+    by_pon: HashMap<PageObjectNumber, i64>,
 }
 
 impl Registry {
     fn decode(pages: &Value) -> Self {
-        // Read in place: `&Value` is a deserializer, so the shared layouts
-        // aren't copied first.
-        let rows: Vec<Option<PageLayout>> = pages
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|row| serde::Deserialize::deserialize(row).ok())
-            .collect();
-        let pons: Vec<Option<PageObjectNumber>> = pages
-            .as_array()
-            .into_iter()
-            .flatten()
-            .map(|row| row.get("ref").and_then(PageRef::from_json).map(|r| r.page_object_number))
-            .collect();
+        let rows = pages.as_array().map(Vec::as_slice).unwrap_or_default();
+        let mut pons = Vec::with_capacity(rows.len());
         let mut by_pon = HashMap::with_capacity(rows.len());
-        for (i, pon) in pons.iter().enumerate() {
+        for row in rows {
+            let pon = row.get("ref").and_then(PageRef::from_json).map(|r| r.page_object_number);
             if let Some(pon) = pon {
-                by_pon.entry(*pon).or_insert(i);
+                let index = row.get("index").and_then(Value::as_f64).map_or(-1, |i| i as i64);
+                by_pon.entry(pon).or_insert(index);
             }
+            pons.push(pon);
         }
-        Registry { pons, rows, by_pon }
-    }
-
-    fn layout_of(&self, pon: PageObjectNumber) -> Option<&PageLayout> {
-        self.rows.get(*self.by_pon.get(&pon)?)?.as_ref()
+        Registry { pons, by_pon }
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 enum Expand {
     Word,
     Line,
@@ -127,29 +98,56 @@ enum Which {
 }
 
 struct Ordered {
-    start: GlyphPointer,
-    end: GlyphPointer,
+    start: GlyphPosition,
+    end: GlyphPosition,
     direction: SelectionDirection,
 }
 
 /// Everything the read model derives from one state object.
 struct ReadModel {
-    state: Rc<SelectionState>,
     snapshot: SelectionSnapshot,
     pages: Vec<PageRef>,
     anchor: Option<SelectionAnchor>,
 }
 
+/// The read model's inputs: the range, the segments (by identity) and the
+/// registry revision.
+struct ModelKey {
+    selection: Option<SelectionRange>,
+    segments: SegmentsByPage,
+    revision: u64,
+}
+
+impl ModelKey {
+    fn matches(&self, state: &SelectionState, revision: u64) -> bool {
+        self.revision == revision
+            && self.selection == state.selection
+            && same_segment_lists(&self.segments, &state.segments)
+    }
+}
+
+/// Whether two segment maps hold the same lists: the identity
+/// `previous.segments === next.segments` compares.
+fn same_segment_lists(a: &SegmentsByPage, b: &SegmentsByPage) -> bool {
+    a.len() == b.len() && a.iter().zip(b).all(|((ka, va), (kb, vb))| ka == kb && Rc::ptr_eq(va, vb))
+}
+
+/// A page's mirror answer and the layout built from it (`None` when the
+/// answer held no geometry).
+type BuiltLayout = (Rc<Value>, Option<Rc<TextLayout>>);
+
 struct Core {
-    cx: Controller<SelectionState, SelectionAction>,
-    raw_geometry: RefCell<HashMap<PageObjectNumber, Rc<PageGeometrySnapshot>>>,
-    derived: RefCell<HashMap<PageObjectNumber, (String, Rc<SelectionPageGeometry>)>>,
-    loads: RefCell<HashMap<PageObjectNumber, Promise<()>>>,
+    cx: Controller<SelectionState, Value>,
+    settings: InstanceSettings,
+    geometry: PageMirror,
+    /// Each page's built layout, beside the mirror answer it was built from.
+    layouts: RefCell<HashMap<PageObjectNumber, BuiltLayout>>,
     text_snapshots: RefCell<HashMap<PageObjectNumber, Promise<Rc<PageTextSnapshot>>>>,
-    /// Bumped on content invalidation; reads in flight from before are dropped.
+    /// Bumped on every content change; a text read in flight across one
+    /// fails (M23).
     epoch: Cell<u64>,
-    model: RefCell<Option<Rc<ReadModel>>>,
-    /// The decoded registry and the page list it came from.
+    model: RefCell<Option<(ModelKey, Rc<ReadModel>)>>,
+    /// The decoded registry and the page list it came from (M22).
     registry: RefCell<Option<(Rc<Value>, Rc<Registry>)>>,
     changed: EventHookSource<SelectionChangedEvent>,
     committed: EventHookSource<SelectionCommittedEvent>,
@@ -162,9 +160,9 @@ struct Core {
 pub struct SelectionCapability(Rc<Core>);
 
 /// `Promise.all` over promises of one type: settles one turn after the last
-/// element's reaction, or with the first rejection, and at once when empty.
-/// The same as `epdf_plugin_annotation::promise::all`, which this crate
-/// can't reach: the annotation plugin depends on this one.
+/// element's reaction, or with the first rejection, and at once when empty
+/// (S9). The same as `epdf_plugin_annotation::promise::all`, which this
+/// crate can't reach: the annotation plugin depends on this one.
 fn all<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<Vec<T>> {
     if promises.is_empty() {
         return Promise::resolved(Vec::new());
@@ -190,19 +188,9 @@ fn all<T: Clone + 'static>(promises: Vec<Promise<T>>) -> Promise<Vec<T>> {
     out
 }
 
-fn permission_denied(operation: &str, scope: &str) -> Error {
-    plugin_error(
-        code::PERMISSION_DENIED,
-        "selection",
-        format!("{operation} requires {scope}"),
-        None,
-        Some(serde_json::json!({ "required": scope })),
-    )
-}
-
 /// A content change landed while a text read was in flight: the pages
 /// already read may hold text the change removed (a redaction). The
-/// TypeScript returns that text; this is a Rust-only refusal.
+/// TypeScript returns that text; this is a Rust-only refusal (M23).
 fn throw_if_stale(at: u64, now: u64) -> Result<(), Error> {
     if at != now {
         return Err(plugin_error(
@@ -216,82 +204,135 @@ fn throw_if_stale(at: u64, now: u64) -> Result<(), Error> {
     Ok(())
 }
 
-fn throw_if_aborted(signal: Option<&AbortSignal>) -> Result<(), Error> {
-    if signal.is_some_and(AbortSignal::aborted) {
-        return Err(plugin_error(
-            code::OPERATION_CANCELLED,
-            "selection",
-            "selection.readText was cancelled",
-            None,
-            None,
-        ));
-    }
-    Ok(())
+fn union_of(segments: Option<&Rc<Vec<SelectionSegment>>>) -> Option<Rect> {
+    let rects: Vec<Rect> = segments?.iter().map(|s| s.rect).collect();
+    bounds_of_rects(&rects)
 }
 
-fn union_of(segments: Option<&Vec<SelectionSegment>>) -> Option<Rect> {
-    let segments = segments.filter(|s| !s.is_empty())?;
-    let (mut x1, mut y1) = (f64::INFINITY, f64::INFINITY);
-    let (mut x2, mut y2) = (f64::NEG_INFINITY, f64::NEG_INFINITY);
-    for s in segments {
-        x1 = js::min(x1, s.rect.x);
-        y1 = js::min(y1, s.rect.y);
-        x2 = js::max(x2, s.rect.x + s.rect.width);
-        y2 = js::max(y2, s.rect.y + s.rect.height);
-    }
-    Some(Rect { x: x1, y: y1, width: x2 - x1, height: y2 - y1 })
+fn page_json(page: PageRef) -> Value {
+    page.to_json()
+}
+
+/// The mirror's key for a page: it reads only `objectNumber`.
+fn page_key(page: PageRef) -> Value {
+    serde_json::json!({ "objectNumber": page.page_object_number })
+}
+
+/// A `page.text.layout` answer read into a layout: the `$textLayout`
+/// marker the conformance fake answers, or the bare page-space snapshot.
+/// `None` when it is neither, which reads as no geometry.
+fn hydrate(answer: &Value) -> Option<TextLayout> {
+    let snapshot = answer.get("$textLayout").unwrap_or(answer);
+    serde_json::from_value::<PageGeometrySnapshot>(snapshot.clone()).ok().map(create_text_layout)
 }
 
 /// `createSelectionController(ctx)`: the api and its `connect` half, which
-/// watches the registry revision and the content-invalidating events.
-pub fn create_selection_controller(
-    cx: Controller<SelectionState, SelectionAction>,
-) -> (SelectionCapability, ConnectFn) {
+/// watches the registry revision and the content-changing events and
+/// registers the pointer handler.
+pub(crate) fn create_selection_controller(
+    cx: Controller<SelectionState, Value>,
+) -> Result<(SelectionCapability, ConnectFn), Error> {
+    let settings = cx.settings()?;
+    let slot: Rc<RefCell<Weak<Core>>> = Rc::default();
+    let on_change = slot.clone();
+    let geometry = cx.page_mirror(PageMirrorSpec {
+        name: "geometry".into(),
+        load: Rc::new(|doc, page, _signal| {
+            let Some(doc) = doc else {
+                return Promise::rejected(Error::new("[selection] no document"));
+            };
+            let pon = PageRef::from_json(&page).map(|p| p.page_object_number);
+            doc.call("page.text.layout", pon, Vec::new())
+        }),
+        affected: Rc::new(|event| match content_changed_pages_of(event) {
+            Some(pages) => Affected::Pages(pages.into_iter().map(page_json).collect()),
+            None => Affected::None,
+        }),
+        fold: None,
+        predict: None,
+        changed: Some(Rc::new(move |change: PageMirrorChange| {
+            // A page's geometry arrived: a boundary page's segments can fill in.
+            if change.cause != "load" {
+                return Ok(());
+            }
+            if let Some(core) = on_change.borrow().upgrade() {
+                let api = SelectionCapability(core);
+                if let Some(current) = api.state().selection {
+                    api.recompute(current);
+                }
+            }
+            Ok(())
+        })),
+    })?;
     let core = Rc::new(Core {
         changed: cx.event_source(),
         committed: cx.event_source(),
         cleared: cx.event_source(),
+        settings,
+        geometry,
         cx,
-        raw_geometry: RefCell::default(),
-        derived: RefCell::default(),
-        loads: RefCell::default(),
+        layouts: RefCell::default(),
         text_snapshots: RefCell::default(),
         epoch: Cell::new(0),
         model: RefCell::new(None),
         registry: RefCell::new(None),
     });
+    *slot.borrow_mut() = Rc::downgrade(&core);
     let api = SelectionCapability(core);
+
+    // ── events, derived from each state change ──
+    let weak = Rc::downgrade(&api.0);
+    api.0.cx.on_state_change(move |next, previous| {
+        if previous.selection == next.selection
+            && same_segment_lists(&previous.segments, &next.segments)
+        {
+            return Ok(());
+        }
+        let Some(core) = weak.upgrade() else { return Ok(()) };
+        let api = SelectionCapability(core);
+        let model = api.read_model();
+        api.0.changed.emit(&SelectionChangedEvent {
+            range: model.snapshot.range,
+            pages: model.pages.clone(),
+        });
+        if previous.selection.is_some() && next.selection.is_none() {
+            api.0.cleared.emit(&SelectionClearedEvent {});
+        }
+        Ok(())
+    });
+
     let this = api.clone();
     let connect: ConnectFn = Rc::new(move || {
         let cx = &this.0.cx;
-        // Registry changes (rotate/move/delete/insert bump the document revision).
-        let last_revision = Rc::new(Cell::new(this.revision().unwrap_or(-1.0)));
-        let watcher = this.clone();
+        // Registry changes (rotate, move, delete, insert) bump the revision.
+        let last_revision = Rc::new(Cell::new(this.revision()));
+        let watcher = Rc::downgrade(&this.0);
         cx.listen(cx.subscribe(Rc::new(move || {
-            let Some(revision) = watcher.revision() else { return Ok(()) };
+            let Some(core) = watcher.upgrade() else { return Ok(()) };
+            let api = SelectionCapability(core);
+            let revision = api.revision();
             if revision == last_revision.get() {
                 return Ok(());
             }
             last_revision.set(revision);
-            watcher.on_pages_updated();
+            api.on_pages_updated();
             Ok(())
         })));
-        // Content changes: every cached snapshot is stale.
         let doc = cx.doc()?;
-        let listener = this.clone();
+        let listener = Rc::downgrade(&this.0);
         cx.listen(doc.subscribe(Rc::new(move |event: &Value| {
-            let kind = event.get("type").and_then(Value::as_str);
-            if matches!(kind, Some("redaction.applied" | "pages.flattened")) {
-                listener.invalidate_content();
+            if let (Some(core), Some(pages)) = (listener.upgrade(), content_changed_pages_of(event))
+            {
+                SelectionCapability(core).on_content_changed(&pages);
             }
         })));
-        Ok(())
+        crate::connect::connect_selection(cx, this.clone())
     });
-    (api, connect)
+    Ok((api, connect))
 }
 
 impl SelectionCapability {
-    fn cx(&self) -> &Controller<SelectionState, SelectionAction> {
+    fn cx(&self) -> &Controller<SelectionState, Value> {
         &self.0.cx
     }
 
@@ -308,350 +349,317 @@ impl SelectionCapability {
         self.0.cx.state()
     }
 
-    fn allows(&self, scope: &str) -> bool {
-        self.cx().doc().is_ok_and(|doc| doc.security().allows(scope))
-    }
-
-    fn assert_scope(&self, scope: &str, operation: &str) -> Result<(), Error> {
-        if self.allows(scope) { Ok(()) } else { Err(permission_denied(operation, scope)) }
+    fn update(&self, transition: impl FnOnce(&Rc<SelectionState>) -> Rc<SelectionState>) {
+        self.0.cx.update_state(|state| transition(&state));
     }
 
     // ── page addressing (the registry is the truth for order and layout) ──
 
-    /// `ctx.document()?.revision`, read without cloning the page list.
-    fn revision(&self) -> Option<f64> {
+    /// The document's revision and page list, read in place: `document()`
+    /// copies the whole meta, and these are read once per page of a span.
+    fn meta_of<R>(&self, read: impl FnOnce(u64, &Rc<Value>) -> R) -> Option<R> {
         let core = self.cx().core();
         match self.cx().document_id().and_then(|id| core.documents.get(id)) {
-            Some(meta) => Some(meta.revision as f64),
-            None => self.cx().document().map(|meta| meta.revision as f64),
+            Some(meta) => Some(read(meta.revision, &meta.pages)),
+            None => self.cx().document().map(|meta| read(meta.revision, &meta.pages)),
         }
+    }
+
+    /// `ctx.document()?.revision ?? 0`.
+    fn revision(&self) -> u64 {
+        self.meta_of(|revision, _| revision).unwrap_or(0)
     }
 
     /// The registry decoded once per page list: a lookup per page or per
     /// index would rescan and redecode it, which made a span O(n^2) and a
-    /// settling select-all O(n^3). Keyed on the shared list's identity.
+    /// settling select-all O(n^3) (M22). Keyed on the shared list's identity.
     fn registry(&self) -> Rc<Registry> {
-        let Some(meta) = self.cx().document() else { return Rc::new(Registry::default()) };
-        if let Some(cached) = self.0.registry.borrow().as_ref()
-            && Rc::ptr_eq(&cached.0, &meta.pages)
-        {
-            return cached.1.clone();
-        }
-        let registry = Rc::new(Registry::decode(&meta.pages));
-        *self.0.registry.borrow_mut() = Some((meta.pages.clone(), registry.clone()));
-        registry
+        self.meta_of(|_, pages| {
+            if let Some(cached) = self.0.registry.borrow().as_ref()
+                && Rc::ptr_eq(&cached.0, pages)
+            {
+                return cached.1.clone();
+            }
+            let registry = Rc::new(Registry::decode(pages));
+            *self.0.registry.borrow_mut() = Some((pages.clone(), registry.clone()));
+            registry
+        })
+        .unwrap_or_default()
     }
 
-    fn pages(&self) -> Rc<Registry> {
-        self.registry()
+    /// `pageIndexOf(page)`: `ctx.getPage(page)?.index ?? -1`.
+    fn page_index_of(&self, page: PageRef) -> i64 {
+        self.registry().by_pon.get(&page.page_object_number).copied().unwrap_or(-1)
     }
 
-    fn layout_of(&self, pon: PageObjectNumber) -> Option<PageLayout> {
-        self.registry().layout_of(pon).cloned()
-    }
-
-    fn page_index_of(&self, pon: PageObjectNumber) -> i64 {
-        self.registry().layout_of(pon).map_or(-1, |l| l.index as i64)
-    }
-
-    fn pon_at_index(&self, i: i64) -> Option<PageObjectNumber> {
+    /// `pageAtIndex(i)`: `ctx.document()?.pages[i]?.ref`.
+    fn page_at_index(&self, i: i64) -> Option<PageRef> {
         let i = usize::try_from(i).ok()?;
-        self.registry().pons.get(i).copied().flatten()
+        self.registry().pons.get(i).copied().flatten().map(PageRef::new)
     }
 
-    // ── geometry ──
+    /// `ctx.getPage(target)?.ref`: `None` for a page not in the document.
+    fn get_page(&self, target: PageTarget) -> Option<PageRef> {
+        match target {
+            PageTarget::Ref(page) => {
+                self.registry().by_pon.contains_key(&page.page_object_number).then_some(page)
+            }
+            PageTarget::Index(index) => {
+                if index.fract() != 0.0 || index < 0.0 {
+                    return None;
+                }
+                self.page_at_index(index as i64)
+            }
+        }
+    }
 
-    /// Page-space geometry for a page, derived on demand from the raw
-    /// snapshot and the current layout. A view rotation (or crop change)
-    /// changes the key and re-derives; the engine is never asked again. A
-    /// page whose crop box has no area has none (the TypeScript throws).
-    fn geometry_for(&self, pon: PageObjectNumber) -> Option<Rc<SelectionPageGeometry>> {
-        if !self.0.raw_geometry.borrow().contains_key(&pon) {
+    /// `ctx.pageOf(target).ref`: `not-found` for a page not in the document.
+    fn page_of(&self, target: PageTarget) -> Result<PageRef, Error> {
+        self.get_page(target).ok_or_else(|| {
+            let message = match target {
+                PageTarget::Ref(page) => {
+                    format!("page {} is not in this document", page.page_object_number)
+                }
+                PageTarget::Index(index) => {
+                    format!("there is no page {} in this document", number_to_string(index))
+                }
+            };
+            plugin_error(code::NOT_FOUND, "selection", message, None, None)
+        })
+    }
+
+    // ── text geometry ──
+
+    /// A page's layout while it is loaded and current: a page whose re-read
+    /// failed has none, exactly as `is_loaded` says.
+    fn geometry_for(&self, page: PageRef) -> Option<Rc<TextLayout>> {
+        let key = page_key(page);
+        if self.0.geometry.get_status(&key) != ResourceStatus::Ready {
             return None;
         }
-        self.geometry_with(pon, &self.layout_of(pon)?)
-    }
-
-    /// `geometry_for` against a layout the caller already decoded.
-    fn geometry_with(
-        &self,
-        pon: PageObjectNumber,
-        layout: &PageLayout,
-    ) -> Option<Rc<SelectionPageGeometry>> {
-        let raw = self.0.raw_geometry.borrow().get(&pon).cloned()?;
-        let crop = layout.boxes.crop;
-        let key = format!(
-            "{}|{}|{},{},{},{}",
-            number_to_string(layout.rotation.0),
-            number_to_string(layout.user_unit),
-            number_to_string(crop.left),
-            number_to_string(crop.bottom),
-            number_to_string(crop.right),
-            number_to_string(crop.top),
-        );
-        if let Some((hit, geom)) = self.0.derived.borrow().get(&pon)
-            && *hit == key
-        {
-            return Some(geom.clone());
-        }
-        let geom = Rc::new(
-            build_selection_page_geometry(&raw, crop, layout.rotation, layout.user_unit).ok()?,
-        );
-        self.0.derived.borrow_mut().insert(pon, (key, geom.clone()));
-        Some(geom)
-    }
-
-    fn glyph_at(geom: &SelectionPageGeometry, point: Point) -> Option<i64> {
-        text_glyph_at(&geom.layout, content_point_to_pdf(geom, point), DEFAULT_TOLERANCE_FACTOR)
-            .map(|i| i as i64)
-    }
-
-    fn load(&self, page: PageRef) -> Promise<()> {
+        let answer = self.0.geometry.get(&key)?;
         let pon = page.page_object_number;
-        if self.0.raw_geometry.borrow().contains_key(&pon) {
-            return Promise::resolved(());
+        if let Some((built_from, layout)) = self.0.layouts.borrow().get(&pon)
+            && Rc::ptr_eq(built_from, &answer)
+        {
+            return layout.clone();
         }
-        if let Some(in_flight) = self.0.loads.borrow().get(&pon) {
-            return in_flight.clone();
-        }
+        let layout = hydrate(&answer).map(Rc::new);
+        self.0.layouts.borrow_mut().insert(pon, (answer, layout.clone()));
+        layout
+    }
+
+    fn glyph_at(layout: &TextLayout, point: Point) -> Option<i64> {
+        layout.char_at(point).map(|i| i as i64)
+    }
+
+    /// Start loading a page's geometry, if this caller may read it and the
+    /// page is in the document: the load `ensure_loaded` waits for.
+    fn start_load(&self, page: PageRef) -> Option<Promise<()>> {
         // Authorized-only warming: without doc.text.select the read is
-        // guaranteed to be refused, so it isn't issued.
-        if !self.allows(SELECT_SCOPE) || self.layout_of(pon).is_none() {
-            return Promise::resolved(());
+        // guaranteed to be refused, so it is not issued.
+        if !self.can_select() || self.get_page(PageTarget::Ref(page)).is_none() {
+            return None;
         }
-        let Ok(doc) = self.cx().doc() else { return Promise::resolved(()) };
-        let at = self.0.epoch.get();
-        let read = doc.call_answer("page.geometry.read", Some(pon), Vec::new());
-        let this = self.clone();
-        let load = Promise::spawn(async move {
-            let result = read.await;
-            this.0.loads.borrow_mut().remove(&pon);
-            // closed / aborted / refused: nothing to paint, a later call retries
-            let Ok(value) = result else { return Ok(()) };
-            if at != this.0.epoch.get() {
-                return Ok(()); // content changed while in flight: stale
-            }
-            let Ok(snapshot) = value.decode::<PageGeometrySnapshot>() else { return Ok(()) };
-            this.0.raw_geometry.borrow_mut().insert(pon, Rc::new(snapshot));
-            this.cx().dispatch(SelectionAction::PageLoaded { page });
-            // a mid-span page arrived: fill its segments
-            if let Some(current) = this.state().selection {
-                this.recompute(current, ChangeTrigger::System);
-            }
-            Ok(())
-        });
-        if !load.is_settled() {
-            self.0.loads.borrow_mut().insert(pon, load.clone());
-        }
-        load
+        Some(self.0.geometry.ensure_loaded(page_json(page)))
+    }
+
+    /// `void ensureLoaded(page)`: warm a page nobody waits on. Its arrival
+    /// recomputes through the mirror's `changed`.
+    fn warm(&self, page: PageRef) {
+        let _ = self.start_load(page);
     }
 
     // ── the range model ──
 
-    /// Order the two ends by document position (page, then glyph).
-    fn ordered_ends(&self, sel: &SelectionRange) -> Ordered {
-        let ai = self.page_index_of(sel.anchor.page.page_object_number);
-        let fi = self.page_index_of(sel.focus.page.page_object_number);
-        let anchor_first = ai < fi || (ai == fi && sel.anchor.glyph <= sel.focus.glyph);
+    fn ordered_ends(&self, selection: &SelectionRange) -> Ordered {
+        let anchor_page = self.page_index_of(selection.anchor.page);
+        let focus_page = self.page_index_of(selection.focus.page);
+        let anchor_first = anchor_page < focus_page
+            || (anchor_page == focus_page && selection.anchor.glyph <= selection.focus.glyph);
         if anchor_first {
-            Ordered { start: sel.anchor, end: sel.focus, direction: SelectionDirection::Forward }
+            Ordered {
+                start: selection.anchor,
+                end: selection.focus,
+                direction: SelectionDirection::Forward,
+            }
         } else {
-            Ordered { start: sel.focus, end: sel.anchor, direction: SelectionDirection::Backward }
+            Ordered {
+                start: selection.focus,
+                end: selection.anchor,
+                direction: SelectionDirection::Backward,
+            }
         }
     }
 
-    /// Clamp a pointer into its page's real character range once geometry is known.
-    fn clamp_pointer(&self, ptr: GlyphPointer) -> GlyphPointer {
-        let Some(geom) = self.geometry_for(ptr.page.page_object_number) else { return ptr };
-        let max = (geom.layout.glyphs.len() as i64 - 1).max(0);
-        GlyphPointer { page: ptr.page, glyph: ptr.glyph.min(max).max(0) }
+    /// Clamp a position into its page's real character range once the
+    /// geometry is known.
+    fn clamp_position(&self, position: GlyphPosition) -> GlyphPosition {
+        let Some(layout) = self.geometry_for(position.page) else { return position };
+        let max = (layout.char_count() as i64 - 1).max(0);
+        GlyphPosition { page: position.page, glyph: position.glyph.min(max).max(0) }
     }
 
-    /// The one place the selection changes: commit the model, then tell listeners.
-    fn publish(
-        &self,
-        selection: Option<SelectionRange>,
-        segments: BTreeMap<PageObjectNumber, Vec<SelectionSegment>>,
-        trigger: ChangeTrigger,
-    ) {
-        let before = self.state();
-        match selection {
-            Some(selection) => self.cx().dispatch(SelectionAction::Set { selection, segments }),
-            None => self.cx().dispatch(SelectionAction::Clear),
-        }
-        if Rc::ptr_eq(&self.state(), &before) {
-            return; // clearing nothing is not a change
-        }
-        let origin = ChangeOrigin::local(trigger);
-        let model = self.read_model();
-        self.0.changed.emit(&SelectionChangedEvent {
-            range: model.snapshot.range,
-            pages: model.pages.clone(),
-            origin: origin.clone(),
-        });
-        if selection.is_none() {
-            self.0.cleared.emit(&SelectionClearedEvent { origin });
-        }
-    }
-
-    /// Rebuild the merged segments of every loaded page in the span; warm
+    /// Rebuild merged line segments for every loaded page in the span; warm
     /// the rest. Clears when an endpoint's page has left the registry.
-    fn recompute(&self, sel: SelectionRange, trigger: ChangeTrigger) {
+    fn recompute(&self, selection: SelectionRange) {
         let clamped = SelectionRange {
-            anchor: self.clamp_pointer(sel.anchor),
-            focus: self.clamp_pointer(sel.focus),
+            anchor: self.clamp_position(selection.anchor),
+            focus: self.clamp_position(selection.focus),
         };
         let Ordered { start, end, .. } = self.ordered_ends(&clamped);
-        let si = self.page_index_of(start.page.page_object_number);
-        let ei = self.page_index_of(end.page.page_object_number);
-        if si < 0 || ei < 0 {
-            self.publish(None, BTreeMap::new(), trigger);
+        let start_page = self.page_index_of(start.page);
+        let end_page = self.page_index_of(end.page);
+        if start_page < 0 || end_page < 0 {
+            self.update(clear_selection);
             return;
         }
-        let mut segments = BTreeMap::new();
-        let pages = self.pages();
-        for i in si..=ei {
-            let Some(pon) = pages.pons.get(i as usize).copied().flatten() else { continue };
-            let geom = match pages.layout_of(pon) {
-                Some(layout) => self.geometry_with(pon, layout),
-                None => None,
-            };
-            let Some(geom) = geom else {
-                let _ = self.load(PageRef::new(pon)); // recomputes on arrival
+        let mut segments = SegmentsByPage::new();
+        let registry = self.registry();
+        for i in start_page..=end_page {
+            let page =
+                usize::try_from(i).ok().and_then(|i| registry.pons.get(i).copied().flatten());
+            let Some(page) = page.map(PageRef::new) else { continue };
+            let Some(layout) = self.geometry_for(page) else {
+                self.warm(page); // recomputes on arrival
                 continue;
             };
-            let from = if i == si { start.glyph } else { 0 };
-            let to = if i == ei { end.glyph } else { geom.layout.glyphs.len() as i64 - 1 };
-            let segs = text_segments_for_range(&geom.layout, from, to - from + 1)
-                .iter()
-                .map(|s| to_content_segment(&geom, s))
-                .collect();
-            segments.insert(pon, segs);
+            let from = if i == start_page { start.glyph } else { 0 };
+            let to = if i == end_page { end.glyph } else { layout.char_count() as i64 - 1 };
+            let range = CharRange { start: from, count: to.saturating_sub(from).saturating_add(1) };
+            segments.insert(page.page_object_number, Rc::new(layout.segments(range)));
         }
-        self.publish(Some(clamped), segments, trigger);
+        self.update(|state| set_selection(state, clamped, segments));
     }
 
-    fn set_gesture(&self, active: bool) {
-        self.cx().dispatch(SelectionAction::SetGestureActive { active });
-    }
-
-    /// Changes made while a gesture drives the selection are the user's;
-    /// the rest come through the API.
-    fn write_trigger(&self) -> ChangeTrigger {
-        if self.state().gesture_active { ChangeTrigger::User } else { ChangeTrigger::Api }
-    }
-
-    // ── the read model, built once per state object ──
+    // ── the read model, built once per selection and registry revision ──
 
     fn read_model(&self) -> Rc<ReadModel> {
-        let s = self.state();
-        if let Some(model) = self.0.model.borrow().as_ref()
-            && Rc::ptr_eq(&model.state, &s)
+        let state = self.state();
+        let revision = self.revision();
+        if let Some((key, model)) = self.0.model.borrow().as_ref()
+            && key.matches(&state, revision)
         {
             return model.clone();
         }
-        let mut with_segments: Vec<PageObjectNumber> =
-            s.segments.iter().filter(|(_, segs)| !segs.is_empty()).map(|(pon, _)| *pon).collect();
+        let model = Rc::new(self.build_read_model(&state));
+        let key =
+            ModelKey { selection: state.selection, segments: state.segments.clone(), revision };
+        *self.0.model.borrow_mut() = Some((key, model.clone()));
+        model
+    }
+
+    fn build_read_model(&self, state: &SelectionState) -> ReadModel {
+        let segments = &state.segments;
+        let mut with_segments: Vec<PageRef> = segments
+            .iter()
+            .filter(|(_, list)| !list.is_empty())
+            .map(|(pon, _)| PageRef::new(*pon))
+            .collect();
         // A stable sort by page index, as `Array.prototype.sort` is.
         let registry = self.registry();
-        with_segments.sort_by_key(|pon| registry.layout_of(*pon).map_or(-1, |l| l.index as i64));
-        let pages: Vec<PageRef> = with_segments.iter().map(|pon| PageRef::new(*pon)).collect();
-        let snapshot_pages = with_segments
+        with_segments.sort_by_key(|page| {
+            registry.by_pon.get(&page.page_object_number).copied().unwrap_or(-1)
+        });
+        let snapshot_pages: Vec<SnapshotPage> = with_segments
             .iter()
-            .map(|pon| SnapshotPage { page: PageRef::new(*pon), segments: s.segments[pon].clone() })
+            .map(|page| SnapshotPage {
+                page: *page,
+                segments: segments[&page.page_object_number].clone(),
+            })
             .collect();
-        let mut anchor = None;
-        let snapshot = match s.selection {
-            None => SelectionSnapshot {
-                pages: snapshot_pages,
-                start: None,
-                end: None,
-                direction: SelectionDirection::Forward,
-                range: None,
-            },
-            Some(selection) => {
-                let Ordered { start, end, direction } = self.ordered_ends(&selection);
-                // Prefer the gesture's end page; while its geometry is still
-                // loading, fall back to the last page (document order) with
-                // materialized segments.
-                let end_pon = end.page.page_object_number;
-                if let Some(bounds) = union_of(s.segments.get(&end_pon)) {
-                    anchor = Some(SelectionAnchor { page: end.page, bounds });
-                } else if let Some(last) = with_segments.last()
-                    && let Some(bounds) = union_of(s.segments.get(last))
-                {
-                    anchor = Some(SelectionAnchor { page: PageRef::new(*last), bounds });
-                }
-                SelectionSnapshot {
+        let Some(selection) = state.selection else {
+            return ReadModel {
+                snapshot: SelectionSnapshot {
                     pages: snapshot_pages,
-                    start: self.endpoint_for(&s, start, Which::Start),
-                    end: self.endpoint_for(&s, end, Which::End),
-                    direction,
-                    range: Some(TextRange {
-                        start: TextPosition { page: start.page, index: start.glyph },
-                        end: TextPosition { page: end.page, index: end.glyph + 1 },
-                    }),
-                }
-            }
+                    start: None,
+                    end: None,
+                    direction: SelectionDirection::Forward,
+                    range: None,
+                },
+                pages: with_segments,
+                anchor: None,
+            };
         };
-        let model = Rc::new(ReadModel { state: s, snapshot, pages, anchor });
-        *self.0.model.borrow_mut() = Some(model.clone());
-        model
+        let Ordered { start, end, direction } = self.ordered_ends(&selection);
+        let snapshot = SelectionSnapshot {
+            pages: snapshot_pages,
+            start: self.endpoint_for(segments, start, Which::Start),
+            end: self.endpoint_for(segments, end, Which::End),
+            direction,
+            range: Some(TextRange {
+                start: TextPosition { page: start.page, index: start.glyph },
+                end: TextPosition { page: end.page, index: end.glyph.saturating_add(1) },
+            }),
+        };
+        // Prefer the gesture's end page; while its geometry is still
+        // loading, fall back to the last page (document order) with
+        // segments, so the anchor never jumps backwards mid-drag.
+        let mut anchor = union_of(segments.get(&end.page.page_object_number))
+            .map(|bounds| SelectionAnchor { page: end.page, bounds });
+        if anchor.is_none()
+            && let Some(last) = with_segments.last()
+            && let Some(bounds) = union_of(segments.get(&last.page_object_number))
+        {
+            anchor = Some(SelectionAnchor { page: *last, bounds });
+        }
+        ReadModel { snapshot, pages: with_segments, anchor }
     }
 
     fn endpoint_for(
         &self,
-        s: &SelectionState,
-        ptr: GlyphPointer,
+        segments_by_page: &SegmentsByPage,
+        position: GlyphPosition,
         which: Which,
     ) -> Option<SelectionEndpoint> {
-        let pon = ptr.page.page_object_number;
-        let segments = s.segments.get(&pon).map(Vec::as_slice).unwrap_or_default();
+        let segments = segments_by_page.get(&position.page.page_object_number)?;
         let segment = if which == Which::Start { segments.first()? } else { segments.last()? };
         // The boundary glyph's own cell, so caret placement lands on the
-        // exact character edge; the segment when the glyph is degenerate.
-        let geom = self.geometry_for(pon);
-        let cell = geom.as_ref().and_then(|g| text_glyph_quad(&g.layout, ptr.glyph));
-        if let (Some(geom), Some(cell)) = (geom, cell) {
-            let glyph_quad = to_content_text_quad(&geom, &cell);
-            return Some(SelectionEndpoint {
-                page: ptr.page,
-                glyph_quad,
+        // exact character edge; the segment when the glyph has no box.
+        let cell = self.geometry_for(position.page).and_then(|l| l.char_quad(position.glyph));
+        Some(match cell {
+            Some(cell) => SelectionEndpoint {
+                page: position.page,
+                glyph_quad: cell,
                 advance: segment.advance,
-                rect: text_quad_bounds(glyph_quad),
-            });
-        }
-        Some(SelectionEndpoint {
-            page: ptr.page,
-            glyph_quad: segment.quad,
-            advance: segment.advance,
-            rect: segment.rect,
+                rect: quad_bounds(cell),
+            },
+            None => SelectionEndpoint {
+                page: position.page,
+                glyph_quad: segment.quad,
+                advance: segment.advance,
+                rect: segment.rect,
+            },
         })
     }
 
     // ── span writes ──
 
-    /// Word or line around a point. Whether a span actually engaged
-    /// (geometry present and a glyph under the point).
-    fn select_span_at(&self, page: PageRef, point: Point, expand: Expand) -> Result<bool, Error> {
+    /// Word or line around a point. Whether a span engaged (geometry
+    /// present and a glyph under the point): what haptics key on.
+    fn select_span_at(
+        &self,
+        target: PageTarget,
+        point: Point,
+        expand: Expand,
+    ) -> Result<bool, Error> {
         let operation = match expand {
             Expand::Word => "selection.selectWordAt",
             Expand::Line => "selection.selectLineAt",
         };
-        self.assert_scope(SELECT_SCOPE, operation)?;
-        let Some(geom) = self.geometry_for(page.page_object_number) else { return Ok(false) };
-        let Some(i) = Self::glyph_at(&geom, point) else { return Ok(false) };
-        let (from, to) = match expand {
-            Expand::Word => expand_text_range_to_word(&geom.layout, i),
-            Expand::Line => expand_text_range_to_line(&geom.layout, i),
+        self.cx().assert_allowed(SELECT_SCOPE, operation)?;
+        let page = self.page_of(target)?;
+        let Some(layout) = self.geometry_for(page) else { return Ok(false) };
+        let Some(glyph) = Self::glyph_at(&layout, point) else { return Ok(false) };
+        let span = match expand {
+            Expand::Word => layout.word_at(glyph),
+            Expand::Line => layout.line_at(glyph),
         };
-        self.recompute(
-            SelectionRange {
-                anchor: GlyphPointer { page, glyph: from },
-                focus: GlyphPointer { page, glyph: to },
-            },
-            self.write_trigger(),
-        );
+        let Some(span) = span else { return Ok(false) };
+        self.recompute(SelectionRange {
+            anchor: GlyphPosition { page, glyph: span.start },
+            focus: GlyphPosition { page, glyph: span.start.saturating_add(span.count) - 1 },
+        });
         Ok(true)
     }
 
@@ -659,74 +667,168 @@ impl SelectionCapability {
 
     /// Per-page text, cached as a promise so concurrent readers share one
     /// fetch; a rejection is evicted.
-    fn page_text(&self, pon: PageObjectNumber) -> Promise<Rc<PageTextSnapshot>> {
+    fn page_text(&self, page: PageRef) -> Promise<Rc<PageTextSnapshot>> {
+        let pon = page.page_object_number;
         if let Some(p) = self.0.text_snapshots.borrow().get(&pon) {
             return p.clone();
         }
         let call = match self.cx().doc() {
-            Ok(doc) => doc.call_answer("page.text.read", Some(pon), Vec::new()),
+            Ok(doc) => doc.call_answer("page.text.get", Some(pon), Vec::new()),
             Err(error) => Promise::rejected(error),
         };
         // `Promise.resolve(abortable)`: an AbortablePromise is a subclass, so
-        // this adopts it as a thenable, which is one turn more than awaiting.
-        let p = Promise::spawn(async move {
+        // this adopts it as a thenable, one turn more than awaiting.
+        let pending = Promise::spawn(async move {
             rt::tick().await;
             let value = call.await?;
             value.decode::<PageTextSnapshot>().map(Rc::new)
         });
         let core = Rc::downgrade(&self.0);
-        let watched = p.clone();
+        let watched = pending.clone();
         rt::spawn(async move {
-            if watched.await.is_err()
+            if watched.clone().await.is_err()
                 && let Some(core) = core.upgrade()
             {
-                core.text_snapshots.borrow_mut().remove(&pon);
+                let mut cache = core.text_snapshots.borrow_mut();
+                if cache.get(&pon).is_some_and(|p| p.same(&watched)) {
+                    cache.remove(&pon);
+                }
             }
         });
-        self.0.text_snapshots.borrow_mut().insert(pon, p.clone());
-        p
+        self.0.text_snapshots.borrow_mut().insert(pon, pending.clone());
+        pending
+    }
+
+    /// A range's text, read a few pages at a time. Cancelling stops the
+    /// wait at once; the page reads it started finish into the cache.
+    async fn read_range(
+        &self,
+        range: TextRange,
+        options: OperationOptions,
+    ) -> Result<String, Error> {
+        // The content generation the read starts in (M23).
+        let at = self.0.epoch.get();
+        self.cx().assert_page_ref(range.start.page)?;
+        self.cx().assert_page_ref(range.end.page)?;
+        let start_page = self.page_index_of(range.start.page);
+        let mut end_page = self.page_index_of(range.end.page);
+        let mut end_index = range.end.index;
+        if end_page < start_page || (end_page == start_page && end_index <= range.start.index) {
+            return Ok(String::new());
+        }
+        if end_index == 0 {
+            end_page -= 1; // a range ending at a page boundary includes nothing of that page
+            end_index = OPEN_END;
+        }
+        // Per-page half-open character spans; interior pages span their
+        // whole text, which the slice clamps to.
+        let mut spans: Vec<(PageRef, i64, i64)> = Vec::new();
+        for i in start_page..=end_page {
+            let Some(page) = self.page_at_index(i) else { continue };
+            let from = if i == start_page { range.start.index.max(0) } else { 0 };
+            let to = if i == end_page { end_index } else { OPEN_END };
+            spans.push((page, from, to));
+        }
+        let signal = options.signal;
+        let mut parts = Vec::with_capacity(spans.len());
+        for batch in spans.chunks(TEXT_READ_CONCURRENCY) {
+            // A signal that has fired starts no more reads.
+            if signal.as_ref().is_some_and(AbortSignal::aborted) {
+                return Err(plugin_error(
+                    code::OPERATION_CANCELLED,
+                    "selection",
+                    "reading the text was cancelled",
+                    None,
+                    None,
+                ));
+            }
+            let reads = all(batch.iter().map(|(page, _, _)| self.page_text(*page)).collect());
+            let snapshots = cancellable("selection", signal.clone(), reads).await?;
+            throw_if_stale(at, self.0.epoch.get())?;
+            for (snapshot, (_, from, to)) in snapshots.iter().zip(batch) {
+                parts.push(slice_text(snapshot, *from as f64, (*to as f64) - (*from as f64)));
+            }
+        }
+        Ok(parts.join("\n"))
     }
 
     // ── invalidation ──
 
-    /// A structural registry change: drop the caches of pages that left,
-    /// then recompute. Raw snapshots are never refetched here.
+    /// A structural registry change (rotate, move, delete, insert): drop
+    /// the text of pages that left, then recompute. A deleted endpoint page
+    /// clears through recompute's registry check.
     fn on_pages_updated(&self) {
         let alive: HashSet<PageObjectNumber> =
-            self.pages().pons.iter().flatten().copied().collect();
-        let gone: Vec<PageObjectNumber> =
-            self.0.raw_geometry.borrow().keys().filter(|p| !alive.contains(p)).copied().collect();
-        for pon in gone {
-            self.0.raw_geometry.borrow_mut().remove(&pon);
-            self.0.derived.borrow_mut().remove(&pon);
-            self.0.text_snapshots.borrow_mut().remove(&pon);
-        }
+            self.registry().pons.iter().flatten().copied().collect();
+        self.0.text_snapshots.borrow_mut().retain(|pon, _| alive.contains(pon));
+        self.0.layouts.borrow_mut().retain(|pon, _| alive.contains(pon));
         if let Some(current) = self.state().selection {
-            self.recompute(current, ChangeTrigger::System);
+            self.recompute(current);
         }
     }
 
-    /// Page content changed: every cache is stale and any live range points
-    /// into a character space that no longer exists.
-    fn invalidate_content(&self) {
+    /// Page content changed: the pages' text is stale, and a live range
+    /// points into a character space that no longer exists, so it clears.
+    /// The geometry mirror re-reads those pages itself.
+    fn on_content_changed(&self, pages: &[PageRef]) {
         self.0.epoch.set(self.0.epoch.get() + 1);
-        self.0.raw_geometry.borrow_mut().clear();
-        self.0.derived.borrow_mut().clear();
-        self.0.loads.borrow_mut().clear();
-        self.0.text_snapshots.borrow_mut().clear();
-        self.publish(None, BTreeMap::new(), ChangeTrigger::System);
+        for page in pages {
+            self.0.text_snapshots.borrow_mut().remove(&page.page_object_number);
+        }
+        self.update(clear_selection);
+    }
+
+    fn set_gesture(&self, active: bool) {
+        self.update(|state| set_selecting(state, active));
+    }
+
+    // ── settings ──
+
+    /// The settings, for every open document.
+    pub fn get_settings(&self) -> SelectionSettings {
+        serde_json::from_value((*self.0.settings.get()).clone())
+            .unwrap_or_else(|_| selection_defaults())
+    }
+
+    /// Merge `changes` into the settings, for every document. Fires
+    /// `on_settings_changed` once when a setting changed.
+    pub fn update_settings(&self, changes: &SelectionConfig) {
+        self.0.settings.store.update_settings(&changes.to_json());
+    }
+
+    /// Go back to what the app registered.
+    pub fn reset_settings(&self) {
+        self.0.settings.store.reset_settings();
+    }
+
+    /// Fires once for each call that changed a setting. This instance's
+    /// listeners go when its document closes.
+    pub fn on_settings_changed(
+        &self,
+        listener: impl Fn(&SelectionSettingsChanged) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.settings.events.on(move |event| {
+            let settings = serde_json::from_value((*event.settings).clone())
+                .unwrap_or_else(|_| selection_defaults());
+            listener(&SelectionSettingsChanged { settings, changed: event.changed.clone() })
+        })
+    }
+
+    /// The drag threshold, read when a press would become a drag.
+    pub(crate) fn drag_threshold(&self) -> f64 {
+        self.0.settings.get().get("dragThreshold").and_then(Value::as_f64).unwrap_or(4.0)
     }
 
     // ── public lens: authorization ──
 
     /// Whether this caller may create selections (`doc.text.select`).
     pub fn can_select(&self) -> bool {
-        self.allows(SELECT_SCOPE)
+        self.cx().allows(SELECT_SCOPE)
     }
 
-    /// Whether this caller may extract text (`doc.text.copy`).
+    /// Whether this caller may extract literal text (`doc.text.copy`).
     pub fn can_copy(&self) -> bool {
-        self.allows(COPY_SCOPE)
+        self.cx().allows(COPY_SCOPE)
     }
 
     // ── public lens: writes ──
@@ -734,117 +836,121 @@ impl SelectionCapability {
     /// Select a range. An empty range clears. `permission-denied` without
     /// `doc.text.select`, `not-found` for a page not in this document.
     pub fn select(&self, input: SelectionRangeInput) -> Result<(), Error> {
-        self.assert_scope(SELECT_SCOPE, "selection.select")?;
+        self.cx().assert_allowed(SELECT_SCOPE, "selection.select")?;
         let range = match input {
             SelectionRangeInput::Range(range) => range,
             SelectionRangeInput::Span { page, start, count } => TextRange {
                 start: TextPosition { page, index: start },
+                // S3: saturate where the TypeScript's float sum never overflows.
                 end: TextPosition { page, index: start.saturating_add(count) },
             },
         };
         self.cx().assert_page_ref(range.start.page)?;
         self.cx().assert_page_ref(range.end.page)?;
-        let si = self.page_index_of(range.start.page.page_object_number);
-        let mut ei = self.page_index_of(range.end.page.page_object_number);
+        let start_page = self.page_index_of(range.start.page);
+        let mut end_page = self.page_index_of(range.end.page);
         let mut end_index = range.end.index;
-        if ei < si || (ei == si && end_index <= range.start.index) {
-            self.publish(None, BTreeMap::new(), self.write_trigger()); // an empty range is no selection
+        if end_page < start_page || (end_page == start_page && end_index <= range.start.index) {
+            self.update(clear_selection); // an empty range is no selection
             return Ok(());
         }
         if end_index == 0 {
             // A half-open end exactly at a page boundary: the last included
             // character is the previous page's last one, which settles by
             // clamping on load.
-            ei -= 1;
-            if ei < si {
-                self.publish(None, BTreeMap::new(), self.write_trigger());
+            end_page -= 1;
+            if end_page < start_page {
+                self.update(clear_selection);
                 return Ok(());
             }
             end_index = OPEN_END;
         }
-        let Some(focus_pon) = self.pon_at_index(ei) else { return Ok(()) };
-        self.recompute(
-            SelectionRange {
-                anchor: GlyphPointer { page: range.start.page, glyph: range.start.index.max(0) },
-                focus: GlyphPointer {
-                    page: PageRef::new(focus_pon),
-                    glyph: end_index.saturating_sub(1),
-                },
-            },
-            self.write_trigger(),
-        );
+        let Some(focus_page) = self.page_at_index(end_page) else { return Ok(()) };
+        self.recompute(SelectionRange {
+            anchor: GlyphPosition { page: range.start.page, glyph: range.start.index.max(0) },
+            focus: GlyphPosition { page: focus_page, glyph: end_index.saturating_sub(1) },
+        });
         Ok(())
     }
 
     /// Select every character of the document.
     pub fn select_all(&self) -> Result<(), Error> {
-        self.assert_scope(SELECT_SCOPE, "selection.selectAll")?;
-        let pages = self.pages();
-        let (Some(Some(first)), Some(Some(last))) = (pages.pons.first(), pages.pons.last()) else {
+        self.cx().assert_allowed(SELECT_SCOPE, "selection.selectAll")?;
+        let registry = self.registry();
+        let (Some(Some(first)), Some(Some(last))) = (registry.pons.first(), registry.pons.last())
+        else {
             return Ok(());
         };
-        self.recompute(
-            SelectionRange {
-                anchor: GlyphPointer { page: PageRef::new(*first), glyph: 0 },
-                focus: GlyphPointer { page: PageRef::new(*last), glyph: OPEN_END },
-            },
-            self.write_trigger(),
-        );
+        self.recompute(SelectionRange {
+            anchor: GlyphPosition { page: PageRef::new(*first), glyph: 0 },
+            focus: GlyphPosition { page: PageRef::new(*last), glyph: OPEN_END },
+        });
         Ok(())
     }
 
     /// Select every character on one page.
-    pub fn select_page(&self, page: PageRef) -> Result<(), Error> {
-        self.assert_scope(SELECT_SCOPE, "selection.selectPage")?;
-        self.cx().assert_page_ref(page)?;
-        self.recompute(
-            SelectionRange {
-                anchor: GlyphPointer { page, glyph: 0 },
-                focus: GlyphPointer { page, glyph: OPEN_END },
-            },
-            self.write_trigger(),
-        );
+    pub fn select_page(&self, target: impl Into<PageTarget>) -> Result<(), Error> {
+        self.cx().assert_allowed(SELECT_SCOPE, "selection.selectPage")?;
+        let page = self.page_of(target.into())?;
+        self.recompute(SelectionRange {
+            anchor: GlyphPosition { page, glyph: 0 },
+            focus: GlyphPosition { page, glyph: OPEN_END },
+        });
         Ok(())
     }
 
     /// Select the word around a page point; false when the point has no
-    /// selectable text.
-    pub fn select_word_at(&self, page: PageRef, point: Point) -> Result<bool, Error> {
-        self.select_span_at(page, point, Expand::Word)
+    /// selectable text (geometry not loaded yet, or no glyph there).
+    pub fn select_word_at(
+        &self,
+        target: impl Into<PageTarget>,
+        point: Point,
+    ) -> Result<bool, Error> {
+        self.select_span_at(target.into(), point, Expand::Word)
     }
 
     /// Select the visual line around a page point.
-    pub fn select_line_at(&self, page: PageRef, point: Point) -> Result<bool, Error> {
-        self.select_span_at(page, point, Expand::Line)
+    pub fn select_line_at(
+        &self,
+        target: impl Into<PageTarget>,
+        point: Point,
+    ) -> Result<bool, Error> {
+        self.select_span_at(target.into(), point, Expand::Line)
     }
 
     /// Extend the current selection to a page point. No selection is a
     /// no-op; a page whose geometry has not loaded is warmed and the
     /// extension lands when it arrives.
-    pub fn extend_to(&self, page: PageRef, point: Point) -> Result<(), Error> {
-        self.assert_scope(SELECT_SCOPE, "selection.extendTo")?;
+    pub fn extend_to(&self, target: impl Into<PageTarget>, point: Point) -> Result<(), Error> {
+        self.cx().assert_allowed(SELECT_SCOPE, "selection.extendTo")?;
+        let page = self.page_of(target.into())?;
         let Some(current) = self.state().selection else { return Ok(()) };
-        let Some(geom) = self.geometry_for(page.page_object_number) else {
-            let _ = self.load(page);
+        let Some(layout) = self.geometry_for(page) else {
+            self.warm(page); // lands on arrival
             return Ok(());
         };
-        let Some(i) = Self::glyph_at(&geom, point) else { return Ok(()) }; // off-text: keep the focus
-        self.recompute(
-            SelectionRange { anchor: current.anchor, focus: GlyphPointer { page, glyph: i } },
-            self.write_trigger(),
-        );
+        let Some(glyph) = Self::glyph_at(&layout, point) else { return Ok(()) }; // off-text
+        self.recompute(SelectionRange {
+            anchor: current.anchor,
+            focus: GlyphPosition { page, glyph },
+        });
         Ok(())
     }
 
     /// Clear the selection. Always allowed.
     pub fn clear(&self) {
-        self.publish(None, BTreeMap::new(), self.write_trigger());
+        self.update(clear_selection);
     }
 
     // ── public lens: reads ──
 
     pub fn has_selection(&self) -> bool {
         self.state().selection.is_some()
+    }
+
+    /// Whether the user is still selecting: from the press until it lifts.
+    pub fn is_selecting(&self) -> bool {
+        self.state().selecting
     }
 
     /// Per-page segments, endpoints, direction and the range.
@@ -862,39 +968,47 @@ impl SelectionCapability {
         self.read_model().pages.clone()
     }
 
-    /// Per-line oriented segments for a page, in page space.
-    pub fn list_segments(&self, page: PageRef) -> Vec<SelectionSegment> {
-        self.state().segments.get(&page.page_object_number).cloned().unwrap_or_default()
-    }
-
-    /// The segments' boxes.
-    pub fn list_rects(&self, page: PageRef) -> Vec<Rect> {
+    /// Per-line oriented segments for a page, in page space. A page that
+    /// isn't in the document has none.
+    pub fn list_segments(&self, target: impl Into<PageTarget>) -> Vec<SelectionSegment> {
+        let Some(page) = self.get_page(target.into()) else { return Vec::new() };
         self.state()
             .segments
             .get(&page.page_object_number)
-            .map_or_else(Vec::new, |s| s.iter().map(|s| s.rect).collect())
+            .map(|list| (**list).clone())
+            .unwrap_or_default()
+    }
+
+    /// The segments' boxes.
+    pub fn list_rects(&self, target: impl Into<PageTarget>) -> Vec<Rect> {
+        self.list_segments(target).iter().map(|s| s.rect).collect()
     }
 
     /// Where selection-scoped floating UI attaches: the union box on the
-    /// end page, else the last page with materialized segments.
+    /// end page, else the last page with segments.
     pub fn get_anchor(&self) -> Option<SelectionAnchor> {
         self.read_model().anchor
     }
 
     // ── public lens: text extraction ──
 
-    /// The selected text: `""` with nothing selected.
+    /// The selected text: `""` with nothing selected. Rejects
+    /// `permission-denied` without `doc.text.copy`, `operation-cancelled`
+    /// when the signal fires.
     pub fn read_text(&self, options: OperationOptions) -> Promise<String> {
-        match self.read_model().snapshot.range {
-            Some(range) => self.read_text_in_range(range, options),
-            None => Promise::resolved(String::new()),
-        }
+        let this = self.clone();
+        Promise::spawn(async move {
+            this.cx().assert_allowed(COPY_SCOPE, "selection.readText")?;
+            match this.read_model().snapshot.range {
+                Some(range) => this.read_range(range, options).await,
+                None => Ok(String::new()),
+            }
+        })
     }
 
     /// Text for any range, without touching the selection. Pages join with
-    /// `\n`. Rejects `permission-denied` without `doc.text.copy`,
-    /// `not-found` for a page not in this document, `operation-cancelled`
-    /// when the signal aborts.
+    /// `\n`. Rejects as `read_text` does, and `not-found` for a page not in
+    /// this document.
     pub fn read_text_in_range(
         &self,
         range: TextRange,
@@ -902,48 +1016,8 @@ impl SelectionCapability {
     ) -> Promise<String> {
         let this = self.clone();
         Promise::spawn(async move {
-            // The content generation the read starts in. A redaction or
-            // flatten that lands while batches are in flight fails the read
-            // rather than return text from before it.
-            let at = this.0.epoch.get();
-            this.assert_scope(COPY_SCOPE, "selection.readText")?;
-            this.cx().assert_page_ref(range.start.page)?;
-            this.cx().assert_page_ref(range.end.page)?;
-            let si = this.page_index_of(range.start.page.page_object_number);
-            let mut ei = this.page_index_of(range.end.page.page_object_number);
-            let mut end_index = range.end.index;
-            if ei < si || (ei == si && end_index <= range.start.index) {
-                return Ok(String::new());
-            }
-            if end_index == 0 {
-                ei -= 1; // a range ending at a page boundary includes nothing of that page
-                end_index = OPEN_END;
-            }
-            // Per-page half-open character spans; interior pages span their
-            // whole text, which the slice clamps to.
-            let mut spans: Vec<(PageObjectNumber, i64, i64)> = Vec::new();
-            let pages = this.pages();
-            for i in si..=ei {
-                let Some(pon) = pages.pons.get(i as usize).copied().flatten() else {
-                    continue;
-                };
-                let from = if i == si { range.start.index.max(0) } else { 0 };
-                let to = if i == ei { end_index } else { OPEN_END };
-                spans.push((pon, from, to));
-            }
-            let signal = options.signal.as_ref();
-            let mut parts = Vec::with_capacity(spans.len());
-            for batch in spans.chunks(TEXT_READ_CONCURRENCY) {
-                throw_if_aborted(signal)?;
-                let reads = batch.iter().map(|(pon, _, _)| this.page_text(*pon)).collect();
-                let snapshots = all(reads).await?;
-                throw_if_stale(at, this.0.epoch.get())?;
-                for (snap, (_, from, to)) in snapshots.iter().zip(batch) {
-                    parts.push(slice_text_by_chars(snap, *from as f64, *to as f64));
-                }
-            }
-            throw_if_aborted(signal)?;
-            Ok(parts.join("\n"))
+            this.cx().assert_allowed(COPY_SCOPE, "selection.readTextInRange")?;
+            this.read_range(range, options).await
         })
     }
 
@@ -972,20 +1046,26 @@ impl SelectionCapability {
 
     // ── host lens ──
 
-    /// Warm a page's text geometry. Resolves once loaded; resolves at once
-    /// without `doc.text.select` or for an unknown page, and on a failed read.
+    /// Warm a page's text geometry. Resolves once loaded; at once without
+    /// `doc.text.select` or for an unknown page; and on a failed read.
     pub fn ensure_loaded(&self, page: PageRef) -> Promise<()> {
-        self.load(page)
+        let Some(load) = self.start_load(page) else { return Promise::resolved(()) };
+        let load = load.reaction();
+        // refused or failed: nothing to paint, and a later call retries
+        Promise::spawn(async move {
+            let _ = load.await;
+            Ok(())
+        })
     }
 
+    /// Whether the page's text geometry is loaded and current.
     pub fn is_loaded(&self, page: PageRef) -> bool {
-        self.state().loaded.get(&page.page_object_number).copied().unwrap_or(false)
+        self.0.geometry.get_status(&page_key(page)) == ResourceStatus::Ready
     }
 
-    /// Is a page-space point on (or near) text?
+    /// Is a page-space point on (or near) text? Drives the I-beam cursor.
     pub fn is_over_text(&self, page: PageRef, point: Point) -> bool {
-        self.geometry_for(page.page_object_number)
-            .is_some_and(|geom| Self::glyph_at(&geom, point).is_some())
+        self.geometry_for(page).is_some_and(|layout| Self::glyph_at(&layout, point).is_some())
     }
 
     /// A pointer gesture that drives the selection opened.
@@ -994,26 +1074,25 @@ impl SelectionCapability {
     }
 
     /// Open a caret selection at a page point; false when the point has no
-    /// text.
+    /// text, so the caller lets the gesture go.
     pub fn begin_gesture_at(&self, page: PageRef, point: Point) -> bool {
         if !self.can_select() {
             return false;
         }
-        let Some(geom) = self.geometry_for(page.page_object_number) else { return false };
-        let Some(i) = Self::glyph_at(&geom, point) else { return false };
-        self.set_gesture(true); // before the publish, so listeners see a coherent pair
-        self.recompute(
-            SelectionRange {
-                anchor: GlyphPointer { page, glyph: i },
-                focus: GlyphPointer { page, glyph: i },
-            },
-            ChangeTrigger::User,
-        );
+        let Some(layout) = self.geometry_for(page) else { return false };
+        let Some(glyph) = Self::glyph_at(&layout, point) else { return false };
+        // The gesture opens before the selection changes, so listeners see
+        // a coherent pair.
+        self.set_gesture(true);
+        self.recompute(SelectionRange {
+            anchor: GlyphPosition { page, glyph },
+            focus: GlyphPosition { page, glyph },
+        });
         true
     }
 
     /// The gesture ended: settle first, so commit listeners observe
-    /// `is_gesture_active() == false`, then commit a selection in place.
+    /// `is_selecting() == false`, then commit a selection in place.
     pub fn end_gesture(&self) {
         self.set_gesture(false);
         if let Some(range) = self.read_model().snapshot.range {
@@ -1021,13 +1100,9 @@ impl SelectionCapability {
         }
     }
 
-    pub fn is_gesture_active(&self) -> bool {
-        self.state().gesture_active
-    }
-
     /// Suppress or restore the default highlight visual.
     pub fn set_highlight_visible(&self, visible: bool) {
-        self.cx().dispatch(SelectionAction::SetHighlightHidden { hidden: !visible });
+        self.update(|state| set_highlight_hidden(state, !visible));
     }
 
     pub fn is_highlight_visible(&self) -> bool {

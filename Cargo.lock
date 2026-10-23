@@ -772,6 +772,8 @@ dependencies = [
 name = "epdf-plugin-selection"
 version = "0.0.0"
 dependencies = [
+ "build-support",
+ "epdf-engine",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",

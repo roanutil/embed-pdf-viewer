@@ -1,44 +1,103 @@
 //! `handles.ts`: the pure half of selection handles. A handle is the
 //! boundary glyph's leading (or trailing) edge, projected by the hosting
-//! view; the drag session speaks the selection's own gesture verbs.
+//! view; the drag session speaks the selection's own gesture verbs
+//! (`begin_gesture_at`, `extend_to`, `end_gesture`), so a handle drag is a
+//! selection gesture, re-anchored.
 
 use std::cell::Cell;
 use std::rc::Rc;
 
-use epdf_geometry::{Point, TextQuad, TextQuadSide, js, text_quad_edge};
+use epdf_geometry::{Point, Quad, QuadSide, js, quad_edge};
 use epdf_kernel::geometry::PageRef;
-use epdf_plugin_interaction::page_ref_json;
 use serde::{Deserialize, Serialize};
 
+use crate::contract::SelectionSnapshot;
 use crate::controller::SelectionCapability;
 
-/// A page under an overlay point.
+/// A page under an overlay point, and the point on it.
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub struct PagePoint {
-    #[serde(rename = "ref", with = "page_ref_json")]
+    #[serde(rename = "ref")]
     pub page: PageRef,
     pub point: Point,
 }
 
 /// What handle geometry and drags need from the hosting view.
 pub trait SelectionHandleView {
-    /// Page content point to overlay px; point-exact.
-    fn to_overlay(&self, page: PageRef, pt: Point) -> Option<Point>;
+    /// Page point to overlay px. Must be point-exact; a box projector loses
+    /// orientation.
+    fn to_overlay(&self, page: PageRef, point: Point) -> Option<Point>;
     /// Overlay px to the page under it, `None` over a gap.
     fn page_at(&self, overlay: Point) -> Option<PagePoint>;
-    /// Overlay px to a specific page's content space, unclamped.
+    /// Overlay px to a specific page's page space, unclamped.
     fn point_on_page(&self, page: PageRef, overlay: Point) -> Option<Point>;
 }
 
-/// One selection boundary as the handle needs it.
+/// The stage's projection, as the handles use it (`SelectionHandleStage`).
+/// The stage capability satisfies it; this crate stays stage-free.
+pub trait SelectionHandleStage {
+    fn page_to_viewport(&self, page: PageRef, point: Point) -> Option<Point>;
+    fn get_page_at(&self, point: Point) -> Option<PagePoint>;
+    fn viewport_to_page(&self, page: PageRef, point: Point) -> Option<Point>;
+}
+
+/// `selectionHandleViewOf(stage)`: point-exact projection in, page lookup out.
+pub struct StageHandleView<S>(pub S);
+
+impl<S: SelectionHandleStage> SelectionHandleView for StageHandleView<S> {
+    fn to_overlay(&self, page: PageRef, point: Point) -> Option<Point> {
+        self.0.page_to_viewport(page, point)
+    }
+    fn page_at(&self, overlay: Point) -> Option<PagePoint> {
+        self.0.get_page_at(overlay)
+    }
+    fn point_on_page(&self, page: PageRef, overlay: Point) -> Option<Point> {
+        self.0.viewport_to_page(page, overlay)
+    }
+}
+
+/// `selectionHandleViewOf(stage)`.
+pub fn selection_handle_view_of<S: SelectionHandleStage>(stage: S) -> StageHandleView<S> {
+    StageHandleView(stage)
+}
+
+/// One selection boundary as the handle needs it (a `SelectionEndpoint` slice).
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectionHandleEndpoint {
-    #[serde(with = "page_ref_json")]
     pub page: PageRef,
-    pub glyph_quad: TextQuad,
-    /// Reading direction of its segment (1 is the frame's +x).
+    /// The boundary glyph's own oriented cell, in page space.
+    pub glyph_quad: Quad,
+    /// Reading direction of its segment (1 is the frame's +x): which side
+    /// of the cell is the selection's leading edge.
     pub advance: i32,
+}
+
+/// Both ends of a selection, as the handles need them.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct SelectionHandleEndpoints {
+    pub start: SelectionHandleEndpoint,
+    pub end: SelectionHandleEndpoint,
+}
+
+/// `selectionHandleEndpointsOf(snapshot)`: the two ends, or `None` while
+/// nothing is selected.
+pub fn selection_handle_endpoints_of(
+    snapshot: &SelectionSnapshot,
+) -> Option<SelectionHandleEndpoints> {
+    let (start, end) = (snapshot.start.as_ref()?, snapshot.end.as_ref()?);
+    Some(SelectionHandleEndpoints {
+        start: SelectionHandleEndpoint {
+            page: start.page,
+            glyph_quad: start.glyph_quad,
+            advance: start.advance,
+        },
+        end: SelectionHandleEndpoint {
+            page: end.page,
+            glyph_quad: end.glyph_quad,
+            advance: end.advance,
+        },
+    })
 }
 
 /// The gesture verbs a handle drag drives.
@@ -114,10 +173,8 @@ pub fn selection_handle_geom(
         HandleRole::Start => ep.advance > 0,
         HandleRole::End => ep.advance < 0,
     };
-    let [upper_page, lower_page] = text_quad_edge(
-        ep.glyph_quad,
-        if leading { TextQuadSide::Start } else { TextQuadSide::End },
-    );
+    let [upper_page, lower_page] =
+        quad_edge(ep.glyph_quad, if leading { QuadSide::Left } else { QuadSide::Right });
     let upper = view.to_overlay(ep.page, upper_page);
     let lower = view.to_overlay(ep.page, lower_page);
     let (upper, lower) = (upper?, lower?);
@@ -168,7 +225,7 @@ pub fn create_selection_handle_drag(
 ) -> SelectionHandleDragSession {
     let q = opposite.glyph_quad;
     let anchor_point =
-        midpoint(midpoint(q.upper_start, q.lower_end), midpoint(q.upper_end, q.lower_start));
+        midpoint(midpoint(q.upper_left, q.lower_right), midpoint(q.upper_right, q.lower_left));
     SelectionHandleDragSession {
         selection,
         view,
@@ -207,4 +264,32 @@ impl SelectionHandleDragSession {
             self.selection.end_gesture();
         }
     }
+}
+
+/// A press on a handle, armed: the point it grabbed and the drag it starts.
+pub struct ArmedSelectionHandle {
+    /// The point the user grabbed: the bar's midpoint, overlay px.
+    pub base: Point,
+    pub drag: SelectionHandleDragSession,
+}
+
+/// `armSelectionHandle(selection, view, endpoints, role)`: arm a drag of
+/// the `role` handle with the view and the endpoints as they are at the
+/// press; it extends the selection from the opposite end. `None` when the
+/// handle's page isn't laid out.
+pub fn arm_selection_handle(
+    selection: Rc<dyn SelectionHandleTarget>,
+    view: Rc<dyn SelectionHandleView>,
+    endpoints: &SelectionHandleEndpoints,
+    role: HandleRole,
+) -> Option<ArmedSelectionHandle> {
+    let (own, opposite) = match role {
+        HandleRole::Start => (&endpoints.start, &endpoints.end),
+        HandleRole::End => (&endpoints.end, &endpoints.start),
+    };
+    let geometry = selection_handle_geom(&*view, own, role)?;
+    Some(ArmedSelectionHandle {
+        base: midpoint(geometry.bar.from, geometry.bar.to),
+        drag: create_selection_handle_drag(selection, view, opposite, own.page),
+    })
 }

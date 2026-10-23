@@ -4,10 +4,14 @@
 //! Every record carries a kernel `PageRef` or an `epdf-geometry` quad, so
 //! each is a mirror here. Character indices stay `i64`: they are PDFium
 //! character indices (the space search hits address), not UTF-16 offsets
-//! into extracted text. The selection's `ChangeOrigin` is always local,
-//! with no session or actor, so only its trigger crosses.
+//! into extracted text. Selection is session state, so its events carry no
+//! origin.
 //!
 //! Every method hops to the kernel thread through `KernelBound`.
+//!
+//! Not compiled until `epdf-ffi` builds again (Task 13.33): its `TextQuad`
+//! still names `upper_start`..`lower_end`, so [`quad`] maps the named
+//! corners onto it; 13.33 renames the mirror.
 
 use std::sync::Arc;
 
@@ -15,6 +19,7 @@ use epdf_ffi::{
     CancelToken, KernelBound, KernelPost, PageRef, Point, Rect, Subscription, TextQuad, ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
+use epdf_kernel::geometry::PageRef as KernelPageRef;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Error, Unsubscribe};
 
@@ -87,9 +92,19 @@ pub struct SelectionSegment {
     pub advance: i32,
 }
 
+/// A quad's named corners on the mirror's.
+fn quad(q: epdf_geometry::Quad) -> TextQuad {
+    TextQuad {
+        upper_start: q.upper_left.into(),
+        upper_end: q.upper_right.into(),
+        lower_start: q.lower_left.into(),
+        lower_end: q.lower_right.into(),
+    }
+}
+
 impl From<&crate::SelectionSegment> for SelectionSegment {
     fn from(s: &crate::SelectionSegment) -> Self {
-        SelectionSegment { quad: s.quad.into(), rect: s.rect.into(), advance: s.advance }
+        SelectionSegment { quad: quad(s.quad), rect: s.rect.into(), advance: s.advance }
     }
 }
 
@@ -106,7 +121,7 @@ impl From<&crate::SelectionEndpoint> for SelectionEndpoint {
     fn from(e: &crate::SelectionEndpoint) -> Self {
         SelectionEndpoint {
             page: e.page.into(),
-            glyph_quad: e.glyph_quad.into(),
+            glyph_quad: quad(e.glyph_quad),
             advance: e.advance,
             rect: e.rect.into(),
         }
@@ -177,34 +192,11 @@ impl From<&crate::SelectionSnapshot> for SelectionSnapshot {
     }
 }
 
-/// Who changed the selection.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
-pub enum SelectionChangeTrigger {
-    User,
-    Api,
-    Script,
-    System,
-    Unknown,
-}
-
-impl From<crate::ChangeTrigger> for SelectionChangeTrigger {
-    fn from(t: crate::ChangeTrigger) -> Self {
-        match t {
-            crate::ChangeTrigger::User => SelectionChangeTrigger::User,
-            crate::ChangeTrigger::Api => SelectionChangeTrigger::Api,
-            crate::ChangeTrigger::Script => SelectionChangeTrigger::Script,
-            crate::ChangeTrigger::System => SelectionChangeTrigger::System,
-            crate::ChangeTrigger::Unknown => SelectionChangeTrigger::Unknown,
-        }
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SelectionChangedEvent {
     pub range: Option<SelectionTextRange>,
     /// The pages that carry a segment now.
     pub pages: Vec<PageRef>,
-    pub trigger: SelectionChangeTrigger,
 }
 
 /// A selection gesture ended with a selection in place.
@@ -213,16 +205,11 @@ pub struct SelectionCommittedEvent {
     pub range: SelectionTextRange,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Record)]
-pub struct SelectionClearedEvent {
-    pub trigger: SelectionChangeTrigger,
-}
-
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum SelectionEvent {
     Changed { event: SelectionChangedEvent },
     Committed { event: SelectionCommittedEvent },
-    Cleared { event: SelectionClearedEvent },
+    Cleared,
 }
 
 #[uniffi::export(with_foreign)]
@@ -294,20 +281,20 @@ impl SelectionHandle {
     }
 
     pub async fn select_page(&self, page: PageRef) -> Result<(), ViewerError> {
-        self.on(move |c| c.select_page(page.into())).await
+        self.on(move |c| c.select_page(KernelPageRef::from(page))).await
     }
 
     /// False when the point has no selectable text.
     pub async fn select_word_at(&self, page: PageRef, point: Point) -> Result<bool, ViewerError> {
-        self.on(move |c| c.select_word_at(page.into(), point.into())).await
+        self.on(move |c| c.select_word_at(KernelPageRef::from(page), point.into())).await
     }
 
     pub async fn select_line_at(&self, page: PageRef, point: Point) -> Result<bool, ViewerError> {
-        self.on(move |c| c.select_line_at(page.into(), point.into())).await
+        self.on(move |c| c.select_line_at(KernelPageRef::from(page), point.into())).await
     }
 
     pub async fn extend_to(&self, page: PageRef, point: Point) -> Result<(), ViewerError> {
-        self.on(move |c| c.extend_to(page.into(), point.into())).await
+        self.on(move |c| c.extend_to(KernelPageRef::from(page), point.into())).await
     }
 
     pub async fn clear(&self) -> Result<(), ViewerError> {
@@ -335,11 +322,17 @@ impl SelectionHandle {
     }
 
     pub async fn segments(&self, page: PageRef) -> Result<Vec<SelectionSegment>, ViewerError> {
-        self.on(move |c| Ok(c.list_segments(page.into()).iter().map(Into::into).collect())).await
+        self.on(move |c| {
+            Ok(c.list_segments(KernelPageRef::from(page)).iter().map(Into::into).collect())
+        })
+        .await
     }
 
     pub async fn rects(&self, page: PageRef) -> Result<Vec<Rect>, ViewerError> {
-        self.on(move |c| Ok(c.list_rects(page.into()).into_iter().map(Into::into).collect())).await
+        self.on(move |c| {
+            Ok(c.list_rects(KernelPageRef::from(page)).into_iter().map(Into::into).collect())
+        })
+        .await
     }
 
     pub async fn anchor(&self) -> Result<Option<SelectionAnchor>, ViewerError> {
@@ -396,7 +389,7 @@ impl SelectionHandle {
         self.on(move |c| Ok(c.is_over_text(page.into(), point.into()))).await
     }
 
-    /// Mark the following changes as the user's until `end_gesture`.
+    /// A pointer gesture opened: `is_selecting` until `end_gesture`.
     pub async fn begin_gesture(&self) -> Result<(), ViewerError> {
         self.on(|c| {
             c.begin_gesture();
@@ -418,8 +411,9 @@ impl SelectionHandle {
         .await
     }
 
-    pub async fn is_gesture_active(&self) -> Result<bool, ViewerError> {
-        self.on(|c| Ok(c.is_gesture_active())).await
+    /// Whether a selecting gesture is in flight.
+    pub async fn is_selecting(&self) -> Result<bool, ViewerError> {
+        self.on(|c| Ok(c.is_selecting())).await
     }
 
     pub async fn set_highlight_visible(&self, visible: bool) -> Result<(), ViewerError> {
@@ -450,7 +444,6 @@ impl SelectionHandle {
                                 event: SelectionChangedEvent {
                                     range: e.range.map(Into::into),
                                     pages: e.pages.iter().map(|p| (*p).into()).collect(),
-                                    trigger: e.origin.trigger.into(),
                                 },
                             });
                             Ok(())
@@ -467,10 +460,8 @@ impl SelectionHandle {
                     };
                     let cleared = {
                         let listener = listener.clone();
-                        c.on_cleared(move |e| {
-                            listener.on_event(SelectionEvent::Cleared {
-                                event: SelectionClearedEvent { trigger: e.origin.trigger.into() },
-                            });
+                        c.on_cleared(move |_| {
+                            listener.on_event(SelectionEvent::Cleared);
                             Ok(())
                         })
                     };

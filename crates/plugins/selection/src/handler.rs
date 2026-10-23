@@ -13,6 +13,7 @@
 //! dropped for that reason.
 
 use std::cell::{Cell, RefCell};
+use std::rc::Rc;
 
 use epdf_geometry::{Point, js};
 use epdf_kernel::geometry::PageRef;
@@ -20,16 +21,17 @@ use epdf_plugin_interaction::{
     Feedback, Gesture, InteractionCapability, InteractionHandler, PointerSample, Tool,
 };
 
+use crate::contract::selection_defaults;
 use crate::controller::SelectionCapability;
 
 const CURSOR_TOKEN: &str = "selection-text";
-/// Viewport px the pointer must move before a drag-select begins.
-const DEFAULT_DRAG_THRESHOLD: f64 = 4.0;
 
 /// `TextSelectHandlerOptions`.
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Default)]
 pub struct TextSelectHandlerOptions {
-    pub drag_threshold: Option<f64>,
+    /// Viewport px the pointer must move before a drag-select begins, read
+    /// when the drag would start. `SELECTION_DEFAULTS.dragThreshold` without one.
+    pub drag_threshold: Option<Rc<dyn Fn() -> f64>>,
 }
 
 #[derive(Clone, Copy)]
@@ -45,7 +47,7 @@ pub struct TextSelectHandler {
     selection: SelectionCapability,
     interaction: InteractionCapability,
     feedback: Option<Feedback>,
-    drag_threshold: f64,
+    drag_threshold: Rc<dyn Fn() -> f64>,
     anchor: RefCell<Option<Anchor>>,
     dragging: Cell<bool>,
 }
@@ -60,7 +62,10 @@ pub fn create_text_select_handler(
         selection,
         interaction,
         feedback,
-        drag_threshold: options.drag_threshold.unwrap_or(DEFAULT_DRAG_THRESHOLD),
+        drag_threshold: options.drag_threshold.unwrap_or_else(|| {
+            let threshold = selection_defaults().drag_threshold;
+            Rc::new(move || threshold)
+        }),
         anchor: RefCell::new(None),
         dragging: Cell::new(false),
     }
@@ -82,13 +87,14 @@ impl InteractionHandler for TextSelectHandler {
     fn on_down(&self, s: &PointerSample) -> bool {
         *self.anchor.borrow_mut() = None;
         self.dragging.set(false);
-        let Some(hit) = s.page else { return false }; // over a gap: let a lower handler try
+        let Some(hit) = &s.page else { return false }; // over a gap: let a lower handler try
         if !self.selection.can_select() {
             return false; // nothing here can engage: stay out of the way
         }
         let (page, point) = (hit.page, hit.point);
         let clicks = s.click_count.unwrap_or(1.0);
-        // The pointer is down: until it lifts, every change is the user's.
+        // The pointer is down: until it lifts, the gesture is active and
+        // selection-scoped UI stays out of the way.
         self.selection.begin_gesture();
         if clicks >= 3.0 {
             let _ = self.selection.select_line_at(page, point);
@@ -117,10 +123,12 @@ impl InteractionHandler for TextSelectHandler {
     }
 
     fn on_move(&self, s: &PointerSample) {
-        let Some(hit) = s.page else { return };
+        let Some(hit) = &s.page else { return };
         let Some(anchor) = *self.anchor.borrow() else { return };
         if !self.dragging.get() {
-            if js::hypot(s.viewport.x - anchor.vx, s.viewport.y - anchor.vy) < self.drag_threshold {
+            if js::hypot(s.viewport.x - anchor.vx, s.viewport.y - anchor.vy)
+                < (self.drag_threshold)()
+            {
                 return; // still a click
             }
             self.dragging.set(true);
@@ -145,7 +153,7 @@ impl InteractionHandler for TextSelectHandler {
     }
 
     fn on_hover(&self, s: &PointerSample) {
-        let Some(hit) = s.page else {
+        let Some(hit) = &s.page else {
             self.interaction.claim_cursor(CURSOR_TOKEN, None, 0.0); // off the page
             return;
         };
