@@ -56,7 +56,11 @@ pub fn lib_root() -> PathBuf {
     if let Ok(dir) = env::var("PDF_RUNTIME_LIB_DIR") {
         return PathBuf::from(dir);
     }
-    let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap());
+    lib_root_from(Path::new(&env::var("CARGO_MANIFEST_DIR").unwrap()))
+}
+
+/// [`lib_root`]'s search from a manifest directory, without the override.
+fn lib_root_from(manifest: &Path) -> PathBuf {
     let root = manifest
         .ancestors()
         .find(|dir| dir.join("packages/engine/runtime").is_dir())
@@ -351,6 +355,14 @@ pub fn assert_bindings_are_complete(bindings: &str, target: &str) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lib_root_is_the_same_from_top_level_and_nested_crates() {
+        let crates = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let expected = crates.parent().unwrap().join("packages/engine/runtime/build/libpdfium");
+        assert_eq!(lib_root_from(&crates.join("pdfium-sys")), expected);
+        assert_eq!(lib_root_from(&crates.join("plugins/geometry")), expected);
+    }
 
     #[test]
     fn maps_rust_targets_to_the_forks_target_spelling() {
