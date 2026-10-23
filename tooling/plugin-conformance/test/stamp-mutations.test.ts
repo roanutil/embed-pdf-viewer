@@ -779,6 +779,58 @@ test('mark authoring sends current ink/free-text drafts and closes each scratch 
   assert.equal(calls(bad.trace).filter((c) => c.path === 'page.annotations.create').length, 0);
 });
 
+test('imported canonical owner survives a preferred-id collision and unknown asset deletion', async () => {
+  const { trace } = await run('a-loose-asset-under-a-canonical-id');
+  const importedLibrary: StampLibrary = {
+    id: 'stamp-lib-0-1',
+    name: 'Stamps',
+    kind: 'stamps',
+    assetIds: ['stamp-lib-0-1:Stamp1', 'stamp-lib-0-1:Stamp2'],
+  };
+  const freshLibrary: StampLibrary = {
+    id: 'stamp-lib-0-2',
+    name: 'Logo',
+    kind: 'stamps',
+    assetIds: [],
+  };
+  const importedAssets: Record<string, StampAsset> = {
+    'stamp-lib-0-1:Stamp1': {
+      id: 'stamp-lib-0-1:Stamp1',
+      libraryId: 'stamp-lib-0-1',
+      kind: 'stamp',
+      name: 'Stamp1',
+      label: 'Stamp1',
+      page: { kind: 'objectNumber', objectNumber: 100 },
+      size: { width: 200, height: 100 },
+    },
+    'stamp-lib-0-1:Stamp2': {
+      id: 'stamp-lib-0-1:Stamp2',
+      libraryId: 'stamp-lib-0-1',
+      kind: 'stamp',
+      name: 'Stamp2',
+      label: 'Stamp2',
+      page: { kind: 'objectNumber', objectNumber: 101 },
+      size: { width: 201, height: 101 },
+    },
+  };
+  assert.deepEqual(resolved(trace, 1), { library: importedLibrary });
+  assert.deepEqual(resolved(trace, 2), { library: freshLibrary });
+  assert.deepEqual(value(trace, 3), [importedLibrary, freshLibrary]);
+  assert.deepEqual(state(trace, 3).libraries, {
+    'stamp-lib-0-1': importedLibrary,
+    'stamp-lib-0-2': freshLibrary,
+  });
+  assert.deepEqual(state(trace, 3).assets, importedAssets);
+  assert.deepEqual(resolved(trace, 4), { $undefined: true });
+  assert.deepEqual(trace[4].engine, []);
+  assert.deepEqual(trace[4].callbacks, []);
+  assert.deepEqual(trace[4].stateChanges, []);
+  assert.deepEqual(state(trace, 4), state(trace, 3));
+  assert.deepEqual(state(trace, 4).assets, importedAssets);
+  assert.deepEqual(value(trace, 5), importedAssets['stamp-lib-0-1:Stamp1']);
+  assert.deepEqual(state(trace, 5).assets, importedAssets);
+});
+
 test('library edits write current metadata and complete catalog patches with exact fact counts', async () => {
   const { trace } = await run('create-update-and-delete-libraries');
   assert.deepEqual(
@@ -1049,7 +1101,12 @@ test('destroyed-instance queued writes keep their precise source outcome and res
     Object.getOwnPropertyDescriptor(console, 'warn'),
     Object.getOwnPropertyDescriptor(crypto, 'randomUUID'),
   ];
-  const { trace } = await run('a-queued-mutation-after-destroy');
+  const { trace, unmatched } = await runScenario(input('a-queued-mutation-after-destroy'));
+  assert.deepEqual(unmatched, []);
+  assert.deepEqual(
+    trace.flatMap((entry) => entry.reports),
+    reports['a-queued-mutation-after-destroy'],
+  );
   assert.deepEqual(trace[2].settled, []);
   assert.deepEqual(trace[3].settled, []);
   assert.equal(trace[5].settled.length, 2);
