@@ -22,6 +22,22 @@ use crate::contract::{
     ActionsSettingsPatch, JavaScriptSettings, OpenSequence, actions_defaults,
 };
 
+/// The reserved key of a stored function identity's handle.
+const IDENTITY_KEY: &str = "$identity";
+
+/// A stored member read into its type. Only this crate's typed calls write
+/// the store, so a member that doesn't read is a bug: debug builds stop
+/// there, release builds fall back to the default.
+fn stored<T: serde::de::DeserializeOwned>(value: &Value, what: &str) -> Option<T> {
+    match serde_json::from_value(value.clone()) {
+        Ok(read) => Some(read),
+        Err(error) => {
+            debug_assert!(false, "[actions] malformed stored setting {what}: {error}");
+            None
+        }
+    }
+}
+
 #[derive(Default)]
 pub(crate) struct IdentityTable {
     functions: RefCell<Vec<(u64, ActionsScriptIdentity)>>,
@@ -55,13 +71,28 @@ impl IdentityTable {
         n
     }
 
+    /// The store merges a change key by key, where TS `mergeValue`
+    /// (`packages/core/main/src/settings.ts`) replaces a function whole and
+    /// merges plain fields over `{}` when the base was a function. So each
+    /// form names every key the other writes: fields carry
+    /// `"$identity": null`, and a function nulls every field.
     fn identity_json(&self, identity: &Option<ActionsScriptIdentity>) -> Value {
         match identity {
             None => Value::Null,
             Some(ActionsScriptIdentity::Value(fields)) => {
-                serde_json::to_value(fields).unwrap_or(Value::Null)
+                let mut out = serde_json::to_value(fields).unwrap_or_else(|_| json!({}));
+                if let Some(out) = out.as_object_mut() {
+                    out.insert(IDENTITY_KEY.into(), Value::Null);
+                }
+                out
             }
-            Some(function) => json!({ "$identity": self.handle(function) }),
+            Some(function) => json!({
+                IDENTITY_KEY: self.handle(function),
+                "name": null,
+                "loginName": null,
+                "corporation": null,
+                "email": null,
+            }),
         }
     }
 
@@ -69,10 +100,20 @@ impl IdentityTable {
         if value.is_null() || epdf_kernel::is_undefined(value) {
             return None;
         }
-        if let Some(n) = value.get("$identity").and_then(Value::as_u64) {
-            return self.functions.borrow().iter().find(|(m, _)| *m == n).map(|(_, f)| f.clone());
+        match value.get(IDENTITY_KEY) {
+            Some(Value::Null) | None => {}
+            Some(handle) => {
+                let n = handle.as_u64();
+                let function = self.functions.borrow().iter().find(|(m, _)| Some(*m) == n).cloned();
+                debug_assert!(
+                    function.is_some(),
+                    "[actions] stored identity handle {handle} names no function"
+                );
+                return function.map(|(_, f)| f);
+            }
         }
-        let fields: PartialScriptIdentity = serde_json::from_value(value.clone()).ok()?;
+        // `null` members are absent; the reserved key is not a field.
+        let fields = stored::<PartialScriptIdentity>(value, "javascript.identity")?;
         Some(ActionsScriptIdentity::Value(fields))
     }
 
@@ -128,17 +169,13 @@ impl IdentityTable {
             return settings.clone();
         }
         let defaults = actions_defaults();
-        let policy: ActionPolicy = value
-            .get("policy")
-            .and_then(|policy| serde_json::from_value(policy.clone()).ok())
-            .unwrap_or(defaults.policy);
-        let triggers: ActionTriggers = value
-            .get("triggers")
-            .and_then(|triggers| serde_json::from_value(triggers.clone()).ok())
-            .unwrap_or(defaults.triggers);
+        let policy: ActionPolicy =
+            value.get("policy").and_then(|v| stored(v, "policy")).unwrap_or(defaults.policy);
+        let triggers: ActionTriggers =
+            value.get("triggers").and_then(|v| stored(v, "triggers")).unwrap_or(defaults.triggers);
         let open_sequence: OpenSequence = value
             .get("openSequence")
-            .and_then(|mode| serde_json::from_value(mode.clone()).ok())
+            .and_then(|v| stored(v, "openSequence"))
             .unwrap_or(defaults.open_sequence);
         let javascript = value.get("javascript");
         let settings = ActionsSettings {
@@ -178,9 +215,9 @@ impl IdentityTable {
 
     fn prune(&self, current: &Value) {
         let named = |n: u64| {
-            [current, &*self.registered.borrow()]
-                .iter()
-                .any(|settings| settings["javascript"]["identity"]["$identity"].as_u64() == Some(n))
+            [current, &*self.registered.borrow()].iter().any(|settings| {
+                settings["javascript"]["identity"][IDENTITY_KEY].as_u64() == Some(n)
+            })
         };
         self.functions.borrow_mut().retain(|(n, _)| named(*n));
     }

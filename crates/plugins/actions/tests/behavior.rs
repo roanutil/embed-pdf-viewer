@@ -15,12 +15,11 @@ use epdf_kernel::kernel::{OpenOptions, OpenSource};
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{AnyPlugin, Error, Kernel, KernelOptions, Token, define, undefined};
 use epdf_plugin_actions::{
-    ACTIONS, ActionContext, ActionDiagnosticCode, ActionNodeStatus, ActionPolicyDecision,
-    ActionPolicyPatch, ActionResultStatus, ActionUiAdapter, ActionUiContext, ActionsCapability,
-    ActionsConfig, ActionsScriptIdentity, ActionsSettingsPatch, JavaScriptConfig,
-    JavaScriptSettingsPatch, NO_DEFAULT_SANDBOX, OpenSequence, PartialActionPolicyRow,
-    ScriptDocument, ScriptPhase, ScriptRealmKind, ScriptRealmTarget, ScriptSurfaceResult,
-    actions_plugin,
+    ACTIONS, ActionContext, ActionNodeStatus, ActionPolicyDecision, ActionPolicyPatch,
+    ActionResultStatus, ActionUiAdapter, ActionUiContext, ActionsCapability, ActionsConfig,
+    ActionsScriptIdentity, ActionsSettingsPatch, JavaScriptConfig, JavaScriptSettingsPatch,
+    NO_DEFAULT_SANDBOX, OpenSequence, PartialActionPolicyRow, ScriptDocument, ScriptPhase,
+    ScriptRealmKind, ScriptRealmTarget, ScriptSurfaceResult, actions_plugin,
 };
 use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
 use serde_json::{Value, json};
@@ -205,14 +204,22 @@ fn script(source: &str) -> Value {
 
 /// Every diagnostic the capability reports, as `code: message` where the
 /// run lists one.
-fn diagnostics(actions: &ActionsCapability) -> Rc<RefCell<Vec<ActionDiagnosticCode>>> {
+fn diagnostics(actions: &ActionsCapability) -> Rc<RefCell<Vec<Value>>> {
     let seen = Rc::new(RefCell::new(Vec::new()));
     let log = seen.clone();
     let _ = actions.on_diagnostic_reported(move |event| {
-        log.borrow_mut().push(event.code);
+        log.borrow_mut().push(serde_json::to_value(event).expect("an event"));
         Ok(())
     });
     seen
+}
+
+/// What `onDiagnosticReported` carries for a refused script print: the
+/// event has no message (`packages/plugin/actions/src/contract.ts`,
+/// `ActionDiagnosticReportedEvent`); the text is pinned in
+/// `lifecycle::document_events::tests`.
+fn blocked_script_print() -> Value {
+    json!({ "code": "blocked", "action": "javascript", "source": { "kind": "api" } })
 }
 
 fn print_row(user: ActionPolicyDecision) -> ActionsSettingsPatch {
@@ -245,7 +252,7 @@ fn m14_a_lifecycle_script_print_under_the_default_block_never_reaches_the_adapte
     let result = result.peek().expect("settled").expect("a result");
     assert_eq!(result.status, ActionResultStatus::Executed);
     assert!(prints.borrow().is_empty(), "a lifecycle print reached the adapter");
-    assert_eq!(*reported.borrow(), [ActionDiagnosticCode::Blocked]);
+    assert_eq!(*reported.borrow(), [blocked_script_print()]);
 }
 
 #[test]
@@ -275,14 +282,14 @@ fn m14_a_user_script_print_follows_the_live_print_row() {
     let _ = actions.execute(script("this.print()"), context("user"), None);
     rt::run_until_stalled();
     assert_eq!(prints.borrow().len(), 1);
-    assert_eq!(*reported.borrow(), [ActionDiagnosticCode::Blocked]);
+    assert_eq!(*reported.borrow(), [blocked_script_print()]);
 
     // `report` refuses as well, and says so the same way.
     actions.update_settings(&print_row(ActionPolicyDecision::Report));
     let _ = actions.execute(script("this.print()"), context("user"), None);
     rt::run_until_stalled();
     assert_eq!(prints.borrow().len(), 1);
-    assert_eq!(reported.borrow().len(), 2);
+    assert_eq!(*reported.borrow(), [blocked_script_print(), blocked_script_print()]);
 }
 
 #[test]
@@ -456,4 +463,62 @@ fn a_policy_change_reaches_every_open_document() {
     assert_eq!(b.get_settings().policy.print.user, ActionPolicyDecision::Block);
     assert_eq!(*changed.borrow(), [vec!["policy".to_string()]]);
     assert!(!b.can_execute_named("Print", None));
+}
+
+fn identity_patch(identity: ActionsScriptIdentity) -> ActionsSettingsPatch {
+    ActionsSettingsPatch {
+        javascript: Some(JavaScriptSettingsPatch { enabled: None, identity: Some(Some(identity)) }),
+        ..Default::default()
+    }
+}
+
+fn fields(name: Option<&str>, email: Option<&str>) -> ActionsScriptIdentity {
+    ActionsScriptIdentity::Value(PartialScriptIdentity {
+        name: name.map(str::to_string),
+        email: email.map(str::to_string),
+        ..Default::default()
+    })
+}
+
+fn stored_fields(actions: &ActionsCapability) -> Option<PartialScriptIdentity> {
+    match actions.get_settings().javascript.identity {
+        Some(ActionsScriptIdentity::Value(fields)) => Some(fields),
+        _ => None,
+    }
+}
+
+#[test]
+fn fields_over_a_function_identity_replace_it_as_the_typescript_merge_does() {
+    // `mergeValue` (packages/core/main/src/settings.ts): a plain object over
+    // a function merges into `{}`, so only the new fields remain.
+    let viewer =
+        Viewer::new(ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() });
+    let actions = viewer.open("a");
+    let function: Rc<dyn Fn() -> PartialScriptIdentity> = Rc::new(PartialScriptIdentity::default);
+    let weak = Rc::downgrade(&function);
+    actions.update_settings(&identity_patch(fields(Some("A"), None)));
+    actions.update_settings(&identity_patch(ActionsScriptIdentity::Function(function)));
+    actions.update_settings(&identity_patch(fields(None, Some("b@x.test"))));
+    assert_eq!(
+        stored_fields(&actions),
+        Some(PartialScriptIdentity { email: Some("b@x.test".into()), ..Default::default() })
+    );
+    // The store no longer names the function, so the table released it.
+    assert!(weak.upgrade().is_none(), "the replaced function identity is still held");
+}
+
+#[test]
+fn a_function_over_fields_replaces_them() {
+    let viewer =
+        Viewer::new(ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() });
+    let actions = viewer.open("a");
+    let function: Rc<dyn Fn() -> PartialScriptIdentity> = Rc::new(PartialScriptIdentity::default);
+    actions.update_settings(&identity_patch(fields(Some("A"), None)));
+    actions.update_settings(&identity_patch(ActionsScriptIdentity::Function(function.clone())));
+    match actions.get_settings().javascript.identity {
+        Some(ActionsScriptIdentity::Function(stored)) => {
+            assert!(std::ptr::addr_eq(Rc::as_ptr(&stored), Rc::as_ptr(&function)));
+        }
+        _ => panic!("the function did not replace the fields"),
+    }
 }

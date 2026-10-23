@@ -245,3 +245,112 @@ impl ActionsCapability {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+
+    use epdf_kernel::kernel::{OpenOptions, OpenSource};
+    use epdf_kernel::rt::{self, Promise};
+    use epdf_kernel::{Kernel, KernelOptions};
+    use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
+    use serde_json::json;
+
+    use crate::contract::{
+        ACTIONS, ActionDiagnostic, ActionNodeStatus, ActionOrigin, ActionPolicyDecision,
+        ActionPolicyPatch, ActionUiAdapter, ActionUiContext, ActionsConfig, ActionsSettingsPatch,
+        OpenSequence, PartialActionPolicyRow, ScriptPhase,
+    };
+    use crate::{ActionsCapability, actions_plugin};
+
+    fn opened() -> (Kernel, ActionsCapability) {
+        rt::reset();
+        let fake = FakeEngine::new(json!({
+            "documents": { "a": {
+                "security": { "allows": "*" },
+                "pages": [],
+                "responses": [{
+                    "path": "actions.get",
+                    "value": { "nameTreeScripts": [], "openAction": null, "openDestination": null },
+                }],
+            } }
+        }));
+        let config = ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() };
+        let kernel = Kernel::new(
+            Rc::new(AsEngine(fake)),
+            vec![actions_plugin(config)],
+            KernelOptions::default(),
+        )
+        .expect("kernel");
+        kernel.start();
+        rt::run_until_stalled();
+        kernel.documents().open(
+            OpenSource::Input(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })),
+            OpenOptions::default(),
+        );
+        rt::run_until_stalled();
+        let actions = kernel.capability(&ACTIONS, Some("a")).expect("actions");
+        (kernel, actions)
+    }
+
+    /// What the print door answers a script print from `origin`, and the
+    /// diagnostics it gave.
+    fn script_print(
+        actions: &ActionsCapability,
+        origin: ActionOrigin,
+    ) -> ((ActionNodeStatus, Option<String>), Vec<ActionDiagnostic>) {
+        let seen: Rc<RefCell<Vec<ActionDiagnostic>>> = Rc::default();
+        let log = seen.clone();
+        let ui = ActionUiContext { origin, phase: ScriptPhase::User };
+        let outcome = Promise::spawn(
+            actions
+                .clone()
+                .fire_print_through_adapter(Some(ui), Rc::new(move |d| log.borrow_mut().push(d))),
+        );
+        rt::run_until_stalled();
+        let outcome = outcome.peek().expect("settled").expect("an outcome");
+        (outcome, seen.borrow().clone())
+    }
+
+    fn messages(diagnostics: &[ActionDiagnostic]) -> Vec<&str> {
+        diagnostics.iter().map(|d| d.message.as_str()).collect()
+    }
+
+    #[test]
+    fn m14_a_script_print_reads_the_print_row_with_these_words() {
+        let (_kernel, actions) = opened();
+        let _adapter = actions.set_ui_adapter(Some(Rc::new(ActionUiAdapter {
+            open_uri: Rc::new(|_, _| Ok(())),
+            print: Rc::new(|_| Ok(())),
+            alert: None,
+            goto_page: None,
+        })));
+
+        let (outcome, said) = script_print(&actions, ActionOrigin::Lifecycle);
+        assert_eq!(outcome, (ActionNodeStatus::Blocked, Some("policy 'block'".into())));
+        assert_eq!(messages(&said), ["print: policy 'block' for origin 'lifecycle'"]);
+
+        let row = |user| ActionsSettingsPatch {
+            policy: Some(ActionPolicyPatch {
+                print: Some(PartialActionPolicyRow { user: Some(user), ..Default::default() }),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        actions.update_settings(&row(ActionPolicyDecision::Block));
+        let (outcome, said) = script_print(&actions, ActionOrigin::User);
+        assert_eq!(outcome, (ActionNodeStatus::Blocked, Some("policy 'block'".into())));
+        assert_eq!(messages(&said), ["print: policy 'block' for origin 'user'"]);
+
+        actions.update_settings(&row(ActionPolicyDecision::Report));
+        let (outcome, said) = script_print(&actions, ActionOrigin::User);
+        assert_eq!(outcome, (ActionNodeStatus::Blocked, Some("policy 'report'".into())));
+        assert_eq!(messages(&said), ["print: policy 'report' for origin 'user'"]);
+
+        actions.update_settings(&row(ActionPolicyDecision::Adapter));
+        let (outcome, said) = script_print(&actions, ActionOrigin::User);
+        assert_eq!(outcome, (ActionNodeStatus::Executed, None));
+        assert!(said.is_empty());
+    }
+}
