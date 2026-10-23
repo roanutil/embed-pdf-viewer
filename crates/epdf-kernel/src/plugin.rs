@@ -95,7 +95,6 @@ pub(crate) trait SessionView {
     fn on_settle(&self, flush: crate::settle::SettleFlush) -> Unsubscribe;
     fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe;
     fn changes(&self) -> crate::changes::DocumentChanges;
-    fn events(&self) -> EventHookSource<Value>;
     fn add_mirror(&self, plugin_id: &str, start: Rc<dyn Fn()>);
     fn id(&self) -> String;
     /// Unique per open; a reopened id gets a new one.
@@ -695,11 +694,16 @@ impl ControllerContext {
         let lifetime = self.0.lifetime.clone();
         let instance = self.0.instance_id.clone();
         let notify = self.clone();
+        // `onDocumentEvent`: each mirror subscribes to the guarded handle
+        // itself (context.ts:216), unsubscribed with the instance.
+        let events = crate::event_hook::EventHookSource::new(Some(services.report()));
+        let feed = events.clone();
+        self.listen(doc.subscribe(Rc::new(move |event| feed.emit(event))));
         Ok(crate::mirror::MirrorEnvironment {
             doc: Some(doc),
             lifetime: lifetime.clone(),
             changes: session.changes(),
-            events: session.events(),
+            events,
             cell: Rc::new(move |name, initial| {
                 let lease = store.lease(
                     &format!("{prefix}/{name}"),

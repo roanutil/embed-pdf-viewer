@@ -235,9 +235,6 @@ impl SessionView for Session {
     fn changes(&self) -> crate::changes::DocumentChanges {
         self.changes.clone()
     }
-    fn events(&self) -> EventHookSource<Value> {
-        self.events.clone()
-    }
     fn add_mirror(&self, id: &str, start: Rc<dyn Fn()>) {
         self.mirror_starts.borrow_mut().push((id.into(), start));
     }
