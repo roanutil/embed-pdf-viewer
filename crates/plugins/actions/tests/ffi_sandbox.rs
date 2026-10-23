@@ -279,7 +279,7 @@ fn a_javascript_node_runs_in_the_foreign_engine_and_alerts() {
         let config = ActionsConfig {
             open_sequence: Some(OpenSequence::Off),
             javascript: Some(JavaScriptConfig {
-                enabled: true,
+                enabled: Some(true),
                 sandbox_factory: Some(factory),
                 ..Default::default()
             }),
