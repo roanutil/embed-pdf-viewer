@@ -2,7 +2,10 @@
 
 `packages/core/signature` in Rust: parse, verify and build detached CMS signatures, the completion
 gate, certificate chain validation, `sign()` and `validateSignatures()` over a document handle, and
-the signer ports. All 460 cases in the five `vectors/core/signature-*.json` files replay identically
+the signer ports. Document timestamps (`sign` with `kind: 'timestamp'`, `cms/timestamp.ts`, the
+`timestamp` gate profile and `createTestTimestampAuthority`) port too. No vector signs a timestamp,
+so `tests/timestamp.rs` checks them against the refusal texts the TypeScript gives for the same
+inputs. All 460 cases in the five `vectors/core/signature-*.json` files replay identically
 (`cargo test -p epdf-signature-core`): 204 parse cases, 97 for verify, build and the gate, 96 for
 trust, 35 for signing and validation over a document, and 28 for the signers.
 
@@ -71,6 +74,11 @@ These are recorded rather than fixed; the TypeScript is the oracle.
   for SignedData"; this port applies the same structure and reports the same text, but asn1js's
   schema matcher has corners (extra members, constructed strings) it doesn't follow member for
   member.
+- `timestamp::read_timestamp_info` checks the five members pkijs's `TSTInfo` schema requires and
+  ignores the rest. asn1js also ignores members past a schema's end, but it refuses some optional
+  members its matcher cannot place, so a token pkijs reads as `malformed` can pass this reader. Its
+  imprint and signature are still checked. A GeneralizedTime asn1js cannot read is `malformed` in
+  both, with different text.
 - An ECDSA hash shorter than half the curve's field (SHA-256 over P-521) is left-padded before
   `verify_prehash`, which is what WebCrypto's integer conversion does; the `ecdsa` crate would
   otherwise refuse it.
@@ -107,6 +115,9 @@ signers in `packages/engine/main/test/fixtures`, one of them with the OpenSSL-st
 engine's policy and name-constraint half.
 
 ## Mutation testing
+
+These counts predate the Task 13.9 catch-up (document timestamps, `CompletionProfile`, the
+harness's `pkcs7` fallback for an unknown gate profile) and are stale until Task 14 reruns them.
 
 `scripts/mutants.sh -p epdf-signature-core --test-package epdf-signature-core --file <file>`, file by
 file over every module but `harness.rs`, catches 1,781 of 1,824 viable mutants (1,777 caught, 4
