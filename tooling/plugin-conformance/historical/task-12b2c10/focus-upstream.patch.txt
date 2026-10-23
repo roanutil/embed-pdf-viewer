@@ -1,0 +1,183 @@
+commit d6dd4f2833ee22c39f0e55eccf9a9cada0e9d1f6
+Author: Bob Singor <bob@singor.com>
+Date:   Tue Oct 13 14:01:34 2026 +0300
+
+    Copy and Find in the focused viewer: Edit → Copy answered, and Ctrl/Cmd+F puts the cursor in the search field
+    
+    Copies reach a viewer only while focus is inside it, Edit → Copy included. The last commit gave the headless `SelectionClipboard` a `target` in all four frameworks (Angular: the `epdfSelectionClipboard` directive, shaped like `epdfCommandShortcuts`) and listened on that element, which missed a copy from the browser's Edit menu: with no DOM selection (the viewer draws its own) it goes to the page's body. `wireSelectionClipboard` now listens on the document and acts only while focus is inside its target, for the copy and for Ctrl/Cmd+C, before the text-field rule. `containsFocus` follows a slotted element to its slot, so your components slotted into the viewer count, as they do for its keys.
+    
+    Panels ask for the cursor through state. `shell.open(id, { focus: true })` and `toggle(id, { focus: true })` raise the surface's `focusRequest`, also when it is open already; closing clears it, and snapshots leave it out. A command's `panel` takes `focus`. The element that should get the cursor says so: `useSurfaceFocus(id, ref, { select })` in React and Vue, the `surfaceFocus` attachment in Svelte, the `epdfSurfaceFocus` directive in Angular, all following `@embedpdf/web`'s `createSurfaceFocusFollower` (a new request moves the cursor in, and so does mounting while one is up, as a lazy panel does). React's hook runs after the frames, so a sheet records its opener and gives focus back to the button on close. `moveFocusInto` moves focus into a container unless it's there already; the focus trap and the viewer's overlay use it, so a field that took the cursor as its panel opened keeps it.
+    
+    In the viewer, Ctrl/Cmd+F is Find (`search:find`, brought with the search panel): search with the cursor in its field and the text selected, never closing it. A command can run its shortcut from text fields (`shortcutInTextFields`; `matchStroke` takes `inTextField`), and Find does, so pressing it again in the search field, or in any field in the viewer, selects the search text instead of opening the browser's find. The Search button puts the cursor in the field too; a plain `open('search')` leaves it where it is. "Find" is in all 13 languages, and the shortcuts sheet lists it under Viewing.
+    
+    Docs: Panels (focus, and opening one with the cursor in it), Buttons & commands (`search:find`, `shortcutInTextFields`, copying in the focused viewer), and the headless Panels (putting the cursor in a panel, with a snippet per framework), Commands (`shortcutInTextFields`) and Text selection (`target` in each framework) pages.
+    
+    Tests: a browser test for copying with two viewers on a page, each with text selected: Ctrl/Cmd+C copies from the focused one only, Edit → Copy at the body is answered by the focused one, and the page's own selected paragraph is left to the page; each case fails without its change (the last commit's listener on the viewer fails Edit → Copy; a page-wide listener without the focus check fails the key and the paragraph). A browser test for search: Ctrl/Cmd+F puts the cursor in the field and typing searches; pressed again from the field it keeps search open, selects the text and keeps the browser's find from opening; the Search button puts the cursor there; a plain open leaves it; at 800 px, where search opens over the pages, the field has focus, not the close button. Unit tests for the follower, `moveFocusInto`, `containsFocus` through a slot, the clipboard's focus rule (Edit → Copy at the body, two viewers), shortcuts from text fields, the shell's focus requests, a command's `panel.focus` and `shortcutInTextFields` matching, the hook in each framework (a rise, a late mount, never on a plain open, `select`, one document's request not another's), and Find's and the search panel's commands. plugin-shell 7, plugin-commands 45, web 337, the headless adapters 131/167/157/185, the viewer 343/343, the wrappers 24/23/24/26. API snapshots regenerated; the snippets compile on all 40 headless pages in every framework; docs:check passes on both sites.
+
+diff --git a/packages/plugin/shell/src/contract.ts b/packages/plugin/shell/src/contract.ts
+index 8a4d1b602..ed14fb59a 100644
+--- a/packages/plugin/shell/src/contract.ts
++++ b/packages/plugin/shell/src/contract.ts
+@@ -23,16 +23,27 @@ export interface SurfaceState {
+   readonly exclusive?: string;
+   /** Opaque props passed at open (e.g. which annotation a style panel edits). */
+   readonly props?: SurfaceProps;
++  /**
++   * How many opens asked for focus since the surface opened: 0 when none did, and again once it
++   * closes. A rise is the moment the cursor moves into the surface; it is not state to keep, so
++   * snapshots leave it out.
++   */
++  readonly focusRequest: number;
+ }
+ 
+ export interface OpenSurfaceOptions {
+   readonly exclusive?: string;
+   readonly props?: SurfaceProps;
++  /**
++   * Ask for the cursor: raises the surface's `focusRequest` by one, also when it is open already,
++   * so the element that follows it takes focus.
++   */
++  readonly focus?: boolean;
+ }
+ 
+ /** Everything the shell holds — serializable, for persist and restore. */
+ export interface ShellSnapshot {
+-  readonly surfaces: Readonly<Record<string, Omit<SurfaceState, 'id'>>>;
++  readonly surfaces: Readonly<Record<string, Omit<SurfaceState, 'id' | 'focusRequest'>>>;
+   /** Open dropdown menus, in opening order (last = topmost). */
+   readonly openMenus: readonly string[];
+ }
+@@ -67,13 +78,14 @@ export interface ShellCapability {
+   listOpenSurfaces(): readonly SurfaceState[];
+   /**
+    * Open a surface. `exclusive` closes the other open surfaces of that group,
+-   * and `props` travel with it. Fires `onSurfaceOpened`, and `onSurfaceClosed`
+-   * for each surface it closes.
++   * `props` travel with it, and `focus` raises its `focusRequest`, also when
++   * it is open already. Fires `onSurfaceOpened` when it was closed, and
++   * `onSurfaceClosed` for each surface it closes.
+    */
+   open(id: string, options?: OpenSurfaceOptions): void;
+   /** Close a surface. Fires `onSurfaceClosed` when it was open. */
+   close(id: string): void;
+-  /** Open a closed surface, or close an open one. */
++  /** Open a closed surface, with `options` as `open` takes them, or close an open one. */
+   toggle(id: string, options?: OpenSurfaceOptions): void;
+   /** Change a surface's props without reopening it. */
+   updateSurfaceProps(id: string, props: SurfaceProps): void;
+@@ -95,9 +107,12 @@ export interface ShellCapability {
+   closeAllMenus(): void;
+ 
+   // ── persistence ──
+-  /** Everything the plugin holds, as plain data you can store. */
++  /** Everything the plugin holds, as plain data you can store; `focusRequest` is left out. */
+   getSnapshot(): ShellSnapshot;
+-  /** Put back what `getSnapshot()` returned. Fires the events of what opens and closes. */
++  /**
++   * Put back what `getSnapshot()` returned, every `focusRequest` at 0. Fires the events of what
++   * opens and closes.
++   */
+   applySnapshot(snapshot: ShellSnapshot): void;
+ 
+   // ── events ──
+diff --git a/packages/plugin/shell/src/model.ts b/packages/plugin/shell/src/model.ts
+index 46e17011e..9156cbd76 100644
+--- a/packages/plugin/shell/src/model.ts
++++ b/packages/plugin/shell/src/model.ts
+@@ -1,7 +1,7 @@
+ /**
+- * The shell's state: which surfaces are open (with their exclusivity tag and
+- * props) and the stack of open menus. Every function below is a pure
+- * transition; the controller applies them with `ctx.state.update`.
++ * The shell's state: which surfaces are open (with their exclusivity tag,
++ * props and focus requests) and the stack of open menus. Every function below
++ * is a pure transition; the controller applies them with `ctx.state.update`.
+  */
+ import type { OpenSurfaceOptions, ShellSnapshot, SurfaceProps } from './contract';
+ 
+@@ -10,6 +10,8 @@ export interface SurfaceRecord {
+   readonly open: boolean;
+   readonly exclusive?: string;
+   readonly props?: SurfaceProps;
++  /** Raised by every open that asks for focus; every way of closing sets it back to 0. */
++  readonly focusRequest: number;
+ }
+ 
+ export interface ShellState {
+@@ -20,6 +22,13 @@ export interface ShellState {
+ 
+ export const initialShellState = (): ShellState => ({ surfaces: {}, openMenus: [] });
+ 
++/** A surface closed: no longer open, and no request for focus left. */
++const closed = (surface: SurfaceRecord): SurfaceRecord => ({
++  ...surface,
++  open: false,
++  focusRequest: 0,
++});
++
+ /** Close every open surface that shares the exclusivity tag, except `keepId`. */
+ function closeExclusive(
+   surfaces: ShellState['surfaces'],
+@@ -29,7 +38,7 @@ function closeExclusive(
+   const next: Record<string, SurfaceRecord> = {};
+   for (const [id, surface] of Object.entries(surfaces)) {
+     const closes = surface.open && surface.exclusive === exclusive && id !== keepId;
+-    next[id] = closes ? { ...surface, open: false } : surface;
++    next[id] = closes ? closed(surface) : surface;
+   }
+   return next;
+ }
+@@ -38,14 +47,21 @@ export function openSurface(state: ShellState, id: string, options: OpenSurfaceO
+   const surfaces = options.exclusive
+     ? closeExclusive(state.surfaces, options.exclusive, id)
+     : { ...state.surfaces };
+-  surfaces[id] = { open: true, exclusive: options.exclusive, props: options.props };
++  // A closed surface's request is 0, so only an open one carries a count forward.
++  const asked = state.surfaces[id]?.focusRequest ?? 0;
++  surfaces[id] = {
++    open: true,
++    exclusive: options.exclusive,
++    props: options.props,
++    focusRequest: options.focus ? asked + 1 : asked,
++  };
+   return { ...state, surfaces };
+ }
+ 
+ export function closeSurface(state: ShellState, id: string): ShellState {
+   const surface = state.surfaces[id];
+   if (!surface?.open) return state;
+-  return { ...state, surfaces: { ...state.surfaces, [id]: { ...surface, open: false } } };
++  return { ...state, surfaces: { ...state.surfaces, [id]: closed(surface) } };
+ }
+ 
+ export function toggleSurface(state: ShellState, id: string, options?: OpenSurfaceOptions): ShellState {
+@@ -62,7 +78,7 @@ export function closeAllSurfaces(state: ShellState): ShellState {
+   if (!Object.values(state.surfaces).some((surface) => surface.open)) return state;
+   const surfaces: Record<string, SurfaceRecord> = {};
+   for (const [id, surface] of Object.entries(state.surfaces)) {
+-    surfaces[id] = surface.open ? { ...surface, open: false } : surface;
++    surfaces[id] = surface.open ? closed(surface) : surface;
+   }
+   return { ...state, surfaces };
+ }
+@@ -85,6 +101,19 @@ export function closeAllMenus(state: ShellState): ShellState {
+   return state.openMenus.length === 0 ? state : { ...state, openMenus: [] };
+ }
+ 
++/** What a snapshot holds: the state without the focus requests, which are moments. */
++export function snapshotOf(state: ShellState): ShellSnapshot {
++  const surfaces: Record<string, ShellSnapshot['surfaces'][string]> = {};
++  for (const [id, { focusRequest: _focusRequest, ...surface }] of Object.entries(state.surfaces)) {
++    surfaces[id] = surface;
++  }
++  return { surfaces, openMenus: state.openMenus };
++}
++
+ export function applySnapshot(_state: ShellState, snapshot: ShellSnapshot): ShellState {
+-  return { surfaces: { ...snapshot.surfaces }, openMenus: [...snapshot.openMenus] };
++  const surfaces: Record<string, SurfaceRecord> = {};
++  for (const [id, surface] of Object.entries(snapshot.surfaces)) {
++    surfaces[id] = { ...surface, focusRequest: 0 };
++  }
++  return { surfaces, openMenus: [...snapshot.openMenus] };
+ }
