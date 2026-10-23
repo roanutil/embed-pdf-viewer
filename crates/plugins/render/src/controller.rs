@@ -1,5 +1,5 @@
-//! `controller.ts`: the render controller, the one place STRATEGY (the
-//! config, what the viewer spends) composes with POLICY (the engine fact,
+//! `controller.ts`: the render controller, the one place strategy (the
+//! settings, what the viewer spends) composes with policy (the engine fact,
 //! what the deployment serves). Conforming demand to the resolved render
 //! points, collapsing same-key asks in the raster store, exposing stable
 //! source keys and turning a view's demand into a retention-safe tile plan
@@ -10,36 +10,48 @@
 //! for staleness: confirmed document events (see `connect`) and the
 //! `invalidate` verb. Both go through `publish_invalidation`, the one place
 //! the ledger bumps and `onInvalidated` fires.
+//!
+//! The TypeScript asks the engine for every render with `priority: 'high'`
+//! and the view it is for (`ctx.doc.with({priority, view})`). The Rust
+//! document handle has no such hint yet; the plugin keeps the view on the
+//! tile path so a host handle that learns one can be given it.
 
 use std::cell::{Cell, RefCell};
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 use std::rc::{Rc, Weak};
 
 use epdf_geometry::Rect;
+use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::geometry::{self as kgeo, PageRef};
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::plugin::ConnectFn;
 use epdf_kernel::rt::{self, Promise};
+use epdf_kernel::settings::{InstanceSettings, SettingsChanged};
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
-use epdf_kernel::types::{DocumentMeta, PluginErrorInfo, origin_of};
+use epdf_kernel::types::{DocumentMeta, PluginErrorInfo};
 use epdf_kernel::{Controller, Error};
 use indexmap::{IndexMap, IndexSet};
 use serde_json::{Map, Value, json};
 
+use crate::appearance_store::{AppearanceStore, RecentPictures};
 use crate::contract::{
-    InvalidateOptions, InvalidateScope, PageImage, PageRender, PageRenderFailure,
-    RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions, RenderPagesOptions,
-    RenderThumbnailOptions,
+    InvalidateOptions, InvalidateScope, PageArg, PageImage, PageLayerOptions, PageRender,
+    PageRenderFailure, RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions,
+    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, config_of,
 };
 use crate::host_contract::{
-    PaintSettings, RenderCompletedEvent, RenderFailedEvent, RenderHost, RenderSourceOptions,
+    AppearanceFamily, AppearancePicture, AppearancesOptions, PaintSettings, RenderCompletedEvent,
+    RenderFailedEvent, RenderHost, RenderSourceOptions,
 };
-use crate::invalidation::annotated_pons;
+use crate::invalidation::pixel_change_of;
 use crate::js::{self, number_to_string as num};
-use crate::model::{RenderAction, RenderState};
+use crate::model::{
+    PageLayerRights, PageRenderLayers, RenderState, invalidate_pages, layers_key_of,
+    render_epoch_of, resolve_page_layers,
+};
 use crate::paint_plan::{
     PageViewDemand, RenderFormat, ResolvedRenderOptions, TilePaintPlan, empty_tile_plan,
     resolve_render_options,
@@ -51,29 +63,12 @@ use crate::tile_manager::{TileManager, TileManagerDeps};
 use crate::tiles::PageSizePt;
 
 const RENDER_SCOPE: &str = "doc.render";
+const FORMS_SCOPE: &str = "doc.forms.read";
+const ANNOTATIONS_SCOPE: &str = "doc.annotate.read";
 const DEFAULT_BATCH_CONCURRENCY: f64 = 4.0;
+const CAPABILITY: &str = "render";
 
-/// `SYSTEM_ORIGIN`: engine events without an origin (the stream's own
-/// housekeeping).
-fn system_origin() -> Value {
-    json!({ "locality": "local", "trigger": "system", "sessionId": null, "actorId": null })
-}
-
-/// `API_ORIGIN`: an `invalidate` call.
-fn api_origin() -> Value {
-    json!({ "locality": "local", "trigger": "api", "sessionId": null, "actorId": null })
-}
-
-/// `'origin' in event && event.origin ? originOf(event) : SYSTEM_ORIGIN`.
-fn origin_of_event(event: &Value) -> Value {
-    match event.get("origin") {
-        None | Some(Value::Null) | Some(Value::Bool(false)) => system_origin(),
-        Some(Value::String(s)) if s.is_empty() => system_origin(),
-        Some(Value::Number(n)) if n.as_f64() == Some(0.0) => system_origin(),
-        Some(_) => origin_of(event),
-    }
-}
-
+/// `toPluginErrorInfo(error)`.
 fn error_info(error: &Error) -> PluginErrorInfo {
     let text =
         |key: &str| error.member(key).and_then(Value::as_str).unwrap_or_default().to_string();
@@ -81,14 +76,35 @@ fn error_info(error: &Error) -> PluginErrorInfo {
         code: text("code"),
         message: error.message.clone(),
         capability: text("capability"),
+        permission: error.member("permission").and_then(Value::as_str).map(str::to_string),
+    }
+}
+
+/// `annotationKey(ref)`: `obj:<n>` or `base:<page>:<index>`, and
+/// `undefined` (as a template literal prints it) for a ref of another kind.
+pub(crate) fn annotation_key(reference: &Value) -> String {
+    let text = |value: Option<&Value>| match value {
+        None => "undefined".to_string(),
+        Some(Value::Number(n)) => num(n.as_f64().unwrap_or(f64::NAN)),
+        Some(Value::String(s)) => s.clone(),
+        Some(other) => other.to_string(),
+    };
+    match reference.get("kind").and_then(Value::as_str) {
+        Some("baseIndex") => format!(
+            "base:{}:{}",
+            text(reference.get("page").and_then(|p| p.get("objectNumber"))),
+            text(reference.get("baseIndex"))
+        ),
+        Some("objectNumber") => format!("obj:{}", text(reference.get("objectNumber"))),
+        _ => "undefined".to_string(),
     }
 }
 
 /// What a raster request sends the engine besides its target.
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 struct RasterRequest {
     viewport: PageRenderViewport,
-    include_annotations: bool,
+    layers: PageRenderLayers,
     format: Option<RenderFormat>,
     quality: Option<f64>,
 }
@@ -96,7 +112,7 @@ struct RasterRequest {
 /// A view's live demand for one page, as last set through its handle.
 struct PageDemand {
     demand: PageViewDemand,
-    include_annotations: bool,
+    layers: PageRenderLayers,
     plan: Rc<TilePaintPlan>,
 }
 
@@ -111,25 +127,37 @@ struct ViewRecord {
     pages: Pages,
 }
 
+/// `RenderSettingsChanged`: the settings after a change, and the top-level
+/// keys that changed.
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+pub struct RenderSettingsChanged {
+    pub settings: RenderSettings,
+    pub changed: Vec<String>,
+}
+
 struct Core {
-    cx: Controller<RenderState, RenderAction>,
-    resolved: Rc<ResolvedRenderOptions>,
+    cx: Controller<RenderState, Value>,
+    settings: InstanceSettings,
+    resolved_memo: RefCell<Option<(Rc<Value>, Rc<ResolvedRenderOptions>)>>,
     host: RenderHost,
     /// Document-lifetime cache; staleness is a new key, never a flush.
     store: RasterStore,
+    appearances: AppearanceStore<AppearancePicture>,
+    recent_appearances: RecentPictures<AppearancePicture>,
     tiles: TileManager,
     invalidated: EventHookSource<RenderInvalidatedEvent>,
     render_completed: EventHookSource<RenderCompletedEvent>,
     render_failed: EventHookSource<RenderFailedEvent>,
     /// The kernel's policy JSON and its parse.
     policy_memo: RefCell<Option<(Value, EngineRenderPolicy)>>,
-    strategy_memo: RefCell<Option<(EngineRenderPolicy, Rc<ResolvedStrategy>)>>,
+    strategy_memo:
+        RefCell<Option<(EngineRenderPolicy, Rc<ResolvedRenderOptions>, Rc<ResolvedStrategy>)>>,
+    paint_settings_memo: RefCell<Option<(bool, Rc<PaintSettings>)>>,
     warned_format: Cell<bool>,
     warned_budget: Cell<bool>,
     pending_advance: RefCell<IndexSet<u32>>,
     advance_scheduled: Cell<bool>,
     views: RefCell<IndexMap<String, ViewRecord>>,
-    paint_settings: PaintSettings,
 }
 
 impl Core {
@@ -147,23 +175,102 @@ impl Core {
         f(meta.as_ref())
     }
 
-    /// The twin (permissions.md).
-    fn can_render(&self) -> bool {
-        self.cx.doc().is_ok_and(|doc| doc.security().allows(RENDER_SCOPE))
+    // ── settings ──
+
+    /// The settings as the strategy reads them, resolved again when they
+    /// change. A settings value this port cannot read (a member of the wrong
+    /// type, written past the typed API) is the defaults.
+    fn resolved(&self) -> Rc<ResolvedRenderOptions> {
+        let current = self.settings.get();
+        if let Some((value, resolved)) = &*self.resolved_memo.borrow()
+            && Rc::ptr_eq(value, &current)
+        {
+            return resolved.clone();
+        }
+        let config = config_of(&current).unwrap_or_default();
+        let resolved = Rc::new(resolve_render_options(&config));
+        *self.resolved_memo.borrow_mut() = Some((current, resolved.clone()));
+        resolved
     }
 
-    fn assert_can_render(&self, operation: &str) -> Result<(), Error> {
-        if self.can_render() {
-            return Ok(());
-        }
-        Err(plugin_error(
-            code::PERMISSION_DENIED,
-            "render",
-            format!("{operation} requires {RENDER_SCOPE}"),
-            None,
-            Some(json!({ "required": RENDER_SCOPE })),
-        ))
+    fn get_settings(&self) -> RenderSettings {
+        config_of(&self.settings.get()).unwrap_or_default()
     }
+
+    // ── what a picture draws ──
+
+    fn can_render(&self) -> bool {
+        self.cx.allows(RENDER_SCOPE)
+    }
+
+    /// What the session may read of the parts a picture draws.
+    fn rights(&self) -> PageLayerRights {
+        PageLayerRights {
+            annotations: self.cx.allows(ANNOTATIONS_SCOPE),
+            form_fields: self.cx.allows(FORMS_SCOPE),
+        }
+    }
+
+    /// The engine's rule: each option as given, and one left out draws what
+    /// the session may read. Reads (keys, epochs, plans) never throw: they
+    /// count an option the session may not read as left out.
+    fn layers_of(&self, options: PageLayerOptions) -> PageRenderLayers {
+        let may = self.rights();
+        let keep = |asked: Option<bool>, allowed: bool| asked.filter(|asked| allowed || !*asked);
+        resolve_page_layers(
+            keep(options.include_annotations, may.annotations),
+            keep(options.include_form_fields, may.form_fields),
+            may,
+        )
+        .expect("an option the session may not read was left out")
+    }
+
+    /// The doors refuse an explicit `true` the session may not read, as the
+    /// engine would.
+    fn picture_layers(
+        &self,
+        options: PageLayerOptions,
+        operation: &str,
+    ) -> Result<PageRenderLayers, Error> {
+        if options.include_annotations == Some(true) {
+            self.cx.assert_allowed(ANNOTATIONS_SCOPE, operation)?;
+        }
+        if options.include_form_fields == Some(true) {
+            self.cx.assert_allowed(FORMS_SCOPE, operation)?;
+        }
+        Ok(self.layers_of(options))
+    }
+
+    // ── one-shot developer hints ──
+
+    fn warn_dropped_format(&self, strategy: &ResolvedStrategy, requested: Option<RenderFormat>) {
+        let Some(requested) = requested else { return };
+        if self.warned_format.get() || strategy.format == Some(requested) {
+            return;
+        }
+        self.warned_format.set(true);
+        (self.host.warn)(&format!(
+            "[render] format '{}' is not in the deployment's formats — using '{}'.",
+            requested.as_str(),
+            strategy.format.map_or("undefined", |f| f.as_str())
+        ));
+    }
+
+    fn warn_past_budget_no_tiles(&self, demand_width: f64, supplied: f64) {
+        if self.warned_budget.get()
+            || self.resolved().tiles.enabled
+            || demand_width <= supplied * 2.0
+        {
+            return;
+        }
+        self.warned_budget.set(true);
+        (self.host.warn)(&format!(
+            "[render] demand is {}× over the base budget and the tile plane is disabled (tiles: false) — the page rests blurry. Raise fullPage.maxWidth or re-enable tiles.",
+            js::to_fixed(demand_width / supplied, 1)
+        ));
+    }
+
+    // ── strategy ∧ policy ──
 
     /// The policy is a document fact on the kernel's registry.
     fn policy(&self) -> EngineRenderPolicy {
@@ -181,62 +288,74 @@ impl Core {
         })
     }
 
+    /// Composed with the strategy once per policy and settings.
     fn strategy(&self) -> Rc<ResolvedStrategy> {
         let policy = self.policy();
+        let options = self.resolved();
         let memoized = match &*self.strategy_memo.borrow() {
-            Some((p, strategy)) if *p == policy => Some(strategy.clone()),
+            Some((p, o, strategy)) if *p == policy && Rc::ptr_eq(o, &options) => {
+                Some(strategy.clone())
+            }
             _ => None,
         };
         if let Some(strategy) = memoized {
             return strategy;
         }
-        let strategy = Rc::new(resolve_strategy(&policy, &self.resolved));
-        *self.strategy_memo.borrow_mut() = Some((policy, strategy.clone()));
-        self.warn_dropped_format(&strategy);
+        let strategy = Rc::new(resolve_strategy(&policy, &options));
+        *self.strategy_memo.borrow_mut() = Some((policy, options.clone(), strategy.clone()));
+        self.warn_dropped_format(&strategy, options.format);
         strategy
     }
 
-    /// One-shot developer hint, not an error.
-    fn warn_dropped_format(&self, strategy: &ResolvedStrategy) {
-        let Some(requested) = self.resolved.format else { return };
-        if self.warned_format.get() || strategy.format == Some(requested) {
-            return;
-        }
-        self.warned_format.set(true);
-        (self.host.warn)(&format!(
-            "[render] format '{}' is not in the deployment's formats — using '{}'.",
-            requested.as_str(),
-            strategy.format.map_or("undefined", |f| f.as_str())
-        ));
-    }
+    // ── pages ──
 
-    fn warn_past_budget_no_tiles(&self, demand_width: f64, supplied: f64) {
-        if self.warned_budget.get() || self.resolved.tiles.enabled || demand_width <= supplied * 2.0
-        {
-            return;
-        }
-        self.warned_budget.set(true);
-        (self.host.warn)(&format!(
-            "[render] demand is {}× over the base budget and the tile plane is disabled (tiles: false) — the page rests blurry. Raise fullPage.maxWidth or re-enable tiles.",
-            js::to_fixed(demand_width / supplied, 1)
-        ));
-    }
-
-    /// `ctx.getPage(ref)?.size`.
-    fn page_size(&self, page: PageRef) -> Option<PageSizePt> {
+    /// `ctx.getPage(page)`: the page's ref and size, or `None` for a page
+    /// this document does not have.
+    fn find_page(&self, page: PageArg) -> Option<(PageRef, PageSizePt)> {
         self.with_meta(|meta| {
             let pages = meta?.pages.as_array()?;
-            let size = pages.iter().find(|p| page.names(p))?.get("size")?;
-            Some(PageSizePt {
-                width: size.get("width").and_then(Value::as_f64).unwrap_or(f64::NAN),
-                height: size.get("height").and_then(Value::as_f64).unwrap_or(f64::NAN),
-            })
+            let info = match page {
+                PageArg::Ref(page) => pages.iter().find(|p| page.names(p))?,
+                PageArg::Index(index) => {
+                    if index < 0.0 || index.fract() != 0.0 {
+                        return None;
+                    }
+                    pages.get(index as usize)?
+                }
+            };
+            let reference = info.get("ref").and_then(PageRef::from_json)?;
+            let size = info.get("size");
+            let side = |key: &str| {
+                size.and_then(|s| s.get(key)).and_then(Value::as_f64).unwrap_or(f64::NAN)
+            };
+            Some((reference, PageSizePt { width: side("width"), height: side("height") }))
         })
     }
 
-    /// `not-found` for a page this document does not have.
+    /// `ctx.pageOf(page)`: `not-found` for a page this document does not
+    /// have.
+    fn page_of(&self, page: PageArg) -> Result<(PageRef, PageSizePt), Error> {
+        self.find_page(page).ok_or_else(|| {
+            let message = match page {
+                PageArg::Ref(page) => {
+                    format!("page {} is not in this document", page.page_object_number)
+                }
+                PageArg::Index(index) => {
+                    format!("there is no page {} in this document", num(index))
+                }
+            };
+            plugin_error(code::NOT_FOUND, CAPABILITY, message, None, None)
+        })
+    }
+
+    fn page_size(&self, pon: u32) -> Option<PageSizePt> {
+        self.find_page(PageArg::Ref(PageRef::new(pon))).map(|(_, size)| size)
+    }
+
+    /// The width a host-door page converts scale against: `not-found` for a
+    /// page this document does not have.
     fn page_width_of(&self, page: PageRef) -> Result<f64, Error> {
-        match self.page_size(page) {
+        match self.page_size(page.page_object_number) {
             Some(size) => Ok(size.width),
             None => {
                 self.cx.assert_page_ref(page)?;
@@ -256,16 +375,10 @@ impl Core {
         })
     }
 
-    /// The one base-sizing path: `render_source`, `get_source_key`,
-    /// `conform_viewport` and (through the tile manager) engagement.
-    fn conform_viewport(&self, page: PageRef, scale: f64) -> Result<PageRenderViewport, Error> {
-        // The TypeScript's width-less viewport (an empty ladder) has no
-        // Rust shape; NaN stands in.
-        Ok(PageRenderViewport::Width { width: self.base_width(page, scale)?.unwrap_or(f64::NAN) })
-    }
-
-    /// The conformed base width, `None` where the TypeScript's is
-    /// `undefined` (an empty client ladder).
+    /// The conformed base width: the one base-sizing path (`render_source`,
+    /// `get_source_key`, `conform_viewport` and, through the tile manager,
+    /// engagement). `None` where the TypeScript's is `undefined` (an empty
+    /// client ladder, M26).
     fn base_width(&self, page: PageRef, scale: f64) -> Result<Option<f64>, Error> {
         let demand_width = scale * self.page_width_of(page)?;
         let width = base_ask_width(&self.strategy(), demand_width);
@@ -273,13 +386,14 @@ impl Core {
         Ok(width)
     }
 
-    fn epoch_of(&self, pon: u32, include_annotations: bool) -> f64 {
-        let state = self.cx.state();
-        let content = state.content_epochs.get(&pon).copied().unwrap_or(0);
-        if !include_annotations {
-            return content as f64;
-        }
-        (content + state.annotated_epochs.get(&pon).copied().unwrap_or(0)) as f64
+    fn conform_viewport(&self, page: PageRef, scale: f64) -> Result<PageRenderViewport, Error> {
+        // The TypeScript's width-less viewport (an empty ladder) has no
+        // Rust shape; NaN stands in (M26).
+        Ok(PageRenderViewport::Width { width: self.base_width(page, scale)?.unwrap_or(f64::NAN) })
+    }
+
+    fn epoch_of(&self, pon: u32, layers: PageRenderLayers) -> f64 {
+        render_epoch_of(&self.cx.state(), pon, layers) as f64
     }
 
     /// A raster's identity includes its encode format (the resolved format
@@ -288,29 +402,29 @@ impl Core {
         &self,
         pon: u32,
         width: Option<f64>,
-        annotations: bool,
+        layers: PageRenderLayers,
         format: Option<RenderFormat>,
         quality: Option<f64>,
     ) -> String {
         format!(
-            "{pon}|w{}|a{}|e{}{}{}",
+            "{pon}|w{}|{}|e{}{}{}",
             width.map_or_else(|| "undefined".to_string(), num),
-            u8::from(annotations),
-            num(self.epoch_of(pon, annotations)),
+            layers_key_of(layers),
+            num(self.epoch_of(pon, layers)),
             format.map_or(String::new(), |f| format!("|f{}", f.as_str())),
             quality.map_or(String::new(), |q| format!("|q{}", num(q)))
         )
     }
 
-    /// The raster store door, shared by both render doors. `Err` is a
-    /// synchronous throw (the engine refusing a page the registry lists).
+    // ── the raster store door (shared by both render doors and the tiles) ──
+
     fn acquire_raster(
         self: &Rc<Self>,
         page: PageRef,
         key: String,
         request: RasterRequest,
         signal: Option<&AbortSignal>,
-    ) -> Result<Promise<PageImageHandle>, Error> {
+    ) -> Promise<PageImageHandle> {
         let result = self.store.acquire(
             &key,
             |store_signal| {
@@ -319,26 +433,33 @@ impl Core {
                     "viewport".into(),
                     serde_json::to_value(request.viewport).unwrap_or_default(),
                 );
-                options.insert("includeAnnotations".into(), json!(request.include_annotations));
+                options
+                    .insert("includeAnnotations".into(), json!(request.layers.include_annotations));
+                options
+                    .insert("includeFormFields".into(), json!(request.layers.include_form_fields));
                 if let Some(format) = request.format {
                     options.insert("format".into(), json!(format.as_str()));
                 }
                 if let Some(quality) = request.quality {
                     options.insert("quality".into(), json!(quality));
                 }
-                render_image(&self.cx.doc()?, page, Value::Object(options), store_signal)
+                Ok(render_image(&self.cx.doc()?, page, Value::Object(options), store_signal))
             },
             signal,
-        )?;
+        );
+        let result = match result {
+            Ok(result) => result,
+            Err(error) => return Promise::rejected(error),
+        };
         let this = self.clone();
-        Ok(Promise::spawn(async move {
+        Promise::spawn(async move {
             match result.await {
                 Ok(image) => {
                     this.render_completed.emit(&RenderCompletedEvent { page, key });
                     Ok(image)
                 }
                 Err(error) => {
-                    let mapped = to_plugin_error("render", &error);
+                    let mapped = to_plugin_error(CAPABILITY, &error);
                     if !mapped.is_plugin_error(Some(code::OPERATION_CANCELLED))
                         && !mapped.is_plugin_error(Some(code::INSTANCE_CLOSED))
                     {
@@ -351,9 +472,10 @@ impl Core {
                     Err(mapped)
                 }
             }
-        }))
+        })
     }
 
+    /// The host door: conformed to the render points.
     fn render_source(
         self: &Rc<Self>,
         page: PageRef,
@@ -361,38 +483,39 @@ impl Core {
     ) -> Promise<PageImage> {
         let this = self.clone();
         Promise::spawn(async move {
-            this.assert_can_render("render.renderSource")?;
-            let annotations = options.include_annotations.unwrap_or(true);
+            this.cx.assert_allowed(RENDER_SCOPE, "render.renderSource")?;
+            let layers = this.picture_layers(options.layers, "render.renderSource")?;
             let width = this.base_width(page, options.scale)?;
             let viewport = PageRenderViewport::Width { width: width.unwrap_or(f64::NAN) };
             let strategy = this.strategy();
             let key =
-                this.raster_key(page.page_object_number, width, annotations, strategy.format, None);
+                this.raster_key(page.page_object_number, width, layers, strategy.format, None);
             let request = RasterRequest {
                 viewport,
-                include_annotations: annotations,
+                layers,
                 format: strategy.format,
                 quality: strategy.quality,
             };
-            let raster = this.acquire_raster(page, key, request, options.signal.as_ref())?;
+            let raster = this.acquire_raster(page, key, request, options.signal.as_ref());
             adopt(raster).await
         })
     }
 
+    /// The public door: the requested size, exactly.
     fn render_page(
         self: &Rc<Self>,
-        page: PageRef,
+        page: PageArg,
         options: RenderPageOptions,
     ) -> Promise<PageImage> {
         let this = self.clone();
         Promise::spawn(async move {
-            this.assert_can_render("render.renderPage")?;
-            let page_width = this.page_width_of(page)?;
+            this.cx.assert_allowed(RENDER_SCOPE, "render.renderPage")?;
+            let (page, size) = this.page_of(page)?;
             let width = js::max(
                 1.0,
-                js::round(options.width.unwrap_or(options.scale.unwrap_or(1.0) * page_width)),
+                js::round(options.width.unwrap_or(options.scale.unwrap_or(1.0) * size.width)),
             );
-            let annotations = options.include_annotations.unwrap_or(true);
+            let layers = this.picture_layers(options.layers, "render.renderPage")?;
             let strategy = this.strategy();
             let format = options.format.or(strategy.format);
             let quality = options.quality.or(strategy.quality);
@@ -401,35 +524,37 @@ impl Core {
             let key = this.raster_key(
                 page.page_object_number,
                 Some(width),
-                annotations,
+                layers,
                 format,
                 options.quality,
             );
             let request = RasterRequest {
                 viewport: PageRenderViewport::Width { width },
-                include_annotations: annotations,
+                layers,
                 format,
                 quality,
             };
-            let raster = this.acquire_raster(page, key, request, options.signal.as_ref())?;
-            adopt(raster).await
+            let raster = this.acquire_raster(page, key, request, options.signal.as_ref());
+            adopt(cancellable(CAPABILITY, options.signal.clone(), raster)).await
         })
     }
 
     fn render_pages(
         self: &Rc<Self>,
-        pages: Vec<PageRef>,
+        pages: Vec<PageArg>,
         options: RenderPagesOptions,
     ) -> Promise<RenderBatchResult> {
         let this = self.clone();
         Promise::spawn(async move {
-            this.assert_can_render("render.renderPages")?;
+            this.cx.assert_allowed(RENDER_SCOPE, "render.renderPages")?;
             let concurrency =
                 js::max(1.0, options.concurrency.unwrap_or(DEFAULT_BATCH_CONCURRENCY));
-            let applied: Rc<RefCell<Vec<PageRender>>> = Rc::default();
-            let failed: Rc<RefCell<Vec<PageRenderFailure>>> = Rc::default();
-            let queue: Rc<RefCell<VecDeque<PageRef>>> =
-                Rc::new(RefCell::new(pages.iter().copied().collect()));
+            // Each entry keeps its place in the input, so the result reads in
+            // the order given whatever order the renders finished in.
+            let applied: Rc<RefCell<Vec<(usize, PageRender)>>> = Rc::default();
+            let failed: Rc<RefCell<Vec<(usize, PageRenderFailure)>>> = Rc::default();
+            let queue: Rc<RefCell<VecDeque<(usize, PageArg)>>> =
+                Rc::new(RefCell::new(pages.iter().copied().enumerate().collect()));
             // `Array.from({length: Math.min(concurrency, queue.length)})`.
             let workers = js::min(concurrency, queue.borrow().len() as f64);
             let workers = if workers.is_nan() { 0 } else { workers as usize };
@@ -440,55 +565,188 @@ impl Core {
                 let page_options = options.page.clone();
                 running.push(Promise::spawn(async move {
                     loop {
-                        let Some(page) = queue.borrow_mut().pop_front() else { break };
+                        let Some((index, page)) = queue.borrow_mut().pop_front() else { break };
                         match this.render_page(page, page_options.clone()).await {
-                            Ok(image) => applied.borrow_mut().push(PageRender { page, image }),
-                            Err(error) => failed.borrow_mut().push(PageRenderFailure {
-                                page,
-                                error: error_info(&to_plugin_error("render", &error)),
-                            }),
+                            Ok(image) => {
+                                let reference = match this.page_of(page) {
+                                    Ok((reference, _)) => reference,
+                                    Err(error) => {
+                                        // The page left the document as it
+                                        // rendered: `ctx.pageOf` threw.
+                                        failed.borrow_mut().push((
+                                            index,
+                                            PageRenderFailure { page, error: error_info(&error) },
+                                        ));
+                                        continue;
+                                    }
+                                };
+                                applied
+                                    .borrow_mut()
+                                    .push((index, PageRender { page: reference, image }));
+                            }
+                            Err(error) => failed.borrow_mut().push((
+                                index,
+                                PageRenderFailure {
+                                    page,
+                                    error: error_info(&to_plugin_error(CAPABILITY, &error)),
+                                },
+                            )),
                         }
                     }
                     Ok(())
                 }));
             }
-            all(running).await?;
-            // Report in input order, whatever the completion order was. A
-            // repeated page sorts at its last index, as a `Map` keeps it.
-            let index: HashMap<u32, usize> =
-                pages.iter().enumerate().map(|(i, p)| (p.page_object_number, i)).collect();
-            let at = |p: &PageRef| index.get(&p.page_object_number).copied().unwrap_or(0);
+            let batch = all(running);
+            cancellable(CAPABILITY, options.page.signal.clone(), batch).reaction().await?;
             let mut applied = std::mem::take(&mut *applied.borrow_mut());
             let mut failed = std::mem::take(&mut *failed.borrow_mut());
-            applied.sort_by_key(|a| at(&a.page));
-            failed.sort_by_key(|f| at(&f.page));
-            Ok(RenderBatchResult { applied, skipped: Vec::new(), failed })
+            applied.sort_by_key(|(index, _)| *index);
+            failed.sort_by_key(|(index, _)| *index);
+            Ok(RenderBatchResult {
+                applied: applied.into_iter().map(|(_, render)| render).collect(),
+                skipped: Vec::new(),
+                failed: failed.into_iter().map(|(_, failure)| failure).collect(),
+            })
         })
     }
 
-    /// The one place the ledger bumps and `onInvalidated` fires.
-    fn publish_invalidation(
-        &self,
-        pons: Vec<u32>,
-        scope: InvalidateScope,
-        origin: Value,
-    ) -> Result<(), Error> {
+    // ── appearance pictures: the owners' items, shared between their views ──
+
+    fn render_appearances(
+        self: &Rc<Self>,
+        page: PageArg,
+        options: AppearancesOptions,
+    ) -> Promise<Rc<Vec<AppearancePicture>>> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            let scope = match options.family {
+                AppearanceFamily::Widgets => FORMS_SCOPE,
+                AppearanceFamily::Annotations => ANNOTATIONS_SCOPE,
+            };
+            this.cx.assert_allowed(scope, "render.renderAppearances")?;
+            let pon = this.page_of(page)?.0.page_object_number;
+            let mut versions: IndexMap<String, f64> = IndexMap::new();
+            for item in &options.items {
+                versions.insert(annotation_key(&item.reference), item.version);
+            }
+            let mut asked: Vec<String> = versions
+                .iter()
+                .map(|(item, version)| format!("{item}@{}", num(*version)))
+                .collect();
+            asked.sort();
+            let family = options.family;
+            let group = format!("{}|{pon}", family.as_str());
+            let key = format!("{group}|s{}|{}", num(options.scale), asked.join(","));
+            let scale = options.scale;
+            let fetcher = this.clone();
+            let pictures = this.appearances.acquire(
+                &group,
+                &key,
+                move |fetch_signal| {
+                    fetcher.fetch_appearances(pon, family, scale, versions, fetch_signal)
+                },
+                options.signal.as_ref(),
+            );
+            let mapped = Promise::spawn(async move {
+                pictures.await.map_err(|error| to_plugin_error(CAPABILITY, &error))
+            });
+            adopt(cancellable(CAPABILITY, options.signal.clone(), mapped)).await
+        })
+    }
+
+    /// The look at rest only, in every state: a check box keeps both its
+    /// pictures, and the looks under the pointer and pressed aren't drawn.
+    fn fetch_appearances(
+        self: &Rc<Self>,
+        pon: u32,
+        family: AppearanceFamily,
+        scale: f64,
+        versions: IndexMap<String, f64>,
+        signal: &AbortSignal,
+    ) -> Promise<Vec<AppearancePicture>> {
+        let doc = match self.cx.doc() {
+            Ok(doc) => doc,
+            Err(error) => return Promise::rejected(error),
+        };
+        let path = match family {
+            AppearanceFamily::Widgets => "page.forms.renderAppearances",
+            AppearanceFamily::Annotations => "page.annotations.renderAppearances",
+        };
+        let options =
+            json!({ "viewport": { "kind": "scale", "scale": scale }, "modes": ["normal"] });
+        let task = doc.call(path, Some(pon), vec![options]);
+        // The listener holds the task, and through it the pictures: it
+        // comes off the entry's signal once the task settles.
+        let listener = if signal.aborted() {
+            task.abort(None);
+            None
+        } else {
+            let aborted = task.clone();
+            Some(signal.on_abort(Rc::new(move |_| aborted.abort(None))))
+        };
+        let this = self.clone();
+        let signal = signal.clone();
+        Promise::spawn(async move {
+            let answer = task.await;
+            if let Some(id) = listener {
+                signal.remove(id);
+            }
+            let answer = answer?;
+            let drawn: Vec<AppearancePicture> = answer
+                .get("appearances")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(|picture| {
+                    let reference = picture.get("ref").unwrap_or(&Value::Null);
+                    let version = versions.get(&annotation_key(reference))?;
+                    Some(AppearancePicture { picture: picture.clone(), version: *version })
+                })
+                .collect();
+            this.recent_appearances
+                .remember(family.as_str(), &drawn, |picture| annotation_key(picture.reference()));
+            Ok(drawn)
+        })
+    }
+
+    // ── invalidation: the one place the ledger bumps and onInvalidated fires ──
+
+    fn publish_invalidation(&self, pons: Vec<u32>, scope: InvalidateScope, origin: Value) {
         if pons.is_empty() {
-            return Ok(());
+            return;
         }
-        self.cx.dispatch(RenderAction::Invalidate { scope, pages: pons.clone() });
+        self.cx.update_state(|state| match invalidate_pages(&state, &pons, scope) {
+            Some(next) => Rc::new(next),
+            None => state,
+        });
         // Every view's plan for these pages points at old-epoch pixels:
-        // re-plan now, so `get_plan` reads fresh.
+        // re-plan now, so `get_plan` reads fresh on the next look.
         for &pon in &pons {
-            self.replan_page(pon)?;
+            self.replan_page(pon);
         }
         self.invalidated.emit(&RenderInvalidatedEvent {
             pages: pons.into_iter().map(PageRef::new).collect(),
             scope,
             origin,
         });
-        Ok(())
     }
+
+    fn invalidate(&self, options: InvalidateOptions) {
+        let pons = match options.pages {
+            Some(pages) => pages
+                .into_iter()
+                .filter_map(|page| self.find_page(page).map(|(r, _)| r.page_object_number))
+                .collect(),
+            None => self.all_pons(),
+        };
+        self.publish_invalidation(
+            pons,
+            options.scope.unwrap_or(InvalidateScope::Content),
+            Value::Null,
+        );
+    }
+
+    // ── tiles ──
 
     /// Tile resolutions arrive in bursts: coalesce the re-plans per frame.
     fn wake(self: &Rc<Self>, pon: u32) {
@@ -498,31 +756,29 @@ impl Core {
         }
         self.advance_scheduled.set(true);
         let this = Rc::downgrade(self);
-        (self.host.request_frame)(Box::new(move || {
+        self.cx.clock().next_frame(move |_| {
             let Some(this) = this.upgrade() else { return };
             this.advance_scheduled.set(false);
             let pons: Vec<u32> =
                 std::mem::take(&mut *this.pending_advance.borrow_mut()).into_iter().collect();
             for pon in pons {
-                // A throw here would be an uncaught error in a frame callback.
-                let _ = this.replan_page(pon);
+                this.replan_page(pon);
             }
-        }));
+        });
     }
 
     /// Re-plan a page for every view that wants it (schedules the next want
-    /// set), and wake subscribers once when any plan changed.
-    fn replan_page(&self, pon: u32) -> Result<(), Error> {
+    /// set), and wake readers once when any plan changed.
+    fn replan_page(&self, pon: u32) {
         let views: Vec<(String, Pages)> =
             self.views.borrow().iter().map(|(id, v)| (id.clone(), v.pages.clone())).collect();
         let mut changed = false;
         for (view_id, pages) in views {
-            let Some((demand, include_annotations)) =
-                pages.borrow().get(&pon).map(|e| (e.demand, e.include_annotations))
+            let Some((demand, layers)) = pages.borrow().get(&pon).map(|e| (e.demand, e.layers))
             else {
                 continue;
             };
-            let plan = self.tiles.plan(&view_id, pon, &demand, include_annotations)?;
+            let plan = self.tiles.plan(&view_id, pon, &demand, layers);
             if let Some(entry) = pages.borrow_mut().get_mut(&pon)
                 && !Rc::ptr_eq(&plan, &entry.plan)
             {
@@ -531,28 +787,40 @@ impl Core {
             }
         }
         if changed {
-            self.cx.dispatch(RenderAction::PaintAdvanced { page: pon });
+            self.cx.notify();
         }
-        Ok(())
+    }
+
+    /// What the layers paint with: the same `Rc` until a setting it reads
+    /// changes.
+    fn paint_settings(&self) -> Rc<PaintSettings> {
+        let enabled = self.resolved().tiles.enabled;
+        if let Some((memo, settings)) = &*self.paint_settings_memo.borrow()
+            && *memo == enabled
+        {
+            return settings.clone();
+        }
+        let settings = Rc::new(PaintSettings { tiles: enabled });
+        *self.paint_settings_memo.borrow_mut() = Some((enabled, settings.clone()));
+        settings
+    }
+
+    /// A settings change reaches every view's plans at once.
+    fn on_settings_changed(&self) {
+        let mut shown: IndexSet<u32> = IndexSet::new();
+        for view in self.views.borrow().values() {
+            shown.extend(view.pages.borrow().keys().copied());
+        }
+        for pon in shown {
+            self.replan_page(pon);
+        }
     }
 
     fn on_document_event(&self, event: &Value) {
-        // A throw from a listener has nowhere to go.
-        let _ = if event.get("type").and_then(Value::as_str) == Some("redaction.applied") {
-            let pons: Vec<u32> = event
-                .get("results")
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .filter(|r| r.get("status").and_then(Value::as_str) == Some("applied"))
-                .filter_map(|r| r.get("page").and_then(PageRef::from_json))
-                .map(|r| r.page_object_number)
-                .collect();
-            self.publish_invalidation(pons, InvalidateScope::Content, origin_of_event(event))
-        } else {
-            let pons = annotated_pons(event, || self.all_pons());
-            self.publish_invalidation(pons, InvalidateScope::Annotations, origin_of_event(event))
-        };
+        let Some(change) = pixel_change_of(event, || self.all_pons()) else { return };
+        // `'origin' in event ? event.origin : null`.
+        let origin = event.get("origin").cloned().unwrap_or(Value::Null);
+        self.publish_invalidation(change.pages, change.scope, origin);
     }
 }
 
@@ -594,17 +862,15 @@ fn render_image(
     page: PageRef,
     options: Value,
     signal: &AbortSignal,
-) -> Result<Promise<Value>, Error> {
-    let pon = page.page_object_number;
-    doc.page_index(pon)?;
-    let task = doc.call("page.render.image", Some(pon), vec![options]);
+) -> Promise<Value> {
+    let task = doc.call("page.render.image", Some(page.page_object_number), vec![options]);
     if signal.aborted() {
         task.abort(None);
     } else {
         let task = task.clone();
         signal.on_abort(Rc::new(move |_| task.abort(None)));
     }
-    Ok(task)
+    task
 }
 
 // ── the capability ────────────────────────────────────────────────────────────
@@ -616,6 +882,38 @@ fn render_image(
 pub struct RenderCapability(Rc<Core>);
 
 impl RenderCapability {
+    // ── settings ──
+
+    /// `getSettings()`: the settings in effect.
+    pub fn get_settings(&self) -> RenderSettings {
+        self.0.get_settings()
+    }
+
+    /// `updateSettings(changes)`: merge `changes` in, for every document.
+    /// Fires `on_settings_changed` once when a setting changed.
+    pub fn update_settings(&self, changes: &RenderConfig) {
+        let changes = serde_json::to_value(changes).expect("plain data");
+        self.0.settings.store.update_settings(&changes);
+    }
+
+    /// `resetSettings()`: back to what the app registered.
+    pub fn reset_settings(&self) {
+        self.0.settings.store.reset_settings();
+    }
+
+    /// `onSettingsChanged`.
+    pub fn on_settings_changed(
+        &self,
+        listener: impl Fn(&RenderSettingsChanged) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.settings.events.on(move |event: &SettingsChanged| {
+            listener(&RenderSettingsChanged {
+                settings: config_of(&event.settings).unwrap_or_default(),
+                changed: event.changed.clone(),
+            })
+        })
+    }
+
     // ── public lens ──
 
     /// Would page rasters be served to this session (`doc.render`)?
@@ -623,24 +921,29 @@ impl RenderCapability {
         self.0.can_render()
     }
 
-    /// Render one page at the requested size, exactly. Rejects
-    /// `permission-denied` without `doc.render`, `not-found` for a page not
-    /// in this document, `operation-cancelled` on abort.
-    pub fn render_page(&self, page: PageRef, options: RenderPageOptions) -> Promise<PageImage> {
-        self.0.render_page(page, options)
+    /// Render one page, by its ref or its index, at the requested size,
+    /// exactly. Rejects `permission-denied` without `doc.render`,
+    /// `not-found` for a page not in this document, `operation-cancelled`
+    /// on abort.
+    pub fn render_page(
+        &self,
+        page: impl Into<PageArg>,
+        options: RenderPageOptions,
+    ) -> Promise<PageImage> {
+        self.0.render_page(page.into(), options)
     }
 
     /// A small raster at `max_width` device pixels.
     pub fn render_thumbnail(
         &self,
-        page: PageRef,
+        page: impl Into<PageArg>,
         options: RenderThumbnailOptions,
     ) -> Promise<PageImage> {
         self.0.render_page(
-            page,
+            page.into(),
             RenderPageOptions {
                 width: Some(options.max_width),
-                include_annotations: options.include_annotations,
+                layers: options.layers,
                 signal: options.signal,
                 ..Default::default()
             },
@@ -650,7 +953,7 @@ impl RenderCapability {
     /// Render several pages with bounded concurrency; best-effort per page.
     pub fn render_pages(
         &self,
-        pages: Vec<PageRef>,
+        pages: Vec<PageArg>,
         options: RenderPagesOptions,
     ) -> Promise<RenderBatchResult> {
         self.0.render_pages(pages, options)
@@ -661,23 +964,20 @@ impl RenderCapability {
         self.0.policy()
     }
 
-    /// The version of the raster these options would produce.
-    pub fn get_render_epoch(&self, page: PageRef, include_annotations: bool) -> f64 {
-        self.0.epoch_of(page.page_object_number, include_annotations)
+    /// The version of the picture these options would produce: content
+    /// facts, plus annotation facts when it draws annotations and form facts
+    /// when it draws form fields. 0 for a page that isn't in the document.
+    pub fn get_render_epoch(&self, page: impl Into<PageArg>, layers: PageLayerOptions) -> f64 {
+        match self.0.find_page(page.into()) {
+            Some((page, _)) => self.0.epoch_of(page.page_object_number, self.0.layers_of(layers)),
+            None => 0.0,
+        }
     }
 
-    /// Declare that page pixels changed. `Err` where re-planning a view's
-    /// tiles throws (the engine refusing a page the registry lists).
-    pub fn invalidate(&self, options: InvalidateOptions) -> Result<(), Error> {
-        let pons = match options.pages {
-            Some(pages) => pages.into_iter().map(|p| p.page_object_number).collect(),
-            None => self.0.all_pons(),
-        };
-        self.0.publish_invalidation(
-            pons,
-            options.scope.unwrap_or(InvalidateScope::Content),
-            api_origin(),
-        )
+    /// Declare that page pixels changed. A page that isn't in the document
+    /// is skipped.
+    pub fn invalidate(&self, options: InvalidateOptions) {
+        self.0.invalidate(options);
     }
 
     /// `onInvalidated`.
@@ -702,13 +1002,13 @@ impl RenderCapability {
         &self,
         page: PageRef,
         scale: f64,
-        include_annotations: Option<bool>,
+        layers: PageLayerOptions,
     ) -> Result<String, Error> {
         let width = self.0.base_width(page, scale)?;
         Ok(self.0.raster_key(
             page.page_object_number,
             width,
-            include_annotations.unwrap_or(true),
+            self.0.layers_of(layers),
             self.0.strategy().format,
             None,
         ))
@@ -719,8 +1019,15 @@ impl RenderCapability {
         self.0.conform_viewport(page, scale)
     }
 
-    pub fn get_paint_settings(&self) -> PaintSettings {
-        self.0.paint_settings
+    /// The resolved paint settings: the same `Rc` until one changes.
+    pub fn get_paint_settings(&self) -> Rc<PaintSettings> {
+        self.0.paint_settings()
+    }
+
+    /// What the user may read of the parts a picture draws beside the page
+    /// content.
+    pub fn get_layer_rights(&self) -> PageLayerRights {
+        self.0.rights()
     }
 
     /// This view's tile surface. Stable per view id; pair with `dispose`.
@@ -755,6 +1062,37 @@ impl RenderCapability {
             },
         );
         ViewDemand(handle)
+    }
+
+    /// The engine's pictures of the owner's items on a page: each item's
+    /// look at rest, in every state it stores, tagged with the item's
+    /// version. Asks for the same page, family, scale and items share one
+    /// fetch, and the last few sets of each page are kept. Rejects
+    /// `permission-denied` without `doc.annotate.read` (annotations) or
+    /// `doc.forms.read` (widgets).
+    pub fn render_appearances(
+        &self,
+        page: impl Into<PageArg>,
+        options: AppearancesOptions,
+    ) -> Promise<Rc<Vec<AppearancePicture>>> {
+        self.0.render_appearances(page.into(), options)
+    }
+
+    /// An item's last pictures, every state, kept a while after it left its
+    /// page. Empty for one never drawn.
+    pub fn kept_appearances(
+        &self,
+        family: AppearanceFamily,
+        item: &Value,
+    ) -> Rc<Vec<AppearancePicture>> {
+        self.0.recent_appearances.of(family.as_str(), &annotation_key(item))
+    }
+
+    /// The appearance scale a render scale conforms to under the
+    /// deployment's policy. A lattice with an empty appearance ladder is
+    /// refused as the engine refuses it.
+    pub fn get_appearance_scale(&self, render_scale: f64) -> Result<f64, Error> {
+        crate::policy::snap_appearance_scale(&self.0.policy(), render_scale)
     }
 
     /// `onRenderCompleted`: a base raster resolved (either door).
@@ -792,7 +1130,7 @@ impl RenderCapability {
     /// `not-found` for a page not in this document.
     #[cfg(feature = "uniffi")]
     pub(crate) fn page_width(&self, page: PageRef) -> Result<f64, Error> {
-        self.0.page_width_of(page)
+        self.0.page_of(PageArg::Ref(page)).map(|(_, size)| size.width)
     }
 }
 
@@ -813,26 +1151,19 @@ struct ViewInner {
 pub struct ViewDemand(Rc<ViewInner>);
 
 impl ViewDemand {
-    /// What this view wants for a page right now. `include_annotations:
-    /// None` is true. `Err` where planning throws (the engine refusing a
-    /// page the registry lists).
-    pub fn set_demand(
-        &self,
-        page: PageRef,
-        demand: PageViewDemand,
-        include_annotations: Option<bool>,
-    ) -> Result<(), Error> {
+    /// What this view wants for a page right now. Idempotent; schedules the
+    /// want set.
+    pub fn set_demand(&self, page: PageRef, demand: PageViewDemand, options: PageLayerOptions) {
         let inner = &self.0;
         let pon = page.page_object_number;
-        let include_annotations = include_annotations.unwrap_or(true);
+        let layers = inner.core.layers_of(options);
         let previous = inner.pages.borrow().get(&pon).map(|e| e.plan.clone());
-        let plan = inner.core.tiles.plan(&inner.view_id, pon, &demand, include_annotations)?;
+        let plan = inner.core.tiles.plan(&inner.view_id, pon, &demand, layers);
         let changed = previous.is_none_or(|p| !Rc::ptr_eq(&p, &plan));
-        inner.pages.borrow_mut().insert(pon, PageDemand { demand, include_annotations, plan });
+        inner.pages.borrow_mut().insert(pon, PageDemand { demand, layers, plan });
         if changed {
-            inner.core.cx.dispatch(RenderAction::PaintAdvanced { page: pon });
+            inner.core.cx.notify();
         }
-        Ok(())
     }
 
     /// The current paint plan for a page under this view's demand.
@@ -892,13 +1223,12 @@ impl ViewDemand {
 
 // ── createRenderController ────────────────────────────────────────────────────
 
-/// `createRenderController(ctx, config)`: the capability and its `connect`.
+/// `createRenderController(ctx)`: the capability and its `connect`.
 pub fn create_render_controller(
-    cx: Controller<RenderState, RenderAction>,
-    config: &RenderConfig,
+    cx: Controller<RenderState, Value>,
     host: RenderHost,
 ) -> Result<(RenderCapability, Option<ConnectFn>), Error> {
-    let resolved = Rc::new(resolve_render_options(config));
+    let settings = cx.settings()?;
     let store = match &host.release_image {
         Some(release) => RasterStore::with_release(DEFAULT_MAX_COST, release.clone()),
         None => RasterStore::default(),
@@ -906,35 +1236,41 @@ pub fn create_render_controller(
     let invalidated = cx.event_source::<RenderInvalidatedEvent>();
     let render_completed = cx.event_source::<RenderCompletedEvent>();
     let render_failed = cx.event_source::<RenderFailedEvent>();
-    let paint_settings =
-        PaintSettings { fade_ms: resolved.tiles.fade_ms, tiles: resolved.tiles.enabled };
+    let clock = cx.clock();
 
     let core = Rc::new_cyclic(|weak: &Weak<Core>| {
         let debug_sink = host.debug.clone();
         let tiles = TileManager::new(TileManagerDeps {
             store: store.clone(),
-            options: resolved.clone(),
+            get_options: {
+                let weak = weak.clone();
+                Rc::new(move || {
+                    weak.upgrade().map_or_else(
+                        || Rc::new(resolve_render_options(&RenderConfig::default())),
+                        |c| c.resolved(),
+                    )
+                })
+            },
             get_policy: {
                 let weak = weak.clone();
                 Rc::new(move || weak.upgrade().map_or(CONTINUOUS_RENDER_POLICY, |c| c.policy()))
             },
             get_page_size: {
                 let weak = weak.clone();
-                Rc::new(move |pon| weak.upgrade()?.page_size(PageRef::new(pon)))
+                Rc::new(move |pon| weak.upgrade()?.page_size(pon))
             },
             get_epoch: {
                 let weak = weak.clone();
-                Rc::new(move |pon, annotations| {
-                    weak.upgrade().map_or(0.0, |c| c.epoch_of(pon, annotations))
-                })
+                Rc::new(move |pon, layers| weak.upgrade().map_or(0.0, |c| c.epoch_of(pon, layers)))
             },
+            after: Rc::new(move |ms, run| clock.after(ms, run)),
             fetch_tile: {
                 let weak = weak.clone();
-                Rc::new(move |pon, rect: Rect, scale, include_annotations, signal| {
+                Rc::new(move |view: &str, pon, rect: Rect, scale, layers, signal: &AbortSignal| {
                     let Some(core) = weak.upgrade() else {
-                        return Err(Error::new("render: the controller is gone"));
+                        return Ok(Promise::rejected(Error::new("render: the controller is gone")));
                     };
-                    fetch_tile(&core, pon, rect, scale, include_annotations, signal)
+                    Ok(fetch_tile(&core, view, pon, rect, scale, layers, signal))
                 })
             },
             on_advance: {
@@ -945,92 +1281,99 @@ pub fn create_render_controller(
                     }
                 })
             },
-            debug: resolved.debug.then(|| {
-                Rc::new(move |message: &str| debug_sink(&format!("[render] {message}")))
-                    as Rc<dyn Fn(&str)>
-            }),
+            debug: {
+                let weak = weak.clone();
+                Some(Rc::new(move |message: &str| {
+                    if weak.upgrade().is_some_and(|c| c.resolved().debug) {
+                        debug_sink(&format!("[render] {message}"));
+                    }
+                }) as Rc<dyn Fn(&str)>)
+            },
             warn: host.warn.clone(),
         });
         Core {
             cx: cx.clone(),
-            resolved: resolved.clone(),
+            settings: settings.clone(),
+            resolved_memo: RefCell::new(None),
             host: host.clone(),
             store: store.clone(),
+            appearances: AppearanceStore::default(),
+            recent_appearances: RecentPictures::default(),
             tiles,
             invalidated,
             render_completed,
             render_failed,
             policy_memo: RefCell::new(None),
             strategy_memo: RefCell::new(None),
+            paint_settings_memo: RefCell::new(None),
             warned_format: Cell::new(false),
             warned_budget: Cell::new(false),
             pending_advance: RefCell::new(IndexSet::new()),
             advance_scheduled: Cell::new(false),
             views: RefCell::new(IndexMap::new()),
-            paint_settings,
         }
     });
 
+    // A settings change reaches every view's plans at once.
+    let listener = Rc::downgrade(&core);
+    cx.listen(settings.events.on(move |_| {
+        if let Some(core) = listener.upgrade() {
+            core.on_settings_changed();
+        }
+        Ok(())
+    }));
+
     let connecting = core.clone();
     let connect: ConnectFn = Rc::new(move || {
-        // Confirmed pixel-changing facts, own or remote.
+        // Confirmed pixel-changing facts, own or remote, and the stream's
+        // notice that some were lost.
         let doc = connecting.cx.doc()?;
-        let listener = connecting.clone();
-        connecting
-            .cx
-            .listen(doc.subscribe(Rc::new(move |event: &Value| listener.on_document_event(event))));
+        let listener = Rc::downgrade(&connecting);
+        connecting.cx.listen(doc.subscribe(Rc::new(move |event: &Value| {
+            if let Some(core) = listener.upgrade() {
+                core.on_document_event(event);
+            }
+        })));
         Ok(())
     });
     Ok((RenderCapability(core), Some(connect)))
 }
 
 /// The tile manager's `fetchTile`: the same refusal the engine would send,
-/// without the round trip, then a page-space region converted to PDF space
-/// by the kernel's page space (crop offsets included).
+/// without the round trip (a denied session's viewport would otherwise be
+/// refused once per tile), then a page-space region at a scale.
 fn fetch_tile(
-    core: &Core,
+    core: &Rc<Core>,
+    _view: &str,
     pon: u32,
     rect: Rect,
     scale: f64,
-    include_annotations: bool,
+    layers: PageRenderLayers,
     signal: &AbortSignal,
-) -> Result<Promise<Value>, Error> {
-    if !core.can_render() {
-        return Ok(Promise::rejected(plugin_error(
-            code::PERMISSION_DENIED,
-            "render",
-            format!("render.tile requires {RENDER_SCOPE}"),
-            None,
-            Some(json!({ "required": RENDER_SCOPE })),
-        )));
+) -> Promise<Value> {
+    if let Err(error) = core.cx.assert_allowed(RENDER_SCOPE, "render.tile") {
+        return Promise::rejected(error);
     }
-    let page = PageRef::new(pon);
     let strategy = core.strategy();
-    let doc = core.cx.doc()?;
-    doc.page_index(pon)?;
-    let target = core.cx.for_page(page)?.page_rect_to_pdf(kgeo::Rect {
-        x: rect.x,
-        y: rect.y,
-        width: rect.width,
-        height: rect.height,
-    });
+    let doc = match core.cx.doc() {
+        Ok(doc) => doc,
+        Err(error) => return Promise::rejected(error),
+    };
     let mut options = Map::new();
-    // `pageRectToPdf`'s literal order (`packages/core/geometry/src/page-space.ts`),
-    // not `PdfEdges`'s declared one.
-    let target = json!({
-        "left": target.left,
-        "right": target.right,
-        "top": target.top,
-        "bottom": target.bottom,
-    });
-    options.insert("target".into(), json!({ "kind": "rect", "rect": target }));
+    options.insert(
+        "target".into(),
+        json!({ "kind": "rect", "rect": {
+            "x": rect.x, "y": rect.y, "width": rect.width, "height": rect.height,
+        } }),
+    );
     options.insert("viewport".into(), json!({ "kind": "scale", "scale": scale }));
-    options.insert("includeAnnotations".into(), json!(include_annotations));
+    options.insert("includeAnnotations".into(), json!(layers.include_annotations));
+    options.insert("includeFormFields".into(), json!(layers.include_form_fields));
     if let Some(format) = strategy.format {
         options.insert("format".into(), json!(format.as_str()));
     }
     if let Some(quality) = strategy.quality {
         options.insert("quality".into(), json!(quality));
     }
-    render_image(&doc, page, Value::Object(options), signal)
+    render_image(&doc, PageRef::new(pon), Value::Object(options), signal)
 }

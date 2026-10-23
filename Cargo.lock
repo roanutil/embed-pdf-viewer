@@ -741,6 +741,7 @@ dependencies = [
 name = "epdf-plugin-render"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",

@@ -19,7 +19,7 @@ fn kernel() -> Kernel {
     let fake = FakeEngine::new(json!({
         "documents": { "a": {
             "security": { "allows": ["doc.render"] },
-            "pages": [{ "index": 0, "ref": { "kind": "objectNumber", "pageObjectNumber": 11 },
+            "pages": [{ "index": 0, "ref": { "kind": "objectNumber", "objectNumber": 11 },
                 "label": null,
                 "size": { "width": 612, "height": 792 }, "rotation": 0, "userUnit": 1,
                 "boxes": { "media": box_, "crop": box_ } }],
@@ -80,7 +80,7 @@ fn the_store_and_manager_are_the_capability_s() {
         velocity: None,
     };
     let stage = render.create_view_demand("stage");
-    stage.set_demand(PageRef::new(11), demand, None).expect("plan");
+    stage.set_demand(PageRef::new(11), demand, PageLayerOptions::default());
     let stats = render.tile_manager().stats("stage", 11);
     assert_eq!(stats, TileStats { entries: 4, in_flight: 4 });
     rt::run_until_stalled();
@@ -269,14 +269,20 @@ fn a_handle_without_a_hook_releases_nothing() {
 fn refusing_manager(
     refuse: Rc<std::cell::Cell<bool>>,
     calls: Rc<std::cell::Cell<u32>>,
+    failures: Rc<std::cell::Cell<u32>>,
 ) -> TileManager {
+    let options = Rc::new(resolve_render_options(&RenderConfig {
+        tiles: Some(TilesSetting::On(TilesOptions { settle_ms: Some(0.0), ..Default::default() })),
+        ..Default::default()
+    }));
     TileManager::new(TileManagerDeps {
         store: RasterStore::default(),
-        options: Rc::new(resolve_render_options(&RenderConfig::default())),
+        get_options: Rc::new(move || options.clone()),
         get_policy: Rc::new(|| CONTINUOUS_RENDER_POLICY),
         get_page_size: Rc::new(|_| Some(PageSizePt { width: 612.0, height: 792.0 })),
         get_epoch: Rc::new(|_, _| 0.0),
-        fetch_tile: Rc::new(move |_, _, _, _, _| {
+        after: Rc::new(|_, _| epdf_kernel::Unsubscribe::noop()),
+        fetch_tile: Rc::new(move |_, _, _, _, _, _| {
             calls.set(calls.get() + 1);
             if refuse.get() {
                 Err(epdf_kernel::Error::new("page is not in this document"))
@@ -284,34 +290,45 @@ fn refusing_manager(
                 Ok(Promise::pending().0)
             }
         }),
-        on_advance: Rc::new(|_| {}),
+        on_advance: Rc::new(move |_| failures.set(failures.get() + 1)),
         debug: None,
         warn: Rc::new(|_| {}),
     })
 }
 
+/// M25: a fetch refused synchronously frees its transit slot and counts as a
+/// failure at its level, so refusals past `MAX_IN_FLIGHT` (8) never stop
+/// tile fetching. The TypeScript's `fetchTile` is `async` and cannot refuse
+/// this way; a synchronous throw there would strand the entry and the slot.
 #[test]
 fn a_synchronous_tile_refusal_frees_its_slot() {
     rt::reset();
     let refuse = Rc::new(std::cell::Cell::new(true));
     let calls = Rc::new(std::cell::Cell::new(0));
-    let tiles = refusing_manager(refuse.clone(), calls.clone());
-    let demand = PageViewDemand {
-        desired_device_width: 612.0 * 8.0,
+    let failures = Rc::new(std::cell::Cell::new(0));
+    let tiles = refusing_manager(refuse.clone(), calls.clone(), failures.clone());
+    let demand = |width: f64| PageViewDemand {
+        desired_device_width: width,
         visible_rect: Some(epdf_geometry::Rect { x: 0.0, y: 0.0, width: 612.0, height: 792.0 }),
         velocity: None,
     };
-    // More refusals than MAX_IN_FLIGHT (8): each would strand a slot.
-    for _ in 0..12 {
-        assert!(tiles.plan("v", 11, &demand, false).is_err());
-        let stats = tiles.stats("v", 11);
-        assert_eq!((stats.entries, stats.in_flight), (0, 0), "nothing stranded");
-    }
-    assert_eq!(calls.get(), 12, "each plan tried one new key");
-    // The engine accepts again: fetching resumes up to the transit bound.
+    let layers = PageRenderLayers::default();
+    // 8x over a 612pt page in 512px tiles is 10x13 visible tiles, more than
+    // the transit bound: every one is tried in this plan, none strands.
+    let plan = tiles.plan("v", 11, &demand(4896.0), layers);
+    assert_eq!(calls.get(), 130, "each visible tile tried once");
+    assert_eq!(failures.get(), 130, "each refusal woke the layers");
+    assert_eq!(tiles.stats("v", 11), TileStats { entries: 0, in_flight: 0 }, "nothing stranded");
+    assert!(plan.engaged && plan.fetching.is_empty() && plan.paint.is_empty());
+    // At the same level a failed key is not retried.
+    tiles.plan("v", 11, &demand(4896.0), layers);
+    assert_eq!(calls.get(), 130);
+    // The engine accepts again: a new level clears the failures and fetching
+    // resumes up to the transit bound.
     refuse.set(false);
-    tiles.plan("v", 11, &demand, false).expect("plan");
+    tiles.plan("v", 11, &demand(5200.0), layers);
     assert_eq!(tiles.stats("v", 11).in_flight, 8);
+    assert_eq!(calls.get(), 138);
 }
 
 #[test]

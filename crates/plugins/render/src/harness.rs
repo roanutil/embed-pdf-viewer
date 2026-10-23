@@ -6,10 +6,9 @@
 //! a `renderSource`, `renderPage` or `renderThumbnail` option `signal: {"$abortSignal": name}`
 //! is the signal of a controller named `name`, which the `signals` test
 //! plugin's `abort(name)` aborts; the plugin's `console.warn` and
-//! `console.debug` lines log as callbacks of those names; and the frame
-//! scheduler is the TypeScript's Node fallback, `setTimeout(cb, 16)`. On a
-//! live harness, `host: {requestFrame, warn, debug, releaseImage}` replaces
-//! them.
+//! `console.debug` lines log as callbacks of those names. Frames are the
+//! scenario clock's. On a live harness, `host: {warn, debug, releaseImage}`
+//! replaces the console.
 
 use std::any::Any;
 use std::cell::RefCell;
@@ -21,7 +20,7 @@ use epdf_geometry::Rect;
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Token, define, is_undefined};
+use epdf_kernel::{AnyPlugin, AnyToken, Error, Promise, Token, define, is_undefined};
 use plugin_conformance::js::{arg, from_value, to_value};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde::Serialize;
@@ -37,33 +36,19 @@ use crate::*;
 
 // ── a live host ───────────────────────────────────────────────────────────────
 
-/// A live host's globals: `host: {requestFrame, warn, debug, releaseImage}`
-/// in the config, each a `$fn` the host answers (`requestAnimationFrame`,
-/// `console.warn` and `console.debug` in a browser). `requestFrame` receives
-/// the frame as a ref the host calls once. `releaseImage` receives the
-/// `$host` id of a handle whose last Rust clone dropped, as a bare number:
-/// the handle's JSON itself would decode back to the live image on the way
-/// out, id and all. A handle with no `$host` id has nothing to release.
-/// Only a live harness reads it; a vector's config never has one.
+/// A live host's globals: `host: {warn, debug, releaseImage}` in the
+/// config, each a `$fn` the host answers (`console.warn` and
+/// `console.debug` in a browser). `releaseImage` receives the `$host` id of
+/// a handle whose last Rust clone dropped, as a bare number: the handle's
+/// JSON itself would decode back to the live image on the way out, id and
+/// all. A handle with no `$host` id has nothing to release. Only a live
+/// harness reads it; a vector's config never has one.
 fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
     if !h.is_live() {
         return;
     }
     let Some(live) = config.get("host") else { return };
     let spec = |name: &str| live.get(name).filter(|f| f.get("$fn").is_some());
-    if let Some(request_frame) = spec("requestFrame").map(|f| h.callback(f)) {
-        let h = h.clone();
-        host.request_frame = Rc::new(move |frame| {
-            let frame = RefCell::new(Some(frame));
-            let frame = h.register_fn(Rc::new(move |_| {
-                if let Some(frame) = frame.borrow_mut().take() {
-                    frame();
-                }
-                Outcome::undefined()
-            }));
-            let _ = request_frame.call(vec![frame]);
-        });
-    }
     if let Some(warn) = spec("warn").map(|f| h.callback(f)) {
         host.warn = Rc::new(move |message| {
             let _ = warn.call(vec![json!(message)]);
@@ -90,6 +75,10 @@ fn live_host(host: &mut RenderHost, config: &Value, h: &Harness) {
 
 /// The api object literal's member order (the harness wrapper spreads it).
 const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "canRender",
     "renderPage",
     "renderThumbnail",
@@ -102,7 +91,11 @@ const MEMBERS: &[&str] = &[
     "getSourceKey",
     "conformViewport",
     "getPaintSettings",
+    "getLayerRights",
     "createViewDemand",
+    "renderAppearances",
+    "keptAppearances",
+    "getAppearanceScale",
     "onRenderCompleted",
     "onRenderFailed",
 ];
@@ -134,19 +127,24 @@ fn page_ref(value: &Value) -> Result<PageRef, Error> {
     PageRef::from_json(value).ok_or_else(|| Error::named("TypeError", "[render] not a PageRef"))
 }
 
-fn page_arg(args: &[Value], i: usize) -> Result<PageRef, Error> {
+fn page_ref_arg(args: &[Value], i: usize) -> Result<PageRef, Error> {
     page_ref(present(args, i).unwrap_or(&Value::Null))
+}
+
+/// `PageRef | number`.
+fn page_target(value: &Value) -> Result<PageArg, Error> {
+    match value.as_f64() {
+        Some(index) => Ok(PageArg::Index(index)),
+        None => page_ref(value).map(PageArg::Ref),
+    }
+}
+
+fn page_target_arg(args: &[Value], i: usize) -> Result<PageArg, Error> {
+    page_target(present(args, i).unwrap_or(&Value::Null))
 }
 
 fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
-}
-
-fn unit(result: Result<(), Error>) -> Outcome {
-    match result {
-        Ok(()) => Outcome::undefined(),
-        Err(error) => Outcome::Threw(error),
-    }
 }
 
 fn member<'a>(options: Option<&'a Value>, key: &str) -> Option<&'a Value> {
@@ -157,9 +155,13 @@ fn number(options: Option<&Value>, key: &str) -> Option<f64> {
     member(options, key).and_then(Value::as_f64)
 }
 
-/// `includeAnnotations ?? true`: absent and null are both true.
-fn include_annotations(options: Option<&Value>) -> Option<bool> {
-    member(options, "includeAnnotations").and_then(Value::as_bool)
+/// `PageLayerOptions`: a boolean member as given; `null` and an absent one
+/// are both left out.
+fn layers(options: Option<&Value>) -> PageLayerOptions {
+    PageLayerOptions {
+        include_annotations: member(options, "includeAnnotations").and_then(Value::as_bool),
+        include_form_fields: member(options, "includeFormFields").and_then(Value::as_bool),
+    }
 }
 
 fn signal_of(options: Option<&Value>) -> Option<AbortSignal> {
@@ -180,7 +182,7 @@ fn page_options(
     Ok(RenderPageOptions {
         width: number(options, "width"),
         scale: number(options, "scale"),
-        include_annotations: include_annotations(options),
+        layers: layers(options),
         format,
         quality: number(options, "quality"),
         signal,
@@ -204,6 +206,25 @@ fn hook<E: Serialize + 'static>(
     })))
 }
 
+fn appearance_options(options: Option<&Value>) -> Result<AppearancesOptions, Error> {
+    let family = from_value::<AppearanceFamily>(member(options, "family").unwrap_or(&Value::Null))?;
+    let items = member(options, "items")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+        .map(|item| AppearanceItem {
+            reference: item.get("ref").cloned().unwrap_or(Value::Null),
+            version: item.get("version").and_then(Value::as_f64).unwrap_or(f64::NAN),
+        })
+        .collect();
+    Ok(AppearancesOptions {
+        family,
+        scale: number(options, "scale").unwrap_or(f64::NAN),
+        items,
+        signal: signal_of(options),
+    })
+}
+
 impl Render {
     fn call_capability(
         &self,
@@ -213,27 +234,44 @@ impl Render {
         h: &Harness,
     ) -> Result<Outcome, Error> {
         Ok(match method {
+            "getSettings" => Outcome::Returned(to_value(&cap.get_settings())),
+            "updateSettings" => {
+                let changes: RenderConfig = match present(args, 0) {
+                    Some(changes) => from_value(changes)?,
+                    None => RenderConfig::default(),
+                };
+                cap.update_settings(&changes);
+                Outcome::undefined()
+            }
+            "resetSettings" => {
+                cap.reset_settings();
+                Outcome::undefined()
+            }
+            "onSettingsChanged" => {
+                let cap = cap.clone();
+                hook(h, present(args, 0), move |f| cap.on_settings_changed(f))
+            }
             "canRender" => Outcome::Returned(json!(cap.can_render())),
             "renderPage" => {
                 let options = present(args, 1);
                 let options = page_options(options, signal_of(options))?;
-                Outcome::promise(cap.render_page(page_arg(args, 0)?, options))
+                Outcome::promise(cap.render_page(page_target_arg(args, 0)?, options))
             }
             "renderThumbnail" => {
                 let options = present(args, 1);
                 let options = RenderThumbnailOptions {
                     max_width: number(options, "maxWidth").unwrap_or(f64::NAN),
-                    include_annotations: include_annotations(options),
+                    layers: layers(options),
                     signal: signal_of(options),
                 };
-                Outcome::promise(cap.render_thumbnail(page_arg(args, 0)?, options))
+                Outcome::promise(cap.render_thumbnail(page_target_arg(args, 0)?, options))
             }
             "renderPages" => {
                 let pages = present(args, 0)
                     .and_then(Value::as_array)
                     .into_iter()
                     .flatten()
-                    .map(page_ref)
+                    .map(page_target)
                     .collect::<Result<Vec<_>, _>>()?;
                 let options = present(args, 1);
                 let options = RenderPagesOptions {
@@ -243,26 +281,21 @@ impl Render {
                 Outcome::promise(cap.render_pages(pages, options))
             }
             "getRenderPolicy" => Outcome::Returned(to_value(&cap.get_render_policy())),
-            "getRenderEpoch" => {
-                // A default parameter: only `undefined` is true; `null` is falsy.
-                let annotations = match present(args, 1) {
-                    None => true,
-                    Some(Value::Bool(b)) => *b,
-                    Some(_) => false,
-                };
-                Outcome::Returned(json!(cap.get_render_epoch(page_arg(args, 0)?, annotations)))
-            }
+            "getRenderEpoch" => Outcome::Returned(json!(
+                cap.get_render_epoch(page_target_arg(args, 0)?, layers(present(args, 1)))
+            )),
             "invalidate" => {
                 let options = present(args, 0);
                 let pages = match member(options, "pages").and_then(Value::as_array) {
-                    Some(pages) => Some(pages.iter().map(page_ref).collect::<Result<Vec<_>, _>>()?),
+                    Some(pages) => Some(pages.iter().map(page_target).collect::<Result<_, _>>()?),
                     None => None,
                 };
                 let scope = match member(options, "scope") {
                     Some(scope) => Some(from_value::<InvalidateScope>(scope)?),
                     None => None,
                 };
-                unit(cap.invalidate(InvalidateOptions { pages, scope }))
+                cap.invalidate(InvalidateOptions { pages, scope });
+                Outcome::undefined()
             }
             "onInvalidated" => {
                 let cap = cap.clone();
@@ -272,30 +305,51 @@ impl Render {
                 let options = present(args, 1);
                 let options = RenderSourceOptions {
                     scale: number(options, "scale").unwrap_or(f64::NAN),
-                    include_annotations: include_annotations(options),
+                    view: member(options, "view").and_then(Value::as_str).map(str::to_string),
+                    layers: layers(options),
                     signal: signal_of(options),
                 };
-                Outcome::promise(cap.render_source(page_arg(args, 0)?, options))
+                Outcome::promise(cap.render_source(page_ref_arg(args, 0)?, options))
             }
             "getSourceKey" => {
                 let options = present(args, 1);
                 let scale = number(options, "scale").unwrap_or(f64::NAN);
                 Outcome::from_result(
-                    cap.get_source_key(page_arg(args, 0)?, scale, include_annotations(options))
+                    cap.get_source_key(page_ref_arg(args, 0)?, scale, layers(options))
                         .map(Value::String),
                 )
             }
             "conformViewport" => {
                 let scale = present(args, 1).and_then(Value::as_f64).unwrap_or(f64::NAN);
                 Outcome::from_result(
-                    cap.conform_viewport(page_arg(args, 0)?, scale).map(|v| to_value(&v)),
+                    cap.conform_viewport(page_ref_arg(args, 0)?, scale).map(|v| to_value(&v)),
                 )
             }
-            "getPaintSettings" => Outcome::Returned(to_value(&cap.get_paint_settings())),
+            "getPaintSettings" => Outcome::Returned(to_value(&*cap.get_paint_settings())),
+            "getLayerRights" => Outcome::Returned(to_value(&cap.get_layer_rights())),
             "createViewDemand" => {
                 let view = present(args, 0).and_then(Value::as_str).unwrap_or_default();
                 let handle: Rc<dyn Any> = Rc::new(cap.create_view_demand(view));
-                Outcome::Returned(h.describe(handle).unwrap_or_else(|| json!({})))
+                match h.try_describe(handle) {
+                    Some(Ok(described)) => Outcome::Returned(described),
+                    Some(Err(error)) => Outcome::Threw(error),
+                    None => Outcome::Returned(json!({})),
+                }
+            }
+            "renderAppearances" => {
+                let options = appearance_options(present(args, 1))?;
+                let pictures = cap.render_appearances(page_target_arg(args, 0)?, options);
+                Outcome::promise(Promise::spawn(async move { Ok(to_value(&*pictures.await?)) }))
+            }
+            "keptAppearances" => {
+                let family =
+                    from_value::<AppearanceFamily>(present(args, 0).unwrap_or(&Value::Null))?;
+                let item = present(args, 1).cloned().unwrap_or(Value::Null);
+                Outcome::Returned(to_value(&*cap.kept_appearances(family, &item)))
+            }
+            "getAppearanceScale" => {
+                let scale = present(args, 0).and_then(Value::as_f64).unwrap_or(f64::NAN);
+                Outcome::from_result(cap.get_appearance_scale(scale).map(|s| json!(s)))
             }
             "onRenderCompleted" => {
                 let cap = cap.clone();
@@ -314,20 +368,21 @@ impl Render {
         Ok(match method {
             "setDemand" => {
                 let demand: PageViewDemand = from_value(present(args, 1).unwrap_or(&Value::Null))?;
-                let page = page_arg(args, 0)?;
-                unit(view.set_demand(page, demand, include_annotations(present(args, 2))))
+                let page = page_ref_arg(args, 0)?;
+                view.set_demand(page, demand, layers(present(args, 2)));
+                Outcome::undefined()
             }
-            "getPlan" => Outcome::Returned(to_value(&*view.get_plan(page_arg(args, 0)?))),
+            "getPlan" => Outcome::Returned(to_value(&*view.get_plan(page_ref_arg(args, 0)?))),
             "markPainted" => {
-                view.mark_painted(page_arg(args, 0)?, &key());
+                view.mark_painted(page_ref_arg(args, 0)?, &key());
                 Outcome::undefined()
             }
             "markUnpainted" => {
-                view.mark_unpainted(page_arg(args, 0)?, &key());
+                view.mark_unpainted(page_ref_arg(args, 0)?, &key());
                 Outcome::undefined()
             }
             "release" => {
-                view.release(page_arg(args, 0)?);
+                view.release(page_ref_arg(args, 0)?);
                 Outcome::undefined()
             }
             "dispose" => {
@@ -360,9 +415,6 @@ impl HarnessPlugin for Render {
         };
         let (warn_h, debug_h) = (h.clone(), h.clone());
         let mut host = RenderHost {
-            request_frame: Rc::new(|frame| {
-                epdf_kernel::rt::set_timeout(16.0, frame);
-            }),
             warn: Rc::new(move |message| warn_h.log("console.warn", vec![json!(message)])),
             debug: Rc::new(move |message| debug_h.log("console.debug", vec![json!(message)])),
             release_image: None,
@@ -498,20 +550,22 @@ fn snap_tile_scale_fn(a: &[Value]) -> Out {
 fn initial_render_state_fn(_: &[Value]) -> Out {
     ok(&initial_render_state())
 }
-/// `{changed: next !== state, state: next}`. An action outside the union is
-/// the reducer's `return state`.
-fn reduce_render_fn(a: &[Value]) -> Out {
+/// `{changed: next !== state, state: next}`.
+fn invalidate_pages_fn(a: &[Value]) -> Out {
+    // `serde_json` itself: page object numbers key the ledgers as strings.
     let state: RenderState = serde_json::from_value(a[0].clone())
         .map_err(|e| Error::new(format!("[render] bad state: {e}")))?;
-    let next = match serde_json::from_value::<RenderAction>(a[1].clone()) {
-        Ok(action) => reduce_render(&state, &action),
-        Err(_) => None,
-    };
+    let pons: Vec<u32> = arg(a, 1)?;
+    let scope: InvalidateScope = arg(a, 2)?;
+    let next = invalidate_pages(&state, &pons, scope);
     Ok(json!({ "changed": next.is_some(), "state": to_value(next.as_ref().unwrap_or(&state)) }))
 }
-fn annotated_pons_fn(a: &[Value]) -> Out {
+fn pixel_change_of_fn(a: &[Value]) -> Out {
     let pons: Vec<u32> = arg(a, 1)?;
-    ok(&annotated_pons(&a[0], || pons))
+    Ok(match pixel_change_of(&a[0], || pons) {
+        Some(change) => to_value(&change),
+        None => Value::Null,
+    })
 }
 
 /// The pure functions, by the names the vectors use.
@@ -535,7 +589,7 @@ pub fn functions() -> FunctionTable {
         ("snapAppearanceScale", snap_appearance_scale_fn),
         ("snapTileScale", snap_tile_scale_fn),
         ("initialRenderState", initial_render_state_fn),
-        ("reduceRender", reduce_render_fn),
-        ("annotatedPons", annotated_pons_fn),
+        ("invalidatePages", invalidate_pages_fn),
+        ("pixelChangeOf", pixel_change_of_fn),
     ]
 }

@@ -60,8 +60,12 @@ fn the_request_carries_an_exact_width_and_the_annotations_flag() {
     assert_eq!((image.width, image.height, image.stride), (10, 5, 40));
     assert_eq!(image.scale, 2.5);
     assert_eq!(image.pixels.len(), 200);
-    let options =
-        RenderPageOptions { width: Some(6.0), scale: Some(9.0), include_annotations: Some(false) };
+    let options = RenderPageOptions {
+        width: Some(6.0),
+        scale: Some(9.0),
+        include_annotations: Some(false),
+        include_form_fields: None,
+    };
     let image = block_on(rig.render.render_page(LARGE, options, token())).unwrap();
     // `width` wins over `scale`.
     assert_eq!((image.width, image.height, image.scale), (6, 3, 1.5));
@@ -70,11 +74,13 @@ fn the_request_carries_an_exact_width_and_the_annotations_flag() {
         vec![
             (
                 4,
-                json!({ "viewport": { "kind": "width", "width": 10.0 }, "includeAnnotations": true })
+                json!({ "viewport": { "kind": "width", "width": 10.0 }, "includeAnnotations": true,
+                    "includeFormFields": true })
             ),
             (
                 4,
-                json!({ "viewport": { "kind": "width", "width": 6.0 }, "includeAnnotations": false })
+                json!({ "viewport": { "kind": "width", "width": 6.0 }, "includeAnnotations": false,
+                    "includeFormFields": false })
             ),
         ]
     );
@@ -98,7 +104,8 @@ fn a_bad_scale_is_refused() {
         let width = RenderPageOptions { width: Some(bad), ..Default::default() };
         let error = block_on(rig.render.render_page(SMALL, width, token())).unwrap_err();
         assert_eq!(code(&error), Some("invalid-input"), "{bad}: {error:?}");
-        let error = block_on(rig.render.render_thumbnail(SMALL, bad, None, token())).unwrap_err();
+        let error =
+            block_on(rig.render.render_thumbnail(SMALL, bad, None, None, token())).unwrap_err();
         assert_eq!(code(&error), Some("invalid-input"), "{bad}: {error:?}");
     }
     assert!(rig.requests().is_empty());
@@ -115,7 +122,8 @@ fn a_page_the_document_lacks_is_not_found() {
 #[test]
 fn a_thumbnail_renders_at_its_width() {
     let rig = Rig::pixels();
-    let image = block_on(rig.render.render_thumbnail(LARGE, 2.0, Some(false), token())).unwrap();
+    let image =
+        block_on(rig.render.render_thumbnail(LARGE, 2.0, Some(false), None, token())).unwrap();
     assert_eq!((image.width, image.height, image.scale), (2, 1, 0.5));
     assert_eq!(rig.requests()[0].1["includeAnnotations"], json!(false));
 }
@@ -231,15 +239,15 @@ fn invalidating_bumps_the_epoch_and_is_observed() {
     let rig = Rig::pixels();
     let events = Arc::new(Events::default());
     let _subscription = rig.render.subscribe(events.clone());
-    assert_eq!(block_on(rig.render.render_epoch(SMALL, None)).unwrap(), 0);
+    assert_eq!(block_on(rig.render.render_epoch(SMALL, None, None)).unwrap(), 0);
     block_on(rig.render.invalidate(Some(vec![SMALL]), None)).unwrap();
-    assert_eq!(block_on(rig.render.render_epoch(SMALL, None)).unwrap(), 1);
-    assert_eq!(block_on(rig.render.render_epoch(SMALL, Some(false))).unwrap(), 1);
-    assert_eq!(block_on(rig.render.render_epoch(LARGE, None)).unwrap(), 0);
+    assert_eq!(block_on(rig.render.render_epoch(SMALL, None, None)).unwrap(), 1);
+    assert_eq!(block_on(rig.render.render_epoch(SMALL, Some(false), None)).unwrap(), 1);
+    assert_eq!(block_on(rig.render.render_epoch(LARGE, None, None)).unwrap(), 0);
     block_on(rig.render.invalidate(None, Some(RenderInvalidateScope::Annotations))).unwrap();
     // Annotations only: the bare raster is unchanged.
-    assert_eq!(block_on(rig.render.render_epoch(LARGE, Some(false))).unwrap(), 0);
-    assert_eq!(block_on(rig.render.render_epoch(LARGE, Some(true))).unwrap(), 1);
+    assert_eq!(block_on(rig.render.render_epoch(LARGE, Some(false), None)).unwrap(), 0);
+    assert_eq!(block_on(rig.render.render_epoch(LARGE, Some(true), None)).unwrap(), 1);
     assert_eq!(
         events.taken(),
         vec![
@@ -258,7 +266,7 @@ fn a_confirmed_annotation_change_is_observed() {
     let events = Arc::new(Events::default());
     let _subscription = rig.render.subscribe(events.clone());
     rig.ping();
-    rig.emit(json!({ "type": "annotation.updated", "page": { "pageObjectNumber": 4 } }));
+    rig.emit(json!({ "type": "annotations.updated", "page": { "kind": "objectNumber", "objectNumber": 4 } }));
     assert_eq!(
         events.taken(),
         vec![RenderEvent::Invalidated {
@@ -327,11 +335,11 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
     let errors = [
         block_on(render.can_render()).map(|_| ()).unwrap_err(),
         block_on(render.render_page(SMALL, scale(1.0), token())).map(|_| ()).unwrap_err(),
-        block_on(render.render_thumbnail(SMALL, 2.0, None, token())).map(|_| ()).unwrap_err(),
+        block_on(render.render_thumbnail(SMALL, 2.0, None, None, token())).map(|_| ()).unwrap_err(),
         block_on(render.render_pages(vec![SMALL], scale(1.0), None, token()))
             .map(|_| ())
             .unwrap_err(),
-        block_on(render.render_epoch(SMALL, None)).map(|_| ()).unwrap_err(),
+        block_on(render.render_epoch(SMALL, None, None)).map(|_| ()).unwrap_err(),
         block_on(render.invalidate(None, None)).unwrap_err(),
     ];
     for error in errors {
@@ -377,12 +385,12 @@ fn the_default_policy_is_continuous_and_a_viewport_conforms_to_a_width() {
 #[test]
 fn a_source_key_names_the_raster_render_source_produces() {
     let rig = Rig::pixels();
-    let a = block_on(rig.render.source_key(LARGE, 2.0, None)).unwrap();
-    let b = block_on(rig.render.source_key(LARGE, 2.0, Some(true))).unwrap();
-    let c = block_on(rig.render.source_key(LARGE, 3.0, None)).unwrap();
+    let a = block_on(rig.render.source_key(LARGE, 2.0, None, None)).unwrap();
+    let b = block_on(rig.render.source_key(LARGE, 2.0, Some(true), None)).unwrap();
+    let c = block_on(rig.render.source_key(LARGE, 3.0, None, None)).unwrap();
     assert_eq!(a, b);
     assert_ne!(a, c);
-    let image = block_on(rig.render.render_source(LARGE, 2.0, None, token())).unwrap();
+    let image = block_on(rig.render.render_source(LARGE, 2.0, None, None, token())).unwrap();
     assert_eq!((image.width, image.height), (8, 4));
 }
 
@@ -390,7 +398,7 @@ fn a_source_key_names_the_raster_render_source_produces() {
 fn a_page_not_in_the_document_is_not_found() {
     let rig = Rig::pixels();
     let missing = PageRef { page_object_number: 99 };
-    let error = block_on(rig.render.source_key(missing, 1.0, None)).unwrap_err();
+    let error = block_on(rig.render.source_key(missing, 1.0, None, None)).unwrap_err();
     assert_eq!(code(&error), Some("not-found"), "{error:?}");
 }
 
@@ -405,7 +413,7 @@ fn a_view_demand_plans_and_disposes() {
         velocity_x: None,
         velocity_y: None,
     };
-    block_on(view.set_demand(LARGE, demand, None)).unwrap();
+    block_on(view.set_demand(LARGE, demand, None, None)).unwrap();
     let plan = block_on(view.plan(LARGE)).unwrap();
     // The full-page raster already supplies 8 device pixels across, so the
     // tile plane stays disengaged whether or not tiles are on.
