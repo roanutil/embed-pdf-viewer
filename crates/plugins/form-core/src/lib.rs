@@ -38,7 +38,7 @@ pub use font::{LayoutFont, layout_font_of};
 pub use layout::{
     Alignment, LaidLine, LaidWord, PdfRect, TextLayout, VariableTextOptions, layout_variable_text,
 };
-pub use scene::{FillRule, Paint, SceneNode, WidgetPlacement, widget_scene};
+pub use scene::{Paint, SceneNode, StandardProgram, WidgetPlacement, widget_scene};
 
 /// `Math.fround`: the nearest single-precision value, as PDFium's `float`
 /// arithmetic keeps it.

@@ -45,12 +45,10 @@ each pair (`drawing/border.ts:36-38`); the schema allows only `#rrggbb`, so othe
 canonical form prints as `{"$function": true}`; `src/harness.rs` appends that member to every
 `program` it returns.
 
-`SceneNode` and `Paint` are local. `core-annotation` owns those types in TypeScript, but its Rust port
-(`crates/plugins/annotation-core`) has no `glyphs` node or `clip` yet, so this crate defines the
-`path` and `glyphs` nodes `widget_scene` makes, with the TypeScript's member order. Task 13.7 owns
-the fix: it ports the `glyphs` node and `clip` into annotation-core's `SceneNode`, keeping that
-crate's `--no-default-features` build pure, and this crate then re-exports annotation-core's types
-in place of its own.
+`SceneNode` and `Paint` are `core-annotation`'s, re-exported from `epdf-annotation-core`, as the
+TypeScript imports them. That crate builds without its harness for `wasm32-unknown-unknown`, so
+depending on it adds no PDFium. A `glyphs` node holds its font program as a `FontProgramRef`;
+`StandardProgram` is the standard face's program behind it.
 
 ## What it costs a binary
 

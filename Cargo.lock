@@ -490,6 +490,7 @@ name = "epdf-form-core"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-annotation-core",
  "epdf-fonts",
  "epdf-geometry",
  "epdf-kernel",

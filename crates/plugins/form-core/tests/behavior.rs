@@ -165,8 +165,14 @@ fn it_fits_a_size_of_0_to_the_box_with_the_engine_sizes() {
     assert_eq!([fitted(10.0), fitted(20.0), fitted(40.0)], [8.0, 14.0, 30.0]);
 }
 
-fn glyphs_of(scene: &[SceneNode]) -> &SceneNode {
-    scene.iter().find(|node| matches!(node, SceneNode::Glyphs { .. })).expect("glyphs")
+fn glyphs_of(scene: &[SceneNode]) -> &epdf_annotation_core::GlyphsScene {
+    scene
+        .iter()
+        .find_map(|node| match node {
+            SceneNode::Glyphs(glyphs) => Some(glyphs),
+            _ => None,
+        })
+        .expect("glyphs")
 }
 
 #[test]
@@ -177,27 +183,32 @@ fn it_lands_on_the_page_turned_with_the_widget() {
         &drawing(&painter_widget(json!({})), &field),
         &WidgetPlacement { box_: frame, rotation: None },
     );
-    let SceneNode::Glyphs { offsets, font_family, program, clip, rotation, .. } =
-        glyphs_of(&upright)
-    else {
-        unreachable!()
-    };
-    assert_eq!(offsets, &[0.0, 7.22]);
+    let glyphs = glyphs_of(&upright);
+    assert_eq!(glyphs.offsets, [0.0, 7.22]);
+    let font_family = &glyphs.font_family;
     assert!(font_family.starts_with("\"epdf-") && font_family.contains("\", Helvetica"));
     // The face it draws in comes with it, for whatever draws it to mount.
-    assert_eq!(program.family, font_family[1..22]);
-    assert_eq!((program.weight, program.style), (400, epdf_fonts::FontStyle::Normal));
-    assert_eq!(*clip, Some(epdf_geometry::Rect { x: 11.0, y: 21.0, width: 98.0, height: 18.0 }));
-    assert_eq!(*rotation, None);
+    let program = &glyphs.program.as_ref().expect("a program").0;
+    assert_eq!(program.family(), &font_family[1..22]);
+    assert_eq!((program.weight(), program.style()), (400.0, "normal"));
+    assert!(!program.load().is_empty());
+    assert_eq!(
+        glyphs.clip,
+        Some(epdf_geometry::Rect { x: 11.0, y: 21.0, width: 98.0, height: 18.0 })
+    );
+    assert_eq!(glyphs.rotation, None);
 
     let turned = widget_scene(
         &drawing(&painter_widget(json!({ "rotation": 90 })), &field),
         &WidgetPlacement { box_: frame, rotation: Some(90.0) },
     );
-    let SceneNode::Glyphs { rotation, clip, .. } = glyphs_of(&turned) else { unreachable!() };
-    assert_eq!(*rotation, Some(90.0));
+    let glyphs = glyphs_of(&turned);
+    assert_eq!(glyphs.rotation, Some(90.0));
     // Turned a quarter clockwise about the box's middle (60, 30): the clip stands up.
-    assert_eq!(*clip, Some(epdf_geometry::Rect { x: 51.0, y: -19.0, width: 18.0, height: 98.0 }));
+    assert_eq!(
+        glyphs.clip,
+        Some(epdf_geometry::Rect { x: 51.0, y: -19.0, width: 18.0, height: 98.0 })
+    );
 }
 
 /// The painter's text: its size and runs.

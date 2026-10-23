@@ -5,14 +5,20 @@
 //! every character at the place the engine puts it, in the standard face's
 //! CSS (its program first, which the node carries for mounting).
 //!
-//! [`SceneNode`] and [`Paint`] are the part of `core-annotation`'s types this
-//! function makes: a `path` and a `glyphs` node, each optionally clipped.
-//! Task 13.7 ports the `glyphs` node and `clip` into annotation-core's
-//! `SceneNode`; this crate then re-exports those types in place of these.
+//! [`SceneNode`] and [`Paint`] are `core-annotation`'s types
+//! (`epdf-annotation-core`), as the TypeScript imports them: a `path` and a
+//! `glyphs` node, each optionally clipped.
 
+use std::rc::Rc;
+
+use epdf_annotation_core::json::Object;
+use epdf_annotation_core::{FontProgramRef, GlyphsScene, SceneFontProgram, ShapeScene};
 use epdf_fonts::{FontProgram, FontStyle, standard_font_css, standard_font_program};
 use epdf_geometry::{Point, Rect, js};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde_json::Value;
+
+pub use epdf_annotation_core::{Paint, SceneNode};
 
 use crate::{DrawOp, PathSegment, PdfRect, Rgb, WidgetDrawing};
 
@@ -25,58 +31,57 @@ pub struct WidgetPlacement {
     pub rotation: Option<f64>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
-pub enum FillRule {
-    #[serde(rename = "evenodd")]
-    EvenOdd,
+/// A standard face's program as a scene's font program.
+#[derive(Debug)]
+pub struct StandardProgram(pub &'static FontProgram);
+
+fn style_name(style: FontStyle) -> &'static str {
+    match style {
+        FontStyle::Normal => "normal",
+        FontStyle::Italic => "italic",
+    }
 }
 
-/// How to paint one node; an absent member means none.
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Paint {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fill: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stroke: Option<String>,
-    /// The stroke width.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub width: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dash: Option<Vec<f64>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub fill_rule: Option<FillRule>,
+impl SceneFontProgram for StandardProgram {
+    fn members(&self) -> Object {
+        match serde_json::to_value(self.0) {
+            Ok(Value::Object(members)) => members,
+            _ => Object::new(),
+        }
+    }
+    fn family(&self) -> &str {
+        &self.0.family
+    }
+    fn weight(&self) -> f64 {
+        f64::from(self.0.weight)
+    }
+    fn style(&self) -> &str {
+        style_name(self.0.style)
+    }
+    fn load(&self) -> &[u8] {
+        self.0.load()
+    }
 }
 
-#[derive(Clone, Debug, Serialize)]
-#[serde(tag = "kind", rename_all = "lowercase", rename_all_fields = "camelCase")]
-pub enum SceneNode {
-    /// SVG path data in page space.
-    Path {
-        d: String,
-        paint: Paint,
-        /// Drawn only inside this upright rectangle.
-        #[serde(skip_serializing_if = "Option::is_none")]
-        clip: Option<Rect>,
-    },
-    /// Text placed character by character: `offsets[i]` is how far along the
-    /// baseline from `at` character `i` starts. `rotation` turns the run about
-    /// `at`, degrees clockwise.
-    Glyphs {
-        at: Point,
-        text: String,
-        offsets: Vec<f64>,
-        font_size: f64,
-        font_family: String,
-        font_weight: u32,
-        font_style: FontStyle,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        rotation: Option<f64>,
-        program: &'static FontProgram,
-        paint: Paint,
-        #[serde(skip_serializing_if = "Option::is_none")]
-        clip: Option<Rect>,
-    },
+fn path_node(d: String, paint: Paint, clip: Option<Rect>) -> SceneNode {
+    SceneNode::Path(
+        ShapeScene {
+            rect: None,
+            a: None,
+            b: None,
+            points: None,
+            closed: None,
+            d: Some(d),
+            paint,
+            clip,
+            order: Default::default(),
+        }
+        .ordered(&["d", "paint", "clip"]),
+    )
+}
+
+fn color(hex: String) -> Option<Value> {
+    Some(Value::String(hex))
 }
 
 /// `Math.round(Math.min(1, Math.max(0, channel)) * 255)` in hex, two digits.
@@ -160,27 +165,27 @@ pub fn widget_scene(drawing: &WidgetDrawing, placement: &WidgetPlacement) -> Vec
         let Some(op) = ops.get(index) else { continue };
         stack.push((ops, clip, index + 1));
         match op {
-            DrawOp::Fill { path, color, even_odd } => nodes.push(SceneNode::Path {
-                d: path_data(path),
-                paint: Paint {
-                    fill: Some(hex_of(*color)),
-                    fill_rule: even_odd.then_some(FillRule::EvenOdd),
+            DrawOp::Fill { path, color: rgb, even_odd } => nodes.push(path_node(
+                path_data(path),
+                Paint {
+                    fill: color(hex_of(*rgb)),
+                    fill_rule: even_odd.then(|| "evenodd".into()),
                     ..Paint::default()
                 },
                 clip,
-            }),
-            DrawOp::Stroke { path, color, width, dash } => nodes.push(SceneNode::Path {
-                d: path_data(path),
-                paint: Paint {
-                    stroke: Some(hex_of(*color)),
+            )),
+            DrawOp::Stroke { path, color: rgb, width, dash } => nodes.push(path_node(
+                path_data(path),
+                Paint {
+                    stroke: color(hex_of(*rgb)),
                     width: Some(*width),
                     dash: dash.clone(),
                     ..Paint::default()
                 },
                 clip,
-            }),
+            )),
             DrawOp::Clip { rect, ops } => stack.push((ops, Some(clip_of(rect)), 0)),
-            DrawOp::Text { font, size, color, runs } => {
+            DrawOp::Text { font, size, color: rgb, runs } => {
                 let css = standard_font_css(*font);
                 for run in runs {
                     let mut offsets = Vec::with_capacity(run.advances.len());
@@ -190,20 +195,23 @@ pub fn widget_scene(drawing: &WidgetDrawing, placement: &WidgetPlacement) -> Vec
                         along += advance;
                     }
                     let at = to_page(run.x, run.y);
-                    nodes.push(SceneNode::Glyphs {
+                    nodes.push(SceneNode::Glyphs(GlyphsScene {
                         at: Point { x: round(at.x), y: round(at.y) },
                         text: run.text.clone(),
                         offsets,
                         font_size: *size,
                         font_family: css.font_family.clone(),
-                        font_weight: css.font_weight,
-                        font_style: css.font_style,
+                        font_weight: Some(f64::from(css.font_weight)),
+                        font_style: Some(style_name(css.font_style).into()),
                         // `turn` is falsy at 0 and NaN.
                         rotation: (turn != 0.0 && !turn.is_nan()).then_some(turn),
-                        program: standard_font_program(*font),
-                        paint: Paint { fill: Some(hex_of(*color)), ..Paint::default() },
+                        program: Some(FontProgramRef(Rc::new(StandardProgram(
+                            standard_font_program(*font),
+                        )))),
+                        paint: Paint { fill: color(hex_of(*rgb)), ..Paint::default() },
                         clip,
-                    });
+                        order: Default::default(),
+                    }));
                 }
             }
         }
