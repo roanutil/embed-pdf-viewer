@@ -1,0 +1,38 @@
+(node:22698) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current dispatcher executes document work before deferred navigation and URI callbacks (635.708583ms)
+✖ current tree reads return catalog, field, page and annotation trees through current services (3.826458ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1520.138791
+
+✖ failing tests:
+
+test at test/actions-current.test.ts:1:1034
+✖ current tree reads return catalog, field, page and annotation trees through current services (3.826458ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+
+  + [
+  +   'a: actions.get []',
+  +   'a: actions.get []',
+  +   'a: actions.get []',
+  +   'b: actions.get []'
+  + ]
+  - []
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/actions-current.test.ts:27:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'a: actions.get []', 'a: actions.get []', 'a: actions.get []', 'b: actions.get []' ],
+    expected: [],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

@@ -1,0 +1,29 @@
+{
+  "base": "ac71d11080ebf4aa423f9e443c3686dedf517880",
+  "originalSourceSha256": "485f6b1a46fefab40221716135b412ebfef07fb3ee6df6b2005fb8af36d65e40",
+  "currentSourceSha256": "97cd9cec9be24b508b9f4cdf495ea30bbc33db6067e7c120c24cb69243d9a47b",
+  "currentFixtureSha256": "30bd78268b44518e6296a5de239f2fbf67ff013d9afd2c9fdfc3519ae85037e0",
+  "originalInputsSha256": "4f3840c2b78b6c8b2848ffc6a41f36c7cfcf1ec352b8d53dc132d3a9738e0f3f",
+  "originalRuntimeSha256": "c37fe3ce6549233a0669ce4d2b2114179650d8660fc48cc0645030ee59cccef9",
+  "currentInputsRuntimeSha256": "f152c54c86e34ab21be7c56abc6d03adfefcd7c4860616a6e1b5fc5bad1f169b",
+  "preservedDeferredRuntimeSha256": "c877b94482b0093398e712a08fab37c831b41fbd59e1cd1f82490458f89c8145",
+  "preservedLinkRuntimeSha256": "4c0944fcbc1b405d03534dc88f9f9df1de3ba9518603676cffb0f5ede075eaa7",
+  "task11": {
+    "paths": [
+      "plugins/actions.json",
+      "plugins/actions-dispatcher.json",
+      "plugins/actions-submit.json"
+    ],
+    "inputDiff": 0,
+    "disposition": "All three binding Task11 paths have inputDiff0; these are fresh Task12 migrations, not inherited drift fixes."
+  },
+  "upstream": {
+    "get": "83f6598d22d86e454e7f9110b078d8e0124cbba1 DocumentActionsService.read -> get",
+    "settingsEventsAndCreate": "cdf4586c7115f64d7ec80f362149c6b5bc6cc719 ActionsCapability settings/public events; createActionsController returns api/connect",
+    "form": "5da4ca52ad31040143d5f272a451d5dd4e2eec53 FormReader/current complete FormSnapshot; 98e5c270c sink change",
+    "refsAndDto": "83f6598d22d86e454e7f9110b078d8e0124cbba1 refs; current PdfAction.ts/PdfDestination.ts/PageLayout and complete reviewed form/annotation builders",
+    "unsupportedDirectVisibility": "62c1245d1 already limits ActionTreeSource.page to open|close; current contract.ts111 retains it, triggers154 still supports visible|invisible",
+    "submit": "actions/submit/intent.ts toFormSubmissionRequest; engine/core/src/forms/submission.ts FormSubmissionRequest ISO sentAt and typed receipt",
+    "negatives": "Exact current results/callbacks/reports/operations asserted in actions-current.test.ts, with the complete named channels in negative-channels.json"
+  }
+}

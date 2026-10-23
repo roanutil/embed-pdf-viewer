@@ -1,0 +1,9 @@
+src/suites/actions.ts(151,5): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/actions.ts(151,18): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/actions.ts(187,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/actions.ts(187,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/annotation-fixtures.ts(102,5): error TS2352: Conversion of type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' to type 'AnyPlugin' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'create' is missing in type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' but required in type 'PluginDef<any, any, any>'.
+src/suites/annotation-fixtures.ts(118,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/annotation-fixtures.ts(118,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/link.ts(62,17): error TS2339: Property 'origin' does not exist on type 'LinkActivatedEvent'.
