@@ -170,6 +170,8 @@ mod edge_inputs {
         let metrics = scroll_metrics(ORIGIN, bounds, VP_NAN, 0.0);
         assert_eq!((metrics.scroll_left, metrics.scroll_top), (0.0, 0.0));
         assert_nan(metrics.scroll_width, "scroll width");
+        assert_nan(metrics.scroll_height, "scroll height");
+        assert_nan(metrics.client_width, "client width");
         assert_nan(metrics.client_height, "client height");
         assert!(!metrics.scrollable_x && !metrics.scrollable_y);
 
@@ -188,6 +190,7 @@ mod edge_inputs {
         );
         assert_eq!(placed.zoom, 0.0);
         assert_nan(placed.x, "placed x at zero zoom");
+        assert_nan(placed.y, "placed y at zero zoom");
 
         let revealed = reveal_camera(ORIGIN, rect(0.0, 0.0, 10.0, 10.0), VP_NAN, 0.0);
         assert_nan(revealed.x, "revealed x");
