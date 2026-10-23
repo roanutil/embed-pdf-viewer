@@ -110,6 +110,9 @@ impl DocumentHandle for GuardedHandle {
     fn is_local(&self) -> bool {
         self.inner.is_local()
     }
+    fn held_object_numbers(&self) -> usize {
+        self.inner.held_object_numbers()
+    }
     fn take_object_number(&self) -> Result<Option<u32>, Error> {
         self.inner.take_object_number().map_err(|e| to_plugin_error(&self.guard.capability, &e))
     }

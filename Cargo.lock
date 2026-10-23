@@ -1578,6 +1578,8 @@ name = "plugin-conformance"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "build-support",
+ "epdf-engine",
  "epdf-kernel",
  "serde",
  "serde_json",

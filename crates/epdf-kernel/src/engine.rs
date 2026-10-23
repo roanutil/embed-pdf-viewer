@@ -2,7 +2,7 @@
 //! contract, as one JSON envelope per operation.
 //!
 //! A call names its service path the way the TypeScript spells the member
-//! chain: `metadata.read`, `pages.list`, `render.policy`, and for a page
+//! chain: `metadata.read`, `pages.list`, `render.getPolicy`, and for a page
 //! handle `page.render.render` with the page's object number alongside.
 //! Arguments and results are JSON; binary members travel as
 //! `{"$bytes": "<base64>"}`, which [`crate::bytes::Bytes`] reads and writes.
@@ -57,6 +57,9 @@ pub trait DocumentHandle {
     /// Whether writes remain in this tab until downloaded. Cloud documents return false.
     fn is_local(&self) -> bool {
         false
+    }
+    fn held_object_numbers(&self) -> usize {
+        0
     }
     fn take_object_number(&self) -> Result<Option<u32>, Error> {
         Ok(None)

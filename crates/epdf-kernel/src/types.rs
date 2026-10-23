@@ -39,8 +39,7 @@ pub struct DocumentMeta {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
     pub page_count: u32,
-    #[serde(default)]
-    pub has_unsaved_changes: bool,
+
     /// `PageLayout[]`, as the engine reported it. Shared, because nearly
     /// every read of a document clones its meta, and a deep copy of every
     /// page's layout per read made those reads O(pages).
@@ -48,6 +47,8 @@ pub struct DocumentMeta {
     /// Bumps each time a mutation event replaces the page registry.
     pub revision: u64,
     pub render_policy: Value,
+    #[serde(default)]
+    pub has_unsaved_changes: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]

@@ -123,6 +123,8 @@ pub struct SliceChange {
 }
 
 struct LeaseInner {
+    closed_reported: Cell<bool>,
+    report: Report,
     changed: EventHookSource<SliceChange>,
     key: String,
     instance_id: String,
@@ -180,6 +182,18 @@ impl SliceLease {
     /// Replace this instance's state. A revoked lease can never publish again.
     pub fn write(&self, next: SliceState) -> bool {
         if !self.live() {
+            if !self.0.closed_reported.replace(true) {
+                (self.0.report)(&crate::error::plugin_error(
+                    "instance-closed",
+                    self.key().split("::").next().unwrap_or(self.key()),
+                    format!(
+                        "a state update after the instance closed ({}); dropped",
+                        self.instance_id()
+                    ),
+                    None,
+                    None,
+                ));
+            }
             return false;
         }
         let previous = self.read();
@@ -399,6 +413,8 @@ impl Store {
             prior.revoke();
         }
         let lease = SliceLease(Rc::new(LeaseInner {
+            closed_reported: Cell::new(false),
+            report: self.report.clone(),
             changed: EventHookSource::new(Some(self.report.clone())),
             key: key.to_string(),
             instance_id,

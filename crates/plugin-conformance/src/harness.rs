@@ -70,6 +70,17 @@ pub trait HarnessPlugin {
         args: Vec<Value>,
         h: &Harness,
     ) -> Option<Outcome>;
+    /// Resolve an object-valued getter now, preserving its receiver identity.
+    /// Dotted calls traverse these getters afresh on each invocation; a
+    /// described function keeps the resolved object it was obtained from.
+    fn resolve_member(
+        &self,
+        _capability: &Rc<dyn Any>,
+        _member: &str,
+        _h: &Harness,
+    ) -> Option<Result<Rc<dyn Any>, Error>> {
+        None
+    }
     /// The capability's own members, in the order the TypeScript object
     /// literal defines them, for printing the object when a call returns it.
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>>;
@@ -91,6 +102,8 @@ pub(crate) struct Entry {
     pub outcome: Option<Value>,
     pub settled: Vec<Value>,
     pub actions: Vec<Value>,
+    pub state_changes: Vec<Value>,
+    pub document_events: Vec<Value>,
     pub callbacks: Vec<Value>,
     pub reports: Vec<Value>,
 }
@@ -497,12 +510,35 @@ impl Harness {
     }
 
     /// Print a capability object: its members as refs that call back into
-    /// the adapter that owns it.
+    /// the adapter that owns it. Panics if a getter throws; scenario steps
+    /// use [`try_describe`](Self::try_describe).
     pub fn describe(&self, capability: Rc<dyn Any>) -> Option<Value> {
+        self.try_describe(capability)
+            .map(|result| result.unwrap_or_else(|error| panic!("getter threw: {error}")))
+    }
+
+    /// [`describe`](Self::describe), with a throwing getter returned as the
+    /// error, as TypeScript's `canonical` throws out of the call that
+    /// returned the object. Refs registered before the throw stay
+    /// registered, as they do there.
+    pub fn try_describe(&self, capability: Rc<dyn Any>) -> Option<Result<Value, Error>> {
         for adapter in &self.0.adapters {
             if let Some(members) = adapter.members(&capability) {
                 let mut out = serde_json::Map::new();
                 for member in members {
+                    if let Some(resolved) = adapter.resolve_member(&capability, member, self) {
+                        let described = match resolved {
+                            Ok(resolved) => self.try_describe(resolved),
+                            Err(error) => return Some(Err(error)),
+                        };
+                        let value = match described {
+                            Some(Ok(value)) => value,
+                            Some(Err(error)) => return Some(Err(error)),
+                            None => json!({}),
+                        };
+                        out.insert(member.to_string(), value);
+                        continue;
+                    }
                     if let Some(value) = adapter.describe_member(&capability, member, self) {
                         out.insert(member.to_string(), value);
                         continue;
@@ -519,7 +555,7 @@ impl Harness {
                     });
                     out.insert(member.to_string(), self.register_fn(f));
                 }
-                return Some(Value::Object(out));
+                return Some(Ok(Value::Object(out)));
             }
         }
         None
@@ -527,6 +563,16 @@ impl Harness {
 
     /// Call a method on any capability, through whichever adapter owns it.
     pub fn call(&self, capability: &Rc<dyn Any>, method: &str, args: Vec<Value>) -> Outcome {
+        if let Some((member, remaining)) = method.split_once('.') {
+            for adapter in &self.0.adapters {
+                if let Some(resolved) = adapter.resolve_member(capability, member, self) {
+                    return match resolved {
+                        Ok(receiver) => self.call(&receiver, remaining, args),
+                        Err(error) => Outcome::Threw(error),
+                    };
+                }
+            }
+        }
         for adapter in &self.0.adapters {
             if let Some(outcome) = adapter.call(capability, method, args.clone(), self) {
                 return outcome;

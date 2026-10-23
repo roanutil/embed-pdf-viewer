@@ -9,7 +9,7 @@
 
 use std::fmt;
 
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 
 /// The class an error was constructed from, where the TypeScript tells
 /// errors apart with `instanceof` rather than by name. A table or a vector
@@ -85,7 +85,13 @@ impl Error {
             Some(context) => format!("permission denied ({context}): {required}"),
             None => format!("permission denied: {required}"),
         };
+        let mut details = json!({ "required": required });
+        if let Some(context) = context {
+            details["context"] = json!(context);
+        }
         let mut error = Error::named("PermissionDenied", message)
+            .with("code", "Forbidden")
+            .with("details", details)
             .with("required", required)
             .of_class(ErrorClass::PermissionDenied);
         if let Some(context) = context {

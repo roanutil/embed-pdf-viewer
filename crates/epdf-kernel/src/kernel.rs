@@ -290,6 +290,7 @@ impl Sessions {
 // ── the kernel ────────────────────────────────────────────────────────────────
 
 struct Inner {
+    viewer_settings: crate::settings::Settings,
     this: Weak<Inner>,
     engine: Rc<dyn Engine>,
     clock: Rc<dyn crate::clock::HostClock>,
@@ -373,7 +374,8 @@ fn is_abort_like(error: &Error) -> bool {
 
 fn layout_from_event(event: &Value) -> Option<&Value> {
     match event.get("type").and_then(Value::as_str)? {
-        "pages.moved" | "pages.rotated" | "pages.deleted" | "pages.inserted" => event.get("layout"),
+        "pages.reordered" | "pages.rotated" | "pages.deleted" | "pages.inserted"
+        | "pages.restored" => event.get("layout"),
         _ => None,
     }
 }
@@ -486,7 +488,7 @@ impl Inner {
         let changes = session.changes.clone();
         session.scope.defer_fn(move || changes.close());
         let events = session.events.clone();
-        session.scope.defer_fn(move || events.dispose());
+        session.cancel.on_abort(Rc::new(move |_| events.dispose()));
         session
     }
 
@@ -583,7 +585,13 @@ impl Inner {
             || core.documents.contains_key(next_id)
             || core.pending.contains_key(next_id)
         {
-            return Err(Error::new(format!("[documents] duplicate document id: {next_id}")));
+            return Err(crate::error::plugin_error(
+                "conflict",
+                "documents",
+                format!("duplicate document id: {next_id}"),
+                None,
+                None,
+            ));
         }
         self.sessions.borrow_mut().delete(&previous_id);
         *session.id.borrow_mut() = next_id.to_string();
@@ -709,7 +717,9 @@ impl Inner {
                         error: None,
                     },
                 );
-                core.order.push(id.clone());
+                if !core.order.contains(&id) {
+                    core.order.push(id.clone());
+                }
                 if activate || core.active_id.is_none() {
                     core.active_id = Some(id.clone());
                 }
@@ -1107,8 +1117,8 @@ impl Inner {
         let handle = session.handle().expect("handle");
         let mut render_policy = continuous_render_policy();
         if handle.has("render") {
-            // `(await handle.render?.policy()) ?? CONTINUOUS_RENDER_POLICY`, best-effort
-            if let Ok(policy) = handle.call("render.policy", None, Vec::new()).await
+            // `(await handle.render?.getPolicy()) ?? CONTINUOUS_RENDER_POLICY`, best-effort
+            if let Ok(policy) = handle.call("render.getPolicy", None, Vec::new()).await
                 && !policy.is_null()
                 && !crate::is_undefined(&policy)
             {
@@ -1131,6 +1141,12 @@ impl Inner {
             render_policy,
         });
 
+        let burst = Rc::downgrade(&session);
+        session.scope.defer_fn(move || {
+            if let Some(session) = burst.upgrade() {
+                session.burst.borrow_mut().take();
+            }
+        });
         let weak = Rc::downgrade(&this);
         let s = Rc::downgrade(&session);
         let unsubscribe = handle.subscribe(Rc::new(move |event: &Value| {
@@ -1307,16 +1323,42 @@ impl Inner {
         options: OpenOptions,
         hold: Option<Rc<HostHold>>,
     ) -> Result<(Rc<Session>, Promise<Value>), Error> {
+        self.reserve_and_open_as(input, options, hold, None)
+    }
+
+    fn reserve_and_open_as(
+        &self,
+        input: OpenSource,
+        options: OpenOptions,
+        hold: Option<Rc<HostHold>>,
+        reuse_id: Option<String>,
+    ) -> Result<(Rc<Session>, Promise<Value>), Error> {
         self.guard_usable("documents.open()")?;
         let hold = hold.or_else(|| HostHold::of(&input));
         let recorded = (input.clone(), options.clone(), hold);
-        let OpenOptions { activate, name, engine: engine_options } = options;
-        let requested_id = match &input {
+        let OpenOptions { activate, name, engine: mut engine_options } = options;
+        let viewer = self.viewer_settings.get();
+        for key in ["scope", "identity"] {
+            if engine_options.get(key).is_none_or(|v| v.is_null() || crate::is_undefined(v)) {
+                if let Some(value) =
+                    viewer.get(key).filter(|v| !v.is_null() && !crate::is_undefined(v))
+                {
+                    engine_options.insert(key.into(), value.clone());
+                }
+            }
+        }
+        let requested_id = reuse_id.unwrap_or_else(|| match &input {
             OpenSource::Thunk(_) => self.next_ticket(),
             OpenSource::Input(value) => id_of_input(value).unwrap_or_else(|| self.next_ticket()),
-        };
+        });
         if self.sessions.borrow().has(&requested_id) {
-            return Err(Error::new(format!("[documents] document already open: {requested_id}")));
+            return Err(crate::error::plugin_error(
+                "conflict",
+                "documents",
+                format!("document already open: {requested_id}"),
+                None,
+                None,
+            ));
         }
         let session = self.create_session(requested_id.clone(), name);
         *session.source.borrow_mut() = Some(recorded);
@@ -1503,7 +1545,14 @@ impl Inner {
         // `return beginOperation(...)` from an async function adopts the
         // operation. It is still pending here, so the adoption settles one
         // turn after it does, which is what `.then` costs as well.
-        Ok(operation.map(|_| Ok(())))
+        Ok(Promise::spawn(async move {
+            let result = operation
+                .reaction()
+                .await
+                .map_err(|e| crate::error::to_plugin_error("documents", &e));
+            rt::tick().await;
+            result.map(|_| ())
+        }))
     }
 
     fn close_document(&self, id: &str) -> Promise<()> {
@@ -1599,6 +1648,44 @@ impl Kernel {
         options: KernelOptions,
         clock: Rc<dyn crate::clock::HostClock>,
     ) -> Result<Kernel, Error> {
+        Self::new_with_clock_and_settings(engine, plugins, options, clock, None)
+    }
+
+    pub fn new_with_viewer_settings(
+        engine: Rc<dyn Engine>,
+        plugins: Vec<AnyPlugin>,
+        options: KernelOptions,
+        registered: Option<Value>,
+    ) -> Result<Kernel, Error> {
+        Self::new_with_clock_and_settings(
+            engine,
+            plugins,
+            options,
+            Rc::new(crate::clock::TimerClock),
+            registered,
+        )
+    }
+
+    pub fn get_settings(&self) -> Rc<Value> {
+        self.0.viewer_settings.get()
+    }
+    pub fn update_settings(&self, changes: &Value) {
+        self.0.viewer_settings.update_settings(changes);
+    }
+    pub fn reset_settings(&self) {
+        self.0.viewer_settings.reset_settings();
+    }
+    pub fn on_settings_changed(&self) -> EventHookSource<crate::settings::SettingsChanged> {
+        self.0.viewer_settings.on_settings_changed()
+    }
+
+    pub fn new_with_clock_and_settings(
+        engine: Rc<dyn Engine>,
+        plugins: Vec<AnyPlugin>,
+        options: KernelOptions,
+        clock: Rc<dyn crate::clock::HostClock>,
+        registered: Option<Value>,
+    ) -> Result<Kernel, Error> {
         let report = options
             .report
             .unwrap_or_else(|| Rc::new(|error: &Error| eprintln!("[kernel] {error}")));
@@ -1612,9 +1699,26 @@ impl Kernel {
             let events = events.clone();
             workspace_scope.defer_fn(move || events.dispose());
         }
+        let weak_store = Rc::downgrade(&store);
+        let viewer_settings = crate::settings::Settings::new(
+            crate::settings::SettingsDeclaration {
+                defaults: serde_json::json!({"identity":null,"scope":null,"accent":"#3858e9","page":{"background":"#ffffff","shadow":"0 6px 18px rgb(0 0 0 / 0.18)"}}),
+                registered,
+                whole: vec!["identity".into()],
+            },
+            Rc::new(move || {
+                if let Some(store) = weak_store.upgrade() {
+                    store.notify();
+                }
+            }),
+            report.clone(),
+        );
+        let dispose_viewer = viewer_settings.clone();
+        workspace_scope.defer_fn(move || dispose_viewer.dispose());
         let release_closed_sessions = options.release_closed_sessions;
         let inner = Rc::new_cyclic(|this| Inner {
             this: this.clone(),
+            viewer_settings,
             engine,
             clock,
             store,
@@ -1652,8 +1756,7 @@ impl Kernel {
                     }),
                     inner.report.clone(),
                 );
-                let dispose = settings.clone();
-                inner.workspace_scope.defer_fn(move || dispose.dispose());
+
                 inner.settings.borrow_mut().insert(plugin.id.clone(), settings);
             }
             if plugin.scope != PluginScope::Document {
@@ -1668,6 +1771,12 @@ impl Kernel {
                 inner.workspace_leases.borrow_mut().push((Rc::as_ptr(plugin), lease));
             }
         }
+        let stores = inner.settings.borrow().values().cloned().collect::<Vec<_>>();
+        inner.workspace_scope.defer_fn(move || {
+            for settings in stores {
+                settings.dispose();
+            }
+        });
         for plugin in &inner.plan.ordered {
             if plugin.scope == PluginScope::Document {
                 continue;
@@ -2039,12 +2148,24 @@ impl Documents {
                 (s.phase.get() == Phase::Error).then(|| s.source.borrow().clone()).flatten()
             });
             let (Some(session), Some((source, options, hold))) = (session, recorded) else {
-                return Err(Error::new(format!(
-                    "[documents] \"{id}\" is not a failed open; nothing to retry"
-                )));
+                return Err(crate::error::plugin_error(
+                    "invalid-input",
+                    "documents",
+                    format!("{id} didn't fail to open; nothing to retry"),
+                    None,
+                    None,
+                ));
             };
-            inner.close_session(&session).await?;
-            let reopened = inner.open_document(source, options, hold);
+            inner.sessions.borrow_mut().delete(&id);
+            // Failure already disposed this session's scope. Keep the tab and
+            // its position while replacing only the failed session.
+            let _old = session;
+            let mut options = options;
+            options.activate = Some(false);
+            let reopened = match inner.reserve_and_open_as(source, options, hold, Some(id)) {
+                Ok((_, operation)) => adopt(operation),
+                Err(error) => Promise::rejected(error),
+            };
             // `return openDocument(...)` from an async function adopts it.
             rt::tick().await;
             reopened.reaction().await
@@ -2111,7 +2232,7 @@ impl Documents {
 
     pub fn unlock(&self, id: &str, password: &str) -> Promise<()> {
         match self.inner() {
-            Ok(inner) => document_errors(inner.unlock_document(id, password.to_string())),
+            Ok(inner) => inner.unlock_document(id, password.to_string()),
             Err(error) => Promise::rejected(error),
         }
     }
@@ -2196,8 +2317,12 @@ impl Documents {
         a.sort();
         b.sort();
         if ids.len() != current.len() || a != b {
-            return Err(Error::new(
-                "[documents] setOrder() needs a permutation of the current order",
+            return Err(crate::error::plugin_error(
+                "invalid-input",
+                "documents",
+                "setOrder() needs a permutation of the current order",
+                None,
+                None,
             ));
         }
         inner.reorder(ids.to_vec());

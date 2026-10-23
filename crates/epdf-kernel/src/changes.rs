@@ -12,7 +12,6 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashSet,
     rc::Rc,
-    sync::atomic::{AtomicU64, Ordering},
 };
 
 type Apply = Rc<dyn Fn(Value, Value) -> Promise<Value>>;
@@ -159,24 +158,7 @@ impl DocumentChanges {
         held: bool,
         merge: Option<String>,
     ) -> PendingChange {
-        static IDS: AtomicU64 = AtomicU64::new(0);
-        let n = IDS.fetch_add(1, Ordering::Relaxed);
-        use std::hash::{BuildHasher, Hash, Hasher};
-        let millis = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as u64;
-        let mut random = std::collections::hash_map::RandomState::new().build_hasher();
-        n.hash(&mut random);
-        let bits = random.finish();
-        let op_id = format!(
-            "{:08x}-{:04x}-7{:03x}-{:04x}-{:012x}",
-            (millis >> 16) as u32,
-            millis as u16,
-            (bits >> 52) & 0xfff,
-            0x8000 | ((bits >> 38) & 0x3fff),
-            ((bits << 10) ^ n) & 0xffffffffffff
-        );
+        let op_id = crate::identity::generate_uuid_v7(None);
         let (result, resolver) = Promise::pending();
         let seq = self.0.seq.get();
         self.0.seq.set(seq + 1);

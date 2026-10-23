@@ -253,8 +253,13 @@ fn close_revokes_retained_state_mirror_and_pending_change() {
             Ok(((), None))
         })
         .build();
-    let kernel =
-        Kernel::new(Rc::new(TestEngine(document.clone())), vec![plugin], options()).unwrap();
+    let reports = Rc::new(RefCell::new(Vec::<Error>::new()));
+    let sink = reports.clone();
+    let opts = KernelOptions {
+        report: Some(Rc::new(move |e| sink.borrow_mut().push(e.clone()))),
+        ..Default::default()
+    };
+    let kernel = Kernel::new(Rc::new(TestEngine(document.clone())), vec![plugin], opts).unwrap();
     run(kernel.start()).unwrap();
     run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
     let ctx = retained.borrow().clone().unwrap();
@@ -282,6 +287,10 @@ fn close_revokes_retained_state_mirror_and_pending_change() {
     );
     document.events.emit(&json!({"value":7}));
     assert_eq!(*mirror.get(), json!(0));
+    assert!(!ctx.update_state(|same| same));
+    assert_eq!(reports.borrow().len(), 1);
+    assert_eq!(reports.borrow()[0].code(), Some("instance-closed"));
+    assert!(reports.borrow()[0].message.contains("doc#1"));
     run(kernel.destroy()).unwrap();
 }
 
@@ -340,7 +349,13 @@ fn state_events_are_synchronous_per_write_while_global_notifications_are_held() 
         .initial_state(|| json!(0))
         .create(&token, |ctx| Ok((ctx, None)))
         .build();
-    let kernel = Kernel::new(Rc::new(TestEngine(doc(false))), vec![plugin], options()).unwrap();
+    let reports = Rc::new(RefCell::new(Vec::<Error>::new()));
+    let sink = reports.clone();
+    let opts = KernelOptions {
+        report: Some(Rc::new(move |e| sink.borrow_mut().push(e.clone()))),
+        ..Default::default()
+    };
+    let kernel = Kernel::new(Rc::new(TestEngine(doc(false))), vec![plugin], opts).unwrap();
     run(kernel.start()).unwrap();
     run(kernel.documents().open(input(), OpenOptions::default())).unwrap();
     let ctx = kernel.try_capability(&token, Some("doc")).unwrap().unwrap();
@@ -369,6 +384,10 @@ fn state_events_are_synchronous_per_write_while_global_notifications_are_held() 
     run(kernel.documents().close("doc")).unwrap();
     assert!(!ctx.update_state(|_| Rc::new(json!(3))));
     assert_eq!(events.borrow().len(), 2);
+    assert!(!ctx.update_state(|same| same));
+    assert_eq!(reports.borrow().len(), 1);
+    assert_eq!(reports.borrow()[0].code(), Some("instance-closed"));
+    assert!(reports.borrow()[0].message.contains("doc#1"));
     run(kernel.destroy()).unwrap();
 }
 

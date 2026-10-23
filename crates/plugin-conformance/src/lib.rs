@@ -27,7 +27,7 @@ pub use harness::{Answer, Callback, Harness, HarnessPlugin, LiveFn, Outcome, Rel
 pub use scenario::Registry;
 
 /// The envelope version the generator writes (`vectors.ts`).
-pub const SCHEMA_VERSION: u64 = 1;
+pub const SCHEMA_VERSION: u64 = 2;
 
 /// Drop object members that are JavaScript `undefined`, as JSON would. The
 /// TypeScript's canonical form never prints them, so a Rust value carrying
