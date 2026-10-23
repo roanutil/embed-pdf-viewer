@@ -119,3 +119,114 @@ test('current shallow state comparison and signature target transitions preserve
   };
   assert.equal(target.changed, false);
 });
+
+test('signature asset placement is isolated across repeated scenarios', async () => {
+  const input = scenario('plugins/signature.json', 'place-by-mode-visual');
+  const first = await runScenario(input);
+  const second = await runScenario(input);
+  assert.deepEqual(second, first);
+  const placementIndex = input.steps.findIndex(
+    (step) =>
+      step.op === 'call' &&
+      step.method === 'placeMark' &&
+      JSON.stringify(step.args?.[0]) === JSON.stringify({ assetId: 'stamp-lib-0-0:Logo' }),
+  );
+  assert.notEqual(placementIndex, -1);
+  for (const result of [first, second]) {
+    assert.deepEqual(result.unmatched, []);
+    const placements = result.trace
+      .flatMap((entry) => entry.engine)
+      .filter(
+        (entry) =>
+          entry !== null && typeof entry === 'object' && 'path' in entry && entry.path === 'apply',
+      );
+    assert.equal(placements.length, 2);
+    assert.deepEqual(placements[0], {
+      doc: 'a',
+      path: 'apply',
+      args: [
+        {
+          ops: [
+            {
+              type: 'annotations.create',
+              page: { kind: 'objectNumber', objectNumber: 1 },
+              data: {
+                subtype: 'stamp',
+                box: { x: 75, y: 87.5, width: 50, height: 25 },
+                rotation: null,
+                fit: 'contain',
+                name: 'Logo',
+                subject: 'Logo',
+              },
+              objectNumber: 60,
+              resources: { appearance: { $bytes: 'JVBERi1wYWdlLTkwMA==' } },
+            },
+          ],
+        },
+        { opId: '00000000-0000-7000-8000-000000000001' },
+      ],
+    });
+    const outcome = result.trace[placementIndex].outcome;
+    assert.ok(outcome && 'promise' in outcome);
+    const settlement = result.trace
+      .flatMap((entry) => entry.settled)
+      .find((entry) => entry.promise === outcome.promise);
+    assert.deepEqual(settlement, {
+      promise: outcome.promise,
+      resolved: {
+        kind: 'placed',
+        annotation: {
+          kind: 'objectNumber',
+          page: { kind: 'objectNumber', objectNumber: 1 },
+          objectNumber: 60,
+        },
+      },
+    });
+  }
+});
+
+test('an imported signature mark reaches field handling and reports a refused fill', async () => {
+  const requested = await runScenario(
+    scenario('plugins/signature.json', 'an-armed-mark-over-a-field'),
+  );
+  assert.deepEqual(requested.unmatched, []);
+  assert.ok(
+    requested.trace
+      .flatMap((entry) => entry.callbacks)
+      .some(
+        (entry) =>
+          entry.fn === 'SignRequested' &&
+          JSON.stringify(entry.args) ===
+            JSON.stringify([
+              {
+                field: { kind: 'objectNumber', objectNumber: 2 },
+                mark: { assetId: 'stamp-lib-0-1:Stamp1' },
+              },
+            ]),
+      ),
+  );
+  const refused = await runScenario(
+    scenario('plugins/signature.json', 'a-mark-that-fails-to-land'),
+  );
+  assert.deepEqual(refused.unmatched, []);
+  assert.deepEqual(
+    refused.trace.flatMap((entry) => entry.callbacks),
+    [
+      {
+        fn: 'console.error',
+        args: [
+          '[signature] placing the mark failed:',
+          {
+            $error: {
+              name: 'PluginError',
+              message: 'this engine cannot draw into a signature field',
+              code: 'unsupported',
+              capability: 'signature',
+              permission: null,
+            },
+          },
+        ],
+      },
+    ],
+  );
+});

@@ -960,10 +960,9 @@ test('a rejected preload keeps isolation alive until every delayed source import
   );
 });
 
-test('a later legacy import and full sorted discovery retain host identities around current cases', async () => {
-  await import(new URL('../src/suites/stamp-fixtures.ts', import.meta.url).href);
+test('full sorted discovery retains host identities around current cases', async () => {
   const prior = hosts();
-  const first = await runScenario(composed('after-legacy'));
+  const first = await runScenario(composed('around-discovery'));
   assert.deepEqual(hosts(), prior);
   assert.deepEqual(first.unmatched, []);
   const { readdir } = await import('node:fs/promises');
@@ -972,7 +971,7 @@ test('a later legacy import and full sorted discovery retain host identities aro
     .sort())
     await import(new URL('../src/suites/' + file, import.meta.url).href);
   const discovered = hosts();
-  const second = await runScenario(composed('after-legacy'));
+  const second = await runScenario(composed('around-discovery'));
   assert.deepEqual(second, first);
   assert.deepEqual(hosts(), discovered);
 });

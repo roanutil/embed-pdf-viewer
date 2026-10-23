@@ -1032,27 +1032,6 @@ test('the complete original B3 archive and all 61 measurement mappings remain ex
   };
   for (const source of baseline.archive) {
     assert.equal(digest(await readFile(new URL(source.name + '.ts.txt', history))), source.sha256);
-    if (
-      source.name !== 'measurement' &&
-      source.name !== 'redaction' &&
-      source.name !== 'stamp-functions' &&
-      source.name !== 'stamp-library' &&
-      source.name !== 'stamp-assets' &&
-      source.name !== 'stamp-api' &&
-      source.name !== 'stamp-placement'
-    )
-      assert.equal(
-        digest(await readFile(new URL('../src/suites/' + source.name + '.ts', import.meta.url))),
-        source.sha256,
-        source.name + ' deferred bytes',
-      );
   }
-  const signature = JSON.parse(
-    await readFile(new URL('c-signature-inputs.json', history), 'utf8'),
-  ) as { sources: { path: string; sha256: string }[] };
-  for (const source of signature.sources)
-    assert.equal(
-      digest(await readFile(new URL('../' + source.path, import.meta.url))),
-      source.sha256,
-    );
+  // Signature and stamp now use current fixtures; their former active-source freeze is retired.
 });

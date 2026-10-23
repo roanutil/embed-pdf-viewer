@@ -32,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   formWidget as currentFormWidget,
+  type FormFieldDTO,
   type SignatureDTO,
   type SignatureCompleteResult,
 } from '@embedpdf/engine-core/runtime';
@@ -39,13 +40,20 @@ import {
 import { definePlugin, type AnyPlugin } from '@embedpdf/core';
 
 import { signaturePlugin } from '../../../../packages/plugin/signature/src/signature.plugin';
-import { SIGNATURE_DEFAULTS, SignatureToken } from '../../../../packages/plugin/signature/src/contract';
-import type { SignatureConfig,
+import {
+  SIGNATURE_DEFAULTS,
+  SignatureToken,
+} from '../../../../packages/plugin/signature/src/contract';
+import type {
+  SignatureConfig,
   SignatureCapability,
 } from '../../../../packages/plugin/signature/src/contract';
 import { createSignatureController } from '../../../../packages/plugin/signature/src/controller';
 import * as model from '../../../../packages/plugin/signature/src/model';
-import { initialSignatureState, sameFieldRef } from '../../../../packages/plugin/signature/src/model';
+import {
+  initialSignatureState,
+  sameFieldRef,
+} from '../../../../packages/plugin/signature/src/model';
 import type { SignatureState } from '../../../../packages/plugin/signature/src/model';
 import { blankPagePdf } from '../../../../packages/plugin/signature/src/blank-page';
 import { markRoleOf } from '../../../../packages/plugin/signature/src/contract';
@@ -66,15 +74,30 @@ import {
 } from './annotation-live-fixtures';
 import { canonical } from '../canonical';
 import { makeError, type FakeDocumentSpec, type ResponseSpec } from '../fake-engine';
-import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
+import {
+  onCaseEnd,
+  registerPlugin,
+  type PluginEnv,
+  type ScenarioCase,
+  type Step,
+} from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 
 const sameRef = sameFieldRef;
 import type { AnswerSpec } from './acrojs';
-import { created, hydrate, stamp as stampDto } from './annotation-fixtures';
-import { annotations, list, ref, fqn, signature as sigField, text, widgetAnnot, PAGES, sample } from './form-fixtures';
+import { hydrate, PAGES, widget, pr, write } from './annotation-live-fixtures';
+import {
+  list,
+  snapshot as formSnapshot,
+  ref,
+  fqn,
+  signature as sigField,
+  text,
+} from './form-current-fixtures';
+import { sample } from './annotation-live-inputs';
 import './interaction';
-import { assetDoc, assetPage, opens, PDF, png, withWorkshop } from './stamp-fixtures';
+import { assetDoc, assetPage, opens, PDF, png, STAMP } from './stamp-current-fixtures';
+import { SEED, seedDoc, appendDoc } from './stamp-mutation-fixtures';
 
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const UNSNAPSHOTTED = {
@@ -90,12 +113,16 @@ interface Fixtures {
   cms: Record<string, string>;
 }
 const fixtures = JSON.parse(
-  readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../../fixtures/signature/fixtures.json'), 'utf8'),
+  readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), '../../fixtures/signature/fixtures.json'),
+    'utf8',
+  ),
 ) as Fixtures;
 const $b = (b64: string) => ({ $bytes: b64 });
 const cmsArg = (name: string) => $b(fixtures.cms[name]);
 const certArg = (name: string) => $b(fixtures.certs[name]);
-const digestBytes = (n: number, seed: number) => new Uint8Array(n).map((_, i) => (i * 7 + seed) & 0xff);
+const digestBytes = (n: number, seed: number) =>
+  new Uint8Array(n).map((_, i) => (i * 7 + seed) & 0xff);
 const GOOD_DIGEST = $b(Buffer.from(digestBytes(32, 3)).toString('base64'));
 
 // ── the harness factory ───────────────────────────────────────────────────────
@@ -117,13 +144,18 @@ console.error = (...args: unknown[]) => {
 const decodeBytes = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map(decodeBytes);
   if (value && typeof value === 'object') {
-    if ('$bytes' in value) return new Uint8Array(Buffer.from((value as { $bytes: string }).$bytes, 'base64'));
+    if ('$bytes' in value)
+      return new Uint8Array(Buffer.from((value as { $bytes: string }).$bytes, 'base64'));
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, decodeBytes(v)]));
   }
   return value;
 };
 
-function answering(name: string, spec: AnswerSpec, env: PluginEnv): (...args: unknown[]) => Promise<unknown> {
+function answering(
+  name: string,
+  spec: AnswerSpec,
+  env: PluginEnv,
+): (...args: unknown[]) => Promise<unknown> {
   return async (...args: unknown[]) => {
     env.log(name, args);
     if (spec.rejects) throw makeError(spec.rejects);
@@ -172,7 +204,9 @@ function configOf(spec: SignatureSpec, env: PluginEnv): SignatureConfig {
     ...(spec.mode !== undefined ? { mode: spec.mode } : {}),
     ...(spec.allowCertify !== undefined ? { allowCertify: spec.allowCertify } : {}),
     ...(spec.signer ? { key: signerOf(spec.signer, env) } : {}),
-    ...(spec.trust ? { trust: { anchors: answering('trust.anchors', spec.trust.anchors, env) as never } } : {}),
+    ...(spec.trust
+      ? { trust: { anchors: answering('trust.anchors', spec.trust.anchors, env) as never } }
+      : {}),
   };
 }
 
@@ -224,7 +258,12 @@ registerPlugin('signature-annotation', {
 type Dto = Record<string, unknown>;
 
 /** A signature DTO: field `n`, widget `100 + n` on page 1. */
-const dto = (index: number, n: number, name: string, over: Partial<SignatureDTO> = {}): SignatureDTO => ({
+const dto = (
+  index: number,
+  n: number,
+  name: string,
+  over: Partial<SignatureDTO> = {},
+): SignatureDTO => ({
   index,
   field: ref(n),
   fieldName: name,
@@ -245,7 +284,12 @@ const dto = (index: number, n: number, name: string, over: Partial<SignatureDTO>
   seedValue: null,
   ...over,
 });
-const signedDto = (index: number, n: number, name: string, over: Partial<SignatureDTO> = {}): SignatureDTO =>
+const signedDto = (
+  index: number,
+  n: number,
+  name: string,
+  over: Partial<SignatureDTO> = {},
+): SignatureDTO =>
   dto(index, n, name, {
     signed: true,
     filter: 'Adobe.PPKLite',
@@ -254,7 +298,8 @@ const signedDto = (index: number, n: number, name: string, over: Partial<Signatu
     contentsSize: 8192,
     coverage: 'whole-revision',
     revisionIndex: 0,
-    signer: { name: 'Conformance Signer',
+    signer: {
+      name: 'Conformance Signer',
       location: null,
       reason: null,
       contactInfo: null,
@@ -280,15 +325,27 @@ const snap = (signatures: readonly unknown[], over: Dto = {}) => ({
   },
   ...over,
 });
-const listed = (signatures: readonly unknown[], over: Dto = {}, extra: Partial<ResponseSpec> = {}): ResponseSpec => ({
+const listed = (
+  signatures: readonly unknown[],
+  over: Dto = {},
+  extra: Partial<ResponseSpec> = {},
+): ResponseSpec => ({
   path: 'signatures.list',
   value: snap(signatures, over),
   ...extra,
 });
 
-const analysis = (verdict: string, basis = 'working-copy', primary: unknown = null): ResponseSpec => ({
+const analysis = (
+  verdict: string,
+  basis = 'working-copy',
+  primary: unknown = null,
+): ResponseSpec => ({
   path: 'signatures.analyze',
-  value: { current: { verdict, primary }, basis: { source: basis }, later: { revisionCount: 0, undoneObjectNumbers: [] } },
+  value: {
+    current: { verdict, primary },
+    basis: { source: basis },
+    later: { revisionCount: 0, undoneObjectNumbers: [] },
+  },
 });
 const PERMITTED = analysis('permitted');
 
@@ -300,8 +357,12 @@ const FIELDS = [
   text(3, 'Name'),
   sigField(4, 'Sig4', { valueEntry: { kind: 'scalar', value: 'x' } }),
 ];
-const rect = (bottom: number) => ({ left: 100, bottom, right: 260, top: bottom + 24 });
-const WIDGETS = [widgetAnnot(1, 101, rect(600)), widgetAnnot(1, 102, rect(500)), widgetAnnot(1, 103, rect(400)), widgetAnnot(1, 104, rect(300))];
+const WIDGETS = FIELDS.map((field, index) =>
+  widget(101 + index, field.family, {
+    field: field.ref,
+    rect: { x: 100, y: 168 + index * 100, width: 160, height: 24 },
+  }),
+);
 
 interface DocOptions {
   readonly signatures?: readonly unknown[];
@@ -310,20 +371,20 @@ interface DocOptions {
   readonly allows?: string[] | '*';
   /** Tried before the defaults. */
   readonly responses?: ResponseSpec[];
-  readonly fields?: unknown[];
+  readonly fields?: FormFieldDTO[];
 }
 
 const docOf = (o: DocOptions = {}): FakeDocumentSpec => ({
   pages: PAGES,
+  objectNumbers: Array.from({ length: 20 }, (_, i) => 60 + i),
   services: o.services ?? ['signatures'],
   ...(o.lacks ? { lacks: o.lacks } : {}),
   security: { allows: o.allows ?? '*' },
   responses: [
     ...(o.responses ?? []),
-    hydrate({ 1: WIDGETS }),
-    { path: 'annotations.list', value: { annotations: WIDGETS } },
-    list(o.fields ?? FIELDS),
-    annotations(1, WIDGETS),
+    hydrate(WIDGETS),
+    list(formSnapshot(o.fields ?? FIELDS, WIDGETS)),
+    { path: 'page.annotations.list', pon: 1, value: { annotations: WIDGETS } },
     listed(o.signatures ?? [SIG1, SIG2]),
     PERMITTED,
     { path: 'forms.setSignatureAppearance' },
@@ -335,13 +396,43 @@ const docOf = (o: DocOptions = {}): FakeDocumentSpec => ({
 
 const ORIGIN = { kind: 'local', sessionId: 's1', sub: null, ts: 0, serverId: null } as const;
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
-const open = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }] });
-const close = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'close', args: [id] });
+const open = (id = 'a'): Step => ({
+  op: 'call',
+  target: 'documents',
+  method: 'open',
+  args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
+});
+const close = (id = 'a'): Step => ({
+  op: 'call',
+  target: 'documents',
+  method: 'close',
+  args: [id],
+});
 const boot = [start, open()];
-const sig = (method: keyof SignatureCapability, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'signature', doc: 'a' }, method, args });
-const st = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'stamp' }, method, args });
-const ix = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'interaction', doc: 'a' }, method, args });
-const anno = (method: 'arm' | 'isArmed', ...args: unknown[]): Step => ({ op: 'call', target: { token: 'signature-annotation', doc: 'a' }, method, args });
+const sig = (method: keyof SignatureCapability, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'signature', doc: 'a' },
+  method,
+  args,
+});
+const st = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'stamp' },
+  method,
+  args: canonical(args) as unknown[],
+});
+const ix = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'interaction', doc: 'a' },
+  method,
+  args,
+});
+const anno = (method: 'arm' | 'isArmed', ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'signature-annotation', doc: 'a' },
+  method,
+  args,
+});
 const emit = (event: Dto): Step => {
   const field = currentSignatureField(2, 'Sig2');
   let value: unknown = event;
@@ -432,17 +523,29 @@ const HOOKS = [
 ] satisfies (keyof SignatureCapability)[];
 const listenAll = HOOKS.map((h) => listen(h));
 
-const PNG = png(100, 50);
+const PNG = canonical(png(100, 50));
 const MARK = { source: PNG };
-const FORM_SIG = (config?: SignatureSpec) => [{ factory: 'interaction' }, { factory: 'form' }, config === undefined ? { factory: 'signature' } : { factory: 'signature', config }];
-const FULL = (config?: SignatureSpec) => [
+const assetCreationEngine = (target: FakeDocumentSpec) => ({
+  documents: {
+    a: target,
+    seed: seedDoc('stamp-lib-0-0', 'Logo'),
+    append: appendDoc(SEED, 'Logo', { raster: true, size: { width: 100, height: 50 } }),
+  },
+  responses: opens('a', 'seed', 'append'),
+});
+const FORM_SIG = (config?: SignatureSpec) => [
   { factory: 'interaction' },
-  { factory: 'annotation' },
-  { factory: 'signature-annotation' },
-  { factory: 'form' },
-  { factory: 'stamp' },
+  { factory: 'form-current' },
   config === undefined ? { factory: 'signature' } : { factory: 'signature', config },
 ];
+const FULL = (config?: SignatureSpec) =>
+  STAMP({ assetEngine: 'instance' }, [
+    { factory: 'interaction' },
+    { factory: 'annotation-live' },
+    { factory: 'signature-annotation' },
+    { factory: 'form-current' },
+    config === undefined ? { factory: 'signature' } : { factory: 'signature', config },
+  ]);
 
 const CMS_SIGNER: SignerSpec = { kind: 'cms', answer: { resolves: cmsArg('rsaCades') } };
 const prepared = (over: Dto = {}) => ({
@@ -483,7 +586,11 @@ const reads: ScenarioCase[] = [
     covers:
       "The initial read lands the snapshot and, since something is signed, a validation of the working copy. The lists are memoized per snapshot. getSignature finds a field by ref (sameRef, which a mixed pair never matches), by name, by a widget's object number or annotation ref (a widget the snapshot doesn't carry is looked up through the form plugin), and answers null for an unknown address or an address that is neither. getVerdict follows the last validation.",
     plugins: FORM_SIG(),
-    engine: { documents: { a: docOf({ signatures: [SIG1, dto(1, 2, 'Sig2', { widget: null }), SIG3_FQN] }) } },
+    engine: {
+      documents: {
+        a: docOf({ signatures: [SIG1, dto(1, 2, 'Sig2', { widget: null }), SIG3_FQN] }),
+      },
+    },
     steps: [
       ...boot,
       sig('getSnapshot'),
@@ -496,7 +603,11 @@ const reads: ScenarioCase[] = [
       sig('getSignature', fqn('Nope')),
       sig('getSignature', ref(9)),
       sig('getSignature', { annotObjectNumber: 101 }),
-      sig('getSignature', { kind: 'objectNumber', page: { kind: 'objectNumber', objectNumber: 1 }, annotObjectNumber: 101 }),
+      sig('getSignature', {
+        kind: 'objectNumber',
+        page: { kind: 'objectNumber', objectNumber: 1 },
+        annotObjectNumber: 101,
+      }),
       sig('getSignature', { annotObjectNumber: 102 }),
       sig('getSignature', { annotObjectNumber: 999 }),
       sig('getSignature', { kind: 'name', name: 'Sig1' }),
@@ -547,14 +658,20 @@ const reads: ScenarioCase[] = [
         a: docOf({
           signatures: [
             SIG1,
-            dto(1, 2, 'Sig2', { widget: currentFormWidget(150, { kind: 'objectNumber', objectNumber: 1 }) }),
+            dto(1, 2, 'Sig2', {
+              widget: currentFormWidget(150, { kind: 'objectNumber', objectNumber: 1 }),
+            }),
             { ...dto(2, 0, 'Odd'), field: { kind: 'objectNumber' }, widget: null },
           ],
         }),
       },
     },
     ...UNSNAPSHOTTED,
-    steps: [...boot, sig('getSignature', { annotObjectNumber: 150 }), sig('getSignature', { kind: 'objectNumber' })],
+    steps: [
+      ...boot,
+      sig('getSignature', { annotObjectNumber: 150 }),
+      sig('getSignature', { kind: 'objectNumber' }),
+    ],
   },
   {
     name: 'nothing-signed-reads',
@@ -563,14 +680,22 @@ const reads: ScenarioCase[] = [
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf({ signatures: [SIG2] }) } },
     snapshot: ['signature::a'],
-    steps: [...boot, sig('getVerdict', ref(2)), sig('listVerdicts'), sig('listSignatures'), sig('listUnsignedFields')],
+    steps: [
+      ...boot,
+      sig('getVerdict', ref(2)),
+      sig('listVerdicts'),
+      sig('listSignatures'),
+      sig('listUnsignedFields'),
+    ],
   },
   {
     name: 'signature-service-refuses-unsupported',
     covers:
       "Without the engine's signatures service the snapshot is null and stays idle: reads answer empty, refresh and validate answer null and [], analyzeChanges and readRevision refuse unsupported (readRevision synchronously), and every signing verb rejects unsupported. abortPending with nothing parked resolves.",
     plugins: FORM_SIG(),
-    engine: { documents: { a: docOf({
+    engine: {
+      documents: {
+        a: docOf({
           responses: [
             'list',
             'getContents',
@@ -584,7 +709,9 @@ const reads: ScenarioCase[] = [
             path: `signatures.${method}`,
             error: { name: 'EngineError', code: 'Unsupported', message: 'unsupported' },
           })),
-        }) } },
+        }),
+      },
+    },
     snapshot: ['signature::a'],
     steps: [
       ...boot,
@@ -630,7 +757,8 @@ const reads: ScenarioCase[] = [
   },
   {
     name: 'certify-needs-the-config',
-    covers: 'canCertify is false without allowCertify, whatever the grant; an explicit mode wins over the signer default.',
+    covers:
+      'canCertify is false without allowCertify, whatever the grant; an explicit mode wins over the signer default.',
     plugins: FORM_SIG({ mode: 'ask' }),
     engine: { documents: { a: docOf() } },
     ...UNSNAPSHOTTED,
@@ -643,9 +771,18 @@ const reads: ScenarioCase[] = [
 const hydration: ScenarioCase[] = [
   {
     name: 'the-initial-read-fails',
-    covers: 'A snapshot read that rejects marks the status error and reports the initial read; a refresh rejects again.',
+    covers:
+      'A snapshot read that rejects marks the status error and reports the initial read; a refresh rejects again.',
     plugins: FORM_SIG(),
-    engine: { documents: { a: docOf({ responses: [{ path: 'signatures.list', error: { name: 'EngineError', message: 'io', code: 'Io' } }] }) } },
+    engine: {
+      documents: {
+        a: docOf({
+          responses: [
+            { path: 'signatures.list', error: { name: 'EngineError', message: 'io', code: 'Io' } },
+          ],
+        }),
+      },
+    },
     snapshot: ['signature::a'],
     steps: [...boot, sig('getStatus'), sig('refresh')],
   },
@@ -670,7 +807,10 @@ const hydration: ScenarioCase[] = [
     steps: [
       ...boot,
       sig('onProtectionChanged', fn('protectionChanged')),
-      sig('onProtectionChanged', fn('protectionChanged.bad', { throws: { message: 'listener broke' } })),
+      sig(
+        'onProtectionChanged',
+        fn('protectionChanged.bad', { throws: { message: 'listener broke' } }),
+      ),
       sig('getStatus'),
       settle('first', snap([SIG2])),
       sig('refresh'),
@@ -693,7 +833,15 @@ const hydration: ScenarioCase[] = [
             { ...analysis('forbidden'), times: 1 },
             { ...analysis('forbidden'), times: 1 },
             { ...analysis('permitted'), times: 1 },
-            { ...analysis('forbidden', 'working-copy', { verdict: 'forbidden', objectNumber: 7, rule: 'page-content', detail: 'replaced' }), times: 1 },
+            {
+              ...analysis('forbidden', 'working-copy', {
+                verdict: 'forbidden',
+                objectNumber: 7,
+                rule: 'page-content',
+                detail: 'replaced',
+              }),
+              times: 1,
+            },
             { ...analysis('forbidden', 'persisted'), times: 1 },
           ],
         }),
@@ -722,7 +870,11 @@ const hydration: ScenarioCase[] = [
         a: docOf({
           signatures: [SIG1, SIG2, signedDto(2, 4, 'Sig4', { revisionIndex: null })],
           responses: [
-            { path: 'signatures.analyze', args: [{ since: { signatureIndex: 0 }, until: 'persisted' }], value: { current: { verdict: 'unchanged', primary: null } } },
+            {
+              path: 'signatures.analyze',
+              args: [{ since: { signatureIndex: 0 }, until: 'persisted' }],
+              value: { current: { verdict: 'unchanged', primary: null } },
+            },
             { path: 'signatures.downloadRevision', args: [1], value: $b('cmV2MQ==') },
             { path: 'signatures.downloadRevision', args: [0], value: $b('cmV2MA==') },
           ],
@@ -744,7 +896,10 @@ const hydration: ScenarioCase[] = [
 
 // ── live document events ──────────────────────────────────────────────────────
 
-const LIST_FAILS = { path: 'signatures.list', error: { name: 'EngineError', message: 'io', code: 'Io' } } as const;
+const LIST_FAILS = {
+  path: 'signatures.list',
+  error: { name: 'EngineError', message: 'io', code: 'Io' },
+} as const;
 
 const events: ScenarioCase[] = [
   {
@@ -771,9 +926,7 @@ const events: ScenarioCase[] = [
         'forms.widgetRemoved',
         'forms.repaired',
         'forms.repaired',
-      ].map(
-        (type) => emit({ type }),
-      ),
+      ].map((type) => emit({ type })),
       advance(300),
       ...[
         'annotations.created',
@@ -782,9 +935,7 @@ const events: ScenarioCase[] = [
         'annotations.reordered',
         'forms.valueSet',
         'forms.updated',
-      ].map(
-        (type) => emit({ type }),
-      ),
+      ].map((type) => emit({ type })),
       advance(299),
       emit({ type: 'forms.updated' }),
       advance(299),
@@ -808,20 +959,38 @@ const events: ScenarioCase[] = [
     engine: {
       documents: {
         a: docOf({
-          responses: [listed([SIG1, SIG2], {}, { times: 2 }), { ...LIST_FAILS, times: 1 }, listed([SIG1, SIG2], {}, { times: 1 }), LIST_FAILS],
+          responses: [
+            listed([SIG1, SIG2], {}, { times: 2 }),
+            { ...LIST_FAILS, times: 1 },
+            listed([SIG1, SIG2], {}, { times: 1 }),
+            LIST_FAILS,
+          ],
         }),
       },
     },
     ...UNSNAPSHOTTED,
-    steps: [...boot, emit({ type: 'document.versioned' }), emit({ type: 'forms.created' }), emit({ type: 'annotations.updated' }), advance(300)],
+    steps: [
+      ...boot,
+      emit({ type: 'document.versioned' }),
+      emit({ type: 'forms.created' }),
+      emit({ type: 'annotations.updated' }),
+      advance(300),
+    ],
   },
   {
     name: 'close-drops-the-pending-validation',
-    covers: 'Closing the document with a validation scheduled clears its timer and disposes the hooks.',
+    covers:
+      'Closing the document with a validation scheduled clears its timer and disposes the hooks.',
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf() } },
     ...UNSNAPSHOTTED,
-    steps: [...boot, sig('onValidated', fn('validated')), emit({ type: 'annotations.updated' }), close(), advance(400)],
+    steps: [
+      ...boot,
+      sig('onValidated', fn('validated')),
+      emit({ type: 'annotations.updated' }),
+      close(),
+      advance(400),
+    ],
   },
 ];
 
@@ -835,7 +1004,9 @@ const fills: ScenarioCase[] = [
     plugins: FORM_SIG(),
     engine: {
       documents: {
-        a: docOf({ responses: [{ path: 'forms.setSignatureAppearance', times: 1, defer: 'draw' }] }),
+        a: docOf({
+          responses: [{ path: 'forms.setSignatureAppearance', times: 1, defer: 'draw' }],
+        }),
       },
     },
     snapshot: ['signature::a'],
@@ -859,7 +1030,12 @@ const fills: ScenarioCase[] = [
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf({ lacks: ['forms.setSignatureAppearance'] }) } },
     ...UNSNAPSHOTTED,
-    steps: [...boot, sig('fillField', ref(2), MARK), sig('clearField', ref(2)), sig('canFill', ref(2))],
+    steps: [
+      ...boot,
+      sig('fillField', ref(2), MARK),
+      sig('clearField', ref(2)),
+      sig('canFill', ref(2)),
+    ],
   },
   {
     name: 'the-sign-here-target',
@@ -887,15 +1063,28 @@ const fills: ScenarioCase[] = [
   },
   {
     name: 'fill-an-asset-mark',
-    covers: "A mark naming a stamp asset draws the asset's bytes; an asset the stamp plugin doesn't know refuses not-found.",
-    plugins: [{ factory: 'interaction' }, { factory: 'form' }, { factory: 'stamp' }, { factory: 'signature' }],
-    engine: withWorkshop({ documents: { a: docOf() } }),
+    covers:
+      "A mark naming a stamp asset draws the asset's bytes; an asset the stamp plugin doesn't know refuses not-found.",
+    plugins: STAMP({ assetEngine: 'instance' }, [
+      { factory: 'interaction' },
+      { factory: 'form-current' },
+      { factory: 'signature' },
+    ]),
+    engine: assetCreationEngine(docOf()),
     ...UNSNAPSHOTTED,
-    steps: [...boot, st('createAsset', { name: 'Logo', source: PNG }), sig('fillField', ref(2), { assetId: 'stamp-lib-0-0:Logo' }), sig('fillField', ref(2), { assetId: 'nope' })],
+    awaitCalls: true,
+    steps: [
+      ...boot,
+      st('createAsset', { name: 'Logo', source: PNG }),
+      sig('fillField', ref(2), { assetId: 'stamp-lib-0-0:Logo' }),
+      sig('fillField', ref(2), { assetId: 'nope' }),
+    ],
   },
 ];
 
-const PREPARE: ResponseSpec = { path: 'signatures.prepare', value: prepared(),
+const PREPARE: ResponseSpec = {
+  path: 'signatures.prepare',
+  value: prepared(),
   events: canonical([
     {
       type: 'signatures.prepared',
@@ -906,7 +1095,9 @@ const PREPARE: ResponseSpec = { path: 'signatures.prepare', value: prepared(),
     } satisfies import('@embedpdf/engine-core/runtime').DocumentEvent,
   ]) as ResponseSpec['events'],
 };
-const COMPLETE: ResponseSpec = { path: 'signatures.complete', value: completed(),
+const COMPLETE: ResponseSpec = {
+  path: 'signatures.complete',
+  value: completed(),
   events: [
     {
       type: 'signatures.completed',
@@ -926,7 +1117,12 @@ const signing: ScenarioCase[] = [
     engine: {
       documents: {
         a: docOf({
-          responses: [listed([SIG1, SIG2], {}, { times: 2 }), listed(BOTH_SIGNED), PREPARE, COMPLETE],
+          responses: [
+            listed([SIG1, SIG2], {}, { times: 2 }),
+            listed(BOTH_SIGNED),
+            PREPARE,
+            COMPLETE,
+          ],
         }),
       },
     },
@@ -955,25 +1151,58 @@ const signing: ScenarioCase[] = [
   },
   {
     name: 'abort-the-parked-signing',
-    covers: 'abortPending cancels the parked signing and clears it; with nothing parked it does nothing.',
+    covers:
+      'abortPending cancels the parked signing and clears it; with nothing parked it does nothing.',
     plugins: FORM_SIG(),
     engine: {
-      documents: { a: docOf({ responses: [PREPARE, { path: 'signatures.cancel', value: { status: 'cancelled' },
+      documents: {
+        a: docOf({
+          responses: [
+            PREPARE,
+            {
+              path: 'signatures.cancel',
+              value: { status: 'cancelled' },
               events: [{ type: 'signatures.cancelled', signingId: 'signing-1', origin: ORIGIN }],
-            }] }) },
+            },
+          ],
+        }),
+      },
     },
     snapshot: ['signature::a'],
-    steps: [...boot, sig('prepareSignature', { field: ref(2), mark: MARK }), sig('cancelPending'), sig('cancelPending'), sig('completeSignature', 'signing-1', $b('AAEC'))],
+    steps: [
+      ...boot,
+      sig('prepareSignature', { field: ref(2), mark: MARK }),
+      sig('cancelPending'),
+      sig('cancelPending'),
+      sig('completeSignature', 'signing-1', $b('AAEC')),
+    ],
   },
   {
     name: 'a-parked-signing-from-elsewhere',
-    covers: "abortPending cancels a signing the engine announced, which this session can't complete.",
+    covers:
+      "abortPending cancels a signing the engine announced, which this session can't complete.",
     plugins: FORM_SIG(),
-    engine: { documents: { a: docOf({ responses: [{ path: 'signatures.cancel', value: { status: 'cancelled' },
+    engine: {
+      documents: {
+        a: docOf({
+          responses: [
+            {
+              path: 'signatures.cancel',
+              value: { status: 'cancelled' },
               events: [{ type: 'signatures.cancelled', signingId: 'signing-1', origin: ORIGIN }],
-            }] }) } },
+            },
+          ],
+        }),
+      },
+    },
     ...UNSNAPSHOTTED,
-    steps: [...boot, emit({ type: 'signatures.prepared', signingId: 'remote-1', field: ref(2) }), sig('completeSignature', 'remote-1', $b('AAEC')), sig('cancelPending'), sig('getPending')],
+    steps: [
+      ...boot,
+      emit({ type: 'signatures.prepared', signingId: 'remote-1', field: ref(2) }),
+      sig('completeSignature', 'remote-1', $b('AAEC')),
+      sig('cancelPending'),
+      sig('getPending'),
+    ],
   },
   {
     name: 'sign-one-shot',
@@ -982,13 +1211,31 @@ const signing: ScenarioCase[] = [
     plugins: FORM_SIG({ signer: CMS_SIGNER }),
     engine: {
       documents: {
-        a: docOf({ responses: [listed([SIG1, SIG2], {}, { times: 2 }), listed(BOTH_SIGNED), PREPARE, COMPLETE] }),
+        a: docOf({
+          responses: [
+            listed([SIG1, SIG2], {}, { times: 2 }),
+            listed(BOTH_SIGNED),
+            PREPARE,
+            COMPLETE,
+          ],
+        }),
       },
     },
     snapshot: ['signature::a'],
     awaitCalls: true,
-    steps: [...boot, listen('onSigned'), sig('setTarget', ref(2)), drain, sig('sign', { field: ref(2), mark: MARK,
-        signer: { reason: 'approve' }, lock: { action: 'all' } }), drain],
+    steps: [
+      ...boot,
+      listen('onSigned'),
+      sig('setTarget', ref(2)),
+      drain,
+      sig('sign', {
+        field: ref(2),
+        mark: MARK,
+        signer: { reason: 'approve' },
+        lock: { action: 'all' },
+      }),
+      drain,
+    ],
   },
   {
     name: 'sign-with-a-per-call-signer',
@@ -997,7 +1244,15 @@ const signing: ScenarioCase[] = [
     plugins: FORM_SIG({ signer: { ...CMS_SIGNER, answer: { rejects: { message: 'not me' } } } }),
     engine: {
       documents: {
-        a: docOf({ responses: [listed([SIG1, SIG2], {}, { times: 3 }), { ...LIST_FAILS, times: 1 }, listed(BOTH_SIGNED), PREPARE, COMPLETE] }),
+        a: docOf({
+          responses: [
+            listed([SIG1, SIG2], {}, { times: 3 }),
+            { ...LIST_FAILS, times: 1 },
+            listed(BOTH_SIGNED),
+            PREPARE,
+            COMPLETE,
+          ],
+        }),
       },
     },
     ...UNSNAPSHOTTED,
@@ -1009,7 +1264,9 @@ const signing: ScenarioCase[] = [
         field: ref(2),
         mark: MARK,
         appearance: $b('JVBERi0xLjc='),
-        key: fn('call.resolve', { resolves: { kind: 'cms', sign: fn('call.sign', { resolves: cmsArg('rsaCades') }) } }),
+        key: fn('call.resolve', {
+          resolves: { kind: 'cms', sign: fn('call.sign', { resolves: cmsArg('rsaCades') }) },
+        }),
       }),
       drain,
     ],
@@ -1019,12 +1276,28 @@ const signing: ScenarioCase[] = [
     covers:
       "A raw signer's certificate subject is the default /Name, which the caller's attribution overrides; a signer that fails aborts the signing and rejects. A thunk signer resolves per signing. A raw signer with no certificate names no one.",
     plugins: FORM_SIG({
-      signer: { kind: 'raw', certificateChain: [certArg('leaf'), certArg('inter')], algorithm: 'RSA-PKCS1-v1_5', hash: 'sha256', answer: { rejects: { message: 'token removed' } }, thunk: true },
+      signer: {
+        kind: 'raw',
+        certificateChain: [certArg('leaf'), certArg('inter')],
+        algorithm: 'RSA-PKCS1-v1_5',
+        hash: 'sha256',
+        answer: { rejects: { message: 'token removed' } },
+        thunk: true,
+      },
     }),
     engine: {
-      documents: { a: docOf({ responses: [PREPARE, { path: 'signatures.cancel', value: { status: 'cancelled' },
+      documents: {
+        a: docOf({
+          responses: [
+            PREPARE,
+            {
+              path: 'signatures.cancel',
+              value: { status: 'cancelled' },
               events: [{ type: 'signatures.cancelled', signingId: 'signing-1', origin: ORIGIN }],
-            }] }) },
+            },
+          ],
+        }),
+      },
     },
     snapshot: ['signature::a'],
     awaitCalls: true,
@@ -1032,18 +1305,28 @@ const signing: ScenarioCase[] = [
       ...boot,
       drain,
       sig('sign', { field: ref(2), mark: MARK }),
-      sig('sign', { field: ref(2), mark: MARK,
-        signer: { name: 'Someone Else', location: 'Oslo' } }),
       sig('sign', {
         field: ref(2),
         mark: MARK,
-        key: { kind: 'raw', certificateChain: [], algorithm: 'RSA-PKCS1-v1_5', hash: 'sha256', sign: fn('raw.sign', { resolves: $b('') }) },
+        signer: { name: 'Someone Else', location: 'Oslo' },
+      }),
+      sig('sign', {
+        field: ref(2),
+        mark: MARK,
+        key: {
+          kind: 'raw',
+          certificateChain: [],
+          algorithm: 'RSA-PKCS1-v1_5',
+          hash: 'sha256',
+          sign: fn('raw.sign', { resolves: $b('') }),
+        },
       }),
     ],
   },
   {
     name: 'sign-without-a-signer',
-    covers: "sign with no signer configured or passed rejects invalid-input; a mark the stamp plugin can't resolve rejects not-found.",
+    covers:
+      "sign with no signer configured or passed rejects invalid-input; a mark the stamp plugin can't resolve rejects not-found.",
     plugins: FORM_SIG(),
     engine: { documents: { a: docOf() } },
     ...UNSNAPSHOTTED,
@@ -1053,23 +1336,42 @@ const signing: ScenarioCase[] = [
 
 // ── the destination rule ──────────────────────────────────────────────────────
 
+const placementAnswer = (
+  n: number,
+  box: { x: number; y: number; width: number; height: number },
+  name?: string,
+) =>
+  write(n - 59, [
+    {
+      item: currentCreated(
+        materialize(n, {
+          subtype: 'stamp',
+          box,
+          fit: 'contain',
+          ...(name ? { name, subject: name } : {}),
+        }),
+      ),
+    },
+  ]);
 const PLACE_DOC = (o: DocOptions = {}) =>
   docOf({
     ...o,
-    responses: [
-      ...(o.responses ?? []),
-      { path: 'page.annotations.create', pon: 1, value: created(stampDto(60)) },
+    responses: o.responses ?? [
+      placementAnswer(60, { x: 75, y: 87.5, width: 50, height: 25 }, 'Logo'),
+      placementAnswer(61, { x: 75, y: 87.5, width: 50, height: 25 }),
     ],
   });
-const at = { page: { kind: 'objectNumber', objectNumber: 1 }, at: { x: 100, y: 100 }, targetWidth: 50 };
+const at = { page: pr(1), center: { x: 100, y: 100 }, targetWidth: 50 };
 
 const placement: ScenarioCase[] = [
   {
     name: 'place-by-mode-visual',
-    covers: 'Mode visual fills the field; a free placement of an asset goes through the stamp plugin and of bytes through the annotation plugin.',
+    covers:
+      'Mode visual fills the field; a free placement of an asset goes through the stamp plugin and of bytes through the annotation plugin.',
     plugins: FULL(),
-    engine: withWorkshop({ documents: { a: PLACE_DOC() } }),
+    engine: assetCreationEngine(PLACE_DOC()),
     ...UNSNAPSHOTTED,
+    awaitCalls: true,
     steps: [
       ...boot,
       listen('onFilled'),
@@ -1085,12 +1387,22 @@ const placement: ScenarioCase[] = [
     plugins: FORM_SIG({ mode: 'ask' }),
     engine: { documents: { a: docOf() } },
     ...UNSNAPSHOTTED,
-    steps: [...boot, listen('onSignRequested'), sig('placeMark', { assetId: 'a-1' }, { field: ref(2) })],
+    steps: [
+      ...boot,
+      listen('onSignRequested'),
+      sig('placeMark', { assetId: 'a-1' }, { field: ref(2) }),
+    ],
   },
   {
     name: 'place-an-asset-without-the-stamp-plugin',
     covers: 'A free placement of an asset with no stamp plugin refuses unsupported.',
-    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'signature-annotation' }, { factory: 'form' }, { factory: 'signature' }],
+    plugins: [
+      { factory: 'interaction' },
+      { factory: 'annotation-live' },
+      { factory: 'signature-annotation' },
+      { factory: 'form-current' },
+      { factory: 'signature' },
+    ],
     engine: { documents: { a: docOf() } },
     ...UNSNAPSHOTTED,
     steps: [...boot, sig('placeMark', { assetId: 'a-1' }, at)],
@@ -1110,7 +1422,14 @@ const placement: ScenarioCase[] = [
     plugins: FORM_SIG({ signer: CMS_SIGNER, allowCertify: true }),
     engine: {
       documents: {
-        a: docOf({ responses: [listed([SIG1, SIG2], {}, { times: 2 }), listed(BOTH_SIGNED), PREPARE, COMPLETE] }),
+        a: docOf({
+          responses: [
+            listed([SIG1, SIG2], {}, { times: 2 }),
+            listed(BOTH_SIGNED),
+            PREPARE,
+            COMPLETE,
+          ],
+        }),
       },
     },
     ...UNSNAPSHOTTED,
@@ -1121,21 +1440,39 @@ const placement: ScenarioCase[] = [
 
 // ── the armed mark ────────────────────────────────────────────────────────────
 
-const LIB = assetDoc([assetPage(0, 100)]);
-const down = (x: number, y: number, over: Dto = {}) => ix('dispatchPointer', sample('down', x, y, over));
+const LIB = (kind: 'stamps' | 'signatures' = 'signatures') =>
+  assetDoc([assetPage(0, 100)], {
+    catalogWrites: [{ id: 'stamp-lib-0-1', kind }],
+  });
+const down = (x: number, y: number, over: Dto = {}) =>
+  ix('dispatchPointer', sample('down', x, y, over));
 const up = (x: number, y: number) => ix('dispatchPointer', sample('up', x, y));
 const importSignatures = st('importLibrary', PDF, { libraryKind: 'signatures' });
 const importStamps = st('importLibrary', PDF);
-const arm = st('armAsset', 'a', 'stamp-lib-0-1:Stamp1');
+const arm: Step = {
+  op: 'call',
+  target: { token: 'stamp', doc: 'a' },
+  method: 'armAsset',
+  args: ['stamp-lib-0-1:Stamp1'],
+};
 
 const armed: ScenarioCase[] = [
   {
     name: 'an-armed-mark-over-a-field',
     covers:
-      "With the interaction hub and the stamp plugin, an armed asset from a signatures library pressed over an empty signature field disarms and goes into the field by mode. Over a signed field, or a signature field that carries a value, the press is consumed and nothing happens. Over a text field, over no field, or without a page the handler declines and the annotation plugin's stamp placement runs.",
+      'With the interaction hub and the stamp plugin, an armed asset from a signatures library pressed over an empty signature field disarms and goes into the field by mode. Over a signed field, or a signature field that carries a value, the press is consumed and nothing happens. Over a text field or without a page the handler declines; annotation hit handling retains priority over placement. Over an empty page area the stamp is placed.',
     plugins: FULL({ mode: 'ask' }),
-    engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
+    engine: {
+      documents: {
+        a: PLACE_DOC({
+          responses: [placementAnswer(60, { x: 400, y: 650, width: 200, height: 100 }, 'Stamp1')],
+        }),
+        lib: LIB(),
+      },
+      responses: opens('a', 'lib'),
+    },
     ...UNSNAPSHOTTED,
+    awaitCalls: true,
     steps: [
       ...boot,
       listen('onSignRequested'),
@@ -1163,8 +1500,12 @@ const armed: ScenarioCase[] = [
     covers:
       "An asset from a library of another kind, or a stamp the annotation plugin armed on its own, is not a person's mark: the handler declines. With another tool active the handler is not asked.",
     plugins: FULL({ mode: 'ask' }),
-    engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
+    engine: {
+      documents: { a: PLACE_DOC({ responses: [] }), lib: LIB('stamps') },
+      responses: opens('a', 'lib'),
+    },
     ...UNSNAPSHOTTED,
+    awaitCalls: true,
     steps: [
       ...boot,
       listen('onSignRequested'),
@@ -1181,25 +1522,47 @@ const armed: ScenarioCase[] = [
   },
   {
     name: 'an-armed-mark-reports-its-handler',
-    covers: "The press that drops a mark into a field is the handler's gesture: onGestureStarted names signature:armed-mark-on-field.",
+    covers:
+      'A press over a signature field starts a stamp-tool gesture on its page and is handled by the signature handler.',
     plugins: FULL({ mode: 'ask' }),
-    engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
+    engine: { documents: { a: PLACE_DOC(), lib: LIB() }, responses: opens('a', 'lib') },
     ...UNSNAPSHOTTED,
-    steps: [...boot, ix('onGestureStarted', fn('started')), importSignatures, arm, down(150, 288), up(150, 288)],
+    awaitCalls: true,
+    steps: [
+      ...boot,
+      ix('onGestureStarted', fn('started')),
+      importSignatures,
+      arm,
+      down(150, 288),
+      up(150, 288),
+    ],
   },
   {
     name: 'a-legacy-stamp-tool-keeps-the-arm',
     covers:
       "A tool enabling the legacy annotation-stamp tag keeps the stamp armed, but it is not the armed-stamp tool, so the handler is not asked and the annotation plugin's stamp placement runs over the field.",
     plugins: FULL({ mode: 'ask' }),
-    engine: { documents: { a: PLACE_DOC(), lib: LIB }, responses: opens('a', 'lib') },
+    engine: {
+      documents: {
+        a: PLACE_DOC({
+          responses: [placementAnswer(60, { x: 50, y: 238, width: 200, height: 100 }, 'Stamp1')],
+        }),
+        lib: LIB(),
+      },
+      responses: opens('a', 'lib'),
+    },
     ...UNSNAPSHOTTED,
+    awaitCalls: true,
     steps: [
       ...boot,
       listen('onSignRequested'),
       importSignatures,
       arm,
-      ix('registerTool', { id: 'legacy-stamp', cursor: 'copy', enables: { $set: ['annotation-stamp'] } }),
+      ix('registerTool', {
+        id: 'legacy-stamp',
+        cursor: 'copy',
+        enables: { $set: ['annotation-stamp'] },
+      }),
       ix('activateTool', 'legacy-stamp'),
       anno('isArmed'),
       down(150, 288),
@@ -1210,18 +1573,40 @@ const armed: ScenarioCase[] = [
     name: 'a-mark-that-fails-to-land',
     covers: 'A placement the handler started that rejects is reported.',
     plugins: FULL(),
-    engine: { documents: { a: PLACE_DOC({ lacks: ['forms.setSignatureAppearance'] }), lib: LIB }, responses: opens('a', 'lib') },
+    engine: {
+      documents: { a: PLACE_DOC({ lacks: ['forms.setSignatureAppearance'] }), lib: LIB() },
+      responses: opens('a', 'lib'),
+    },
     ...UNSNAPSHOTTED,
+    awaitCalls: true,
     steps: [...boot, importSignatures, arm, down(150, 288), up(150, 288)],
   },
   {
     name: 'no-handler-without-the-hub-and-the-stamp-plugin',
-    covers: 'Without the stamp plugin no handler is registered, so an armed stamp over a field stays a stamp placement.',
-    plugins: [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'signature-annotation' },
-      { factory: 'form' }, { factory: 'signature', config: { mode: 'ask' } }],
-    engine: { documents: { a: PLACE_DOC({ responses: [{ path: 'apply', ...confirmation(901, [{ item: currentCreated(materialize(3, { subtype: 'stamp', box: { x: 100, y: 263, width: 100, height: 50 } })) }]) }] }) } },
+    covers:
+      'Without the stamp plugin no handler is registered, so an armed stamp over a field stays a stamp placement.',
+    plugins: [
+      { factory: 'interaction' },
+      { factory: 'annotation-live' },
+      { factory: 'signature-annotation' },
+      { factory: 'form-current' },
+      { factory: 'signature', config: { mode: 'ask' } },
+    ],
+    engine: {
+      documents: {
+        a: PLACE_DOC({
+          responses: [placementAnswer(60, { x: 100, y: 263, width: 100, height: 50 })],
+        }),
+      },
+    },
     ...UNSNAPSHOTTED,
-    steps: [...boot, listen('onSignRequested'), anno('arm', { source: PNG }), down(150, 288), up(150, 288)],
+    steps: [
+      ...boot,
+      listen('onSignRequested'),
+      anno('arm', { source: PNG }),
+      down(150, 288),
+      up(150, 288),
+    ],
   },
 ];
 
@@ -1234,12 +1619,23 @@ const shapes: ScenarioCase[] = [
     plugins: FORM_SIG({ shape: 'controller' }),
     engine: { documents: { a: docOf() } },
     snapshot: ['signature::a'],
-    steps: [...boot, sig('getStatus'), emit({ type: 'signatures.prepared', signingId: 's-1', field: ref(2) }), sig('getPending'), sig('refresh')],
+    steps: [
+      ...boot,
+      sig('getStatus'),
+      emit({ type: 'signatures.prepared', signingId: 's-1', field: ref(2) }),
+      sig('getPending'),
+      sig('refresh'),
+    ],
   },
   {
     name: 'the-controller-shape',
-    covers: 'createSignatureController with no config connects the same way the plugin does, without the armed-mark handler.',
-    plugins: [{ factory: 'interaction' }, { factory: 'form' }, { factory: 'stamp' }, { factory: 'signature', config: { shape: 'controller' } }],
+    covers:
+      'createSignatureController with no config connects the same way the plugin does, without the armed-mark handler.',
+    plugins: STAMP({ assetEngine: 'instance' }, [
+      { factory: 'interaction' },
+      { factory: 'form-current' },
+      { factory: 'signature', config: { shape: 'controller' } },
+    ]),
     engine: { documents: { a: docOf({ signatures: [SIG2] }) } },
     snapshot: ['signature::a'],
     steps: [...boot, sig('getStatus'), sig('getMode')],
@@ -1254,7 +1650,9 @@ const functions = {
   setBusy: model.setBusy,
   blankPagePdf: () => blankPagePdf(),
   markRoleOf: (asset: { name: string }) => markRoleOf(asset),
-  setTarget: (target: Parameters<typeof model.setTarget>[1], field: Parameters<typeof model.setTarget>[1],
+  setTarget: (
+    target: Parameters<typeof model.setTarget>[1],
+    field: Parameters<typeof model.setTarget>[1],
   ) => {
     const before = { ...initialSignatureState(), target };
     const state = model.setTarget(before, field);
@@ -1266,9 +1664,21 @@ const functions = {
 const S0 = initialSignatureState();
 const functionCases: FunctionCase[] = [
   { name: 'initial-state', fn: 'initialSignatureState', args: [] },
-  { name: 'set-verdicts', fn: 'setVerdicts', args: [S0, []] }, { name: 'set-target', fn: 'setTarget', args: [null, ref(2)] }, { name: 'set-busy', fn: 'setBusy', args: [S0, true] },
-  { name: 'blank-page', covers: 'The blank one-page PDF a clear draws.', fn: 'blankPagePdf', args: [] },
-  { name: 'blank-page-cached', covers: 'A second call copies the cached bytes.', fn: 'blankPagePdf', args: [] },
+  { name: 'set-verdicts', fn: 'setVerdicts', args: [S0, []] },
+  { name: 'set-target', fn: 'setTarget', args: [null, ref(2)] },
+  { name: 'set-busy', fn: 'setBusy', args: [S0, true] },
+  {
+    name: 'blank-page',
+    covers: 'The blank one-page PDF a clear draws.',
+    fn: 'blankPagePdf',
+    args: [],
+  },
+  {
+    name: 'blank-page-cached',
+    covers: 'A second call copies the cached bytes.',
+    fn: 'blankPagePdf',
+    args: [],
+  },
   { name: 'mark-role-initials', fn: 'markRoleOf', args: [{ name: 'initials' }] },
   { name: 'mark-role-signature', fn: 'markRoleOf', args: [{ name: 'anything' }] },
   { name: 'is-target-none', fn: 'setTarget', args: [null, ref(1)] },
@@ -1285,7 +1695,16 @@ export const suites: Suite[] = [
     file: 'plugins/signature.json',
     describes:
       'packages/plugin/signature: reads, hydration and validation, document events, fills, the sign-here target, one-shot and two-phase signing, the destination rule and the armed mark.',
-    cases: [...reads, ...hydration, ...events, ...fills, ...signing, ...placement, ...armed, ...shapes],
+    cases: [
+      ...reads,
+      ...hydration,
+      ...events,
+      ...fills,
+      ...signing,
+      ...placement,
+      ...armed,
+      ...shapes,
+    ],
   },
   {
     kind: 'function',

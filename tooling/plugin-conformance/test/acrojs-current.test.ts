@@ -545,7 +545,7 @@ test('host transactions are plain promises; disposal refuses new admissions with
     { name: 'Error', message: 'script host is disposed' },
   );
 });
-test('shared scripted exports and complete deferred consumer inputs remain unchanged', async () => {
+test('shared scripted exports remain unchanged', async () => {
   const original = readFileSync(new URL('original-acrojs.ts.txt', history), 'utf8');
   const current = readFileSync(new URL('../src/suites/acrojs.ts', import.meta.url), 'utf8');
   const block = (source: string) =>
@@ -554,48 +554,7 @@ test('shared scripted exports and complete deferred consumer inputs remain uncha
       source.indexOf('// ── the script-host driver'),
     );
   assert.equal(block(current), block(original));
-  for (const saved of read('deferred-inputs.json') as {
-    source: string;
-    sourceSha256: string;
-    inputs: unknown;
-  }[]) {
-    const source = readFileSync(
-      new URL('../src/suites/' + saved.source + '.ts', import.meta.url),
-      'utf8',
-    );
-    if (saved.source !== 'actions' && saved.source !== 'link') {
-      assert.equal(
-        createHash('sha256').update(source).digest('hex'),
-        saved.sourceSha256,
-        saved.source,
-      );
-    }
-    const module = await import('../src/suites/' + saved.source + '.ts');
-    // C6 owns links and C2–C4 own actions; stage and legacy stamp stay frozen.
-    const deferred = (entry: { file: string }) =>
-      ![
-        'plugins/link.json',
-        'plugins/link-functions.json',
-        'plugins/actions.json',
-        'plugins/actions-dispatcher.json',
-        'plugins/actions-submit.json',
-        'plugins/actions-triggers.json',
-        'plugins/actions-lifecycle.json',
-        'plugins/actions-script.json',
-        'plugins/actions-hover.json',
-      ].includes(entry.file);
-    assert.deepEqual(
-      (module.suites ?? [])
-        .filter(deferred)
-        .map(({ file, kind, cases }: { file: string; kind: string; cases: unknown }) => ({
-          file,
-          kind,
-          cases: canonical(cases),
-        })),
-      (saved.inputs as { file: string }[]).filter(deferred),
-      saved.source,
-    );
-  }
+
 });
 
 test('every default-world sandbox callback records the complete current input and literal seed sequence', async () => {
