@@ -19,8 +19,10 @@ allowance and no outcome exception (`cargo test -p epdf-plugin-stage`):
 
 `tests/api.rs` covers what the vectors can't: lens identity, motion on frames and its cancellation
 when the document closes, `stop_motion`, the current destination and a destination asked for before
-placement, the order of a viewport report's events, the paged-empty camera refusal, the empty
-scenes kept for M27 and R5, page arguments, the working set, and what a close releases.
+placement, the order of a viewport report's events, the paged-empty camera refusal, M27 (the empty
+scene for a NaN column count, and `Err` rather than a panic for non-finite camera input on a grid),
+R5, a non-invertible page transform, page arguments, the working set and its engine calls, and what
+a close releases.
 
 The statement and branch coverage figures that stood here were measured against the pre-catch-up
 package and are stale; Task 14 re-measures them.
@@ -112,10 +114,16 @@ equality is `PartialEq` on the typed values, `NaN` unequal to itself included.
 
 `connect.ts`'s `ctx.watch` calls are `connect::watch`, a store subscription the instance releases.
 The working-set watch (`working-set.ts`) runs as in the TypeScript, because reading the visible pages
-on every store change builds the scene when it does there. The engine call at its end,
-`ctx.doc.setWorkingSet(id, pages)`, is missing: the kernel's `DocumentHandle` has no such member. That
-is a kernel carry (Task 13.1 contract, host 13.33), and no vector observes it, since the fake
-engine's `setWorkingSet` is a no-op.
+on every store change builds the scene when it does there. It tells the engine through
+`DocumentHandle::set_working_set(view, pages)`, the pages as JSON, once per change of the set's key.
+The kernel's default is a no-op, and so is the conformance fake's, as the TypeScript fake's is
+(`fake-engine.ts:625`); forwarding it to the local engine is the host's (Task 13.33).
+`the_working_set_is_told_at_connect_and_on_each_change` pins the calls with a recording handle.
+
+A page transform whose view scale squares to zero (a huge device ratio over a tiny unbounded zoom)
+is not invertible. The TypeScript throws `Mat2D.invert: non-invertible matrix` from the page reads;
+no Rust page read returns a `Result`, so the page is left out of `list_visible_pages` and
+`get_page_frame` answers `None` (`a_non_invertible_page_transform_leaves_the_page_out`).
 
 Engine JSON reaches the stage carrying the kernel's `{"$undefined": true}` marker (a page without
 `userUnit`, say). `without_undefined` drops those members before the page registry and destinations
