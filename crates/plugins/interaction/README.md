@@ -1,23 +1,34 @@
 # epdf-plugin-interaction
 
-`packages/plugin/interaction` in Rust, at the v3 contract: the pointer hub (tools, a tool stack,
-prioritized handlers, gesture capture and gesture events, cursor claims, touch pre-flight) and the
-feedback plugin. All 27 cases in `vectors/plugins/interaction.json` and all 19 in
-`vectors/plugins/interaction-functions.json` replay identically (`cargo test -p
-epdf-plugin-interaction`).
+`packages/plugin/interaction` in Rust, at upstream `b456ee4fd`: the pointer hub (tools with their
+own page-space pointer members, a tool stack, prioritized handlers, gesture capture and gesture
+events, cursor claims, touch pre-flight), its settings, and the feedback plugin. All 19 cases in
+`vectors/plugins/interaction-functions.json` replay identically. Of the 27 in
+`vectors/plugins/interaction.json`, 15 do; the other 12 differ only in `stateChanges`, because
+`crates/plugin-conformance/src/scenario.rs:420` prints a slice that isn't a JSON `Value` as
+`undefined`. With that line printing through the plugin's `to_json`, all 27 replay (Task 13.11
+report).
 
-The modules follow the TypeScript files: `contract.rs`, `model.rs`, `controller.rs` and
-`feedback.rs`. The plugin is document-scoped and built through `create`, as
-`definePlugin({ create })` builds it. The api uses the v3 names: `getActiveTool`,
-`getDefaultToolId`, `listTools`, `getTool`, `hasTool`, `activeToolEnables`, `activateTool`,
-`activateDefaultTool`, `pushTool`, `popTool`, `setToolCursor`, `registerTool` (which errs `conflict`
-on a duplicate id unless `replace`), and the events `onToolChanged` (with the caller's `payload`),
-`onGestureStarted`, `onGestureEnded` and `onGestureCancelled`. An unknown tool errs `not-found`.
-Both errors are `PluginError`s with capability `interaction`.
+The modules follow the TypeScript files: `contract.rs`, `model.rs`, `controller.rs`, `state.rs`
+and `feedback.rs`. The plugin is document-scoped, built through `create` with no reducer, and
+declares its settings (`defaultTool`, `tools`) as `definePlugin({ settings })` does. The state holds
+`activeToolId`, `toolStack` and `cursor`; every change goes through the pure transitions in
+`model.rs`. The capability starts with the settings calls (`get_settings`, `update_settings`,
+`reset_settings`, `on_settings_changed`), then `getActiveTool`, `getActiveToolId`,
+`getDefaultToolId`, `listTools`, `getTool`, `hasTool`, `activateTool`, `activateDefaultTool`,
+`pushTool`, `popTool`, `setToolCursor`, `registerTool` (which errs `conflict` on a taken id unless
+`replace`, and moves a replaced id to the end), and the events `onToolChanged`, `onGestureStarted`,
+`onGestureEnded` and `onGestureCancelled`. An unknown tool errs `not-found`. Both errors are
+`PluginError`s with capability `interaction`.
+
+A tool given to `update_settings` can carry callbacks, which the kernel's JSON settings store can't
+hold. `settings.rs` stores it as a handle into a table that belongs to the registration, so it keeps
+its identity; a tool written as plain JSON reads as one without callbacks.
 
 ## Coverage
 
-The generators reach 589 of the package's 590 statements and 131 of its 132 branches. The one line
+The coverage figures below were measured before upstream replaced the reducer with transitions,
+and are stale until the coverage refresh. The generators reach 589 of the package's 590 statements and 131 of its 132 branches. The one line
 they can't reach is `model.ts:47`, the `default` arm for an action outside the four-member
 `InteractionAction` union. In Rust that union is an enum, so the arm has nothing to match.
 
@@ -30,8 +41,9 @@ tool stack, which is what took the package from 197 of 207 controller statements
 The TypeScript hands out one object under one token and types it twice: `InteractionCapability`
 for applications, `InteractionHostCapability` for pointer sources and feature plugins. Rust has one
 type, `InteractionCapability`, and `InteractionHostCapability` is an alias for it. The host members
-are `dispatch_pointer`, `would_claim_touch`, `register_handler` (taking `RegisterHandlerOptions`),
-`claim_cursor`, `get_cursor` and `on_cursor_changed`.
+are `active_tool_enables`, `dispatch_pointer`, `would_claim_touch`, `register_handler` (taking
+`RegisterHandlerOptions`), `claim_cursor`, `has_cursor_claim`, `get_cursor` and
+`on_cursor_changed`.
 
 `InteractionHandler` is a trait, and it's what the Rust selection, annotation, form and stage
 plugins implement. The TypeScript interface has six optional members; the trait gives each one a
@@ -58,16 +70,30 @@ noise for every downstream implementation, so the vectors don't script a throwin
 `Phase` is a four-variant enum. The TypeScript routes any phase string that isn't `down`, `move` or
 `cancel` down the `up` branch; a Rust caller can't construct one.
 
-The hub releases its handler list, its source scopes and the gesture owner when the instance
-closes. The TypeScript doesn't need to: a garbage collector reclaims the cycle between the hub and
-the handlers that hold it. Rust would leak it.
+The hub releases its handler list, its source scopes, the tools' own handlers and the gesture owner
+when the instance closes. The TypeScript doesn't need to: a garbage collector reclaims the cycle
+between the hub and the handlers that hold it. Rust would leak it. A closed hub then routes nothing
+(`closing_the_document_releases_the_handlers` in `tests/api.rs`). The tool registry stays, so a tool
+whose callbacks hold the capability strongly still keeps the hub alive; give such a callback a weak
+handle.
 
-`harness.rs` exports the JSON bridges (`sample_from_json`, `sample_json`, `tool_json`,
+The vectors write every page ref as `{kind: 'objectNumber', pageObjectNumber}`, a spelling the
+current `PageRef` doesn't have (`tooling/plugin-conformance/src/suites/interaction.ts:88`). The
+TypeScript reads `objectNumber` of such a ref as `undefined`, so `samplePointOn` matches no page and
+the vectors record `null` for the same-page cases. `harness.rs` reads such a ref as a stand-in that
+names no page and prints it as given. `sample_point_on_falls_back_to_the_same_page_hit` pins what a
+real ref does.
+
+`harness.rs` exports the JSON bridges (`sample_from_json`, `sample_json`, `with_vector_sample`,
+`tool_from_json`, `tool_json`, `page_ref_from_json`, `page_ref_json`, `gesture_json`,
 `tool_changed_json`, `config_from_json`, `ScriptedHandler`) and the `Interaction` adapter, which
-downstream crates register next to their own when their vectors drive the hub.
+downstream crates register next to their own when their vectors drive the hub. A vector's sample,
+tool or unreadable page ref prints as the vector gave it, because the TypeScript passes those
+objects through.
 
 ## Mutation testing
 
+These counts predate Task 13.11's re-port and are stale until Task 14 runs the table again.
 `scripts/mutants.sh -p epdf-plugin-interaction --test-package epdf-plugin-interaction --file
 <file>`, file by file over every module but `harness.rs`, catches 87 of 90 viable mutants (87 caught,
 0 timeouts; 26 unviable). One of those is killed by `a_nullable_page_ref_round_trips` in
