@@ -617,6 +617,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-history"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-kernel",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-i18n"
 version = "0.0.0"
 dependencies = [
