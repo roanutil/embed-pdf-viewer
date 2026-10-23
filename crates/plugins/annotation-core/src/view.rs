@@ -1,550 +1,762 @@
-//! `view.ts`: pure view selectors. [`page_items`] is the per-annotation
-//! render list with the live gesture applied; [`chrome`] is the selection
-//! overlay.
+//! `view.ts`: the pure view selectors. `pageItems` is the per-annotation
+//! render list (the live gesture applied), `chrome` the selection overlay.
 
-use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use crate::anchor::{
-    anchor_mode_of, anchor_of, anchored_box, anchored_geom, anchored_stroke_width,
-};
-use crate::flags::{annot_transformable, viewable};
+use crate::anchor::{anchor_mode_of, anchored_geom, anchored_scale, anchored_stroke_width};
+use crate::appearance::{raster_placement, source_during};
+use crate::editable::is_transformable_by_hand;
+use crate::flags::viewable;
+use crate::frame::placed;
 use crate::geometry::{
     Knob, ROTATE_KNOB_OFFSET, chord_through, geom_handles, geom_rotate_about, geom_rotation,
-    geom_scale_about, geom_translate, geom_visual_bounds, group_resize_factors, normalize_deg,
-    place_rotate_knob, rect_from_points, rect_handles_for, rotate_point, shape_rect_for,
-    union_rect,
+    geom_scale_about, geom_translate, geom_visual_bounds, group_resize_factors, place_rotate_knob,
+    rect_handles_for,
 };
 use crate::group::group_caps;
 use crate::hit::{is_selectable, paint_order};
-use crate::js;
-use crate::kinds::caps_for;
-use crate::measurement::{MeasurementAppearance, distance_handles, distance_layout};
+use crate::json::{self, Object};
+use crate::kinds::blend_for;
+use crate::measurement::{
+    MeasurementAppearance, distance_handles, distance_layout, measurement_of,
+};
 use crate::measurement_shape::{
     measurement_layout, move_measurement_caption, shape_measurement_readout,
-    transform_measurement_caption,
 };
-use crate::props::style_from_props;
-use crate::scene::blend_for;
-use crate::selection::{SelectionFrame, annotation_selection_frame};
+use crate::placement::{GestureForm, is_drag, placed_shape};
+use crate::record::{kind_of, ref_of, shape_of, style_of, text_of};
+use crate::rect::{MIN_SIZE, cursor_on_screen, rect_from_points, rotate_point, union_rect};
+use crate::selection::{Live, SelectionFrame, annotation_selection_frame};
+use crate::shapes::text_box::callout_shape;
 use crate::types::{
-    Annot, CalloutStep, ChromeNode, CreationDraftAnchor, CreationDraftKind, Draft, Geom, GuideLine,
-    GuideRole, Id, LineEnding, LineEndings, Model, PageRef, Point, PolySubtype, Rect, RenderItem,
-    RenderSource, Source, Style, ViewEnv,
+    ChromeNode, CreationDraftAnchor, Draft, GuideLine, GuideNode, HandleNode, Id, InkShape,
+    ItemSource, KnobNode, LineEndings, LinePoints, LineShape, Model, ObbNode, OutlineNode, PageRef,
+    Point, PolyShape, QuadsShape, Rect, RedactLabel, RenderItem, RotateGuidesNode, RotationAnchor,
+    Shape, Style, ViewEnv,
 };
+use crate::update::draw::{ShapeDraft, draft_placement};
 use crate::update::{
-    CalloutDraft, callout_box, callout_upright_rot, defaults_for, rotate_draft_delta,
+    callout_box, callout_upright_rot, line_endings_of, rotate_draft_delta, tool_annotation,
 };
 
-const DRAFT_ID: &str = "__draft__";
-const PREVIEW_ID: &str = "__markup_preview__";
+pub const DRAFT_ID: &str = "__draft__";
+pub const PREVIEW_ID: &str = "__markup_preview__";
 
-fn poly_preview_points(points: &[Point], cur: Point) -> Vec<Point> {
-    let mut out = points.to_vec();
-    if let Some(last) = points.last()
-        && (cur.x != last.x || cur.y != last.y)
-    {
-        out.push(cur);
+fn poly_preview_points(points: &[Point], current: Point) -> Vec<Point> {
+    match points.last() {
+        Some(last) if current.x != last.x || current.y != last.y => {
+            let mut out = points.to_vec();
+            out.push(current);
+            out
+        }
+        _ => points.to_vec(),
     }
-    out
 }
 
-/// The gesture-effective measurement appearance: a caption drag, a leader
-/// drag, and a pinned shape caption riding a move, rotate or group resize.
-fn eff_measure(m: &Model, id: &str) -> Option<MeasurementAppearance> {
-    let a = &m.by_id[id];
-    let measure = a.measure.as_ref()?;
-    let Some(d) = m.draft.as_deref() else {
-        return Some(measure.clone());
-    };
-    let has = |ids: &[Id]| ids.iter().any(|x| x == id);
-    match d {
-        Draft::Caption { id: did, delta, .. } if did == id => {
-            Some(move_measurement_caption(&a.geom, measure, *delta, &a.style))
+/// A redaction's overlay text: the label its hover preview draws.
+fn redaction_label_of(annotation: &Object) -> Option<RedactLabel> {
+    if json::get_str(annotation, "subtype") != Some("redact") {
+        return None;
+    }
+    let text = annotation.get("overlayText").filter(|v| json::truthy(Some(v)))?;
+    Some(RedactLabel {
+        text: text.as_str().unwrap_or("").into(),
+        repeat: annotation.get("repeat").filter(|v| !json::undefined(Some(v))).cloned(),
+        order: Default::default(),
+    })
+}
+
+/// `iconOf(annotation)`: a note's or file attachment's icon.
+pub fn icon_of(annotation: &Object) -> Option<Value> {
+    matches!(json::get_str(annotation, "subtype"), Some("text" | "file-attachment"))
+        .then(|| annotation.get("icon").filter(|v| json::truthy(Some(v))).cloned())
+        .flatten()
+}
+
+fn eff_measure(model: &Model, id: &str) -> Option<MeasurementAppearance> {
+    let record = model.record(id)?;
+    let measure = measurement_of(&record.annotation)?;
+    match model.draft() {
+        Some(Draft::Caption(d)) if d.id == id => {
+            let geometry = shape_of(&record.annotation);
+            Some(
+                move_measurement_caption(
+                    &geometry,
+                    &measure,
+                    d.delta,
+                    &style_of(&record.annotation),
+                )
+                .1,
+            )
         }
-        Draft::Leader { id: did, delta, .. } if did == id => match measure {
-            MeasurementAppearance::Distance(dist) => Some(MeasurementAppearance::Distance(
-                dist.with_leader_length(dist.leader.map_or(0.0, |l| l.length) + delta),
-            )),
-            _ => Some(measure.clone()),
+        Some(Draft::Leader(d)) if d.id == id && measure.is_distance() => {
+            Some(measure.with_leader_length(measure.leader_length() + d.delta))
+        }
+        _ => Some(measure),
+    }
+}
+
+fn eff_geom(model: &Model, id: &str, view: Option<&ViewEnv>) -> Shape {
+    let record = model.record(id).expect("a record");
+    let geometry =
+        anchored_geom(&shape_of(&record.annotation), anchor_mode_of(record).as_ref(), view);
+    match model.draft() {
+        Some(Draft::Move(d)) if d.ids.iter().any(|i| i == id) => geom_translate(&geometry, d.delta),
+        Some(Draft::Handle(d)) if d.id == id => d.current.clone(),
+        Some(Draft::Caption(d)) if d.id == id => match measurement_of(&record.annotation) {
+            Some(m) => {
+                move_measurement_caption(&geometry, &m, d.delta, &style_of(&record.annotation)).0
+            }
+            None => geometry,
         },
-        Draft::Move { ids, delta, .. } if has(ids) => {
-            transform_measurement_caption(Some(measure), |p| Point {
-                x: p.x + delta.x,
-                y: p.y + delta.y,
-            })
+        Some(Draft::Rotate(d)) if d.ids.iter().any(|i| i == id) => {
+            geom_rotate_about(&geometry, d.pivot, rotate_draft_delta(model, d).delta)
         }
-        Draft::Rotate { ids, pivot, .. } if has(ids) => {
-            let delta = rotate_draft_delta(m, &d.as_rotate().expect("a rotate draft")).delta;
-            transform_measurement_caption(Some(measure), |p| rotate_point(p, *pivot, delta))
+        Some(Draft::Group(d)) if d.ids.iter().any(|i| i == id) => {
+            let (sx, sy) = group_resize_factors(d.base, d.current);
+            geom_scale_about(&geometry, d.anchor, sx, sy, Some(MIN_SIZE))
         }
-        Draft::Group { ids, anchor, base, cur, .. } if has(ids) => {
-            let f = group_resize_factors(*base, *cur);
-            transform_measurement_caption(Some(measure), |p| Point {
-                x: anchor.x + (p.x - anchor.x) * f.sx,
-                y: anchor.y + (p.y - anchor.y) * f.sy,
-            })
-        }
-        _ => Some(measure.clone()),
+        _ => geometry,
     }
 }
 
-/// The gesture-effective geometry in view space: project first, then apply
-/// the live gesture.
-fn eff_geom(m: &Model, id: &str, view: Option<ViewEnv>) -> Geom {
-    let a = &m.by_id[id];
-    let g = anchored_geom(&a.geom, anchor_mode_of(a), view);
-    let Some(d) = m.draft.as_deref() else {
-        return g;
-    };
-    let has = |ids: &[Id]| ids.iter().any(|x| x == id);
-    match d {
-        Draft::Move { ids, delta, .. } if has(ids) => geom_translate(&g, *delta),
-        Draft::Handle { id: hid, cur, .. } if hid == id => cur.clone(),
-        Draft::Rotate { ids, pivot, .. } if has(ids) => {
-            let rd = d.as_rotate().expect("a rotate draft");
-            geom_rotate_about(&g, *pivot, rotate_draft_delta(m, &rd).delta)
-        }
-        Draft::Group { ids, anchor, base, cur, .. } if has(ids) => {
-            let f = group_resize_factors(*base, *cur);
-            geom_scale_about(&g, *anchor, f.sx, f.sy)
-        }
-        _ => g,
-    }
-}
-
-fn eff_style(a: &Annot, view: Option<ViewEnv>) -> Style {
-    let mode = anchor_mode_of(a);
+fn eff_style(annotation: &Object, view: Option<&ViewEnv>) -> Style {
+    let mode = anchor_mode_of(&AnnotationOnly(annotation));
+    let style = style_of(annotation);
     match (mode, view) {
-        (Some(mode), Some(_)) if mode.zoom => Style {
-            stroke_width: anchored_stroke_width(a.style.stroke_width, Some(mode), view),
-            ..a.style.clone()
-        },
-        _ => a.style.clone(),
-    }
-}
-
-/// `x || undefined` for a number.
-fn truthy(x: f64) -> Option<f64> {
-    (x != 0.0 && !x.is_nan()).then_some(x)
-}
-
-fn eff_ap(m: &Model, id: &str, view: Option<ViewEnv>) -> (Option<Rect>, Option<f64>) {
-    let a = &m.by_id[id];
-    if caps_for(&a.subtype).opaque_body {
-        let g = eff_geom(m, id, view);
-        return (g.rect().copied().or(a.ap_box), truthy(geom_rotation(&g)));
-    }
-    let Some(ap_box) = a.ap_box else {
-        return (None, a.ap_rot);
-    };
-    let projected = anchored_box(ap_box, anchor_of(&a.geom), anchor_mode_of(a), view);
-    let mut bx = projected.map_or(ap_box, |p| p.box_);
-    let rot = truthy(normalize_deg(a.ap_rot.unwrap_or(0.0) + projected.map_or(0.0, |p| p.rot)));
-    if let Some(Draft::Move { ids, delta, .. }) = m.draft.as_deref()
-        && ids.iter().any(|x| x == id)
-    {
-        bx = Rect { x: bx.x + delta.x, y: bx.y + delta.y, ..bx };
-    }
-    (Some(bx), rot)
-}
-
-fn eff_source(m: &Model, id: &str) -> Source {
-    let a = &m.by_id[id];
-    if caps_for(&a.subtype).opaque_body {
-        return a.source;
-    }
-    if m.editing.as_deref() == Some(id) && matches!(a.geom, Geom::Text { .. }) {
-        return Source::Vector;
-    }
-    match m.draft.as_deref() {
-        Some(
-            Draft::Handle { id: hid, .. }
-            | Draft::Caption { id: hid, .. }
-            | Draft::Leader { id: hid, .. },
-        ) if hid == id => Source::Vector,
-        Some(Draft::Rotate { ids, .. } | Draft::Group { ids, .. })
-            if ids.iter().any(|x| x == id) =>
-        {
-            Source::Vector
+        (Some(m), Some(v)) if m.zoom => {
+            let mut next = style.clone();
+            next.stroke_width = anchored_stroke_width(style.stroke_width, Some(&m), Some(v));
+            next
         }
-        _ => a.source,
+        _ => style,
     }
 }
 
-fn text_is_live(m: &Model, id: &str) -> bool {
-    m.editing.as_deref() == Some(id) || eff_source(m, id) == Source::Vector
+/// A record's annotation alone, as a flag bearer with no authority.
+struct AnnotationOnly<'a>(&'a Object);
+
+impl crate::flags::FlagBearer for AnnotationOnly<'_> {
+    fn bearer_annotation(&self) -> &Object {
+        self.0
+    }
+    fn bearer_authority(&self) -> Option<&crate::types::Authority> {
+        None
+    }
 }
 
-fn ghost(subtype: &str, geom: Geom, style: Style) -> RenderItem {
-    RenderItem {
-        id: DRAFT_ID.into(),
-        ref_: None,
-        subtype: subtype.into(),
-        box_: geom_visual_bounds(&geom, style.stroke_width, Some(&style.border)),
-        measure: None,
-        geom,
+/// `unmadeItem(id, annotation, shape, source, view, measure)`.
+pub fn unmade_item(
+    id: &str,
+    annotation: &Object,
+    shape: &Shape,
+    source: ItemSource,
+    view: Option<&ViewEnv>,
+    measure: Option<&MeasurementAppearance>,
+) -> RenderItem {
+    let mode = anchor_mode_of(&AnnotationOnly(annotation));
+    let geometry = anchored_geom(shape, mode.as_ref(), view);
+    let style = eff_style(annotation, view);
+    let distance = measure.and_then(|m| measurement_layout(&geometry, m, &style));
+    let rot = geom_rotation(&geometry);
+    let item = RenderItem {
+        id: id.into(),
+        reference: Some(Value::Null),
+        annotation: None,
+        subtype: kind_of(annotation).name,
+        box_: distance
+            .map_or_else(|| geom_visual_bounds(&geometry, style.stroke()), |d| d.visual_bounds()),
+        geometry,
         ap_box: None,
-        ap_rot: None,
-        style,
-        text: None,
-        source: RenderSource::Ghost,
+        text: text_of(annotation),
+        icon: icon_of(annotation),
+        label: redaction_label_of(annotation),
+        measure: measure.map(|m| m.0.clone()),
+        source,
+        picture_version: None,
+        lent_scene: Default::default(),
+        ghost_opacity: None,
         selected: false,
         hovered: None,
-        label: None,
-        rot: None,
-        blend: None,
+        rot: Some(rot),
+        ap_rot: None,
+        blend: blend_for(&style),
+        style,
+        frame: None,
+        raster: None,
+        order: Default::default(),
     }
+    .ordered(&[
+        "id", "ref", "subtype", "geometry", "box", "style", "text", "icon", "label", "measure",
+        "source", "selected", "rot", "blend",
+    ]);
+    placed(item, anchored_scale(mode.as_ref(), view))
 }
 
-/// The visual box of a render item: the measurement layout's when it has
-/// one.
-fn item_box(geom: &Geom, style: &Style, measure: Option<&MeasurementAppearance>) -> Rect {
-    measure.and_then(|me| measurement_layout(geom, me, style)).map_or_else(
-        || geom_visual_bounds(geom, style.stroke_width, Some(&style.border)),
-        |l| l.visual_bounds(),
-    )
+/// `textIsLive(model, id)`.
+fn text_is_live(model: &Model, id: &str) -> bool {
+    model.editing.as_deref() == Some(id) || source_during(model, id) == crate::types::Source::Vector
 }
 
-/// The render list for a page: annotations in paint order, then the
-/// creation ghost, then the markup preview.
-pub fn page_items(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Vec<RenderItem> {
-    let pon = page.pon();
+/// `pageItems(model, page, view)`.
+pub fn page_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -> Vec<RenderItem> {
     let mut items = Vec::new();
-    for id in paint_order(m, page) {
-        let a = &m.by_id[&id];
-        let geom = eff_geom(m, &id, view);
-        let style = eff_style(a, view);
-        let (ap_box, ap_rot) = eff_ap(m, &id, view);
-        let measure = eff_measure(m, &id);
-        items.push(RenderItem {
-            ref_: a.ref_.clone(),
-            subtype: a.subtype.clone(),
-            box_: item_box(&geom, &style, measure.as_ref()),
-            ap_box,
-            text: a.text.clone(),
-            label: a.label.clone(),
-            measure,
-            source: eff_source(m, &id).into(),
-            selected: m.selected.contains(&id),
-            hovered: (m.hovered.as_deref() == Some(id.as_str())).then_some(true),
-            rot: Some(geom_rotation(&geom)),
-            ap_rot: ap_rot.and_then(truthy),
-            blend: blend_for(&a.style),
-            geom,
-            style,
-            id,
+    for id in paint_order(model, page) {
+        let record = model.record(&id).expect("a painted record");
+        let text = text_of(&record.annotation);
+        let geometry = eff_geom(model, &id, view);
+        let style = eff_style(&record.annotation, view);
+        let ap = raster_placement(model, &id, view, &geometry);
+        let measure = eff_measure(model, &id);
+        let distance = measure.as_ref().and_then(|m| measurement_layout(&geometry, m, &style));
+        let box_ = distance
+            .map_or_else(|| geom_visual_bounds(&geometry, style.stroke()), |d| d.visual_bounds());
+        let lent = record.painter.0.clone().map(|paint| {
+            let made: std::rc::Rc<std::cell::OnceCell<Vec<crate::types::SceneNode>>> =
+                Default::default();
+            let f: std::rc::Rc<dyn Fn() -> Vec<crate::types::SceneNode>> =
+                std::rc::Rc::new(move || made.get_or_init(|| paint(box_)).clone());
+            f
         });
+        let rot = geom_rotation(&geometry);
+        let item = RenderItem {
+            id: id.clone(),
+            reference: Some(ref_of(Some(record)).unwrap_or(Value::Null)),
+            annotation: Some(record.annotation.clone()),
+            subtype: kind_of(&record.annotation).name,
+            geometry,
+            box_,
+            ap_box: ap.rect,
+            text,
+            icon: icon_of(&record.annotation),
+            label: redaction_label_of(&record.annotation),
+            measure: measure.map(|m| m.0),
+            source: source_during(model, &id).into(),
+            picture_version: Some(record.picture_version.unwrap_or(0.0)),
+            lent_scene: crate::types::LentScene(lent),
+            ghost_opacity: None,
+            selected: model.is_selected(&id),
+            hovered: (model.hovered.as_deref() == Some(id.as_str())).then_some(true),
+            rot: Some(rot),
+            ap_rot: ap.rot,
+            blend: blend_for(&style),
+            style,
+            frame: None,
+            raster: None,
+            order: Default::default(),
+        }
+        .ordered(&[
+            "id",
+            "ref",
+            "annotation",
+            "subtype",
+            "geometry",
+            "box",
+            "apBox",
+            "style",
+            "text",
+            "icon",
+            "label",
+            "measure",
+            "source",
+            "pictureVersion",
+            "lentScene",
+            "selected",
+            "hovered",
+            "rot",
+            "apRot",
+            "blend",
+        ]);
+        items.push(placed(item, anchored_scale(anchor_mode_of(record).as_ref(), view)));
     }
-    match m.draft.as_deref() {
-        Some(
-            d @ (Draft::CreateRect { page: p, .. }
-            | Draft::CreateLine { page: p, .. }
-            | Draft::CreateDistance { page: p, .. }
-            | Draft::CreatePoly { page: p, .. }
-            | Draft::CreateInk { page: p, .. }),
-        ) if p.pon() == pon => {
-            let (subtype, preset) = match d {
-                Draft::CreateRect { subtype, preset, .. }
-                | Draft::CreateLine { subtype, preset, .. }
-                | Draft::CreatePoly { subtype, preset, .. }
-                | Draft::CreateInk { subtype, preset, .. } => (subtype, preset.as_deref()),
-                Draft::CreateDistance { subtype, preset, .. } => (subtype, Some(preset.as_str())),
-                _ => unreachable!(),
-            };
-            let def = defaults_for(m, preset.unwrap_or(subtype));
-            let mut style = style_from_props(&def);
-            if matches!(d, Draft::CreateDistance { .. }) && style.interior_color.is_none() {
-                style.interior_color = Some(style.color.clone());
-            }
-            let geom = match d {
-                Draft::CreateRect { from, to, ellipse, .. } => {
-                    let dragged = rect_from_points(*from, *to);
-                    (dragged.width > 0.0 || dragged.height > 0.0).then(|| Geom::Rect {
-                        rect: shape_rect_for(dragged, *ellipse, &style),
-                        ellipse: *ellipse,
-                        rot: None,
-                    })
-                }
-                Draft::CreateLine { from, to, .. } | Draft::CreateDistance { from, to, .. } => {
-                    Some(Geom::Line { a: *from, b: *to, ends: Some(def.line_endings), rot: None })
-                }
-                Draft::CreatePoly { points, cur, closed, .. } => Some(Geom::Poly {
-                    points: poly_preview_points(points, *cur),
-                    closed: *closed,
-                    ends: if *closed { None } else { Some(def.line_endings) },
-                    rot: None,
-                }),
-                Draft::CreateInk { strokes, .. } => {
-                    Some(Geom::Ink { strokes: strokes.clone(), rot: None })
-                }
-                _ => None,
-            };
-            if let Some(geom) = geom {
-                let measure = match d {
-                    Draft::CreateLine { measure, .. } => measure.clone(),
-                    Draft::CreateDistance { measure, .. } => {
-                        Some(MeasurementAppearance::Distance(measure.clone()))
-                    }
-                    Draft::CreatePoly { measure, .. } => {
-                        measure.clone().map(MeasurementAppearance::Shape)
-                    }
-                    _ => None,
-                };
-                let box_ = item_box(&geom, &style, measure.as_ref());
-                items.push(RenderItem { box_, measure, ..ghost(subtype, geom, style) });
+    let draft = model.draft().cloned();
+    let on_page = |p: &PageRef| p.object_number == page.object_number;
+    match &draft {
+        Some(Draft::CreateRect(d))
+            if on_page(&d.page) && is_drag(GestureForm::Box, d.from, d.to) =>
+        {
+            let tool = json::spread(
+                &tool_annotation(model, &d.subtype, d.preset.as_deref()),
+                &d.flags.clone().unwrap_or_default(),
+            );
+            if let Some(shape) =
+                draft_placement(ShapeDraft::Rect(d), None).and_then(|p| placed_shape(&tool, &p))
+            {
+                items.push(unmade_item(DRAFT_ID, &tool, &shape, ItemSource::Draft, view, None));
             }
         }
-        Some(d @ Draft::CreateCallout { page: p, subtype, preset, step, tip, knee, cur, .. })
-            if p.pon() == pon =>
+        Some(Draft::CreateLine(d))
+            if on_page(&d.page) && is_drag(GestureForm::Segment, d.from, d.to) =>
         {
-            let def = defaults_for(m, preset.as_deref().unwrap_or(subtype));
-            let style = style_from_props(&def);
-            let ending = if def.line_endings.end != LineEnding::None {
-                def.line_endings.end
-            } else {
-                LineEnding::OpenArrow
-            };
-            let cd = CalloutDraft::of(d).expect("a callout draft");
-            let rot = callout_upright_rot(&cd);
-            let geom = if *step == CalloutStep::Knee {
-                Geom::Line {
-                    a: *tip,
-                    b: *cur,
-                    ends: Some(LineEndings { start: ending, end: LineEnding::None }),
-                    rot: None,
-                }
-            } else {
-                Geom::Text {
-                    rect: callout_box(&cd),
-                    callout: Some(crate::types::Callout { tip: *tip, knee: *knee, ending }),
-                    rot: truthy(rot),
-                }
-            };
-            items.push(ghost(subtype, geom, style));
+            let tool = json::spread(
+                &tool_annotation(model, &d.subtype, d.preset.as_deref()),
+                &d.flags.clone().unwrap_or_default(),
+            );
+            if let Some(shape) =
+                draft_placement(ShapeDraft::Line(d), None).and_then(|p| placed_shape(&tool, &p))
+            {
+                let measure = d.measure.clone().map(MeasurementAppearance);
+                items.push(unmade_item(
+                    DRAFT_ID,
+                    &tool,
+                    &shape,
+                    ItemSource::Draft,
+                    view,
+                    measure.as_ref(),
+                ));
+            }
         }
         _ => {}
     }
-    if let Some(preview) = &m.preview
-        && let Some(quads) = preview.by_page.get(&js::number_to_string(f64::from(pon)))
-        && !quads.is_empty()
+    let in_progress = match &draft {
+        Some(Draft::CreateDistance(d)) if on_page(&d.page) => {
+            let tool = tool_annotation(model, &d.subtype, Some(&d.preset));
+            let geometry = Shape::Line(LineShape {
+                line_points: LinePoints::new(d.from, d.to),
+                line_endings: Some(line_endings_of(&tool)),
+                rotation: 0.0,
+                order: Default::default(),
+            });
+            Some((
+                d.subtype.clone(),
+                tool,
+                geometry,
+                Some(MeasurementAppearance(d.measure.clone())),
+                true,
+            ))
+        }
+        Some(Draft::CreatePoly(d)) if on_page(&d.page) => {
+            let tool = tool_annotation(model, &d.subtype, d.preset.as_deref());
+            let geometry = Shape::Poly(PolyShape {
+                vertices: poly_preview_points(&d.points, d.current),
+                closed: d.closed,
+                line_endings: if d.closed { None } else { Some(line_endings_of(&tool)) },
+                caption_center: None,
+                rotation: 0.0,
+                order: Default::default(),
+            });
+            Some((
+                d.subtype.clone(),
+                tool,
+                geometry,
+                d.measure.clone().map(MeasurementAppearance),
+                false,
+            ))
+        }
+        Some(Draft::CreateInk(d)) if on_page(&d.page) => {
+            let tool = tool_annotation(model, &d.subtype, d.preset.as_deref());
+            let geometry = Shape::Ink(InkShape {
+                ink_list: d.strokes.clone(),
+                rotation: 0.0,
+                order: Default::default(),
+            });
+            Some((d.subtype.clone(), tool, geometry, None, false))
+        }
+        _ => None,
+    };
+    if let Some((subtype, tool, geometry, measure, distance_draft)) = in_progress {
+        let mut style = style_of(&tool);
+        if distance_draft && style.interior_color.is_null() {
+            style.interior_color =
+                crate::object::Nullable::from_option(style.color_str().map(str::to_string));
+        }
+        let layout = measure.as_ref().and_then(|m| measurement_layout(&geometry, m, &style));
+        let box_ = layout
+            .map_or_else(|| geom_visual_bounds(&geometry, style.stroke()), |l| l.visual_bounds());
+        let item = RenderItem {
+            id: DRAFT_ID.into(),
+            reference: Some(Value::Null),
+            annotation: None,
+            subtype,
+            geometry,
+            box_,
+            ap_box: None,
+            style,
+            text: None,
+            icon: None,
+            label: None,
+            measure: measure.map(|m| m.0),
+            source: ItemSource::Draft,
+            picture_version: None,
+            lent_scene: Default::default(),
+            ghost_opacity: None,
+            selected: false,
+            hovered: None,
+            rot: None,
+            ap_rot: None,
+            blend: None,
+            frame: None,
+            raster: None,
+            order: Default::default(),
+        }
+        .ordered(&[
+            "id", "ref", "measure", "subtype", "geometry", "box", "style", "source", "selected",
+        ]);
+        items.push(placed(item, 1.0));
+    }
+    if let Some(Draft::CreateCallout(d)) = &draft
+        && on_page(&d.page)
     {
-        let geom = Geom::Quads { quads: quads.clone() };
-        let style = style_from_props(&defaults_for(m, &preview.preset));
-        items.push(RenderItem {
+        let tool = tool_annotation(model, &d.subtype, d.preset.as_deref());
+        let style = style_of(&tool);
+        let tool_ending = if json::get_str(&tool, "subtype") == Some("free-text") {
+            json::get_str(&tool, "lineEnding")
+        } else {
+            None
+        };
+        let ending = match tool_ending {
+            Some(e) if !e.is_empty() && e != "none" => e.to_string(),
+            _ => "open-arrow".into(),
+        };
+        let rot = callout_upright_rot(d);
+        let geometry = if d.step == "knee" {
+            Shape::Line(LineShape {
+                line_points: LinePoints::new(d.tip, d.current),
+                line_endings: Some(LineEndings::new(&ending, "none")),
+                rotation: 0.0,
+                order: Default::default(),
+            })
+        } else {
+            Shape::TextBox(callout_shape(callout_box(d), rot, d.tip, d.knee, &ending))
+        };
+        let item = RenderItem {
+            id: DRAFT_ID.into(),
+            reference: Some(Value::Null),
+            annotation: None,
+            subtype: d.subtype.clone(),
+            box_: geom_visual_bounds(&geometry, style.stroke()),
+            geometry,
+            ap_box: None,
+            style,
+            text: None,
+            icon: None,
+            label: None,
+            measure: None,
+            source: ItemSource::Draft,
+            picture_version: None,
+            lent_scene: Default::default(),
+            ghost_opacity: None,
+            selected: false,
+            hovered: None,
+            rot: None,
+            ap_rot: None,
+            blend: None,
+            frame: None,
+            raster: None,
+            order: Default::default(),
+        }
+        .ordered(&["id", "ref", "subtype", "geometry", "box", "style", "source", "selected"]);
+        items.push(placed(item, 1.0));
+    }
+    if let Some(preview) = &model.preview
+        && let Some(quads) = preview
+            .by_page
+            .get(&crate::js::number_to_string(page.object_number))
+            .filter(|q| !q.is_empty())
+    {
+        let geometry =
+            Shape::Quads(QuadsShape { quad_points: quads.clone(), order: Default::default() });
+        let item = RenderItem {
             id: PREVIEW_ID.into(),
+            reference: Some(Value::Null),
+            annotation: None,
             subtype: preview.subtype.clone(),
-            box_: geom_visual_bounds(&geom, 0.0, None),
-            ..ghost("", geom, style)
-        });
+            box_: geom_visual_bounds(&geometry, crate::types::Stroke::width(0.0)),
+            geometry,
+            ap_box: None,
+            style: style_of(&tool_annotation(model, &preview.subtype, Some(&preview.preset))),
+            text: None,
+            icon: None,
+            label: None,
+            measure: None,
+            source: ItemSource::Draft,
+            picture_version: None,
+            lent_scene: Default::default(),
+            ghost_opacity: None,
+            selected: false,
+            hovered: None,
+            rot: None,
+            ap_rot: None,
+            blend: None,
+            frame: None,
+            raster: None,
+            order: Default::default(),
+        }
+        .ordered(&["id", "ref", "subtype", "geometry", "box", "style", "source", "selected"]);
+        items.push(placed(item, 1.0));
     }
     items
 }
 
-/// One free-text box, geometry only.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// One free-text box (`TextBox`).
+#[derive(Clone, Debug, PartialEq)]
 pub struct TextBox {
     pub id: Id,
-    #[serde(rename = "box")]
-    pub box_: Rect,
+    pub rect: Rect,
     pub editing: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rot: Option<f64>,
+    pub rot: f64,
 }
 
-/// The live free-text boxes on a page.
-pub fn text_boxes(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Vec<TextBox> {
-    let pon = page.pon();
+impl TextBox {
+    pub fn to_value(&self) -> Value {
+        use crate::object::Json;
+        Value::Object(json::object([
+            ("id", Value::String(self.id.clone())),
+            ("box", self.rect.json()),
+            ("editing", Value::Bool(self.editing)),
+            ("rot", json::num(self.rot)),
+        ]))
+    }
+}
+
+/// `textBoxes(model, page, view)`.
+pub fn text_boxes(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -> Vec<TextBox> {
     let mut out = Vec::new();
-    for id in m.order.iter() {
-        let a = &m.by_id[id];
-        if a.page.pon() != pon || !matches!(a.geom, Geom::Text { .. }) {
+    for id in model.order.iter() {
+        let Some(record) = model.record(id) else { continue };
+        if record.page_number() != Some(page.object_number)
+            || !matches!(shape_of(&record.annotation), Shape::TextBox(_))
+        {
             continue;
         }
-        if !viewable(&a.flags, m.selected.contains(id)) {
+        if !viewable(&record.annotation, model.is_selected(id)) || !text_is_live(model, id) {
             continue;
         }
-        if !text_is_live(m, id) {
-            continue;
+        let geometry = eff_geom(model, id, view);
+        if let Shape::TextBox(t) = &geometry {
+            out.push(TextBox {
+                id: id.clone(),
+                rect: t.box_,
+                editing: model.editing.as_deref() == Some(id.as_str()),
+                rot: geom_rotation(&geometry),
+            });
         }
-        let g = eff_geom(m, id, view);
-        let Geom::Text { rect, .. } = &g else { continue };
-        out.push(TextBox {
-            id: id.clone(),
-            box_: *rect,
-            editing: m.editing.as_deref() == Some(id.as_str()),
-            rot: Some(geom_rotation(&g)),
-        });
     }
     out
 }
 
-/// The selected annotations as render items, cross-page.
-pub fn selected_items(m: &Model, view: Option<ViewEnv>) -> Vec<RenderItem> {
+/// `selectedItems(model, view)`.
+pub fn selected_items(model: &Model, view: Option<&ViewEnv>) -> Vec<RenderItem> {
     let mut items = Vec::new();
-    for id in &m.selected {
-        let Some(a) = m.by_id.get(id) else { continue };
-        let geom = eff_geom(m, id, view);
-        let style = eff_style(a, view);
-        items.push(RenderItem {
+    for id in model.selected.iter() {
+        let Some(record) = model.record(id) else { continue };
+        let geometry = eff_geom(model, id, view);
+        let style = eff_style(&record.annotation, view);
+        let rot = geom_rotation(&geometry);
+        let item = RenderItem {
             id: id.clone(),
-            ref_: a.ref_.clone(),
-            subtype: a.subtype.clone(),
-            box_: geom_visual_bounds(&geom, style.stroke_width, Some(&style.border)),
-            rot: Some(geom_rotation(&geom)),
-            geom,
+            reference: Some(ref_of(Some(record)).unwrap_or(Value::Null)),
+            annotation: Some(record.annotation.clone()),
+            subtype: kind_of(&record.annotation).name,
+            box_: geom_visual_bounds(&geometry, style.stroke()),
+            geometry,
             ap_box: None,
-            ap_rot: None,
             style,
             text: None,
+            icon: None,
+            label: None,
             measure: None,
-            source: a.source.into(),
+            source: record.source.into(),
+            picture_version: None,
+            lent_scene: Default::default(),
+            ghost_opacity: None,
             selected: true,
             hovered: None,
-            label: None,
+            rot: Some(rot),
+            ap_rot: None,
             blend: None,
-        });
+            frame: None,
+            raster: None,
+            order: Default::default(),
+        }
+        .ordered(&[
+            "id",
+            "ref",
+            "annotation",
+            "subtype",
+            "geometry",
+            "box",
+            "style",
+            "source",
+            "selected",
+            "rot",
+        ]);
+        items.push(placed(item, anchored_scale(anchor_mode_of(record).as_ref(), view)));
     }
     items
 }
 
-fn box_corners(r: Rect) -> [Point; 4] {
+fn box_corners(rect: Rect) -> [Point; 4] {
     [
-        Point { x: r.x, y: r.y },
-        Point { x: r.x + r.width, y: r.y },
-        Point { x: r.x + r.width, y: r.y + r.height },
-        Point { x: r.x, y: r.y + r.height },
+        Point { x: rect.x, y: rect.y },
+        Point { x: rect.x + rect.width, y: rect.y },
+        Point { x: rect.x + rect.width, y: rect.y + rect.height },
+        Point { x: rect.x, y: rect.y + rect.height },
     ]
 }
 
-/// The frame of the annotation after the current gesture.
 fn effective_selection_frame(
-    m: &Model,
+    model: &Model,
     id: &str,
-    geometry: Geom,
-    view: Option<ViewEnv>,
+    geometry: Shape,
+    view: Option<&ViewEnv>,
 ) -> SelectionFrame {
-    let a = &m.by_id[id];
-    let effective = Annot {
-        geom: geometry,
-        style: eff_style(a, view),
-        measure: eff_measure(m, id),
-        ..a.clone()
+    let record = model.record(id).expect("a record");
+    let live = Live {
+        geometry: Some(geometry),
+        style: Some(eff_style(&record.annotation, view)),
+        measure: Some(eff_measure(model, id)),
     };
-    annotation_selection_frame(&effective, None)
+    annotation_selection_frame(record, None, &live)
 }
 
 fn union_bounds_of(
-    m: &Model,
-    page: PageRef,
-    geom_of: &dyn Fn(&str) -> Geom,
-    view: Option<ViewEnv>,
+    model: &Model,
+    page: &PageRef,
+    geom_of: &dyn Fn(&str) -> Shape,
+    view: Option<&ViewEnv>,
 ) -> Option<Rect> {
-    let pon = page.pon();
     let mut corners = Vec::new();
-    for id in &m.selected {
-        let Some(a) = m.by_id.get(id) else { continue };
-        if a.page.pon() != pon {
+    for id in model.selected.iter() {
+        let Some(record) = model.record(id) else { continue };
+        if record.page_number() != Some(page.object_number) {
             continue;
         }
-        corners.extend(effective_selection_frame(m, id, geom_of(id), view).corners);
+        corners.extend(effective_selection_frame(model, id, geom_of(id), view).corners);
     }
     (!corners.is_empty()).then(|| union_rect(&corners))
 }
 
-fn selectable_on_page(m: &Model, page: PageRef) -> Vec<Id> {
-    m.selected
+fn selectable_on_page(model: &Model, page: &PageRef) -> Vec<Id> {
+    model
+        .selected
         .iter()
-        .filter(|id| is_selectable(m, id) && m.by_id[*id].page.pon() == page.pon())
+        .filter(|id| {
+            is_selectable(model, id)
+                && model.record(id).is_some_and(|r| r.page_number() == Some(page.object_number))
+        })
         .cloned()
         .collect()
 }
 
 fn place_selection_knob(
-    m: &Model,
-    page: PageRef,
+    model: &Model,
+    page: &PageRef,
     page_box: Option<Rect>,
     knob_offset: f64,
-    geom_of: &dyn Fn(&str) -> Geom,
-    view: Option<ViewEnv>,
+    geom_of: &dyn Fn(&str) -> Shape,
+    view: Option<&ViewEnv>,
 ) -> Option<Knob> {
-    let sel = selectable_on_page(m, page);
-    if sel.len() == 1 {
-        let a = &m.by_id[&sel[0]];
-        if !caps_for(&a.subtype).rotatable || !annot_transformable(a) {
+    let selection = selectable_on_page(model, page);
+    if selection.len() == 1 {
+        let record = model.record(&selection[0])?;
+        if !kind_of(&record.annotation).caps.rotatable
+            || !is_transformable_by_hand(&model.editable, record)
+        {
             return None;
         }
-        let frame = effective_selection_frame(m, &a.id, geom_of(&a.id), view);
+        let frame = effective_selection_frame(model, &record.id, geom_of(&record.id), view);
         return Some(place_rotate_knob(&frame.corners, knob_offset, page_box));
     }
-    if sel.len() > 1
-        && group_caps(m, &sel).rotatable
-        && let Some(union) = union_bounds_of(m, page, geom_of, view)
+    if selection.len() > 1
+        && group_caps(model, &selection).rotatable
+        && let Some(union) = union_bounds_of(model, page, geom_of, view)
     {
         return Some(place_rotate_knob(&box_corners(union), knob_offset, page_box));
     }
     None
 }
 
-/// The rotate knob for the selection on `pon`, or `None`. During a live
-/// rotate it rides the committed placement, turned by the snapped delta.
+/// `selectionKnob(model, page, pageBox, knobOffset, view)`.
 pub fn selection_knob(
-    m: &Model,
-    page: PageRef,
+    model: &Model,
+    page: &PageRef,
     page_box: Option<Rect>,
-    knob_offset: Option<f64>,
-    view: Option<ViewEnv>,
+    knob_offset: f64,
+    view: Option<&ViewEnv>,
 ) -> Option<Knob> {
-    let knob_offset = knob_offset.unwrap_or(ROTATE_KNOB_OFFSET);
-    if let Some(d @ Draft::Rotate { ids, pivot, .. }) = m.draft.as_deref()
-        && ids.first().and_then(|id| m.by_id.get(id)).is_some_and(|a| a.page.pon() == page.pon())
+    if let Some(Draft::Rotate(d)) = model.draft()
+        && d.ids
+            .first()
+            .and_then(|i| model.record(i))
+            .is_some_and(|r| r.page_number() == Some(page.object_number))
     {
-        let committed = |id: &str| {
-            let a = &m.by_id[id];
-            anchored_geom(&a.geom, anchor_mode_of(a), view)
+        let rest_geom = |id: &str| {
+            let record = model.record(id).expect("a record");
+            anchored_geom(&shape_of(&record.annotation), anchor_mode_of(record).as_ref(), view)
         };
-        let rest = place_selection_knob(m, page, page_box, knob_offset, &committed, view)?;
-        let delta = rotate_draft_delta(m, &d.as_rotate().expect("a rotate draft")).delta;
+        let rest = place_selection_knob(model, page, page_box, knob_offset, &rest_geom, view)?;
+        let delta = rotate_draft_delta(model, d).delta;
         return Some(Knob {
-            at: rotate_point(rest.at, *pivot, delta),
-            from: rotate_point(rest.from, *pivot, delta),
+            at: rotate_point(rest.at, d.pivot, delta),
+            from: rotate_point(rest.from, d.pivot, delta),
         });
     }
-    place_selection_knob(m, page, page_box, knob_offset, &|id| eff_geom(m, id, view), view)
+    place_selection_knob(
+        model,
+        page,
+        page_box,
+        knob_offset,
+        &|id: &str| eff_geom(model, id, view),
+        view,
+    )
 }
 
-/// The selection overlay for a page.
+fn handle_role(id: &str) -> &'static str {
+    match id {
+        "nw" | "ne" | "se" | "sw" => "corner",
+        "n" | "e" | "s" | "w" => "side",
+        _ => "point",
+    }
+}
+
+/// `chrome(model, page, pageBox, knobOffset, view)`.
 pub fn chrome(
-    m: &Model,
-    page: PageRef,
+    model: &Model,
+    page: &PageRef,
     page_box: Option<Rect>,
-    knob_offset: Option<f64>,
-    view: Option<ViewEnv>,
+    knob_offset: f64,
+    view: Option<&ViewEnv>,
 ) -> Vec<ChromeNode> {
-    let pon = page.pon();
     let mut nodes = Vec::new();
-    if let Some(Draft::Marquee { page: p, from, to }) = m.draft.as_deref()
-        && p.pon() == pon
-    {
-        nodes.push(ChromeNode::Marquee { rect: rect_from_points(*from, *to) });
-    }
+    let on_page = |p: &PageRef| p.object_number == page.object_number;
     let first_on_page = |ids: &[Id]| {
-        ids.first().and_then(|id| m.by_id.get(id)).is_some_and(|a| a.page.pon() == pon)
+        ids.first()
+            .and_then(|i| model.record(i))
+            .is_some_and(|r| r.page_number() == Some(page.object_number))
     };
-    if let Some(Draft::Move { ids, guides, .. }) = m.draft.as_deref()
-        && !guides.is_empty()
-        && first_on_page(ids)
-    {
-        for g in guides {
-            nodes.push(ChromeNode::Guide { axis: g.axis, at: g.at, lo: g.lo, hi: g.hi });
+    match model.draft() {
+        Some(Draft::Marquee(d)) if on_page(&d.page) => {
+            nodes.push(ChromeNode::Marquee(OutlineNode {
+                rect: rect_from_points(d.from, d.to),
+                order: Default::default(),
+            }))
         }
+        Some(Draft::CreateRect(d)) if d.subtype == "link" && on_page(&d.page) => {
+            nodes.push(ChromeNode::Marquee(OutlineNode {
+                rect: rect_from_points(d.from, d.to),
+                order: Default::default(),
+            }))
+        }
+        Some(Draft::Move(d)) if !d.guides.is_empty() && first_on_page(&d.ids) => {
+            for g in &d.guides {
+                nodes.push(ChromeNode::Guide(GuideNode {
+                    axis: g.axis.clone(),
+                    at: g.at,
+                    lo: g.lo,
+                    hi: g.hi,
+                    order: Default::default(),
+                }));
+            }
+        }
+        _ => {}
     }
-    let rd = match m.draft.as_deref() {
-        Some(d @ Draft::Rotate { ids, .. }) if first_on_page(ids) => d.as_rotate(),
+    let rd = match model.draft() {
+        Some(Draft::Rotate(d)) if first_on_page(&d.ids) => Some(d.clone()),
         _ => None,
     };
     if let Some(rd) = &rd {
-        let angle = rotate_draft_delta(m, rd).angle;
-        nodes.push(ChromeNode::AngleChip { at: rd.cur, angle: js::round(angle) });
+        let angle = rotate_draft_delta(model, rd).angle;
         let span = page_box.unwrap_or(Rect {
             x: rd.pivot.x - 300.0,
             y: rd.pivot.y - 300.0,
@@ -552,129 +764,215 @@ pub fn chrome(
             height: 600.0,
         });
         let mut lines = Vec::new();
-        for (deg, role) in
-            [(0.0, GuideRole::Axis), (90.0, GuideRole::Axis), (angle, GuideRole::Indicator)]
-        {
-            if let Some(c) = chord_through(span, rd.pivot, deg) {
-                lines.push(GuideLine { a: c.a, b: c.b, role });
+        for (deg, role) in [(0.0, "axis"), (90.0, "axis"), (angle, "indicator")] {
+            if let Some(chord) = chord_through(span, rd.pivot, deg) {
+                lines.push(GuideLine {
+                    a: chord.a,
+                    b: chord.b,
+                    role: role.into(),
+                    order: Default::default(),
+                });
             }
         }
-        nodes.push(ChromeNode::RotateGuides { center: rd.pivot, angle, lines });
+        nodes.push(ChromeNode::RotateGuides(RotateGuidesNode {
+            center: rd.pivot,
+            angle,
+            lines,
+            order: Default::default(),
+        }));
     }
-    let sel = selectable_on_page(m, page);
-    if sel.len() == 1 {
-        let a = &m.by_id[&sel[0]];
-        let g = eff_geom(m, &sel[0], view);
-        let style = eff_style(a, view);
-        let caps = caps_for(&a.subtype);
-        let rot = geom_rotation(&g);
-        let measure = eff_measure(m, &a.id);
-        let distance = match &measure {
-            Some(MeasurementAppearance::Distance(d)) => distance_layout(&g, d, style.stroke_width),
-            _ => None,
-        };
-        let frame = effective_selection_frame(m, &a.id, g.clone(), view);
+    let selection = selectable_on_page(model, page);
+    let screen = view.map_or(0.0, |v| v.rotation);
+    if selection.len() == 1 {
+        let record = model.record(&selection[0]).expect("a record");
+        let geometry = eff_geom(model, &selection[0], view);
+        let style = eff_style(&record.annotation, view);
+        let caps = kind_of(&record.annotation).caps;
+        let rot = geom_rotation(&geometry);
+        let measure = eff_measure(model, &record.id);
+        let distance = measure
+            .as_ref()
+            .filter(|m| m.is_distance())
+            .and_then(|m| distance_layout(&geometry, m, style.stroke_width));
+        let frame = effective_selection_frame(model, &record.id, geometry.clone(), view);
         if frame.angle != 0.0 {
-            nodes.push(ChromeNode::Obb { corners: frame.corners, angle: frame.angle });
+            nodes.push(ChromeNode::Obb(ObbNode {
+                corners: frame.corners.to_vec(),
+                angle: frame.angle,
+                order: Default::default(),
+            }));
         } else {
-            nodes.push(ChromeNode::Outline { rect: union_rect(&frame.corners) });
+            nodes.push(ChromeNode::Outline(OutlineNode {
+                rect: union_rect(&frame.corners),
+                order: Default::default(),
+            }));
         }
-        if rd.is_none() && annot_transformable(a) && (caps.resizable || caps.vertex_editable) {
+        if rd.is_none()
+            && is_transformable_by_hand(&model.editable, record)
+            && (caps.resizable || caps.vertex_editable)
+        {
             let handles = match &distance {
-                Some(layout) => distance_handles(layout),
-                None => geom_handles(&g),
+                Some(d) => distance_handles(d),
+                None => geom_handles(&geometry),
             };
-            for h in handles {
-                nodes.push(ChromeNode::Handle { at: h.at, cursor: h.cursor, rot: truthy(rot) });
+            let dragged = match model.draft() {
+                Some(Draft::Handle(d)) if d.id == record.id => Some(d.handle.clone()),
+                _ => None,
+            };
+            for handle in handles {
+                nodes.push(ChromeNode::Handle(HandleNode {
+                    at: handle.at,
+                    cursor: cursor_on_screen(&handle.cursor, screen),
+                    rot: (rot != 0.0 && !rot.is_nan()).then_some(rot),
+                    role: handle_role(&handle.id).into(),
+                    active: dragged.as_deref() == Some(handle.id.as_str()),
+                    order: Default::default(),
+                }));
             }
         }
-    } else if sel.len() > 1
+    } else if selection.len() > 1
         && rd.is_none()
-        && let Some(union) = union_bounds_of(m, page, &|id| eff_geom(m, id, view), view)
+        && let Some(union) =
+            union_bounds_of(model, page, &|id: &str| eff_geom(model, id, view), view)
     {
-        nodes.push(ChromeNode::Outline { rect: union });
-        if group_caps(m, &sel).resizable {
-            for h in rect_handles_for(union) {
-                nodes.push(ChromeNode::Handle { at: h.at, cursor: h.cursor, rot: None });
+        nodes.push(ChromeNode::Outline(OutlineNode { rect: union, order: Default::default() }));
+        if group_caps(model, &selection).resizable {
+            let dragged = match model.draft() {
+                Some(Draft::Group(d)) if d.op == "resize" => Some(d.handle.clone()),
+                _ => None,
+            };
+            for handle in rect_handles_for(union) {
+                nodes.push(ChromeNode::Handle(HandleNode {
+                    at: handle.at,
+                    cursor: cursor_on_screen(&handle.cursor, screen),
+                    rot: None,
+                    role: handle_role(&handle.id).into(),
+                    active: dragged.as_deref() == Some(handle.id.as_str()),
+                    order: Default::default(),
+                }));
             }
         }
     }
     if rd.is_none()
-        && let Some(knob) = selection_knob(m, page, page_box, knob_offset, view)
+        && let Some(knob) = selection_knob(model, page, page_box, knob_offset, view)
     {
-        nodes.push(ChromeNode::RotateKnob { at: knob.at, from: knob.from });
+        nodes.push(ChromeNode::RotateKnob(KnobNode {
+            at: knob.at,
+            from: knob.from,
+            order: Default::default(),
+        }));
     }
     nodes
 }
 
-/// The union of the selectable selection on `pon`, or `None`.
-pub fn selection_bounds_on_page(m: &Model, page: PageRef, view: Option<ViewEnv>) -> Option<Rect> {
-    let sel = selectable_on_page(m, page);
-    if sel.is_empty() {
+/// `selectionBoundsOnPage(model, page, view)`.
+pub fn selection_bounds_on_page(
+    model: &Model,
+    page: &PageRef,
+    view: Option<&ViewEnv>,
+) -> Option<Rect> {
+    let selection = selectable_on_page(model, page);
+    if selection.is_empty() {
         return None;
     }
-    let corners: Vec<Point> = sel
+    let corners: Vec<Point> = selection
         .iter()
-        .flat_map(|id| effective_selection_frame(m, id, eff_geom(m, id, view), view).corners)
+        .flat_map(|id| {
+            effective_selection_frame(model, id, eff_geom(model, id, view), view).corners
+        })
         .collect();
     Some(union_rect(&corners))
 }
 
-/// The anchor for a selection-aware floating menu.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// A selection-aware menu's anchor (`selectionAnchor`).
+#[derive(Clone, Debug, PartialEq)]
 pub struct SelectionAnchor {
     pub page: PageRef,
     pub bounds: Rect,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub knob: Option<Point>,
 }
 
-/// The primary page of the selection, its bounds there, and the knob. The
-/// three lookups resolve per page (`undefined` for none).
+/// `selectionAnchor(model, pageBoxOf, knobOffsetOf, viewOf)`.
 pub fn selection_anchor(
-    m: &Model,
-    page_box_of: Option<&dyn Fn(PageRef) -> Option<Rect>>,
-    knob_offset_of: Option<&dyn Fn(PageRef) -> Option<f64>>,
-    view_of: Option<&dyn Fn(PageRef) -> Option<ViewEnv>>,
+    model: &Model,
+    page_box_of: &dyn Fn(&PageRef) -> Option<Rect>,
+    knob_offset_of: &dyn Fn(&PageRef) -> Option<f64>,
+    view_of: &dyn Fn(&PageRef) -> Option<ViewEnv>,
 ) -> Option<SelectionAnchor> {
-    if matches!(m.draft.as_deref(), Some(Draft::Rotate { .. })) {
+    if let Some(draft) = model.draft()
+        && !draft.tag().starts_with("create-")
+    {
         return None;
     }
-    let id = m.selected.iter().find(|x| is_selectable(m, x))?;
-    let page = m.by_id[id].page;
-    let view = view_of.and_then(|f| f(page));
-    let bounds = selection_bounds_on_page(m, page, view)?;
+    let id = model.selected.iter().find(|id| is_selectable(model, id))?;
+    let page = model.record(id)?.page();
+    let view = view_of(&page);
+    let bounds = selection_bounds_on_page(model, &page, view.as_ref())?;
     let knob = selection_knob(
-        m,
-        page,
-        page_box_of.and_then(|f| f(page)),
-        Some(knob_offset_of.and_then(|f| f(page)).unwrap_or(ROTATE_KNOB_OFFSET)),
-        view,
+        model,
+        &page,
+        page_box_of(&page),
+        knob_offset_of(&page).unwrap_or(ROTATE_KNOB_OFFSET),
+        view.as_ref(),
     );
     Some(SelectionAnchor { page, bounds, knob: knob.map(|k| k.at) })
 }
 
-/// Anchor for controls that finish or cancel a multi-click poly creation.
-pub fn creation_draft_anchor(m: &Model) -> Option<CreationDraftAnchor> {
-    let Some(Draft::CreatePoly { page, points, closed, measure, .. }) = m.draft.as_deref() else {
-        return None;
-    };
-    if points.is_empty() {
+/// `rotationAnchor(model)`.
+pub fn rotation_anchor(model: &Model) -> Option<RotationAnchor> {
+    let Some(Draft::Rotate(d)) = model.draft() else { return None };
+    let page = d.ids.first().and_then(|i| model.record(i))?.page();
+    Some(RotationAnchor {
+        page,
+        at: d.current,
+        angle: crate::js::round(rotate_draft_delta(model, d).angle),
+        order: Default::default(),
+    })
+}
+
+/// `creationDraftAnchor(model)`.
+pub fn creation_draft_anchor(model: &Model) -> Option<CreationDraftAnchor> {
+    let Some(Draft::CreatePoly(d)) = model.draft() else { return None };
+    if d.points.is_empty() {
         return None;
     }
-    let min_points = if *closed { 3 } else { 2 };
+    let min_points = if d.closed { 3 } else { 2 };
+    let can_finish = d.points.len() >= min_points
+        && match &d.measure {
+            None => true,
+            Some(m) => {
+                let shape = Shape::Poly(PolyShape {
+                    vertices: d.points.clone(),
+                    closed: d.closed,
+                    line_endings: None,
+                    caption_center: None,
+                    rotation: 0.0,
+                    order: Default::default(),
+                });
+                shape_measurement_readout(&shape, &MeasurementAppearance(m.clone()))
+                    .unavailable()
+                    .is_none()
+            }
+        };
     Some(CreationDraftAnchor {
-        kind: CreationDraftKind::Poly,
-        subtype: if *closed { PolySubtype::Polygon } else { PolySubtype::Polyline },
-        page: *page,
-        bounds: union_rect(points),
-        point_count: points.len(),
-        min_points,
-        can_finish: points.len() >= min_points
-            && measure.as_ref().is_none_or(|me| {
-                let geom =
-                    Geom::Poly { points: points.clone(), closed: *closed, ends: None, rot: None };
-                shape_measurement_readout(&geom, me).readout().is_some()
-            }),
+        kind: "poly".into(),
+        subtype: if d.closed { "polygon" } else { "polyline" }.into(),
+        page: d.page.clone(),
+        bounds: union_rect(&d.points),
+        point_count: d.points.len() as f64,
+        min_points: min_points as f64,
+        can_finish,
+        order: Default::default(),
     })
+}
+
+/// `annotationAnchor(model, id, view)`.
+pub fn annotation_anchor(
+    model: &Model,
+    id: &str,
+    view: Option<&ViewEnv>,
+) -> Option<(PageRef, Rect)> {
+    let record = model.record(id)?;
+    let frame = effective_selection_frame(model, id, eff_geom(model, id, view), view);
+    Some((record.page(), union_rect(&frame.corners)))
 }

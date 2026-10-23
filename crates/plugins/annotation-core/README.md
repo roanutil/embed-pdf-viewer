@@ -1,44 +1,47 @@
 # epdf-annotation-core
 
-`packages/core/annotation` in Rust: every exported function, type and constant of its 22 source
-files, plus the module-level exports the package index leaves out (`endingPoints`,
-`endingNodes`, `cloudyPolyPath`, `chordThrough`, `apSizeChanged`, `rectsIntersect`,
+`packages/core/annotation` in Rust: the modules of `src/` and of its `kinds/`, `record/`,
+`shapes/` and `update/` directories, plus the module-level exports the package index leaves out
+(`endingPoints`, `endingNodes`, `cloudyPolyPath`, `chordThrough`, `rectsIntersect`,
 `rectHandlesFor`, `rotatePoint`, `paintOrder`, `groupUnionBounds`, `blendFor`,
-`layoutRedactLabel`, `kindTakesLink`, `annotsInBox`, `calloutBox`, `calloutUprightRot`,
-`distanceCaptionWidth`, `pointInPoly`). All 7,641 cases in the 20 vector files replay identically
+`layoutRedactLabel`, `annotsInBox`, `calloutBox`, `calloutUprightRot`, `distanceCaptionWidth`,
+`pointInPoly`). The pure part of `@embedpdf/engine-core/runtime` the package calls is ported too,
+in `src/engine/` (see below). All 7,505 cases in the 20 vector files replay identically
 (`cargo test -p epdf-annotation-core`):
 
 | File | Cases | Covers |
 |---|---|---|
-| `annotation-geometry-basics.json` | 338 | rect math, rotation helpers, upright placement, `fitStampBox`, group scaling, the rotate knob, guide chords, the SAT test |
-| `annotation-geometry-shapes.json` | 3,340 | every per-geom function crossed with 52 shapes (each `Geom` variant rotated and degenerate), borders and stroke widths, and every handle a shape offers plus bogus ones |
+| `annotation-geometry-basics.json` | 294 | rect math, rotation helpers, upright placement, `fitStampBox`, group scaling, the rotate knob, guide chords, the SAT test |
+| `annotation-geometry-shapes.json` | 3,279 | every per-geom function crossed with 52 shapes (each `Geom` variant rotated and degenerate), borders and stroke widths, and every handle a shape offers plus bogus ones |
 | `annotation-geometry-hit.json` | 248 | `geomHit` over probe grids at the margin boundary, every line ending as a target |
-| `annotation-geometry-text.json` | 97 | callout connection, caret boxes from text anchors, the PDF/content bridge |
+| `annotation-geometry-text.json` | 59 | callout connection, caret boxes from text anchors, the PDF/content bridge |
 | `annotation-endings.json` | 88 | the ten `/LE` endings at four angles and stroke widths |
-| `annotation-cloudy.json` | 351 | cloudy rect, ellipse and polygon paths, intensities -1 to 3 including 0 and fractions |
-| `annotation-kinds.json` | 137 | the kind table, caps and prop specs for every subtype, unknown and prototype names |
+| `annotation-cloudy.json` | 354 | cloudy rect, ellipse and polygon paths, intensities -1 to 3 including 0 and fractions |
+| `annotation-kinds.json` | 109 | the kind table, caps and prop specs for every subtype, unknown and prototype names |
 | `annotation-flags.json` | 650 | the `/F` predicates for every flag, authority split, conversation and substrate planes |
 | `annotation-groups.json` | 15 | group keys, members, caps, attached link children |
-| `annotation-props.json` | 533 | `readProp` and `applyProps` for 26 annotations and 19 patches, `defaultsFor` |
+| `annotation-props.json` | 532 | `readProp` and `applyProps` for 26 annotations and 19 patches, `defaultsFor` |
 | `annotation-anchor.json` | 582 | `noZoom`/`noRotate` projection and its inverse across modes and views |
 | `annotation-snap.json` | 17 | move snapping guides |
 | `annotation-hit.json` | 17 | `hitTest` and `cursorAt` for 19 selections over 35 points on a mixed page, plus 38 edge calls |
-| `annotation-scene.json` | 274 | painted scenes per kind, markup, redaction at rest and on hover, label layout |
+| `annotation-scene.json` | 276 | painted scenes per kind, markup, redaction at rest and on hover, label layout |
 | `annotation-placement.json` | 194 | click placement, click geometry, ink straightening |
 | `annotation-view.json` | 30 | 114 idle, selected and mid-gesture models through every view selector |
-| `annotation-update.json` | 121 | 251 message runs through `update`, plus the rotate, callout (page slide included) and marquee helpers |
-| `annotation-measurement.json` | 462 | distance layouts across 7 lines and 16 appearances, shape captions, readout labels for 30 `/Measure` dictionaries, selection frames, `textPlateInset`, `geomResetRotation` about a pivot |
-| `annotation-richtext.json` | 111 | the run algebra: offsets, splits, styling ranges, normalisation, plain projection |
-| `annotation-measurement-model.json` | 36 | 53 runs over measured and rich-text annotations (distance and shape creation, caption and leader drags, `createAnnot`, `setRichText`, bold props), their hit test, scene, props and 25 view states |
+| `annotation-update.json` | 112 | 251 message runs through `update`, plus the rotate, callout (page slide included) and marquee helpers |
+| `annotation-measurement.json` | 496 | distance layouts across 7 lines and 16 appearances, shape captions, readout labels for 30 `/Measure` dictionaries, selection frames, `textPlateInset`, `geomResetRotation` about a pivot |
+| `annotation-richtext.json` | 114 | the run algebra: offsets, splits, styling ranges, normalisation, plain projection |
+| `annotation-measurement-model.json` | 39 | 53 runs over measured and rich-text annotations (distance and shape creation, caption and leader drags, `createAnnot`, `setRichText`, bold props), their hit test, scene, props and 25 view states |
 
 A case can carry many calls: `runs`, `viewMany`, `hitCalls`, `hitProbe`, `selectionAnchors` and
 `groupProbe` evaluate a list against one page, so a 22-annotation page is written once per batch.
-The files come to 19 MB. The three measurement and rich-text files come from
+The files come to 54 MB. The three measurement and rich-text files come from
 `tooling/plugin-conformance/src/suites/annotation-core-measurement.ts`, which reuses the other
 suites' wrappers.
 
-The generators reach 8,319 of 8,328 statements and 2,584 of 2,604 branches of the package
-(`vectors/coverage.json`). What they don't reach can't be reached from the public surface:
+`vectors/coverage.json` was last written at `ec3870988`, before `update.ts`, `kinds.ts` and the
+record helpers split into directories, so it still lists the old 23 files. By it the generators
+reach 8,335 of 8,344 statements and 2,595 of 2,621 branches. The line numbers below are from that
+earlier layout; what the list names can't be reached from the public surface:
 
 - `cloudy.ts` lines 66, 67 (`cosine`/`sine` of a zero hypotenuse; callers skip zero-length
   segments first), 110 to 113 and 132 (an arc of zero span; every arc the curls draw has a fixed
@@ -60,42 +63,37 @@ The generators reach 8,319 of 8,328 statements and 2,584 of 2,604 branches of th
 
 ## Where the port differs in shape
 
-Pages are `PageRef`, a serde mirror of the engine's `{kind: 'objectNumber', pageObjectNumber}`,
-defined here because the crate does not depend on `epdf-kernel` outside its harness. Internals
-compare `page.pon()`, as the TypeScript compares `page.pageObjectNumber`. The suite wrappers still
-take an object number and build the address, so `src/harness.rs` does the same.
+A model is a `Session` plus the records it views, as in the TypeScript. `update(&model, &message)`
+returns an `UpdateResult` of the next `session`, a `change` (`put`, `drop`, `patches`) and the
+`effects`, or a `CoreError` where the TypeScript throws (`name` is `EngineError`, `TypeError` or
+`Error`; an engine error carries its `InvalidArg` code and `details`). The plugin lays `change` on
+its records. A session's members are `Rc`s, so `Session::same` answers what `===` on the
+TypeScript's object answers, and the vectors' `same` per step compares that.
 
-`measurementReadout` and what it calls (`scaleOf`, `pathLength`, `polygonArea`,
-`validAreaBoundary`, `formatMeasurement`) live in `@embedpdf/engine-core/runtime`, not in this
-package. They are ported in `src/measure.rs` because the captions read them; the coverage gate
-counts none of their lines, so their branches are pinned only as far as the 30 `/Measure`
-dictionaries in `annotation-measurement.json` reach. `formatMeasurement` returns `None` where the
-TypeScript throws `RangeError`. `MeasurementAppearance` and `MeasurementLayout` are untagged enums
-told apart by `intent` and by shape; the distance layout variant is boxed.
+A record's `annotation` is the engine's annotation as a JSON object (`Rc<serde_json::Map>`, in
+insertion order), read through `record::kind_of`, `shape_of`, `style_of` and `text_of` as the
+TypeScript reads it. Drafts and patches are JSON objects too. The typed values the core returns
+(`ModelAnnotation`, the `Shape` union, drafts, scene nodes, effects) are `js_object!` structs that
+remember the order their members were read or written in, so a value prints in the order the
+TypeScript's object literal or spread gives it; `src/object.rs` holds the `Json` trait and the
+macros. A member that may be absent, `null` or a value is `Nullable`. `ClickCreate` stays a JSON
+object, because the TypeScript tests `'length' in policy` and `'width' in policy` and carries
+members neither test names.
+
+`src/engine/` is what the core calls from `@embedpdf/engine-core/runtime`, ported without PDFium so
+the crate still builds for `wasm32-unknown-unknown`: the kind facts and defaults, the page-space
+to file-space mirror, the predictor (`resolveAnnotationDraft`, `resolveAnnotationPatch`, the rect
+command, `annotationPatchBetween`, `mergeAnnotationPatch`), `appearanceChangeOf`, and the
+measurement readout and format. `src/engine/kind_facts.rs` is generated from the TypeScript tables
+by `node_modules/.bin/tsx crates/plugins/annotation-core/scripts/kind-facts.ts`. Destinations
+(`linkTarget`, `actions`) cross the mirror unchanged; `src/engine/space.rs` says why the result is
+the same. `epdf-engine` keeps its own copies on PDFium's side.
 
 `richtext.rs` counts offsets in UTF-16 code units, as the TypeScript does. A rich document's body
 and a paragraph's own properties are JSON maps, carried verbatim.
 
-`update(m, msg)` returns `(Option<Model>, Vec<Effect>)`. `None` is the TypeScript handing back
-the same model object, which a store takes as "no change"; `Some` is a new model even when it
-equals the old one, as `{ ...m, draft: null }` is. The vectors record which (`same` per step).
-`apply` gives the model either way.
-
 The TypeScript `Vec` is `Point` (and `Vec2`), since a `Vec` would shadow Rust's. Handles are
 `&str`, as in the TypeScript, so an unknown handle names no edge exactly where it did before.
-
-`Annot.data` is the engine `AnnotationDTO` as a `serde_json::Value`: the model reads five members
-of it (`subtype`, `state`, `stateModel`, `contents`, and a link child's `target`) and carries the
-rest. `AnnotationRef`, `PdfLinkTarget`, `PdfDestination`, `AnnotationFlags` and the enums
-(`LineEnding`, `BlendMode`, `Intent`) are typed serde mirrors of `@embedpdf/engine-core/runtime`.
-
-A member that may be absent, `null` or a value (`interiorColor` in a patch, `link`) is
-`js::Nullable`. `AnnotationPropsPatch` has a hand-written `Deserialize` that records the order its
-keys arrived in and keeps members no key names in `extra`, because the `props` patch effect
-reports `Object.keys(patch)` verbatim and `defaultsFor` spreads unknown members into the bag.
-`ClickCreate` keeps all five members optional: the TypeScript tells a box from a segment by
-`'length' in policy` in one place and `'width' in policy` in two others, and an object with both
-answers differently to each.
 
 Callbacks become data. `selectionAnchor` takes three `&dyn Fn(pon)` lookups; the vector wrapper
 passes tables keyed by page object number. `annots_in_box`, `hit_test` and `PointerInput.inert`
@@ -103,38 +101,37 @@ take a `js::IdSet`, which reads a canonical `{"$set": [...]}`.
 
 ## Not ported
 
-These inputs answer differently, and no vector feeds them:
+These inputs answer differently on purpose, each pinned by a test in `tests/`:
 
-- Unknown enum strings. `LineEnding`, `BlendMode`, `Border.kind`, a `PdfLinkTarget` that doesn't
-  match its union fail to decode; the TypeScript takes any string (`endingNodes` with an unknown
-  ending returns `[]`), and `linkOf` returns an unparseable child target verbatim where the Rust
-  returns `None`.
-- A `null` for a member the type says is a string or number (`color: null` in a patch).
-- An id or subtype that names an `Object.prototype` member (`constructor`, `toString`). The
-  TypeScript finds a function there; where that only changes an answer (`groupResizeAnchor`), the
-  port reproduces it, and where the TypeScript then throws (`m.byId['constructor'].flags`), the
-  port doesn't try.
-- A missing id in a move draft: snapping and the move commit read `byId[id]` unguarded and throw a
-  `TypeError`; the Rust panics at the same read.
-- `geomEqual` is `JSON.stringify(a) === JSON.stringify(b)`, which is member-order sensitive. The
-  Rust compares values, so a caller-built handle draft whose `base` lists its keys in another
-  order than `geomDragHandle` writes them counts as unchanged here and changed there.
-- `setText` on a DTO that is a string (the spread copies its characters).
-- `setRichText` on a free-text DTO with no `richText`: the TypeScript reads `richText.body` and
-  throws a `TypeError`; the port takes the body as empty. No vector holds one.
+- A ref of a kind no key is defined for (review finding N6). `annotationKey` keys it `undefined`,
+  so every such record would share one key; `record::annotation_key` returns `None`, and
+  `record::from_dto` and `irt_of` find nothing for it (`tests/behavior.rs`).
+- A name that `Object.prototype` has (`constructor`, `toString`, `__proto__`). The TypeScript
+  finds the prototype's member in its kind table and later reads of it throw; `kinds::kind_named`
+  reads it as an unknown kind that is only shown. The harness reproduces the TypeScript's answers
+  for those names so the vectors still pin them, and `groupResizeAnchor`'s `center` is reproduced
+  in the core because it changes only an answer.
+- A cloudy border with more than a million curls (review finding M20): the path and outline are
+  empty and the bounds are the box grown by half the stroke, where the TypeScript would allocate
+  until it runs out (`tests/hostile_geometry.rs`).
+- Sorting stays V8's TimSort (review finding N5), so an inconsistent comparator leaves elements
+  where V8 does (`tests/js_sort.rs`).
+- A record id in `forget`'s list or a snap's ids that the view doesn't hold. Snapping skips it
+  where the TypeScript reads `byId[id]` unguarded; a gesture whose record is forgotten ends
+  (`tests/behavior.rs`). A move, resize or caption draft whose record is missing but not
+  forgotten throws the TypeScript's own `TypeError`.
+- `setRichText` on a free-text annotation with no `richText`: the TypeScript reads
+  `richText.body` and throws a `TypeError`; the port takes the body as empty. No vector holds one.
 - A rich-text cut inside a surrogate pair. `slice` keeps the lone surrogate; a Rust string cannot,
   so the half becomes U+FFFD.
 - `rangeHasStyle` over a non-empty range of a document with no paragraphs reads `paragraphs[0]`
   and throws; the port answers `false`.
 - A `null` member in a rich-text style delta. `cleanDelta` keeps it; the typed delta reads it as
   absent.
-- A non-finite `rot` on a box: `rotatedHandleCursor` reads past its table and the handle has no
-  `cursor`; here the cursor is `""`.
 
 ## JavaScript numerics
 
-`src/js.rs` adds `to_fixed` (`Number#toFixed`: the exact decimal rounded half up, where Rust's
-`{:.N}` breaks exact ties to even, so `(0.03125).toFixed(4)` is `0.0313`), `fixed`
+`src/js.rs` re-exports `epdf_geometry::js::to_fixed` (`Number#toFixed`) and adds `fixed`
 (`Number(x.toFixed(d))`), `string_to_number` (`Number(string)`, for `Number(handle.slice(1))`,
 which takes `" 1"`, `"0x1"` and `""` as numbers) and `utf16_len`. Everything else comes from
 `epdf_geometry::js`.
@@ -147,6 +144,11 @@ curl advance at zero tolerance, and `straightenInkStroke` compares an `atan2` an
 threshold (the cases sit at 17.6 and 17.7 rather than on `100 * tan(10°)`).
 
 ## Mutation testing
+
+These counts are from the port before the re-port to the current `packages/core/annotation`
+layout, and the line numbers point into it: `measure.rs` and `update.rs` are gone (their code is
+now in `src/engine/` and `src/update/`), and `tests/api.rs` with them. The run has not been
+repeated on the current modules.
 
 `scripts/mutants.sh -p epdf-annotation-core --test-package epdf-annotation-core --file <file>`,
 file by file over every module but `harness.rs`, catches 4,577 of 4,669 viable mutants (4,556

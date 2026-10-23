@@ -27,3 +27,6 @@ indexmap = { version = "2", features = ["serde"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 epdf-kernel = { path = "../../epdf-kernel", optional = true }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

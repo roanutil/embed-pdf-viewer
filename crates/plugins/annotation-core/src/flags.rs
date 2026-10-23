@@ -1,130 +1,120 @@
-//! `flags.ts`: the one interpretation of the `/F` annotation flags.
+//! `flags.ts`: the one interpretation of the `/F` flags (ISO 32000-2 Table
+//! 167). Rendering, hit-testing, chrome and the reducer all ask here.
 
-use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-use crate::kinds::caps_for;
-use crate::types::{Annot, AnnotationFlags, AnnotationFlagsPatch, Authority};
+use crate::engine::facts::FLAG_NAMES;
+use crate::json::{self, Object};
+use crate::record::kind_of;
+use crate::types::{Authority, ModelAnnotation};
 
-/// `NO_ANNOTATION_FLAGS` (engine-core): every flag clear.
-pub const NO_ANNOTATION_FLAGS: AnnotationFlags = AnnotationFlags {
-    invisible: false,
-    hidden: false,
-    print: false,
-    no_zoom: false,
-    no_rotate: false,
-    no_view: false,
-    read_only: false,
-    locked: false,
-    toggle_no_view: false,
-    locked_contents: false,
-};
+/// The flag names, in the primitives' order (`FLAG_KEYS`).
+pub const FLAG_KEYS: [&str; 10] = FLAG_NAMES;
 
-/// The `/F` every freshly drawn annotation starts with: `print` set.
-pub const DRAWN_FLAGS: AnnotationFlags = AnnotationFlags { print: true, ..NO_ANNOTATION_FLAGS };
-
-/// All ten flags, in the primitives' order.
-pub const FLAG_KEYS: [&str; 10] = [
-    "invisible",
-    "hidden",
-    "print",
-    "noZoom",
-    "noRotate",
-    "noView",
-    "readOnly",
-    "locked",
-    "toggleNoView",
-    "lockedContents",
-];
-
-pub fn flags_equal(a: &AnnotationFlags, b: &AnnotationFlags) -> bool {
-    a == b
+/// `NO_ANNOTATION_FLAGS`.
+pub fn no_annotation_flags() -> Object {
+    FLAG_KEYS.iter().map(|k| ((*k).to_string(), Value::Bool(false))).collect()
 }
 
-/// `{ ...base, ...patch }`.
-pub fn merge_flags(base: &AnnotationFlags, patch: &AnnotationFlagsPatch) -> AnnotationFlags {
-    AnnotationFlags {
-        invisible: patch.invisible.unwrap_or(base.invisible),
-        hidden: patch.hidden.unwrap_or(base.hidden),
-        print: patch.print.unwrap_or(base.print),
-        no_zoom: patch.no_zoom.unwrap_or(base.no_zoom),
-        no_rotate: patch.no_rotate.unwrap_or(base.no_rotate),
-        no_view: patch.no_view.unwrap_or(base.no_view),
-        read_only: patch.read_only.unwrap_or(base.read_only),
-        locked: patch.locked.unwrap_or(base.locked),
-        toggle_no_view: patch.toggle_no_view.unwrap_or(base.toggle_no_view),
-        locked_contents: patch.locked_contents.unwrap_or(base.locked_contents),
-    }
+/// `DRAWN_FLAGS`: `print` set, the rest off.
+pub fn drawn_flags() -> Object {
+    let mut flags = no_annotation_flags();
+    flags.insert("print".into(), Value::Bool(true));
+    flags
 }
 
-/// On-screen visibility: `hidden` beats everything; `noView` hides unless
-/// `toggleNoView` and the annotation is engaged (selected).
-pub fn viewable(f: &AnnotationFlags, engaged: bool) -> bool {
-    !f.hidden && (!f.no_view || (f.toggle_no_view && engaged))
+/// `flagsEqual(left, right)`: every flag `===`.
+pub fn flags_equal(left: &Object, right: &Object) -> bool {
+    FLAG_KEYS.iter().all(|k| left.get(*k) == right.get(*k))
 }
 
-/// Any pointer interaction. ReadOnly kills it.
-pub fn interactive(f: &AnnotationFlags) -> bool {
-    !f.hidden && !f.no_view && !f.read_only
+/// `mergeFlags(base, patch)`.
+pub fn merge_flags(base: &Object, patch: &Object) -> Object {
+    json::spread(base, patch)
 }
 
-/// The members of an annotation the flag predicates read.
+fn flag(annotation: &Object, name: &str) -> bool {
+    json::truthy(annotation.get(name))
+}
+
+/// Does `invisible` leave this annotation unpainted? Only on a type that isn't standard.
+fn hidden_by_invisible_flag(annotation: &Object) -> bool {
+    flag(annotation, "invisible")
+        && json::get_str(annotation, "subtype") == Some("unsupported")
+        && json::get_num(annotation, "rawSubtypeCode") == Some(0.0)
+        && json::get_str(annotation, "rawSubtypeName") != Some("Projection")
+}
+
+/// `viewable(annotation, engaged)`: on-screen visibility.
+pub fn viewable(annotation: &Object, engaged: bool) -> bool {
+    !flag(annotation, "hidden")
+        && !hidden_by_invisible_flag(annotation)
+        && (!flag(annotation, "noView") || (flag(annotation, "toggleNoView") && engaged))
+}
+
+/// `interactive(flags)`: any pointer interaction.
+pub fn interactive(flags: &Object) -> bool {
+    !flag(flags, "hidden") && !flag(flags, "noView") && !flag(flags, "readOnly")
+}
+
+/// The part of a record the predicates read (`FlagBearer`).
 pub trait FlagBearer {
-    fn subtype(&self) -> &str;
-    fn flags(&self) -> &AnnotationFlags;
-    fn authority(&self) -> Option<Authority>;
+    fn bearer_annotation(&self) -> &Object;
+    fn bearer_authority(&self) -> Option<&Authority>;
 }
 
-impl FlagBearer for Annot {
-    fn subtype(&self) -> &str {
-        &self.subtype
+impl FlagBearer for ModelAnnotation {
+    fn bearer_annotation(&self) -> &Object {
+        &self.annotation
     }
-    fn flags(&self) -> &AnnotationFlags {
-        &self.flags
-    }
-    fn authority(&self) -> Option<Authority> {
-        self.authority
+    fn bearer_authority(&self) -> Option<&Authority> {
+        self.authority.as_ref()
     }
 }
 
-/// `FlagBearer` as a value: a subtype, its flags and optional authority.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct FlagFields {
-    pub subtype: String,
-    pub flags: AnnotationFlags,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub authority: Option<Authority>,
+fn may_update(record: &dyn FlagBearer) -> bool {
+    record.bearer_authority().is_none_or(|a| a.update)
 }
 
-impl FlagBearer for FlagFields {
-    fn subtype(&self) -> &str {
-        &self.subtype
-    }
-    fn flags(&self) -> &AnnotationFlags {
-        &self.flags
-    }
-    fn authority(&self) -> Option<Authority> {
-        self.authority
+fn may_delete(record: &dyn FlagBearer) -> bool {
+    record.bearer_authority().is_none_or(|a| a.delete)
+}
+
+/// `annotInteractive(record)`: widgets ignore `readOnly`.
+pub fn annot_interactive(record: &dyn FlagBearer) -> bool {
+    let annotation = record.bearer_annotation();
+    if kind_of(annotation).caps.ignores_read_only {
+        !flag(annotation, "hidden") && !flag(annotation, "noView")
+    } else {
+        interactive(annotation)
     }
 }
 
-/// Interaction gate for a concrete annotation: widget kinds ignore `readOnly`.
-pub fn annot_interactive(a: &impl FlagBearer) -> bool {
-    let f = a.flags();
-    if caps_for(a.subtype()).ignores_read_only { !f.hidden && !f.no_view } else { interactive(f) }
+/// `annotTransformable(record)`.
+pub fn annot_transformable(record: &dyn FlagBearer) -> bool {
+    annot_interactive(record) && !flag(record.bearer_annotation(), "locked") && may_update(record)
 }
 
-/// Geometry and style mutations: interactive, not `locked`, and the session
-/// holds update authority (absent authority allows).
-pub fn annot_transformable(a: &impl FlagBearer) -> bool {
-    annot_interactive(a) && !a.flags().locked && a.authority().is_none_or(|x| x.update)
+/// `annotDeletable(record)`.
+pub fn annot_deletable(record: &dyn FlagBearer) -> bool {
+    annot_interactive(record) && !flag(record.bearer_annotation(), "locked") && may_delete(record)
 }
 
-/// Deletion: the delete half of the authority split.
-pub fn annot_deletable(a: &impl FlagBearer) -> bool {
-    annot_interactive(a) && !a.flags().locked && a.authority().is_none_or(|x| x.delete)
+/// `annotContentsEditable(record)`.
+pub fn annot_contents_editable(record: &dyn FlagBearer) -> bool {
+    annot_interactive(record)
+        && !flag(record.bearer_annotation(), "lockedContents")
+        && may_update(record)
 }
 
-/// `/Contents` text edits: the contents counterpart of `locked`.
-pub fn annot_contents_editable(a: &impl FlagBearer) -> bool {
-    annot_interactive(a) && !a.flags().locked_contents && a.authority().is_none_or(|x| x.update)
+/// `mayWrite(record, field)`: may this session change the engine field now?
+pub fn may_write(record: &dyn FlagBearer, field: &str) -> bool {
+    if FLAG_KEYS.contains(&field) {
+        return may_update(record);
+    }
+    if field == "contents" || field == "richText" {
+        annot_contents_editable(record)
+    } else {
+        annot_transformable(record)
+    }
 }

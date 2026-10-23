@@ -1,35 +1,49 @@
-//! `selection.ts`: the annotation frame selection chrome and transform
-//! gestures share.
-
-use serde::{Deserialize, Serialize};
+//! `selection.ts`: the complete annotation frame shared by selection and
+//! transform gestures.
 
 use crate::anchor::{anchor_mode_of, anchored_geom, anchored_stroke_width};
-use crate::geometry::{geom_rotation, is_rotatable_geom, selection_quad};
+use crate::geometry::{geom_rotation, is_rotatable_geom, selection_quad, turn_pivot_of};
+use crate::measurement::{MeasurementAppearance, measurement_of};
 use crate::measurement_shape::measurement_selection_quad;
-use crate::types::{Annot, Point, Quad, Style, ViewEnv};
+use crate::record::{shape_of, style_of};
+use crate::types::{ModelAnnotation, Point, Shape, Style, ViewEnv};
 
-/// The oriented corners, their centre and the frame's angle.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+/// The frame a selection outlines (`SelectionFrame`).
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SelectionFrame {
-    pub corners: Quad,
+    pub corners: [Point; 4],
     pub center: Point,
     pub angle: f64,
 }
 
-/// The complete frame of an annotation in view space: its projected
-/// geometry, measurement caption included. A PDF `/Rect`'s padding never
-/// changes it.
-pub fn annotation_selection_frame(annotation: &Annot, view: Option<ViewEnv>) -> SelectionFrame {
-    let mode = anchor_mode_of(annotation);
-    let geometry = anchored_geom(&annotation.geom, mode, view);
-    let stroke_width = anchored_stroke_width(annotation.style.stroke_width, mode, view);
-    let corners = match &annotation.measure {
-        Some(measure) => measurement_selection_quad(
-            &geometry,
-            measure,
-            &Style { stroke_width, ..annotation.style.clone() },
-        ),
-        None => selection_quad(&geometry, stroke_width, Some(&annotation.style.border)),
+/// What a gesture lays over a record's own fields (`live`).
+#[derive(Clone, Debug, Default)]
+pub struct Live {
+    pub geometry: Option<Shape>,
+    pub style: Option<Style>,
+    pub measure: Option<Option<MeasurementAppearance>>,
+}
+
+/// `annotationSelectionFrame(record, view, live)`.
+pub fn annotation_selection_frame(
+    record: &ModelAnnotation,
+    view: Option<&ViewEnv>,
+    live: &Live,
+) -> SelectionFrame {
+    let style = live.style.clone().unwrap_or_else(|| style_of(&record.annotation));
+    let measure = match &live.measure {
+        Some(Some(m)) => Some(m.clone()),
+        _ => measurement_of(&record.annotation),
+    };
+    let mode = anchor_mode_of(record);
+    let base = live.geometry.clone().unwrap_or_else(|| shape_of(&record.annotation));
+    let geometry = anchored_geom(&base, mode.as_ref(), view);
+    let stroke_width = anchored_stroke_width(style.stroke_width, mode.as_ref(), view);
+    let mut stroked = style.clone();
+    stroked.stroke_width = stroke_width;
+    let corners = match &measure {
+        Some(m) => measurement_selection_quad(&geometry, m, &stroked),
+        None => selection_quad(&geometry, stroked.stroke()),
     };
     SelectionFrame {
         corners,
@@ -39,4 +53,13 @@ pub fn annotation_selection_frame(annotation: &Annot, view: Option<ViewEnv>) -> 
         },
         angle: if is_rotatable_geom(&geometry) { geom_rotation(&geometry) } else { 0.0 },
     }
+}
+
+/// `annotationTurnPivot(record, view)`.
+pub fn annotation_turn_pivot(record: &ModelAnnotation, view: Option<&ViewEnv>) -> Point {
+    turn_pivot_of(&anchored_geom(
+        &shape_of(&record.annotation),
+        anchor_mode_of(record).as_ref(),
+        view,
+    ))
 }
