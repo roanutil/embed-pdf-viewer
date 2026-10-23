@@ -43,3 +43,44 @@ fn an_absurd_cloudy_border_draws_nothing() {
         assert_eq!(cloudy_poly_bounds(&ring, 1.0, 2.0).x, -1.0, "{size}");
     }
 }
+
+/// The most points a cloud's outline may hold (`MAX_OUTLINE_POINTS`).
+const OUTLINE_BUDGET: usize = 4_000_000;
+
+fn points(lines: &[Vec<Point>]) -> usize {
+    lines.iter().map(Vec::len).sum()
+}
+
+#[test]
+fn a_hostile_curl_size_flattens_within_the_budget_or_not_at_all() {
+    let bx = Rect { x: 0.0, y: 0.0, width: 100.0, height: 100.0 };
+    let ring = [
+        Point { x: 0.0, y: 0.0 },
+        Point { x: 100.0, y: 0.0 },
+        Point { x: 100.0, y: 100.0 },
+        Point { x: 0.0, y: 100.0 },
+    ];
+    // (intensity, stroke width): a hostile /BE /I, then a hostile /BS /W.
+    let hostile = [(1e4, 1.0), (1e5, 1.0), (f64::INFINITY, 1.0), (1.0, 1e5), (1.0, f64::INFINITY)];
+    for (intensity, width) in hostile {
+        let started = std::time::Instant::now();
+        for ellipse in [false, true] {
+            let n = points(&cloudy_outline(bx, ellipse, intensity, width));
+            assert!(n <= OUTLINE_BUDGET, "box {ellipse} {intensity} {width}: {n}");
+        }
+        let n = points(&cloudy_poly_outline(&ring, intensity, width));
+        assert!(n <= OUTLINE_BUDGET, "polygon {intensity} {width}: {n}");
+        // The path and the bounds trace each curl once, with no flattening.
+        cloudy_path(bx, false, intensity, width);
+        cloudy_bounds(bx, true, intensity, width);
+        cloudy_poly_path(&ring, intensity, width);
+        cloudy_poly_bounds(&ring, intensity, width);
+        assert!(
+            started.elapsed().as_secs_f64() < 5.0,
+            "{intensity} {width}: {:?}",
+            started.elapsed()
+        );
+    }
+    // An ordinary cloud still flattens.
+    assert!(points(&cloudy_outline(bx, false, 1.0, 1.0)) > 1_000);
+}

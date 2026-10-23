@@ -185,17 +185,42 @@ impl CurveSink for CurveBounds {
 /// Chord length the curves are split into, in page units.
 const FLATTEN_STEP: f64 = 0.5;
 
+/// The most points one cloud's outline may hold (review finding M20, a kept
+/// Rust-only bound). Each curve flattens to one point per half unit of its
+/// control hull, and the hull grows with the curl radius
+/// (`4 * intensity + strokeWidth / 2`), which the perimeter budget doesn't
+/// see: a hostile /BE /I or /BS /W would ask for a list beyond memory, and
+/// an infinite one would never finish. Past this many points the outline is
+/// empty, no cloud, as for a border over the curl budget. A box or circle
+/// the size of the largest page, at intensity 1, stays under it
+/// (`tests/hostile_geometry.rs`); the TypeScript has no limit.
+const MAX_OUTLINE_POINTS: f64 = 4.0 * MAX_CLOUDY_CURLS;
+
 /// The curves as polylines, one per subpath, in page space.
 struct CurvePolylines {
     lines: Vec<Vec<Point>>,
     current: Point,
     ox: f64,
     oy: f64,
+    /// Points written so far, against [`MAX_OUTLINE_POINTS`].
+    written: f64,
+    over: bool,
 }
 
 impl CurvePolylines {
     fn new(ox: f64, oy: f64) -> Self {
-        CurvePolylines { lines: Vec::new(), current: Point { x: 0.0, y: 0.0 }, ox, oy }
+        CurvePolylines {
+            lines: Vec::new(),
+            current: Point { x: 0.0, y: 0.0 },
+            ox,
+            oy,
+            written: 0.0,
+            over: false,
+        }
+    }
+    /// The polylines, or none when the cloud was over the point budget.
+    fn finish(self) -> Vec<Vec<Point>> {
+        if self.over { Vec::new() } else { self.lines }
     }
     fn place(&self, x: f64, y: f64) -> Point {
         Point { x: x + self.ox, y: -y + self.oy }
@@ -205,7 +230,9 @@ impl CurvePolylines {
 impl CurveSink for CurvePolylines {
     fn move_to(&mut self, x: f64, y: f64) {
         self.current = self.place(x, y);
-        self.lines.push(vec![self.current]);
+        if !self.over {
+            self.lines.push(vec![self.current]);
+        }
     }
     fn curve_to(&mut self, x1: f64, y1: f64, x2: f64, y2: f64, x3: f64, y3: f64) {
         let p0 = self.current;
@@ -214,6 +241,14 @@ impl CurveSink for CurvePolylines {
         let p3 = self.place(x3, y3);
         let hull = distance(p0, p1) + distance(p1, p2) + distance(p2, p3);
         let steps = js::max(2.0, (hull / FLATTEN_STEP).ceil());
+        // A NaN count compares false and stays on the drawing side, where
+        // the loop below writes nothing for it.
+        if self.over || self.written + steps > MAX_OUTLINE_POINTS {
+            self.over = true;
+            self.lines.clear();
+            return;
+        }
+        self.written += if steps.is_nan() { 0.0 } else { steps };
         if self.lines.is_empty() {
             self.lines.push(vec![p0]);
         }
@@ -807,7 +842,7 @@ pub fn cloudy_poly_bounds(points: &[Point], intensity: f64, stroke_width: f64) -
 pub fn cloudy_poly_outline(points: &[Point], intensity: f64, stroke_width: f64) -> Vec<Vec<Point>> {
     let mut out = CurvePolylines::new(0.0, 0.0);
     polygon_cloud(points, intensity, stroke_width, &mut out);
-    out.lines
+    out.finish()
 }
 
 /// `cloudyOutline(box, ellipse, intensity, strokeWidth)`.
@@ -819,7 +854,7 @@ pub fn cloudy_outline(
 ) -> Vec<Vec<Point>> {
     let mut out = CurvePolylines::new(rect.x, rect.y);
     box_cloud(rect, ellipse, intensity, stroke_width, &mut out);
-    out.lines
+    out.finish()
 }
 
 /// `cloudyBounds(box, ellipse, intensity, strokeWidth)`.
