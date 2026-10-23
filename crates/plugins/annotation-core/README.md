@@ -115,7 +115,7 @@ These inputs answer differently on purpose, each pinned by a test in `tests/`:
 - Hostile geometry (review finding M20), where the TypeScript would allocate until it runs out
   or loop forever. A cloudy border with more than a million curls has an empty path and outline,
   and its bounds are the box grown by half the stroke (`tests/hostile_geometry.rs`). A cloud
-  outline that would flatten to more than 4,000,000 points, from a hostile `/BE` intensity or
+  outline that would flatten to more than 1,000,000 points, from a hostile `/BE` intensity or
   `/BS` width, is empty (`MAX_OUTLINE_POINTS` in `src/cloudy.rs`, same test file). A squiggly
   underline whose baseline would take more than a million segments draws nothing (`src/scene.rs`
   unit tests).

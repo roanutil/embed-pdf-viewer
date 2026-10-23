@@ -193,8 +193,10 @@ const FLATTEN_STEP: f64 = 0.5;
 /// an infinite one would never finish. Past this many points the outline is
 /// empty, no cloud, as for a border over the curl budget. A box or circle
 /// the size of the largest page, at intensity 1, stays under it
-/// (`tests/hostile_geometry.rs`); the TypeScript has no limit.
-const MAX_OUTLINE_POINTS: f64 = 4.0 * MAX_CLOUDY_CURLS;
+/// (`tests/hostile_geometry.rs`); the TypeScript has no limit. The outline
+/// is flattened on every hit test, so the budget is kept to the curl
+/// budget: about 16 MB and a few milliseconds for a hostile record.
+const MAX_OUTLINE_POINTS: f64 = MAX_CLOUDY_CURLS;
 
 /// The curves as polylines, one per subpath, in page space.
 struct CurvePolylines {

@@ -45,7 +45,7 @@ fn an_absurd_cloudy_border_draws_nothing() {
 }
 
 /// The most points a cloud's outline may hold (`MAX_OUTLINE_POINTS`).
-const OUTLINE_BUDGET: usize = 4_000_000;
+const OUTLINE_BUDGET: usize = 1_000_000;
 
 fn points(lines: &[Vec<Point>]) -> usize {
     lines.iter().map(Vec::len).sum()
