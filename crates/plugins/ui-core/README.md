@@ -43,8 +43,7 @@ member of the wrong type the way the TypeScript does: skipped by the edits and n
 `validate_layout`. The layout cases match the TypeScript's member order with no entry in
 `crates/plugin-conformance/member-order-allow.json`
 (`layout_cases_keep_member_order_with_no_allowance` in `tests/conformance.rs`). Its entry for
-`core/ui-transforms.json` `replace-everywhere` is no longer needed. The two `core/ui-schema.json`
-entries still are: `group` returns a typed `BarGroup`, whose members print in one order where the
+`core/ui-transforms.json` `replace-everywhere` is gone. The two `core/ui-schema.json` entries stay: `group` returns a typed `BarGroup`, whose members print in one order where the
 TypeScript prints the caller's options in theirs.
 
 Case folding is Rust's `to_lowercase` and `to_uppercase`. They agree with V8 on every string the
@@ -92,12 +91,22 @@ Three Rust-only divergences, each pinned by a test (`tests/behavior.rs`, and `va
 third):
 
 - Members are own members. `bars['constructor']` finds `Object.prototype`'s function in the
-  TypeScript, which then edits it as a bar; Rust reads no bar there. `formatShortcut('Ctrl+constructor')`
-  prints `Ctrl+` in the TypeScript, which finds a function in `KEY_NAMES`, and `Ctrl+Constructor` in
-  Rust. The same choice as `epdf-annotation-core`'s kind names and `epdf-fonts`' face names.
-- A `null` bar or panel is skipped. The TypeScript throws a `TypeError` reading a member of one in
-  `validateLayout` (beside a bar placed `before` or `after` another), `replace`, `removePanel` and
-  `panels`.
+  TypeScript, which then edits it as a bar; Rust reads no bar there. For a key named `constructor`
+  or `__proto__`, `formatShortcut` finds an `Object.prototype` member in `KEY_NAMES`
+  (`packages/core/ui/src/shortcuts.ts:139`) and prints its missing name as nothing elsewhere
+  (`Ctrl+`) and as `undefined` on a Mac (`⌃undefined`, `⌘undefined`). Rust prints `Ctrl+Constructor`,
+  `⌃Constructor` and `⌘__proto__`. The same choice as `epdf-annotation-core`'s kind names and
+  `epdf-fonts`' face names.
+- A `null` bar or panel, or layout data that is `null`, is read as empty. The TypeScript throws a
+  `TypeError` reading a member of one in `validateLayout` (beside a bar placed `before` or `after`
+  another), `replace`, `removePanel`, `panels` with an object `present` or a `width`
+  (`layout.ts:664`), and any edit of `createLayout(null)`.
 - A string spread into an object splits into UTF-16 units in the TypeScript. Rust can't hold half
   a surrogate pair, so each half of one reads as U+FFFD. Only a bars, menus or panels record that is
   a string reaches this.
+
+Options outside their types read as absent. `AddItemOptions`' `before`, `after`, `group` and
+`section` and `CustomItem.terminal` are `Option<String>`, so a `null` is no option at all, where the
+TypeScript tells `null` from `undefined`: `{ before: null, after: 'x' }` cuts before `'x'`,
+`group: null` starts a group with id `null`, and `{ slot, terminal: null, importance: 2 }` keeps
+importance 2 where Rust pins the item. Typed TypeScript and the vectors never pass these.

@@ -59,11 +59,6 @@
       "$.returned"
     ]
   },
-  "core/ui-transforms.json": {
-    "replace-everywhere": [
-      "$.returned"
-    ]
-  },
   "plugins/actions-submit.json": {
     "a-handler-beats-the-home": [
       "$.callbacks[].args[]"

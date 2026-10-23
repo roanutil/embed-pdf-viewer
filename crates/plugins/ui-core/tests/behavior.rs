@@ -1092,14 +1092,23 @@ fn shortcuts_match_compare_and_show_as_each_platform_does() {
 fn an_object_prototype_name_is_no_bar_menu_or_key_name() {
     let layout = create_layout(base()).add("x", &to("constructor"));
     assert_eq!(layout_warnings_of(&layout), ["add: no bar or menu \"constructor\""]);
+    // The TypeScript prints `Ctrl+` here, and `⌃undefined` on a Mac.
     assert_eq!(
         format_shortcut("Ctrl+constructor", ShortcutOptions { is_mac: false }).unwrap(),
         "Ctrl+Constructor"
     );
+    assert_eq!(
+        format_shortcut("Ctrl+constructor", ShortcutOptions { is_mac: true }).unwrap(),
+        "⌃Constructor"
+    );
+    assert_eq!(
+        format_shortcut("Mod+__proto__", ShortcutOptions { is_mac: true }).unwrap(),
+        "⌘__proto__"
+    );
 }
 
 /// The TypeScript throws a `TypeError` reading a member of a `null` bar or
-/// panel; Rust reads nothing there and goes on.
+/// panel, or of `null` layout data; Rust reads it as empty and goes on.
 #[test]
 fn a_null_bar_or_panel_is_skipped_where_the_typescript_throws() {
     let data = js(json!({
@@ -1116,6 +1125,19 @@ fn a_null_bar_or_panel_is_skipped_where_the_typescript_throws() {
     );
     let replaced = create_layout(data.clone()).replace("a", "b").to_json();
     assert_eq!(get(&replaced, &["bars", "main", "start"]), js(json!([["b"]])));
-    let panels = create_layout(data.clone()).panels(js(json!({ "side": "start" }))).to_json();
-    assert_eq!(get(&panels, &["panels", "gone"]), js(json!({ "side": "start" })));
+    // `layout.ts:664` reads `panel.present` of the `null` panel and throws.
+    let panels = create_layout(data.clone())
+        .panels(js(json!({ "present": { "compact": "dock" } })))
+        .to_json();
+    assert_eq!(
+        get(&panels, &["panels"]),
+        js(json!({
+            "gone": { "present": { "compact": "dock" } },
+            "notes": { "side": "end", "present": { "compact": "dock" } }
+        }))
+    );
+    // `createLayout(null)`: every edit reads `data.bars` of `null` and throws.
+    let from_null = create_layout(JsValue::Null).add_bar("main", js(json!({ "place": "top" })));
+    assert_eq!(from_null.to_json(), js(json!({ "bars": { "main": { "place": "top" } } })));
+    assert!(layout_warnings_of(&from_null).is_empty());
 }
