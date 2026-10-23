@@ -271,11 +271,19 @@ pub fn same_value(left: Option<&Value>, right: Option<&Value>) -> bool {
     }
 }
 
-/// `JSON.stringify(value)`: members in order, non-finite numbers as `null`.
+/// `JSON.stringify(value)`: members in order, non-finite numbers as `null`,
+/// `-0` as `0`, and `1.0` as `1`.
 pub fn stringify(value: &Value) -> String {
     fn plain(value: &Value) -> Value {
-        if number(value).is_some_and(|x| !x.is_finite()) {
-            return Value::Null;
+        match number(value) {
+            Some(x) if !x.is_finite() => return Value::Null,
+            // One spelling per number, as JavaScript has one number type: an
+            // integral value prints without a fraction, and `-0` as `0`.
+            Some(x) if x.fract() == 0.0 && x.abs() < 9_007_199_254_740_992.0 => {
+                return Value::from(x as i64);
+            }
+            Some(x) => return num(x),
+            None => {}
         }
         match value {
             Value::Array(items) => Value::Array(items.iter().map(plain).collect()),

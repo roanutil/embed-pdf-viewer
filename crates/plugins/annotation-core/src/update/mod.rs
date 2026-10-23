@@ -199,8 +199,12 @@ fn transition(model: &Model, message: &Message) -> CoreResult<(Model, Vec<Effect
         Message::SetDefaults { preset, patch } => none(session::set_defaults(model, preset, patch)),
         Message::SetSnap { patch } => {
             let merged: Object = json::spread(&model.snap.to_object(), patch);
-            let mut snap = SnapSettings::read(&serde_json::Value::Object(merged))
-                .unwrap_or_else(|_| (*model.snap).clone());
+            // The TypeScript spreads any patch in. Settings the typed
+            // `SnapSettings` can't hold (`alignment: "yes"`) are refused
+            // instead: the model is returned as it is, so nothing changed.
+            let Ok(mut snap) = SnapSettings::read(&serde_json::Value::Object(merged)) else {
+                return none(model.clone());
+            };
             snap.order = model.snap.order.clone();
             none(Model { snap: Rc::new(snap), ..model.clone() })
         }

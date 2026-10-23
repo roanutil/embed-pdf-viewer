@@ -222,7 +222,7 @@ pub fn edit_down(model: &Model, input: &PointerInput) -> Model {
 }
 
 /// The TypeScript's `TypeError` for a record a gesture names that the view doesn't hold.
-fn missing_record() -> crate::error::CoreError {
+pub(super) fn missing_record() -> crate::error::CoreError {
     crate::error::CoreError {
         name: "TypeError",
         message: "Cannot read properties of undefined (reading 'annotation')".into(),

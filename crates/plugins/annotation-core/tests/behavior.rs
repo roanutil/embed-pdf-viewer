@@ -311,3 +311,135 @@ fn a_message_that_leaves_the_records_alone_changes_none() {
         update(&next, &message(json!({ "type": "hover", "id": next.hovered }))).expect("an update");
     assert!(again.session.same(&next.session()));
 }
+
+// ── a gesture whose record is gone without a forget ─────────────────────────
+
+/// The model with `id` gone from the records but not from the session, as a
+/// host that drops a record without sending `forget` leaves it.
+fn without_record(model: &Model, id: &str) -> Model {
+    let mut by_id = (*model.by_id).clone();
+    by_id.shift_remove(id);
+    let order: Vec<Id> = model.order.iter().filter(|o| *o != id).cloned().collect();
+    Model::of(model.session(), Rc::new(by_id), Rc::new(order))
+}
+
+fn assert_type_error(result: CoreResult<UpdateResult>) {
+    let error = result.err().expect("the TypeScript throws");
+    assert_eq!(error.name, "TypeError");
+    assert_eq!(error.message, "Cannot read properties of undefined (reading 'annotation')");
+}
+
+#[test]
+fn releasing_a_move_on_a_record_that_left_throws_the_typescript_error() {
+    let (m, id) = drawn_square();
+    let moving = run(&m, &[edit("down", 100.5, 115.0), edit("move", 110.5, 134.0)]);
+    assert!(matches!(moving.draft(), Some(Draft::Move(_))));
+    assert_type_error(update(&without_record(&moving, &id), &edit("up", 110.5, 134.0)));
+}
+
+#[test]
+fn releasing_a_resize_on_a_record_that_left_throws_the_typescript_error() {
+    let (m, id) = drawn_square();
+    let resizing = run(&m, &[edit("down", 180.0, 160.0), edit("move", 200.0, 190.0)]);
+    assert!(matches!(resizing.draft(), Some(Draft::Handle(_))));
+    assert_type_error(update(&without_record(&resizing, &id), &edit("up", 200.0, 190.0)));
+}
+
+// ── malformed messages and kinds ────────────────────────────────────────────
+
+#[test]
+fn a_message_of_unknown_type_or_phase_does_not_read() {
+    assert!(Message::read(&json!({ "type": "bogus" })).is_err());
+    assert!(
+        Message::read(
+            &json!({ "type": "editPointer", "phase": "sideways", "in": input(1.0, 1.0) })
+        )
+        .is_err()
+    );
+    assert!(Message::read(&json!("hover")).is_err());
+}
+
+#[test]
+fn a_kind_no_table_has_is_only_shown() {
+    let kind = kind_named("bogus");
+    assert_eq!(kind.name, "bogus");
+    assert!(kind.caps.raster_only && !kind.caps.selectable && !kind.caps.movable);
+    assert!(!props::kind_takes_link(&kind));
+}
+
+// ── an edit leaves the old model's records as they were ─────────────────────
+
+#[test]
+fn an_edit_leaves_the_old_models_records_intact() {
+    let (m, id) = drawn_square();
+    let before = m.by_id.get(&id).cloned().expect("the square");
+    let dragged = run(&m, &[edit("down", 100.5, 115.0), edit("move", 110.5, 125.0)]);
+    let (after, result) = step(&dragged, &edit("up", 110.5, 125.0));
+    assert!(!result.change.is_empty());
+    assert!(
+        Rc::ptr_eq(m.by_id.get(&id).expect("still there"), &before),
+        "the old model still holds the old record"
+    );
+    assert!(!Rc::ptr_eq(after.by_id.get(&id).expect("moved"), &before));
+    assert_eq!(shape_of(&before.annotation), shape_of(&m.record(&id).expect("old").annotation));
+}
+
+// ── geometry equality is JSON.stringify's ───────────────────────────────────
+
+#[test]
+fn minus_zero_and_zero_are_the_same_geometry() {
+    use epdf_annotation_core::update::changes::geom_equal;
+    let shape = |x: f64| {
+        Shape::read(&json!({ "kind": "box", "box": { "x": x, "y": 0, "width": 1, "height": 1 }, "rotation": 0, "ellipse": false })).expect("a shape")
+    };
+    assert!(geom_equal(&shape(-0.0), &shape(0.0)));
+}
+
+// ── N10: a draft says whether it creates, from its tag ──────────────────────
+
+#[test]
+fn draft_is_create_matches_its_tag() {
+    let base = session_with_numbers();
+    let mut drafts: Vec<Rc<Draft>> = Vec::new();
+    for subtype in ["square", "line", "polygon", "ink", "freeText"] {
+        let m = run(
+            &base,
+            &[create(subtype, "down", 100.0, 100.0), create(subtype, "move", 150.0, 150.0)],
+        );
+        drafts.extend(m.draft.clone());
+    }
+    let (m, _) = drawn_square();
+    for gesture in [
+        vec![edit("down", 100.5, 115.0)],
+        vec![edit("down", 180.0, 160.0)],
+        vec![edit("down", 140.0, 76.0)],
+        vec![edit("down", 400.0, 400.0), edit("move", 420.0, 420.0)],
+    ] {
+        drafts.extend(run(&m, &gesture).draft.clone());
+    }
+    assert!(drafts.len() >= 7, "{}", drafts.len());
+    let mut seen = std::collections::BTreeSet::new();
+    for d in &drafts {
+        let tag = d.tag();
+        seen.insert(tag);
+        assert_eq!(d.is_create(), tag.starts_with("create-"), "{tag}");
+    }
+    assert!(
+        seen.iter().any(|t| t.starts_with("create-"))
+            && seen.iter().any(|t| !t.starts_with("create-")),
+        "{seen:?}"
+    );
+}
+
+// ── a snap patch the settings can't hold ────────────────────────────────────
+
+#[test]
+fn a_snap_patch_that_does_not_read_changes_nothing() {
+    let m = session_with_numbers();
+    let bad = update(&m, &message(json!({ "type": "setSnap", "patch": { "alignment": "yes" } })))
+        .expect("an update");
+    assert!(bad.session.same(&m.session()), "the same session: no change");
+    let good = update(&m, &message(json!({ "type": "setSnap", "patch": { "alignment": false } })))
+        .expect("an update");
+    assert!(!good.session.same(&m.session()) && !good.session.snap.alignment);
+}

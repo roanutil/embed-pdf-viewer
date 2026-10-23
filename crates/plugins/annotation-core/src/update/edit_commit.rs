@@ -17,7 +17,7 @@ use crate::record::{shape_of, style_of, with_shape, with_values};
 use crate::rect::MIN_SIZE;
 use crate::types::{Draft, Effect, Model, ModelAnnotation};
 use crate::update::changes::{commit_view_gesture, geom_equal};
-use crate::update::edit::rotate_draft_delta;
+use crate::update::edit::{missing_record, rotate_draft_delta};
 
 fn without_draft(model: &Model) -> Model {
     Model { draft: None, ..model.clone() }
@@ -87,7 +87,7 @@ pub fn edit_up(model: &Model) -> CoreResult<(Model, Vec<Effect>)> {
             if geom_equal(&d.base, &d.current) {
                 return done(without_draft(model));
             }
-            let before = model.record(&d.id).expect("a handle record");
+            let Some(before) = model.record(&d.id) else { return Err(missing_record()) };
             let stored =
                 unanchored_geom(&d.current, anchor_mode_of(before).as_ref(), d.view.as_ref());
             if let Some(measure) = measurement_of(&before.annotation)
@@ -140,7 +140,7 @@ pub fn edit_up(model: &Model) -> CoreResult<(Model, Vec<Effect>)> {
             }
             let mut by_id = (*model.by_id).clone();
             for id in &d.ids {
-                let record = by_id.get(id).cloned().expect("a moving record");
+                let Some(record) = by_id.get(id).cloned() else { return Err(missing_record()) };
                 let geometry = shape_of(&record.annotation);
                 if let Some(next) = with_shape(&record, &geom_translate(&geometry, d.delta))? {
                     by_id.insert(id.clone(), Rc::new(next));

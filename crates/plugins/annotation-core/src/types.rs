@@ -645,6 +645,21 @@ js_union! {
 }
 
 impl Draft {
+    /// A draft that creates a record (`draft.kind.startsWith('create-')`,
+    /// `view.ts`): one of the six `create-*` drafts. Read from the variant,
+    /// not by printing the draft (review finding N10).
+    pub fn is_create(&self) -> bool {
+        matches!(
+            self,
+            Draft::CreateRect(_)
+                | Draft::CreateDistance(_)
+                | Draft::CreateLine(_)
+                | Draft::CreatePoly(_)
+                | Draft::CreateInk(_)
+                | Draft::CreateCallout(_)
+        )
+    }
+
     /// The page a draft that has one (`'page' in draft`) is on.
     pub fn page(&self) -> Option<&PageRef> {
         match self {
