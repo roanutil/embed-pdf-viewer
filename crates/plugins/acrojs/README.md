@@ -1,11 +1,11 @@
 # epdf-acrojs
 
-`packages/core/acrojs` in Rust: the host side of Acrobat JavaScript. Of the 75 cases in
-`vectors/core/acrojs.json`, 74 replay identically, and 19 of the 20 in
-`vectors/core/acrojs-host.json` do (`cargo test -p epdf-acrojs`). Two wait on a decision.
-`prelude-source` pins the current `prelude.ts` text, which the committed `prelude.js` predates.
+`packages/core/acrojs` in Rust: the host side of Acrobat JavaScript. All 75 cases in
+`vectors/core/acrojs.json` and all 20 in `vectors/core/acrojs-host.json` pass
+(`cargo test -p epdf-acrojs`). One passes through a named exception:
 `dispose-pending-factory` releases the second realm at the repeated `dispose()`, where this crate
-releases it when the queue drains (M13, `22ca510e6`).
+releases it when the queue drains (M13, `22ca510e6`). The entry is in
+`crates/plugin-conformance/outcome-exceptions.json`.
 
 What ports is `host.ts`, `input.ts`, `color.ts`, `actions.ts` and the contract and constants in
 `types.ts`. What doesn't is `prelude.ts`, the JavaScript that runs inside the sandbox. We ship its
