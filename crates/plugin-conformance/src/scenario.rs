@@ -413,11 +413,15 @@ fn instrument(plugin: AnyPlugin, h: &Harness) -> AnyPlugin {
         create: None,
     };
     let h = h.clone();
+    // Printed through the slice's own JSON, as the TypeScript records the
+    // state object: a typed slice is not a `Value`.
+    let to_json = plugin.to_json.clone();
     wrapper.create = Some(Rc::new(move |cx| {
         let slice = cx.slice_key().to_string();
         let h = h.clone();
+        let to_json = to_json.clone();
         let off = cx.lease().on_change(move |change| {
-            let show = |state: &epdf_kernel::store::SliceState| state.downcast_ref::<Value>().cloned().unwrap_or_else(undefined);
+            let show = |state: &epdf_kernel::store::SliceState| (to_json)(&**state);
             h.0.entry.borrow_mut().state_changes.push(json!({"slice": slice, "previous": show(&change.previous), "next": show(&change.next)}));
             Ok(())
         });
