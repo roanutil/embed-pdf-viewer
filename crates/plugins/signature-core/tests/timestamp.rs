@@ -114,13 +114,17 @@ const DIGEST: [u8; 32] = [7; 32];
 const GEN_TIME: f64 = 1_768_435_200_250.0;
 
 fn token() -> Vec<u8> {
+    token_at(GEN_TIME)
+}
+
+fn token_at(gen_time: f64) -> Vec<u8> {
     block_on(build_timestamp_token(
         &LeafCrypto,
         BuildTimestampTokenInput {
             digest: DIGEST.to_vec(),
             hash: Digest::Sha256,
             authority: leaf_signer(),
-            gen_time: Some(GEN_TIME),
+            gen_time: Some(gen_time),
         },
     ))
     .unwrap()
@@ -396,5 +400,512 @@ fn the_test_timestamp_authority_stamps_with_its_own_certificate() {
     assert_eq!(
         verify_for_completion(&token, &prepared(&DIGEST, "sha256"), CompletionProfile::Timestamp),
         Gate::Ok
+    );
+}
+
+fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+    haystack.windows(needle.len()).any(|w| w == needle)
+}
+
+#[test]
+fn gen_time_writes_milliseconds_only_when_present_and_padded_to_three() {
+    assert!(contains(&token_at(1_768_435_200_000.0), b"\x18\x0f20260115000000Z"));
+    assert!(contains(&token_at(1_768_435_200_005.0), b"\x18\x1320260115000000.005Z"));
+}
+
+#[test]
+fn the_tst_info_is_carried_as_a_constructed_octet_string() {
+    // id-ct-TSTInfo, then `[0]` around a constructed OCTET STRING (0x24).
+    let mut header = der::oid(epdf_signature_core::oids::TST_INFO);
+    header.push(0xa0);
+    let token = token();
+    let at =
+        token.windows(header.len()).position(|w| w == header.as_slice()).unwrap() + header.len();
+    let length_octets = if token[at] & 0x80 == 0 { 1 } else { 1 + usize::from(token[at] & 0x7f) };
+    assert_eq!(token[at + length_octets], 0x24);
+}
+
+/// The built token with its encapsulated content replaced by `e_content`.
+fn token_with_e_content(e_content: Vec<u8>) -> Vec<u8> {
+    let root = der::from_ber(&token()).unwrap();
+    let signed = &root.children[1].children[0];
+    let mut members: Vec<Vec<u8>> = signed.children.iter().map(|n| n.raw.clone()).collect();
+    members[2] = der::sequence(&[
+        der::oid(epdf_signature_core::oids::TST_INFO),
+        der::context(0, &[e_content]),
+    ]);
+    der::sequence(&[root.children[0].raw.clone(), der::context(0, &[der::sequence(&members)])])
+}
+
+#[test]
+fn a_constructed_e_content_joins_its_own_pieces_only() {
+    // asn1js `OctetString.getValue()`: a nested constructed piece adds nothing.
+    let nested = der::tlv(
+        0x24,
+        &[der::tlv(0x24, &der::octet_string(&[1, 2, 3])), der::octet_string(&[4, 5])].concat(),
+    );
+    let internal = parse_cms_content(&token_with_e_content(nested), CmsContent::TstInfo).unwrap();
+    assert_eq!(internal.e_content, Some(vec![4, 5]));
+}
+
+#[test]
+fn a_sub_filter_that_is_not_a_string_is_unknown() {
+    let doc = Rc::new(ScriptedDoc { calls: RefCell::default() });
+    let mut input = timestamp_input();
+    input.remove("kind");
+    input.insert("subFilter".into(), json!(["adbe.pkcs7.detached"]));
+    let error = block_on(sign(doc.clone(), input, SignerPort::Raw(leaf_signer()))).unwrap_err();
+    assert_eq!(error.code(), Some("InvalidArg"));
+    assert_eq!(error.message, "unknown subFilter 'adbe.pkcs7.detached'");
+    assert!(doc.calls.borrow().is_empty());
+}
+
+/// `Ok(genTime)`, or `Err(name, CmsError reason, message)`.
+#[derive(Debug, PartialEq)]
+enum Outcome {
+    Ok(f64),
+    Err(&'static str, Option<&'static str>, &'static str),
+}
+
+/// Every row: the TSTInfo bytes, and what `readTimestampInfo` answers for them
+/// (pkijs 3.4.0 / asn1js 3.0.10 under tsx, `TZ=UTC`).
+const READER_CASES: &[(&str, &str, Outcome)] = &[
+    (
+        "base",
+        "304c02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "imprintConstructed",
+        "305002010106022a033033300b06096086480165030402012424041007070707070707070707070707070707041007070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "imprintNested",
+        "305002010106022a033033300b06096086480165030402012424242204200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "timeComma",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181332303236303131353030303030302c3235305a",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "timeHours",
+        "304802010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180b323032363031313530305a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "timeHoursFraction",
+        "304a02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180d323032363031313530302e355a",
+        Outcome::Ok(1768437000000.0),
+    ),
+    (
+        "timeMinutes",
+        "304a02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180d3230323630313135303030305a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "timeMinutesFraction",
+        "304d02010106022a03302f300b06096086480165030402010420070707070707070707070707070707070707070707070707070707070707070702010518103230323630313135303030302e32355a",
+        Outcome::Ok(1768435215000.0),
+    ),
+    (
+        "timeDate",
+        "304602010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180932303236303131355a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "timeDateFraction",
+        "304802010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180b32303236303131352e355a",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "timeMillis",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181332303236303131353030303030302e3235305a",
+        Outcome::Ok(1768435200250.0),
+    ),
+    (
+        "timeEmptyFraction",
+        "304d02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181032303236303131353030303030302e5a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "timeExponent",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181332303236303131353030303030302e3565325a",
+        Outcome::Ok(1768435250000.0),
+    ),
+    (
+        "timeTrailingSpace",
+        "304f02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181232303236303131353030303030302e31205a",
+        Outcome::Ok(1768435200100.0),
+    ),
+    (
+        "timeMinusInUtc",
+        "305102010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181432303236303131353030303030302e31652d325a",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "timeMonth13",
+        "304c02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236313331353030303030305a",
+        Outcome::Ok(1799971200000.0),
+    ),
+    (
+        "timeLetter",
+        "304c02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f323032364f3131353030303030305a",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "timeShort",
+        "304d02010106022a03302f300b06096086480165030402010420070707070707070707070707070707070707070707070707070707070707070702010518103230323630313135303030303030305a",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "timeEmpty",
+        "303d02010106022a03302f300b0609608648016503040201042007070707070707070707070707070707070707070707070707070707070707070201051800",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "timeYear0050",
+        "304c02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f30303530303131353030303030305a",
+        Outcome::Ok(-629942400000.0),
+    ),
+    (
+        "timeConstructed",
+        "304e02010106022a03302f300b0609608648016503040201042007070707070707070707070707070707070707070707070707070707070707070201053811180f32303236303131353030303030305a",
+        Outcome::Err("CmsError", Some("malformed"), "TSTInfo is not valid BER"),
+    ),
+    (
+        "timeLocal",
+        "304b02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180e3230323630313135303030303030",
+        Outcome::Ok(1767139200000.0),
+    ),
+    (
+        "timeOffset",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105181332303236303131353030303030302b30313030",
+        Outcome::Ok(1767142800000.0),
+    ),
+    (
+        "trailingOctets",
+        "304f02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a040101",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "accuracy",
+        "305102010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a3003020101",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "accuracyEmpty",
+        "304e02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a3000",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "accuracyNotAccuracy",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a300406022a03",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "orderingBeforeAccuracy",
+        "305402010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a0101ff3003020101",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "twoNonces",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a02010902010a",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "nonceThenOrdering",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a0201090101ff",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "allOptional",
+        "307c02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a3009020101800101810102010100020109a012a410300e310c300a06035504030c03545341a109300706022a03040105",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "tsaDirectory",
+        "306002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa012a410300e310c300a06035504030c03545341",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "tsaDns",
+        "305b02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa00d820b7473612e6578616d706c65",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "tsaNotGeneralName",
+        "305102010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa003020103",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "tsaEmpty",
+        "304e02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa000",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "tsaRegisteredIdBad",
+        "305102010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa003880181",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Error during parsing of ASN.1 data. Data is not correct for 'GeneralName registeredID'.",
+        ),
+    ),
+    (
+        "tsaRegisteredId",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa00488022a03",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "extensions",
+        "305702010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa109300706022a03040105",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "extensionsEmpty",
+        "304e02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa100",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "extensionsNotExtension",
+        "305102010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa103020103",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "extensionsThenTrailing",
+        "305a02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa109300706022a03040105040101",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "badTimeInsideExtensions",
+        "305102010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa103180178",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "extraAfterAllSlots",
+        "307902010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a3003020101010100020109a012a410300e310c300a06035504030c03545341a109300706022a03040105040101",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "rid0",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa0028800",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "ridPadded",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa00488028001",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "ridBig",
+        "305b02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa00d880b2affffffffffffffffff7f",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "rfc822Binary",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa0048102ff00",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "uriEmpty",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa0028600",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "ipBinary",
+        "305402010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa006870401020304",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "otherNameBadTime",
+        "305902010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa00ba00906022a03a003180178",
+        Outcome::Err("Error", None, "Wrong input string for conversion"),
+    ),
+    (
+        "otherName",
+        "305902010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa00ba00906022a03a003020101",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "utcConstructedTrailing",
+        "304e02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a3700",
+        Outcome::Err("CmsError", Some("malformed"), "TSTInfo is not valid BER"),
+    ),
+    (
+        "utcBadTrailing",
+        "304f02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a170178",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "gtConstructedInExt",
+        "305002010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa1023800",
+        Outcome::Err("CmsError", Some("malformed"), "TSTInfo is not valid BER"),
+    ),
+    (
+        "x400",
+        "305202010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa004a3023000",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "ediParty",
+        "305502010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa007a505a1030c0170",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "ediPartyBad",
+        "305502010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305aa007a505a103020101",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "versionConstructed",
+        "304e220302010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Err("CmsError", Some("malformed"), "TSTInfo is not valid BER"),
+    ),
+    (
+        "octetConstructedTrailing",
+        "304e02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a2400",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "imprintAlgExtra",
+        "305102010106022a03303430100609608648016503040201050002010104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "imprintAlgNoOid",
+        "304402010106022a033027300302010104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "imprintExtra",
+        "304f02010106022a033032300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020101020105180f32303236303131353030303030305a",
+        Outcome::Ok(1768435200000.0),
+    ),
+    (
+        "imprintShort",
+        "302a02010106022a03300d300b0609608648016503040201020105180f32303236303131353030303030305a",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "fourMembers",
+        "303b02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "notSequence",
+        "314c02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+    (
+        "longTag",
+        "304f02010106022a03302f300b060960864801650304020104200707070707070707070707070707070707070707070707070707070707070707020105180f32303236303131353030303030305a9f1f00",
+        Outcome::Err(
+            "CmsError",
+            Some("malformed"),
+            "TSTInfo does not parse: Object's schema was not verified against input data for TSTInfo",
+        ),
+    ),
+];
+
+fn unhex(hex: &str) -> Vec<u8> {
+    (0..hex.len()).step_by(2).map(|i| u8::from_str_radix(&hex[i..i + 2], 16).unwrap()).collect()
+}
+
+#[test]
+fn the_tst_info_reader_accepts_and_refuses_what_pkijs_does() {
+    let mut wrong = Vec::new();
+    for (name, hex, expected) in READER_CASES {
+        let got = match read_timestamp_info(&unhex(hex)) {
+            Ok(info) => {
+                assert_eq!(info.imprint_algorithm, Digest::Sha256, "{name}");
+                assert_eq!(info.imprint.len(), 32, "{name}");
+                format!("{:?}", Outcome::Ok(info.gen_time))
+            }
+            Err(e) => {
+                let error = e.to_error();
+                format!("Err({:?}, {:?}, {:?})", error.name, e.reason(), error.message)
+            }
+        };
+        if got != format!("{expected:?}") {
+            wrong.push(format!("{name}: expected {expected:?}, got {got}"));
+        }
+    }
+    assert!(
+        wrong.is_empty(),
+        "{} of {} rows differ:\n{}",
+        wrong.len(),
+        READER_CASES.len(),
+        wrong.join("\n")
     );
 }

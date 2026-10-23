@@ -121,11 +121,23 @@ pub async fn sign(
         .with("details", json!({ "field": "key" })));
     }
     let sub_filter = if timestamp {
-        "ETSI.RFC3161".to_string()
+        Value::from("ETSI.RFC3161")
     } else {
-        present(&input, "subFilter").map_or_else(|| "ETSI.CAdES.detached".into(), js_string)
+        present(&input, "subFilter").cloned().unwrap_or_else(|| "ETSI.CAdES.detached".into())
     };
-    let profile = profile_for(&sub_filter)?;
+    // `profileFor` switches with strict equality: only a string can name a
+    // sub-filter, whatever another value prints as.
+    let profile = match &sub_filter {
+        Value::String(name) => profile_for(name)?,
+        other => {
+            return Err(Error::engine(
+                "InvalidArg",
+                format!("unknown subFilter '{}'", js_string(other)),
+            )
+            .with("details", json!({ "field": "subFilter" })));
+        }
+    };
+    let sub_filter = js_string(&sub_filter);
     let digest = match present(&input, "digest") {
         Some(d) => d.clone(),
         None => json!(match &key {

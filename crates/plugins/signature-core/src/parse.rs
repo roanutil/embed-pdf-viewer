@@ -341,15 +341,24 @@ pub fn parse_cms_content(cms: &[u8], content_kind: CmsContent) -> Result<Interna
             else {
                 return Err(ParseError::malformed("a timestamp token must carry a TSTInfo"));
             };
-            // pkijs keeps an OCTET STRING (joining a constructed one); any
-            // other element has no `getValue`.
+            // pkijs keeps an OCTET STRING; any other element has no
+            // `getValue`. asn1js's `getValue()` joins a constructed one's
+            // primitive pieces only: a nested constructed piece adds nothing.
             if !node.is_octet_string() {
                 return Err(ParseError::Other(Error::named(
                     "TypeError",
                     "encapsulated.eContent.getValue is not a function",
                 )));
             }
-            e_content = Some(node.octets());
+            e_content = Some(if node.constructed {
+                node.children
+                    .iter()
+                    .filter(|c| !c.constructed)
+                    .flat_map(|c| c.content.clone())
+                    .collect()
+            } else {
+                node.content.clone()
+            });
         }
     }
     if signed_data.signer_infos.len() != 1 {
