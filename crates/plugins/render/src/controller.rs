@@ -11,10 +11,9 @@
 //! `invalidate` verb. Both go through `publish_invalidation`, the one place
 //! the ledger bumps and `onInvalidated` fires.
 //!
-//! The TypeScript asks the engine for every render with `priority: 'high'`
-//! and the view it is for (`ctx.doc.with({priority, view})`). The Rust
-//! document handle has no such hint yet; the plugin keeps the view on the
-//! tile path so a host handle that learns one can be given it.
+//! Every render it asks for is the picture of a page itself, so it asks the
+//! engine with `priority: 'high'`, naming the view it's for when it knows it
+//! (`ctx.doc.with({priority, view})`, here `DocumentHandle::call_with`).
 
 use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
@@ -22,7 +21,7 @@ use std::rc::{Rc, Weak};
 
 use epdf_geometry::Rect;
 use epdf_kernel::cancellable::cancellable;
-use epdf_kernel::engine::DocumentHandle;
+use epdf_kernel::engine::{CallFacts, CallPriority, DocumentHandle};
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
@@ -40,7 +39,7 @@ use crate::appearance_store::{AppearanceStore, RecentPictures};
 use crate::contract::{
     InvalidateOptions, InvalidateScope, PageArg, PageImage, PageLayerOptions, PageRender,
     PageRenderFailure, RenderBatchResult, RenderConfig, RenderInvalidatedEvent, RenderPageOptions,
-    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, config_of,
+    RenderPagesOptions, RenderSettings, RenderThumbnailOptions, config_of, render_defaults,
 };
 use crate::host_contract::{
     AppearanceFamily, AppearancePicture, AppearancesOptions, PaintSettings, RenderCompletedEvent,
@@ -107,6 +106,9 @@ struct RasterRequest {
     layers: PageRenderLayers,
     format: Option<RenderFormat>,
     quality: Option<f64>,
+    /// The view whose picture it is, so the engine ranks it by where the
+    /// page is there.
+    view: Option<String>,
 }
 
 /// A view's live demand for one page, as last set through its handle.
@@ -155,6 +157,7 @@ struct Core {
     paint_settings_memo: RefCell<Option<(bool, Rc<PaintSettings>)>>,
     warned_format: Cell<bool>,
     warned_budget: Cell<bool>,
+    warned_settings: Cell<bool>,
     pending_advance: RefCell<IndexSet<u32>>,
     advance_scheduled: Cell<bool>,
     views: RefCell<IndexMap<String, ViewRecord>>,
@@ -177,9 +180,23 @@ impl Core {
 
     // ── settings ──
 
+    /// A settings value as [`RenderSettings`]. One this port cannot read (a
+    /// member of the wrong type, written past the typed API through
+    /// `Kernel::settings_of`) reads as [`render_defaults`], and the first
+    /// such read warns once. The TypeScript resolves whatever is there.
+    fn decode_settings(&self, value: &Value) -> RenderSettings {
+        config_of(value).unwrap_or_else(|error| {
+            if !self.warned_settings.replace(true) {
+                (self.host.warn)(&format!(
+                    "[render] malformed settings ({error}); using the defaults."
+                ));
+            }
+            render_defaults()
+        })
+    }
+
     /// The settings as the strategy reads them, resolved again when they
-    /// change. A settings value this port cannot read (a member of the wrong
-    /// type, written past the typed API) is the defaults.
+    /// change.
     fn resolved(&self) -> Rc<ResolvedRenderOptions> {
         let current = self.settings.get();
         if let Some((value, resolved)) = &*self.resolved_memo.borrow()
@@ -187,14 +204,14 @@ impl Core {
         {
             return resolved.clone();
         }
-        let config = config_of(&current).unwrap_or_default();
+        let config = self.decode_settings(&current);
         let resolved = Rc::new(resolve_render_options(&config));
         *self.resolved_memo.borrow_mut() = Some((current, resolved.clone()));
         resolved
     }
 
     fn get_settings(&self) -> RenderSettings {
-        config_of(&self.settings.get()).unwrap_or_default()
+        self.decode_settings(&self.settings.get())
     }
 
     // ── what a picture draws ──
@@ -443,7 +460,14 @@ impl Core {
                 if let Some(quality) = request.quality {
                     options.insert("quality".into(), json!(quality));
                 }
-                Ok(render_image(&self.cx.doc()?, page, Value::Object(options), store_signal))
+                let facts = high_for(request.view.clone());
+                Ok(render_image(
+                    &self.cx.doc()?,
+                    &facts,
+                    page,
+                    Value::Object(options),
+                    store_signal,
+                ))
             },
             signal,
         );
@@ -495,6 +519,7 @@ impl Core {
                 layers,
                 format: strategy.format,
                 quality: strategy.quality,
+                view: options.view.clone(),
             };
             let raster = this.acquire_raster(page, key, request, options.signal.as_ref());
             adopt(raster).await
@@ -533,6 +558,7 @@ impl Core {
                 layers,
                 format,
                 quality,
+                view: None,
             };
             let raster = this.acquire_raster(page, key, request, options.signal.as_ref());
             adopt(cancellable(CAPABILITY, options.signal.clone(), raster)).await
@@ -854,16 +880,24 @@ fn all(promises: Vec<Promise<()>>) -> Promise<()> {
     all
 }
 
-/// `ctx.doc.page(page).render.image(options)`, aborted with `signal`. The
-/// TypeScript hands the engine the signal's reason only when it is a string;
-/// a Rust abort reason is always an error, so the engine gets none.
+/// `{priority: 'high', view}`, the view left out when the caller names none.
+fn high_for(view: Option<String>) -> CallFacts {
+    CallFacts { priority: Some(CallPriority::High), view }
+}
+
+/// `ctx.doc.with(facts).page(page).render.image(options)`, aborted with
+/// `signal`. The TypeScript hands the engine the signal's reason only when
+/// it is a string; a Rust abort reason is always an error, so the engine
+/// gets none.
 fn render_image(
     doc: &Rc<dyn DocumentHandle>,
+    facts: &CallFacts,
     page: PageRef,
     options: Value,
     signal: &AbortSignal,
 ) -> Promise<Value> {
-    let task = doc.call("page.render.image", Some(page.page_object_number), vec![options]);
+    let task =
+        doc.call_with(facts, "page.render.image", Some(page.page_object_number), vec![options]);
     if signal.aborted() {
         task.abort(None);
     } else {
@@ -906,11 +940,13 @@ impl RenderCapability {
         &self,
         listener: impl Fn(&RenderSettingsChanged) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
+        let core = Rc::downgrade(&self.0);
         self.0.settings.events.on(move |event: &SettingsChanged| {
-            listener(&RenderSettingsChanged {
-                settings: config_of(&event.settings).unwrap_or_default(),
-                changed: event.changed.clone(),
-            })
+            let settings = match core.upgrade() {
+                Some(core) => core.decode_settings(&event.settings),
+                None => config_of(&event.settings).unwrap_or_else(|_| render_defaults()),
+            };
+            listener(&RenderSettingsChanged { settings, changed: event.changed.clone() })
         })
     }
 
@@ -1308,6 +1344,7 @@ pub fn create_render_controller(
             paint_settings_memo: RefCell::new(None),
             warned_format: Cell::new(false),
             warned_budget: Cell::new(false),
+            warned_settings: Cell::new(false),
             pending_advance: RefCell::new(IndexSet::new()),
             advance_scheduled: Cell::new(false),
             views: RefCell::new(IndexMap::new()),
@@ -1344,7 +1381,7 @@ pub fn create_render_controller(
 /// refused once per tile), then a page-space region at a scale.
 fn fetch_tile(
     core: &Rc<Core>,
-    _view: &str,
+    view: &str,
     pon: u32,
     rect: Rect,
     scale: f64,
@@ -1375,5 +1412,6 @@ fn fetch_tile(
     if let Some(quality) = strategy.quality {
         options.insert("quality".into(), json!(quality));
     }
-    render_image(&doc, PageRef::new(pon), Value::Object(options), signal)
+    let facts = high_for(Some(view.to_string()));
+    render_image(&doc, &facts, PageRef::new(pon), Value::Object(options), signal)
 }
