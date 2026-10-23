@@ -423,6 +423,7 @@ dependencies = [
 name = "epdf-acrojs"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-kernel",
  "plugin-conformance",
  "serde",
