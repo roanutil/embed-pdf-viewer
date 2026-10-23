@@ -21,7 +21,7 @@
  * runs with `enabled: true` and no factory, which must behave identically.
  */
 import { definePlugin, type AnyPlugin, type DocumentMeta } from '@embedpdf/core';
-import type { FormSubmissionEntry } from '@embedpdf/engine-core/runtime';
+import type { Annotation, AnnotationRef, DocumentActionsSnapshot, DocumentEvent, FormSubmissionEntry } from '@embedpdf/engine-core/runtime';
 import type { ScriptWorldInput } from '../../../../packages/core/acrojs/src/index';
 
 import { actionsPlugin } from '../../../../packages/plugin/actions/src/actions.plugin';
@@ -34,11 +34,16 @@ import {
   type ActionsConfig as ActionsPluginConfig,
   type ActionTrigger,
   type ActionTriggerResult,
+  type ActionSource,
+  type PdfAnnotationEventKind,
+  type DocumentTriggerEvent,
 } from '../../../../packages/plugin/actions/src/contract';
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { onCaseEnd, registerPlugin, type PluginEnv, type ScenarioCase, type Step } from '../scenario';
 import type { FunctionCase, Suite } from '../vectors';
 import * as current from './actions-current-fixtures';
+import { updatedFact } from './annotation-live-fixtures';
+import type { PageStateReport } from '../../../../packages/plugin/actions/src/host-contract';
 import { scriptedCallback, scriptedSandboxFactory, type AnswerSpec, type SandboxSpec } from './acrojs';
 
 /** Why some cases record no state; see `ScenarioCase` in `../scenario`. */
@@ -997,420 +1002,761 @@ const dispatch = (trigger: unknown) => cap('dispatch', trigger);
 const nmRef = (pon: number, nm: string) => ({ kind: 'nm', page: pr(pon), nm });
 const indexRef = (pon: number, index: number, revision: unknown = 'r1') => ({ kind: 'index', page: pr(pon), index, revision });
 
+/** C3 inputs are typed before recording; legacy builders above remain for C4/link. */
+const baseRef = (page: number, baseIndex: number): AnnotationRef => ({
+  kind: 'baseIndex',
+  page: current.pr(page),
+  baseIndex,
+});
+const lifecycleAnnot = (
+  page: number,
+  number: number,
+  actions?: Annotation['actions'],
+  over: { ref?: AnnotationRef } = {},
+): Annotation => ({ ...current.annot(page, number, actions), ...over });
+const activateCurrent = (
+  page: number,
+  ref: AnnotationRef,
+  source?: ActionSource,
+): ActionTrigger => ({
+  scope: 'activate',
+  page: current.pr(page),
+  ref,
+  ...(source ? { source } : {}),
+});
+const annotationCurrent = (
+  event: PdfAnnotationEventKind,
+  page: number,
+  ref: AnnotationRef,
+  source?: ActionSource,
+): ActionTrigger => ({
+  scope: 'annotation',
+  event,
+  page: current.pr(page),
+  ref,
+  ...(source ? { source } : {}),
+});
 const fanPage5 = [
-  annot(5, 11, { pageOpen: tree(named('PO-11')), pageClose: tree(named('PC-11')), pageVisible: tree(named('PV-11')), pageInvisible: tree(named('PI-11')) }),
-  annot(5, 12, { pageOpen: tree(named('PO-12')) }),
-  annot(5, 13),
-  annot(5, 14, { pageOpen: tree(null), cursorEnter: tree(named('E-14')) }),
+  lifecycleAnnot(5, 11, {
+    pageOpen: current.tree(current.named('PO-11')),
+    pageClose: current.tree(current.named('PC-11')),
+    pageVisible: current.tree(current.named('PV-11')),
+    pageInvisible: current.tree(current.named('PI-11')),
+  }),
+  lifecycleAnnot(5, 12, { pageOpen: current.tree(current.named('PO-12')) }),
+  lifecycleAnnot(5, 13),
+  lifecycleAnnot(5, 14, {
+    pageOpen: current.tree(null),
+    cursorEnter: current.tree(current.named('E-14')),
+  }),
 ];
-const fanEngine = engineWith({
-  pages: [page(5, 0, { open: tree(named('pageO')), close: tree(named('pageC')) }), page(6, 1, { open: tree(null) })],
-  responses: [annotations(5, fanPage5)],
+const fanEngine = current.engineWith({
+  pages: [
+    current.page(5, 0, {
+      open: current.tree(current.named('pageO')),
+      close: current.tree(current.named('pageC')),
+    }),
+    current.page(6, 1, { open: current.tree(null) }),
+  ],
+  responses: [current.annotations(5, fanPage5)],
 });
 
 const triggerCases: ScenarioCase[] = [
   {
     name: 'activate-resolves-the-annotation-tree',
-    covers: 'An activate trigger finds its annotation by ref (object number, /NM on the same page, index on the same page) and runs /A; mismatched kinds, pages or indexes find nothing.',
-    plugins: plugins(OFF),
-    engine: engineWith({
+    covers:
+      'An activate trigger resolves current objectNumber and stable baseIndex refs on their own pages; mismatched kinds, pages and absent refs find nothing. Historical NM/revision-index spellings are archived.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
       responses: [
-        annotations(2, [annot(2, 0, { activate: tree(named('click-numberless')) }, { ref: { kind: 'objectNumber', page: pr(2) } })]),
-        annotations(1, [
-          annot(1, 9, { activate: tree(named('click-9')) }),
-          annot(1, 10, { activate: tree(named('click-nm')) }, { ref: nmRef(1, 'tip') }),
-          annot(1, 11, { activate: tree(named('click-index')) }, { ref: indexRef(1, 3) }),
+        current.annotations(2, [
+          lifecycleAnnot(
+            2,
+            0,
+            { activate: current.tree(current.named('click-numberless')) },
+            { ref: { kind: 'baseIndex', page: current.pr(2), baseIndex: 0 } },
+          ),
+        ]),
+        current.annotations(1, [
+          lifecycleAnnot(1, 9, { activate: current.tree(current.named('click-9')) }),
+          lifecycleAnnot(
+            1,
+            10,
+            { activate: current.tree(current.named('click-nm')) },
+            { ref: baseRef(1, 2) },
+          ),
+          lifecycleAnnot(
+            1,
+            11,
+            { activate: current.tree(current.named('click-index')) },
+            { ref: baseRef(1, 3) },
+          ),
         ]),
       ],
     }),
     steps: [
       ...boot,
       reg('named'),
-      dispatch(activate(1, aref(1, 9))),
-      dispatch(activate(1, aref(99, 9))),
-      dispatch(activate(1, nmRef(1, 'tip'))),
-      dispatch(activate(1, nmRef(2, 'tip'))),
-      dispatch(activate(1, nmRef(1, 'other'))),
-      dispatch(activate(1, indexRef(1, 3, 'other-revision'))),
-      dispatch(activate(1, indexRef(2, 3))),
-      dispatch(activate(1, indexRef(1, 4))),
-      dispatch(activate(1, aref(1, 10))),
-      dispatch(activate(1, { kind: 'objectNumber', page: pr(1), annotObjectNumber: 404 })),
-      dispatch(activate(2, { kind: 'objectNumber', page: pr(2) })),
+      dispatch(activateCurrent(1, current.aref(1, 9))),
+      dispatch(activateCurrent(1, current.aref(99, 9))),
+      dispatch(activateCurrent(1, baseRef(1, 2))),
+      dispatch(activateCurrent(1, baseRef(2, 2))),
+      dispatch(activateCurrent(1, baseRef(1, 99))),
+      dispatch(activateCurrent(1, baseRef(1, 3))),
+      dispatch(activateCurrent(1, baseRef(2, 3))),
+      dispatch(activateCurrent(1, baseRef(1, 4))),
+      dispatch(activateCurrent(1, current.aref(1, 10))),
+      dispatch(activateCurrent(1, current.aref(1, 404))),
+      dispatch(activateCurrent(2, { kind: 'baseIndex', page: current.pr(2), baseIndex: 0 })),
     ],
     snapshot: snap,
   },
   {
     name: 'annotation-events-resolve-their-aa-tree',
-    covers: 'Each of the six /AA pointer events resolves its own tree; absence is silently inert; the hover pair is hover-origin and the rest are user-origin.',
-    plugins: plugins(OFF),
-    engine: engineWith({
+    covers:
+      'Each of the six /AA pointer events resolves its own tree; absence is silently inert; the hover pair is hover-origin and the rest are user-origin.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
       responses: [
-        annotations(4, [
-          annot(4, 7, {
-            cursorEnter: tree(named('E')),
-            cursorExit: tree(named('X')),
-            mouseDown: tree(named('D')),
-            mouseUp: tree(named('U')),
-            focus: tree(named('Fo')),
-            blur: tree(named('Bl')),
+        current.annotations(4, [
+          lifecycleAnnot(4, 7, {
+            cursorEnter: current.tree(current.named('E')),
+            cursorExit: current.tree(current.named('X')),
+            mouseDown: current.tree(current.named('D')),
+            mouseUp: current.tree(current.named('U')),
+            focus: current.tree(current.named('Fo')),
+            blur: current.tree(current.named('Bl')),
           }),
-          annot(4, 8),
+          lifecycleAnnot(4, 8),
         ]),
       ],
-      pages: [page(4, 0)],
+      pages: [current.page(4, 0)],
     }),
     steps: [
       ...boot,
       reg('named'),
-      listen('onExecuted'),
-      ...['cursorEnter', 'cursorExit', 'mouseDown', 'mouseUp', 'focus', 'blur'].map((event) => dispatch(annotationEvent(event, 4, aref(4, 7)))),
-      dispatch(annotationEvent('cursorEnter', 4, aref(4, 8))),
+      listenCurrent('onExecuted'),
+      ...(
+        [
+          'cursorEnter',
+          'cursorExit',
+          'mouseDown',
+          'mouseUp',
+          'focus',
+          'blur',
+        ] satisfies PdfAnnotationEventKind[]
+      ).map((event) => dispatch(annotationCurrent(event, 4, current.aref(4, 7)))),
+      dispatch(annotationCurrent('cursorEnter', 4, current.aref(4, 8))),
     ],
     snapshot: snap,
   },
   {
     name: 'a-source-hint-is-provenance-only',
-    covers: 'A first-party source hint becomes the step source, and the origin is still derived from the trigger.',
-    plugins: plugins(OFF),
-    engine: engineWith({ responses: [annotations(1, [annot(1, 7, { cursorEnter: tree(named('e')) })])] }),
-    steps: [...boot, reg('named'), listen('onExecuted'), dispatch(annotationEvent('cursorEnter', 1, aref(1, 7), { kind: 'link', annotation: aref(1, 7), page: pr(1) }))],
+    covers:
+      'A first-party source hint becomes the step source, and the origin is still derived from the trigger.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      responses: [
+        current.annotations(1, [
+          lifecycleAnnot(1, 7, { cursorEnter: current.tree(current.named('e')) }),
+        ]),
+      ],
+    }),
+    steps: [
+      ...boot,
+      reg('named'),
+      listenCurrent('onExecuted'),
+      dispatch(
+        annotationCurrent('cursorEnter', 1, current.aref(1, 7), {
+          kind: 'link',
+          annotation: current.aref(1, 7),
+          page: current.pr(1),
+        }),
+      ),
+    ],
     snapshot: snap,
   },
   {
     name: 'a-precedes-aa-u',
-    covers: '/A shadows the /AA U tree: a mouseUp on an annotation with /A is inert; without /A its U tree runs.',
-    plugins: plugins(OFF),
-    engine: engineWith({
+    covers:
+      '/A shadows the /AA U tree: a mouseUp on an annotation with /A is inert; without /A its U tree runs.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
       responses: [
-        annotations(1, [annot(1, 1, { activate: tree(named('A-1')), mouseUp: tree(named('U-1')) }), annot(1, 2, { mouseUp: tree(named('U-2')) })]),
+        current.annotations(1, [
+          lifecycleAnnot(1, 1, {
+            activate: current.tree(current.named('A-1')),
+            mouseUp: current.tree(current.named('U-1')),
+          }),
+          lifecycleAnnot(1, 2, { mouseUp: current.tree(current.named('U-2')) }),
+        ]),
       ],
     }),
-    steps: [...boot, reg('named'), dispatch(annotationEvent('mouseUp', 1, aref(1, 1))), dispatch(annotationEvent('mouseUp', 1, aref(1, 2)))],
+    steps: [
+      ...boot,
+      reg('named'),
+      dispatch(annotationCurrent('mouseUp', 1, current.aref(1, 1))),
+      dispatch(annotationCurrent('mouseUp', 1, current.aref(1, 2))),
+    ],
     snapshot: snap,
   },
   {
     name: 'an-incomplete-trigger-tree-is-refused',
-    covers: 'A rootless but incomplete tree still becomes a step, and the step is refused; the trigger folds to refused.',
-    plugins: plugins(OFF),
-    engine: engineWith({ responses: [annotations(1, [annot(1, 1, { activate: tree(null, true) })])] }),
-    steps: [...boot, listen(), dispatch(activate(1, aref(1, 1)))],
+    covers:
+      'A rootless but incomplete tree still becomes a step, and the step is refused; the trigger folds to refused.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      responses: [
+        current.annotations(1, [lifecycleAnnot(1, 1, { activate: current.tree(null, true) })]),
+      ],
+    }),
+    steps: [...boot, listenCurrent(), dispatch(activateCurrent(1, current.aref(1, 1)))],
     snapshot: snap,
   },
   {
     name: 'resolution-never-rejects',
-    covers: 'A failed annotation read and an unknown page both come back refused with trigger-failed; dispatch never rejects.',
-    plugins: plugins(OFF),
-    engine: engineWith({ responses: [{ path: 'page.annotations.list', pon: 1, error: { name: 'EngineError', message: 'read exploded', code: 'Io' } }] }),
-    steps: [...boot, listen(), dispatch(annotationEvent('cursorEnter', 1, aref(1, 1))), dispatch(activate(77, aref(77, 1))), dispatch(pageEvent('open', 77))],
+    covers:
+      'A failed annotation read and an unknown page both come back refused with trigger-failed; dispatch never rejects.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      responses: [
+        {
+          path: 'page.annotations.list',
+          pon: 1,
+          error: { name: 'EngineError', message: 'read exploded', code: 'Io' },
+        },
+      ],
+    }),
+    steps: [
+      ...boot,
+      listenCurrent(),
+      dispatch(annotationCurrent('cursorEnter', 1, current.aref(1, 1))),
+      dispatch(activateCurrent(77, current.aref(77, 1))),
+      dispatch(current.pageEvent('open', 77)),
+    ],
     snapshot: snap,
   },
   {
     name: 'submission-order-is-execution-order',
     covers: 'Two dispatches run in call order even when the first read is slower.',
-    plugins: plugins(OFF),
-    engine: engineWith({
-      pages: [page(1, 0, { close: tree(named('closeA')) }), page(2, 1, { open: tree(named('openB')) })],
-      responses: [annotations(1, [], { defer: 'slow-list' })],
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [
+        current.page(1, 0, { close: current.tree(current.named('closeA')) }),
+        current.page(2, 1, { open: current.tree(current.named('openB')) }),
+      ],
+      responses: [current.annotations(1, [], { defer: 'slow-list' })],
     }),
-    steps: [...boot, reg('named'), dispatch(pageEvent('close', 1)), dispatch(pageEvent('open', 2)), settle('slow-list', { annotations: [] })],
+    steps: [
+      ...boot,
+      reg('named'),
+      dispatch(current.pageEvent('close', 1)),
+      dispatch(current.pageEvent('open', 2)),
+      settle('slow-list', { annotations: [] }),
+    ],
     snapshot: snap,
   },
   {
     name: 'page-fan-out-order',
-    covers: 'open runs page /O then the /PO set; close runs the /PC set then /C; visible and invisible fan only their sets; rootless trees and tree-less annotations are no steps.',
-    plugins: plugins(OFF),
+    covers:
+      'open runs page /O then the /PO set; close runs the /PC set then /C; visible and invisible fan only their sets; rootless trees and tree-less annotations are no steps.',
+    plugins: current.plugins(OFF),
     engine: fanEngine,
     steps: [
       ...boot,
       reg('named'),
-      listen('onExecuted'),
-      dispatch(pageEvent('open', 5)),
-      dispatch(pageEvent('close', 5)),
-      dispatch(pageEvent('visible', 5)),
-      dispatch(pageEvent('invisible', 5)),
-      dispatch(pageEvent('open', 6)),
+      listenCurrent('onExecuted'),
+      dispatch(current.pageEvent('open', 5)),
+      dispatch(current.pageEvent('close', 5)),
+      dispatch(current.pageEvent('visible', 5)),
+      dispatch(current.pageEvent('invisible', 5)),
+      dispatch(current.pageEvent('open', 6)),
     ],
     snapshot: snap,
   },
   {
     name: 'a-failed-step-never-skips-its-siblings',
-    covers: 'A /PC step that fails is partial; the page /C still runs, and the trigger folds to partial.',
-    plugins: plugins(OFF),
-    engine: engineWith({
-      pages: [page(6, 0, { close: tree(named('pageC')) })],
-      responses: [annotations(6, [annot(6, 21, { pageClose: tree(js('boom')) })])],
+    covers:
+      'A /PC step that fails is partial; the page /C still runs, and the trigger folds to partial.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [current.page(6, 0, { close: current.tree(current.named('pageC')) })],
+      responses: [
+        current.annotations(6, [
+          lifecycleAnnot(6, 21, { pageClose: current.tree(current.js('boom')) }),
+        ]),
+      ],
     }),
-    steps: [...boot, reg('named'), reg('javascript', { returns: { status: 'failed', error: 'boom' } }), dispatch(pageEvent('close', 6))],
+    steps: [
+      ...boot,
+      reg('named'),
+      reg('javascript', { returns: { status: 'failed', error: 'boom' } }),
+      dispatch(current.pageEvent('close', 6)),
+    ],
     snapshot: snap,
   },
   {
     name: 'single-tree-lifecycle-annotations',
-    covers: 'An annotation bearing only one lifecycle tree (close, visible or invisible) is still in the lifecycle set.',
-    plugins: plugins(OFF),
-    engine: engineWith({
-      pages: [page(6, 0)],
+    covers:
+      'An annotation bearing only one lifecycle tree (close, visible or invisible) is still in the lifecycle set.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [current.page(6, 0)],
       responses: [
-        annotations(6, [
-          annot(6, 31, { pageClose: tree(named('PC-31')) }),
-          annot(6, 32, { pageVisible: tree(named('PV-32')) }),
-          annot(6, 33, { pageInvisible: tree(named('PI-33')) }),
+        current.annotations(6, [
+          lifecycleAnnot(6, 31, { pageClose: current.tree(current.named('PC-31')) }),
+          lifecycleAnnot(6, 32, { pageVisible: current.tree(current.named('PV-32')) }),
+          lifecycleAnnot(6, 33, { pageInvisible: current.tree(current.named('PI-33')) }),
         ]),
       ],
     }),
-    steps: [...boot, reg('named'), dispatch(pageEvent('close', 6)), dispatch(pageEvent('visible', 6)), dispatch(pageEvent('invisible', 6))],
+    steps: [
+      ...boot,
+      reg('named'),
+      dispatch(current.pageEvent('close', 6)),
+      dispatch(current.pageEvent('visible', 6)),
+      dispatch(current.pageEvent('invisible', 6)),
+    ],
     snapshot: snap,
   },
   {
     name: 'an-all-inert-fan-out-is-inert',
     covers: 'Steps that all come back inert fold to inert.',
-    plugins: plugins(OFF),
-    engine: engineWith({ pages: [page(6, 0, { open: tree(js('orphan()')) })], responses: [annotations(6, [annot(6, 34, { pageOpen: tree(named('Print')) })])] }),
-    steps: [...boot, dispatch(pageEvent('open', 6))],
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [current.page(6, 0, { open: current.tree(current.js('orphan()')) })],
+      responses: [
+        current.annotations(6, [
+          lifecycleAnnot(6, 34, { pageOpen: current.tree(current.named('Print')) }),
+        ]),
+      ],
+    }),
+    steps: [...boot, dispatch(current.pageEvent('open', 6))],
     snapshot: snap,
   },
   {
     name: 'deferred-navigation-flushes-per-step',
     covers: 'A page /O goto fires inside its own step, before the /PO step runs.',
-    plugins: plugins(OFF),
-    engine: engineWith({
-      pages: [page(7, 0, { open: tree(goto(2)) })],
-      responses: [annotations(7, [annot(7, 31, { pageOpen: tree(named('PO')) })])],
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [current.page(7, 0, { open: current.tree(current.goto(2)) })],
+      responses: [
+        current.annotations(7, [
+          lifecycleAnnot(7, 31, { pageOpen: current.tree(current.named('PO')) }),
+        ]),
+      ],
     }),
-    steps: [...boot, reg('named'), reg('goto'), dispatch(pageEvent('open', 7))],
+    steps: [...boot, reg('named'), reg('goto'), dispatch(current.pageEvent('open', 7))],
     snapshot: snap,
   },
   {
     name: 'lifecycle-cache-and-invalidation',
-    covers: 'Lifecycle trees are read once per page; any annotation.* event and stream.desynced clear the cache, other events do not; close unsubscribes.',
-    plugins: plugins(OFF),
+    covers:
+      'Lifecycle trees are read once per page; confirmed annotations.updated for that page and stream.desynced clear the cache, other events do not; close unsubscribes.',
+    plugins: current.plugins(OFF),
     engine: fanEngine,
     steps: [
       ...boot,
       reg('named'),
-      dispatch(pageEvent('visible', 5)),
-      dispatch(pageEvent('invisible', 5)),
-      { op: 'emit', doc: 'a', event: { type: 'metadata.updated' } },
-      dispatch(pageEvent('visible', 5)),
-      { op: 'emit', doc: 'a', event: { type: 'annotation.updated' } },
-      dispatch(pageEvent('visible', 5)),
-      { op: 'emit', doc: 'a', event: { type: 'stream.desynced' } },
-      dispatch(pageEvent('visible', 5)),
+      dispatch(current.pageEvent('visible', 5)),
+      dispatch(current.pageEvent('invisible', 5)),
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          type: 'metadata.updated',
+          origin: { kind: 'remote', sessionId: 'peer', sub: null, ts: 0, serverId: null },
+          metadata: {
+            title: 'Changed',
+            author: null,
+            subject: null,
+            keywords: null,
+            producer: null,
+            creator: null,
+            createdAt: null,
+            modifiedAt: null,
+            trapped: 'unknown',
+          },
+          meta: { affectedPages: [], cacheDelta: null, opId: 'remote-metadata', undoable: true },
+        } satisfies DocumentEvent,
+      },
+      dispatch(current.pageEvent('visible', 5)),
+      { op: 'emit', doc: 'a', event: updatedFact(current.annot(5, 11)) },
+      dispatch(current.pageEvent('visible', 5)),
+      {
+        op: 'emit',
+        doc: 'a',
+        event: {
+          type: 'stream.desynced',
+          reason: 'backlog-overflow',
+          ts: 0,
+        } satisfies DocumentEvent,
+      },
+      dispatch(current.pageEvent('visible', 5)),
+      close(),
+      open(),
+      reg('named'),
+      dispatch(current.pageEvent('visible', 5)),
       close(),
     ],
     ...UNSNAPSHOTTED_ACTIONS_TRIGGERS,
   },
   {
     name: 'trigger-gates',
-    covers: 'Disabled families are inert with trigger-disabled and canDispatch false; activate is never gated.',
-    plugins: plugins({ openSequence: 'off', triggers: { page: false, annotation: false, document: false } }),
-    engine: engineWith({ pages: [page(1, 0, { open: tree(named('O')) })] }),
+    covers:
+      'Disabled families are inert with trigger-disabled and canDispatch false; activate is never gated.',
+    plugins: current.plugins({
+      openSequence: 'off',
+      triggers: { page: false, annotation: false, document: false },
+    }),
+    engine: current.engineWith({
+      pages: [current.page(1, 0, { open: current.tree(current.named('O')) })],
+    }),
     steps: [
       ...boot,
       reg('named'),
-      listen(),
-      dispatch(pageEvent('open', 1)),
-      dispatch(annotationEvent('cursorEnter', 1, aref(1, 1))),
-      dispatch(docEvent('open')),
-      cap('canDispatch', pageEvent('open', 1)),
-      cap('canDispatch', annotationEvent('cursorEnter', 1, aref(1, 1))),
-      cap('canDispatch', docEvent('will-save')),
-      cap('canDispatch', activate(1, aref(1, 1))),
-      dispatch(activate(1, aref(1, 1))),
+      listenCurrent(),
+      dispatch(current.pageEvent('open', 1)),
+      dispatch(annotationCurrent('cursorEnter', 1, current.aref(1, 1))),
+      dispatch(current.docEvent('open')),
+      cap('canDispatch', current.pageEvent('open', 1)),
+      cap('canDispatch', annotationCurrent('cursorEnter', 1, current.aref(1, 1))),
+      cap('canDispatch', current.docEvent('will-save')),
+      cap('canDispatch', activateCurrent(1, current.aref(1, 1))),
+      dispatch(activateCurrent(1, current.aref(1, 1))),
     ],
     snapshot: snap,
   },
   {
     name: 'gates-default-open',
     covers: 'A triggers object with no families set leaves every family enabled.',
-    plugins: plugins({ openSequence: 'off', triggers: {} }),
-    engine: engineWith(),
-    steps: [...boot, cap('canDispatch', pageEvent('open', 1)), cap('canDispatch', annotationEvent('focus', 1, aref(1, 1))), cap('canDispatch', docEvent('open'))],
+    plugins: current.plugins({ openSequence: 'off', triggers: {} }),
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      cap('canDispatch', current.pageEvent('open', 1)),
+      cap('canDispatch', annotationCurrent('focus', 1, current.aref(1, 1))),
+      cap('canDispatch', current.docEvent('open')),
+    ],
     ...UNSNAPSHOTTED_ACTIONS_TRIGGERS,
   },
 ];
 
 // ── the open sequence, the barrier and the coordinator ─────────────────────────
 
-const report = (currentPon: number | null, visiblePons: number[], cause = 'user', placed = true) =>
-  cap('reportPageState', { currentPage: currentPon === null ? null : pr(currentPon), visiblePages: visiblePons.map(pr), placed, cause });
-const drainTrigger = dispatch(annotationEvent('cursorEnter', 999, aref(999, 1)));
-const openDocs = { openAction: tree(named('OpenAction')), openDestination: { kind: 'fit', page: pr(3) } };
-const threePages = [page(1, 0, { open: tree(named('O-1')) }), page(3, 1, { open: tree(named('O-3')) })];
+const reportCurrent = (
+  currentPon: number | null,
+  visiblePons: number[],
+  cause: PageStateReport['cause'] = 'user',
+  placed = true,
+) =>
+  cap('reportPageState', {
+    currentPage: currentPon === null ? null : current.pr(currentPon),
+    visiblePages: visiblePons.map(current.pr),
+    placed,
+    cause,
+  } satisfies PageStateReport);
+// A valid inert document event drains queued work without a fabricated missing-page failure.
+const drainTriggerCurrent = dispatch(current.docEvent('did-save'));
+const openDocs = {
+  openAction: current.tree(current.named('OpenAction')),
+  openDestination: { kind: 'fit', page: current.pr(3) },
+} satisfies Partial<DocumentActionsSnapshot>;
+const threePages = [
+  current.page(1, 0, { open: current.tree(current.named('O-1')) }),
+  current.page(3, 1, { open: current.tree(current.named('O-3')) }),
+];
 
 const sequenceCases: ScenarioCase[] = [
   {
     name: 'auto-fires-on-adapter-install',
     covers:
       'Pre-open reports are buffered and coalesced; an adapter install runs the openDestination goto, then OpenAction, then the page open the latest report asks for; another adapter never replays it.',
-    plugins: plugins(),
-    engine: engineWith({ services: ['actions'], pages: threePages, responses: [catalog(openDocs)] }),
+    plugins: current.plugins(),
+    engine: current.engineWith({
+      services: ['actions'],
+      pages: threePages,
+      responses: [current.catalog(openDocs)],
+    }),
     steps: [
       ...boot,
       reg('named'),
       reg('goto'),
-      report(1, [1], 'programmatic'),
-      report(3, [3], 'programmatic'),
+      reportCurrent(1, [1], 'programmatic'),
+      reportCurrent(3, [3], 'programmatic'),
       cap('setUiAdapter', adapter()),
-      drainTrigger,
+      drainTriggerCurrent,
       cap('setUiAdapter', adapter()),
-      drainTrigger,
+      drainTriggerCurrent,
     ],
     snapshot: snap,
   },
   {
     name: 'auto-fires-ahead-of-the-first-user-dispatch',
     covers: 'The first user-origin dispatch arms the sequence before taking its own queue slot.',
-    plugins: plugins(),
-    engine: engineWith({
+    plugins: current.plugins(),
+    engine: current.engineWith({
       services: ['actions'],
-      pages: [page(2, 0)],
-      responses: [catalog({ openAction: tree(named('OpenAction')) }), annotations(2, [annot(2, 9, { activate: tree(named('click')) })])],
+      pages: [current.page(2, 0)],
+      responses: [
+        current.catalog({ openAction: current.tree(current.named('OpenAction')) }),
+        current.annotations(2, [
+          lifecycleAnnot(2, 9, { activate: current.tree(current.named('click')) }),
+        ]),
+      ],
     }),
-    steps: [...boot, reg('named'), dispatch(activate(2, aref(2, 9)))],
+    steps: [...boot, reg('named'), dispatch(activateCurrent(2, current.aref(2, 9)))],
     snapshot: snap,
   },
   {
     name: 'open-sequence-completed-event',
     covers:
       'onOpenSequenceCompleted fires once with the folded sequence result after the document steps; a throwing listener is reported to the host sink and never stops its siblings.',
-    plugins: plugins(),
-    engine: engineWith({ services: ['actions'], pages: threePages, responses: [catalog(openDocs)] }),
+    plugins: current.plugins(),
+    engine: current.engineWith({
+      services: ['actions'],
+      pages: threePages,
+      responses: [current.catalog(openDocs)],
+    }),
     steps: [
       ...boot,
       reg('goto'),
       reg('named'),
-      cap('onOpenSequenceCompleted', fnSpec('completed.bad', { throws: { message: 'listener broke' } })),
-      listen('onOpenSequenceCompleted', 'completed'),
+      cap(
+        'onOpenSequenceCompleted',
+        fnSpec('completed.bad', { throws: { message: 'listener broke' } }),
+      ),
+      listenCurrent('onOpenSequenceCompleted', 'completed'),
       cap('setUiAdapter', adapter()),
-      drainTrigger,
+      drainTriggerCurrent,
       cap('setUiAdapter', adapter()),
-      drainTrigger,
+      drainTriggerCurrent,
     ],
     snapshot: snap,
   },
   {
     name: 'auto-a-submit-handler-does-not-arm',
-    covers: 'Installing a submit handler is not the latch release: nothing runs until an adapter arrives.',
-    plugins: plugins(),
-    engine: engineWith({ services: ['actions'], responses: [catalog({ openAction: tree(named('OpenAction')) })] }),
-    steps: [...boot, reg('named'), cap('setSubmitHandler', fnSpec('handler')), cap('setUiAdapter', null), cap('setUiAdapter', adapter())],
+    covers:
+      'Installing a submit handler is not the latch release: nothing runs until an adapter arrives.',
+    plugins: current.plugins(),
+    engine: current.engineWith({
+      services: ['actions'],
+      responses: [current.catalog({ openAction: current.tree(current.named('OpenAction')) })],
+    }),
+    steps: [
+      ...boot,
+      reg('named'),
+      cap('setSubmitHandler', fnSpec('handler')),
+      cap('setUiAdapter', null),
+      cap('setUiAdapter', adapter()),
+    ],
     snapshot: snap,
   },
   {
     name: 'headless-falls-back-to-the-first-page',
-    covers: 'headless fires at bring-up; with no stage report the initial page open is the first page.',
-    plugins: plugins({ openSequence: 'headless' }),
-    engine: engineWith({ services: ['actions'], pages: [page(8, 0, { open: tree(named('O-8')) })], responses: [catalog()] }),
-    steps: [...boot, reg('named'), drainTrigger],
+    covers:
+      'headless fires at bring-up; with no stage report the initial page open is the first page.',
+    plugins: current.plugins({ openSequence: 'headless' }),
+    engine: current.engineWith({
+      services: ['actions'],
+      pages: [current.page(8, 0, { open: current.tree(current.named('O-8')) })],
+      responses: [current.catalog({}, { defer: 'fallback-catalog' })],
+    }),
+    steps: [
+      ...boot,
+      reg('named'),
+      settle('fallback-catalog', {
+        nameTreeScripts: [],
+        openAction: null,
+        openDestination: null,
+      } satisfies DocumentActionsSnapshot),
+      drainTriggerCurrent,
+    ],
     snapshot: snap,
   },
   {
     name: 'headless-with-a-report',
     covers: 'headless with a buffered report opens the reported page instead of the first.',
-    plugins: plugins({ openSequence: 'headless' }),
-    engine: engineWith({ services: ['actions'], pages: threePages, responses: [catalog({}, { defer: 'catalog' })] }),
-    steps: [...boot, reg('named'), report(3, [1, 3]), settle('catalog', { nameTreeScripts: [], openAction: null, openDestination: null }), drainTrigger],
+    plugins: current.plugins({ openSequence: 'headless' }),
+    engine: current.engineWith({
+      services: ['actions'],
+      pages: threePages,
+      responses: [current.catalog({}, { defer: 'catalog' })],
+    }),
+    steps: [
+      ...boot,
+      reg('named'),
+      reportCurrent(3, [1, 3]),
+      settle('catalog', { nameTreeScripts: [], openAction: null, openDestination: null }),
+      drainTriggerCurrent,
+    ],
     snapshot: snap,
   },
   {
     name: 'headless-with-no-pages',
     covers: 'headless on a document with no pages releases the barrier and opens nothing.',
-    plugins: plugins({ openSequence: 'headless' }),
-    engine: engineWith({ pages: [] }),
-    steps: [...boot, reg('named'), drainTrigger],
+    plugins: current.plugins({ openSequence: 'headless' }),
+    engine: current.engineWith({ pages: [] }),
+    steps: [...boot, reg('named'), drainTriggerCurrent],
     snapshot: snap,
   },
   {
     name: 'off-releases-the-barrier',
     covers: 'off never runs the sequence but a report emits straight away.',
-    plugins: plugins(OFF),
-    engine: engineWith({ services: ['actions'], pages: [page(1, 0, { open: tree(named('O-1')) })], responses: [catalog(openDocs)] }),
-    steps: [...boot, reg('named'), reg('goto'), report(1, [1])],
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      services: ['actions'],
+      pages: [current.page(1, 0, { open: current.tree(current.named('O-1')) })],
+      responses: [current.catalog(openDocs)],
+    }),
+    steps: [...boot, reg('named'), reg('goto'), reportCurrent(1, [1])],
     snapshot: snap,
   },
   {
     name: 'a-replayed-open-trigger',
-    covers: 'A document-open trigger after the sequence fired reports open-sequence-replayed; before it fired, it runs the sequence.',
-    plugins: plugins(),
-    engine: engineWith({ services: ['actions'], responses: [catalog({ openAction: tree(null, true) })] }),
-    steps: [...boot, listen(), dispatch(docEvent('open')), dispatch(docEvent('open'))],
+    covers:
+      'A document-open trigger after the sequence fired reports open-sequence-replayed; before it fired, it runs the sequence.',
+    plugins: current.plugins(),
+    engine: current.engineWith({
+      services: ['actions'],
+      responses: [current.catalog({ openAction: current.tree(null, true) })],
+    }),
+    steps: [
+      ...boot,
+      listenCurrent(),
+      dispatch(current.docEvent('open')),
+      dispatch(current.docEvent('open')),
+    ],
     snapshot: snap,
   },
   {
     name: 'open-sequence-read-fails',
-    covers: 'A failed catalog read inside the sequence is a trigger-failed diagnostic; the barrier still releases and a later report emits.',
-    plugins: plugins({ openSequence: 'headless' }),
-    engine: engineWith({
+    covers:
+      'A failed catalog read inside the sequence is a trigger-failed diagnostic; the barrier still releases and a later report emits.',
+    plugins: current.plugins({ openSequence: 'headless' }),
+    engine: current.engineWith({
       services: ['actions'],
       pages: threePages,
-      responses: [{ path: 'actions.read', times: 1, error: { name: 'EngineError', message: 'catalog gone', code: 'Io' } }, catalog()],
+      responses: [
+        { path: 'actions.get', times: 1, defer: 'failed-open-catalog' },
+        current.catalog(),
+      ],
     }),
-    steps: [...boot, reg('named'), listen(), drainTrigger, report(3, [3])],
+    steps: [
+      ...boot,
+      reg('named'),
+      listenCurrent(),
+      fail('failed-open-catalog', 'catalog gone'),
+      drainTriggerCurrent,
+      reportCurrent(3, [3]),
+    ],
     snapshot: snap,
   },
   {
     name: 'no-actions-service',
-    covers: 'A document without the actions service reads as no catalog: the sequence has no steps.',
-    plugins: plugins({ openSequence: 'headless' }),
-    engine: engineWith({ pages: [page(1, 0)] }),
-    steps: [...boot, dispatch(docEvent('will-save')), dispatch(docEvent('open'))],
+    covers:
+      'The current required actions service returns an empty catalog: no lifecycle trees run; a second open is a replay.',
+    plugins: current.plugins({ openSequence: 'headless' }),
+    engine: current.engineWith({ pages: [current.page(1, 0)] }),
+    steps: [...boot, dispatch(current.docEvent('will-save')), dispatch(current.docEvent('open'))],
     snapshot: snap,
   },
   {
     name: 'coordinator-diffs',
     covers:
       'Unplaced reports are ignored; a placed report emits close(old), invisible, visible, open(new); a report with no change emits nothing; a current page of null closes without opening.',
-    plugins: plugins(OFF),
-    engine: engineWith({
-      pages: [page(1, 0, { close: tree(named('C-1')), open: tree(named('O-1')) }), page(2, 1, { open: tree(named('O-2')), close: tree(named('C-2')) })],
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [
+        current.page(1, 0, {
+          close: current.tree(current.named('C-1')),
+          open: current.tree(current.named('O-1')),
+        }),
+        current.page(2, 1, {
+          open: current.tree(current.named('O-2')),
+          close: current.tree(current.named('C-2')),
+        }),
+      ],
       responses: [
-        annotations(1, [annot(1, 41, { pageInvisible: tree(named('PI-1')), pageVisible: tree(named('PV-1')) })]),
-        annotations(2, [annot(2, 42, { pageVisible: tree(named('PV-2')), pageInvisible: tree(named('PI-2')) })]),
+        current.annotations(1, [
+          lifecycleAnnot(1, 41, {
+            pageInvisible: current.tree(current.named('PI-1')),
+            pageVisible: current.tree(current.named('PV-1')),
+          }),
+        ]),
+        current.annotations(2, [
+          lifecycleAnnot(2, 42, {
+            pageVisible: current.tree(current.named('PV-2')),
+            pageInvisible: current.tree(current.named('PI-2')),
+          }),
+        ]),
       ],
     }),
     steps: [
       ...boot,
       reg('named'),
-      report(1, [1], 'user', false),
-      report(1, [1]),
-      report(2, [2]),
-      report(2, [2]),
-      report(2, [1, 2]),
-      report(null, []),
+      reportCurrent(1, [1], 'user', false),
+      reportCurrent(1, [1]),
+      reportCurrent(2, [2]),
+      reportCurrent(2, [2]),
+      reportCurrent(2, [1, 2]),
+      reportCurrent(null, []),
     ],
     snapshot: snap,
   },
   {
     name: 'cascade-budget',
-    covers: 'Consecutive programmatic rounds past the cap are suppressed with a cascade-budget diagnostic (state still tracked); a user-caused report resets the count.',
-    plugins: plugins(OFF),
-    engine: engineWith({ pages: [page(1, 0, { open: tree(named('O-1')) }), page(2, 1, { open: tree(named('O-2')) })] }),
+    covers:
+      'Consecutive programmatic rounds past the cap are suppressed with a cascade-budget diagnostic (state still tracked); a user-caused report resets the count.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
+      pages: [
+        current.page(1, 0, { open: current.tree(current.named('O-1')) }),
+        current.page(2, 1, { open: current.tree(current.named('O-2')) }),
+      ],
+    }),
     steps: [
       ...boot,
       reg('named'),
-      listen(),
-      report(1, []),
-      ...Array.from({ length: 10 }, (_, round) => report(round % 2 === 0 ? 2 : 1, [], 'programmatic')),
-      report(2, [], 'user'),
-      report(1, [], 'programmatic'),
+      listenCurrent(),
+      reportCurrent(1, []),
+      ...Array.from({ length: 10 }, (_, round) =>
+        reportCurrent(round % 2 === 0 ? 2 : 1, [], 'programmatic'),
+      ),
+      reportCurrent(2, [], 'user'),
+      reportCurrent(1, [], 'programmatic'),
     ],
     snapshot: snap,
   },
   {
     name: 'cascade-budget-resets-on-user-activity',
-    covers: 'A user-origin dispatch resets the cascade count, and so does a user report while the barrier is closed.',
-    plugins: plugins(),
-    engine: engineWith({ pages: [page(1, 0, { open: tree(named('O-1')) }), page(2, 1, { open: tree(named('O-2')) })], responses: [annotations(1, [annot(1, 5, { focus: tree(named('focus')) })])] }),
+    covers:
+      'A user-origin dispatch resets the cascade count, and so does a user report while the barrier is closed.',
+    plugins: current.plugins(),
+    engine: current.engineWith({
+      pages: [
+        current.page(1, 0, { open: current.tree(current.named('O-1')) }),
+        current.page(2, 1, { open: current.tree(current.named('O-2')) }),
+      ],
+      responses: [
+        current.annotations(1, [
+          lifecycleAnnot(1, 5, { focus: current.tree(current.named('focus')) }),
+        ]),
+      ],
+    }),
     steps: [
       ...boot,
       reg('named'),
-      listen(),
-      report(1, [], 'user'),
+      listenCurrent(),
+      reportCurrent(1, [], 'user'),
       cap('setUiAdapter', adapter()),
-      ...Array.from({ length: 8 }, (_, round) => report(round % 2 === 0 ? 2 : 1, [], 'programmatic')),
-      dispatch(annotationEvent('focus', 1, aref(1, 5))),
-      ...Array.from({ length: 2 }, (_, round) => report(round % 2 === 0 ? 2 : 1, [], 'programmatic')),
+      ...Array.from({ length: 8 }, (_, round) =>
+        reportCurrent(round % 2 === 0 ? 2 : 1, [], 'programmatic'),
+      ),
+      dispatch(annotationCurrent('focus', 1, current.aref(1, 5))),
+      ...Array.from({ length: 2 }, (_, round) =>
+        reportCurrent(round % 2 === 0 ? 2 : 1, [], 'programmatic'),
+      ),
     ],
     snapshot: snap,
   },
@@ -1419,85 +1765,146 @@ const sequenceCases: ScenarioCase[] = [
 // ── document lifecycle events ─────────────────────────────────────────────────
 
 const allTrees = {
-  willSave: tree(js('ws')),
-  didSave: tree(js('ds')),
-  willPrint: tree(js('wp')),
-  didPrint: tree(js('dp')),
-  willClose: tree(js('wc')),
+  willSave: current.tree(current.js('ws')),
+  didSave: current.tree(current.js('ds')),
+  willPrint: current.tree(current.js('wp')),
+  didPrint: current.tree(current.js('dp')),
+  willClose: current.tree(current.js('wc')),
 };
-const docEngine = (over: Record<string, unknown> = {}, extra: ResponseSpec[] = []) =>
-  engineWith({ services: ['actions'], responses: [...extra, catalog(over)] });
-const verb = (verbName: string, answer: AnswerSpec = { returns: 'done' }) => cap('runDocumentVerb', verbName, fnSpec(`op.${verbName}`, answer));
+const docEngine = (over: Partial<DocumentActionsSnapshot> = {}, extra: ResponseSpec[] = []) =>
+  current.engineWith({ services: ['actions'], responses: [...extra, current.catalog(over)] });
+const verb = (verbName: string, answer: AnswerSpec = { returns: 'done' }) =>
+  cap('runDocumentVerb', verbName, fnSpec(`op.${verbName}`, answer));
 
 const docEventCases: ScenarioCase[] = [
   {
     name: 'the-five-catalog-trees',
-    covers: 'Each verb-shaped document event resolves its Table-200 tree through dispatch; a missing tree is inert.',
-    plugins: plugins(OFF),
+    covers:
+      'Each verb-shaped document event resolves its Table-200 tree through dispatch; a missing tree is inert.',
+    plugins: current.plugins(OFF),
     engine: docEngine(allTrees),
-    steps: [...boot, reg('javascript'), ...['will-save', 'did-save', 'will-print', 'did-print', 'will-close'].map((e) => dispatch(docEvent(e)))],
+    steps: [
+      ...boot,
+      reg('javascript'),
+      ...(
+        [
+          'will-save',
+          'did-save',
+          'will-print',
+          'did-print',
+          'will-close',
+        ] satisfies DocumentTriggerEvent[]
+      ).map((e) => dispatch(current.docEvent(e))),
+    ],
     snapshot: snap,
   },
   {
     name: 'missing-trees-are-inert',
     covers: 'A catalog without the tree, or with a rootless one, is inert.',
-    plugins: plugins(OFF),
-    engine: docEngine({ willSave: tree(null) }),
-    steps: [...boot, dispatch(docEvent('will-save')), dispatch(docEvent('did-save'))],
+    plugins: current.plugins(OFF),
+    engine: docEngine({ willSave: current.tree(null) }),
+    steps: [
+      ...boot,
+      dispatch(current.docEvent('will-save')),
+      dispatch(current.docEvent('did-save')),
+    ],
     snapshot: snap,
   },
   {
     name: 'open-runs-before-the-first-document-event',
-    covers: 'Under auto with the latch still armed, a first will-save runs the OpenAction inline first; the sequence then counts as fired.',
-    plugins: plugins(),
-    engine: docEngine({ openAction: tree(js('open')), willSave: tree(js('ws')) }),
-    steps: [...boot, reg('javascript'), listen(), dispatch(docEvent('will-save')), dispatch(docEvent('open')), dispatch(docEvent('will-save'))],
+    covers:
+      'Under auto with the latch still armed, a first will-save runs the OpenAction inline first; the sequence then counts as fired.',
+    plugins: current.plugins(),
+    engine: docEngine({
+      openAction: current.tree(current.js('open')),
+      willSave: current.tree(current.js('ws')),
+    }),
+    steps: [
+      ...boot,
+      reg('javascript'),
+      listenCurrent(),
+      dispatch(current.docEvent('will-save')),
+      dispatch(current.docEvent('open')),
+      dispatch(current.docEvent('will-save')),
+    ],
     snapshot: snap,
   },
   {
     name: 'a-rejected-catalog-read-is-evicted',
-    covers: 'A rejected catalog read degrades to trigger-failed and is evicted, so the next event reads again.',
-    plugins: plugins(OFF),
-    engine: engineWith({
+    covers:
+      'A rejected catalog read degrades to trigger-failed and is evicted, so the next event reads again.',
+    plugins: current.plugins(OFF),
+    engine: current.engineWith({
       services: ['actions'],
-      responses: [{ path: 'actions.read', times: 1, error: { message: 'transient read failure' } }, catalog({ willSave: tree(js('ws')) })],
+      responses: [
+        { path: 'actions.get', times: 1, error: { message: 'transient read failure' } },
+        current.catalog({ willSave: current.tree(current.js('ws')) }),
+      ],
     }),
-    steps: [...boot, reg('javascript'), listen(), dispatch(docEvent('will-save')), dispatch(docEvent('will-save')), dispatch(docEvent('did-save'))],
+    steps: [
+      ...boot,
+      reg('javascript'),
+      listenCurrent(),
+      dispatch(current.docEvent('will-save')),
+      dispatch(current.docEvent('will-save')),
+      dispatch(current.docEvent('did-save')),
+    ],
     snapshot: snap,
   },
   {
     name: 'document-family-disabled',
-    covers: 'triggers.document false: runDocumentVerb skips both trees and still runs the operation; dispatch of a document event is trigger-disabled.',
-    plugins: plugins({ openSequence: 'off', triggers: { document: false } }),
+    covers:
+      'triggers.document false: runDocumentVerb skips both trees and still runs the operation; dispatch of a document event is trigger-disabled.',
+    plugins: current.plugins({ openSequence: 'off', triggers: { document: false } }),
     engine: docEngine(allTrees),
-    steps: [...boot, reg('javascript'), verb('save', { returns: 'ok' }), dispatch(docEvent('will-save')), cap('prepareClose')],
+    steps: [
+      ...boot,
+      reg('javascript'),
+      verb('save', { returns: 'ok' }),
+      dispatch(current.docEvent('will-save')),
+      cap('prepareClose'),
+    ],
     snapshot: snap,
   },
   {
     name: 'prepare-close',
     covers: 'prepareClose runs the will-close tree through the dispatch door.',
-    plugins: plugins(OFF),
-    engine: docEngine({ willClose: tree(js('wc')) }),
+    plugins: current.plugins(OFF),
+    engine: docEngine({ willClose: current.tree(current.js('wc')) }),
     steps: [...boot, reg('javascript'), cap('prepareClose')],
     snapshot: snap,
   },
   {
     name: 'run-document-verb-serializes',
-    covers: 'Two concurrent save verbs never interleave: the second waits for the first operation and its did-save.',
-    plugins: plugins(OFF),
-    engine: docEngine({ willSave: tree(js('ws')), didSave: tree(js('ds')) }),
-    steps: [...boot, reg('javascript'), verb('save', { seq: [{ defer: 'op1' }, { resolves: 'bytes-2' }] }), verb('save', { seq: [{ defer: 'op1' }, { resolves: 'bytes-2' }] }), settle('op1', 'bytes-1')],
+    covers:
+      'Two concurrent save verbs never interleave: the second waits for the first operation and its did-save.',
+    plugins: current.plugins(OFF),
+    engine: docEngine({
+      willSave: current.tree(current.js('ws')),
+      didSave: current.tree(current.js('ds')),
+    }),
+    steps: [
+      ...boot,
+      reg('javascript'),
+      verb('save', { defer: 'op1' }),
+      verb('save', { resolves: 'bytes-2' }),
+      settle('op1', 'bytes-1'),
+    ],
     snapshot: snap,
   },
   {
     name: 'run-document-verb-failure-laws',
-    covers: 'A failing will-save never cancels the operation; an operation that throws or rejects skips did-save and rethrows.',
-    plugins: plugins(OFF),
-    engine: docEngine({ willSave: tree(js('ws')), didSave: tree(js('ds')) }),
+    covers:
+      'A failing will-save never cancels the operation; an operation that throws or rejects skips did-save and rethrows.',
+    plugins: current.plugins(OFF),
+    engine: docEngine({
+      willSave: current.tree(current.js('ws')),
+      didSave: current.tree(current.js('ds')),
+    }),
     steps: [
       ...boot,
       reg('javascript', { seq: [{ returns: { status: 'failed', error: 'ws broke' } }, EXECUTED] }),
-      listen(),
+      listenCurrent(),
       verb('save', { returns: 42 }),
       verb('save', { throws: { message: 'save failed' } }),
       verb('save', { rejects: { message: 'save rejected' } }),
@@ -1506,49 +1913,102 @@ const docEventCases: ScenarioCase[] = [
   },
   {
     name: 'run-document-verb-print-holds-the-latch',
-    covers: 'The print verb holds the print latch for its whole body: a Named Print inside will-print is suppressed as reentrant, and the latch is released after.',
-    plugins: plugins({ openSequence: 'off', policy: { print: { user: 'adapter', hover: 'block', lifecycle: 'adapter' } } }),
-    engine: docEngine({ willPrint: tree(js('wp', [named('Print')])), didPrint: tree(js('dp')) }),
-    steps: [...boot, reg('javascript'), listen(), cap('setUiAdapter', adapter()), verb('print', { returns: 'printed' }), verb('print', { throws: { message: 'printer on fire' } }), cap('execute', tree(named('Print')), USER)],
+    covers:
+      'The print verb holds the print latch for its whole body: a Named Print inside will-print is suppressed as reentrant, and the latch is released after.',
+    plugins: current.plugins({
+      openSequence: 'off',
+      policy: { print: { user: 'adapter', hover: 'block', lifecycle: 'adapter' } },
+    }),
+    engine: docEngine({
+      willPrint: current.tree(current.js('wp', [current.named('Print')])),
+      didPrint: current.tree(current.js('dp')),
+    }),
+    steps: [
+      ...boot,
+      reg('javascript'),
+      listenCurrent(),
+      cap('setUiAdapter', adapter()),
+      verb('print', { returns: 'printed' }),
+      verb('print', { throws: { message: 'printer on fire' } }),
+      cap('execute', current.tree(current.named('Print')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'print-verb-runs-wp-adapter-dp',
-    covers: 'A Named Print runs will-print, the adapter exactly once, then did-print; a Print nested in will-print is suppressed with reentrant-print.',
-    plugins: plugins({ openSequence: 'off', policy: { print: { user: 'adapter', hover: 'block', lifecycle: 'adapter' } } }),
-    engine: docEngine({ willPrint: tree(js('wp', [named('Print')])), didPrint: tree(js('dp')) }),
-    steps: [...boot, reg('javascript'), listen(), cap('setUiAdapter', adapter()), cap('execute', tree(named('Print')), USER)],
+    covers:
+      'A Named Print runs will-print, the adapter exactly once, then did-print; a Print nested in will-print is suppressed with reentrant-print.',
+    plugins: current.plugins({
+      openSequence: 'off',
+      policy: { print: { user: 'adapter', hover: 'block', lifecycle: 'adapter' } },
+    }),
+    engine: docEngine({
+      willPrint: current.tree(current.js('wp', [current.named('Print')])),
+      didPrint: current.tree(current.js('dp')),
+    }),
+    steps: [
+      ...boot,
+      reg('javascript'),
+      listenCurrent(),
+      cap('setUiAdapter', adapter()),
+      cap('execute', current.tree(current.named('Print')), current.USER),
+    ],
     snapshot: snap,
   },
   {
     name: 'an-adapter-throw-skips-did-print',
-    covers: 'An adapter print that throws rejects execute and skips did-print; the latch resets, so a later print works.',
-    plugins: plugins(OFF),
-    engine: docEngine({ willPrint: tree(js('wp')), didPrint: tree(js('dp')) }),
+    covers:
+      'An adapter print that throws rejects execute and skips did-print; the latch resets, so a later print works.',
+    plugins: current.plugins(OFF),
+    engine: docEngine({
+      willPrint: current.tree(current.js('wp')),
+      didPrint: current.tree(current.js('dp')),
+    }),
     steps: [
       ...boot,
       reg('javascript'),
-      cap('setUiAdapter', { openUri: fnSpec('ui.openUri'), print: fnSpec('ui.print', { throws: { message: 'dialog exploded' } }) }),
-      cap('execute', tree(named('Print')), USER),
+      cap('setUiAdapter', {
+        openUri: fnSpec('ui.openUri'),
+        print: fnSpec('ui.print', { throws: { message: 'dialog exploded' } }),
+      }),
+      cap('execute', current.tree(current.named('Print')), current.USER),
       cap('setUiAdapter', adapter()),
-      cap('execute', tree(named('Print')), USER),
+      cap('execute', current.tree(current.named('Print')), current.USER),
     ],
     snapshot: snap,
   },
   {
     name: 'adapter-uninstalled-mid-print',
-    covers: 'An adapter cleared while will-print runs leaves the print no-executor, without did-print.',
-    plugins: plugins(OFF),
-    engine: docEngine({ willPrint: tree(js('wp')), didPrint: tree(js('dp')) }),
-    steps: [...boot, reg('javascript', { defer: 'wp' }), cap('setUiAdapter', adapter()), cap('execute', tree(named('Print')), USER), callRef(1), settle('wp', { status: 'executed' })],
+    covers:
+      'An adapter cleared while will-print runs leaves the print no-executor, without did-print.',
+    plugins: current.plugins(OFF),
+    engine: docEngine({
+      willPrint: current.tree(current.js('wp')),
+      didPrint: current.tree(current.js('dp')),
+    }),
+    steps: [
+      ...boot,
+      reg('javascript', { defer: 'wp' }),
+      cap('setUiAdapter', adapter()),
+      cap('execute', current.tree(current.named('Print')), current.USER),
+      callRef(1),
+      settle('wp', { status: 'executed' }),
+    ],
     snapshot: snap,
   },
   {
     name: 'an-open-uri-throw-rejects-execute',
     covers: 'An adapter openUri that throws rejects execute; the counter does not move.',
-    plugins: plugins(OFF),
-    engine: engineWith(),
-    steps: [...boot, cap('setUiAdapter', { openUri: fnSpec('ui.openUri', { throws: { message: 'popup blocked' } }), print: fnSpec('ui.print') }), cap('execute', tree(uri('https://a.test/')), USER)],
+    plugins: current.plugins(OFF),
+    engine: current.engineWith(),
+    steps: [
+      ...boot,
+      cap('setUiAdapter', {
+        openUri: fnSpec('ui.openUri', { throws: { message: 'popup blocked' } }),
+        print: fnSpec('ui.print'),
+      }),
+      cap('execute', current.tree(current.uri('https://a.test/')), current.USER),
+    ],
     snapshot: snap,
   },
 ];

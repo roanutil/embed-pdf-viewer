@@ -1024,11 +1024,14 @@ test('current factory preserves actual scripting enablement with null or omitted
 
 const historical = new URL('../historical/task-12b2c2/', import.meta.url);
 const readHistory = (name: string) => JSON.parse(readFileSync(new URL(name, historical), 'utf8'));
-test('all 84 deferred actions and 29 link inputs and exact outcomes remain frozen', async () => {
+test('all 42 deferred actions and 29 link inputs and exact outcomes remain frozen', async () => {
   const { suites: links } = await import('../src/suites/link');
   const available = [...suites, ...links];
   for (const saved of [
-    ...readHistory('deferred-runtime.json'),
+    ...readHistory('deferred-runtime.json').filter(
+      (entry: { file: string }) =>
+        !['plugins/actions-triggers.json', 'plugins/actions-lifecycle.json'].includes(entry.file),
+    ),
     ...readHistory('link-runtime.json'),
   ] as {
     file: string;
@@ -1225,7 +1228,7 @@ test('legacy registrations, builders and deferred scenario source sections remai
   const current = readFileSync(new URL('../src/suites/actions.ts', import.meta.url), 'utf8');
   for (const [start, end] of [
     ['// ── the observer-error host input', '// ── the dispatcher'],
-    ['// ── triggers', '// ── pure helpers'],
+    ['// ── scripting', '// ── pure helpers'],
   ]) {
     const section = (source: string) => source.slice(source.indexOf(start!), source.indexOf(end!));
     assert.equal(section(current), section(original));

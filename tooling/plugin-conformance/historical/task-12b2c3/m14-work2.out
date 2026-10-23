@@ -1,0 +1,13 @@
+(node:27285) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ page triggers preserve O/PO, PC/C and visibility fan-out order (625.830625ms)
+✔ all 42 cases assert complete current results, exact callback order and named negative channels (31.862917ms)
+✔ M14 executor print distinguishes kernel origin refusal, adapter policy and accepted user print (1.749583ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1551.597375

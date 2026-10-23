@@ -578,6 +578,8 @@ test('shared scripted exports and complete deferred consumer inputs remain uncha
         'plugins/actions.json',
         'plugins/actions-dispatcher.json',
         'plugins/actions-submit.json',
+        'plugins/actions-triggers.json',
+        'plugins/actions-lifecycle.json',
       ].includes(entry.file);
     assert.deepEqual(
       (module.suites ?? [])

@@ -1,0 +1,7 @@
+{
+  "headSha256": "be5e1652ba1496826f2cc2ddd85be94e8d9f53e025a91399877e739f87d9609a",
+  "generatedSha256": "fd8bfaf3f4f213fd6b1d744a181636bff0256be1a929e8ccfbbc87f21f313b9e",
+  "restoredSha256": "be5e1652ba1496826f2cc2ddd85be94e8d9f53e025a91399877e739f87d9609a",
+  "neededRestoration": true,
+  "exactHeadAfterLastImport": true
+}
