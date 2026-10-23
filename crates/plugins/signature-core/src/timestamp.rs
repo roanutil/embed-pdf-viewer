@@ -217,12 +217,14 @@ fn match_members(slots: &[(Slot, bool)], input: &[Node]) -> Option<Vec<Option<us
 }
 
 /// What asn1js's `fromBER` does beyond the reader in `der`, in document
-/// order: a constructed encoding of a primitive-only universal type, or a
-/// constructed OCTET or BIT STRING with a member of another type, fails the
-/// parse (`None` from `fromBER`, here `Err(false)`); a GeneralizedTime its
-/// `fromString` cannot read throws (`Err(true)`).
-fn asn1js_parse_checks(node: &Node) -> Result<(), bool> {
+/// order. More than [`ASN1JS_MAX_NODES`] elements, a constructed encoding
+/// of a primitive-only universal type, or a constructed OCTET or BIT STRING
+/// with a member of another type fails the parse (`None` from `fromBER`,
+/// here `Err(false)`); a GeneralizedTime its `fromString` cannot read
+/// throws (`Err(true)`).
+fn asn1js_parse_checks(node: &Node, nodes: &mut usize) -> Result<(), bool> {
     const PRIMITIVE_ONLY: &[u32] = &[1, 2, 5, 6, 9, 13, 14, 23, 24, 31, 32, 33, 34];
+    count_node(nodes)?;
     if node.class == UNIVERSAL && node.constructed {
         if PRIMITIVE_ONLY.contains(&node.tag) {
             return Err(false);
@@ -234,12 +236,41 @@ fn asn1js_parse_checks(node: &Node) -> Result<(), bool> {
         }
     }
     for child in &node.children {
-        asn1js_parse_checks(child)?;
+        asn1js_parse_checks(child, nodes)?;
+    }
+    if is_indefinite(node) {
+        // The end-of-contents marker is an element to asn1js too.
+        count_node(nodes)?;
     }
     if node.class == UNIVERSAL && !node.constructed && node.tag == der::GENERALIZED_TIME {
         der::asn1js_generalized_time(&node.content).ok_or(true)?;
     }
     Ok(())
+}
+
+/// asn1js 3.0.10's `DEFAULT_MAX_NODES`: one more element fails the parse.
+/// asn1js also counts the elements it finds by speculatively decoding each
+/// primitive OCTET STRING's contents; those are not counted here.
+const ASN1JS_MAX_NODES: usize = 10_000;
+
+fn count_node(nodes: &mut usize) -> Result<(), bool> {
+    *nodes += 1;
+    if *nodes > ASN1JS_MAX_NODES { Err(false) } else { Ok(()) }
+}
+
+/// Whether a constructed element used the indefinite length form.
+fn is_indefinite(node: &Node) -> bool {
+    if !node.constructed {
+        return false;
+    }
+    let mut at = 1;
+    if node.raw.first().is_some_and(|b| b & 0x1f == 0x1f) {
+        while node.raw.get(at).is_some_and(|b| b & 0x80 != 0) {
+            at += 1;
+        }
+        at += 1;
+    }
+    node.raw.get(at) == Some(&0x80)
 }
 
 fn tst_info_error(detail: &str) -> ParseError {
@@ -257,7 +288,7 @@ pub fn read_timestamp_info(e_content: &[u8]) -> Result<TimestampInfo, ParseError
     let not_ber =
         || ParseError::Cms { reason: "malformed", message: "TSTInfo is not valid BER".into() };
     let node = der::from_ber(e_content).ok_or_else(not_ber)?;
-    asn1js_parse_checks(&node).map_err(|throws| {
+    asn1js_parse_checks(&node, &mut 0).map_err(|throws| {
         if throws {
             ParseError::Other(Error::new("Wrong input string for conversion"))
         } else {

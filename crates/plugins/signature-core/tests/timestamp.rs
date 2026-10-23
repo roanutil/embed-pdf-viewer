@@ -909,3 +909,31 @@ fn the_tst_info_reader_accepts_and_refuses_what_pkijs_does() {
         wrong.join("\n")
     );
 }
+
+/// A TSTInfo whose imprint AlgorithmIdentifier carries `nulls` NULLs as
+/// parameters: `10 + nulls` elements.
+fn tst_info_with_null_params(nulls: usize) -> Vec<u8> {
+    der::sequence(&[
+        der::integer(1),
+        der::oid("1.2.3"),
+        der::sequence(&[
+            der::sequence(&[
+                der::oid(epdf_signature_core::oids::SHA256),
+                der::sequence(&vec![der::null(); nulls]),
+            ]),
+            der::octet_string(&DIGEST),
+        ]),
+        der::integer(5),
+        der::tlv(0x18, b"20260115000000Z"),
+    ])
+}
+
+#[test]
+fn a_tst_info_past_asn1js_s_node_limit_is_not_ber() {
+    // asn1js 3.0.10 stops at 10,000 nodes (`DEFAULT_MAX_NODES`). Under tsx,
+    // pkijs reads 9,000 NULLs and refuses 10,100 as "TSTInfo is not valid BER".
+    let read = read_timestamp_info(&tst_info_with_null_params(9_000)).unwrap();
+    assert_eq!(read.gen_time, 1_768_435_200_000.0);
+    let error = read_timestamp_info(&tst_info_with_null_params(10_100)).unwrap_err();
+    assert_eq!((error.reason(), error.message()), (Some("malformed"), "TSTInfo is not valid BER"));
+}
