@@ -325,3 +325,38 @@ fn caller_cancel_keeps_its_code_and_detaches_listener_when_answer_arrives() {
     assert_eq!(call.peek().unwrap().unwrap_err().code(), Some("operation-cancelled"));
     assert_eq!(signal.listener_count(), 0);
 }
+
+#[test]
+fn settings_instance_reports_once_continues_siblings_and_disposes_all_listeners() {
+    use epdf_kernel::{
+        scope::Scope,
+        settings::{Settings, SettingsDeclaration},
+    };
+    rt::reset();
+    let errors = Rc::new(std::cell::RefCell::new(vec![]));
+    let reported = errors.clone();
+    let report: epdf_kernel::store::Report =
+        Rc::new(move |e| reported.borrow_mut().push(e.message.clone()));
+    let settings = Settings::new(
+        SettingsDeclaration { defaults: json!({"x":0}), registered: None, whole: vec![] },
+        Rc::new(|| {}),
+        report.clone(),
+    );
+    let scope = Scope::new(report);
+    let instance = settings.for_instance(&scope);
+    let calls = Rc::new(std::cell::Cell::new(0));
+    let count = calls.clone();
+    instance.events.on(|_| Err(Error::new("instance listener failed")));
+    instance.events.on(move |_| {
+        count.set(count.get() + 1);
+        Ok(())
+    });
+    settings.update_settings(&json!({"x":1}));
+    assert_eq!(*errors.borrow(), vec!["instance listener failed"]);
+    assert_eq!(calls.get(), 1);
+    scope.dispose();
+    rt::run_until_stalled();
+    settings.update_settings(&json!({"x":2}));
+    assert_eq!(calls.get(), 1);
+    assert_eq!(errors.borrow().len(), 1);
+}

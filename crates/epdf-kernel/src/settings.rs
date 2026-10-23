@@ -16,6 +16,7 @@ pub struct SettingsChanged {
 #[derive(Clone)]
 pub struct Settings(Rc<Inner>);
 struct Inner {
+    report: Report,
     initial: Rc<Value>,
     current: RefCell<Rc<Value>>,
     whole: Vec<String>,
@@ -30,6 +31,7 @@ impl Settings {
             &declaration.whole,
         ));
         Self(Rc::new(Inner {
+            report: report.clone(),
             initial: initial.clone(),
             current: RefCell::new(initial),
             whole: declaration.whole,
@@ -74,7 +76,7 @@ impl Settings {
         self.0.events.clone()
     }
     pub fn for_instance(&self, scope: &Scope) -> InstanceSettings {
-        let events = EventHookSource::new(None);
+        let events = EventHookSource::new(Some(self.0.report.clone()));
         let publish = events.clone();
         let off = self.0.events.on(move |e| {
             publish.emit(e);

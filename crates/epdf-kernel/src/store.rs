@@ -16,6 +16,7 @@ use serde_json::Value;
 
 use crate::action::Action;
 use crate::error::Error;
+use crate::event_hook::EventHookSource;
 use crate::types::CoreState;
 
 pub type Report = Rc<dyn Fn(&Error)>;
@@ -115,7 +116,14 @@ impl<F: ?Sized> Listeners<F> {
 #[derive(Clone)]
 pub struct SliceLease(Rc<LeaseInner>);
 
+#[derive(Clone)]
+pub struct SliceChange {
+    pub next: SliceState,
+    pub previous: SliceState,
+}
+
 struct LeaseInner {
+    changed: EventHookSource<SliceChange>,
     key: String,
     instance_id: String,
     live: Cell<bool>,
@@ -161,12 +169,7 @@ impl SliceLease {
         let next = (self.0.reducer)(&state, action);
         let store = self.0.store.upgrade();
         if let Some(next) = next {
-            *self.0.state.borrow_mut() = next;
-            if let Some(store) = &store {
-                self.0.revision.set(store.next_slice_revision());
-                store.bump();
-                store.emit_change();
-            }
+            self.write(next);
         }
         if let Some(store) = &store {
             store.emit_action(action);
@@ -179,15 +182,24 @@ impl SliceLease {
         if !self.live() {
             return false;
         }
-        if Rc::ptr_eq(&self.read(), &next) {
+        let previous = self.read();
+        if Rc::ptr_eq(&previous, &next) {
             return true;
         }
-        *self.0.state.borrow_mut() = next;
+        *self.0.state.borrow_mut() = next.clone();
         if let Some(store) = self.0.store.upgrade() {
             self.0.revision.set(store.next_slice_revision());
             store.notify();
         }
+        self.0.changed.emit(&SliceChange { next, previous });
         true
+    }
+
+    pub fn on_change(
+        &self,
+        listener: impl Fn(&SliceChange) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.changed.on(listener)
     }
 
     pub fn revoke(&self) {
@@ -195,6 +207,7 @@ impl SliceLease {
             return;
         }
         self.0.live.set(false);
+        self.0.changed.dispose();
         let Some(store) = self.0.store.upgrade() else { return };
         let current =
             store.leases.borrow().get(&self.0.key).is_some_and(|l| Rc::ptr_eq(&l.0, &self.0));
@@ -386,6 +399,7 @@ impl Store {
             prior.revoke();
         }
         let lease = SliceLease(Rc::new(LeaseInner {
+            changed: EventHookSource::new(Some(self.report.clone())),
             key: key.to_string(),
             instance_id,
             live: Cell::new(true),

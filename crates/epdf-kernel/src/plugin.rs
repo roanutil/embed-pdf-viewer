@@ -92,6 +92,8 @@ pub(crate) trait Services {
 
 /// The slice of a document session a context needs.
 pub(crate) trait SessionView {
+    fn on_settle(&self, flush: crate::settle::SettleFlush) -> Unsubscribe;
+    fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe;
     fn changes(&self) -> crate::changes::DocumentChanges;
     fn events(&self) -> EventHookSource<Value>;
     fn add_mirror(&self, plugin_id: &str, start: Rc<dyn Fn()>);
@@ -654,6 +656,27 @@ impl ControllerContext {
             })
     }
 
+    /// Register deferred document work, owned by this instance.
+    pub fn on_settle(&self, flush: crate::settle::SettleFlush) -> Result<(), Error> {
+        let session = self
+            .0
+            .session
+            .as_ref()
+            .ok_or_else(|| Error::new("[kernel] workspace plugin has no document to settle"))?;
+        self.listen(session.on_settle(flush));
+        Ok(())
+    }
+
+    /// Register document save actions; first registered runs outermost.
+    pub fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Result<(), Error> {
+        let session =
+            self.0.session.as_ref().ok_or_else(|| {
+                Error::new("[kernel] workspace plugin has no document to download")
+            })?;
+        self.listen(session.around_download(wrap));
+        Ok(())
+    }
+
     pub fn changes(&self) -> Result<crate::changes::ChangeQueue, Error> {
         self.0
             .session
@@ -960,18 +983,19 @@ impl<S: 'static, A: Action> Controller<S, A> {
         &self,
         listener: impl Fn(Rc<S>, Rc<S>) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        let state = self.state();
-        let previous = Rc::new(RefCell::new(state));
-        let cx = self.clone();
-        let off = self.cx.subscribe(Rc::new(move || {
-            let next = cx.state();
-            let before = previous.borrow().clone();
-            if !Rc::ptr_eq(&before, &next) {
-                *previous.borrow_mut() = next.clone();
-                listener(next, before)?;
-            }
-            Ok(())
-        }));
+        let off = self.cx.lease().on_change(move |change| {
+            let next = change
+                .next
+                .clone()
+                .downcast::<S>()
+                .map_err(|_| Error::new("state type changed"))?;
+            let previous = change
+                .previous
+                .clone()
+                .downcast::<S>()
+                .map_err(|_| Error::new("state type changed"))?;
+            listener(next, previous)
+        });
         self.cx.listen(off.clone());
         off
     }

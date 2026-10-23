@@ -37,6 +37,7 @@ pub mod rt;
 pub mod scope;
 pub mod serial_queue;
 pub mod settings;
+pub mod settle;
 pub mod signal;
 pub mod store;
 pub mod token;

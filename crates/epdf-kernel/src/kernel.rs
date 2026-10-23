@@ -175,6 +175,9 @@ fn collect_hosts(value: &Value, out: &mut Vec<Value>) {
 type Recorded = (OpenSource, OpenOptions, Option<Rc<HostHold>>);
 
 struct Session {
+    change_count: Cell<u64>,
+    settle_flushes: Rc<RefCell<Vec<crate::settle::SettleFlush>>>,
+    download_wraps: Rc<RefCell<Vec<crate::settle::DownloadWrap>>>,
     burst: RefCell<Option<(String, crate::store::StoreHold)>>,
     changes: crate::changes::DocumentChanges,
     events: EventHookSource<Value>,
@@ -205,6 +208,30 @@ struct Session {
 }
 
 impl SessionView for Session {
+    fn on_settle(&self, flush: crate::settle::SettleFlush) -> Unsubscribe {
+        if !self.settle_flushes.borrow().iter().any(|f| Rc::ptr_eq(f, &flush)) {
+            self.settle_flushes.borrow_mut().push(flush.clone());
+        }
+        let weak = Rc::downgrade(&self.settle_flushes);
+        Unsubscribe::new(move || {
+            if let Some(flushes) = weak.upgrade() {
+                flushes.borrow_mut().retain(|f| !Rc::ptr_eq(f, &flush));
+            }
+        })
+    }
+    fn around_download(&self, wrap: crate::settle::DownloadWrap) -> Unsubscribe {
+        self.download_wraps.borrow_mut().push(wrap.clone());
+        let weak = Rc::downgrade(&self.download_wraps);
+        Unsubscribe::new(move || {
+            if let Some(wraps) = weak.upgrade() {
+                let index = wraps.borrow().iter().position(|w| Rc::ptr_eq(w, &wrap));
+                if let Some(index) = index {
+                    wraps.borrow_mut().remove(index);
+                }
+            }
+        })
+    }
+
     fn changes(&self) -> crate::changes::DocumentChanges {
         self.changes.clone()
     }
@@ -296,6 +323,7 @@ pub struct LifecycleEvents {
     pub closed: EventHookSource<Value>,
     pub active_changed: EventHookSource<Value>,
     pub pages_changed: EventHookSource<Value>,
+    pub unsaved_changes_changed: EventHookSource<Value>,
 }
 
 impl LifecycleEvents {
@@ -308,6 +336,7 @@ impl LifecycleEvents {
             closed: hook(),
             active_changed: hook(),
             pages_changed: hook(),
+            unsaved_changes_changed: hook(),
         }
     }
 
@@ -319,6 +348,7 @@ impl LifecycleEvents {
             &self.closed,
             &self.active_changed,
             &self.pages_changed,
+            &self.unsaved_changes_changed,
         ] {
             hook.dispose();
         }
@@ -412,6 +442,9 @@ impl Inner {
                 self.report.clone(),
             );
             Session {
+                change_count: Cell::new(0),
+                settle_flushes: Rc::default(),
+                download_wraps: Rc::default(),
                 burst: RefCell::new(None),
                 changes,
                 events: EventHookSource::new(Some(self.report.clone())),
@@ -775,6 +808,147 @@ impl Inner {
         }));
     }
 
+    fn set_unsaved_changes(&self, session: &Session, dirty: bool) {
+        let id = session.id();
+        let published = self.store.core().documents.get(&id).cloned();
+        let Some(meta) = published else {
+            if let Some(meta) = session.staged_meta.borrow_mut().as_mut() {
+                meta.has_unsaved_changes = dirty;
+            }
+            return;
+        };
+        if meta.instance_id != session.instance_id || meta.has_unsaved_changes == dirty {
+            return;
+        }
+        self.set_core(
+            |core| {
+                if let Some(meta) = core.documents.get_mut(&id) {
+                    meta.has_unsaved_changes = dirty;
+                }
+            },
+            &core_action("@@core/document-changed"),
+        );
+        self.events
+            .unsaved_changes_changed
+            .emit(&serde_json::json!({"documentId":id,"hasUnsavedChanges":dirty}));
+    }
+
+    fn download_file(
+        &self,
+        id: Option<&str>,
+        mode: Option<Value>,
+        layer: bool,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let verb = if layer { "downloadLayer" } else { "download" };
+        let not_ready = move || {
+            crate::error::plugin_error(
+                "not-ready",
+                "documents",
+                format!("no open document to {verb}"),
+                None,
+                None,
+            )
+        };
+        let Some(session) =
+            self.session_of(id).filter(|s| matches!(s.phase.get(), Phase::Bringup | Phase::Ready))
+        else {
+            return Promise::rejected(not_ready());
+        };
+        let Some(handle) = session.handle() else {
+            return Promise::rejected(not_ready());
+        };
+        if !handle.security().allows("doc.download") {
+            return Promise::rejected(
+                crate::error::plugin_error(
+                    "permission-denied",
+                    "documents",
+                    format!("documents.{verb} requires doc.download"),
+                    None,
+                    None,
+                )
+                .with("permission", "doc.download"),
+            );
+        }
+        if layer && (!handle.is_local() || !handle.has("downloadLayer")) {
+            return Promise::rejected(crate::error::plugin_error(
+                "unsupported",
+                "documents",
+                "only the local engine gives a layer to download",
+                None,
+                None,
+            ));
+        }
+        let this = self.this.upgrade().expect("kernel");
+        let changes = session.changes.clone();
+        let queue_flush: crate::settle::SettleFlush = Rc::new(move |_| Ok(Some(changes.settle())));
+        let mut flushes = vec![queue_flush];
+        flushes.extend(session.settle_flushes.borrow().iter().cloned());
+        let mut signals = vec![session.cancel.clone()];
+        if let Some(signal) = &signal {
+            signals.push(signal.clone());
+        }
+        let settled = crate::settle::settle(flushes, signals, self.report.clone());
+        document_errors(Promise::spawn(async move {
+            settled.await?;
+            // Keep the captured instance, never resolve the active tab again.
+            let live = this
+                .sessions
+                .borrow()
+                .get(&session.id())
+                .is_some_and(|current| Rc::ptr_eq(&current, &session));
+            if !live || !matches!(session.phase.get(), Phase::Bringup | Phase::Ready) {
+                return Err(not_ready());
+            }
+            let read_at = Rc::new(Cell::new(None));
+            let read_session = session.clone();
+            let read_signal = signal.clone();
+            let stamp = read_at.clone();
+            let read: crate::settle::DownloadRead = Rc::new(move || {
+                if read_session.cancel.aborted()
+                    || read_signal.as_ref().is_some_and(AbortSignal::aborted)
+                {
+                    return Promise::rejected(crate::error::plugin_error(
+                        "operation-cancelled",
+                        "documents",
+                        "operation cancelled",
+                        None,
+                        None,
+                    ));
+                }
+                stamp.set(Some(read_session.change_count.get()));
+                let task = if layer {
+                    handle.call("downloadLayer", None, vec![])
+                } else {
+                    let options = mode
+                        .clone()
+                        .map(|mode| serde_json::json!({"mode":mode}))
+                        .unwrap_or_else(crate::undefined);
+                    handle.call("download", None, vec![options])
+                };
+                let abort = task.abort_handle();
+                let task = crate::cancellable::cancellable(
+                    "documents",
+                    Some(read_session.cancel.clone()),
+                    task,
+                );
+                // Caller cancellation must still reach the original read after
+                // the document-lifetime wrapper has been applied.
+                let task = match abort {
+                    Some(abort) => task.with_abort_member(move |reason| abort(reason)),
+                    None => task,
+                };
+                crate::cancellable::cancellable("documents", read_signal.clone(), task)
+            });
+            let wraps = session.download_wraps.borrow().clone();
+            let bytes = crate::settle::run_wrapped(wraps, read).await?;
+            if read_at.get() == Some(session.change_count.get()) && !session.cancel.aborted() {
+                this.set_unsaved_changes(&session, false);
+            }
+            Ok(bytes)
+        }))
+    }
+
     // ── capability resolution ─────────────────────────────────────────────────
 
     fn session_of(&self, document_id: Option<&str>) -> Option<Rc<Session>> {
@@ -992,17 +1166,8 @@ impl Inner {
                     )
                 )
             {
-                let id = session.id();
-                if this.store.core().documents.contains_key(&id) {
-                    this.set_core(
-                        |core| {
-                            if let Some(meta) = core.documents.get_mut(&id) {
-                                meta.has_unsaved_changes = true;
-                            }
-                        },
-                        &core_action("@@core/document-changed"),
-                    );
-                }
+                session.change_count.set(session.change_count.get() + 1);
+                this.set_unsaved_changes(&session, true);
             }
             let Some(layout) = layout_from_event(event) else {
                 session.events.emit(event);
@@ -1141,7 +1306,7 @@ impl Inner {
         input: OpenSource,
         options: OpenOptions,
         hold: Option<Rc<HostHold>>,
-    ) -> Result<(String, Promise<Value>), Error> {
+    ) -> Result<(Rc<Session>, Promise<Value>), Error> {
         self.guard_usable("documents.open()")?;
         let hold = hold.or_else(|| HostHold::of(&input));
         let recorded = (input.clone(), options.clone(), hold);
@@ -1195,8 +1360,8 @@ impl Inner {
                 }
             }
         };
-        let id = session.id();
-        Ok((id, self.begin_operation(&session, run)?))
+        let done = self.begin_operation(&session, run)?;
+        Ok((session, done))
     }
 
     async fn open_steps(
@@ -1826,13 +1991,13 @@ impl Documents {
             Ok(i) => i,
             Err(e) => return Promise::rejected(e),
         };
-        let (id, done) = match inner.reserve_and_open(input, options, None) {
+        let (session, done) = match inner.reserve_and_open(input, options, None) {
             Ok(v) => v,
             Err(e) => return Promise::rejected(crate::error::to_plugin_error("documents", &e)),
         };
         let cancel = inner.clone();
         let registration = signal.on_abort(Rc::new(move |_| {
-            cancel.close_document(&id);
+            cancel.close_session(&session);
         }));
         let task = adopt(done);
         let (out, resolver) = Promise::pending();
@@ -1934,9 +2099,9 @@ impl Documents {
                 OpenSource::Input(value) => id_of_input(value).unwrap_or_default(),
             };
             match inner.reserve_and_open(doc.source, options, None) {
-                Ok((id, done)) => {
+                Ok((session, done)) => {
                     done.ignore();
-                    ids.push(id);
+                    ids.push(session.id());
                 }
                 Err(_) => ids.push(asked),
             }
@@ -2065,35 +2230,32 @@ impl Documents {
         inner.reorder(next);
     }
 
-    /// The complete document as PDF bytes. `mode` goes to the engine only
-    /// when one is given.
+    /// Download after deferred plugin work and held changes have settled.
     pub fn save(&self, id: Option<&str>, mode: Option<Value>) -> Promise<Value> {
-        let Ok(inner) = self.inner() else {
-            return Promise::rejected(Error::new("[documents] no document to save"));
-        };
-        match inner.document_handle_of(id) {
-            None => Promise::rejected(Error::new("[documents] no document to save")),
-            Some(handle) => {
-                let options = match mode {
-                    Some(mode) => serde_json::json!({ "mode": mode }),
-                    None => crate::undefined(),
-                };
-                handle.call("download", None, vec![options])
-            }
+        self.save_with_signal(id, mode, None)
+    }
+    pub fn save_with_signal(
+        &self,
+        id: Option<&str>,
+        mode: Option<Value>,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        match self.inner() {
+            Ok(inner) => inner.download_file(id, mode, false, signal),
+            Err(e) => Promise::rejected(to_plugin_error("documents", &e)),
         }
     }
-
-    /// Just the document's layer.
     pub fn save_layer(&self, id: Option<&str>) -> Promise<Value> {
-        let Ok(inner) = self.inner() else {
-            return Promise::rejected(Error::new("[documents] no document to download"));
-        };
-        match inner.document_handle_of(id) {
-            None => Promise::rejected(Error::new("[documents] no document to download")),
-            Some(handle) if !handle.has("downloadLayer") => Promise::rejected(Error::new(
-                "[documents] this engine cannot export a layer (open with a layer on the local engine)",
-            )),
-            Some(handle) => handle.call("downloadLayer", None, Vec::new()),
+        self.save_layer_with_signal(id, None)
+    }
+    pub fn save_layer_with_signal(
+        &self,
+        id: Option<&str>,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        match self.inner() {
+            Ok(inner) => inner.download_file(id, None, true, signal),
+            Err(e) => Promise::rejected(to_plugin_error("documents", &e)),
         }
     }
 
