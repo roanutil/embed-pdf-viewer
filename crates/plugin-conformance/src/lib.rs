@@ -115,6 +115,12 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
                     }
                     Ok(mut run) => {
                         let expected = case["trace"].as_array().cloned().unwrap_or_default();
+                        if verbose {
+                            eprintln!(
+                                "== {name}\n{}",
+                                serde_json::to_string_pretty(&run.trace).unwrap()
+                            );
+                        }
                         let mut stale = None;
                         for entry in exceptions::for_case(file, name) {
                             exceptions_seen.push(name.to_string());
@@ -122,14 +128,10 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
                                 stale = Some(why);
                             }
                         }
-                        if verbose {
-                            eprintln!(
-                                "== {name}\n{}",
-                                serde_json::to_string_pretty(&run.trace).unwrap()
-                            );
-                        }
                         if let Some(why) = stale {
-                            failures.push(format!("{name}: {why}"));
+                            let diff = compare_trace(&expected, &run.trace)
+                                .unwrap_or_else(|| "no other difference".into());
+                            failures.push(format!("{name}: {why}; trace: {diff}"));
                         } else if let Some(diff) = compare_trace(&expected, &run.trace) {
                             failures.push(format!("{name}: {diff}"));
                         } else if !run.unmatched.is_empty()

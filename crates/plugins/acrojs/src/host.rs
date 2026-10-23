@@ -368,10 +368,12 @@ impl ScriptHost {
 ///
 /// `dispose()` releases the current realm, but a transaction enqueued before
 /// it still runs and lazily builds a fresh one (as the TypeScript does).
-/// The TypeScript leaves that realm alive forever; here the last such
-/// transaction to settle releases it, so a closed document never strands a
-/// QuickJS runtime. Script output is unchanged: no transaction can start
-/// after `dispose()`, and the realm lives until every queued one is done.
+/// The TypeScript releases that realm only at a repeated `dispose()`, and
+/// leaks it if `dispose()` is never called again (`host.ts:231-238`). Here
+/// the last such transaction to settle releases it (M13), so a closed
+/// document never strands a QuickJS runtime. Script output is unchanged: no
+/// transaction can start after `dispose()`, and the realm lives until every
+/// queued one is done.
 fn release_sandbox(inner: &Inner) {
     let dying = inner.sandbox.borrow_mut().take();
     inner.booted.set(false);

@@ -26,24 +26,41 @@ pub struct MovedCallback {
     pub reason: String,
 }
 
-/// Every entry of `outcome-exceptions.json`. Panics on an entry without a
-/// reason.
+/// Every entry of `outcome-exceptions.json`. Panics on an invalid list (see
+/// [`validate`]).
 pub fn all() -> &'static [MovedCallback] {
     static LIST: std::sync::OnceLock<Vec<MovedCallback>> = std::sync::OnceLock::new();
     LIST.get_or_init(|| {
         let list: Vec<MovedCallback> =
             serde_json::from_str(include_str!("../outcome-exceptions.json"))
                 .expect("outcome-exceptions.json parses");
-        for entry in &list {
-            assert!(
-                !entry.reason.trim().is_empty(),
-                "outcome-exceptions.json: {} / {} has no reason",
-                entry.file,
-                entry.case
-            );
+        if let Err(why) = validate(&list) {
+            panic!("outcome-exceptions.json: {why}");
         }
         list
     })
+}
+
+/// An entry needs a reason and two different steps, and lists a callback of
+/// its case only once.
+pub fn validate(list: &[MovedCallback]) -> Result<(), String> {
+    for (index, entry) in list.iter().enumerate() {
+        let name = format!("{} / {} / {}", entry.file, entry.case, entry.callback);
+        if entry.reason.trim().is_empty() {
+            return Err(format!("{name} has no reason"));
+        }
+        if entry.actual_step == entry.expected_step {
+            return Err(format!("{name} moves the callback within step {}", entry.actual_step));
+        }
+        if list[..index].iter().any(|earlier| {
+            earlier.file == entry.file
+                && earlier.case == entry.case
+                && earlier.callback == entry.callback
+        }) {
+            return Err(format!("{name} is listed twice"));
+        }
+    }
+    Ok(())
 }
 
 /// The entries for one case of `file`.
@@ -87,17 +104,15 @@ pub fn apply(
             entry.callback, entry.expected_step
         ));
     };
+    if callbacks(actual, entry.expected_step).is_none() {
+        return stale(&format!("the Rust trace has no step {}", entry.expected_step));
+    }
     let moved = actual[entry.actual_step]["callbacks"]
         .as_array_mut()
         .expect("callbacks checked above")
         .remove(from);
-    let target = actual
-        .get_mut(entry.expected_step)
-        .and_then(|step| step.get_mut("callbacks"))
-        .and_then(Value::as_array_mut)
-        .ok_or_else(|| {
-            format!("outcome exception: no step {} in the Rust trace", entry.expected_step)
-        })?;
+    let target =
+        actual[entry.expected_step]["callbacks"].as_array_mut().expect("callbacks checked above");
     target.insert(to.min(target.len()), moved);
     Ok(())
 }
@@ -158,5 +173,31 @@ mod tests {
     #[test]
     fn every_checked_in_entry_has_a_reason() {
         assert!(all().iter().all(|e| !e.reason.trim().is_empty()));
+    }
+
+    #[test]
+    fn an_entry_within_one_step_is_refused() {
+        let same = MovedCallback { expected_step: 0, ..entry() };
+        assert!(validate(&[same]).unwrap_err().contains("within step 0"));
+    }
+
+    #[test]
+    fn a_duplicate_entry_is_refused() {
+        assert!(validate(&[entry(), entry()]).unwrap_err().contains("listed twice"));
+        let other = MovedCallback { case: "d".into(), ..entry() };
+        assert_eq!(validate(&[entry(), other]), Ok(()));
+    }
+
+    #[test]
+    fn a_missing_expected_step_changes_nothing() {
+        let dispose = json!({ "fn": "sandbox.dispose", "args": [1] });
+        let expected = [step(json!([])), step(json!([dispose]))];
+        let mut actual = vec![step(json!([dispose]))];
+        let before = actual.clone();
+        assert_eq!(
+            apply(&entry(), &expected, &mut actual).unwrap_err(),
+            "outcome exception is stale: the Rust trace has no step 1"
+        );
+        assert_eq!(actual, before);
     }
 }
