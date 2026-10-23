@@ -411,8 +411,8 @@ test('all nine former reducer occurrences execute their surviving page-mirror ow
   assert.equal(object((value(replace.trace[5]) as unknown[])[1]).attached, true);
   assert.deepEqual(value(replace.trace[6]), []);
   const empty = await scenario('set-an-empty-page');
-  assert.deepEqual(value(empty.trace[3]), []);
-  assert.equal(value(empty.trace[4]), true);
+  assert.deepEqual(value(empty.trace[11]), []);
+  assert.equal(value(empty.trace[12]), true);
   const drop = await scenario('drop-a-page');
   assert.deepEqual(value(drop.trace[5]), []);
   assert.equal(value(drop.trace[6]), 'idle');
@@ -806,5 +806,51 @@ test('original link29 and all progressed source guard authorities have fixed imm
       .update(readFileSync(new URL('base-commands-current.test.ts.txt', history)))
       .digest('hex'),
     '98819b93b3948551321c7e89c69a2cb492d563ea06285bd8ed7d37dceb3bfe53',
+  );
+});
+
+test('adding or replacing a page retains loaded page1 and cached-empty page3', async () => {
+  const item1 = {
+    id: 'obj:1',
+    bounds: { x: 1, y: 10, width: 20, height: 5 },
+    target: { kind: 'uri', uri: 'https://example.com/1' },
+    ref: objRef(1),
+    attached: false,
+  };
+  const empty = await scenario('set-an-empty-page');
+  assert.deepEqual(empty.trace[5] && value(empty.trace[5]), [item1], 'retain complete page1 item');
+  assert.deepEqual(
+    [6, 7].map((i) => value(empty.trace[i])),
+    [true, 'ready'],
+  );
+  assert.deepEqual(value(empty.trace[8]), []);
+  assert.deepEqual(
+    [9, 10].map((i) => value(empty.trace[i])),
+    [true, 'ready'],
+  );
+  assert.deepEqual(value(empty.trace[11]), []);
+  assert.deepEqual(
+    [12, 13].map((i) => value(empty.trace[i])),
+    [true, 'ready'],
+  );
+  assert.deepEqual(
+    empty.trace
+      .flatMap(engineCalls)
+      .filter((c) => c.path === 'page.annotations.list')
+      .map((c) => c.pon),
+    [1, 3, 2],
+  );
+  const another = await scenario('set-another-page');
+  assert.deepEqual(value(another.trace[5]), [item1]);
+  assert.deepEqual(value(another.trace[7]), []);
+  assert.deepEqual(
+    [8, 9].map((i) => value(another.trace[i])),
+    [true, 'ready'],
+  );
+  const replace = await scenario('set-replaces-a-page');
+  assert.deepEqual(value(replace.trace[6]), []);
+  assert.deepEqual(
+    [7, 8].map((i) => value(replace.trace[i])),
+    [true, 'ready'],
   );
 });

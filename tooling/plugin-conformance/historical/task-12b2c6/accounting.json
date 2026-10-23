@@ -45039,7 +45039,7 @@
       "currentKind": "scenario",
       "currentName": "set-another-page",
       "currentIndex": 22,
-      "currentInputSha256": "b8bfb76cabc1d3d9ef9fce4ba85650839feaf1be082a2b1fe577bc42424a53e9",
+      "currentInputSha256": "bb6250e12fdbc171a8e94992164104a0affaec6d9ed798028d8b6743dcb0b235",
       "changedInputPaths": [
         "$.args",
         "$.covers",
@@ -45167,7 +45167,7 @@
       "currentKind": "scenario",
       "currentName": "set-replaces-a-page",
       "currentIndex": 23,
-      "currentInputSha256": "c38cd027ba7c6a39e8bd1c856be80206fddc5d91e02e27a45a7be35946a57ddd",
+      "currentInputSha256": "3212827473ee39f99f8f0201486a8315c10e8e42c928b4eeb453cc5e120e26b6",
       "changedInputPaths": [
         "$.args",
         "$.covers",
@@ -45249,7 +45249,7 @@
       "currentKind": "scenario",
       "currentName": "set-an-empty-page",
       "currentIndex": 24,
-      "currentInputSha256": "880c9c5ba10e801896945c9792eeb05ed5bd3a52c81d98e09b77af7bd4c79814",
+      "currentInputSha256": "ed173ef90307838f9b08ced7ad06d191dfb4f19fd4a5390396a44dd330e8a90a",
       "changedInputPaths": [
         "$.args",
         "$.covers",
@@ -45260,7 +45260,7 @@
         "$.snapshot",
         "$.steps"
       ],
-      "partialRetirement": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains. Original objectNumber 0 is not a valid PDF page object; use the actual existing first page to exercise cached-empty ownership.",
+      "partialRetirement": "Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains. Original objectNumber 0 is not a valid PDF page object; retain the original loaded page1/item1 and cached-empty page3, then add actual page2 as empty and observe all three ready/loaded states.",
       "currentOwners": [
         "mirror",
         "controller"

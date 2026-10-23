@@ -56218,10 +56218,38 @@
               "objectNumber": 3
             }
           ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "isLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
         }
       ]
     },
-    "inputSha256": "b8bfb76cabc1d3d9ef9fce4ba85650839feaf1be082a2b1fe577bc42424a53e9",
+    "inputSha256": "bb6250e12fdbc171a8e94992164104a0affaec6d9ed798028d8b6743dcb0b235",
     "result": {
       "trace": [
         {
@@ -56522,6 +56550,40 @@
           },
           "outcome": {
             "returned": []
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
           }
         }
       ],
@@ -57287,10 +57349,38 @@
               "objectNumber": 3
             }
           ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "isLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
         }
       ]
     },
-    "inputSha256": "c38cd027ba7c6a39e8bd1c856be80206fddc5d91e02e27a45a7be35946a57ddd",
+    "inputSha256": "3212827473ee39f99f8f0201486a8315c10e8e42c928b4eeb453cc5e120e26b6",
     "result": {
       "trace": [
         {
@@ -57547,6 +57637,40 @@
           },
           "outcome": {
             "returned": []
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
           }
         }
       ],
@@ -57948,6 +58072,75 @@
                 "path": "page.annotations.list",
                 "pon": 1,
                 "value": {
+                  "annotations": [
+                    {
+                      "subtype": "link",
+                      "ref": {
+                        "kind": "objectNumber",
+                        "page": {
+                          "kind": "objectNumber",
+                          "objectNumber": 1
+                        },
+                        "objectNumber": 1
+                      },
+                      "page": {
+                        "kind": "objectNumber",
+                        "objectNumber": 1
+                      },
+                      "hasAppearance": false,
+                      "appearanceState": null,
+                      "nm": null,
+                      "rect": {
+                        "x": 1,
+                        "y": 10,
+                        "width": 20,
+                        "height": 5
+                      },
+                      "contents": null,
+                      "subject": null,
+                      "blendMode": "normal",
+                      "invisible": false,
+                      "hidden": false,
+                      "print": true,
+                      "noZoom": false,
+                      "noRotate": false,
+                      "noView": false,
+                      "readOnly": false,
+                      "locked": false,
+                      "toggleNoView": false,
+                      "lockedContents": false,
+                      "reply": null,
+                      "popup": null,
+                      "groupId": null,
+                      "author": null,
+                      "createdAt": null,
+                      "modifiedAt": null,
+                      "userId": null,
+                      "createdBy": null,
+                      "modifiedBy": null,
+                      "importedBy": null,
+                      "actions": {},
+                      "target": {
+                        "kind": "uri",
+                        "uri": "https://example.com/1"
+                      }
+                    }
+                  ]
+                },
+                "times": 1
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 3,
+                "value": {
+                  "annotations": []
+                },
+                "times": 1
+              },
+              {
+                "path": "page.annotations.list",
+                "pon": 2,
+                "value": {
                   "annotations": []
                 },
                 "times": 1
@@ -57998,6 +58191,34 @@
             "token": "link",
             "doc": "a"
           },
+          "method": "ensureLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "ensureLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
           "method": "listLinks",
           "args": [
             {
@@ -58019,10 +58240,108 @@
               "objectNumber": 1
             }
           ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 1
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "listLinks",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "isLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 3
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "listLinks",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "isLoaded",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 2
+            }
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "link",
+            "doc": "a"
+          },
+          "method": "getStatus",
+          "args": [
+            {
+              "kind": "objectNumber",
+              "objectNumber": 2
+            }
+          ]
         }
       ]
     },
-    "inputSha256": "880c9c5ba10e801896945c9792eeb05ed5bd3a52c81d98e09b77af7bd4c79814",
+    "inputSha256": "ed173ef90307838f9b08ced7ad06d191dfb4f19fd4a5390396a44dd330e8a90a",
     "result": {
       "trace": [
         {
@@ -58151,6 +58470,142 @@
           }
         },
         {
+          "settled": [
+            {
+              "promise": 3,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 3,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 3
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 4,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [
+            {
+              "doc": "a",
+              "path": "page.annotations.list",
+              "pon": 2,
+              "args": []
+            }
+          ],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "promise": 4
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": [
+              {
+                "id": "obj:1",
+                "bounds": {
+                  "x": 1,
+                  "y": 10,
+                  "width": 20,
+                  "height": 5
+                },
+                "target": {
+                  "kind": "uri",
+                  "uri": "https://example.com/1"
+                },
+                "ref": {
+                  "kind": "objectNumber",
+                  "page": {
+                    "kind": "objectNumber",
+                    "objectNumber": 1
+                  },
+                  "objectNumber": 1
+                },
+                "attached": false
+              }
+            ]
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          }
+        },
+        {
           "settled": [],
           "stateChanges": [],
           "documentEvents": [],
@@ -58182,6 +58637,74 @@
           },
           "outcome": {
             "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": []
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": true
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {
+            "a": {
+              "subscribers": 3
+            }
+          },
+          "outcome": {
+            "returned": "ready"
           }
         }
       ],

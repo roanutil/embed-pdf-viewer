@@ -56,7 +56,7 @@ retirements={
 }
 for o in original:
  if o['kind']=='function':retirements[o['name']]='Removed model.ts initialLinkState/linkReducer and public state identity/changed semantics retire at 4fc1a32af. Current controller delegates cache to pageMirror: initial idle, ensureLoaded/reload pages, and pages.deleted epoch invalidation/drop. Empty/absent drop keeps no cache; cached empty page deletion becomes idle. No copied reducer remains.'
-retirements['set-an-empty-page'] += ' Original objectNumber 0 is not a valid PDF page object; use the actual existing first page to exercise cached-empty ownership.'
+retirements['set-an-empty-page'] += ' Original objectNumber 0 is not a valid PDF page object; retain the original loaded page1/item1 and cached-empty page3, then add actual page2 as empty and observe all three ready/loaded states.'
 retirements['set-another-page'] += ' Original action page2 carried an item ref naming page1; current engine Annotation/ref consistently name page2. Original bounds, URI, activate u and hover-enter payload survive.'
 # Enumerate every changed input leaf, including additions and retirements.
 def diff(a,b,p='$'):

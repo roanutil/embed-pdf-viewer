@@ -1,0 +1,78 @@
+wrote crates/plugins/acrojs/prelude.js
+(node:53832) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current links replace the removed cache reducer and use the current annotation host (0.698167ms)
+✔ viewer cache filters visible page-space records, keeps refs and copies activation/hover/reply fields (576.427208ms)
+✔ in-flight requests share the engine read and both settle before a refused page retries (1.366167ms)
+✔ six named read refusals expose error then retry to ready with typed link records (2.168791ms)
+✔ current annotation events refresh loaded pages in order and document close removes subscribers (1.527292ms)
+✔ annotation-backed links follow remote facts and confirmed local apply updates and deletions without page reads (7.572458ms)
+✔ navigation ownership follows real link/pan tools and behavior matching (2.941125ms)
+✔ classic activations and current events hand every non-navigation target to the embedder (1.241167ms)
+✔ stage navigation uses page destinations and configured smooth motion rather than PDF inversion (9.198959ms)
+✔ actions dispatch resolves goto, handles URI success and preserves exact link ref/page provenance (6.25325ms)
+✔ hit tests include edges, choose smallest area with stable ties and miss absent links (1.262542ms)
+✔ labels and pure resolution return current destinations, URI/name and exact reported targets (0.819667ms)
+✔ listAllLinks preserves page order, retries failed pages and emits onLoaded only for successful loads (2.686375ms)
+✔ all nine former reducer occurrences execute their surviving page-mirror ownership with explicit retired state identity (5.281291ms)
+✔ every owned throw, rejection, callback report and nested action diagnostic has an exact independently specified owner (25.366667ms)
+✔ URI openers stack and unsubscribe, event listener failures preserve siblings, lifetime drops pending loads (0.513209ms)
+✔ caller cancellation rejects immediately while the shared page load can complete for other readers (0.456625ms)
+✔ all29 immutable original occurrences map one-to-one to complete current cases and eight explicit additions (9.498167ms)
+✔ all37 current definitions and complete outputs preserve every return, promise, callback, event, engine call and report (33.623167ms)
+✔ prior current actions160 and commands79 keep their complete actual inputs and every output channel (161.092167ms)
+✔ immutable evidence and the one-time prior-tooling audit manifest remain exact (8.870125ms)
+✔ original link29 and all progressed source guard authorities have fixed immutable hashes (0.678375ms)
+✖ adding or replacing a page retains loaded page1 and cached-empty page3 (2.255417ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 22
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1655.664708
+
+✖ failing tests:
+
+test at test/link-current.test.ts:1:24990
+✖ adding or replacing a page retains loaded page1 and cached-empty page3 (2.255417ms)
+  AssertionError [ERR_ASSERTION]: retain complete page1 item
+  + actual - expected
+
+  + undefined
+  - [
+  -   {
+  -     attached: false,
+  -     bounds: {
+  -       height: 5,
+  -       width: 20,
+  -       x: 1,
+  -       y: 10
+  -     },
+  -     id: 'obj:1',
+  -     ref: {
+  -       kind: 'objectNumber',
+  -       objectNumber: 1,
+  -       page: {
+  -         kind: 'objectNumber',
+  -         objectNumber: 1
+  -       }
+  -     },
+  -     target: {
+  -       kind: 'uri',
+  -       uri: 'https://example.com/1'
+  -     }
+  -   }
+  - ]
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/link-current.test.ts:821:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: [ { id: 'obj:1', bounds: [Object], target: [Object], ref: [Object], attached: false } ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
