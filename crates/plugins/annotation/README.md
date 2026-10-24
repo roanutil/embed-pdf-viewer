@@ -1,98 +1,130 @@
 # epdf-plugin-annotation
 
-`packages/plugin/annotation` in Rust, on the v3 controller contract: the pure `epdf-annotation-core`
-model wired to the engine and to the interaction hub. All 956 cases in ten vector files replay
-identically (`CARGO_BUILD_JOBS=6 cargo test -p epdf-plugin-annotation`):
+`packages/plugin/annotation` in Rust, re-ported in Task 13.17 onto the current kernel (state cells,
+the records mirror, the change queue and registered settings). The pure model is
+`epdf-annotation-core`. 990 of the 992 cases in eleven vector files replay identically
+(`cargo test -p epdf-plugin-annotation --features harness`). The two that do not are in
+`annotation-hydration.json` and wait on a kernel fix (see the last section). No member-order
+allowances and no outcome exceptions are left for these files.
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/annotation-repository.json` | function | 693 | `repository/`: `fromDTO` over 60 fixtures (measurement dimensions and rich free-text bodies among them), `toPatch`, `toScopedPatch` (geometry, caption, leader and 11 prop scopes), `toCreateDraft`, the seam helpers |
-| `vectors/plugins/annotation-pure.json` | function | 151 | the tool registry, `buildTextItems`, `iconPlacementDraft`, the reducer, the rich-text policy (`rich-text.ts`), `geometryFromInput`, `previewBucket`, `engine-core`'s `buildCommentThreads` and `sniffBinaryMetadata` |
-| `vectors/plugins/annotation-api.json` | scenario | 18 | the page-space reads and writes, the change events, `selectAll`, `selectInRect`, run restyles over an editor range, rich-text editing, `createAttachment`, `placeStamp`, `readAttachment` without `downloadFile`, the measurement seam, the v3 document events, preview providers |
-| `vectors/plugins/annotation-hydration.json` | scenario | 16 | whole-document hydration, the cursor-ordered replay, remote events, page membership, form and redaction events, `reloadPage` |
-| `vectors/plugins/annotation-crud.json` | scenario | 13 | the raw create, update and delete, the optimistic effects and their rollback, selection, props and flags, text editing, settings, projections |
-| `vectors/plugins/annotation-comments.json` | scenario | 15 | comment threads and their verbs, attached links, the script commit door, attachment download, baked appearances |
-| `vectors/plugins/annotation-grouping.json` | scenario | 5 | `group`/`ungroup` and their twins, the grouped Replace Text create and its rollback |
-| `vectors/plugins/annotation-tools.json` | scenario | 33 | tools in the hub and the five pointer handlers, click placement, stamps, the file-picker port, ghosts, behaviors |
-| `vectors/plugins/annotation-markup.json` | scenario | 9 | markup, caret and replace-text from the selection plugin's signals, `createFromSelection` |
-| `vectors/plugins/annotation-hover.json` | scenario | 3 | hover state, the enter/exit feed onto the actions hover pump, the permission twins |
+| `vectors/plugins/annotation-repository.json` | function | 690 | `record.ts` and `appearance.ts`: `fromDTO`, `withValues`, `annotationPatchBetween` (95 field-changing pairs), the 12 missing-icon negatives, `drawnAfter`, `sourceOfConfirmed` |
+| `vectors/plugins/annotation-pure.json` | function | 153 | the tool registry, `buildTextItems`, the rich-text helpers, `previewBucket`, `buildCommentThreads`, `sniffBinaryMetadata`, `parseAnnotationDraft` |
+| `vectors/plugins/annotation-tools.json` | scenario | 34 | tools in the hub and the four handlers, click placement, ghosts, stamps, the file-picker port, behaviors |
+| `vectors/plugins/annotation-reconciliation.json` | scenario | 32 | the records mirror against the store: creates, refusals, upserts and deletions mid-gesture, the H3 cases |
+| `vectors/plugins/annotation-api.json` | scenario | 19 | the public reads and writes, events, rich-text editing, attachments, stamps, measurement |
+| `vectors/plugins/annotation-hydration.json` | scenario | 18 | the mirror's load, page reloads, remote events, the cursor watermark |
+| `vectors/plugins/annotation-comments.json` | scenario | 16 | comment threads and their verbs, links, the script commit door |
+| `vectors/plugins/annotation-crud.json` | scenario | 13 | create, update, delete, settings, selection, text editing |
+| `vectors/plugins/annotation-markup.json` | scenario | 9 | markup, caret and replace-text from the selection plugin, `createFromSelection` |
+| `vectors/plugins/annotation-grouping.json` | scenario | 5 | `group`, `ungroup` and the grouped replace-text create |
+| `vectors/plugins/annotation-hover.json` | scenario | 3 | hover state, the enter/exit feed onto the actions pump |
 
-The older scenario files were written against v2 names and reach v3 through the mapping table in
-`annotation-fixtures.ts`. `annotation-api.json` calls v3 by name, for the surface that table never
-reached.
+`tests/conformance.rs` also pins the repository suite's 95 `annotationPatchBetween` cases and its
+12 `text-no-icon` cases, so a regenerated vector that drops one fails. `tests/behavior.rs` covers
+what no vector reaches: H3 and N6 (below).
 
-## The API sibling plugins use
+## Layout
 
-Redaction, link, form, stamp, measurement and signature call this plugin through the TypeScript's
-`/contract/host`. Here the public and host lenses are one type, `AnnotationCapability`
-(`AnnotationHostCapability` is an alias), resolved with `ANNOTATION`. Its methods are the
-TypeScript's in snake case, grouped by the file that defines them: `read/` (`get`, `list`,
-`list_raw`, `hit_test_at`, `list_page_items`, `get_hit_kind`, ...), `write/` (`create`,
-`update`, `create_raw`, `update_raw`, `place_stamp`, `create_attachment`, `set_placement_preview`,
-`set_page_viewports`, `remeasure_page`, ...), `sync/` (`get_status`, `refresh`, `reload_page`,
-`deliver_remote_event`), `tools/` (`register_tool`, `register_behavior`, `get_resolved_tool`) and
-the events (`on_created`, `on_draft_captured`, ...). `comments()` and `links()` return the two
-object members as lenses. `create_annotation_controller`, the tool table, the repository and the
-five handler constructors are public, as `/internal` exports them.
+The modules follow `packages/plugin/annotation/src` file for file. `controller.rs` builds the one
+`Core` behind `AnnotationCapability` (the public and host lenses are one type, resolved with
+`ANNOTATION`). `model.rs` is the plugin's state cell, `sync/` the records mirror and the confirmed
+change feed, `services/` the store, staging, lending, authority and events, `read/` the view and
+its projections, `write/` the verbs, `tools/` the registry, handlers and ghosts, `comments/` the
+threads. Engine records stay `serde_json::Value` throughout, as the TypeScript passes the engine's
+objects.
 
-Engine DTOs stay `serde_json::Value`: the model carries each one verbatim in `Annot.data`, and
-every engine call sends JSON built the way the TypeScript's object literal is.
-
-## Host inputs
-
-`AnnotationHost` on `AnnotationConfig` carries the three ambient values the TypeScript reads:
-`console_error` (every failure the plugin swallows; the vectors log it as a `console.error`
-callback), `random_uuid` (`crypto.randomUUID()`, seeding `/NM`), and `fonts`, the registered-font
-list `ctx.engine.fonts.list()` answers. The Rust engine contract has no fonts service, so the host
-passes the list; `None` is no registered fonts, which is what the fake engine and the cloud engine
-have. The face mapping over a registered list is pinned by the function cases in
-`annotation-pure.json`.
+The mirror's value is `{ "byKey": { key: { "dto", "pictureVersion", "$v" } }, "order": [...] }`.
+`$v` is a fresh token per put: the view caches by record identity, as the TypeScript's `WeakMap`s
+do, and JSON has none. Lent records are `Rc<Value>` rows for the same reason, so a lender that
+hands back the same rows is not asked about them again.
 
 ## Turn order
 
 The trace records how engine answers and model updates interleave, so each `await` and `.then` is
-mirrored (`src/promise.rs`). A `.then` on an engine call reacts one turn after it settles; an
-`await` on one adopts the guarded `AbortablePromise` as a thenable. `Promise.allSettled` over the
-write sink adopts each abortable element the same way. An `async` function returning a promise
-costs the adoption job and its reaction.
+mirrored (`src/promise.rs`). An `async` function that ends in `await` costs a turn after the value
+it awaits; `text_end` and `toggle_format` spend it as `text.end` and `toggleFormat` do.
 
-## TypeScript behaviour, re-checked under v3
+## Kept divergences
 
-The v2 README pinned two behaviours and one gap. Under v3:
+H3 (a drag before the create is confirmed) needs no guard of its own any more. Records keep their
+object-number key from the first frame, so nothing is renamed, and a record that leaves the view
+leaves the session in the same notification (`services/store.rs`, the forget watch, as
+`packages/plugin/annotation/src/services/store.ts` does). The `reconcile/h3-*` cases replay it, and
+`h3_a_record_deleted_mid_drag_leaves_the_session_before_the_next_sample` pins that the forget runs
+before any later pointer sample.
 
-- `armStamp` no longer disarms itself. It activates `ARMED_STAMP_TOOL_ID`, and the tool-change
-  callback keeps the payload on that tool (and on any tool with the legacy `annotation-stamp` tag).
-  The `armed-stamps` case in `annotation-tools.json` reads `hasArmedStamp()` as `true` after arming
-  with the default tools.
-- `refresh()` (v2 `rehydrate`) still never re-checks read authority. `runHydration` returns an
-  already-resolved promise when `canRead()` is false, `rehydrate` stores it as `running`, and only
-  the `listRawAll` chain's `finally` clears `running`. Every later `refresh()` sets `again` and
-  returns that promise, so a grant arriving through `/access` is never seen. The port keeps this;
-  `no-read-grant-means-forbidden` in `annotation-hydration.json` pins it.
-- `readAttachment` on a page service without `downloadFile` now has a vector. The fake engine's
-  `lacks` list can name `page.annotations.downloadFile` on both sides, and
-  `attachments-stamps-and-downloads` rejects with the TypeScript's error. The Rust side asks
-  `DocumentHandle::has("page.annotations.downloadFile")`.
+N6 stays: a record whose ref is of a kind no key is defined for is refused (`sync/records.rs`
+`dto_key`), where the TypeScript keys it `"undefined"` and collapses every such record into one
+(`n6_a_record_whose_ref_has_no_key_is_refused_and_the_others_stay`).
 
-## Where the port differs in shape
+M15 is the actions plugin's URI sanitizer. This crate opens no URI, so it has nothing to keep.
 
-The TypeScript memoizes its projections by model identity so a subscribed selector gets a stable
-reference. Canonical JSON has no identity, so the port recomputes every read; the values are the
-same.
+M16 is superseded. Hydration is the kernel's records mirror now, whose `refresh` clears `running`
+on every path (`crates/epdf-kernel/src/mirror.rs` `refresh`, as `packages/core/main/src/mirror.ts`
+`refresh`). The plugin's own hydration and its stuck-promise path are gone.
 
-The store announces a draft change when the draft differs by value; the TypeScript compares the
-draft object by identity. They disagree only when an update rebuilds the draft with equal content,
-which no vector does.
+Two new Rust-only differences, both on paths no vector reaches, registered in
+`docs/research/rust-plugins-branch-review.md`, Status:
 
-`remeasurePage` walks `Object.values(byId)`, which is insertion order. The Rust model's map is
-sorted, so the port walks `order`, which follows insertion for every record the model holds.
+- `fonts()` is always none. The TypeScript reads the local engine's registered fonts
+  (`services/index.ts:71`); the Rust plugin context has no engine font list, so registered faces
+  are not mapped on a local engine. No vector registers a font.
+- Object numbers are never lost. The TypeScript drops numbers the engine reports lost
+  (`services/object-numbers.ts:18`, `ctx.doc.objectNumbers.onLost`); the Rust `DocumentHandle`
+  has no such event, so a held number stays held until it is used. The fake engine never loses
+  one.
 
-A page object number the document does not know makes `doc.page(ref)` throw. Where that throw
-would escape a synchronous path (the stamp and icon placements, the effect runners), the Rust
-skips the call or logs it. The crop lookup that precedes each one comes from the same page list, so
-no vector reaches it.
+## Migrating from the pre-13.17 API
+
+For form (13.18), link, measurement, redaction, signature and stamp, and viewer-host and epdf-web
+(13.33).
+
+| Old | New |
+|---|---|
+| `annotation_plugin(AnnotationConfig)`, `AnnotationHost { console_error, random_uuid, fonts }` | `annotation_plugin(Option<Value>)`, the registered settings (`annotation_defaults()`). `console_error` is `console::set_sink`; `/NM` seeds and fonts are gone |
+| typed `Annotation`, `AnnotationPatch`, `CreateAnnotationInput`, `geometry_from_input`, `AnnotationGeometry` | the engine's records as `Value`: `create(page, fields, resources, CreateOptions)`, `update(ref, patch, resources, signal)` |
+| `list_raw`, `get_raw`, `create_raw`, `update_raw` | removed: `list` and `get` return the engine's records |
+| `create_many`, `update_many`, `delete_many`, `set_rotation`, `rotate_by`, `set_contents` | removed with the TypeScript's; `selection_update`, `selection_rotate_by(degrees)`, `delete` |
+| `get_status`, `get_hydration`, `ensure_hydrated`, `refresh`, `reload_page`, `deliver_remote_event` | the mirror: `records.get_status()`, `records.refresh()`, `records.settled()`; remote events arrive through the kernel |
+| `on_created`, `on_updated`, `on_deleted`, `on_resynced`, `on_selection_changed`, `on_draft_changed`, `on_editing_changed`, `on_draft_captured` | `events.created`, `.updated`, `.deleted`, `.resynced`, ... (`EventHookSource<Value>`), plus `reordered`, `hover_changed`, `tool_defaults_changed`, `write_failed` |
+| `comments()` (`CommentsLens`), `links()` (`LinksLens`) | `comments_*` and `links_*` methods |
+| `hit_test_at` | `annotation_at(page, point)` |
+| `register_tool`, `AnnotationToolDef` | `tools_register(definition: Value)` |
+| `arm_stamp`, `place_stamp`, `StampToolInput`, `StampPlacement` | `stamps_arm(StampInput, signal)`, `stamps_place(StampInput, placement: &Value, signal)` |
+| `create_attachment`, `read_attachment` | `create` with `resources`, `download_resource(ref, role, signal)` |
+| `QuarterTurn`, `TextFormat` | `f64` degrees, `&str` format |
+| `widget_appearance_from_props`, `color_to_css`, `css_to_color` | `epdf_annotation_core::record::widget_appearance_of`; colors are CSS strings in the engine's records, so the two converters have no counterpart |
+| `HoverFlags`, `LinkNavItem` | `list_link_items(page)` as `Value` |
+| `RecalibrationReport`, `SkipReason`, `PageMeasurementViewport` | `remeasure_page(page, scale) -> Promise<Value>`, `set_page_viewports(page, viewports, fallback)` |
+| `value::{str_of, truthy, number}`, `repository::seam::annotation_key_of` | `js::*`, `epdf_annotation_core::json`, `js::key_of` |
+| `host_contract::serialize_error` | the kernel's `Error::to_canonical` |
+| `promise::{await_engine, spawn, then, all}`, `binary::{resolve_binary_source, sniff_binary_metadata}` | unchanged |
+| new | `lend(AnnotationLender)`, `register_behavior`, `commit_script_effects`, `import`, `export`, `reorder`, `is_pending`, `is_editable`, `get_hovered`, `selection_update_link` |
+| ffi typed `AnnotationRecord` (`geometry`, `props`, `flags`), `AnnotationPatch`, `CreateAnnotationInput`, `AnnotationHydration`, `AnnotationQuarterTurn`, `AnnotationSnapSettings` | the record carries `rect`, the text members and authority typed and the rest as `fields_json`; patches, create fields and tool defaults are JSON strings. `src/ffi/` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds (13.33), which also types the JSON against the renamed mirror |
+
+Known call sites: `crates/plugins/form/src` (`widget_appearance_from_props`, `StampPlacement`),
+`crates/plugins/link/src` (`HoverFlags`, `LinkNavItem`), `crates/plugins/measurement/src`
+(`RecalibrationReport`, `SkipReason`, `PageMeasurementViewport`), `crates/plugins/stamp/src` and
+`crates/plugins/signature/src` (`StampToolInput`, `CreateAnnotationInput`), and
+`crates/epdf-viewer-host/src` (`ffi::AnnotationHandle`, `ffi::AnnotationConfig`). None of those
+crates compiles at this commit for their own reasons (the annotation-core and geometry re-ports).
+
+## Waiting on the kernel
+
+`mixed-type-cursors-compare-as-javascript` (step 7) and `string-cursors-compare-as-strings`
+(step 5) in `annotation-hydration.json` fail. The TypeScript mirror skips a queued event when
+`serverId <= cursor` with JavaScript's `<=` on whatever types the engine sent
+(`packages/core/main/src/mirror.ts:416-419`). The kernel's `Loaded.cursor` is `Option<u64>` and it
+reads `serverId` with `as_u64` (`crates/epdf-kernel/src/mirror.rs:405`), so a string or mixed
+cursor never skips and the replay applies events the TypeScript drops. The repair is in the
+kernel: keep `cursor` as a `Value` and compare with JavaScript's relational semantics.
 
 ## Coverage
+
+Stale since Task 13.17: the counts and lines below are the pre-13.17 port's, over files that no
+longer exist. Task 14 regenerates them.
 
 The generators reach 9,238 of the package's 9,254 statements and 2,159 of its 2,258 branches
 (measured with `src/coverage.ts`). The 16 statements left cannot be reached from the public
@@ -110,6 +142,8 @@ The 99 unreached branches are mostly the `??` and optional-chaining arms of the 
 `coverage.json` lists each by line and column.
 
 ## Mutation testing
+
+Stale since Task 13.17: the files and lines below name the pre-13.17 code. Task 14 reruns it.
 
 `scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file <file>`,
 file by file over every module but `harness/`, catches 1,412 of 1,449 viable mutants (1,411 caught,
