@@ -2,10 +2,9 @@
 
 `packages/plugin/annotation` in Rust, re-ported in Task 13.17 onto the current kernel (state cells,
 the records mirror, the change queue and registered settings). The pure model is
-`epdf-annotation-core`. 990 of the 992 cases in eleven vector files replay identically
-(`cargo test -p epdf-plugin-annotation --features harness`). The two that do not are in
-`annotation-hydration.json` and wait on a kernel fix (see the last section). No member-order
-allowances and no outcome exceptions are left for these files.
+`epdf-annotation-core`. All 992 cases in eleven vector files replay identically
+(`cargo test -p epdf-plugin-annotation --features harness`). No member-order allowances and no
+outcome exceptions are left for these files.
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
@@ -110,16 +109,6 @@ Known call sites: `crates/plugins/form/src` (`widget_appearance_from_props`, `St
 `crates/plugins/signature/src` (`StampToolInput`, `CreateAnnotationInput`), and
 `crates/epdf-viewer-host/src` (`ffi::AnnotationHandle`, `ffi::AnnotationConfig`). None of those
 crates compiles at this commit for their own reasons (the annotation-core and geometry re-ports).
-
-## Waiting on the kernel
-
-`mixed-type-cursors-compare-as-javascript` (step 7) and `string-cursors-compare-as-strings`
-(step 5) in `annotation-hydration.json` fail. The TypeScript mirror skips a queued event when
-`serverId <= cursor` with JavaScript's `<=` on whatever types the engine sent
-(`packages/core/main/src/mirror.ts:416-419`). The kernel's `Loaded.cursor` is `Option<u64>` and it
-reads `serverId` with `as_u64` (`crates/epdf-kernel/src/mirror.rs:405`), so a string or mixed
-cursor never skips and the replay applies events the TypeScript drops. The repair is in the
-kernel: keep `cursor` as a `Value` and compare with JavaScript's relational semantics.
 
 ## Coverage
 
