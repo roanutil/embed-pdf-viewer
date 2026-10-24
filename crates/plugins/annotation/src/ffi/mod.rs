@@ -1,20 +1,27 @@
 //! The annotation plugin through uniffi: five handles over the one
-//! capability, typed records decoded from the plugin's JSON, one event enum.
+//! capability, records decoded from the engine's JSON, one event enum.
 //!
-//! Not exported (see the plan's Decisions): the hub's pointer and chrome
-//! members (`editPointer`, `marqueePointer`, `createPointer`, `hoverAt`,
-//! `getHitKind`, `claimsTouchAt`, `getCursorAt`, `listChromeNodes`,
-//! `getSelectionAnchor`), the web render projections (`listPageItems`,
-//! `listTextItems`, `listLinkItems`, `getAppearanceEpoch`, `getBakeScale`,
-//! `renderAppearances`, `pdfToPageRect`, `getCssFontFamily`, `getToolGhost`,
-//! `getArmedStampPreview`, `getStampArmEpoch`, `getChromeSettings`,
-//! `updateChromeSettings`), the raw DTO members (`listRaw`, `getRaw`,
-//! `createRaw`, `updateRaw`, `getSelectionFlags`), the rich-text editing
-//! members (`setRichText`, `draftRichText`), and the hooks other plugins call
+//! Migrated by hand onto the re-ported capability (Task 13.17) and not
+//! compiled until `epdf-ffi` builds again (Task 13.33). The capability now
+//! speaks the engine's records (`Annotation` is the engine DTO), so the typed
+//! projection the old plugin made (`AnnotationGeometry`, `AnnotationProps`,
+//! `AnnotationFlags`) is gone from this surface: a record carries its ref,
+//! page, subtype, rect, text members and authority typed, and the rest of the
+//! DTO as JSON (`fields_json`). Patches, create fields, tool defaults and
+//! selection values are engine field bags, passed as JSON objects. Task 13.33
+//! types them against the renamed `epdf-ffi` mirror.
+//!
+//! Not exported: the hub's pointer and chrome members (`editPointer`,
+//! `marqueePointer`, `createPointer`, `hoverAt`, `getHitKind`,
+//! `claimsTouchAt`, `getCursorAt`, `listChromeNodes`, `selection.getAnchor`),
+//! the web render projections (`listPageItems`, `listTextItems`,
+//! `listLinkItems`, `getAppearanceEpoch`, `renderAppearances`,
+//! `getCssFontFamily`, `getImageGhost`, `renderArmedStampPreview`), the
+//! rich-text editing members (`draftRichText`, `setTextSelection` ranges
+//! beyond a caret), import and export, and the hooks other plugins call
 //! (`registerBehavior`, `pruneEngagedSelection`, `getBehaviorFor`,
-//! `commitScriptEffects`, `deliverRemoteEvent`, `setPageViewports`,
-//! `remeasurePage`, `distanceCreationPage`, `onDraftCaptured`,
-//! `registerTool`, `getResolvedTool`, `listResolvedTools`, `getToolSubtype`).
+//! `commitScriptEffects`, `lend`, `setPageViewports`, `remeasurePage`,
+//! `distanceCreationPage`, `tools.register`).
 
 mod drafts;
 mod handle;
@@ -23,16 +30,11 @@ mod selection;
 mod threads;
 mod tools;
 
-use epdf_annotation_core as core;
-use epdf_ffi::{
-    AnnotationCallout, AnnotationFlags, AnnotationFlagsPatch, AnnotationProps,
-    AnnotationPropsPatch, AnnotationRef, CreationDraftAnchor, PageRef, PluginErrorInfo, Point,
-    Rect, TextQuad,
-};
+use epdf_ffi::{AnnotationRef, PageRef, PluginErrorInfo, Point, Rect};
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
 use serde::de::DeserializeOwned;
-use serde_json::Value;
+use serde_json::{Map, Value, json};
 
 use crate::AnnotationCapability;
 
@@ -42,16 +44,13 @@ pub use drafts::{
 };
 pub use handle::AnnotationHandle;
 pub use picker::{AnnotationFilePicker, AnnotationFilePromptRequest, AnnotationPickedFile};
-pub use selection::{
-    AnnotationQuarterTurn, AnnotationSelectionHandle, AnnotationSelectionProps,
-    AnnotationTextFormat,
-};
+pub use selection::{AnnotationSelectionHandle, AnnotationSelectionProps, AnnotationTextFormat};
 pub use threads::{
     AnnotationComment, AnnotationCommentPermissions, AnnotationCommentThread,
     AnnotationThreadDeleteFailure, AnnotationThreadDeleteResult, AnnotationThreadStatus,
     AnnotationThreadsHandle,
 };
-pub use tools::{AnnotationPropSpec, AnnotationTool, AnnotationToolsHandle};
+pub use tools::{AnnotationProperty, AnnotationTool, AnnotationToolsHandle};
 
 pub(crate) fn decode<T: DeserializeOwned>(value: Value) -> Result<T, Error> {
     serde_json::from_value(value).map_err(|e| {
@@ -78,352 +77,171 @@ pub(crate) fn open(cap: &AnnotationCapability) -> Result<&AnnotationCapability, 
     Ok(cap)
 }
 
-pub(crate) fn ref_out(r: core::AnnotationRef) -> Result<AnnotationRef, Error> {
-    AnnotationRef::try_from(r)
+/// A JSON object handed over the boundary as text (`fields_json`).
+pub(crate) fn object_of(text: &str) -> Result<Map<String, Value>, Error> {
+    match serde_json::from_str::<Value>(text) {
+        Ok(Value::Object(map)) => Ok(map),
+        Ok(_) => Err(invalid("a field bag must be a JSON object")),
+        Err(e) => Err(invalid(format!("a field bag is not JSON: {e}"))),
+    }
 }
 
-pub(crate) fn refs_out(refs: Vec<core::AnnotationRef>) -> Result<Vec<AnnotationRef>, Error> {
-    refs.into_iter().map(ref_out).collect()
+// ── refs, pages and geometry as the engine's JSON ───────────────────────────
+
+pub(crate) fn page_json(page: PageRef) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": page.page_object_number })
 }
 
-fn text(value: &Value) -> Option<String> {
-    value.as_str().map(str::to_string)
+fn whole(value: Option<&Value>, what: &str) -> Result<u32, Error> {
+    value
+        .and_then(Value::as_f64)
+        .filter(|n| *n >= 0.0 && n.fract() == 0.0 && *n <= f64::from(u32::MAX))
+        .map(|n| n as u32)
+        .ok_or_else(|| invalid(format!("{what} is not a whole number")))
 }
 
-/// Subtype-specific geometry in page space.
-#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
-pub enum AnnotationGeometry {
-    Rect { bounds: Rect, rotation: f64 },
-    Line { from: Point, to: Point },
-    Polygon { vertices: Vec<Point> },
-    Polyline { vertices: Vec<Point> },
-    Ink { strokes: Vec<Vec<Point>> },
-    Markup { quads: Vec<TextQuad> },
-    Caret { bounds: Rect },
-    Text { bounds: Rect, rotation: f64, callout: Option<AnnotationCallout> },
+pub(crate) fn page_out(page: &Value) -> Result<PageRef, Error> {
+    Ok(PageRef { page_object_number: whole(page.get("objectNumber"), "a page's object number")? })
 }
 
-fn points(v: Vec<core::Point>) -> Vec<Point> {
-    v.into_iter().map(Into::into).collect()
-}
-
-impl From<crate::AnnotationGeometry> for AnnotationGeometry {
-    fn from(g: crate::AnnotationGeometry) -> Self {
-        use crate::AnnotationGeometry as G;
-        match g {
-            G::Rect { bounds, rotation } => {
-                AnnotationGeometry::Rect { bounds: bounds.into(), rotation }
-            }
-            G::Line { from, to } => AnnotationGeometry::Line { from: from.into(), to: to.into() },
-            G::Polygon { vertices } => AnnotationGeometry::Polygon { vertices: points(vertices) },
-            G::Polyline { vertices } => AnnotationGeometry::Polyline { vertices: points(vertices) },
-            G::Ink { strokes } => {
-                AnnotationGeometry::Ink { strokes: strokes.into_iter().map(points).collect() }
-            }
-            G::Markup { quads } => {
-                AnnotationGeometry::Markup { quads: quads.into_iter().map(Into::into).collect() }
-            }
-            G::Caret { bounds } => AnnotationGeometry::Caret { bounds: bounds.into() },
-            G::Text { bounds, rotation, callout } => AnnotationGeometry::Text {
-                bounds: bounds.into(),
-                rotation,
-                callout: callout.map(Into::into),
-            },
+/// An `AnnotationRef` as the engine writes it. The engine has no `nm` ref
+/// any more: a ref is an object number or a base index on its page.
+pub(crate) fn ref_json(reference: &AnnotationRef) -> Result<Value, Error> {
+    match reference {
+        AnnotationRef::ObjectNumber { page, annot_object_number } => Ok(json!({
+            "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number
+        })),
+        AnnotationRef::Index { page, index, .. } => Ok(json!({
+            "kind": "baseIndex", "page": page_json(*page), "baseIndex": index
+        })),
+        AnnotationRef::Nm { .. } => {
+            Err(invalid("the engine refers to annotations by number, not by /NM"))
         }
     }
 }
 
-/// The page-space record every read returns.
+pub(crate) fn refs_json(refs: &[AnnotationRef]) -> Result<Vec<Value>, Error> {
+    refs.iter().map(ref_json).collect()
+}
+
+/// An engine ref as the foreign enum. A base-index ref has no revision any
+/// more; 13.33 drops the token from `AnnotationRef::Index`.
+pub(crate) fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
+    let page = page_out(reference.get("page").unwrap_or(&Value::Null))?;
+    match reference.get("kind").and_then(Value::as_str) {
+        Some("objectNumber") => Ok(AnnotationRef::ObjectNumber {
+            page,
+            annot_object_number: whole(
+                reference.get("objectNumber"),
+                "an annotation's object number",
+            )?,
+        }),
+        Some("baseIndex") => Ok(AnnotationRef::Index {
+            page,
+            index: whole(reference.get("baseIndex"), "an annotation's base index")?,
+            revision: Default::default(),
+        }),
+        _ => Err(invalid("a ref of a kind the engine does not write")),
+    }
+}
+
+pub(crate) fn refs_out(refs: &Value) -> Result<Vec<AnnotationRef>, Error> {
+    refs.as_array().map(|list| list.iter().map(ref_out).collect()).unwrap_or_else(|| Ok(Vec::new()))
+}
+
+pub(crate) fn point_json(point: Point) -> Value {
+    json!({ "x": point.x, "y": point.y })
+}
+
+pub(crate) fn rect_json(rect: Rect) -> Value {
+    json!({ "x": rect.x, "y": rect.y, "width": rect.width, "height": rect.height })
+}
+
+pub(crate) fn rect_out(rect: &Value) -> Rect {
+    let n = |k: &str| rect.get(k).and_then(Value::as_f64).unwrap_or(0.0);
+    Rect { x: n("x"), y: n("y"), width: n("width"), height: n("height") }
+}
+
+pub(crate) fn geometry_point(point: Point) -> epdf_geometry::Point {
+    epdf_geometry::Point { x: point.x, y: point.y }
+}
+
+fn text(value: Option<&Value>) -> Option<String> {
+    value.and_then(Value::as_str).map(str::to_string)
+}
+
+// ── records ─────────────────────────────────────────────────────────────────
+
+/// An annotation as the engine reads it: the members every caller needs,
+/// typed, and the whole record as JSON.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AnnotationRecord {
     pub annotation_ref: AnnotationRef,
     pub page: PageRef,
     pub subtype: String,
-    pub bounds: Rect,
-    pub geometry: AnnotationGeometry,
-    pub props: AnnotationProps,
-    pub flags: AnnotationFlags,
+    /// The annotation's `/Rect`, page space.
+    pub rect: Rect,
     pub contents: Option<String>,
     pub author: Option<String>,
     /// ISO 8601, as the engine reports it.
     pub created_at: Option<String>,
     pub modified_at: Option<String>,
-    pub group: Option<AnnotationRef>,
+    pub group_id: Option<String>,
+    /// `reply.to`: the annotation this one answers.
     pub in_reply_to: Option<AnnotationRef>,
     pub can_update: bool,
     pub can_delete: bool,
+    /// The engine's record, every member.
+    pub fields_json: String,
 }
 
-impl TryFrom<crate::Annotation> for AnnotationRecord {
-    type Error = Error;
-
-    fn try_from(a: crate::Annotation) -> Result<Self, Error> {
-        // `props` is `Partial<AnnotationProps>`: only the keys the subtype
-        // has (`props_of` in `read/annotations.rs`). The core's patch type
-        // parses that shape and keeps unknown keys in `extra`, which the
-        // record drops.
-        let props: core::AnnotationPropsPatch = decode(Value::Object(a.props))?;
-        let in_reply_to = match a.in_reply_to {
-            Value::Null => None,
-            other => Some(ref_out(decode(other)?)?),
-        };
-        Ok(AnnotationRecord {
-            annotation_ref: ref_out(a.ref_)?,
-            page: a.page.into(),
-            subtype: a.subtype,
-            bounds: a.bounds.into(),
-            geometry: a.geometry.into(),
-            props: props.into(),
-            flags: a.flags.into(),
-            contents: text(&a.contents),
-            author: text(&a.author),
-            created_at: text(&a.created_at),
-            modified_at: text(&a.modified_at),
-            group: a.group.map(ref_out).transpose()?,
-            in_reply_to,
-            can_update: a.authority.update,
-            can_delete: a.authority.delete,
-        })
-    }
+pub(crate) fn record_out(
+    cap: &AnnotationCapability,
+    dto: &Value,
+) -> Result<AnnotationRecord, Error> {
+    let reference = dto.get("ref").cloned().unwrap_or(Value::Null);
+    let in_reply_to = match dto.get("reply").and_then(|r| r.get("to")) {
+        None | Some(Value::Null) => None,
+        Some(to) => Some(ref_out(to)?),
+    };
+    Ok(AnnotationRecord {
+        annotation_ref: ref_out(&reference)?,
+        page: page_out(dto.get("page").unwrap_or(&Value::Null))?,
+        subtype: text(dto.get("subtype")).unwrap_or_default(),
+        rect: rect_out(dto.get("rect").unwrap_or(&Value::Null)),
+        contents: text(dto.get("contents")),
+        author: text(dto.get("author")),
+        created_at: text(dto.get("createdAt")),
+        modified_at: text(dto.get("modifiedAt")),
+        group_id: text(dto.get("groupId")),
+        in_reply_to,
+        can_update: cap.can_update(&reference),
+        can_delete: cap.can_delete(&reference),
+        fields_json: dto.to_string(),
+    })
 }
 
-pub(crate) fn annotations_out(
-    list: Vec<crate::Annotation>,
+pub(crate) fn records_out(
+    cap: &AnnotationCapability,
+    list: &[Value],
 ) -> Result<Vec<AnnotationRecord>, Error> {
-    list.into_iter().map(AnnotationRecord::try_from).collect()
+    list.iter().map(|dto| record_out(cap, dto)).collect()
 }
 
-/// A geometry write. `rotation: None` keeps the current rotation.
-#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
-pub enum AnnotationGeometryPatch {
-    Rect {
-        bounds: Rect,
-        rotation: Option<f64>,
-    },
-    Line {
-        from: Point,
-        to: Point,
-    },
-    Polygon {
-        vertices: Vec<Point>,
-    },
-    Polyline {
-        vertices: Vec<Point>,
-    },
-    Ink {
-        strokes: Vec<Vec<Point>>,
-    },
-    Markup {
-        quads: Vec<TextQuad>,
-    },
-    /// `remove_callout` drops the leader; `callout` sets one; neither leaves it.
-    Text {
-        bounds: Rect,
-        rotation: Option<f64>,
-        callout: Option<AnnotationCallout>,
-        remove_callout: bool,
-    },
-}
-
-fn core_points(v: Vec<Point>) -> Vec<core::Point> {
-    v.into_iter().map(Into::into).collect()
-}
-
-impl TryFrom<AnnotationGeometryPatch> for crate::AnnotationGeometryPatch {
-    type Error = Error;
-
-    fn try_from(g: AnnotationGeometryPatch) -> Result<Self, Error> {
-        use crate::AnnotationGeometryPatch as G;
-        use core::js::Nullable;
-        Ok(match g {
-            AnnotationGeometryPatch::Rect { bounds, rotation } => {
-                G::Rect { bounds: bounds.into(), rotation }
-            }
-            AnnotationGeometryPatch::Line { from, to } => {
-                G::Line { from: from.into(), to: to.into() }
-            }
-            AnnotationGeometryPatch::Polygon { vertices } => {
-                G::Polygon { vertices: core_points(vertices) }
-            }
-            AnnotationGeometryPatch::Polyline { vertices } => {
-                G::Polyline { vertices: core_points(vertices) }
-            }
-            AnnotationGeometryPatch::Ink { strokes } => {
-                G::Ink { strokes: strokes.into_iter().map(core_points).collect() }
-            }
-            AnnotationGeometryPatch::Markup { quads } => {
-                G::Markup { quads: quads.into_iter().map(Into::into).collect() }
-            }
-            AnnotationGeometryPatch::Text { bounds, rotation, callout, remove_callout } => {
-                let callout = match (callout, remove_callout) {
-                    (Some(_), true) => {
-                        return Err(invalid(
-                            "a text geometry patch both sets and removes its callout",
-                        ));
-                    }
-                    (Some(c), false) => Nullable::Value(c.into()),
-                    (None, true) => Nullable::Null,
-                    (None, false) => Nullable::Undefined,
-                };
-                G::Text { bounds: bounds.into(), rotation, callout }
-            }
-        })
-    }
-}
-
-/// A page-space patch. `None` parts are untouched.
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
-pub struct AnnotationPatch {
-    #[uniffi(default = None)]
-    pub bounds: Option<Rect>,
-    #[uniffi(default = None)]
-    pub geometry: Option<AnnotationGeometryPatch>,
-    #[uniffi(default = None)]
-    pub props: Option<AnnotationPropsPatch>,
-    #[uniffi(default = None)]
-    pub flags: Option<AnnotationFlagsPatch>,
-    #[uniffi(default = None)]
-    pub contents: Option<String>,
-}
-
-impl TryFrom<AnnotationPatch> for crate::AnnotationPatch {
-    type Error = Error;
-
-    fn try_from(p: AnnotationPatch) -> Result<Self, Error> {
-        Ok(crate::AnnotationPatch {
-            bounds: p.bounds.map(Into::into),
-            geometry: p.geometry.map(TryInto::try_into).transpose()?,
-            props: p.props.map(TryInto::try_into).transpose()?,
-            flags: p.flags.map(Into::into),
-            contents: p.contents,
-            rich_text: None,
-        })
-    }
-}
-
-/// What `create` takes. `subtype` is the PDF subtype in kebab case
-/// (`square`, `ink`, `free-text`); the geometry fields that subtype reads
-/// must be set, as `geometry_from_input` checks.
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct CreateAnnotationInput {
-    pub page: PageRef,
-    pub subtype: String,
-    #[uniffi(default = None)]
-    pub tool: Option<String>,
-    #[uniffi(default = None)]
-    pub props: Option<AnnotationPropsPatch>,
-    #[uniffi(default = None)]
-    pub flags: Option<AnnotationFlagsPatch>,
-    #[uniffi(default = None)]
-    pub select: Option<bool>,
-    #[uniffi(default = None)]
-    pub bounds: Option<Rect>,
-    #[uniffi(default = None)]
-    pub rotation: Option<f64>,
-    #[uniffi(default = None)]
-    pub from: Option<Point>,
-    #[uniffi(default = None)]
-    pub to: Option<Point>,
-    #[uniffi(default = None)]
-    pub vertices: Option<Vec<Point>>,
-    #[uniffi(default = None)]
-    pub strokes: Option<Vec<Vec<Point>>>,
-    #[uniffi(default = None)]
-    pub quads: Option<Vec<TextQuad>>,
-    #[uniffi(default = None)]
-    pub callout: Option<AnnotationCallout>,
-}
-
-/// Page object number 0 and no geometry: a base for `..Default::default()`.
-impl Default for CreateAnnotationInput {
-    fn default() -> Self {
-        CreateAnnotationInput {
-            page: PageRef { page_object_number: 0 },
-            subtype: String::new(),
-            tool: None,
-            props: None,
-            flags: None,
-            select: None,
-            bounds: None,
-            rotation: None,
-            from: None,
-            to: None,
-            vertices: None,
-            strokes: None,
-            quads: None,
-            callout: None,
-        }
-    }
-}
-
-impl TryFrom<CreateAnnotationInput> for crate::CreateAnnotationInput {
-    type Error = Error;
-
-    fn try_from(i: CreateAnnotationInput) -> Result<Self, Error> {
-        Ok(crate::CreateAnnotationInput {
-            page: i.page.into(),
-            subtype: i.subtype,
-            tool: i.tool,
-            props: i.props.map(TryInto::try_into).transpose()?,
-            flags: i.flags.map(Into::into),
-            select: i.select,
-            bounds: i.bounds.map(|r| serde_json::to_value(core::Rect::from(r)).expect("a rect")),
-            rotation: i.rotation,
-            from: i.from.map(Into::into),
-            to: i.to.map(Into::into),
-            vertices: i.vertices.map(core_points),
-            strokes: i.strokes.map(|s| s.into_iter().map(core_points).collect()),
-            quads: i.quads.map(|q| q.into_iter().map(Into::into).collect()),
-            callout: i.callout.map(Into::into),
-        })
-    }
-}
-
-/// Every member optional.
+/// Which annotations `list` returns. Every member optional.
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct AnnotationFilter {
     #[uniffi(default = None)]
-    pub page: Option<PageRef>,
+    pub pages: Option<Vec<PageRef>>,
     #[uniffi(default = None)]
     pub subtype: Option<String>,
-    #[uniffi(default = None)]
-    pub author: Option<String>,
-    #[uniffi(default = None)]
-    pub group: Option<AnnotationRef>,
 }
 
-impl From<AnnotationFilter> for crate::AnnotationFilter {
+impl From<AnnotationFilter> for crate::read::annotations::AnnotationFilter {
     fn from(f: AnnotationFilter) -> Self {
-        crate::AnnotationFilter {
-            page: f.page.map(Into::into),
+        crate::read::annotations::AnnotationFilter {
+            pages: f.pages.map(|pages| pages.into_iter().map(page_json).collect()),
             subtype: f.subtype,
-            author: f.author,
-            group: f.group.map(Into::into),
-        }
-    }
-}
-
-/// Whole-document hydration.
-#[derive(Clone, Debug, PartialEq, uniffi::Enum)]
-pub enum AnnotationHydration {
-    Loading,
-    Complete,
-    Failed {
-        error: PluginErrorInfo,
-    },
-    /// The scope lacks `doc.annotate.read`.
-    Forbidden,
-}
-
-impl From<crate::AnnotationHydration> for AnnotationHydration {
-    fn from(h: crate::AnnotationHydration) -> Self {
-        match h {
-            crate::AnnotationHydration::Loading => AnnotationHydration::Loading,
-            crate::AnnotationHydration::Complete => AnnotationHydration::Complete,
-            crate::AnnotationHydration::Forbidden => AnnotationHydration::Forbidden,
-            crate::AnnotationHydration::Error(e) => {
-                AnnotationHydration::Failed { error: plugin_error_info(&e) }
-            }
         }
     }
 }
@@ -437,139 +255,81 @@ pub(crate) fn plugin_error_info(error: &Error) -> PluginErrorInfo {
     }
 }
 
+/// A `PluginErrorInfo` the plugin already wrote as JSON.
+pub(crate) fn plugin_error_info_of(info: &Value) -> PluginErrorInfo {
+    let s = |k: &str, or: &str| info.get(k).and_then(Value::as_str).unwrap_or(or).to_string();
+    PluginErrorInfo {
+        code: s("code", "unknown"),
+        message: s("message", ""),
+        capability: s("capability", "annotation"),
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AnnotationBatchFailure {
     pub annotation_ref: AnnotationRef,
     pub error: PluginErrorInfo,
 }
 
-/// What a batch did, best effort per entry.
+/// What a batch did, best effort per entry (`BatchResult`).
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AnnotationBatchResult {
     pub applied: Vec<AnnotationRef>,
     pub failed: Vec<AnnotationBatchFailure>,
 }
 
-impl TryFrom<crate::BatchResult<core::AnnotationRef>> for AnnotationBatchResult {
-    type Error = Error;
-
-    fn try_from(b: crate::BatchResult<core::AnnotationRef>) -> Result<Self, Error> {
-        Ok(AnnotationBatchResult {
-            applied: refs_out(b.applied)?,
-            failed: b
-                .failed
-                .into_iter()
-                .map(|(r, e)| {
-                    Ok(AnnotationBatchFailure {
-                        annotation_ref: ref_out(r)?,
-                        error: plugin_error_info(&e),
+pub(crate) fn batch_out(result: &Value) -> Result<AnnotationBatchResult, Error> {
+    Ok(AnnotationBatchResult {
+        applied: refs_out(result.get("applied").unwrap_or(&Value::Null))?,
+        failed: result
+            .get("failed")
+            .and_then(Value::as_array)
+            .map(|list| {
+                list.iter()
+                    .map(|f| {
+                        Ok(AnnotationBatchFailure {
+                            annotation_ref: ref_out(f.get("ref").unwrap_or(&Value::Null))?,
+                            error: plugin_error_info_of(f.get("error").unwrap_or(&Value::Null)),
+                        })
                     })
-                })
-                .collect::<Result<_, Error>>()?,
-        })
-    }
+                    .collect::<Result<Vec<_>, Error>>()
+            })
+            .transpose()?
+            .unwrap_or_default(),
+    })
 }
 
-/// `createMany`'s batch: each entry is its input's index, since a failed
-/// create has no ref.
+/// A creation draft (`draft.get()`): a polygon or polyline being drawn.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct AnnotationCreateFailure {
-    pub index: u32,
-    pub error: PluginErrorInfo,
+pub struct AnnotationCreationDraft {
+    pub page: PageRef,
+    /// The draft as the plugin reads it (`CreationDraft`).
+    pub draft_json: String,
 }
 
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct AnnotationCreateBatchResult {
-    pub applied: Vec<AnnotationRef>,
-    pub failed: Vec<AnnotationCreateFailure>,
-}
-
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct AnnotationSnapSettings {
-    pub guides: bool,
-    pub guide_threshold: f64,
-    pub rotation: bool,
-    pub rotation_angles: Vec<f64>,
-    pub rotation_threshold: f64,
-}
-
-impl From<core::SnapSettings> for AnnotationSnapSettings {
-    fn from(s: core::SnapSettings) -> Self {
-        AnnotationSnapSettings {
-            guides: s.guides,
-            guide_threshold: s.guide_threshold,
-            rotation: s.rotation,
-            rotation_angles: s.rotation_angles,
-            rotation_threshold: s.rotation_threshold,
-        }
+pub(crate) fn draft_out(draft: &Value) -> Result<Option<AnnotationCreationDraft>, Error> {
+    if draft.is_null() {
+        return Ok(None);
     }
+    Ok(Some(AnnotationCreationDraft {
+        page: page_out(draft.get("page").unwrap_or(&Value::Null))?,
+        draft_json: draft.to_string(),
+    }))
 }
 
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
-pub struct AnnotationSnapSettingsPatch {
-    #[uniffi(default = None)]
-    pub guides: Option<bool>,
-    #[uniffi(default = None)]
-    pub guide_threshold: Option<f64>,
-    #[uniffi(default = None)]
-    pub rotation: Option<bool>,
-    #[uniffi(default = None)]
-    pub rotation_angles: Option<Vec<f64>>,
-    #[uniffi(default = None)]
-    pub rotation_threshold: Option<f64>,
-}
+// ── events ──────────────────────────────────────────────────────────────────
 
-impl From<AnnotationSnapSettingsPatch> for core::SnapSettingsPatch {
-    fn from(p: AnnotationSnapSettingsPatch) -> Self {
-        core::SnapSettingsPatch {
-            guides: p.guides,
-            guide_threshold: p.guide_threshold,
-            rotation: p.rotation,
-            rotation_angles: p.rotation_angles,
-            rotation_threshold: p.rotation_threshold,
-        }
-    }
-}
-
-/// `annotationPlugin(config)`, as Swift sets it. Tool overrides and the
-/// chrome look stay Rust-side (see the plan's Decisions).
-#[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
-pub struct AnnotationConfig {
-    #[uniffi(default = None)]
-    pub snap: Option<AnnotationSnapSettingsPatch>,
-}
-
-impl From<AnnotationConfig> for crate::AnnotationConfig {
-    fn from(c: AnnotationConfig) -> Self {
-        crate::AnnotationConfig { snap: c.snap.map(Into::into), ..Default::default() }
-    }
-}
-
-/// A confirmed creation or update, whoever caused it. `annotation` is
-/// `None` when the plugin could not project the DTO (an unsupported
-/// subtype). The plugin's `origin` is dropped: no foreign caller acts on it.
+/// A confirmed creation or update, whoever caused it. The `origin` is
+/// dropped: no foreign caller acts on it.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AnnotationChangedEvent {
-    pub annotation_ref: AnnotationRef,
-    pub page: PageRef,
-    pub annotation: Option<AnnotationRecord>,
-}
-
-impl TryFrom<&crate::AnnotationChangedEvent> for AnnotationChangedEvent {
-    type Error = Error;
-
-    fn try_from(e: &crate::AnnotationChangedEvent) -> Result<Self, Error> {
-        Ok(AnnotationChangedEvent {
-            annotation_ref: ref_out(e.ref_.clone())?,
-            page: e.page.into(),
-            annotation: e.annotation.clone().map(AnnotationRecord::try_from).transpose()?,
-        })
-    }
+    pub annotation: AnnotationRecord,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AnnotationDeletedEvent {
-    pub annotation_ref: AnnotationRef,
+    /// Everything that went, the annotation first.
+    pub refs: Vec<AnnotationRef>,
     pub page: PageRef,
 }
 
@@ -590,14 +350,44 @@ pub enum AnnotationThreadChange {
 
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum AnnotationEvent {
-    Resynced { pages: AnnotationResyncedPages },
-    Created { event: AnnotationChangedEvent },
-    Updated { event: AnnotationChangedEvent },
-    Deleted { event: AnnotationDeletedEvent },
-    SelectionChanged { refs: Vec<AnnotationRef>, previous_refs: Vec<AnnotationRef> },
-    DraftChanged { draft: Option<CreationDraftAnchor> },
-    EditingChanged { annotation_ref: Option<AnnotationRef> },
-    ThreadChanged { root_ref: AnnotationRef, change: AnnotationThreadChange },
+    Resynced {
+        pages: AnnotationResyncedPages,
+    },
+    Created {
+        event: AnnotationChangedEvent,
+    },
+    Updated {
+        event: AnnotationChangedEvent,
+    },
+    Deleted {
+        event: AnnotationDeletedEvent,
+    },
+    Reordered {
+        page: PageRef,
+        order: Vec<AnnotationRef>,
+    },
+    SelectionChanged {
+        refs: Vec<AnnotationRef>,
+        previous_refs: Vec<AnnotationRef>,
+    },
+    DraftChanged {
+        draft: Option<AnnotationCreationDraft>,
+    },
+    EditingChanged {
+        annotation_ref: Option<AnnotationRef>,
+    },
+    HoverChanged {
+        annotation_ref: Option<AnnotationRef>,
+    },
+    ThreadChanged {
+        root_ref: AnnotationRef,
+        change: AnnotationThreadChange,
+    },
+    /// The engine refused a change the user made; it is already gone from the view.
+    WriteFailed {
+        refs: Vec<AnnotationRef>,
+        error: PluginErrorInfo,
+    },
 }
 
 #[uniffi::export(with_foreign)]
