@@ -199,8 +199,7 @@ impl Core {
         let me = self.weak();
         let off = changes.on_staged().on(move |change| {
             let Some(core) = me.upgrade() else { return Ok(()) };
-            core.on_staged(change);
-            Ok(())
+            core.on_staged(change)
         });
         self.cx.listen(off);
         // A record that left the view leaves the session: synchronous forget (H3).
@@ -208,8 +207,7 @@ impl Core {
         let me = self.weak();
         let off = self.cx.subscribe(Rc::new(move || {
             let Some(core) = me.upgrade() else { return Ok(()) };
-            core.watch_view();
-            Ok(())
+            core.watch_view()
         }));
         self.cx.listen(off);
         // The selection, draft, editing and hover events.
@@ -223,7 +221,7 @@ impl Core {
         Ok(())
     }
 
-    fn watch_view(&self) {
+    fn watch_view(&self) -> Result<(), Error> {
         let next = self.annotation_view();
         let previous = {
             let mut watched = self.store.watched.borrow_mut();
@@ -232,17 +230,21 @@ impl Core {
                 && Rc::ptr_eq(&p.by_id, &next.by_id)
                 && Rc::ptr_eq(&p.order, &next.order)
             {
-                return;
+                return Ok(());
             }
             *watched = Some(next.clone());
             previous
         };
-        let Some(previous) = previous else { return };
+        let Some(previous) = previous else { return Ok(()) };
         let gone: Vec<Id> =
             previous.order.iter().filter(|id| !next.by_id.contains_key(*id)).cloned().collect();
         if !gone.is_empty() {
-            let _ = self.commit_json(json!({ "type": "forget", "ids": gone }));
+            // A failed forget would leave a gesture on a record that is gone
+            // (H3): it reaches the kernel's report, as the TypeScript's throw
+            // in `ctx.watch` does.
+            self.commit_json(json!({ "type": "forget", "ids": gone }))?;
         }
+        Ok(())
     }
 
     fn announce_session(&self) {
@@ -291,7 +293,7 @@ impl Core {
         if held >= count {
             return true;
         }
-        self.store.watching_lost.set(true);
+        self.watch_lost();
         let Ok(changes) = self.changes() else { return false };
         let mut taken: Vec<f64> = Vec::new();
         while held + taken.len() < count {
@@ -355,11 +357,23 @@ impl Core {
         (out, if changed { Some(left) } else { None })
     }
 
-    /// `numbers.watchLost`: numbers the engine reclaims leave the session.
-    /// The kernel's handle has no lost-numbers hook (see the README): nothing reclaims them.
-    #[allow(dead_code)]
-    fn lose_numbers(&self, lost: &[f64]) {
-        self.update_state(|s| without_object_numbers(s, lost));
+    /// `watchLost()`: numbers the engine reclaimed leave the session too, as
+    /// a create naming one would be refused. Subscribed once, the first time
+    /// the session takes numbers.
+    fn watch_lost(&self) {
+        if self.store.watching_lost.get() {
+            return;
+        }
+        let Some(doc) = self.doc() else { return };
+        self.store.watching_lost.set(true);
+        let me = self.weak();
+        let off = doc.on_lost_object_numbers(Rc::new(move |lost| {
+            if let Some(core) = me.upgrade() {
+                let numbers: Vec<f64> = lost.numbers.iter().map(|n| f64::from(*n)).collect();
+                core.update_state(|s| without_object_numbers(s, &numbers));
+            }
+        }));
+        self.cx.listen(off);
     }
 
     // ── selection history (`services/selection-history.ts`) ────────────────
@@ -372,10 +386,10 @@ impl Core {
         }
     }
 
-    fn on_staged(&self, change: &PendingChange) {
-        let Some(undo_of) = change.undo_of() else { return };
+    fn on_staged(&self, change: &PendingChange) -> Result<(), Error> {
+        let Some(undo_of) = change.undo_of() else { return Ok(()) };
         let undone = self.store.kept.borrow().get(&undo_of).cloned();
-        let Some((before, after)) = undone else { return };
+        let Some((before, after)) = undone else { return Ok(()) };
         self.remember(change.op_id(), &after, &before);
         let model = self.model();
         let ids: Vec<Id> = before.into_iter().filter(|id| model.by_id.contains_key(id)).collect();
@@ -384,7 +398,7 @@ impl Core {
         } else {
             json!({ "type": "select", "ids": ids })
         };
-        let _ = self.commit_json(message);
+        self.commit_json(message).map(|_| ())
     }
 
     // ── the doors ───────────────────────────────────────────────────────────
@@ -651,7 +665,7 @@ impl Core {
             self.update_state(|s| with_session(s, &session, &vector));
         }
         if select {
-            let _ = self.commit_json(json!({ "type": "select", "ids": ids }));
+            self.commit_json(json!({ "type": "select", "ids": ids }))?;
         }
         let mut named = ops.clone();
         named.extend(lent.iter().cloned());

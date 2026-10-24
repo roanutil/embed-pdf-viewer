@@ -49,3 +49,75 @@ impl Events {
         }
     }
 }
+
+// ── the capability's event hooks and mirror verbs ──────────────────────────
+
+// Each `on_*` is the TypeScript's `EventHook<T>`: the listener gets the
+// event object as JSON, an `Err` is reported as a throwing listener is, and
+// the return unsubscribes.
+
+macro_rules! hooks {
+    ($($(#[$doc:meta])* $name:ident => $source:ident;)*) => {
+        impl crate::controller::Core {
+            $(
+                $(#[$doc])*
+                pub fn $name(
+                    &self,
+                    listener: impl Fn(&Value) -> Result<(), epdf_kernel::Error> + 'static,
+                ) -> epdf_kernel::Unsubscribe {
+                    self.events.$source.on(listener)
+                }
+            )*
+        }
+    };
+}
+
+hooks! {
+    /// `onCreated`: an annotation was added, once the engine saved it.
+    on_created => created;
+    /// `onUpdated`: an annotation was changed, once the engine saved it.
+    on_updated => updated;
+    /// `onDeleted`: annotations were deleted, one plus its popup and replies.
+    on_deleted => deleted;
+    /// `onReordered`: the drawing order on a page changed.
+    on_reordered => reordered;
+    /// `onResynced`: annotations were read again, as after loading a document.
+    on_resynced => resynced;
+    /// `onWriteFailed`: the engine refused a change the user made.
+    on_write_failed => write_failed;
+    /// `onSelectionChanged`.
+    on_selection_changed => selection_changed;
+    /// `onDraftChanged`: a polygon or polyline is being drawn, or ended.
+    on_draft_changed => draft_changed;
+    /// `onEditingChanged`: typing in a text box started or ended.
+    on_editing_changed => editing_changed;
+    /// `onHoverChanged`: the pointer moved onto an annotation, or off it.
+    on_hover_changed => hover_changed;
+    /// `tools.onDefaultsChanged`: a tool's defaults changed.
+    on_tool_defaults_changed => tool_defaults_changed;
+    /// `comments.onThreadChanged`: a comment thread changed.
+    on_thread_changed => thread_changed;
+    /// `onDraftCaptured` (host lens): a capture tool's line, for the
+    /// measurement plugin's calibration.
+    on_draft_captured => draft_captured;
+}
+
+impl crate::controller::Core {
+    /// `getStatus()`: the records mirror's status.
+    pub fn get_status(&self) -> epdf_kernel::mirror::ResourceStatus {
+        self.records.get_status()
+    }
+
+    /// `refresh(options)`: read every annotation again.
+    pub fn refresh(
+        &self,
+        signal: Option<epdf_kernel::signal::AbortSignal>,
+    ) -> epdf_kernel::rt::Promise<()> {
+        self.cancellable(signal, self.records.refresh())
+    }
+
+    /// `whenSynced()` (host lens): every load and page reload in flight has settled.
+    pub fn when_synced(&self) -> epdf_kernel::rt::Promise<()> {
+        self.records.settled()
+    }
+}

@@ -15,7 +15,7 @@ use serde_json::Value;
 use crate::comments::build::build_comment_threads;
 use crate::controller::Core;
 use crate::engine::compare_iso_date_time;
-use crate::js::{key_or_none, page_object_number};
+use crate::js::key_or_none;
 
 /// The threads, in display order, and the thread of each member.
 pub struct ThreadsIndex {
@@ -114,8 +114,10 @@ impl Core {
         ThreadsIndex { threads: Rc::new(threads), by_member }
     }
 
-    /// `index()`: the threads, memoized.
-    pub(crate) fn threads_index(&self) -> Rc<ThreadsIndex> {
+    /// `index()`: the threads, memoized. The same `Rc` until the records,
+    /// the page layout or the user change (M19: one build per change, not
+    /// per read).
+    pub fn threads_index(&self) -> Rc<ThreadsIndex> {
         let model = self.model();
         let layout = self.layout_signature();
         let user = self.current_user_id();
@@ -168,9 +170,4 @@ impl Core {
         out.push(thread.pointer("/root/ref").cloned().unwrap_or(Value::Null));
         out
     }
-}
-
-#[allow(dead_code)]
-fn unused() -> f64 {
-    page_object_number(&Value::Null)
 }

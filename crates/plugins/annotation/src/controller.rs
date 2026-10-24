@@ -173,6 +173,16 @@ impl Core {
         self.cx.lifetime()
     }
 
+    /// A commit a `void` verb makes, whose failure the TypeScript would throw
+    /// to the caller: logged to the console with the plugin's prefix rather
+    /// than dropped. Every message these verbs build is well formed, so this
+    /// is reached only by a failure in the store's later stages.
+    pub(crate) fn commit_or_log(&self, message: Value) {
+        if let Err(error) = self.commit_json(message) {
+            crate::console::error("[annotation] a change failed:", error.to_canonical());
+        }
+    }
+
     /// `ctx.cancellable(signal, task)`.
     pub(crate) fn cancellable<T: Clone + 'static>(
         &self,
@@ -376,7 +386,7 @@ impl Core {
                     !epdf_annotation_core::editable::is_transformable_by_hand(&model.editable, r)
                 })
             }) {
-                let _ = core.commit_json(serde_json::json!({ "type": "cancel" }));
+                core.commit_json(serde_json::json!({ "type": "cancel" }))?;
             }
             Ok(())
         });
