@@ -582,11 +582,31 @@ fn to_number(value: &Value) -> f64 {
     }
 }
 
+/// JavaScript's WhiteSpace and LineTerminator code points, which
+/// `StringToNumber` trims. Not `char::is_whitespace`: U+0085 is white space to
+/// Rust and not to JavaScript.
+pub fn is_js_white_space(c: char) -> bool {
+    matches!(
+        c,
+        '\u{9}'..='\u{d}'
+            | ' '
+            | '\u{a0}'
+            | '\u{1680}'
+            | '\u{2000}'..='\u{200a}'
+            | '\u{2028}'
+            | '\u{2029}'
+            | '\u{202f}'
+            | '\u{205f}'
+            | '\u{3000}'
+            | '\u{feff}'
+    )
+}
+
 /// `StringToNumber`: surrounding white space ignored, empty is 0, a signed
 /// decimal literal or `Infinity`, or an unsigned `0x`/`0o`/`0b` integer;
 /// anything else is NaN.
 fn string_to_number(s: &str) -> f64 {
-    let t = s.trim_matches(|c: char| c.is_whitespace() || c == '\u{feff}');
+    let t = s.trim_matches(is_js_white_space);
     if t.is_empty() {
         return 0.0;
     }
@@ -654,6 +674,14 @@ mod tests {
         assert!(le(json!(""), json!(0)));
         assert!(le(json!("0x10"), json!(16)));
         assert!(le(json!([5]), json!(5)));
+    }
+
+    #[test]
+    fn only_javascript_white_space_is_trimmed() {
+        assert!(le(json!("\u{3000}7\u{feff}\n"), json!(7)));
+        // U+0085 (NEXT LINE) is white space to Rust, not to JavaScript.
+        assert!(!le(json!("\u{85}7"), json!(7)));
+        assert!(!le(json!("7\u{85}"), json!(7)));
     }
 
     #[test]

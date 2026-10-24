@@ -619,3 +619,22 @@ fn lost_object_numbers_reach_a_listener_through_the_guard() {
     }
     Silent.on_lost_object_numbers(Rc::new(|_| panic!("never lost"))).call();
 }
+
+/// L-N3: a cancellable call lets go of its signal once it settles, so a
+/// signal reused across calls (the annotation plugin's
+/// `renderAppearances`) does not collect listeners.
+#[test]
+fn a_cancellable_call_releases_its_signal_once_it_succeeds() {
+    use epdf_kernel::cancellable::cancellable;
+    rt::reset();
+    let signal = AbortSignal::new();
+    for round in 0..3 {
+        let (task, answer) = Promise::<Value>::pending();
+        let call = cancellable("annotation", Some(signal.clone()), task);
+        assert_eq!(signal.listener_count(), 1, "round {round}: listening while pending");
+        answer.resolve(json!([]));
+        rt::run_until_stalled();
+        assert_eq!(call.peek().unwrap().unwrap(), json!([]));
+        assert_eq!(signal.listener_count(), 0, "round {round}: released on success");
+    }
+}
