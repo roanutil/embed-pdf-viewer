@@ -564,6 +564,7 @@ name = "epdf-plugin-annotation"
 version = "0.0.0"
 dependencies = [
  "async-trait",
+ "build-support",
  "epdf-acrojs",
  "epdf-annotation-core",
  "epdf-ffi",
@@ -574,6 +575,7 @@ dependencies = [
  "epdf-plugin-render",
  "epdf-plugin-selection",
  "futures",
+ "indexmap",
  "plugin-conformance",
  "serde",
  "serde_json",

@@ -1,133 +1,256 @@
-//! `tools/registry.ts`: the resolved tool table (built-ins plus config
-//! overrides). The config tools are kept so `registerTool` re-resolves
+//! `tools/registry.ts`: the resolved tool table (built-ins and the `tools`
+//! setting). A tool maps its id to a routing subtype, a defaults key
+//! (`preset`), the kind whose properties it shows and, for stamps, a source
+//! spec. The setting's tools are kept so `tools.register` can re-resolve
 //! `extends` against the same base pool.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 
-use epdf_annotation_core::{
-    AnnotationProps, AnnotationPropsPatch, Msg, PropSpec, defaults_for, props_for, upright_rotation,
-};
-use epdf_kernel::Error;
-use epdf_plugin_interaction::{INTERACTION, RegisterToolOptions, Tool, Unregister};
+use epdf_annotation_core::geometry::upright_rotation;
+use epdf_annotation_core::kinds::kind_named;
+use epdf_annotation_core::props::properties_of;
+use epdf_annotation_core::record::{read_of_defaults, text_of};
+use epdf_annotation_core::update::defaults_for;
+use epdf_kernel::{Error, Unsubscribe};
+use epdf_plugin_interaction::{INTERACTION, RegisterToolOptions, Tool};
+use indexmap::IndexMap;
+use serde_json::{Map, Value, json};
 
-use crate::contract::AnnotationTool;
-use crate::controller::AnnotationCapability;
-use crate::tools::definitions::{
-    AnnotationToolDef, ResolvedTool, build_tool_registry, is_touch_direct,
-};
+use crate::controller::Core;
+use crate::js::Object;
+use crate::read::property_values::{PropertySources, property_values};
+use crate::tools::definitions::{ResolvedTool, build_tool_registry, tool_touch_of};
 
-impl AnnotationCapability {
-    /// `tools.get(id)`.
-    pub(crate) fn tool(&self, id: &str) -> Option<ResolvedTool> {
-        self.0.registry.borrow().get(id).cloned()
+/// A tool's defaults and style panel, cached while its defaults stay the same.
+#[derive(Clone)]
+struct ToolProperties {
+    own: Object,
+    defaults: Value,
+    properties: Value,
+}
+
+#[derive(Default)]
+pub struct ToolsState {
+    registry: RefCell<IndexMap<String, Rc<ResolvedTool>>>,
+    config_tools: RefCell<Vec<Value>>,
+    properties: RefCell<IndexMap<String, ToolProperties>>,
+    projections: RefCell<Vec<(Rc<ResolvedTool>, Value)>>,
+}
+
+/// The tool as the hub registers it.
+pub fn hub_tool(tool: &ResolvedTool) -> Rc<Tool> {
+    let mut hub =
+        Tool::new(tool.id.clone(), tool.cursor.clone(), tool.enables.iter().map(String::as_str));
+    hub.touch = Some(tool_touch_of(&tool.enables));
+    // The conformance harness prints a tool as it was written; this one is
+    // written `{ id, cursor, enables, touch }` (`registry.ts`).
+    #[cfg(feature = "harness")]
+    {
+        let spelled = json!({
+            "id": hub.id,
+            "cursor": hub.cursor,
+            "enables": { "$set": hub.enables },
+            "touch": hub.touch,
+        });
+        return epdf_plugin_interaction::harness::tool_from_json(&spelled, None);
+    }
+    #[cfg_attr(feature = "harness", allow(unreachable_code))]
+    Rc::new(hub)
+}
+
+impl Core {
+    /// `createToolRegistry(ctx, settingTools, store, events)`: every tool's
+    /// next annotation starts from its defaults.
+    pub(crate) fn create_tool_registry(&self) -> Result<(), Error> {
+        let config = self.parsed().tools();
+        let registry = build_tool_registry(&config)?;
+        *self.tools.config_tools.borrow_mut() = config;
+        *self.tools.registry.borrow_mut() = registry.clone();
+        for tool in registry.values() {
+            if let Some(defaults) = &tool.defaults {
+                self.commit_json(
+                    json!({ "type": "setDefaults", "preset": tool.preset, "patch": defaults }),
+                )?;
+            }
+        }
+        Ok(())
     }
 
-    /// `tools.activeTool()`: the hub's active tool, through this registry.
-    pub(crate) fn active_tool(&self) -> Option<ResolvedTool> {
-        let ix = self.cx().try_get(&INTERACTION).ok().flatten()?;
-        self.tool(&ix.get_active_tool_id())
+    /// `tools.get(id)` on the registry.
+    pub(crate) fn tool(&self, id: &str) -> Option<Rc<ResolvedTool>> {
+        self.tools.registry.borrow().get(id).cloned()
     }
 
-    /// `tools.uprightRotFor(displayRotation)`: the active tool's upright
-    /// counter-rotation, 0 when it asks for none or the display is upright.
+    fn tool_values(&self) -> Vec<Rc<ResolvedTool>> {
+        self.tools.registry.borrow().values().cloned().collect()
+    }
+
+    /// `activeTool()`: the hub's active tool, resolved through this registry.
+    pub(crate) fn active_tool(&self) -> Option<Rc<ResolvedTool>> {
+        let interaction = self.cx.try_get(&INTERACTION).ok().flatten()?;
+        self.tool(&interaction.get_active_tool_id())
+    }
+
+    /// `uprightRotFor(displayRotation)`: the active tool's upright counter-rotation.
     pub(crate) fn upright_rot_for(&self, display_rotation: Option<f64>) -> f64 {
-        let Some(dr) = display_rotation.filter(|r| *r != 0.0 && !r.is_nan()) else { return 0.0 };
+        let Some(rotation) = display_rotation.filter(|r| *r != 0.0 && !r.is_nan()) else {
+            return 0.0;
+        };
         match self.active_tool() {
-            Some(tool) if tool.upright => upright_rotation(dr),
+            Some(tool) if tool.upright => upright_rotation(rotation),
             _ => 0.0,
         }
     }
 
-    fn project_tool(t: &ResolvedTool) -> AnnotationTool {
-        AnnotationTool {
-            id: t.id.clone(),
-            subtype: t.subtype.clone(),
-            preset: t.preset.clone(),
-            cursor: t.cursor.clone(),
-            enables: t.enables.clone(),
-            defaults: t.defaults.clone(),
-            flags: t.flags,
-            upright: t.upright,
+    fn tool_properties_of(&self, tool_id: &str) -> ToolProperties {
+        let tool = self.tool(tool_id);
+        let kind = tool.as_ref().map_or_else(|| tool_id.to_string(), |t| t.subtype.clone());
+        let preset = tool.as_ref().map_or_else(|| tool_id.to_string(), |t| t.preset.clone());
+        let own = defaults_for(&self.model(), &preset);
+        if let Some(cached) = self.tools.properties.borrow().get(tool_id)
+            && cached.own == own
+        {
+            return cached.clone();
         }
+        let read = read_of_defaults(&kind, &own);
+        let mut defaults = read.clone();
+        defaults.shift_remove("subtype");
+        let fields_kind =
+            tool.as_ref().map_or_else(|| tool_id.to_string(), |t| t.fields_kind.clone());
+        let properties = properties_of(&kind_named(&fields_kind));
+        let text = text_of(&read);
+        let target = if read.get("subtype").and_then(Value::as_str) == Some("link") {
+            read.get("target")
+                .cloned()
+                .filter(|t| !epdf_kernel::is_undefined(t))
+                .unwrap_or(Value::Null)
+        } else {
+            Value::Null
+        };
+        let values = property_values(
+            &properties,
+            &PropertySources { data: &defaults, text: text.as_ref(), link: Some(target) },
+        );
+        let entry = ToolProperties {
+            own,
+            defaults: Value::Object(defaults),
+            properties: json!({ "properties": properties, "values": values, "mixed": [] }),
+        };
+        self.tools.properties.borrow_mut().insert(tool_id.to_string(), entry.clone());
+        entry
     }
 
-    /// `listTools()`.
-    pub fn list_tools(&self) -> Vec<AnnotationTool> {
-        self.0.registry.borrow().values().map(Self::project_tool).collect()
+    /// `tools.updateDefaults(id, changes)`: a change to the values they have changes nothing.
+    pub fn tools_update_defaults(&self, tool_id: &str, changes: &Object) -> Result<(), Error> {
+        let own = self.tool_properties_of(tool_id).own;
+        let changed = changes
+            .iter()
+            .any(|(k, v)| crate::js::stringify(own.get(k)) != crate::js::stringify(Some(v)));
+        if !changed {
+            return Ok(());
+        }
+        let preset = self.tool(tool_id).map_or_else(|| tool_id.to_string(), |t| t.preset.clone());
+        self.commit_json(json!({ "type": "setDefaults", "preset": preset, "patch": changes }))?;
+        let defaults = self.tool_properties_of(tool_id).defaults;
+        self.events.tool_defaults_changed.emit(&json!({ "toolId": tool_id, "defaults": defaults }));
+        Ok(())
     }
 
-    /// `getTool(id)`.
-    pub fn get_tool(&self, id: &str) -> Option<AnnotationTool> {
-        self.tool(id).as_ref().map(Self::project_tool)
+    /// `projectTool(tool)`: the public shape of a tool, the same object per resolved tool.
+    fn project_tool(&self, tool: &Rc<ResolvedTool>) -> Value {
+        if let Some((_, v)) =
+            self.tools.projections.borrow().iter().find(|(t, _)| Rc::ptr_eq(t, tool))
+        {
+            return v.clone();
+        }
+        let mut out = Map::new();
+        out.insert("id".into(), json!(tool.id));
+        out.insert("subtype".into(), json!(tool.subtype));
+        out.insert("preset".into(), json!(tool.preset));
+        out.insert("cursor".into(), json!(tool.cursor));
+        out.insert("enables".into(), json!(tool.enables));
+        if let Some(d) = &tool.defaults {
+            out.insert("defaults".into(), Value::Object(d.clone()));
+        }
+        out.insert("ghost".into(), tool.ghost_json());
+        if let Some(m) = &tool.meta {
+            out.insert("meta".into(), Value::Object(m.clone()));
+        }
+        let value = Value::Object(out);
+        let mut projections = self.tools.projections.borrow_mut();
+        projections.retain(|(t, _)| Rc::strong_count(t) > 1);
+        projections.push((tool.clone(), value.clone()));
+        value
     }
 
-    /// `registerTool(def)`: register (or replace by id) at runtime; the
-    /// returned remover removes it again.
-    pub fn register_tool(&self, def: AnnotationToolDef) -> Result<Unregister, Error> {
-        let mut all = self.0.config_tools.clone();
-        all.push(def.clone());
-        let registry = build_tool_registry(&all)?;
-        let resolved = registry.get(&def.id).cloned().ok_or_else(|| {
-            Error::new(format!("[annotation] could not resolve tool '{}'", def.id))
-        })?;
-        self.0.registry.borrow_mut().set(resolved.clone());
-        let un = match self.cx().try_get(&INTERACTION)? {
-            Some(ix) => {
-                let mut tool = Tool::new(
-                    resolved.id.clone(),
-                    resolved.cursor.clone(),
-                    resolved.enables.iter().map(String::as_str),
-                );
-                tool.touch_direct = Some(is_touch_direct(&resolved.enables));
-                Some(ix.register_tool(tool, RegisterToolOptions { replace: true })?)
-            }
+    /// `tools.list()`.
+    pub fn tools_list(&self) -> Vec<Value> {
+        self.tool_values().iter().map(|t| self.project_tool(t)).collect()
+    }
+
+    /// `tools.get(id)`.
+    pub fn tools_get(&self, id: &str) -> Value {
+        self.tool(id).map_or(Value::Null, |t| self.project_tool(&t))
+    }
+
+    /// `tools.register(definition)`: re-resolved against the same base pool,
+    /// registered with the hub, its defaults seeded. Returns the remover.
+    pub fn tools_register(&self, definition: Value) -> Result<Unsubscribe, Error> {
+        let id = definition.get("id").and_then(Value::as_str).unwrap_or("undefined").to_string();
+        let mut pool = self.tools.config_tools.borrow().clone();
+        pool.push(definition);
+        let resolved = build_tool_registry(&pool)?
+            .get(&id)
+            .cloned()
+            .ok_or_else(|| Error::new(format!("[annotation] could not resolve tool '{id}'")))?;
+        self.tools.registry.borrow_mut().insert(resolved.id.clone(), resolved.clone());
+        let unregister = match self.cx.try_get(&INTERACTION).ok().flatten() {
+            Some(interaction) => Some(
+                interaction
+                    .register_tool(hub_tool(&resolved), RegisterToolOptions { replace: true })?,
+            ),
             None => None,
         };
-        if let Some(defaults) = resolved.defaults.clone() {
-            self.commit(Msg::SetDefaults { subtype: resolved.preset.clone(), patch: defaults });
+        if let Some(defaults) = &resolved.defaults {
+            self.commit_json(
+                json!({ "type": "setDefaults", "preset": resolved.preset, "patch": defaults }),
+            )?;
         }
-        let weak = Rc::downgrade(&self.0);
-        let id = resolved.id.clone();
-        Ok(Unregister::new(move || {
-            if let Some(core) = weak.upgrade() {
-                core.registry.borrow_mut().delete(&id);
+        let me = self.weak();
+        let tool_id = resolved.id.clone();
+        Ok(Unsubscribe::new(move || {
+            if let Some(core) = me.upgrade() {
+                core.tools.registry.borrow_mut().shift_remove(&tool_id);
             }
-            if let Some(un) = &un {
-                un.call();
+            if let Some(unregister) = &unregister {
+                unregister.call();
             }
         }))
     }
 
-    /// `getToolDefaults(toolId)`: through the tool's preset.
-    pub fn get_tool_defaults(&self, tool_id: &str) -> AnnotationProps {
-        let preset = self.tool(tool_id).map_or_else(|| tool_id.to_string(), |t| t.preset);
-        defaults_for(&self.model(), &preset)
+    /// `tools.getDefaults(id)`.
+    pub fn tools_get_defaults(&self, id: &str) -> Value {
+        self.tool_properties_of(id).defaults
     }
 
-    /// `setToolDefaults(toolId, patch)`.
-    pub fn set_tool_defaults(&self, tool_id: &str, patch: AnnotationPropsPatch) {
-        let preset = self.tool(tool_id).map_or_else(|| tool_id.to_string(), |t| t.preset);
-        self.commit(Msg::SetDefaults { subtype: preset, patch });
+    /// `tools.getProperties(id)`.
+    pub fn tools_get_properties(&self, id: &str) -> Value {
+        self.tool_properties_of(id).properties
     }
 
-    /// `listPropSpecs(toolId)`: the specs of the tool's props kind.
-    pub fn list_prop_specs(&self, tool_id: &str) -> Vec<PropSpec> {
-        let kind = self.tool(tool_id).map_or_else(|| tool_id.to_string(), |t| t.props_kind);
-        props_for(&kind).to_vec()
+    /// `listResolvedTools()`.
+    pub fn list_resolved_tools(&self) -> Vec<Rc<ResolvedTool>> {
+        self.tool_values()
     }
 
-    /// `listResolvedTools()` (host): every resolved tool, in registry order.
-    pub fn list_resolved_tools(&self) -> Vec<ResolvedTool> {
-        self.0.registry.borrow().values().cloned().collect()
-    }
-
-    /// `getResolvedTool(id)` (host).
-    pub fn get_resolved_tool(&self, id: &str) -> Option<ResolvedTool> {
+    /// `getResolvedTool(id)`.
+    pub fn get_resolved_tool(&self, id: &str) -> Option<Rc<ResolvedTool>> {
         self.tool(id)
     }
 
-    /// `getToolSubtype(id)` (host): the routing subtype, else the id.
+    /// `getToolSubtype(id)`: the tool's routing subtype, or the id itself.
     pub fn get_tool_subtype(&self, id: &str) -> String {
-        self.tool(id).map_or_else(|| id.to_string(), |t| t.subtype)
+        self.tool(id).map_or_else(|| id.to_string(), |t| t.subtype.clone())
     }
 }

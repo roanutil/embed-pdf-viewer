@@ -1,89 +1,99 @@
-//! `services/file-picker.ts`: the one file-picker port every
-//! click-then-pick tool resolves its bytes through (a DOM file dialog, wired
-//! by the framework adapter).
+//! `services/file-picker.ts`: the one file-picker port (a file dialog, wired
+//! by the framework adapter). Every click-then-pick tool resolves its bytes
+//! through this slot.
 
 use std::rc::Rc;
 
-use epdf_annotation_core::{PageObjectNumber, PageRef, Point};
+use epdf_annotation_core::object::Json;
+use epdf_annotation_core::types::Point;
+use epdf_kernel::Unsubscribe;
 use epdf_plugin_interaction::INTERACTION;
-use serde_json::Value;
+use serde_json::{Map, Value, json};
 
-use crate::contract::{FilePickerProvider, FilePromptRequest};
-use crate::controller::AnnotationCapability;
-use crate::promise::then;
-use crate::tools::definitions::{ResolvedTool, StampSourceSpec};
-use crate::value::truthy;
+use crate::controller::Core;
+use crate::engine::to_page_ref;
+use crate::host_contract::FilePickerProvider;
+use crate::tools::definitions::ResolvedTool;
 
-impl AnnotationCapability {
-    /// `setFilePickerProvider(provider)`: one slot, last write wins. The
-    /// remover clears only the provider it installed.
-    pub fn set_file_picker_provider(
-        &self,
-        provider: Option<FilePickerProvider>,
-    ) -> epdf_kernel::Unsubscribe {
-        let serial = self.0.file_picker_serial.get() + 1;
-        self.0.file_picker_serial.set(serial);
-        *self.0.file_picker.borrow_mut() = provider;
-        let weak = Rc::downgrade(&self.0);
-        epdf_kernel::Unsubscribe::new(move || {
-            let Some(core) = weak.upgrade() else { return };
-            if core.file_picker_serial.get() == serial {
+impl Core {
+    /// `setFilePickerProvider(provider)`: returns the function that removes it.
+    pub fn set_file_picker_provider(&self, provider: Option<FilePickerProvider>) -> Unsubscribe {
+        *self.file_picker.borrow_mut() = provider.clone();
+        let me = self.weak();
+        Unsubscribe::new(move || {
+            let Some(core) = me.upgrade() else { return };
+            let current = core.file_picker.borrow().clone();
+            let same = match (&current, &provider) {
+                (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+                (None, None) => true,
+                _ => false,
+            };
+            if same {
                 *core.file_picker.borrow_mut() = None;
             }
         })
     }
 
-    /// `promptAt(tool, pon, point, place)`: run the installed provider with
-    /// the expiry rule (a cancel, a changed document or a changed tool drops
-    /// the placement). No provider declines the click.
+    /// `promptAt(tool, page, point, place)`: run the provider; the
+    /// placement drops if the picker cancels or the document or the active
+    /// tool changed meanwhile. No provider declines the click.
     pub(crate) fn prompt_at(
         &self,
         tool: &ResolvedTool,
-        pon: PageObjectNumber,
+        page: f64,
         point: Point,
-        place: impl FnOnce(&AnnotationCapability, Value) + 'static,
+        place: Rc<dyn Fn(Value)>,
     ) -> bool {
-        let Some(provider) = self.0.file_picker.borrow().clone() else { return false };
-        let accept = match &tool.source {
-            Some(StampSourceSpec::Prompt(p)) => p.accept.clone(),
-            _ => None,
-        };
-        let req = FilePromptRequest {
-            tool_id: tool.id.clone(),
-            subtype: tool.subtype.clone(),
-            accept,
-            page: PageRef::new(pon),
-            point,
-        };
-        let doc_at_click = self.doc();
-        let answer = provider(req);
-        let this = self.clone();
+        let Some(provider) = self.file_picker.borrow().clone() else { return false };
+        let mut request = Map::new();
+        request.insert("toolId".into(), json!(tool.id));
+        request.insert("subtype".into(), json!(tool.subtype));
+        let accept = tool
+            .source
+            .as_ref()
+            .filter(|s| s.get("kind").and_then(Value::as_str) == Some("prompt"))
+            .and_then(|s| s.get("accept"))
+            .cloned()
+            .unwrap_or_else(epdf_kernel::undefined);
+        request.insert("accept".into(), accept);
+        request.insert("page".into(), to_page_ref(page));
+        request.insert("point".into(), point.json());
+        // Held weakly: the address stays the handle's while it is compared.
+        let doc_at_click = self.doc().map(|d| Rc::downgrade(&d));
+        let picked = provider(Value::Object(request));
+        let me = self.weak();
         let tool_id = tool.id.clone();
-        then(answer, move |result| match result {
-            Ok(picked) => {
-                if !truthy(Some(&picked)) {
-                    return;
+        epdf_kernel::rt::spawn(async move {
+            let result = picked.await;
+            let Some(core) = me.upgrade() else { return };
+            match result {
+                Ok(None) => {}
+                Ok(Some(picked)) => {
+                    if picked.is_null() {
+                        return;
+                    }
+                    let same_doc = match (core.doc(), &doc_at_click) {
+                        (Some(d), Some(w)) => std::ptr::addr_eq(Rc::as_ptr(&d), w.as_ptr()),
+                        (None, None) => true,
+                        _ => false,
+                    };
+                    if !same_doc {
+                        return;
+                    }
+                    let active = core
+                        .cx
+                        .try_get(&INTERACTION)
+                        .ok()
+                        .flatten()
+                        .map(|i| i.get_active_tool_id());
+                    if active.as_deref() != Some(tool_id.as_str()) {
+                        return;
+                    }
+                    place(picked);
                 }
-                let same_doc = match (this.doc(), &doc_at_click) {
-                    (Some(a), Some(b)) => Rc::ptr_eq(&a, b),
-                    (None, None) => true,
-                    _ => false,
-                };
-                if !same_doc {
-                    return;
-                }
-                let active = this
-                    .cx()
-                    .try_get(&INTERACTION)
-                    .ok()
-                    .flatten()
-                    .map(|ix| ix.get_active_tool_id());
-                if active.as_deref() != Some(tool_id.as_str()) {
-                    return;
-                }
-                place(&this, picked);
+                Err(error) => core
+                    .log_error("[annotation] file-picker provider failed:", error.to_canonical()),
             }
-            Err(err) => this.console_error("[annotation] file-picker provider failed:", Some(&err)),
         });
         true
     }

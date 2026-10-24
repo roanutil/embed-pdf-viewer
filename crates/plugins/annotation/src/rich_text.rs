@@ -1,69 +1,76 @@
 //! `rich-text.ts`: what the plugin decides about a free-text annotation's
-//! rich document, kept pure so every editor behaves the same.
+//! rich document, kept pure so every editor behaves the same: a flat patch as
+//! the run delta it means for a text range, what a range reads back, faces,
+//! and the commit rule.
 //!
-//! - the rich document of any annotation (the DTO's, or one synthesised from
-//!   the plain text and the `/DA` text style for a draft with no DTO yet);
-//! - a flat props patch as the run delta it means for a text range, and the
-//!   keys left for the body;
-//! - what a range reads back for those keys;
-//! - faces: a DTO font (a standard kebab name or a registered key), the face
-//!   a run names, and a CSS family list.
-//!
-//! A body is a JSON object here: the DTO's is carried verbatim (a spread
-//! over it has to keep every member the engine sent), and the synthesised
-//! one is built in the TypeScript's member order.
+//! Documents stay the engine's JSON (a DTO's body and paragraphs carried
+//! verbatim, in the order the engine wrote their members); the run algebra
+//! reads them into `epdf_annotation_core::richtext` types where it works on
+//! them.
 
+use epdf_annotation_core::engine::text::{FontIdentity, face_for_free_text_font, standard_face};
+use epdf_annotation_core::font_css::{mounted_font_family, standard_font_stack};
+use epdf_annotation_core::record::text_of;
 use epdf_annotation_core::richtext::{
-    RichTextParagraph, RichTextRange, RichTextStyleDelta, locate_offset, paragraphs_from_plain_text,
+    OffsetLocation, RichTextParagraph, RichTextRange, locate_offset,
 };
-use epdf_annotation_core::{Annot, AnnotationPropsPatch, PropKey, TextAlign, TextStyle};
-use serde::{Deserialize, Serialize};
+use epdf_annotation_core::types::TextStyle;
+use epdf_kernel::Error;
 use serde_json::{Map, Value, json};
 
-use crate::value::{get, str_of};
+use crate::js::{Object, num, number};
 
-/// `TextFormat`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TextFormat {
-    Bold,
-    Italic,
-    Underline,
-}
+/// `TextFormat`: `'bold' | 'italic' | 'underline'`.
+pub const TEXT_FORMATS: [&str; 3] = ["bold", "italic", "underline"];
 
-impl TextFormat {
-    pub fn key(self) -> PropKey {
-        match self {
-            TextFormat::Bold => PropKey::Bold,
-            TextFormat::Italic => PropKey::Italic,
-            TextFormat::Underline => PropKey::Underline,
-        }
-    }
-}
-
-/// `TextSelection`: the editor's range inside one free-text annotation,
-/// flat offsets over its plain projection.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// `TextSelection`: the editor's range inside one free-text annotation, flat
+/// offsets over its plain projection.
+#[derive(Clone, Debug, PartialEq)]
 pub struct TextSelection {
     pub id: String,
     pub start: f64,
     pub end: f64,
 }
 
+impl TextSelection {
+    pub fn to_json(&self) -> Value {
+        json!({ "id": self.id, "start": num(self.start), "end": num(self.end) })
+    }
+}
+
 /// `Face`: the face a run or a body names.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct Face {
     pub family: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub weight: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub italic: Option<bool>,
+}
+
+impl Face {
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        out.insert("family".into(), Value::String(self.family.clone()));
+        if let Some(w) = self.weight {
+            out.insert("weight".into(), num(w));
+        }
+        if let Some(i) = self.italic {
+            out.insert("italic".into(), Value::Bool(i));
+        }
+        Value::Object(out)
+    }
+
+    pub fn read(value: &Value) -> Face {
+        Face {
+            family: value.get("family").and_then(Value::as_str).unwrap_or_default().to_string(),
+            weight: value.get("weight").and_then(number),
+            italic: value.get("italic").and_then(Value::as_bool),
+        }
+    }
 }
 
 /// `FontHandle`: one registered font, as the local engine's `fonts.list()`
 /// answers it.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Debug, PartialEq)]
 pub struct FontHandle {
     pub key: String,
     pub family_name: String,
@@ -71,129 +78,106 @@ pub struct FontHandle {
     pub italic: bool,
 }
 
-/// `RANGE_KEYS`: the props keys a text range takes as run deltas.
-pub const RANGE_KEYS: [PropKey; 6] = [
-    PropKey::FontFamily,
-    PropKey::FontSize,
-    PropKey::FontColor,
-    PropKey::Bold,
-    PropKey::Italic,
-    PropKey::Underline,
-];
-
-// ── faces ─────────────────────────────────────────────────────────────────────
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum StandardFamily {
-    Helvetica,
-    Times,
-    Courier,
-    Symbol,
-    ZapfDingbats,
-}
-
-impl StandardFamily {
-    fn name(self) -> &'static str {
-        match self {
-            StandardFamily::Helvetica => "Helvetica",
-            StandardFamily::Times => "Times",
-            StandardFamily::Courier => "Courier",
-            StandardFamily::Symbol => "Symbol",
-            StandardFamily::ZapfDingbats => "ZapfDingbats",
-        }
-    }
-
-    /// `STANDARD_STACKS`.
-    fn stack(self) -> &'static str {
-        match self {
-            StandardFamily::Helvetica => "Helvetica, Arial, sans-serif",
-            StandardFamily::Times => "\"Times New Roman\", Times, serif",
-            StandardFamily::Courier => "\"Courier New\", Courier, monospace",
-            StandardFamily::Symbol | StandardFamily::ZapfDingbats => "serif",
-        }
+impl FontHandle {
+    pub fn read(value: &Value) -> Option<FontHandle> {
+        Some(FontHandle {
+            key: value.get("key")?.as_str()?.to_string(),
+            family_name: value.get("familyName")?.as_str()?.to_string(),
+            weight: value.get("weight").and_then(number)?,
+            italic: value.get("italic")?.as_bool()?,
+        })
     }
 }
+
+/// `FontLookup`: the registered fonts an engine knows (the local engine's
+/// list; none on the cloud engine). `None` is no lookup at all.
+pub type FontLookup<'a> = Option<&'a [FontHandle]>;
+
+/// `RANGE_KEYS`: the fields a text range takes as run deltas.
+pub const RANGE_KEYS: [&str; 6] =
+    ["fontFamily", "fontSize", "fontColor", "bold", "italic", "underline"];
+
+// ── faces ───────────────────────────────────────────────────────────────────
 
 /// `STANDARD_FACES`, in the object literal's order.
-const STANDARD_FACES: [(&str, StandardFamily, f64, bool); 14] = [
-    ("courier", StandardFamily::Courier, 400.0, false),
-    ("courier-bold", StandardFamily::Courier, 700.0, false),
-    ("courier-bold-oblique", StandardFamily::Courier, 700.0, true),
-    ("courier-oblique", StandardFamily::Courier, 400.0, true),
-    ("helvetica", StandardFamily::Helvetica, 400.0, false),
-    ("helvetica-bold", StandardFamily::Helvetica, 700.0, false),
-    ("helvetica-bold-oblique", StandardFamily::Helvetica, 700.0, true),
-    ("helvetica-oblique", StandardFamily::Helvetica, 400.0, true),
-    ("times-roman", StandardFamily::Times, 400.0, false),
-    ("times-bold", StandardFamily::Times, 700.0, false),
-    ("times-bold-italic", StandardFamily::Times, 700.0, true),
-    ("times-italic", StandardFamily::Times, 400.0, true),
-    ("symbol", StandardFamily::Symbol, 400.0, false),
-    ("zapf-dingbats", StandardFamily::ZapfDingbats, 400.0, false),
+const STANDARD_FACE_NAMES: [&str; 14] = [
+    "courier",
+    "courier-bold",
+    "courier-bold-oblique",
+    "courier-oblique",
+    "helvetica",
+    "helvetica-bold",
+    "helvetica-bold-oblique",
+    "helvetica-oblique",
+    "times-roman",
+    "times-bold",
+    "times-bold-italic",
+    "times-italic",
+    "symbol",
+    "zapf-dingbats",
 ];
 
-fn standard_face(font: &str) -> Option<(StandardFamily, f64, bool)> {
-    STANDARD_FACES.iter().find(|(name, ..)| *name == font).map(|(_, f, w, i)| (*f, *w, *i))
-}
-
 /// `STANDARD_FAMILY_KEYS`.
-fn standard_family(key: &str) -> Option<StandardFamily> {
+fn standard_family(key: &str) -> Option<&'static str> {
     Some(match key {
-        "helvetica" | "arial" | "arialmt" | "sansserif" => StandardFamily::Helvetica,
-        "times" | "timesroman" | "timesnewroman" | "timesnewromanpsmt" | "serif" => {
-            StandardFamily::Times
-        }
-        "courier" | "couriernew" | "couriernewpsmt" | "monospace" => StandardFamily::Courier,
-        "symbol" => StandardFamily::Symbol,
-        "zapfdingbats" | "dingbats" => StandardFamily::ZapfDingbats,
+        "helvetica" | "arial" | "arialmt" | "sansserif" => "Helvetica",
+        "times" | "timesroman" | "timesnewroman" | "timesnewromanpsmt" | "serif" => "Times",
+        "courier" | "couriernew" | "couriernewpsmt" | "monospace" => "Courier",
+        "symbol" => "Symbol",
+        "zapfdingbats" | "dingbats" => "ZapfDingbats",
         _ => return None,
     })
 }
 
-/// `FontLookup`: the registered fonts an engine knows.
-pub type FontLookup<'a> = Option<&'a [FontHandle]>;
-
 /// `familyKey(family)`: families compare without case, spaces, hyphens,
-/// underscores and quotes.
+/// underscores and quotes (`/[\s\-_'"]/g`).
 pub fn family_key(family: &str) -> String {
     family
         .to_lowercase()
         .chars()
-        .filter(|c| !(c.is_whitespace() || *c == '\u{feff}' || matches!(c, '-' | '_' | '\'' | '"')))
+        .filter(|c| !(js_space(*c) || matches!(c, '-' | '_' | '\'' | '"')))
         .collect()
+}
+
+/// JavaScript's `\s`.
+fn js_space(c: char) -> bool {
+    c.is_whitespace() || c == '\u{feff}'
 }
 
 /// `faceForFont(font, fonts)`: a standard font's face, a registered key's
 /// identity, else the string itself as a family.
 pub fn face_for_font(font: &str, fonts: FontLookup) -> Face {
-    if let Some((family, weight, italic)) = standard_face(font) {
-        return Face { family: family.name().into(), weight: Some(weight), italic: Some(italic) };
-    }
-    if let Some(f) = fonts.unwrap_or_default().iter().find(|f| f.key == font) {
-        return Face {
-            family: f.family_name.clone(),
-            weight: Some(f.weight),
-            italic: Some(f.italic),
-        };
-    }
-    Face { family: font.into(), weight: None, italic: None }
+    let describe = |key: &str| -> Option<FontIdentity> {
+        fonts?.iter().find(|h| h.key == key).map(|h| FontIdentity {
+            family_name: h.family_name.clone(),
+            weight: h.weight,
+            italic: h.italic,
+        })
+    };
+    let face = if fonts.is_some() {
+        face_for_free_text_font(font, Some(&describe))
+    } else {
+        face_for_free_text_font(font, None)
+    };
+    Face { family: face.family, weight: face.weight, italic: face.italic }
 }
 
-/// `fontForFace(face, fonts)`: the registered key whose identity matches
-/// (closest weight, italic first), else the standard kebab name, else the
+/// `fontForFace(face, fonts)`: the registered key whose identity matches (the
+/// closest weight, italic first), else the standard kebab name, else the
 /// family itself.
 pub fn font_for_face(face: &Face, fonts: FontLookup) -> String {
     let wanted = family_key(&face.family);
     let weight = face.weight.unwrap_or(400.0);
     let italic = face.italic.unwrap_or(false);
     let mut best: Option<(&str, f64)> = None;
-    for f in fonts.unwrap_or_default() {
-        if family_key(&f.family_name) != wanted {
+    for handle in fonts.unwrap_or_default() {
+        if family_key(&handle.family_name) != wanted {
             continue;
         }
-        let score = (f.weight - weight).abs() + if f.italic == italic { 0.0 } else { 1000.0 };
+        let score =
+            (handle.weight - weight).abs() + if handle.italic == italic { 0.0 } else { 1000.0 };
         if best.is_none_or(|(_, s)| score < s) {
-            best = Some((&f.key, score));
+            best = Some((&handle.key, score));
         }
     }
     if let Some((key, _)) = best {
@@ -201,13 +185,14 @@ pub fn font_for_face(face: &Face, fonts: FontLookup) -> String {
     }
     if let Some(standard) = standard_family(&wanted) {
         let bold = weight >= 600.0;
-        for (name, family, w, i) in STANDARD_FACES {
-            if family == standard && (w >= 600.0) == bold && i == italic {
+        for name in STANDARD_FACE_NAMES {
+            let spec = standard_face(name).expect("a standard face");
+            if spec.family == standard && (spec.weight >= 600.0) == bold && spec.italic == italic {
                 return name.to_string();
             }
         }
-        for (name, family, ..) in STANDARD_FACES {
-            if family == standard {
+        for name in STANDARD_FACE_NAMES {
+            if standard_face(name).expect("a standard face").family == standard {
                 return name.to_string();
             }
         }
@@ -215,204 +200,275 @@ pub fn font_for_face(face: &Face, fonts: FontLookup) -> String {
     face.family.clone()
 }
 
-/// `cssFontFamilyForFace(family, fonts)`.
+/// `cssFontFamilyForFace(family, fonts)`: a standard family's web stack, a
+/// registered family's mounted `@font-face`, else the family with a generic
+/// fallback.
 pub fn css_font_family_for_face(family: &str, fonts: FontLookup) -> String {
     let wanted = family_key(family);
     if let Some(standard) = standard_family(&wanted) {
-        return standard.stack().into();
+        return standard_font_stack(standard).unwrap_or_default().to_string();
     }
-    if let Some(f) = fonts.unwrap_or_default().iter().find(|f| family_key(&f.family_name) == wanted)
+    if let Some(handle) =
+        fonts.unwrap_or_default().iter().find(|h| family_key(&h.family_name) == wanted)
     {
-        return format!("\"{}\"", f.key);
+        return mounted_font_family(&handle.key);
     }
     format!("\"{family}\", sans-serif")
 }
 
-/// `cssFontFamilyForFont(font)`: a standard kebab name's web stack, else
-/// the key as a family.
-pub fn css_font_family_for_font(font: &str) -> String {
-    match standard_face(font) {
-        Some((family, ..)) => family.stack().into(),
-        None => format!("\"{font}\", sans-serif"),
+// ── documents ───────────────────────────────────────────────────────────────
+
+/// `RichTextDocument`: a whole body and the paragraphs, as JSON.
+#[derive(Clone, Debug, PartialEq)]
+pub struct RichTextDocument {
+    pub body: Object,
+    pub paragraphs: Vec<Value>,
+}
+
+impl RichTextDocument {
+    pub fn to_json(&self) -> Value {
+        json!({ "body": self.body, "paragraphs": self.paragraphs })
+    }
+
+    /// The paragraphs as the run algebra reads them.
+    pub fn typed(&self) -> Vec<RichTextParagraph> {
+        typed_paragraphs(&self.paragraphs)
     }
 }
 
-// ── documents ─────────────────────────────────────────────────────────────────
-
-/// `RichTextDocument`: a complete body and the paragraphs.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct RichTextDocument {
-    pub body: Map<String, Value>,
-    pub paragraphs: Vec<RichTextParagraph>,
+/// Paragraphs read into the run algebra's types.
+pub fn typed_paragraphs(paragraphs: &[Value]) -> Vec<RichTextParagraph> {
+    paragraphs
+        .iter()
+        .map(|p| {
+            serde_json::from_value(p.clone())
+                .unwrap_or(RichTextParagraph { runs: Vec::new(), props: Map::new() })
+        })
+        .collect()
 }
 
 fn hex(css: &str) -> String {
     css.trim().to_uppercase()
 }
 
-fn align_str(align: TextAlign) -> Value {
-    serde_json::to_value(align).unwrap_or_default()
+fn str_of(value: &Option<Value>) -> Option<&str> {
+    value.as_ref().and_then(Value::as_str)
 }
 
-/// `bodyFromTextStyle(t, fonts)`: the rich body the `/DA` style describes.
-pub fn body_from_text_style(t: &TextStyle, fonts: FontLookup) -> Map<String, Value> {
-    let face = face_for_font(&t.font_family, fonts);
-    let weight = if t.bold == Some(true) { 700.0 } else { face.weight.unwrap_or(400.0) };
-    let italic = t.italic.or(face.italic).unwrap_or(false);
-    let decoration: Vec<&str> = if t.underline == Some(true) { vec!["underline"] } else { vec![] };
+/// `bodyFromTextStyle(style, fonts)`: the rich body the `/DA` text style
+/// describes.
+pub fn body_from_text_style(style: &TextStyle, fonts: FontLookup) -> Object {
+    let face = face_for_font(str_of(&style.font_family).unwrap_or("undefined"), fonts);
+    let weight = if style.bold == Some(true) { 700.0 } else { face.weight.unwrap_or(400.0) };
+    let italic = style.italic.or(face.italic).unwrap_or(false);
+    let decoration: Vec<Value> =
+        if style.underline == Some(true) { vec![json!("underline")] } else { vec![] };
     let mut body = Map::new();
-    body.insert("family".into(), json!(face.family));
-    body.insert("weight".into(), crate::value::number(weight));
-    body.insert("italic".into(), json!(italic));
-    body.insert("size".into(), crate::value::number(t.font_size));
-    body.insert("color".into(), json!(hex(&t.font_color)));
-    body.insert("decoration".into(), json!(decoration));
+    body.insert("family".into(), Value::String(face.family));
+    body.insert("weight".into(), num(weight));
+    body.insert("italic".into(), Value::Bool(italic));
+    body.insert("size".into(), style.font_size.clone().unwrap_or(Value::Null));
+    body.insert(
+        "color".into(),
+        str_of(&style.font_color).map_or(Value::Null, |c| Value::String(hex(c))),
+    );
+    body.insert("decoration".into(), Value::Array(decoration));
     body.insert("script".into(), json!("normal"));
     body.insert("letterSpacing".into(), json!(0));
     body.insert("horizontalScale".into(), json!(1));
-    body.insert("align".into(), align_str(t.text_align));
+    body.insert("align".into(), style.text_align.clone().unwrap_or(Value::Null));
     body.insert("dir".into(), json!("ltr"));
     body
 }
 
-/// `richDocOf(a, fonts)`: the DTO's rich document, else one synthesised
-/// from the plain text and the text style.
-pub fn rich_doc_of(a: &Annot, fonts: FontLookup) -> RichTextDocument {
-    if let Some(d) = &a.data
-        && str_of(d, "subtype") == Some("free-text")
-        && let Some(rich) = get(d, "richText").filter(|r| crate::value::truthy(Some(r)))
-        && let Ok(doc) = serde_json::from_value::<RichTextDocument>(rich.clone())
-    {
-        return doc;
+/// `paragraphsFromPlainText(text)`: one paragraph per line, one unstyled run each.
+pub fn paragraphs_from_plain_text(text: &str) -> Vec<Value> {
+    split_lines(text).into_iter().map(|line| json!({ "runs": [{ "text": line }] })).collect()
+}
+
+/// `text.split(/\r\n|\r|\n/)`.
+fn split_lines(text: &str) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut current = String::new();
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        match c {
+            '\r' => {
+                if chars.peek() == Some(&'\n') {
+                    chars.next();
+                }
+                out.push(std::mem::take(&mut current));
+            }
+            '\n' => out.push(std::mem::take(&mut current)),
+            c => current.push(c),
+        }
     }
-    let fallback = TextStyle {
-        font_family: "helvetica".into(),
-        font_size: 12.0,
-        font_color: "#000000".into(),
-        text_align: TextAlign::Left,
+    out.push(current);
+    out
+}
+
+/// `richDocOf(annotation, fonts)`: a free text's own rich document, else one
+/// made from its plain text and how its text is set.
+pub fn rich_doc_of(annotation: &Object, fonts: FontLookup) -> RichTextDocument {
+    if annotation.get("subtype").and_then(Value::as_str) == Some("free-text")
+        && let Some(rich) = annotation.get("richText").filter(|r| truthy(r))
+    {
+        return RichTextDocument {
+            body: rich.get("body").and_then(Value::as_object).cloned().unwrap_or_default(),
+            paragraphs: rich
+                .get("paragraphs")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default(),
+        };
+    }
+    let style = text_of(annotation).unwrap_or_else(|| TextStyle {
+        font_family: Some(json!("helvetica")),
+        font_size: Some(json!(12)),
+        font_color: Some(json!("#000000")),
+        text_align: Some(json!("left")),
         bold: None,
         italic: None,
         underline: None,
-    };
-    let t = a.text.as_ref().unwrap_or(&fallback);
-    let contents = a.data.as_ref().and_then(|d| str_of(d, "contents")).unwrap_or_default();
+        order: Default::default(),
+    });
+    let contents = annotation.get("contents").and_then(Value::as_str).unwrap_or("");
     RichTextDocument {
-        body: body_from_text_style(t, fonts),
+        body: body_from_text_style(&style, fonts),
         paragraphs: paragraphs_from_plain_text(contents),
     }
 }
 
-/// `textCommitPatch(a, paragraphs, fonts)`: the rich paragraphs, their
+fn truthy(value: &Value) -> bool {
+    epdf_annotation_core::json::truthy(Some(value))
+}
+
+/// `textCommitPatch(record, paragraphs, fonts)`: the rich paragraphs, their
 /// body-equal paragraph properties stripped, and no body.
-pub fn text_commit_patch(a: &Annot, paragraphs: &[RichTextParagraph], fonts: FontLookup) -> Value {
-    let body = rich_doc_of(a, fonts).body;
+pub fn text_commit_patch(annotation: &Object, paragraphs: &[Value], fonts: FontLookup) -> Value {
+    let body = rich_doc_of(annotation, fonts).body;
     json!({ "richText": { "paragraphs": strip_body_defaults(paragraphs, &body) } })
 }
 
 /// `stripBodyDefaults(paragraphs, body)`: paragraph `align` and `dir` equal
 /// to the body's are inherited, not overrides.
-pub fn strip_body_defaults(
-    paragraphs: &[RichTextParagraph],
-    body: &Map<String, Value>,
-) -> Vec<RichTextParagraph> {
+pub fn strip_body_defaults(paragraphs: &[Value], body: &Object) -> Vec<Value> {
     paragraphs
         .iter()
-        .map(|p| {
-            let differs = |key: &str| match p.props.get(key) {
-                None => true,
-                Some(v) => Some(v) != body.get(key),
-            };
+        .map(|paragraph| {
+            let Some(p) = paragraph.as_object() else { return paragraph.clone() };
+            let own = |k: &str| p.get(k).filter(|v| !epdf_kernel::is_undefined(v));
+            let differs = |k: &str| own(k).is_none_or(|v| Some(v) != body.get(k));
             if differs("align") && differs("dir") {
-                return p.clone();
+                return paragraph.clone();
             }
-            let mut out = p.clone();
-            for key in ["align", "dir"] {
-                if let Some(v) = p.props.get(key)
-                    && Some(v) == body.get(key)
-                {
-                    out.props.remove(key);
+            let mut rest = Map::new();
+            for (k, v) in p {
+                if k != "align" && k != "dir" {
+                    rest.insert(k.clone(), v.clone());
                 }
             }
-            out
+            for key in ["align", "dir"] {
+                if let Some(v) = own(key)
+                    && Some(v) != body.get(key)
+                {
+                    rest.insert(key.into(), v.clone());
+                }
+            }
+            Value::Object(rest)
         })
         .collect()
 }
 
-// ── props and runs ────────────────────────────────────────────────────────────
+// ── fields and runs ─────────────────────────────────────────────────────────
 
-/// `runDeltaForProps(patch, fonts)`: the run delta a range takes and the
-/// keys left for the body.
-pub fn run_delta_for_props(
-    patch: &AnnotationPropsPatch,
-    fonts: FontLookup,
-) -> (RichTextStyleDelta, AnnotationPropsPatch) {
-    let mut delta = RichTextStyleDelta::default();
+/// `runDeltaForFields(patch, fonts)`: the run delta a range takes (a JSON
+/// object in the order the patch named its keys) and the fields left for
+/// the annotation.
+pub fn run_delta_for_fields(patch: &Object, fonts: FontLookup) -> (Object, Object) {
+    let mut delta = Map::new();
     let mut rest = Map::new();
-    let Value::Object(members) = serde_json::to_value(patch).unwrap_or_default() else {
-        return (delta, AnnotationPropsPatch::default());
-    };
-    for (key, value) in members {
-        match PropKey::parse(&key) {
-            Some(PropKey::FontFamily) => {
-                let face = face_for_font(value.as_str().unwrap_or_default(), fonts);
-                delta.family = Some(face.family);
+    for (key, value) in patch {
+        if epdf_kernel::is_undefined(value) {
+            continue;
+        }
+        match key.as_str() {
+            "fontFamily" => {
+                let face = face_for_font(value.as_str().unwrap_or("undefined"), fonts);
+                delta.insert("family".into(), Value::String(face.family));
                 if let Some(w) = face.weight {
-                    delta.weight = Some(w);
+                    delta.insert("weight".into(), num(w));
                 }
                 if let Some(i) = face.italic {
-                    delta.italic = Some(i);
+                    delta.insert("italic".into(), Value::Bool(i));
                 }
             }
-            Some(PropKey::FontSize) => delta.size = value.as_f64(),
-            Some(PropKey::FontColor) => delta.color = value.as_str().map(hex),
-            Some(PropKey::Bold) => {
-                delta.weight = Some(if value.as_bool() == Some(true) { 700.0 } else { 400.0 })
+            "fontSize" => {
+                delta.insert("size".into(), value.clone());
             }
-            Some(PropKey::Italic) => delta.italic = value.as_bool(),
-            Some(PropKey::Underline) => {
-                delta.decoration = Some(if value.as_bool() == Some(true) {
-                    vec!["underline".into()]
-                } else {
-                    vec![]
-                })
+            "fontColor" => {
+                delta.insert(
+                    "color".into(),
+                    value.as_str().map_or(value.clone(), |c| Value::String(hex(c))),
+                );
+            }
+            "bold" => {
+                delta.insert("weight".into(), json!(if truthy(value) { 700 } else { 400 }));
+            }
+            "italic" => {
+                delta.insert("italic".into(), value.clone());
+            }
+            "underline" => {
+                delta.insert(
+                    "decoration".into(),
+                    if truthy(value) { json!(["underline"]) } else { json!([]) },
+                );
             }
             _ => {
-                rest.insert(key, value);
+                rest.insert(key.clone(), value.clone());
             }
         }
     }
-    (delta, serde_json::from_value(Value::Object(rest)).unwrap_or_default())
+    (delta, rest)
 }
 
-fn para_len(p: &RichTextParagraph) -> f64 {
-    p.runs.iter().fold(0.0, |n, r| n + epdf_annotation_core::js::utf16_len(&r.text) as f64)
+fn utf16_len(s: &str) -> f64 {
+    s.encode_utf16().count() as f64
 }
 
-/// `runsInRange(doc, range)`: the style deltas of every non-empty run a
-/// range overlaps.
-pub fn runs_in_range(
-    paragraphs: &[RichTextParagraph],
-    range: RichTextRange,
-) -> Vec<RichTextStyleDelta> {
+fn paragraph_len(p: &RichTextParagraph) -> f64 {
+    p.runs.iter().map(|r| utf16_len(&r.text)).sum()
+}
+
+/// `runsInRange(doc, range)`: the style deltas (as JSON) of every non-empty
+/// run a range overlaps.
+pub fn runs_in_range(paragraphs: &[Value], range: RichTextRange) -> Vec<Value> {
+    let typed = typed_paragraphs(paragraphs);
     let start = epdf_geometry::js::min(range.start, range.end);
     let end = epdf_geometry::js::max(range.start, range.end);
     if end <= start {
         return Vec::new();
     }
-    let from = locate_offset(paragraphs, start);
-    let to = locate_offset(paragraphs, end);
+    let from: OffsetLocation = locate_offset(&typed, start);
+    let to: OffsetLocation = locate_offset(&typed, end);
     let mut out = Vec::new();
-    for (index, paragraph) in
-        paragraphs.iter().enumerate().take(to.paragraph + 1).skip(from.paragraph)
-    {
+    for index in from.paragraph..=to.paragraph {
+        let Some(paragraph) = typed.get(index) else { break };
         let local_start = if index == from.paragraph { from.offset } else { 0.0 };
-        let local_end = if index == to.paragraph { to.offset } else { para_len(paragraph) };
+        let local_end = if index == to.paragraph { to.offset } else { paragraph_len(paragraph) };
+        let raw_runs = paragraphs.get(index).and_then(|p| p.get("runs")).and_then(Value::as_array);
         let mut pos = 0.0;
-        for run in &paragraph.runs {
-            let len = epdf_annotation_core::js::utf16_len(&run.text) as f64;
+        for (i, run) in paragraph.runs.iter().enumerate() {
+            let len = utf16_len(&run.text);
             let run_end = pos + len;
             if run_end > local_start && pos < local_end && len > 0.0 {
-                out.push(run.style.clone().unwrap_or_default());
+                let style = raw_runs
+                    .and_then(|r| r.get(i))
+                    .and_then(|r| r.get("style"))
+                    .filter(|s| !s.is_null() && !epdf_kernel::is_undefined(s))
+                    .cloned()
+                    .unwrap_or_else(|| json!({}));
+                out.push(style);
             }
             pos = run_end;
         }
@@ -421,67 +477,65 @@ pub fn runs_in_range(
 }
 
 /// `rangeProps(doc, range, fonts)`: the values a range reads back for the
-/// range keys, resolved against the body; `mixed` where runs disagree.
+/// range keys, resolved against the body, `mixed` where the runs disagree.
 pub fn range_props(
     doc: &RichTextDocument,
     range: RichTextRange,
     fonts: FontLookup,
-) -> Result<(Map<String, Value>, Vec<PropKey>), epdf_kernel::Error> {
+) -> Result<(Object, Vec<String>), Error> {
     let body = &doc.body;
     let runs = runs_in_range(&doc.paragraphs, range);
-    let runs = if runs.is_empty() { vec![RichTextStyleDelta::default()] } else { runs };
-    let pick = |own: Option<Value>, key: &str| own.or_else(|| body.get(key).cloned());
-    let styles: Vec<Map<String, Value>> = runs
+    let runs = if runs.is_empty() { vec![json!({})] } else { runs };
+    let pick = |delta: &Value, key: &str| -> Option<Value> {
+        delta
+            .get(key)
+            .filter(|v| !v.is_null() && !epdf_kernel::is_undefined(v))
+            .or_else(|| body.get(key).filter(|v| !epdf_kernel::is_undefined(v)))
+            .cloned()
+    };
+    let styles: Vec<Object> = runs
         .iter()
-        .map(|d| {
-            let mut s = Map::new();
-            let mut put = |key: &str, v: Option<Value>| {
-                if let Some(v) = v {
-                    s.insert(key.into(), v);
+        .map(|delta| {
+            let mut style = Map::new();
+            for key in ["family", "weight", "italic", "size", "color", "decoration"] {
+                if let Some(v) = pick(delta, key) {
+                    style.insert(key.into(), v);
                 }
-            };
-            put("family", pick(d.family.clone().map(Value::from), "family"));
-            put("weight", pick(d.weight.map(crate::value::number), "weight"));
-            put("italic", pick(d.italic.map(Value::from), "italic"));
-            put("size", pick(d.size.map(crate::value::number), "size"));
-            put("color", pick(d.color.clone().map(Value::from), "color"));
-            put("decoration", pick(d.decoration.clone().map(|v| json!(v)), "decoration"));
-            s
+            }
+            style
         })
         .collect();
-    let body_weight = body.get("weight").and_then(Value::as_f64);
+    let body_weight = body.get("weight").and_then(number);
     let body_italic = body.get("italic").and_then(Value::as_bool);
     let mut values = Map::new();
     let mut mixed = Vec::new();
-    // `of` answers `None` for `undefined`: the key stays out of `values`. A
-    // style is read only until the first one that differs, as `some` stops.
-    type Of<'a> = &'a dyn Fn(&Map<String, Value>) -> Result<Option<Value>, epdf_kernel::Error>;
-    let mut read = |key: PropKey, of: Of| -> Result<(), epdf_kernel::Error> {
+    type Of<'a> = &'a dyn Fn(&Object) -> Result<Option<Value>, Error>;
+    let mut read = |key: &str, of: Of| -> Result<(), Error> {
         let first = of(&styles[0])?;
         match &first {
-            Some(v) => values.insert(key.as_str().into(), v.clone()),
-            None => values.remove(key.as_str()),
+            Some(v) => values.insert(key.into(), v.clone()),
+            None => values.insert(key.into(), epdf_kernel::undefined()),
         };
-        for s in &styles {
-            if of(s)? != first {
-                mixed.push(key);
+        let first_text = crate::js::stringify(first.as_ref());
+        for style in &styles {
+            if crate::js::stringify(of(style)?.as_ref()) != first_text {
+                mixed.push(key.to_string());
                 break;
             }
         }
         Ok(())
     };
-    read(PropKey::FontFamily, &|s| {
-        let family = s.get("family").and_then(Value::as_str).unwrap_or_default().to_string();
+    read("fontFamily", &|s| {
+        let family = s.get("family").and_then(Value::as_str).unwrap_or("undefined").to_string();
         Ok(Some(json!(font_for_face(
             &Face { family, weight: body_weight, italic: body_italic },
             fonts
         ))))
     })?;
-    read(PropKey::FontSize, &|s| Ok(s.get("size").cloned()))?;
-    // `s.color!.toLowerCase()`: a body and run with no color throw.
-    read(PropKey::FontColor, &|s| match s.get("color") {
+    read("fontSize", &|s| Ok(s.get("size").cloned()))?;
+    read("fontColor", &|s| match s.get("color") {
         Some(Value::String(color)) => Ok(Some(json!(color.to_lowercase()))),
-        other => Err(epdf_kernel::Error::named(
+        other => Err(Error::named(
             "TypeError",
             format!(
                 "Cannot read properties of {} (reading 'toLowerCase')",
@@ -489,13 +543,9 @@ pub fn range_props(
             ),
         )),
     })?;
-    read(PropKey::Bold, &|s| {
-        Ok(Some(json!(s.get("weight").and_then(Value::as_f64).unwrap_or(400.0) >= 600.0)))
-    })?;
-    read(PropKey::Italic, &|s| {
-        Ok(Some(json!(s.get("italic").and_then(Value::as_bool).unwrap_or(false))))
-    })?;
-    read(PropKey::Underline, &|s| {
+    read("bold", &|s| Ok(Some(json!(s.get("weight").and_then(number).unwrap_or(400.0) >= 600.0))))?;
+    read("italic", &|s| Ok(Some(json!(s.get("italic").is_some_and(truthy)))))?;
+    read("underline", &|s| {
         Ok(Some(json!(
             s.get("decoration")
                 .and_then(Value::as_array)
@@ -503,4 +553,18 @@ pub fn range_props(
         )))
     })?;
     Ok((values, mixed))
+}
+
+/// `plainTextOf(doc)`: paragraphs joined by `\r`, runs concatenated.
+pub fn plain_text_of(paragraphs: &[Value]) -> String {
+    paragraphs
+        .iter()
+        .map(|p| {
+            p.get("runs")
+                .and_then(Value::as_array)
+                .map(|runs| runs.iter().filter_map(|r| r.get("text")?.as_str()).collect::<String>())
+                .unwrap_or_default()
+        })
+        .collect::<Vec<_>>()
+        .join("\r")
 }

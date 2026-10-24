@@ -1,9 +1,9 @@
-//! `write/script-effects.ts`: the actions plane's commit sink. Document
-//! JavaScript patches annotations through this plugin, which owns the model,
-//! so the engine write and the visible model can never diverge.
+//! `write/script-effects.ts`: the actions plugin's commit sink. Document
+//! JavaScript patches annotations through this plugin, which owns them.
+//! Colors cross the Acrobat-array to engine-hex boundary here; a script's
+//! rect, in the file's numbers, is the annotation's `rect` in page space.
 
 use epdf_acrojs::{ScriptColorArray, script_color_to_rgb};
-use epdf_annotation_core::PageObjectNumber;
 use epdf_kernel::Error;
 use epdf_kernel::rt::Promise;
 use epdf_plugin_actions::{
@@ -11,191 +11,179 @@ use epdf_plugin_actions::{
 };
 use serde_json::{Map, Value, json};
 
-use crate::controller::AnnotationCapability;
-use crate::promise::{self, await_engine};
-use crate::repository::seam::num_json;
-use crate::value::{get, str_of, truthy};
+use crate::controller::Core;
+use crate::engine::{color_of, page_box_of, to_page_ref};
+use crate::js::{Object, key_of, num, page_object_number};
+use crate::services::staging::StoreChange;
+use crate::write::outcomes::applied_or_throw;
 
-fn ref_json(r: &epdf_annotation_core::AnnotationRef) -> Value {
-    serde_json::to_value(r).unwrap_or_default()
+fn engine_color(color: &Value) -> Option<Value> {
+    let parsed: ScriptColorArray = serde_json::from_value(color.clone()).ok()?;
+    let rgb = script_color_to_rgb(&parsed)?;
+    Some(json!(color_of(rgb.r * 255.0, rgb.g * 255.0, rgb.b * 255.0)))
 }
 
-/// `commitScriptEffects`: the script patch as the engine's per-kind patch
-/// vocabulary.
-fn engine_script_patch(subtype: &str, patch: &Value) -> Result<Value, Error> {
+/// `engineScriptPatch(subtype, patch, crop)`: the engine's patch, or why not.
+fn engine_script_patch(
+    subtype: &str,
+    patch: &Value,
+    crop: Option<&Value>,
+) -> Result<Object, String> {
     let mut out = Map::new();
     out.insert("subtype".into(), json!(subtype));
-    let to_engine_color = |c: &Value| -> Value {
-        let rgb = serde_json::from_value::<ScriptColorArray>(c.clone())
-            .ok()
-            .and_then(|c| script_color_to_rgb(&c));
-        match rgb {
-            Some(rgb) => json!({
-                "r": num_json(epdf_geometry::js::round(rgb.r * 255.0)),
-                "g": num_json(epdf_geometry::js::round(rgb.g * 255.0)),
-                "b": num_json(epdf_geometry::js::round(rgb.b * 255.0)),
-            }),
-            None => Value::Null,
-        }
-    };
-    if let Some(stroke) = get(patch, "strokeColor").filter(|v| truthy(Some(v))) {
-        let color = to_engine_color(stroke);
-        if color.is_null() {
-            return Err(Error::new("transparent stroke colours are not supported"));
-        }
+    let present = |k: &str| patch.get(k).filter(|v| !epdf_kernel::is_undefined(v));
+    let truthy = |k: &str| present(k).is_some_and(|v| epdf_annotation_core::json::truthy(Some(v)));
+    if truthy("strokeColor") {
+        let Some(color) = engine_color(&patch["strokeColor"]) else {
+            return Err("transparent stroke colours are not supported".into());
+        };
         out.insert("color".into(), color);
     }
-    if let Some(fill) = get(patch, "fillColor").filter(|v| truthy(Some(v))) {
-        out.insert("interiorColor".into(), to_engine_color(fill));
-    }
-    if let Some(v) = get(patch, "opacity") {
-        out.insert("opacity".into(), v.clone());
-    }
-    if let Some(v) = get(patch, "width") {
-        out.insert("strokeWidth".into(), v.clone());
-    }
-    if let Some(v) = get(patch, "borderStyle").filter(|v| truthy(Some(v))) {
-        let style = if v.as_str() == Some("D") { "dashed" } else { "solid" };
-        out.insert("borderStyle".into(), json!(style));
-    }
-    if let Some(v) = get(patch, "dash").filter(|v| truthy(Some(v))) {
-        out.insert("dashArray".into(), v.clone());
-    }
-    if let Some(r) = get(patch, "rect").filter(|v| truthy(Some(v))) {
-        let at = |i: usize| r.get(i).cloned().unwrap_or(Value::Null);
+    if truthy("fillColor") {
         out.insert(
-            "rect".into(),
-            json!({ "left": at(0), "bottom": at(1), "right": at(2), "top": at(3) }),
+            "interiorColor".into(),
+            engine_color(&patch["fillColor"]).unwrap_or(Value::Null),
         );
     }
-    if let Some(v) = get(patch, "contents") {
+    if let Some(v) = present("opacity") {
+        out.insert("opacity".into(), v.clone());
+    }
+    if let Some(v) = present("width") {
+        out.insert("strokeWidth".into(), v.clone());
+    }
+    if truthy("borderStyle") {
+        let dashed = patch["borderStyle"].as_str() == Some("D");
+        out.insert("borderStyle".into(), json!(if dashed { "dashed" } else { "solid" }));
+    }
+    if truthy("dash") {
+        out.insert("dashArray".into(), patch["dash"].clone());
+    }
+    if truthy("rect") {
+        let Some(crop) = crop else { return Err("annotation page not loaded".into()) };
+        let r: Vec<f64> = patch["rect"]
+            .as_array()
+            .map(|a| a.iter().map(|v| v.as_f64().unwrap_or(f64::NAN)).collect())
+            .unwrap_or_default();
+        let at = |i: usize| r.get(i).copied().unwrap_or(f64::NAN);
+        let (x1, y1, x2, y2) = (at(0), at(1), at(2), at(3));
+        let min = epdf_geometry::js::min;
+        let max = epdf_geometry::js::max;
+        out.insert(
+            "rect".into(),
+            page_box_of(min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2), crop),
+        );
+    }
+    if let Some(v) = present("contents") {
         out.insert("contents".into(), v.clone());
     }
-    if let Some(v) = get(patch, "flags").filter(|v| truthy(Some(v))) {
-        out.insert("flags".into(), v.clone());
+    if let Some(flags) = present("flags").and_then(Value::as_object) {
+        for (k, v) in flags {
+            out.insert(k.clone(), v.clone());
+        }
     }
-    Ok(Value::Object(out))
+    Ok(out)
 }
 
-impl AnnotationCapability {
-    /// `commitScriptEffects(entries)` (host): the actions plane's document
-    /// commit door. Per entry, stop on failure; reconciles its own model.
+impl Core {
+    /// `commitScriptEffects(entries)`: stop on the first failure; every later entry is skipped.
     pub fn commit_script_effects(
         &self,
         entries: Vec<AnnotCommitEntry>,
     ) -> Promise<AnnotCommitResult> {
-        let this = self.clone();
-        promise::spawn(async move {
-            let entry_result = |n: f64, status: AnnotCommitStatus, error: Option<String>| {
-                AnnotCommitResultEntry { annot_object_number: n, status, error }
-            };
-            let Some(doc) = this.doc() else {
-                return Ok(AnnotCommitResult {
-                    results: entries
-                        .iter()
-                        .map(|e| {
-                            entry_result(
-                                e.annot_object_number,
-                                AnnotCommitStatus::Failed,
-                                Some("no document".into()),
-                            )
-                        })
-                        .collect(),
-                });
-            };
+        let me = self.weak();
+        Promise::spawn(async move {
             let mut results = Vec::new();
-            let mut touched: Vec<PageObjectNumber> = Vec::new();
             let mut failed = false;
-            for entry in &entries {
-                let n = entry.annot_object_number;
+            for entry in entries {
+                let number = entry.annot_object_number;
+                let result = |status, error: Option<String>| AnnotCommitResultEntry {
+                    annot_object_number: number,
+                    status,
+                    error,
+                };
                 if failed {
-                    results.push(entry_result(n, AnnotCommitStatus::Skipped, None));
+                    results.push(result(AnnotCommitStatus::Skipped, None));
                     continue;
                 }
-                let key = format!("obj:{}", epdf_geometry::js::number_to_string(n));
-                let loaded = this.model().by_id.get(&key).cloned();
-                let pon: Option<PageObjectNumber> = loaded
+                let core = me.upgrade().ok_or_else(|| Error::new("closed"))?;
+                let model = core.model();
+                let key = format!("obj:{}", epdf_annotation_core::js::number_to_string(number));
+                let loaded = model.by_id.get(&key).cloned();
+                let page = loaded
                     .as_ref()
-                    .map(|a| a.page.page_object_number)
-                    .or(entry.page.map(|p| p.page_object_number));
-                let mut r: Option<Value> =
-                    loaded.as_ref().and_then(|a| a.ref_.as_ref().map(ref_json));
-                let mut subtype: Option<String> = loaded.as_ref().map(|a| a.subtype.clone());
-                if (r.is_none() || subtype.as_deref().is_none_or(str::is_empty))
-                    && let Some(pon) = pon
+                    .and_then(|r| r.page_number())
+                    .or_else(|| entry.page.map(|p| p.page_object_number as f64));
+                let mut reference = loaded.as_ref().and_then(|r| r.annotation.get("ref").cloned());
+                let mut subtype = loaded.as_ref().map(|r| r.subtype().to_string());
+                if (reference.is_none() || subtype.is_none())
+                    && let (Some(page), Some(doc)) = (page, core.doc())
                 {
-                    let listed = async {
-                        doc.page_index(pon)?;
-                        await_engine(doc.call("page.annotations.list", Some(pon), Vec::new())).await
-                    };
-                    if let Ok(listed) = listed.await {
-                        let found = get(&listed, "annotations").and_then(Value::as_array).and_then(
-                            |list| {
-                                list.iter()
-                                    .find(|c| {
-                                        let cr = get(c, "ref");
-                                        cr.and_then(|x| str_of(x, "kind")) == Some("objectNumber")
-                                            && cr
-                                                .and_then(|x| get(x, "annotObjectNumber"))
+                    let call = doc.call("page.annotations.list", Some(page as u32), vec![]);
+                    drop(core);
+                    if let Ok(list) = call.await {
+                        let found =
+                            list.get("annotations").and_then(Value::as_array).and_then(|all| {
+                                all.iter()
+                                    .find(|a| {
+                                        a.pointer("/ref/kind").and_then(Value::as_str)
+                                            == Some("objectNumber")
+                                            && a.pointer("/ref/objectNumber")
                                                 .and_then(Value::as_f64)
-                                                == Some(n)
+                                                == Some(number)
                                     })
                                     .cloned()
-                            },
-                        );
+                            });
                         if let Some(dto) = found {
-                            r = get(&dto, "ref").cloned();
-                            subtype = str_of(&dto, "subtype").map(str::to_string);
+                            reference = dto.get("ref").cloned();
+                            subtype =
+                                dto.get("subtype").and_then(Value::as_str).map(str::to_string);
                         }
                     }
+                } else {
+                    drop(core);
                 }
-                let (Some(pon), Some(r), Some(subtype)) =
-                    (pon, r.filter(|v| truthy(Some(v))), subtype.filter(|s| !s.is_empty()))
+                let (Some(page), Some(reference), Some(subtype)) = (page, reference, subtype)
                 else {
-                    results.push(entry_result(
-                        n,
+                    results.push(result(
                         AnnotCommitStatus::Failed,
                         Some("annotation not resolved (page not loaded)".into()),
                     ));
                     continue;
                 };
-                let patch = match engine_script_patch(&subtype, &entry.patch) {
+                let core = me.upgrade().ok_or_else(|| Error::new("closed"))?;
+                let patch = match engine_script_patch(
+                    &subtype,
+                    &entry.patch,
+                    core.crop_of(page).as_ref(),
+                ) {
                     Ok(p) => p,
-                    Err(e) => {
-                        results.push(entry_result(n, AnnotCommitStatus::Failed, Some(e.message)));
+                    Err(message) => {
+                        results.push(result(AnnotCommitStatus::Failed, Some(message)));
                         continue;
                     }
                 };
-                let write = async {
-                    doc.page_index(pon)?;
-                    await_engine(doc.call(
-                        "page.annotations.update",
-                        Some(pon),
-                        vec![r.clone(), patch],
-                    ))
-                    .await
+                let applied =
+                    core.apply(&[StoreChange::Update { reference, patch, resources: None }], false);
+                drop(core);
+                let outcome = match applied {
+                    Ok(applied) => applied_or_throw(&applied).await.map(|_| ()),
+                    Err(error) => Err(error),
                 };
-                match write.await {
-                    Ok(_) => {
-                        if !touched.contains(&pon) {
-                            touched.push(pon);
-                        }
-                        results.push(entry_result(n, AnnotCommitStatus::Applied, None));
-                    }
+                match outcome {
+                    Ok(()) => results.push(result(AnnotCommitStatus::Applied, None)),
                     Err(error) => {
                         failed = true;
-                        results.push(entry_result(
-                            n,
-                            AnnotCommitStatus::Failed,
-                            Some(error.message),
-                        ));
+                        results
+                            .push(result(AnnotCommitStatus::Failed, Some(error.message.clone())));
                     }
                 }
-            }
-            for pon in touched {
-                this.reload_page_pon(pon).await?;
             }
             Ok(AnnotCommitResult { results })
         })
     }
+}
+
+#[allow(dead_code)]
+fn unused() {
+    let _ = (key_of(&Value::Null), num(0.0), page_object_number(&Value::Null), to_page_ref(0.0));
 }

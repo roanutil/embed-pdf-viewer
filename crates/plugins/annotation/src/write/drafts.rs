@@ -1,104 +1,109 @@
-//! `write/drafts.ts`: creation drafts. The live multi-click or buffered-ink
-//! draft a gesture builds, its commit and cancel doors, and the
-//! captured-draft seam the measurement plugin calibrates from.
+//! `write/drafts.ts`: creation drafts. The polygon or polyline a click per
+//! point builds (and the buffered ink strokes), its finish and cancel doors,
+//! and the captured-draft seam the measurement plugin calibrates from.
 
-use epdf_annotation_core::{
-    AnnotationRef, CreationDraftAnchor, Draft, Geom, Msg, PageRef, content_to_pdf_point,
-    creation_draft_anchor,
-};
+use std::cell::RefCell;
+use std::rc::Rc;
+
+use epdf_annotation_core::object::Json;
+use epdf_annotation_core::types::{CapturedEffect, Draft, Model, Shape};
+use epdf_annotation_core::view::creation_draft_anchor;
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{Error, Unsubscribe};
+use epdf_kernel::signal::AbortSignal;
+use serde_json::{Value, json};
 
-use crate::controller::AnnotationCapability;
-use crate::host_contract::CapturedAnnotationDraft;
-use crate::services::write_sink::create_effects_of;
+use crate::controller::Core;
+use crate::write::outcomes::created_ref_of;
 
-impl AnnotationCapability {
-    pub(crate) fn run_captured_effect(&self, tool: String, page: PageRef, geom: Geom) {
-        if self.doc().is_none() {
-            return;
+#[derive(Default)]
+pub struct DraftsState {
+    anchor: RefCell<Option<(Rc<Model>, Value)>>,
+}
+
+impl Core {
+    /// The `captured` effect: a capture-only tool reports its line.
+    pub(crate) fn capture(&self, effect: &CapturedEffect) {
+        if let Shape::Line(line) = &effect.geometry {
+            self.events.draft_captured.emit(&json!({
+                "tool": effect.tool,
+                "page": effect.page.json(),
+                "from": line.line_points.start.json(),
+                "to": line.line_points.end.json(),
+            }));
         }
-        let Some(crop) = self.crop_of(page.page_object_number) else { return };
-        if let Geom::Line { a, b, .. } = geom {
-            let pdf = |p| {
-                let q = content_to_pdf_point(p, crop);
-                epdf_annotation_core::Point { x: q.x, y: q.y }
+    }
+
+    /// `draft.get()`: the shape being drawn, the same object until it changes.
+    pub fn draft_get(&self) -> Value {
+        let model = self.model();
+        if let Some((m, v)) = &*self.drafts.anchor.borrow()
+            && Rc::ptr_eq(m, &model)
+        {
+            return v.clone();
+        }
+        let anchor = creation_draft_anchor(&model).map_or(Value::Null, |a| a.json());
+        *self.drafts.anchor.borrow_mut() = Some((model, anchor.clone()));
+        anchor
+    }
+
+    /// `draft.finish(options)`: end the draft as a double-click does.
+    pub fn draft_finish(&self, signal: Option<AbortSignal>) -> Promise<Value> {
+        let model = self.model();
+        let Some(draft) = model.draft() else { return Promise::resolved(Value::Null) };
+        if !draft.is_create() {
+            return Promise::resolved(Value::Null);
+        }
+        let ink = matches!(draft, Draft::CreateInk(_));
+        let tool_id = self.active_tool().map(|t| t.id.clone());
+        let message = json!({ "type": if ink { "finishInkDraft" } else { "finishCreationDraft" } });
+        let commit =
+            match self.commit(message, Some(self.after_create_shape(tool_id.clone())), None) {
+                Ok(c) => c,
+                Err(e) => return Promise::rejected(e),
             };
-            self.0.events.draft_captured.emit(&CapturedAnnotationDraft {
-                tool,
-                page,
-                from: pdf(a),
-                to: pdf(b),
-            });
+        self.after_create_done(tool_id.as_deref(), &commit.effects);
+        if !commit
+            .effects
+            .iter()
+            .any(|e| matches!(e, epdf_annotation_core::types::Effect::Create(_)))
+        {
+            return Promise::resolved(Value::Null);
         }
+        let created = self.cancellable(signal, created_ref_of(&commit));
+        let me = self.weak();
+        Promise::spawn(async move {
+            let reference = created.await?;
+            let Some(core) = me.upgrade() else { return Ok(Value::Null) };
+            Ok(match core.get(&reference) {
+                Some(annotation) => json!({ "annotation": annotation }),
+                None => Value::Null,
+            })
+        })
     }
 
-    /// `getCreationDraft()`: the live multi-click draft, or `None`.
-    pub fn get_creation_draft(&self) -> Option<CreationDraftAnchor> {
-        creation_draft_anchor(&self.model())
-    }
-
-    /// `hasCreationDraft()`.
-    pub fn has_creation_draft(&self) -> bool {
-        self.model().draft.as_deref().is_some_and(Draft::is_create)
-    }
-
-    /// `finishCreationDraft()`: commit the draft; `None` when there was none.
-    pub fn finish_creation_draft(&self) -> Promise<Option<AnnotationRef>> {
-        let draft = self.model().draft.clone();
-        let Some(draft) = draft.filter(|d| d.is_create()) else { return Promise::resolved(None) };
-        let msg = if matches!(*draft, Draft::CreateInk { .. }) {
-            Msg::FinishInkDraft
-        } else {
-            Msg::FinishCreationDraft
-        };
-        let effects = self.commit(msg);
-        match create_effects_of(&effects).into_iter().next() {
-            Some(id) => {
-                let created = self.await_create(Some(id));
-                // An async function returning a promise adopts it.
-                Promise::spawn(async move {
-                    epdf_kernel::rt::tick().await;
-                    created.await.map(Some)
-                })
-            }
-            None => Promise::resolved(None),
-        }
-    }
-
-    /// `finishInkDraft()` (host).
-    pub fn finish_ink_draft(&self) {
-        self.commit(Msg::FinishInkDraft);
-    }
-
-    /// `cancelCreationDraft()`.
-    pub fn cancel_creation_draft(&self) {
-        self.commit(Msg::Cancel);
-    }
-
-    /// `cancel()`: the in-flight gesture or draft.
+    /// `draft.cancel()` and the capability's `cancel()`.
     pub fn cancel(&self) {
-        self.commit(Msg::Cancel);
+        let _ = self.commit_json(json!({ "type": "cancel" }));
     }
 
-    /// `distanceCreationPage()` (host): the page of a distance draft placing
-    /// its offset.
-    pub fn distance_creation_page(&self) -> Option<PageRef> {
-        match self.model().draft.as_deref() {
-            Some(Draft::CreateDistance { step, page, .. })
-                if *step == epdf_annotation_core::DistanceStep::Offset =>
-            {
-                Some(*page)
-            }
+    /// `finishInkDraft()`.
+    pub fn finish_ink_draft(&self) {
+        let tool_id = self.active_tool().map(|t| t.id.clone());
+        if let Ok(commit) = self.commit(
+            json!({ "type": "finishInkDraft" }),
+            Some(self.after_create_shape(tool_id.clone())),
+            None,
+        ) {
+            self.after_create_done(tool_id.as_deref(), &commit.effects);
+        }
+    }
+
+    /// `distanceCreationPage()`: the page a distance draft's offset step is on.
+    pub fn distance_creation_page(&self) -> Option<Value> {
+        let model = self.model();
+        match model.draft() {
+            Some(Draft::CreateDistance(d)) if d.step == "offset" => Some(d.page.json()),
             _ => None,
         }
-    }
-
-    /// `onDraftCaptured(listener)` (host).
-    pub fn on_draft_captured(
-        &self,
-        listener: impl Fn(&CapturedAnnotationDraft) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.draft_captured.on(listener)
     }
 }
