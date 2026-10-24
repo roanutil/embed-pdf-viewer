@@ -599,7 +599,8 @@ pub fn create_records_mirror(
             let annotations =
                 list.get("annotations").and_then(Value::as_array).cloned().unwrap_or_default();
             let value = from_snapshot(&current(), &annotations)?;
-            let cursor = list.get("auditHead").and_then(Value::as_u64);
+            // `cursor: list.auditHead`, as the engine sent it.
+            let cursor = list.get("auditHead").cloned();
             Ok(Loaded { value, cursor })
         })
     });

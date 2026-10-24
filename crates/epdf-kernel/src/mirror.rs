@@ -55,7 +55,10 @@ pub fn last_event_of(e: &Value) -> Option<&str> {
 #[derive(Clone)]
 pub struct Loaded {
     pub value: Value,
-    pub cursor: Option<u64>,
+    /// The load's watermark as the engine sent it (`loaded.cursor`): a
+    /// queued event whose `origin.serverId` is `<=` it is already in the
+    /// value. Any JSON value; compared as JavaScript does.
+    pub cursor: Option<Value>,
 }
 #[derive(Clone)]
 pub enum Fold {
@@ -400,10 +403,17 @@ impl Mirror {
                     previous,
                     next,
                 });
+                // `mirror.ts`: `cursor = loaded.cursor ?? null`; an event
+                // with an `origin` skips when `serverId <= cursor`.
+                let cursor =
+                    loaded.cursor.as_ref().filter(|c| !c.is_null() && !crate::is_undefined(c));
                 for e in pending {
-                    let server = e.pointer("/origin/serverId").and_then(Value::as_u64);
-                    if loaded.cursor.zip(server).is_some_and(|(cursor, id)| id <= cursor) {
-                        continue;
+                    if let (Some(cursor), Some(origin)) = (cursor, e.get("origin")) {
+                        let server = origin.get("serverId");
+                        if !matches!(server, Some(Value::Null)) && js_less_or_equal(server, cursor)
+                        {
+                            continue;
+                        }
                     }
                     self.apply(&e);
                 }
@@ -512,4 +522,148 @@ pub(crate) fn replay(
         }
     }
     next
+}
+
+// ── JavaScript's `<=` ───────────────────────────────────────────────────────
+
+/// JavaScript's `a <= b` on JSON values (`undefined` for `None` and the
+/// `$undefined` marker): two strings compare by UTF-16 code units, anything
+/// else compares as numbers after `ToPrimitive` and `ToNumber`, and a NaN on
+/// either side is never `<=`.
+pub fn js_less_or_equal(a: Option<&Value>, b: &Value) -> bool {
+    let a = a.filter(|v| !crate::is_undefined(v));
+    let b = Some(b).filter(|v| !crate::is_undefined(v));
+    let (Some(a), Some(b)) = (a.map(to_primitive), b.map(to_primitive)) else {
+        return false;
+    };
+    if let (Value::String(a), Value::String(b)) = (&a, &b) {
+        return a.encode_utf16().cmp(b.encode_utf16()) != std::cmp::Ordering::Greater;
+    }
+    let (a, b) = (to_number(&a), to_number(&b));
+    a <= b
+}
+
+/// `ToPrimitive` with the default hint: an array joins its elements with
+/// commas, any other object is `"[object Object]"`.
+fn to_primitive(value: &Value) -> Value {
+    match value {
+        Value::Array(_) | Value::Object(_) => Value::String(to_js_string(value)),
+        other => other.clone(),
+    }
+}
+
+fn to_js_string(value: &Value) -> String {
+    match value {
+        Value::Null => "null".into(),
+        Value::Bool(b) => b.to_string(),
+        Value::Number(n) => crate::js::number_to_string(n.as_f64().unwrap_or(f64::NAN)),
+        Value::String(s) => s.clone(),
+        Value::Array(items) => items
+            .iter()
+            .map(|item| match item {
+                Value::Null => String::new(),
+                item if crate::is_undefined(item) => String::new(),
+                item => to_js_string(item),
+            })
+            .collect::<Vec<_>>()
+            .join(","),
+        Value::Object(_) => "[object Object]".into(),
+    }
+}
+
+/// `ToNumber` on a primitive.
+fn to_number(value: &Value) -> f64 {
+    match value {
+        Value::Null => 0.0,
+        Value::Bool(b) => f64::from(u8::from(*b)),
+        Value::Number(n) => n.as_f64().unwrap_or(f64::NAN),
+        Value::String(s) => string_to_number(s),
+        _ => f64::NAN,
+    }
+}
+
+/// `StringToNumber`: surrounding white space ignored, empty is 0, a signed
+/// decimal literal or `Infinity`, or an unsigned `0x`/`0o`/`0b` integer;
+/// anything else is NaN.
+fn string_to_number(s: &str) -> f64 {
+    let t = s.trim_matches(|c: char| c.is_whitespace() || c == '\u{feff}');
+    if t.is_empty() {
+        return 0.0;
+    }
+    for (prefix, radix) in [("0x", 16), ("0X", 16), ("0o", 8), ("0O", 8), ("0b", 2), ("0B", 2)] {
+        if let Some(digits) = t.strip_prefix(prefix) {
+            if digits.is_empty() || !digits.chars().all(|c| c.is_digit(radix)) {
+                return f64::NAN;
+            }
+            return digits
+                .chars()
+                .fold(0.0, |n, c| n * f64::from(radix) + f64::from(c.to_digit(radix).unwrap()));
+        }
+    }
+    let unsigned = t.strip_prefix(['+', '-']).unwrap_or(t);
+    if unsigned == "Infinity" {
+        return if t.starts_with('-') { f64::NEG_INFINITY } else { f64::INFINITY };
+    }
+    let decimal = !unsigned.is_empty()
+        && unsigned.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | 'e' | 'E' | '+' | '-'))
+        && unsigned.chars().next().is_some_and(|c| c.is_ascii_digit() || c == '.');
+    if !decimal {
+        return f64::NAN;
+    }
+    t.parse::<f64>().unwrap_or(f64::NAN)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::js_less_or_equal;
+    use serde_json::{Value, json};
+
+    fn le(a: Value, b: Value) -> bool {
+        js_less_or_equal(Some(&a), &b)
+    }
+
+    #[test]
+    fn numbers_compare_numerically() {
+        assert!(le(json!(2), json!(3)));
+        assert!(le(json!(3), json!(3)));
+        assert!(!le(json!(4), json!(3)));
+        assert!(le(json!(-1.5), json!(0)));
+    }
+
+    #[test]
+    fn strings_compare_by_utf16_code_units() {
+        assert!(le(json!("2"), json!("2")));
+        assert!(le(json!("abc"), json!("abd")));
+        assert!(!le(json!("abd"), json!("abc")));
+        // Not numerically: "10" sorts before "9".
+        assert!(le(json!("10"), json!("9")));
+        assert!(!le(json!("9"), json!("10")));
+        // By code point U+FF61 is below U+1F600; by UTF-16 unit it is above
+        // the emoji's high surrogate U+D83D, as JavaScript compares.
+        assert!(le(json!("\u{1F600}"), json!("\u{FF61}")));
+        assert!(!le(json!("\u{FF61}"), json!("\u{1F600}")));
+    }
+
+    #[test]
+    fn mixed_types_compare_as_numbers() {
+        assert!(!le(json!("10"), json!(9)));
+        assert!(le(json!("9"), json!(10)));
+        assert!(le(json!(" 7 "), json!(7)));
+        assert!(le(json!(null), json!(0)));
+        assert!(le(json!(true), json!(1)));
+        assert!(le(json!(""), json!(0)));
+        assert!(le(json!("0x10"), json!(16)));
+        assert!(le(json!([5]), json!(5)));
+    }
+
+    #[test]
+    fn nan_and_undefined_are_never_le() {
+        assert!(!le(json!("abc"), json!(5)));
+        assert!(!le(json!(5), json!("abc")));
+        assert!(!le(json!({}), json!(5)));
+        assert!(!le(json!("inf"), json!(5)));
+        assert!(!js_less_or_equal(None, &json!(5)));
+        assert!(!le(json!({ "$undefined": true }), json!(5)));
+        assert!(!le(json!(5), json!({ "$undefined": true })));
+    }
 }

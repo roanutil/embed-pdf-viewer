@@ -288,7 +288,7 @@ fn full_load_replays_only_events_after_cursor_and_keeps_prediction_until_reload(
     assert_eq!(*mirror.view(), json!(7));
     events.emit(&json!({"type":"metadata.changed","value":3,"origin":{"serverId":2}}));
     events.emit(&json!({"type":"metadata.changed","value":9,"origin":{"serverId":4}}));
-    land.resolve(Loaded { value: json!(7), cursor: Some(3) });
+    land.resolve(Loaded { value: json!(7), cursor: Some(json!(3)) });
     rt::run_until_stalled();
     assert_eq!(*mirror.get(), json!(9));
     assert_eq!(*mirror.view(), json!(9));
@@ -466,4 +466,44 @@ fn call_facts_reach_the_handle_through_the_guard() {
     }
     let plain = Plain.call_with(&facts, "pages.list", None, Vec::new());
     assert_eq!(plain.peek().unwrap().unwrap(), serde_json::json!("pages.list"));
+}
+
+#[test]
+fn a_string_load_cursor_skips_queued_events_at_or_below_it_as_javascript_compares() {
+    rt::reset();
+    let events = EventHookSource::new(None);
+    let q = DocumentChanges::new(
+        Rc::new(|_, _| Promise::resolved(json!({}))),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let (loaded, land) = Promise::pending();
+    let spec = MirrorSpec::new(
+        "value",
+        json!([]),
+        Rc::new(move |_, _| loaded.clone()),
+        Rc::new(|value, event| {
+            let mut list = value.as_array().cloned().unwrap_or_default();
+            list.push(event["value"].clone());
+            Ok(Fold::Value(Rc::new(Value::Array(list))))
+        }),
+    );
+    let mirror = Mirror::new(
+        spec,
+        MirrorEnvironment::detached(events.clone(), AbortSignal::new(), q.clone()),
+    );
+    let _load = mirror.refresh();
+    rt::run_until_stalled();
+    // Queued while the load runs; the load's cursor is the string "2".
+    events.emit(&json!({"type":"x","value":"equal","origin":{"serverId":"2"}}));
+    events.emit(&json!({"type":"x","value":"lower","origin":{"serverId":"1"}}));
+    // "10" <= "2" as strings: already in the load.
+    events.emit(&json!({"type":"x","value":"string-ten","origin":{"serverId":"10"}}));
+    events.emit(&json!({"type":"x","value":"higher","origin":{"serverId":"3"}}));
+    // A number against the string compares as numbers: 10 > 2.
+    events.emit(&json!({"type":"x","value":"number-ten","origin":{"serverId":10}}));
+    events.emit(&json!({"type":"x","value":"no-id","origin":{}}));
+    land.resolve(Loaded { value: json!([]), cursor: Some(json!("2")) });
+    rt::run_until_stalled();
+    assert_eq!(*mirror.get(), json!(["higher", "number-ten", "no-id"]));
 }
