@@ -119,6 +119,13 @@ impl DocumentHandle for GuardedHandle {
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
         self.guard.promise(self.inner.reserve_object_numbers(count))
     }
+    /// A synchronous member: the TypeScript guard passes it through.
+    fn on_lost_object_numbers(
+        &self,
+        listener: Rc<dyn Fn(&crate::engine::ObjectNumbersLost)>,
+    ) -> Unsubscribe {
+        self.inner.on_lost_object_numbers(listener)
+    }
     fn id(&self) -> String {
         self.inner.id()
     }

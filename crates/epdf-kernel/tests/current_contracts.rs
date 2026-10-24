@@ -507,3 +507,115 @@ fn a_string_load_cursor_skips_queued_events_at_or_below_it_as_javascript_compare
     rt::run_until_stalled();
     assert_eq!(*mirror.get(), json!(["higher", "number-ten", "no-id"]));
 }
+
+/// `objectNumbers.onLost` (Ruling13.17 onLost): the guarded handle passes the
+/// listener to the handle, the handle's losses reach it until it
+/// unsubscribes, and a handle that never loses numbers keeps the silent
+/// default.
+#[test]
+fn lost_object_numbers_reach_a_listener_through_the_guard() {
+    use epdf_kernel::engine::{DocumentHandle, ObjectNumbersLost, ObjectNumbersLostReason};
+    use epdf_kernel::guarded::{GuardedLifetime, guard_handle};
+    use std::cell::RefCell;
+
+    type Listeners = Rc<RefCell<Vec<Option<Rc<dyn Fn(&ObjectNumbersLost)>>>>>;
+    struct Losing(Listeners);
+    impl Losing {
+        fn lose(&self, lost: &ObjectNumbersLost) {
+            let listeners: Vec<_> = self.0.borrow().iter().flatten().cloned().collect();
+            for listener in listeners {
+                listener(lost);
+            }
+        }
+    }
+    impl DocumentHandle for Losing {
+        fn id(&self) -> String {
+            "a".into()
+        }
+        fn capabilities(&self) -> Value {
+            json!({})
+        }
+        fn security(&self) -> Rc<dyn epdf_kernel::engine::DocumentSecurity> {
+            unimplemented!()
+        }
+        fn has(&self, _: &str) -> bool {
+            true
+        }
+        fn call(
+            &self,
+            _: &str,
+            _: Option<u32>,
+            _: Vec<Value>,
+        ) -> epdf_kernel::engine::EngineCall<Value> {
+            Promise::resolved(json!({}))
+        }
+        fn page_index(&self, _: u32) -> Result<u32, epdf_kernel::Error> {
+            Ok(0)
+        }
+        fn subscribe(&self, _: Rc<dyn Fn(&Value)>) -> epdf_kernel::Unsubscribe {
+            epdf_kernel::Unsubscribe::noop()
+        }
+        fn on_lost_object_numbers(
+            &self,
+            listener: Rc<dyn Fn(&ObjectNumbersLost)>,
+        ) -> epdf_kernel::Unsubscribe {
+            let index = self.0.borrow().len();
+            self.0.borrow_mut().push(Some(listener));
+            let listeners = self.0.clone();
+            epdf_kernel::Unsubscribe::new(move || listeners.borrow_mut()[index] = None)
+        }
+    }
+
+    rt::reset();
+    let listeners: Listeners = Rc::new(RefCell::new(Vec::new()));
+    let handle = Rc::new(Losing(listeners.clone()));
+    let lifetime = GuardedLifetime { signal: AbortSignal::new(), instance_id: "a#1".into() };
+    let guarded = guard_handle(handle.clone(), lifetime, "annotation");
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let sink = seen.clone();
+    let off =
+        guarded.on_lost_object_numbers(Rc::new(move |lost| sink.borrow_mut().push(lost.clone())));
+    let lost =
+        ObjectNumbersLost { numbers: vec![10, 11], reason: ObjectNumbersLostReason::Versioned };
+    handle.lose(&lost);
+    assert_eq!(*seen.borrow(), vec![lost.clone()]);
+    assert_eq!(
+        serde_json::to_value(&lost).unwrap(),
+        json!({ "numbers": [10, 11], "reason": "versioned" })
+    );
+    off.call();
+    handle.lose(&lost);
+    assert_eq!(seen.borrow().len(), 1, "unsubscribed");
+
+    // The default never calls the listener.
+    struct Silent;
+    impl DocumentHandle for Silent {
+        fn id(&self) -> String {
+            "a".into()
+        }
+        fn capabilities(&self) -> Value {
+            json!({})
+        }
+        fn security(&self) -> Rc<dyn epdf_kernel::engine::DocumentSecurity> {
+            unimplemented!()
+        }
+        fn has(&self, _: &str) -> bool {
+            true
+        }
+        fn call(
+            &self,
+            _: &str,
+            _: Option<u32>,
+            _: Vec<Value>,
+        ) -> epdf_kernel::engine::EngineCall<Value> {
+            Promise::resolved(json!({}))
+        }
+        fn page_index(&self, _: u32) -> Result<u32, epdf_kernel::Error> {
+            Ok(0)
+        }
+        fn subscribe(&self, _: Rc<dyn Fn(&Value)>) -> epdf_kernel::Unsubscribe {
+            epdf_kernel::Unsubscribe::noop()
+        }
+    }
+    Silent.on_lost_object_numbers(Rc::new(|_| panic!("never lost"))).call();
+}

@@ -76,6 +76,22 @@ pub trait DocumentSecurity {
     fn unlock(&self, input: Value) -> EngineCall<Value>;
 }
 
+/// `ObjectNumbersLost`: numbers this session can no longer use, and why.
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ObjectNumbersLost {
+    pub numbers: Vec<u32>,
+    pub reason: ObjectNumbersLostReason,
+}
+
+/// `'reclaimed'`: the session expired and its numbers went to another one.
+/// `'versioned'`: a new version was published, which numbers objects anew.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ObjectNumbersLostReason {
+    Reclaimed,
+    Versioned,
+}
+
 pub trait DocumentHandle {
     /// Whether writes remain in this tab until downloaded. Cloud documents return false.
     fn is_local(&self) -> bool {
@@ -86,6 +102,14 @@ pub trait DocumentHandle {
     }
     fn take_object_number(&self) -> Result<Option<u32>, Error> {
         Ok(None)
+    }
+    /// `objectNumbers.onLost(listener)`: called with numbers this session
+    /// took or held that it can no longer use (creates naming them are
+    /// refused). Returns the unsubscriber. A handle whose pool never loses
+    /// numbers keeps the default, which never calls the listener.
+    fn on_lost_object_numbers(&self, listener: Rc<dyn Fn(&ObjectNumbersLost)>) -> Unsubscribe {
+        let _ = listener;
+        Unsubscribe::noop()
     }
     fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
         self.call("objectNumbers.reserve", None, vec![Value::from(count)]).convert(|_| Ok(()))
