@@ -18,7 +18,7 @@ use epdf_annotation_core::appearance::{drawn_after, source_of_confirmed, source_
 use epdf_annotation_core::engine::resolve::annotation_patch_between;
 use epdf_annotation_core::record::from_dto;
 use epdf_annotation_core::types::{Authority, ById, Id, Model, ModelAnnotation, Session, Source};
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::js::{Object, key_of};
 use crate::services::lending::LentRecords;
@@ -474,6 +474,5 @@ pub fn owner_of(dto: &Value) -> Value {
             target.insert(key.into(), v.clone());
         }
     }
-    let _ = json!(null);
     Value::Object(target)
 }

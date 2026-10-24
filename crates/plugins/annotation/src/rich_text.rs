@@ -139,9 +139,9 @@ pub fn family_key(family: &str) -> String {
         .collect()
 }
 
-/// JavaScript's `\s`.
+/// JavaScript's `\s`: WhiteSpace and LineTerminator, without U+0085.
 fn js_space(c: char) -> bool {
-    c.is_whitespace() || c == '\u{feff}'
+    epdf_kernel::mirror::is_js_white_space(c)
 }
 
 /// `faceForFont(font, fonts)`: a standard font's face, a registered key's
@@ -248,7 +248,7 @@ pub fn typed_paragraphs(paragraphs: &[Value]) -> Vec<RichTextParagraph> {
 }
 
 fn hex(css: &str) -> String {
-    css.trim().to_uppercase()
+    css.trim_matches(js_space).to_uppercase()
 }
 
 fn str_of(value: &Option<Value>) -> Option<&str> {
@@ -567,4 +567,16 @@ pub fn plain_text_of(paragraphs: &[Value]) -> String {
         })
         .collect::<Vec<_>>()
         .join("\r")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::family_key;
+
+    /// `familyKey` strips JavaScript's `\s`, which has no U+0085.
+    #[test]
+    fn a_family_key_strips_only_javascript_white_space() {
+        assert_eq!(family_key("Helvetica\u{3000}Neue\u{feff}"), "helveticaneue");
+        assert_eq!(family_key("Helvetica\u{85}"), "helvetica\u{85}");
+    }
 }

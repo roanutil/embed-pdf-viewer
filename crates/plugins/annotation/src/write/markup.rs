@@ -217,7 +217,7 @@ impl Core {
 
     /// `clearMarkupPreview()`.
     pub fn clear_markup_preview(&self) {
-        let _ = self.commit_json(json!({ "type": "clearMarkupPreview" }));
+        self.commit_or_log(json!({ "type": "clearMarkupPreview" }));
     }
 
     /// `createFromSelection(toolId, options)`: code never changes the annotation selection.

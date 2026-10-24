@@ -180,6 +180,7 @@ pub fn without_covered_deletes(records: &Value, ops: Vec<Value>) -> Vec<Value> {
 /// `shown` holds them. A record it didn't touch keeps its identity.
 pub fn model_over(before: &Model, previous: &Value, shown: &Value) -> Model {
     let mut by_id = ById::new();
+    let mut kept_order = Vec::new();
     let prev = by_key(previous);
     for key in order(shown) {
         let Some(stored) = by_key(shown).get(&key) else { continue };
@@ -196,9 +197,13 @@ pub fn model_over(before: &Model, previous: &Value, shown: &Value) -> Model {
                 Rc::new(record)
             }
         };
+        kept_order.push(key.clone());
         by_id.insert(key, record);
     }
-    Model { by_id: Rc::new(by_id), order: Rc::new(order(shown)), ..before.clone() }
+    // A record `from_dto` cannot read is skipped from both, so `order` names
+    // only records `by_id` has. The engine's records always read, so this
+    // matches the TypeScript, which has no such record.
+    Model { by_id: Rc::new(by_id), order: Rc::new(kept_order), ..before.clone() }
 }
 
 /// `modelAfter(before, result)`: `before`'s records with a message's change
@@ -323,4 +328,32 @@ pub fn created_key(op: &Value) -> Option<String> {
     key_of(
         &json!({ "kind": "objectNumber", "page": op.get("page").cloned().unwrap_or(Value::Null), "objectNumber": number }),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::model_over;
+    use epdf_annotation_core::update::session::initial_model;
+    use serde_json::json;
+
+    /// A shown record `from_dto` cannot read is left out of `order` as well
+    /// as `by_id`, so the two stay in step.
+    #[test]
+    fn a_record_model_over_cannot_read_leaves_order_too() {
+        let page = json!({ "kind": "objectNumber", "objectNumber": 1 });
+        let readable = json!({ "subtype": "square", "page": page,
+            "ref": { "kind": "objectNumber", "page": page, "objectNumber": 1 } });
+        let unreadable = json!({ "subtype": "square", "page": page, "ref": { "kind": "bogus" } });
+        let shown = json!({
+            "byKey": {
+                "obj:1": { "dto": readable, "pictureVersion": 0, "$v": 1 },
+                "obj:2": { "dto": unreadable, "pictureVersion": 0, "$v": 2 }
+            },
+            "order": ["obj:1", "obj:2"]
+        });
+        let empty = json!({ "byKey": {}, "order": [] });
+        let model = model_over(&initial_model(), &empty, &shown);
+        assert_eq!(*model.order, vec!["obj:1".to_string()]);
+        assert_eq!(model.by_id.len(), 1);
+    }
 }

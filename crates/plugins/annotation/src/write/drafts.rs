@@ -83,7 +83,7 @@ impl Core {
 
     /// `draft.cancel()` and the capability's `cancel()`.
     pub fn cancel(&self) {
-        let _ = self.commit_json(json!({ "type": "cancel" }));
+        self.commit_or_log(json!({ "type": "cancel" }));
     }
 
     /// `finishInkDraft()`.

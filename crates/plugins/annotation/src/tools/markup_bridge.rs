@@ -36,7 +36,14 @@ impl Core {
                 }
                 let quads: Map<String, Value> =
                     by_page.into_iter().map(|(k, v)| (k.to_string(), v)).collect();
-                let _ = self.preview_markup(subtype, &Value::Object(quads), Some(&tool.preset));
+                if let Err(error) =
+                    self.preview_markup(subtype, &Value::Object(quads), Some(&tool.preset))
+                {
+                    crate::console::error(
+                        "[annotation] a markup preview failed:",
+                        error.to_canonical(),
+                    );
+                }
             }
             _ => self.clear_markup_preview(),
         }

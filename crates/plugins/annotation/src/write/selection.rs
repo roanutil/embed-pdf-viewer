@@ -103,7 +103,7 @@ impl Core {
 
     fn select_refs(&self, refs: &[Value], add: bool) {
         let ids: Vec<String> = refs.iter().map(key_or_none).collect();
-        let _ = self.commit_json(json!({ "type": "select", "ids": ids, "add": add }));
+        self.commit_or_log(json!({ "type": "select", "ids": ids, "add": add }));
     }
 
     /// `toggleFormat(format, options)`.
@@ -137,7 +137,7 @@ impl Core {
     /// `selection.set(refs)`: `set([])` selects nothing.
     pub fn selection_set(&self, refs: &[Value]) {
         if refs.is_empty() {
-            let _ = self.commit_json(json!({ "type": "deselect" }));
+            self.commit_or_log(json!({ "type": "deselect" }));
         } else {
             self.select_refs(refs, false);
         }
@@ -152,7 +152,7 @@ impl Core {
     pub fn selection_select_all(&self, page: Option<&Value>) {
         let only = page.map(|p| self.get_page(p));
         if let Some(None) = only {
-            let _ = self.commit_json(json!({ "type": "deselect" }));
+            self.commit_or_log(json!({ "type": "deselect" }));
             return;
         }
         let only_number = only.flatten().and_then(|info| info.get("ref").map(page_object_number));
@@ -169,7 +169,7 @@ impl Core {
             })
             .cloned()
             .collect();
-        let _ = self.commit_json(json!({ "type": "select", "ids": ids }));
+        self.commit_or_log(json!({ "type": "select", "ids": ids }));
     }
 
     /// `selection.selectInRect(page, rect)`.
@@ -184,7 +184,7 @@ impl Core {
 
     /// `selection.clear()`.
     pub fn selection_clear(&self) {
-        let _ = self.commit_json(json!({ "type": "deselect" }));
+        self.commit_or_log(json!({ "type": "deselect" }));
     }
 
     /// `selection.update(changes, options)`.

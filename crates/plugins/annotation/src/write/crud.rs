@@ -309,10 +309,13 @@ impl Core {
                 drop(core);
                 settled.await?;
             }
+            // `{ annotations: result.annotations, ... }`: a member the engine
+            // left out is `undefined`, as the TypeScript's literal has it.
+            let member = |k: &str| result.get(k).cloned().unwrap_or_else(epdf_kernel::undefined);
             Ok(json!({
-                "annotations": result.get("annotations").cloned().unwrap_or(json!([])),
-                "refMap": result.get("refMap").cloned().unwrap_or(json!([])),
-                "dropped": result.get("dropped").cloned().unwrap_or(json!([])),
+                "annotations": member("annotations"),
+                "refMap": member("refMap"),
+                "dropped": member("dropped"),
             }))
         })
     }

@@ -68,7 +68,7 @@ impl Core {
             .cloned()
             .collect();
         if !drop.is_empty() {
-            let _ = self.commit_json(json!({ "type": "deselect", "ids": drop }));
+            self.commit_or_log(json!({ "type": "deselect", "ids": drop }));
         }
     }
 }

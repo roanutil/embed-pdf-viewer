@@ -12,8 +12,8 @@ use epdf_plugin_actions::{
 use serde_json::{Map, Value, json};
 
 use crate::controller::Core;
-use crate::engine::{color_of, page_box_of, to_page_ref};
-use crate::js::{Object, key_of, num, page_object_number};
+use crate::engine::{color_of, page_box_of};
+use crate::js::Object;
 use crate::services::staging::StoreChange;
 use crate::write::outcomes::applied_or_throw;
 
@@ -181,9 +181,4 @@ impl Core {
             Ok(AnnotCommitResult { results })
         })
     }
-}
-
-#[allow(dead_code)]
-fn unused() {
-    let _ = (key_of(&Value::Null), num(0.0), page_object_number(&Value::Null), to_page_ref(0.0));
 }

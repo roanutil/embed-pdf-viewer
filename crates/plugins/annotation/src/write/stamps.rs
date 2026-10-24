@@ -248,7 +248,7 @@ impl Core {
             *core.stamps.armed_info.borrow_mut() = Some(Value::Object(info));
             core.arm_changed();
             if let Ok(Some(interaction)) = core.cx.try_get(&INTERACTION) {
-                let _ = interaction.activate_tool(ARMED_STAMP_TOOL_ID);
+                interaction.activate_tool(ARMED_STAMP_TOOL_ID)?;
             }
             Ok(())
         })

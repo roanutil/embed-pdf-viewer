@@ -563,7 +563,12 @@ pub fn undo_of(records: &Rc<Value>, ops: &[Value]) -> Vec<Value> {
     let mut current = records.clone();
     for op in ops {
         undo.push(undo_of_op(&current, op));
-        current = predict_records(current, op).unwrap_or_else(|_| records.clone());
+        // The TypeScript throws here; the change is checked before it is
+        // staged, so a prediction fails only on an op it cannot read, and
+        // the records the earlier ops left stand.
+        if let Ok(next) = predict_records(current.clone(), op) {
+            current = next;
+        }
     }
     undo.into_iter().rev().flatten().collect()
 }
@@ -691,5 +696,25 @@ mod tests {
     fn a_ref_of_unknown_kind_is_refused() {
         let error = dto_key(&json!({ "ref": { "kind": "nm", "nm": "x" } })).unwrap_err();
         assert!(error.message.contains("no annotation key"));
+    }
+
+    /// `undoOf` steps each op over the records the earlier ones left. An op
+    /// whose prediction fails (a restore with no ref) leaves them as they
+    /// were, not as they started: the delete after it still finds the
+    /// record the create before it made, and its undo restores it.
+    #[test]
+    fn a_failed_prediction_keeps_what_the_earlier_ops_predicted() {
+        let records = Rc::new(no_records());
+        let page = json!({ "kind": "objectNumber", "objectNumber": 1 });
+        let ops = vec![
+            json!({ "type": "annotations.create", "page": page, "objectNumber": 20,
+                    "data": { "subtype": "square", "box": { "x": 0, "y": 0, "width": 10, "height": 10 } } }),
+            json!({ "type": "annotations.restore", "annotation": { "subtype": "square" }, "index": 0 }),
+            json!({ "type": "annotations.delete",
+                    "ref": { "kind": "objectNumber", "page": page, "objectNumber": 20 } }),
+        ];
+        let undo = undo_of(&records, &ops);
+        let kinds: Vec<&str> = undo.iter().filter_map(|op| op["type"].as_str()).collect();
+        assert_eq!(kinds, vec!["annotations.restore", "annotations.delete"], "{undo:?}");
     }
 }

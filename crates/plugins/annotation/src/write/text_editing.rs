@@ -127,7 +127,7 @@ impl Core {
 
     /// `text.begin(ref)`.
     pub fn text_begin(&self, reference: &Value) {
-        let _ = self.commit_json(json!({ "type": "beginTextEdit", "id": key_or_none(reference) }));
+        self.commit_or_log(json!({ "type": "beginTextEdit", "id": key_or_none(reference) }));
     }
 
     /// `text.end(options)`: stop typing, and save what was typed.
@@ -136,7 +136,7 @@ impl Core {
         if self.state().text_selection.is_some() {
             self.update_state(|s| set_text_selection(s, None));
         }
-        let _ = self.commit_json(json!({ "type": "endTextEdit" }));
+        self.commit_or_log(json!({ "type": "endTextEdit" }));
         // `async` with `await ctx.cancellable(…)`: settles a turn after it.
         let sent = self.cancellable(signal, sent);
         Promise::spawn(async move { sent.await })
@@ -145,7 +145,7 @@ impl Core {
     /// `beginTextEditAt(page, point, scale, rotation, zoom)`.
     pub fn begin_text_edit_at(&self, page: &Value, point: Point, view: HitView) -> bool {
         if let Some(id) = self.text_box_at(page, point, view) {
-            let _ = self.commit_json(json!({ "type": "beginTextEdit", "id": id }));
+            self.commit_or_log(json!({ "type": "beginTextEdit", "id": id }));
             if self.model().editing.as_deref() == Some(id.as_str()) {
                 return true;
             }

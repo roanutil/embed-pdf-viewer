@@ -17,11 +17,10 @@ use std::any::Any;
 use std::rc::Rc;
 
 use epdf_annotation_core::object::Json;
-use epdf_annotation_core::types::{Authority, Effect, Model, Painter, Point, Rect, ViewEnv};
+use epdf_annotation_core::types::{Authority, Effect, Model, Painter, Point, ViewEnv};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe, undefined};
-use plugin_conformance::harness::RefFn;
+use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe};
 use plugin_conformance::{Answer, Callback, Harness, HarnessPlugin, Outcome};
 use serde_json::{Value, json};
 
@@ -987,9 +986,4 @@ fn lent_scenes(h: &Harness, items: Value) -> Value {
         ),
         other => other,
     }
-}
-
-#[allow(dead_code)]
-fn unused(_: RefFn, _: Rect) -> Value {
-    undefined()
 }

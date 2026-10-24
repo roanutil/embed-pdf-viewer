@@ -14,10 +14,6 @@ use serde_json::{Map, Value, json};
 use crate::js::num;
 use crate::rich_text::{rich_doc_of, strip_body_defaults};
 
-fn truthy(value: &Option<Value>) -> bool {
-    epdf_annotation_core::json::truthy(value.as_ref())
-}
-
 /// `buildTextItems(model, page, view)`.
 pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -> Vec<Value> {
     text_boxes(model, page, view)
@@ -63,7 +59,6 @@ pub fn build_text_items(model: &Model, page: &PageRef, view: Option<&ViewEnv>) -
                     "padding": num(text_plate_inset(sw)),
                 }),
             );
-            let _ = truthy(&None);
             Value::Object(item)
         })
         .collect()
