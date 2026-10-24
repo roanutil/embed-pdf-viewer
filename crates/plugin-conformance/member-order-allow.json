@@ -64,53 +64,6 @@
       "$.callbacks[].args[]"
     ]
   },
-  "plugins/annotation-api.json": {
-    "create-from-page-space": [
-      "$.actions[].action.model.byId.obj:38"
-    ],
-    "dimension-drafts-continue-without-viewports": [
-      "$.actions[].action.model.byId.obj:41",
-      "$.actions[].action.model.byId.obj:42"
-    ],
-    "measurement-distance-drafts": [
-      "$.actions[].action.model.byId.obj:40",
-      "$.actions[].action.model.byId.obj:41"
-    ]
-  },
-  "plugins/annotation-pure.json": {
-    "buildTextItems/rich": [
-      "$.returned[].richText.paragraphs[].runs[].style"
-    ],
-    "buildToolRegistry/configure-built-in": [
-      "$.returned.$map[][].flags"
-    ],
-    "richDocOf/dto-rich": [
-      "$.returned.paragraphs[].runs[].style"
-    ],
-    "runsInRange/across": [
-      "$.returned[]"
-    ],
-    "runsInRange/reversed": [
-      "$.returned[]"
-    ],
-    "runsInRange/to-the-end": [
-      "$.returned[]"
-    ],
-    "stripBodyDefaults/mixed": [
-      "$.returned[].runs[].style"
-    ],
-    "textCommitPatch/strips-defaults": [
-      "$.returned.richText.paragraphs[].runs[].style"
-    ]
-  },
-  "plugins/annotation-tools.json": {
-    "ink-strokes-group": [
-      "$.actions[].action.model.byId.obj:40"
-    ],
-    "poly-and-callout-clicks": [
-      "$.actions[].action.model.byId.obj:50"
-    ]
-  },
   "plugins/link-functions.json": {
     "set-another-page": [
       "$.returned.state.pages.2[]"

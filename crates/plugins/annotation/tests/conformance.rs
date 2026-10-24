@@ -37,13 +37,28 @@ fn grouping_matches_the_typescript() {
 }
 
 #[test]
+fn hover_matches_the_typescript() {
+    replay("plugins/annotation-hover.json");
+}
+
+#[test]
 fn hydration_matches_the_typescript() {
     replay("plugins/annotation-hydration.json");
 }
 
 #[test]
+fn markup_matches_the_typescript() {
+    replay("plugins/annotation-markup.json");
+}
+
+#[test]
 fn reconciliation_matches_the_typescript() {
     replay("plugins/annotation-reconciliation.json");
+}
+
+#[test]
+fn tools_match_the_typescript() {
+    replay("plugins/annotation-tools.json");
 }
 
 #[test]
