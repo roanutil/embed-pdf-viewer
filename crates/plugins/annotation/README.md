@@ -22,7 +22,10 @@ outcome exceptions are left for these files.
 
 `tests/conformance.rs` also pins the repository suite's 95 `annotationPatchBetween` cases and its
 12 `text-no-icon` cases, so a regenerated vector that drops one fails. `tests/behavior.rs` covers
-what no vector reaches: H3 and N6 (below).
+what no vector reaches: H3, N6, M16 and M19 (below), lost object numbers, the cursorless-handle
+read of `getCursorAt`, and re-entry from an `onWriteFailed` listener, ported from
+`tooling/plugin-conformance/test/annotation-live.test.ts` ("the explicit internal
+failure-callback reentry edge").
 
 ## Layout
 
@@ -63,17 +66,30 @@ M15 is the actions plugin's URI sanitizer. This crate opens no URI, so it has no
 M16 is superseded. Hydration is the kernel's records mirror now, whose `refresh` clears `running`
 on every path (`crates/epdf-kernel/src/mirror.rs` `refresh`, as `packages/core/main/src/mirror.ts`
 `refresh`). The plugin's own hydration and its stuck-promise path are gone.
+`m16_a_read_grant_after_a_forbidden_load_is_seen_on_refresh` pins the sequence: forbidden at
+open, a refresh still forbidden, the grant, and the next refresh loads.
 
-Two new Rust-only differences, both on paths no vector reaches, registered in
+M19 stays: comment threads are built with hashed lookups, once per change of the records, the
+layout or the user. `m19_the_threads_index_is_built_once_per_change` checks the memo by `Rc`
+identity, and `m19_threading_ten_thousand_annotations_stays_linear` builds 10,000 annotations
+under a 10 s hang ceiling (about 0.4 s today).
+
+Lost object numbers leave the session, as `services/object-numbers.ts:14-19` has them: the first
+time the session takes numbers it subscribes to `DocumentHandle::on_lost_object_numbers`
+(`a_lost_object_number_leaves_the_session`). The conformance fake never loses one, as the
+TypeScript fake never does.
+
+Two Rust-only differences, both on paths no vector reaches, are registered in
 `docs/research/rust-plugins-branch-review.md`, Status:
 
 - `fonts()` is always none. The TypeScript reads the local engine's registered fonts
   (`services/index.ts:71`); the Rust plugin context has no engine font list, so registered faces
-  are not mapped on a local engine. No vector registers a font.
-- Object numbers are never lost. The TypeScript drops numbers the engine reports lost
-  (`services/object-numbers.ts:18`, `ctx.doc.objectNumbers.onLost`); the Rust `DocumentHandle`
-  has no such event, so a held number stays held until it is used. The fake engine never loses
-  one.
+  are not mapped on a local engine. The cloud path is the same in both (an empty list). Task
+  13.33 owns the host's font list. No vector registers a font.
+- An attachment or icon placement that `iconPlacement` refuses (an attachment with no name) is
+  logged as `[annotation] icon placement failed:` and the click counts as handled
+  (`write/icons.rs`). The TypeScript throws inside the picker's `.then`, an unhandled rejection
+  with no console line. Rust has no unhandled rejection to raise there.
 
 ## Migrating from the pre-13.17 API
 
@@ -86,29 +102,47 @@ For form (13.18), link, measurement, redaction, signature and stamp, and viewer-
 | typed `Annotation`, `AnnotationPatch`, `CreateAnnotationInput`, `geometry_from_input`, `AnnotationGeometry` | the engine's records as `Value`: `create(page, fields, resources, CreateOptions)`, `update(ref, patch, resources, signal)` |
 | `list_raw`, `get_raw`, `create_raw`, `update_raw` | removed: `list` and `get` return the engine's records |
 | `create_many`, `update_many`, `delete_many`, `set_rotation`, `rotate_by`, `set_contents` | removed with the TypeScript's; `selection_update`, `selection_rotate_by(degrees)`, `delete` |
-| `get_status`, `get_hydration`, `ensure_hydrated`, `refresh`, `reload_page`, `deliver_remote_event` | the mirror: `records.get_status()`, `records.refresh()`, `records.settled()`; remote events arrive through the kernel |
-| `on_created`, `on_updated`, `on_deleted`, `on_resynced`, `on_selection_changed`, `on_draft_changed`, `on_editing_changed`, `on_draft_captured` | `events.created`, `.updated`, `.deleted`, `.resynced`, ... (`EventHookSource<Value>`), plus `reordered`, `hover_changed`, `tool_defaults_changed`, `write_failed` |
+| `get_status`, `get_hydration`, `ensure_hydrated`, `refresh`, `reload_page`, `deliver_remote_event` | `get_status() -> ResourceStatus`, `refresh(signal) -> Promise<()>`, `when_synced()`; hydration is the records mirror, and remote events arrive through the kernel |
+| `on_created`, `on_updated`, `on_deleted`, `on_resynced`, `on_selection_changed`, `on_draft_changed`, `on_editing_changed`, `on_draft_captured`, `comments().on_thread_changed` | the same names, each taking `Fn(&Value) -> Result<(), Error>` and returning `Unsubscribe`; the payload is the TypeScript's event object as JSON. New: `on_reordered`, `on_hover_changed`, `on_write_failed`, `on_tool_defaults_changed`, `on_thread_changed` |
+| `AnnotationChangedEvent` | the `on_created`/`on_updated` payload, `{ annotation, origin }` |
+| `AnnotationFilter` (root) | `read::annotations::AnnotationFilter { pages, subtype }` |
 | `comments()` (`CommentsLens`), `links()` (`LinksLens`) | `comments_*` and `links_*` methods |
 | `hit_test_at` | `annotation_at(page, point)` |
-| `register_tool`, `AnnotationToolDef` | `tools_register(definition: Value)` |
+| `register_tool`, `AnnotationToolDef` | `tools_register(definition: Value)`; a tool definition is JSON |
 | `arm_stamp`, `place_stamp`, `StampToolInput`, `StampPlacement` | `stamps_arm(StampInput, signal)`, `stamps_place(StampInput, placement: &Value, signal)` |
 | `create_attachment`, `read_attachment` | `create` with `resources`, `download_resource(ref, role, signal)` |
 | `QuarterTurn`, `TextFormat` | `f64` degrees, `&str` format |
 | `widget_appearance_from_props`, `color_to_css`, `css_to_color` | `epdf_annotation_core::record::widget_appearance_of`; colors are CSS strings in the engine's records, so the two converters have no counterpart |
 | `HoverFlags`, `LinkNavItem` | `list_link_items(page)` as `Value` |
 | `RecalibrationReport`, `SkipReason`, `PageMeasurementViewport` | `remeasure_page(page, scale) -> Promise<Value>`, `set_page_viewports(page, viewports, fallback)` |
-| `value::{str_of, truthy, number}`, `repository::seam::annotation_key_of` | `js::*`, `epdf_annotation_core::json`, `js::key_of` |
+| `annotation_key`, `repository::seam::annotation_key_of` | `js::key_of` (`epdf_annotation_core::record::annotation_key`) |
+| `value::{get, str_of, truthy, number}` | `epdf_annotation_core::json::{get, get_str, truthy, number}` |
+| `value::{pdf_rect_of, pdf_point_of}` | none: records are page space; convert with the kernel's page geometry (`PageSpace::page_rect_to_pdf`) |
+| `HitView`, `view_env` (root) | `read::chrome::{HitView, view_env}` |
+| `wire_markup` (root) | internal: the plugin wires the selection plugin itself on connect |
+| `from_dto`, `to_patch` (root) | `epdf_annotation_core::record::from_dto`, `annotation_patch_between` |
+| `StampPreview`, `StampPreviewProvider`, `ArmedStampPreview` | `write::stamps::StampPreview`, `StampPreviewProvider` (root), the preview as JSON `{ bytes, mimeType? }` |
+| `ANNOTATION`, `AnnotationCapability`, `ANNOTATION_EDIT_PRIORITY`, `Behavior`, `ARMED_STAMP_TOOL_ID`, `harness::Annotation` | unchanged |
+| `ffi::AnnotationConfig` | removed: the settings are registered with the kernel |
 | `host_contract::serialize_error` | the kernel's `Error::to_canonical` |
 | `promise::{await_engine, spawn, then, all}`, `binary::{resolve_binary_source, sniff_binary_metadata}` | unchanged |
 | new | `lend(AnnotationLender)`, `register_behavior`, `commit_script_effects`, `import`, `export`, `reorder`, `is_pending`, `is_editable`, `get_hovered`, `selection_update_link` |
 | ffi typed `AnnotationRecord` (`geometry`, `props`, `flags`), `AnnotationPatch`, `CreateAnnotationInput`, `AnnotationHydration`, `AnnotationQuarterTurn`, `AnnotationSnapSettings` | the record carries `rect`, the text members and authority typed and the rest as `fields_json`; patches, create fields and tool defaults are JSON strings. `src/ffi/` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds (13.33), which also types the JSON against the renamed mirror |
 
-Known call sites: `crates/plugins/form/src` (`widget_appearance_from_props`, `StampPlacement`),
-`crates/plugins/link/src` (`HoverFlags`, `LinkNavItem`), `crates/plugins/measurement/src`
-(`RecalibrationReport`, `SkipReason`, `PageMeasurementViewport`), `crates/plugins/stamp/src` and
-`crates/plugins/signature/src` (`StampToolInput`, `CreateAnnotationInput`), and
-`crates/epdf-viewer-host/src` (`ffi::AnnotationHandle`, `ffi::AnnotationConfig`). None of those
-crates compiles at this commit for their own reasons (the annotation-core and geometry re-ports).
+Known call sites, by crate:
+
+| Crate | Files | Names |
+|---|---|---|
+| form | `src/controller.rs`, `lib.rs`, `harness.rs`, `tools/handlers.rs` | `AnnotationCapability`, `AnnotationToolDef`, `Behavior`, `widget_appearance_from_props` |
+| link | `src/lib.rs`, `controller.rs`, `contract.rs`, `ffi.rs`, `source.rs` | `AnnotationCapability`, `Behavior`, `ANNOTATION_EDIT_PRIORITY`, `HoverFlags`, `LinkNavItem`, `promise::{all, await_engine, spawn, then}`, `value::{get, pdf_rect_of, str_of, truthy}` |
+| measurement | `src/lib.rs`, `ffi.rs`, `contract.rs`, `write/create.rs`, `write/scale.rs`, `read/scale.rs`, `sync/viewports.rs`, `services/store.rs` | `AnnotationCapability`, `CreateAnnotationInput`, `PageMeasurementViewport`, `RecalibrationReport`, `SkipReason`, `host_contract::serialize_error`, `promise::{all, await_engine}`, `value::{get, pdf_point_of, str_of, truthy}`, `on_draft_captured` |
+| redaction | `src/lib.rs`, `harness.rs`, `controller.rs`, `write/apply.rs`, `write/marks.rs`, `read/pending.rs`, `sync/mod.rs` | `AnnotationCapability`, `annotation_key`, `AnnotationChangedEvent`, `AnnotationFilter`, `CreateAnnotationInput`, `repository::seam::annotation_key_of`, `promise::{await_engine, spawn}`, `on_created`, `on_updated`, `on_deleted` |
+| signature | `src/harness.rs`, `lib.rs`, `contract.rs`, `write/place.rs`, `tools/armed_mark.rs`, `services/marks.rs`, `services/siblings.rs` | `AnnotationCapability`, `StampPlacement`, `StampToolInput`, `ANNOTATION_EDIT_PRIORITY`, `ARMED_STAMP_TOOL_ID`, `binary::resolve_binary_source` |
+| stamp | `src/lib.rs`, `harness.rs`, `value.rs`, `ffi.rs`, `write/libraries.rs`, `write/placement.rs`, `write/marks.rs`, `write/assets.rs`, `read/catalog.rs`, `services/ghosts.rs` | `StampPlacement`, `StampToolInput`, `StampPreview`, `StampPreviewProvider`, `ArmedStampPreview`, `binary::{resolve_binary_source, sniff_binary_metadata}`, `value::{get, number, str_of, truthy}` |
+| epdf-viewer-host, epdf-web | `src/session.rs`, `lib.rs`, `api.rs`; `src/adapters.rs` | `annotation_plugin`, `ffi::AnnotationHandle`, `ffi::AnnotationConfig`, `harness::Annotation` |
+
+None of those crates compiles at this commit for their own reasons (the annotation-core and
+geometry re-ports).
 
 ## Coverage
 
