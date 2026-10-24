@@ -17,6 +17,26 @@ fn replay(file: &str) {
 }
 
 #[test]
+fn api_matches_the_typescript() {
+    replay("plugins/annotation-api.json");
+}
+
+#[test]
+fn comments_match_the_typescript() {
+    replay("plugins/annotation-comments.json");
+}
+
+#[test]
+fn crud_matches_the_typescript() {
+    replay("plugins/annotation-crud.json");
+}
+
+#[test]
+fn grouping_matches_the_typescript() {
+    replay("plugins/annotation-grouping.json");
+}
+
+#[test]
 fn hydration_matches_the_typescript() {
     replay("plugins/annotation-hydration.json");
 }
