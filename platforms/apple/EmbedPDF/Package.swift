@@ -2,6 +2,13 @@
 
 import PackageDescription
 
+// Where the engine comes from. Written by the engine release scripts: the
+// release tag on embed-pdf-runtime and the SHA-256 of its
+// EmbedPDFBindings.xcframework.zip. Both are "unpublished" until the first
+// publish.
+let engineRelease = "unpublished"
+let engineChecksum = "unpublished"
+
 let package = Package(
   name: "EmbedPDF",
   platforms: [
@@ -74,6 +81,44 @@ let package = Package(
     ),
   ]
 )
+
+// The targets above build the engine from source: the generated Swift
+// bindings over EmbedPDFFFI.xcframework, both from build-xcframework.sh. That
+// is the layout for EMBEDPDF_LOCAL_ENGINE=1, which also covers the
+// experimental bridge below. Every other mode swaps those two targets for one
+// EmbedPDFBindings binary, which already holds the compiled Swift, Rust core
+// and PDFium. EMBEDPDF_PREBUILT_ENGINE=local reads the package-engine-framework.sh
+// output beside this manifest; otherwise SwiftPM downloads the published
+// release. EmbedPDFBindingsSmokeTests uses `@testable import`, which a
+// library-evolution binary does not allow, so it exists only in local mode.
+let environment = Context.environment
+let usesLocalEngine = environment["EMBEDPDF_LOCAL_ENGINE"] == "1"
+  || environment["EMBEDPDF_EXPERIMENTAL_BRIDGE"] == "1"
+if !usesLocalEngine {
+  package.targets.removeAll {
+    ["EmbedPDFFFI", "EmbedPDFBindings", "EmbedPDFBindingsSmokeTests"].contains($0.name)
+  }
+  if environment["EMBEDPDF_PREBUILT_ENGINE"] == "local" {
+    package.targets.append(
+      .binaryTarget(name: "EmbedPDFBindings", path: "EmbedPDFBindings.xcframework")
+    )
+  } else {
+    package.targets.append(
+      .binaryTarget(
+        name: "EmbedPDFBindings",
+        url: "https://github.com/roanutil/embed-pdf-runtime/releases/download/\(engineRelease)/EmbedPDFBindings.xcframework.zip",
+        checksum: engineChecksum
+      )
+    )
+  }
+  for target in package.targets where target.name == "EmbedPDF" {
+    target.linkerSettings = (target.linkerSettings ?? []) + [
+      .linkedLibrary("c++"),
+      .linkedFramework("CoreFoundation"),
+      .linkedFramework("CoreGraphics"),
+    ]
+  }
+}
 
 // Task 11's experimental bridge benchmarks: a hand-written C bridge
 // (EmbedPDFManualBridge) and the tests that time it against uniffi. Neither

@@ -44,6 +44,10 @@ public struct PDFError: Error, Sendable, Equatable {
       name = "Closed"
       code = "instance-closed"
       detail = "The viewer has shut down."
+    @unknown default:
+      name = "ViewerError"
+      code = nil
+      detail = String(describing: error)
     }
   }
 

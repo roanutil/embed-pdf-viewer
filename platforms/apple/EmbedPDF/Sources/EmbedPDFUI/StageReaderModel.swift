@@ -51,6 +51,8 @@ public final class StageReaderModel {
         await refresh()
       case let .pageChanged(event):
         currentPageIndex = event.pageIndex
+      @unknown default:
+        break
       }
     }
   }
