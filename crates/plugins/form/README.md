@@ -1,10 +1,13 @@
 # epdf-plugin-form
 
 `packages/plugin/form` in Rust, re-ported in Task 13.18 onto the current kernel: the fields mirror,
-the change queue, registered settings and the K/V/C/F pipeline over the actions plugin's realm. 220
-of the 221 cases in six vector files replay identically (`cargo test -p epdf-plugin-form`). The
-221st, `form-design.json` `placement-refused-by-the-engine`, waits on a kernel repair described
-below. No member-order allowances and no outcome exceptions are used for these files.
+the change queue, registered settings and the K/V/C/F pipeline over the actions plugin's realm. All
+221 cases in six vector files replay identically (`cargo test -p epdf-plugin-form`). No member-order
+allowances and no outcome exceptions are used for these files. The last case to pass,
+`form-design.json` `placement-refused-by-the-engine`, needed the kernel's `to_plugin_error` to pass
+a `PermissionDenied`'s `details` through whole, as `packages/core/main/src/errors.ts:131` does
+(`1ff58faa4` and `526059c29`, pinned by `a_permission_refusal_keeps_its_details_whole` in
+`crates/epdf-kernel`).
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
@@ -17,10 +20,13 @@ below. No member-order allowances and no outcome exceptions are used for these f
 
 `tests/conformance.rs` also pins the six files at 221 cases. `tests/behavior.rs` asserts what the
 replay holds only implicitly: a whole reset reports only the fields it moved (refs 1, 3 and 4 of
-`reset-all`), a palette placement keeps the tool's look, the three placement paths (form-only
-success, the awaited refusal that is logged, the form-only early return), and lost object numbers.
-`tests/budget.rs` is H4. `tests/engine_cross_check.rs` holds the value rules to `epdf-engine`'s on
-native hosts.
+`reset-all`), a palette placement keeps the tool's look while the create is held, the three
+placement paths (form-only success, the awaited refusal that is logged, the form-only early
+return), lost object numbers, and the painter drawing a text field, a checkbox and a listbox, which
+no vector does. `tests/sharing.rs` is M21. `tests/budget.rs` is H4. `tests/engine_cross_check.rs`
+holds `engine.rs` to `epdf-engine` on native hosts: `field_after_value`, `field_after_reset`,
+`form_field_after`, `default_entry_of_draft`, `fit_widget_to_family`, `reordered_list` and
+`reorder_part`, refusals compared by message.
 
 ## Layout
 
@@ -33,9 +39,10 @@ handler, `scripting/` the K/V/C/F pipeline. `engine.rs` is a pure copy of the en
 plugin calls (`forms/predict.ts`, `forms/write.ts`, `forms/widgets.ts`, list positions, ref keys),
 since `epdf-engine` links PDFium and this crate builds for wasm32 (Ruling13.15).
 
-Engine records stay `serde_json::Value`. The kernel's mirror holds JSON, so the `fields` mirror's
-value is the snapshot and the picture versions, and `services/index_cache.rs` keeps the decoded
-`FieldIndex` beside each recent value. The index's records (`byKey`, `byWidget` and so on) are kept
+Engine records stay `serde_json::Value`. The snapshot (`model::Snapshot`) holds its `fields` and
+`widgets` apart, one `Rc` per item. The kernel's mirror holds JSON and copies each value it writes,
+so the `fields` mirror's value is a token, `{ "$fieldIndex": n }`, naming a `FieldIndex` that
+`services/index_cache.rs` keeps: the 256 used last and the confirmed one. The index's records (`byKey`, `byWidget` and so on) are kept
 as JavaScript objects order them, integer-like keys first, so they print and iterate as the
 TypeScript's do.
 
@@ -50,14 +57,37 @@ A5 stays. `importValues` and `exportValues` order names as a plain object does, 
 first (`form-fill.json` `values-keyed-by-integer-like-names` replays it). A6 is gone with the
 code it named: placement names fields with `nextFieldName` over a `HashSet`.
 
-M21 is in part a kernel cost now. The plugin shares a snapshot between reads through
-`IndexCache`, but the kernel's mirror writes every value into its store cell by copy
-(`crates/epdf-kernel/src/mirror.rs`, `write`), so a fold costs a copy of the form there.
+M21 is kept. A fold, a prediction or a fill replaces one field or widget row and shares every other
+one, as the TypeScript's spreads do: an upsert copies pointers, and the mirror's token makes the
+kernel's copy on write a few bytes. The whole snapshot is put together as one value only for
+`getSnapshot`, the scripts and `onResynced`, once per snapshot. `tests/sharing.rs` counts those
+copies with `model::snapshot_copies` and holds them at none across 50 folds and predictions on
+5,000 fields and 15 live fills, folds and reads, each under a 120 s hang ceiling. It also pins
+`listWidgets`' reference stability (`the_fill_projection_is_reference_stable`). The cost: a
+scripted fill still puts the form together once per new view, for the realm.
+
+`listWidgets` is memoized as `memoByKey` does, by page, on the view, the fill rights key and
+`fillable`. The other identity memos are not: `getValue`, `getWidgets`, `exportValues`, `validate`
+and `getSelectedField` build a new value per call where the TypeScript returns the same object while
+its inputs stay the same. That divergence is named in the register and carried to Task 14. A reader
+comparing by reference re-renders more often; no value differs.
+
+Four Rust-only console lines and errors have no TypeScript counterpart. A widget row or field the
+painter can no longer decode is logged as `[form] the painter could not read a widget:` and not
+drawn (`services/looks.rs`); the TypeScript has no decode step. A `surface` that throws inside
+`fill_soon`'s failure path is logged as `[form] surfacing a fill failure threw:`
+(`write/fill.rs`), where the TypeScript raises an unhandled rejection. A widget picture that does
+not serialise rejects the lend's `renderAppearances` (`write/lending.rs`). A widget ref with no
+`page` makes the activation verbs throw a `TypeError` (`write/activation.rs` `page_of_ref`), where
+the TypeScript passes `undefined` on as the action source's page; `epdf-plugin-actions` types that
+page as a `PageRef`, so it can't carry one. Valid refs always name a page.
 
 The kernel's `SerialQueue` has no `signal` option and no `idle()`. `services/queue.rs` adds both over
 it as `serial-queue.ts` defines them: an operation whose signal fired while it waited rejects
 `operation-cancelled` without starting, and `idle()` settles a turn after the last operation queued.
-The kernel's own queue keeps the order and timing.
+The kernel's own queue keeps the order and timing. The actions plugin carries the same `{signal}`
+wrapper (`crates/plugins/actions/src/dispatch/dispatcher.rs:87-105`), so two plugins now wait on
+the Task 14 kernel `SerialQueue` carry.
 
 The palette's form-only early return is kept as the TypeScript has it. With no annotation plugin a
 field the view already shows ends the placement before `created` is awaited, so an engine refusal of
@@ -77,19 +107,6 @@ the Task 14 decision covers.
 
 `flags.raw` is gone with the TypeScript. `DoNotSpellCheck` and `Sort` are not derived from anything
 in its place.
-
-## The kernel repair this crate waits on
-
-`placement-refused-by-the-engine` step 2 expects the refused create to reject with `permission:
-"doc.forms.modify"` and `details: { required: "doc.forms.modify" }`. Rust gives `permission: null`
-and `details: {}`. The engine's refusal is a `PermissionDenied` whose members are `code` and
-`details` only, as the fake makes it (`tooling/plugin-conformance/src/fake-engine.ts:262`
-`makeEngineError`). The TypeScript maps it through its `EngineError` branch: `details` as the error
-carries them, and the permission from `details.required`
-(`packages/core/main/src/errors.ts:121-135`, `requiredPermissionOf` at `:106`). The kernel's
-`PermissionDenied` branch builds `details` from top-level `required` and `context` members instead
-(`crates/epdf-kernel/src/error.rs:310-326`), which this error doesn't have. Taking `details` from the
-error when it has them makes all 221 cases replay; the controller rules on it.
 
 ## Wasm
 
