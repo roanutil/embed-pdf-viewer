@@ -7,7 +7,9 @@
 //!
 //! The cache keeps the [`KEPT`] indexes read or written last, and always
 //! the confirmed one (`pin`). A value without a token is the empty index:
-//! the mirror's initial value.
+//! the mirror's initial value. The store shows the index itself, as the
+//! TypeScript's mirror cell does: [`IndexCache::to_json`] is the fields
+//! mirror's `to_json`, which the kernel calls only when the store is dumped.
 
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
@@ -49,9 +51,15 @@ impl IndexCache {
         let Some(index) = entries.shift_remove(&id) else {
             // Only a value older than every kept one can miss, and the mirror
             // holds none that old: its confirmed value is pinned and its view
-            // is replayed from it.
-            debug_assert!(false, "[form] the fields mirror named an index it no longer keeps");
-            return self.empty.clone();
+            // is replayed from it. Should one miss, say so, and show the
+            // confirmed form rather than none.
+            let fallback = self.pinned.get().and_then(|p| entries.get(&p).cloned());
+            drop(entries);
+            crate::console::error(
+                "[form] the fields mirror named a form it no longer keeps:",
+                json!({ "token": id, "fallback": if fallback.is_some() { "confirmed" } else { "empty" } }),
+            );
+            return fallback.unwrap_or_else(|| self.empty.clone());
         };
         entries.insert(id, index.clone());
         index
@@ -88,8 +96,59 @@ impl IndexCache {
         Rc::new(json!({ TOKEN: id }))
     }
 
+    /// The mirror cell as the TypeScript's store shows it: the whole
+    /// `FieldIndex` a value names (`FieldIndex::to_json`), read without
+    /// touching the recency order.
+    pub fn to_json(&self, value: &Value) -> Value {
+        let index = match token_of(value) {
+            None => self.empty.clone(),
+            Some(id) => match self.entries.borrow().get(&id) {
+                Some(index) => index.clone(),
+                None => {
+                    crate::console::error(
+                        "[form] the fields mirror named a form it no longer keeps:",
+                        json!({ "token": id, "fallback": "empty" }),
+                    );
+                    self.empty.clone()
+                }
+            },
+        };
+        index.to_json()
+    }
+
     /// Keep the index a value names for as long as it is the confirmed one.
     pub fn pin(&self, value: &Value) {
         self.pinned.set(token_of(value));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use super::*;
+
+    #[test]
+    fn a_miss_is_logged_and_shows_the_confirmed_form() {
+        let logged: Rc<RefCell<Vec<Vec<Value>>>> = Rc::default();
+        let sink = logged.clone();
+        let previous = crate::console::set_sink(Some(Rc::new(move |_, args| {
+            sink.borrow_mut().push(args);
+        })));
+        let cache = IndexCache::default();
+        let confirmed =
+            Rc::new(FieldIndex { by_key: [("obj:1".into(), 0.0)].into(), ..Default::default() });
+        let value = cache.value(&confirmed);
+        cache.pin(&value);
+        let missed = cache.index(&json!({ TOKEN: 999 }));
+        crate::console::set_sink(previous);
+        assert!(Rc::ptr_eq(&missed, &confirmed));
+        let logged = logged.borrow();
+        assert_eq!(logged.len(), 1);
+        assert_eq!(
+            logged[0][0],
+            json!("[form] the fields mirror named a form it no longer keeps:")
+        );
+        assert_eq!(logged[0][1], json!({ "token": 999, "fallback": "confirmed" }));
     }
 }

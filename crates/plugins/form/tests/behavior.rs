@@ -367,3 +367,33 @@ fn the_painter_draws_a_text_field_a_checkbox_and_a_listbox() {
     assert_eq!(painted, ["checkbox", "listbox", "text"]);
     assert!(logged.borrow().is_empty(), "{:?}", logged.borrow());
 }
+
+// ── the fields mirror's store cell ──────────────────────────────────────────
+
+/// The fields mirror holds a token naming a shared `FieldIndex`; the store
+/// shows the index itself, member for member as the TypeScript's cell
+/// prints it. The sample is `signature.json` `reads-over-the-snapshot`
+/// after the document opens, replayed here without the signature plugin.
+#[test]
+fn the_fields_mirror_cell_dumps_the_whole_field_index() {
+    let mut sample = case("plugins/signature.json", "reads-over-the-snapshot");
+    let expected = sample["trace"][1]["state"]["plugins"]["form::a/mirror/fields"].clone();
+    sample["plugins"] = json!([{ "factory": "interaction" }, { "factory": "form-current" }]);
+    sample["steps"] = Value::Array(sample["steps"].as_array().unwrap()[..2].to_vec());
+    let run = run_case(&sample, &registry());
+    let shown = &run.trace[1]["state"]["plugins"]["form::a/mirror/fields"];
+    // The replay's own comparison: member order checked, numbers as numbers.
+    assert_eq!(plugin_conformance::canonical::diff(&expected, shown), None);
+    let members = |cell: &Value| -> Vec<String> {
+        cell["value"].as_object().unwrap().keys().cloned().collect()
+    };
+    assert_eq!(
+        members(shown),
+        ["snapshot", "byKey", "byName", "byWidget", "rowByWidget", "pictureVersions"]
+    );
+    assert_eq!(members(shown), members(&expected));
+    assert_eq!(
+        shown["value"]["snapshot"].as_object().unwrap().keys().collect::<Vec<_>>(),
+        expected["value"]["snapshot"].as_object().unwrap().keys().collect::<Vec<_>>(),
+    );
+}

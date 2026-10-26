@@ -4,6 +4,8 @@
 //! `fields:fill` (`fields:sign`) permission for its group, or
 //! `doc.forms.fill` (`doc.sign`) for every field.
 
+use std::rc::Rc;
+
 use epdf_kernel::Error;
 use serde_json::Value;
 
@@ -21,16 +23,8 @@ impl crate::controller::Core {
     /// `rights.key()`: what the session may fill in and sign, per group
     /// (`null` among them), as a key that changes when that does: for memos.
     pub(crate) fn rights_key(&self) -> String {
-        let index = self.view();
-        let mut groups: Vec<&Value> = Vec::new();
-        for field in index.fields() {
-            let group = field.get("groupId").unwrap_or(&Value::Null);
-            if !groups.iter().any(|g| crate::value::strict_eq(Some(g), Some(group))) {
-                groups.push(group);
-            }
-        }
-        groups
-            .into_iter()
+        self.groups()
+            .iter()
             .map(|group| {
                 let grouped = serde_json::json!({ "groupId": group });
                 format!(
@@ -40,6 +34,27 @@ impl crate::controller::Core {
                 )
             })
             .collect()
+    }
+
+    /// The form's groups, `null` (no group) among them: memoized on the
+    /// view, as the TypeScript's `memo(() => [fields.view()], ...)` is.
+    fn groups(&self) -> Rc<Vec<Value>> {
+        let index = self.view();
+        if let Some((seen, groups)) = &*self.rights_groups.borrow()
+            && Rc::ptr_eq(seen, &index)
+        {
+            return groups.clone();
+        }
+        let mut groups: Vec<Value> = Vec::new();
+        for field in index.fields() {
+            let group = field.get("groupId").unwrap_or(&Value::Null);
+            if !groups.iter().any(|g| crate::value::strict_eq(Some(g), Some(group))) {
+                groups.push(group.clone());
+            }
+        }
+        let groups = Rc::new(groups);
+        *self.rights_groups.borrow_mut() = Some((index, groups.clone()));
+        groups
     }
 
     /// `rights.assertMayFill(field, operation)`.

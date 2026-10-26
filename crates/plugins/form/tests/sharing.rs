@@ -125,6 +125,8 @@ fn a_large_form_folds_and_predicts_without_a_copy() {
     within_ceiling(|| {
         const FIELDS: usize = 5_000;
         let mut current = indexed(FIELDS);
+        let untouched_field = current.fields()[FIELDS - 1].clone();
+        let untouched_row = current.widgets()[FIELDS - 1].clone();
         let before = snapshot_copies();
         for i in 0..50 {
             let n = i * 25 % FIELDS + 1;
@@ -137,6 +139,9 @@ fn a_large_form_folds_and_predicts_without_a_copy() {
         assert_eq!(snapshot_copies(), before, "a fold or a prediction copied the snapshot");
         assert_eq!(field_by_key(&current, "obj:26"), Some(&field(26, "confirmed")));
         assert_eq!(current.fields().len(), FIELDS);
+        // A copy the counter doesn't see would still leave new pointers.
+        assert!(Rc::ptr_eq(&untouched_field, &current.fields()[FIELDS - 1]), "the field is shared");
+        assert!(Rc::ptr_eq(&untouched_row, &current.widgets()[FIELDS - 1]), "the row is shared");
     });
 }
 
@@ -189,6 +194,8 @@ fn fills_folds_and_reads_share_the_live_form() {
         let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
         assert_eq!(form.list(None).len(), FIELDS, "the form is read");
         let page = object_ref(1);
+        let untouched_field = form.view().fields()[FIELDS - 1].clone();
+        let untouched_row = form.view().widgets()[FIELDS - 1].clone();
         let before = snapshot_copies();
         let mut pending = Vec::new();
         for i in 0..15 {
@@ -202,6 +209,9 @@ fn fills_folds_and_reads_share_the_live_form() {
             assert_eq!(form.get_value(&object_ref(n + 1)), Some(json!({ "value": "elsewhere" })));
         }
         assert_eq!(snapshot_copies(), before, "a fill, fold or read copied the snapshot");
+        // A copy the counter doesn't see would still leave new pointers.
+        assert!(Rc::ptr_eq(&untouched_field, &form.view().fields()[FIELDS - 1]));
+        assert!(Rc::ptr_eq(&untouched_row, &form.view().widgets()[FIELDS - 1]));
         // `getSnapshot` puts the form together once, and keeps it.
         let whole = form.get_snapshot().expect("the snapshot");
         assert!(Rc::ptr_eq(&whole, &form.get_snapshot().expect("again")));
