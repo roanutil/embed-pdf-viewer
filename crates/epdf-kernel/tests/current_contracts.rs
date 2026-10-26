@@ -223,6 +223,60 @@ fn page_load_epochs_and_delete_prevent_stale_replacement() {
     assert!(mirror.get(&page).is_none());
 }
 
+/// `page-mirror.ts:180-194`: the load's `.then` stores the read on turn T,
+/// `.finally(() => inFlight.delete(key))` runs on T+1, and a caller's
+/// reaction to the load runs on T+4. Measured in Node with the same counter:
+/// `Promise.resolve(1).then(store).finally(clean).then(react)` gives store
+/// 1, clean 2, react 5.
+#[test]
+fn a_page_load_settles_after_its_finally_as_typescript_chains_it() {
+    use epdf_kernel::page_mirror::{Affected, PageMirror, PageMirrorSpec};
+    use std::cell::Cell;
+    rt::reset();
+    let turn = Rc::new(Cell::new(0u32));
+    let count = turn.clone();
+    rt::spawn(async move {
+        for _ in 0..32 {
+            rt::tick().await;
+            count.set(count.get() + 1);
+        }
+    });
+    let stored = Rc::new(Cell::new(u32::MAX));
+    let (seen, at) = (stored.clone(), turn.clone());
+    let q = DocumentChanges::new(
+        Rc::new(|_, _| Promise::resolved(json!({}))),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let page = json!({"kind":"objectNumber","objectNumber":3});
+    let mirror = PageMirror::new(
+        PageMirrorSpec {
+            name: "page".into(),
+            load: Rc::new(|_, _, _| Promise::resolved(json!(1))),
+            affected: Rc::new(|_| Affected::All),
+            fold: None,
+            predict: None,
+            changed: Some(Rc::new(move |_| {
+                seen.set(at.get());
+                Ok(())
+            })),
+        },
+        MirrorEnvironment::detached(EventHookSource::new(None), AbortSignal::new(), q),
+    );
+    let load = mirror.ensure_loaded(page.clone());
+    let reacted = Rc::new(Cell::new(u32::MAX));
+    let (r, at) = (reacted.clone(), turn.clone());
+    let watched = load.clone();
+    rt::spawn(async move {
+        let _ = watched.await;
+        r.set(at.get());
+    });
+    rt::run_until_stalled();
+    assert!(load.peek().unwrap().is_ok());
+    assert_eq!(reacted.get(), stored.get() + 4);
+    assert!(!mirror.ensure_loaded(page).same(&load), "the finally forgot the load");
+}
+
 #[test]
 fn pending_holds_groups_and_dependency_refusal_keep_staging_order() {
     rt::reset();

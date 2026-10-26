@@ -214,6 +214,7 @@ impl PageMirror {
         let (promise, resolver) = Promise::pending();
         self.0.running.borrow_mut().insert(k.clone(), promise.clone());
         let this = self.clone();
+        let own = promise.clone();
         rt::spawn(async move {
             let result = call.reaction().await;
             let current = this.live() && this.0.epochs.borrow().get(&k) == Some(&epoch);
@@ -272,9 +273,16 @@ impl PageMirror {
                     }
                 }
             };
-            if this.0.epochs.borrow().get(&k) == Some(&epoch) {
+            // `.finally(() => inFlight.delete(key))` (page-mirror.ts:194):
+            // its reaction takes a turn, then the promise it returns is
+            // adopted, which takes the TypeScript's two more.
+            rt::tick().await;
+            let mine = this.0.running.borrow().get(&k).is_some_and(|r| r.same(&own));
+            if mine {
                 this.0.running.borrow_mut().remove(&k);
             }
+            rt::tick().await;
+            rt::tick().await;
             resolver.settle(result);
         });
         promise
