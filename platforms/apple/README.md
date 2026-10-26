@@ -42,6 +42,9 @@ manifest is evaluated:
   generated Swift as a source target. `EMBEDPDF_EXPERIMENTAL_BRIDGE=1` implies it. It's the only
   mode with `EmbedPDFBindingsSmokeTests`, because `@testable import` can't see into a binary.
 
+The downloaded engine needs Xcode 27.1 or later: its `.swiftinterface` was written by Swift 6.4
+with `-language-mode 5`, and only the Xcode 27.1 toolchain has been checked against it.
+
 The pin goes stale whenever a crate the engine links changes. `bash
 platforms/apple/check-apple-engine.sh` hashes the tree with `apple-engine-hash.sh` and compares
 the result with `engineRelease`. Exit 0 means the pin is current. Exit 1 means it's stale and
