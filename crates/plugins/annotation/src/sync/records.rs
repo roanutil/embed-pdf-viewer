@@ -89,6 +89,21 @@ pub fn same_record(a: Option<&Value>, b: Option<&Value>) -> bool {
     }
 }
 
+/// The records as a store dump shows them: `$v` is this port's stand-in
+/// for a record object's identity, which the TypeScript's records carry
+/// as the object itself, so the dump leaves it out.
+pub fn records_json(records: &Value) -> Value {
+    let mut out = records.clone();
+    if let Some(by_key) = out.get_mut("byKey").and_then(Value::as_object_mut) {
+        for stored in by_key.values_mut() {
+            if let Some(stored) = stored.as_object_mut() {
+                stored.remove("$v");
+            }
+        }
+    }
+    out
+}
+
 fn stored(dto: Value, picture_version: f64) -> Value {
     json!({ "dto": dto, "pictureVersion": crate::js::num(picture_version), "$v": fresh() })
 }
@@ -617,6 +632,7 @@ pub fn create_records_mirror(
         Err(_) => true,
     }));
     spec.predict = Some(Rc::new(predict_records));
+    spec.to_json = Some(Rc::new(records_json));
     let pages_cx = cx.cx.clone();
     spec.load_pages = Some(Rc::new(move |doc, pages, _signal| {
         let present: Vec<f64> = pages_cx
@@ -674,6 +690,20 @@ mod tests {
             "ref": { "kind": "objectNumber", "page": { "kind": "objectNumber", "objectNumber": page }, "objectNumber": n },
             "page": { "kind": "objectNumber", "objectNumber": page },
         })
+    }
+
+    #[test]
+    fn a_dump_shows_the_records_without_their_identity() {
+        let records = from_snapshot(&no_records(), &[square(1, 1)]).unwrap();
+        assert!(identity(record(&records, "obj:1").unwrap()) > 0);
+        let shown = records_json(&records);
+        let keys: Vec<&str> =
+            shown["byKey"]["obj:1"].as_object().unwrap().keys().map(String::as_str).collect();
+        assert_eq!(keys, ["dto", "pictureVersion"]);
+        assert_eq!(shown["byKey"]["obj:1"]["dto"], records["byKey"]["obj:1"]["dto"]);
+        assert_eq!(shown["order"], json!(["obj:1"]));
+        // The value the mirror keeps is untouched.
+        assert!(record(&records, "obj:1").unwrap().get("$v").is_some());
     }
 
     #[test]
