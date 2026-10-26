@@ -13,6 +13,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use epdf_kernel::Error;
 use serde_json::{Map, Value, json};
 
 use crate::contract::{I18nConfig, I18nSettings, Locale, LocaleLoader};
@@ -70,43 +71,69 @@ impl LoaderTable {
     /// decoded with what it decoded to: a list or a loader record whose JSON
     /// did not change keeps its `Rc`, as the merge keeps the object it did
     /// not change.
-    pub fn decode(&self, value: &Value, previous: Option<(&Value, &I18nSettings)>) -> I18nSettings {
+    ///
+    /// Every write goes through [`encode`](Self::encode), so a member that
+    /// doesn't decode means the store was written some other way. The
+    /// TypeScript would carry on with whatever the member holds; this typed
+    /// boundary can't, so it hands the failure to `report` and reads the
+    /// member as empty (`locales`), absent (a loader) or `""`
+    /// (`fallbackLocale`).
+    pub fn decode(
+        &self,
+        value: &Value,
+        previous: Option<(&Value, &I18nSettings)>,
+        report: &dyn Fn(Error),
+    ) -> I18nSettings {
+        let refuse = |what: &str, found: &Value| {
+            report(Error::new(format!("[i18n] settings.{what} does not decode: {found}")))
+        };
         let unchanged = |member: &str| {
             previous.filter(|(json, _)| json.get(member) == value.get(member)).map(|(_, s)| s)
         };
         let locales = match unchanged("locales") {
             Some(settings) => settings.locales.clone(),
-            None => Rc::new(
-                value
-                    .get("locales")
-                    .and_then(|v| serde_json::from_value::<Vec<Locale>>(v.clone()).ok())
-                    .unwrap_or_default(),
-            ),
+            None => {
+                let raw = value.get("locales").cloned().unwrap_or(Value::Null);
+                Rc::new(serde_json::from_value::<Vec<Locale>>(raw.clone()).unwrap_or_else(|_| {
+                    refuse("locales", &raw);
+                    Vec::new()
+                }))
+            }
         };
         let loaders = match unchanged("loaders") {
             Some(settings) => settings.loaders.clone(),
             None => {
                 let mut record = JsRecord::new();
-                for (code, handle) in
-                    value.get("loaders").and_then(Value::as_object).into_iter().flatten()
-                {
-                    if let Some(loader) = self.loader_of(handle) {
-                        record.insert(code.clone(), loader);
+                match value.get("loaders").and_then(Value::as_object) {
+                    Some(object) => {
+                        for (code, handle) in object {
+                            match self.loader_of(handle) {
+                                Some(loader) => record.insert(code.clone(), loader),
+                                None => refuse(&format!("loaders.{code}"), handle),
+                            }
+                        }
                     }
+                    None => refuse("loaders", value.get("loaders").unwrap_or(&Value::Null)),
                 }
                 Rc::new(record)
             }
         };
-        I18nSettings {
-            locale: value.get("locale").and_then(Value::as_str).map(str::to_string),
-            fallback_locale: value
-                .get("fallbackLocale")
-                .and_then(Value::as_str)
-                .unwrap_or_default()
-                .to_string(),
-            locales,
-            loaders,
-        }
+        let locale = match value.get("locale") {
+            Some(Value::String(locale)) => Some(locale.clone()),
+            Some(Value::Null) => None,
+            other => {
+                refuse("locale", other.unwrap_or(&Value::Null));
+                None
+            }
+        };
+        let fallback_locale = match value.get("fallbackLocale") {
+            Some(Value::String(fallback)) => fallback.clone(),
+            other => {
+                refuse("fallbackLocale", other.unwrap_or(&Value::Null));
+                String::new()
+            }
+        };
+        I18nSettings { locale, fallback_locale, locales, loaders }
     }
 }
 
@@ -120,4 +147,51 @@ pub fn register(config: &I18nConfig) -> (Rc<LoaderTable>, Value) {
     let table = Rc::new(LoaderTable::default());
     let registered = table.encode(config);
     (table, registered)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use super::*;
+
+    /// A store value no `encode` wrote: each member that doesn't decode is
+    /// reported, never dropped quietly.
+    #[test]
+    fn a_member_that_does_not_decode_is_reported() {
+        let table = LoaderTable::default();
+        let reports: RefCell<Vec<String>> = RefCell::default();
+        let settings = table.decode(
+            &json!({ "locale": 7, "locales": [{ "code": "en" }], "loaders": { "ar": { "$i18nLoader": 9 } } }),
+            None,
+            &|error| reports.borrow_mut().push(error.message),
+        );
+        assert!(settings.locales.is_empty() && settings.loaders.keys().next().is_none());
+        assert_eq!((settings.locale, settings.fallback_locale.as_str()), (None, ""));
+        assert_eq!(
+            *reports.borrow(),
+            [
+                "[i18n] settings.locales does not decode: [{\"code\":\"en\"}]",
+                "[i18n] settings.loaders.ar does not decode: {\"$i18nLoader\":9}",
+                "[i18n] settings.locale does not decode: 7",
+                "[i18n] settings.fallbackLocale does not decode: null",
+            ]
+        );
+        // What `encode` writes decodes without a report.
+        reports.borrow_mut().clear();
+        let mut stored = defaults_json();
+        stored["loaders"] = table.encode(&I18nConfig {
+            loaders: Some(
+                [("ar".to_string(), Rc::new(|| Err(Error::new("x"))) as LocaleLoader)]
+                    .into_iter()
+                    .collect(),
+            ),
+            ..I18nConfig::default()
+        })["loaders"]
+            .clone();
+        let settings =
+            table.decode(&stored, None, &|error| reports.borrow_mut().push(error.message));
+        assert!(reports.borrow().is_empty());
+        assert!(settings.loaders.contains_key("ar"));
+    }
 }

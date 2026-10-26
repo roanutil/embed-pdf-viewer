@@ -22,7 +22,7 @@ use crate::contract::{
     LocaleLoadFailedEvent, LocaleLoader, OperationOptions, TextDirection, TranslateOptions,
     TranslationDictionary, Translator, WarnSink,
 };
-use crate::js::Inherited;
+use crate::js::{Inherited, JsRecord};
 use crate::loaders::Loaders;
 use crate::model::{self, I18nState, is_registered};
 use crate::settings::LoaderTable;
@@ -44,11 +44,12 @@ fn unknown_locale(code: &str) -> Error {
 }
 
 /// `getTranslator`'s memo inputs: the locale, the loaded languages (by
-/// identity) and the fallback locale.
-type TranslatorInputs = (String, *const (), String);
+/// identity) and the fallback locale. The cache holds the inputs, as the
+/// TypeScript's `memo` does, so an address is never reused while compared.
+type TranslatorInputs = (String, Rc<JsRecord<Rc<Locale>>>, String);
 /// `listLocales`' memo inputs: the loaded languages and the loaders, both by
-/// identity.
-type ListInputs = (*const (), *const ());
+/// identity, held by the cache.
+type ListInputs = (Rc<JsRecord<Rc<Locale>>>, Rc<JsRecord<LocaleLoader>>);
 
 struct Inner {
     cx: I18nContext,
@@ -103,7 +104,9 @@ impl I18nCapability {
             return settings.clone();
         }
         let previous = decoded.as_ref().map(|(json, settings)| (json.as_ref(), settings.as_ref()));
-        let settings = Rc::new(self.0.table.decode(&json, previous));
+        let cx = self.0.cx.clone();
+        let settings =
+            Rc::new(self.0.table.decode(&json, previous, &move |error| cx.report_error(&error)));
         *decoded = Some((json, settings.clone()));
         settings
     }
@@ -217,11 +220,13 @@ impl I18nCapability {
         let state = self.state();
         let inputs: TranslatorInputs = (
             state.locale.clone(),
-            Rc::as_ptr(&state.locales).cast(),
+            state.locales.clone(),
             self.current_settings().fallback_locale.clone(),
         );
         if let Some((cached, translator)) = &*self.0.translator.borrow()
-            && *cached == inputs
+            && cached.0 == inputs.0
+            && Rc::ptr_eq(&cached.1, &inputs.1)
+            && cached.2 == inputs.2
         {
             return translator.clone();
         }
@@ -264,9 +269,10 @@ impl I18nCapability {
     pub fn list_locales(&self) -> Rc<Vec<LocaleInfo>> {
         let state = self.state();
         let loaders = self.current_settings().loaders.clone();
-        let inputs: ListInputs = (Rc::as_ptr(&state.locales).cast(), Rc::as_ptr(&loaders).cast());
+        let inputs: ListInputs = (state.locales.clone(), loaders.clone());
         if let Some((cached, listed)) = &*self.0.listed.borrow()
-            && *cached == inputs
+            && Rc::ptr_eq(&cached.0, &inputs.0)
+            && Rc::ptr_eq(&cached.1, &inputs.1)
         {
             return listed.clone();
         }
@@ -359,15 +365,16 @@ impl I18nCapability {
 
     /// `registerLocale(locale)`: add a whole language, and get a function
     /// that removes it again. Every call of the remover removes the code,
-    /// as the TypeScript's closure does.
+    /// as the TypeScript's closure does; after the instance closed, the
+    /// write is dropped and reported `instance-closed` once.
     pub fn register_locale(&self, locale: Locale) -> Rc<dyn Fn()> {
         let code = locale.code.clone();
         self.update(|state| model::register_locale(state, &locale));
-        let this = Rc::downgrade(&self.0);
+        // The context, not the capability: it holds no reference back to the
+        // capability, so the remover keeps nothing alive but the lease.
+        let cx = self.0.cx.clone();
         Rc::new(move || {
-            if let Some(inner) = this.upgrade() {
-                I18nCapability(inner).update(|state| model::unregister_locale(state, &code));
-            }
+            cx.update_state(|state| model::unregister_locale(&state, &code));
         })
     }
 

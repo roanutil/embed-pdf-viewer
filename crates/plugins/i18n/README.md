@@ -19,9 +19,10 @@ registration owns, so giving a code the loader it has is no change. `set_locale`
 `not-found`, `operation-failed` or `operation-cancelled` as the TypeScript's does. Superseding or
 cancelling a switch rejects its waiter and never aborts the fetch; a pack that lands late registers
 without switching. `get_translator` and `list_locales` return the same `Rc` until their inputs
-change, as the TypeScript's `memo` does. `register_locale` returns a remover that unregisters the
-code on every call, as the TypeScript's closure does, which is why it is an `Rc<dyn Fn()>` and not
-a run-once `Unsubscribe`.
+change. Their memos hold the inputs they compare, as the TypeScript's `memo` does, so a freed map's
+address can't pass for a new one (`a_new_language_is_never_mistaken_for_a_freed_one`).
+`register_locale` returns a remover that unregisters the code on every call, as the TypeScript's
+closure does, which is why it is an `Rc<dyn Fn()>` and not a run-once `Unsubscribe`.
 
 ## What the TypeScript gets from its runtime
 
@@ -36,8 +37,18 @@ locale's CLDR rules are evaluated over ICU4C's operands. `src/plural_data.rs` is
 `src/script_data.rs`, generated from the same Node: the script of every two- and three-letter
 language subtag alone and with every two-letter and three-digit region, and where the unknown
 script `Zzzz` breaks the simple rule. A cross-check of 40,000 random tags (scripts, regions,
-variants, extensions, mixed case) against Node found no difference. The cost of both tables is that
-they must be regenerated when Node's ICU moves; `vectors:check` will say so.
+variants, extensions, mixed case) against Node found no difference.
+
+Both tables must be regenerated when the ICU in `vectors/environment.json` moves. For the plural
+table, `vectors:check` will say so, because `plurals.json` pins all 424 language codes. For the
+script table it may not: `core.json` has 13 `negotiateLocale` cases, so most of the likely-subtag
+entries are pinned by nothing but the generator. Regenerate it with Node built against that ICU
+(today Node 24.20.0, ICU 78.3), which the script checks before it starts:
+
+```sh
+node crates/plugins/i18n/scripts/script-data.mjs   # about 12 minutes
+cargo fmt -p epdf-plugin-i18n
+```
 
 `src/js.rs` is the rest: `String(number)` for interpolated numbers, a record that enumerates
 integer-like keys first, and the `Object.prototype` members a record lookup finds.
@@ -63,7 +74,11 @@ divergence:
   strings and numbers aren't accepted. A loader that resolves to something that isn't a locale
   fails the load in Rust, where the TypeScript throws inside its `then`.
 - The function `get_translator` returns holds the plugin weakly and answers the key once the plugin
-  is gone; the TypeScript's closure keeps the controller alive.
+  is gone; the TypeScript's closure keeps the controller alive. (The remover `register_locale`
+  returns does not: it holds the instance's context, so a call after close is dropped and reported
+  `instance-closed` once, as the TypeScript's is.)
+- A settings value that doesn't decode (one no `update_settings` wrote) is reported to the kernel
+  and read as empty, where the TypeScript carries on with whatever the member holds.
 
 The harness replays every member a vector calls. `getSettings`, `onSettingsChanged` and
 `getTranslator` answer with functions the replay does not print, so the harness refuses them by

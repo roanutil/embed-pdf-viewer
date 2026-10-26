@@ -690,3 +690,54 @@ fn switches_settle_on_the_typescripts_turns() {
     rt::run_until_stalled();
     assert_eq!(heard_list(&heard), [("changed he".to_string(), 1)], "settings locale lazy");
 }
+
+/// The memos compare inputs they hold, so a map freed between two reads
+/// can't hand its address to the next one and pass for it.
+#[test]
+fn a_new_language_is_never_mistaken_for_a_freed_one() {
+    let rig = Rig::with(JsRecord::new());
+    for round in 0..200 {
+        // Read, then let the answer go before the languages change.
+        let before = rig.i18n.list_locales().len();
+        let (a, b) = (format!("a{round}"), format!("b{round}"));
+        rig.i18n.register_locale(pack(&a, &a, json!({})));
+        rig.i18n.register_locale(pack(&b, &b, json!({})));
+        let listed = rig.i18n.list_locales();
+        assert_eq!(listed.len(), before + 2, "round {round}");
+        let codes: Vec<String> =
+            listed[listed.len() - 2..].iter().map(|l| l.code.clone()).collect();
+        assert_eq!(codes, [a, b], "round {round}");
+    }
+    for round in 0..200 {
+        // The same for the translator: new strings, a new translator. Its
+        // text reads the live state either way; what a memoized component
+        // sees is whether it is the same `Rc`.
+        let previous = rig.i18n.get_translator();
+        for half in ["x", "y"] {
+            let text = format!("{half}{round}");
+            rig.i18n
+                .add_translations("en", serde_json::from_value(json!({ "only": text })).unwrap())
+                .unwrap();
+        }
+        let now = rig.i18n.get_translator();
+        assert!(!Rc::ptr_eq(&previous, &now), "round {round}");
+        assert_eq!(now("only", None), format!("y{round}"));
+    }
+}
+
+#[test]
+fn a_remover_called_after_close_is_dropped_and_reported_once() {
+    let rig = Rig::with(JsRecord::new());
+    let remove = rig.i18n.register_locale(ar());
+    rig.kernel.destroy();
+    rt::run_until_stalled();
+    drop(rig.i18n);
+    remove();
+    remove();
+    let reports = rig.reports.borrow();
+    assert_eq!(reports.len(), 1, "{reports:?}");
+    assert!(
+        reports[0].starts_with("a state update after the instance closed (i18n#"),
+        "{reports:?}"
+    );
+}
