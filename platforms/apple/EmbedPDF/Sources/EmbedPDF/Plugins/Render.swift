@@ -189,10 +189,6 @@ extension RenderedPage {
       switch rendered.format {
       // Memory order R, G, B, A with straight alpha.
       case .rgba8: .last
-      @unknown default:
-        throw PDFError(
-          name: "RenderError", code: "unsupported-pixel-format",
-          detail: "Unsupported pixel format: \(rendered.format)")
       }
     guard
       let provider = CGDataProvider(data: rendered.pixels as CFData),

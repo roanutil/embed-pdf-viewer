@@ -80,7 +80,6 @@ public final class CommandHandler: CommandRunner, Sendable {
     case .active: active?(context) ?? false
     case .visible: visible?(context) ?? true
     case .run, .iconAccent: true
-    @unknown default: true
     }
   }
 

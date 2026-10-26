@@ -18,7 +18,6 @@ public final class HapticFeedback: PlatformFeedback, Sendable {
         case .light: .light
         case .heavy: .heavy
         case .medium, nil: .medium
-        @unknown default: .medium
         }
       UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
@@ -31,7 +30,6 @@ public final class HapticFeedback: PlatformFeedback, Sendable {
         case .success: .success
         case .warning: .warning
         case .error: .error
-        @unknown default: .error
         }
       UINotificationFeedbackGenerator().notificationOccurred(type)
     }

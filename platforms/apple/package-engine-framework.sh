@@ -71,11 +71,23 @@ for slice in "${SLICES[@]}"; do
   # compiles into this one module, so nothing outside it calls them, and
   # dropping `public` makes them internal. The `UInt64` handle variants have
   # no C type in them and stay as uniffi wrote them.
+  #
+  # Library evolution would also make every public enum non-frozen, and
+  # EmbedPDF's exhaustive switches over them would stop compiling. The binary
+  # and the EmbedPDF source that uses it ship together under one checksum, so
+  # no client sees a skewed pair and nothing needs the room to add cases.
+  # `@frozen` on each public enum and struct keeps those switches exhaustive.
+  # uniffi writes no attribute on these lines, and the anchor wants `public`
+  # at the start of the line, so this can't stack on an existing one. Its three
+  # error enums put `public` alone on the line above `enum`, so a line that is
+  # just `public` gets the attribute instead.
   src="$WORK/$fork/src"
   mkdir -p "$src"
   for swift in "$BUILD/generated"/*.swift; do
     sed -E \
       -e 's/^import ([A-Za-z0-9_]+FFI)$/internal import \1/' \
+      -e 's/^public ((indirect )?(enum|struct) )/@frozen public \1/' \
+      -e 's/^public $/@frozen public/' \
       -e 's/^public (func FfiConverter[A-Za-z0-9_]+_(lift|lower)\(.*RustBuffer)/\1/' \
       "$swift" > "$src/$(basename "$swift")"
   done

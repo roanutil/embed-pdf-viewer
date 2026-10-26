@@ -44,7 +44,6 @@ extension BaseSuite {
         case .changed: kinds.append("changed")
         case .committed: kinds.append("committed")
         case .cleared: kinds.append("cleared")
-        @unknown default: break
         }
         if kinds.contains("cleared") { break }
       }
