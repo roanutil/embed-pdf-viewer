@@ -1109,14 +1109,24 @@ fn a_lane_abort_reason_reaches_the_engine_as_the_typescript_value() {
         None,
     );
     rt::run_until_stalled();
-    let _second = lane.run(|_| Promise::<Value>::pending().0, None);
+    let seen = aborted.clone();
+    let second = lane.run(
+        move |run: LatestRun| {
+            let (call, _answer) = Promise::<Value>::pending();
+            let seen = seen.clone();
+            let call = call.with_abort(move |reason| seen.borrow_mut().push(reason));
+            epdf_kernel::cancellable::cancellable("search", Some(run.signal.clone()), call)
+        },
+        None,
+    );
     rt::run_until_stalled();
     assert_eq!(*aborted.borrow(), vec![Some(json!("superseded"))]);
     assert!(first.peek().unwrap().is_err());
+    // `cancel(reason)` aborts with the caller's value as given.
     lane.cancel(Some(&json!({"why":"user"})));
-    let signal = AbortSignal::new();
-    signal.abort_value(Error::new("[object Object]"), json!({"why":"user"}));
-    assert_eq!(signal.reason_value(), Some(json!({"why":"user"})));
+    rt::run_until_stalled();
+    assert_eq!(*aborted.borrow(), vec![Some(json!("superseded")), Some(json!({"why":"user"}))]);
+    assert!(second.peek().unwrap().is_err());
     let plain = AbortSignal::new();
     plain.abort(Error::new("boom"));
     assert_eq!(plain.reason_value(), Some(Error::new("boom").to_canonical()));

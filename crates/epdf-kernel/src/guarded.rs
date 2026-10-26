@@ -56,7 +56,7 @@ impl Guard {
             let guard = self.clone();
             Rc::new(move |_| {
                 if let Some(abort) = &abort {
-                    abort(guard.lifetime.signal.reason().map(|r| r.to_canonical()));
+                    abort(guard.lifetime.signal.reason_value());
                 }
                 resolver.reject(guard.closed());
             })
