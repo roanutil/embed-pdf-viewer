@@ -94,9 +94,9 @@ hooks! {
     /// `onHoverChanged`: the pointer moved onto an annotation, or off it.
     on_hover_changed => hover_changed;
     /// `tools.onDefaultsChanged`: a tool's defaults changed.
-    on_tool_defaults_changed => tool_defaults_changed;
+    tools_on_defaults_changed => tool_defaults_changed;
     /// `comments.onThreadChanged`: a comment thread changed.
-    on_thread_changed => thread_changed;
+    comments_on_thread_changed => thread_changed;
     /// `onDraftCaptured` (host lens): a capture tool's line, for the
     /// measurement plugin's calibration.
     on_draft_captured => draft_captured;

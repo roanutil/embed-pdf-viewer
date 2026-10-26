@@ -103,7 +103,7 @@ For form (13.18), link, measurement, redaction, signature and stamp, and viewer-
 | `list_raw`, `get_raw`, `create_raw`, `update_raw` | removed: `list` and `get` return the engine's records |
 | `create_many`, `update_many`, `delete_many`, `set_rotation`, `rotate_by`, `set_contents` | removed with the TypeScript's; `selection_update`, `selection_rotate_by(degrees)`, `delete` |
 | `get_status`, `get_hydration`, `ensure_hydrated`, `refresh`, `reload_page`, `deliver_remote_event` | `get_status() -> ResourceStatus`, `refresh(signal) -> Promise<()>`, `when_synced()`; hydration is the records mirror, and remote events arrive through the kernel |
-| `on_created`, `on_updated`, `on_deleted`, `on_resynced`, `on_selection_changed`, `on_draft_changed`, `on_editing_changed`, `on_draft_captured`, `comments().on_thread_changed` | the same names, each taking `Fn(&Value) -> Result<(), Error>` and returning `Unsubscribe`; the payload is the TypeScript's event object as JSON. New: `on_reordered`, `on_hover_changed`, `on_write_failed`, `on_tool_defaults_changed`, `on_thread_changed` |
+| `on_created`, `on_updated`, `on_deleted`, `on_resynced`, `on_selection_changed`, `on_draft_changed`, `on_editing_changed`, `on_draft_captured`, `comments_on_thread_changed` | the same names, each taking `Fn(&Value) -> Result<(), Error>` and returning `Unsubscribe`; the payload is the TypeScript's event object as JSON. New: `on_reordered`, `on_hover_changed`, `on_write_failed`, `tools_on_defaults_changed` |
 | `AnnotationChangedEvent` | the `on_created`/`on_updated` payload, `{ annotation, origin }` |
 | `AnnotationFilter` (root) | `read::annotations::AnnotationFilter { pages, subtype }` |
 | `comments()` (`CommentsLens`), `links()` (`LinksLens`) | `comments_*` and `links_*` methods |
