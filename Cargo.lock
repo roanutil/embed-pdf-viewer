@@ -764,10 +764,10 @@ dependencies = [
 name = "epdf-plugin-search"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
- "epdf-plugin-actions",
  "epdf-plugin-stage",
  "futures",
  "plugin-conformance",

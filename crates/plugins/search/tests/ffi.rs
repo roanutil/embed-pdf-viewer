@@ -1,4 +1,6 @@
 #![cfg(feature = "uniffi")]
+//! The search handle through uniffi. Not compiled until `epdf-ffi` builds
+//! again (Task 13.33); its assertions follow the current TypeScript.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -40,11 +42,11 @@ fn a_query_finds_hits_and_navigates_them() {
     // The first hit becomes active as the hits stream in; navigation moves on.
     assert_eq!(block_on(search.active_hit_index()).unwrap(), Some(0));
     let next = block_on(search.next_hit(None)).unwrap().unwrap();
-    assert_eq!(next.char_start, 9.0);
+    assert_eq!(next.start, 9.0);
     assert_eq!(block_on(search.active_hit_index()).unwrap(), Some(1));
     assert_eq!(block_on(search.active_hit()).unwrap(), Some(next));
     let wrapped = block_on(search.go_to_hit(3, None)).unwrap().unwrap();
-    assert_eq!(wrapped.char_start, 0.0);
+    assert_eq!(wrapped.start, 0.0);
     let previous = block_on(search.previous_hit(None)).unwrap().unwrap();
     assert_eq!(previous.page, PageRef { page_object_number: 22 });
     assert_eq!(block_on(search.query()).unwrap(), Some(query("alpha")));
@@ -65,17 +67,20 @@ fn hits_carry_their_page_geometry_and_snippet() {
     );
     let hit = &on_page[0];
     assert_eq!(hit.page_index, 0);
-    assert_eq!(hit.char_count, 5.0);
+    assert_eq!(hit.count, 5.0);
     assert_eq!(hit.segments.len(), 1);
     assert_eq!(hit.segments[0].advance, 1.0);
-    // PDF y-up 20..40 on an 800pt page is page-space y-down 760..780.
+    // The engine's page-space segment, and its rect as the bounds.
     let bounds = hit.bounds.unwrap();
     assert_eq!((bounds.x, bounds.y, bounds.width, bounds.height), (10.0, 760.0, 40.0, 20.0));
     assert_eq!(hit.segments[0].quad.upper_start.y, 760.0);
     let snippet = hit.snippet.as_ref().unwrap();
-    assert_eq!((snippet.text.as_str(), snippet.match_start), ("the alpha test", 4.0));
+    assert_eq!(
+        (snippet.before.as_str(), snippet.matched.as_str(), snippet.after.as_str()),
+        ("the ", "alpha", " test")
+    );
     let progress = block_on(search.progress()).unwrap();
-    assert_eq!((progress.scanned, progress.total), (2.0, 2.0));
+    assert_eq!((progress.pages_searched, progress.page_count), (2.0, 2.0));
     assert_eq!(block_on(search.error()).unwrap(), None);
     assert!(block_on(search.can_search(None)).unwrap());
 }
@@ -89,7 +94,7 @@ fn no_active_hit_is_none_not_minus_one() {
 }
 
 #[test]
-fn a_start_page_reaches_the_engine_as_a_page_ref() {
+fn a_from_page_reaches_the_engine_as_a_page_ref() {
     let (thread, search) = support::handle();
     let start = PageRef { page_object_number: 22 };
     block_on(search.search(query("alpha"), Some(start), token())).unwrap();
@@ -97,10 +102,7 @@ fn a_start_page_reaches_the_engine_as_a_page_ref() {
         .into_iter()
         .find(|entry| entry["path"] == "search.query")
         .expect("a search.query call");
-    assert_eq!(
-        call["args"][0]["startPage"],
-        json!({"kind": "objectNumber", "pageObjectNumber": 22})
-    );
+    assert_eq!(call["args"][0]["from"], json!({"kind": "objectNumber", "objectNumber": 22}));
 }
 
 #[test]
@@ -181,7 +183,7 @@ fn a_session_is_observed() {
         .iter()
         .map(|event| match event {
             SearchEvent::Started { .. } => "started",
-            SearchEvent::Progress { .. } => "progress",
+            SearchEvent::ProgressChanged { .. } => "progress",
             SearchEvent::Completed { .. } => "completed",
             SearchEvent::Cancelled { .. } => "cancelled",
             SearchEvent::Failed { .. } => "failed",
@@ -189,14 +191,22 @@ fn a_session_is_observed() {
             SearchEvent::Cleared => "cleared",
         })
         .collect();
-    assert_eq!(kinds, ["started", "progress", "completed", "active", "cleared"]);
-    assert!(matches!(&seen[1], SearchEvent::Progress { event } if event.hit_count == 3));
-    assert!(matches!(&seen[2], SearchEvent::Completed { event } if event.hit_count == 3));
+    // The progress, active-hit and cleared events derive from state
+    // changes (`controller.ts:80-92`): the first slice makes hit 0 active,
+    // and clear() puts progress and the active hit back to none.
+    assert_eq!(
+        kinds,
+        ["started", "progress", "active", "completed", "active", "progress", "active", "cleared"]
+    );
+    assert!(matches!(&seen[1], SearchEvent::ProgressChanged { event } if event.hit_count == 3));
+    assert!(matches!(&seen[2], SearchEvent::ActiveHitChanged { event } if event.index == Some(0)));
+    assert!(matches!(&seen[3], SearchEvent::Completed { event } if event.hit_count == 3));
     assert!(matches!(
-        &seen[3],
-        SearchEvent::ActiveHitChanged { event } if event.index == 1
-            && event.hit.as_ref().map(|h| h.char_start) == Some(9.0)
+        &seen[4],
+        SearchEvent::ActiveHitChanged { event } if event.index == Some(1)
+            && event.hit.as_ref().map(|h| h.start) == Some(9.0)
     ));
+    assert!(matches!(&seen[6], SearchEvent::ActiveHitChanged { event } if event.index.is_none()));
 }
 
 #[test]
