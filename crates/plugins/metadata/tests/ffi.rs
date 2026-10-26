@@ -1,5 +1,10 @@
+//! The uniffi handle over the current plugin. Migrated by hand in Task 13.26
+//! and not compiled: `epdf-ffi` builds again with Task 13.33, which owns
+//! running these.
 #![cfg(feature = "uniffi")]
 
+use std::cell::RefCell;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -10,10 +15,8 @@ use epdf_plugin_metadata::ffi::{
 };
 use epdf_plugin_metadata::{METADATA, metadata_plugin};
 use futures::executor::block_on;
-use plugin_conformance::test_kernel::{
-    Reply, TestKernel, TestSpec, one_document, spec_with_metadata,
-};
-use serde_json::json;
+use plugin_conformance::test_kernel::{Reply, TestKernel, TestSpec, one_document};
+use serde_json::{Map, Value, json};
 
 #[derive(Default)]
 struct Events(Mutex<Vec<MetadataEvent>>, AtomicUsize);
@@ -39,8 +42,64 @@ fn handle_over(
     (thread, handle)
 }
 
+/// The engine's current metadata wire, as `doc.metadata` answers it: the
+/// standard fields and the custom keys are read and changed apart, and each
+/// write publishes its confirmed event (with an origin) before it answers.
+fn spec_with(title: &str, custom: Value) -> TestSpec {
+    let mut fields = Map::new();
+    for key in
+        ["title", "author", "subject", "keywords", "producer", "creator", "createdAt", "modifiedAt"]
+    {
+        fields.insert(key.into(), Value::Null);
+    }
+    fields.insert("title".into(), json!(title));
+    fields.insert("trapped".into(), json!("unknown"));
+    let origin =
+        json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null });
+    let standard = Rc::new(RefCell::new(fields));
+    let keys = Rc::new(RefCell::new(custom.as_object().cloned().unwrap_or_default()));
+    let (read, read_custom) = (standard.clone(), keys.clone());
+    let custom_origin = origin.clone();
+    TestSpec::new(one_document())
+        .respond("metadata.get", move |_| Ok(Reply::value(Value::Object(read.borrow().clone()))))
+        .respond("metadata.custom.get", move |_| {
+            Ok(Reply::value(Value::Object(read_custom.borrow().clone())))
+        })
+        .respond("metadata.update", move |args| {
+            let mut fields = standard.borrow_mut();
+            for (key, value) in args[0].as_object().into_iter().flatten() {
+                fields.insert(key.clone(), value.clone());
+            }
+            let metadata = Value::Object(fields.clone());
+            Ok(Reply {
+                value: json!({ "metadata": metadata }),
+                events: vec![
+                    json!({ "type": "metadata.updated", "metadata": metadata, "origin": origin }),
+                ],
+            })
+        })
+        .respond("metadata.custom.update", move |args| {
+            let mut custom = keys.borrow_mut();
+            for (key, value) in args[0].as_object().into_iter().flatten() {
+                match value {
+                    Value::Null => custom.remove(key),
+                    value => custom.insert(key.clone(), value.clone()),
+                };
+            }
+            let custom = Value::Object(custom.clone());
+            Ok(Reply {
+                value: json!({ "custom": custom }),
+                events: vec![json!({
+                    "type": "metadata.customUpdated",
+                    "custom": custom,
+                    "origin": custom_origin,
+                })],
+            })
+        })
+}
+
 fn handle() -> (KernelThread<TestKernel>, Arc<MetadataHandle>) {
-    handle_over(|| spec_with_metadata(json!({ "title": "Report", "custom": { "Dept": "Ops" } })))
+    handle_over(|| spec_with("Report", json!({ "Dept": "Ops" })))
 }
 
 fn code(error: &ViewerError) -> Option<&str> {
@@ -55,16 +114,26 @@ fn token() -> Arc<CancelToken> {
 }
 
 #[test]
-fn refresh_then_snapshot_reads_the_metadata() {
+fn ensure_loaded_then_snapshot_reads_the_metadata() {
     let (_thread, metadata) = handle();
-    block_on(metadata.refresh(token())).unwrap();
+    // Nothing is read until someone asks.
+    assert_eq!(block_on(metadata.status()).unwrap(), ResourceStatus::Idle);
+    assert_eq!(block_on(metadata.snapshot()).unwrap(), None);
+    block_on(metadata.ensure_loaded(token())).unwrap();
     assert_eq!(block_on(metadata.status()).unwrap(), ResourceStatus::Ready);
+    assert_eq!(block_on(metadata.custom_status()).unwrap(), ResourceStatus::Ready);
     let snapshot = block_on(metadata.snapshot()).unwrap().unwrap();
     assert_eq!(snapshot.title.as_deref(), Some("Report"));
     assert_eq!(snapshot.author, None);
+    assert_eq!(snapshot.created_at, None);
     assert_eq!(snapshot.trapped, DocumentMetadataTrapped::Unknown);
-    assert_eq!(snapshot.custom.get("Dept").map(String::as_str), Some("Ops"));
-    assert!(block_on(metadata.can_edit()).unwrap());
+    let custom = block_on(metadata.custom_snapshot()).unwrap().unwrap();
+    assert_eq!(custom.get("Dept").map(String::as_str), Some("Ops"));
+    assert!(block_on(metadata.can_update()).unwrap());
+    // A refresh re-reads the standard fields.
+    block_on(metadata.refresh(token())).unwrap();
+    block_on(metadata.refresh_custom(token())).unwrap();
+    assert_eq!(block_on(metadata.status()).unwrap(), ResourceStatus::Ready);
 }
 
 #[test]
@@ -72,7 +141,7 @@ fn an_update_is_observed() {
     let (_thread, metadata) = handle();
     let events = Arc::new(Events::default());
     let _sub = metadata.subscribe(events.clone());
-    block_on(metadata.refresh(token())).unwrap();
+    block_on(metadata.ensure_loaded(token())).unwrap();
     let patch = MetadataPatch { title: Some("Renamed".into()), ..Default::default() };
     assert_eq!(block_on(metadata.update(patch, token())).unwrap().title, Some("Renamed".into()));
     let seen = events.0.lock().unwrap();
@@ -86,17 +155,25 @@ fn an_update_is_observed() {
 #[test]
 fn a_patch_clears_and_edits_custom_keys() {
     let (_thread, metadata) = handle();
-    block_on(metadata.refresh(token())).unwrap();
-    let patch = MetadataPatch {
-        clear: vec![MetadataField::Title],
-        custom: Some(
-            [("Dept".to_string(), None), ("Owner".to_string(), Some("Ana".into()))].into(),
-        ),
-        ..Default::default()
-    };
+    block_on(metadata.ensure_loaded(token())).unwrap();
+    let patch = MetadataPatch { clear: vec![MetadataField::Title], ..Default::default() };
     let updated = block_on(metadata.update(patch, token())).unwrap();
     assert_eq!(updated.title, None);
-    assert_eq!(updated.custom, [("Owner".to_string(), "Ana".to_string())].into());
+    let custom = block_on(metadata.update_custom(
+        [("Dept".to_string(), None), ("Owner".to_string(), Some("Ana".into()))].into(),
+        token(),
+    ))
+    .unwrap();
+    assert_eq!(custom, [("Owner".to_string(), "Ana".to_string())].into());
+    let events = Arc::new(Events::default());
+    let _sub = metadata.subscribe(events.clone());
+    block_on(metadata.update_custom([("Owner".to_string(), Some(String::new()))].into(), token()))
+        .unwrap();
+    let seen = events.0.lock().unwrap();
+    assert!(
+        matches!(seen.last(), Some(MetadataEvent::CustomUpdated { event }) if event.changed_keys == ["Owner"]),
+        "{seen:?}"
+    );
 }
 
 #[test]
@@ -114,7 +191,7 @@ fn a_key_both_set_and_cleared_is_refused() {
 #[test]
 fn cancelling_an_update_before_it_runs_leaves_the_document_alone() {
     let (thread, metadata) = handle();
-    block_on(metadata.refresh(token())).unwrap();
+    block_on(metadata.ensure_loaded(token())).unwrap();
     // Hold the kernel thread so the update's job queues behind this one.
     let (release, gate) = std::sync::mpsc::channel::<()>();
     let (parked_tx, parked) = std::sync::mpsc::channel::<()>();
@@ -138,12 +215,14 @@ fn cancelling_an_update_before_it_runs_leaves_the_document_alone() {
 #[test]
 fn a_closed_documents_capability_refuses_with_instance_closed() {
     let (thread, metadata) = handle();
-    block_on(metadata.refresh(token())).unwrap();
+    block_on(metadata.ensure_loaded(token())).unwrap();
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     for error in [
         block_on(metadata.snapshot()).map(|_| ()).unwrap_err(),
         block_on(metadata.status()).map(|_| ()).unwrap_err(),
-        block_on(metadata.can_edit()).map(|_| ()).unwrap_err(),
+        block_on(metadata.custom_snapshot()).map(|_| ()).unwrap_err(),
+        block_on(metadata.can_update()).map(|_| ()).unwrap_err(),
+        block_on(metadata.ensure_loaded(token())).unwrap_err(),
         block_on(metadata.refresh(token())).unwrap_err(),
     ] {
         assert_eq!(code(&error), Some("instance-closed"), "{error:?}");
@@ -154,9 +233,10 @@ fn a_closed_documents_capability_refuses_with_instance_closed() {
 fn metadata_the_record_cannot_hold_is_an_error_not_a_default() {
     let (_thread, metadata) = handle_over(|| {
         TestSpec::new(one_document())
-            .respond("metadata.read", |_| Ok(Reply::value(json!({ "title": 5 }))))
+            .respond("metadata.get", |_| Ok(Reply::value(json!({ "title": 5 }))))
+            .respond("metadata.custom.get", |_| Ok(Reply::value(json!({}))))
     });
-    block_on(metadata.refresh(token())).unwrap();
+    block_on(metadata.ensure_loaded(token())).unwrap();
     let error = block_on(metadata.snapshot()).unwrap_err();
     assert_eq!(code(&error), Some("invalid-state"), "{error:?}");
 }
@@ -166,7 +246,7 @@ fn closing_the_document_ends_its_subscriptions() {
     let (thread, metadata) = handle();
     let events = Arc::new(Events::default());
     let subscription = metadata.subscribe(events.clone());
-    block_on(metadata.refresh(token())).unwrap();
+    block_on(metadata.ensure_loaded(token())).unwrap();
     assert_eq!(events.1.load(Ordering::SeqCst), 0);
     block_on(thread.call(|k| k.close())).unwrap().unwrap();
     assert_eq!(events.1.load(Ordering::SeqCst), 1);

@@ -702,6 +702,7 @@ dependencies = [
 name = "epdf-plugin-metadata"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",
