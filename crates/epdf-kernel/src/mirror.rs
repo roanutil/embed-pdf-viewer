@@ -464,12 +464,19 @@ impl Mirror {
         rt::spawn(async move {
             let result = loop {
                 this.0.again.set(false);
-                let result = this.load_once().await;
+                // `await loadOnce()`: an `async` function's resume turn.
+                let result = rt::returned(this.load_once()).await;
                 if !this.0.again.get() || !this.live() {
                     break result;
                 }
             };
+            // `.finally(() => running = null)` (mirror.ts:443): its reaction
+            // takes a turn, then the promise it returns is adopted, which
+            // takes two more.
+            rt::tick().await;
             this.0.running.borrow_mut().take();
+            rt::tick().await;
+            rt::tick().await;
             resolver.settle(result);
         });
         promise

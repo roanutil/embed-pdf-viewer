@@ -277,6 +277,54 @@ fn a_page_load_settles_after_its_finally_as_typescript_chains_it() {
     assert!(!mirror.ensure_loaded(page).same(&load), "the finally forgot the load");
 }
 
+/// `mirror.ts:425-446`: `refresh` returns `(async () => { ... })().finally(()
+/// => running = null)`. Measured with tsx on the TypeScript mirror (a load
+/// answering at once) and the same counter: the read is announced on turn 1
+/// and a caller's reaction to `refresh()` runs on turn 6.
+#[test]
+fn a_refresh_settles_after_its_finally_as_typescript_chains_it() {
+    use std::cell::Cell;
+    rt::reset();
+    let turn = Rc::new(Cell::new(0u32));
+    let count = turn.clone();
+    rt::spawn(async move {
+        for _ in 0..64 {
+            rt::tick().await;
+            count.set(count.get() + 1);
+        }
+    });
+    let q = DocumentChanges::new(
+        Rc::new(|_, _| Promise::resolved(json!({}))),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let stored = Rc::new(Cell::new(u32::MAX));
+    let (seen, at) = (stored.clone(), turn.clone());
+    let mut spec = MirrorSpec::new(
+        "n",
+        json!(0),
+        Rc::new(|_, _| Promise::resolved(Loaded { value: json!(1), cursor: None })),
+        Rc::new(|value, _| Ok(Fold::Value(value))),
+    );
+    spec.changed = Some(Rc::new(move |_| {
+        seen.set(at.get());
+        Ok(())
+    }));
+    let mirror = Mirror::new(
+        spec,
+        MirrorEnvironment::detached(EventHookSource::new(None), AbortSignal::new(), q),
+    );
+    let refresh = mirror.refresh();
+    let reacted = Rc::new(Cell::new(u32::MAX));
+    let (r, at) = (reacted.clone(), turn.clone());
+    rt::spawn(async move {
+        let _ = refresh.await;
+        r.set(at.get());
+    });
+    rt::run_until_stalled();
+    assert_eq!((stored.get(), reacted.get()), (1, 6));
+}
+
 #[test]
 fn pending_holds_groups_and_dependency_refusal_keep_staging_order() {
     rt::reset();
