@@ -1,90 +1,107 @@
 # epdf-plugin-stamp
 
-`packages/plugin/stamp` in Rust at the v3 contract: workspace stamp libraries, each a PDF whose
-pages are its stamps, over an asset engine; marks authored into assets; dynamic stamps evaluated in
-a detached script realm; placement through the annotation plugin; and the persistence helpers. All
-100 cases in five vector files replay identically (`cargo test -p epdf-plugin-stamp`):
+`packages/plugin/stamp` in Rust, at the TypeScript of upstream `b456ee4fd` plus the reviewed
+migration (`b029e3d78`): workspace stamp libraries, each a canonical PDF whose pages are its
+stamps; marks authored into pages; dynamic stamps evaluated in a detached script realm; placement
+through the annotation plugin; and the persistence helpers. All 106 cases in five vector files
+replay with no member-order allowance and no outcome exception (`cargo test -p epdf-plugin-stamp`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/stamp-library.json` | scenario | 21 | `importLibrary` of a plain PDF: catalog and page PieceInfo, `/Title`, registration of every page, source errors, missing services, engine failures mid-import and at close, URL renders, id allocation, concurrent imports, every asset-engine configuration and its teardown |
-| `vectors/plugins/stamp-assets.json` | scenario | 20 | `createAsset` from rasters and PDFs, appends to and deletes from a library, `deleteLibrary`, the per-library mutation queue, a mutation that outlives the kernel |
-| `vectors/plugins/stamp-placement.json` | scenario | 19 | `armAsset` and `disarm` through the real annotation plugin, the skipped cases, dynamic materialization in a detached realm, its refusals, flatten and close failures |
-| `vectors/plugins/stamp-api.json` | scenario | 21 | library create, update, export and delete, registered (`/Names /Pages`) libraries, marks, asset edits, moves and copies, assets from annotations, filtered reads, rendered previews, `placeAsset` and `placeAssetOnPages`, the armed asset, the eight change events, persistence |
-| `vectors/plugins/stamp-functions.json` | function | 19 | the reducer |
+| `vectors/plugins/stamp-library.json` | scenario | 23 | `importLibrary`: catalog and page PieceInfo, `/Title`, the named-page registry, plain PDFs, the asset engine settings and their refusals, ids, previews, persistence |
+| `vectors/plugins/stamp-assets.json` | scenario | 20 | `createAsset` from rasters and PDFs, appends and removals, `deleteLibrary`, the per-library queue, a queued mutation after destroy |
+| `vectors/plugins/stamp-placement.json` | scenario | 22 | `armAsset` through the real annotation plugin, ghost renders, materialization in a detached realm, sandbox failures, atomic flatten, the file picker, permission refusals |
+| `vectors/plugins/stamp-api.json` | scenario | 21 | library and asset writes, marks, registered libraries, moves and copies, assets from annotations, `placeAsset` and `placeAssetOnPages`, the armed asset, persistence |
+| `vectors/plugins/stamp-functions.json` | function | 20 | the `model.ts` transitions |
 
-The scenario registry runs the real interaction, actions, annotation and form adapters beside this
-one. The first three files are the v2 suites reaching v3 through renamed calls; `stamp-api` is
-where the v3 surface is pinned.
+`tests/behavior.rs` pins what no vector reaches, because no vector passes a signal or changes a
+setting: the TypeScript-measured turns of ten verbs (`verbs_settle_on_the_typescripts_turns`), a
+queued mutation cancelled before it starts, a cancel after the rewrite that keeps nothing, one
+queue per library, work in flight at teardown that completes where a cancel rejects, ghost renders
+cached per width, a library's assets going with it, and a setting change that re-resolves the asset
+engine.
 
 ## Shape
 
-The v3 plugin is a different design from v2's canonical-or-loose libraries, so the crate was
-rewritten along the TypeScript's split rather than adapted. `contract.rs`, `model.rs`,
-`convention.rs` and `blank_library.rs` are the vocabulary, the reducer, the key and PieceInfo rules
-and the seed PDF. `controller.rs` composes the services (events, the binary sidecar with the
-per-library mutation queue, the asset engine port, the ghost renderer) and the areas: `read/catalog`
-and `write/{libraries,marks,assets,placement}`, each an `impl` block on the one `StampCapability`.
-`persistence.rs` is the store port and its two helpers. `stamp_plugin` declares `create` and is
-workspace-scoped with the annotation and actions tokens optional.
+The files follow the TypeScript package. `contract.rs`, `token.rs`, `model.rs`, `convention.rs` and
+`blank_library.rs` are the vocabulary, the token, the session state and its transitions, the key
+and PieceInfo rules and the seed PDF. `controller.rs` composes the services (`services/`: events,
+binaries and the per-library queue, the asset engine port, ghosts, the target document, settings)
+and the areas (`read/catalog.rs`, `write/{libraries,marks,assets,placement}.rs`), each an `impl`
+block on the one `StampCapability`. `persistence.rs` is the store port and its two helpers.
+`stamp_plugin(config)` is workspace-scoped, with the annotation and actions tokens optional.
 
-The methods are the TypeScript's in snake case. Options objects become structs:
-`CreateLibraryOptions`, `LibraryPatch`, `AssetPatch` (whose `subject` is `Some(None)` for `null`),
-`StampLibraryFilter`, `StampAssetFilter`, `AddAssetInput` with a typed `MarkSource`.
-`place_asset_on_pages` takes the pages as `Option<Vec<PageRef>>`, `None` for `'all'`.
+The verbs take the TypeScript's options as structs whose `signal` is the trailing
+`OperationOptions` member. A placing verb names its document in `StampDocumentOptions` or
+`StampArmOptions`; left out, the active document. The kernel has no `inScope`, so a host fills the
+document in itself. A write resolves the library or asset it made, where the TypeScript wraps it in
+`{ library }` or `{ asset }`.
 
-Dynamic stamps no longer take scripting options. The target document's actions plugin mints a
-detached realm (`create_detached_script_realm`), the form plugin's controller rides it, and the
-result surfaces through `surface_script_commit` with `realm: Detached`. No actions plugin, scripting
-off, or `dynamic: Some(false)` arms the template.
-
-Engine answers stay `serde_json::Value`. Bytes the plugin keeps are `Option<Vec<u8>>`: `None` is an
-engine that answered a save, an extraction or a render with no bytes, which the TypeScript stores as
-`undefined` and later treats as missing.
+The state is `StampState` with `libraries`, `libraryOrder`, `assets` and `armed`. The TypeScript
+builds a library with two literals whose member order differs and adds a member later by
+assignment, so `StampLibrary`, `StampAsset` and `StampState` each carry their member order
+(`Members`) and serialize in it. The records are maps in `Object.keys` order: integer-like keys
+first, then insertion order (`model::assign`).
 
 ## Host inputs
 
-`StampHost` carries what the TypeScript reads from globals: `console_error` for a throwing change
-listener, `console_warn` for ignored registrations and a failed ghost render, and `random` for
-`Math.random`, which `customStampName` draws a minted identifier from. The persistence helpers take
-their `console.warn` sink as an argument. The vectors log both consoles as callbacks and answer
-`random` with a fixed sequence (see `stamp-fixtures.ts`).
+`console.rs` holds the globals the TypeScript reads. `set_sink` takes the `[stamp]` lines written
+to `console.warn` and `console.error`; the default writes to stderr. `set_random` is
+`Math.random`, which `customStampName` draws an identifier from; the default is a clock-seeded
+xorshift. The harness installs both per case, as `stamp-current-fixtures.ts` does.
 
-## Ids
+`uid` numbers session ids from a thread-local counter, the module-level `idCounter` of
+`services/asset-engine.ts`. The generator builds each case over a private copy of the controller
+module, so the harness calls `reset_id_sequence` when it builds the plugin.
 
-`services/asset-engine.ts` numbers session ids from a module-level counter:
-`${prefix}-${Date.now().toString(36)}-${seq.toString(36)}`. The Rust counter is thread-local, and
-`Date.now()` is `rt::now()`. The generator's `stamp` factory builds each case over a private copy of
-the stamp source (`src/loader/instance-hook.mjs`), so its counter starts at zero, and the harness
-calls `services::asset_engine::reset_id_sequence` when it builds the plugin.
+## Where the port differs
 
-## Turn order
+The asset engine is typed. `StampAssetEngine` is a `LocalEngine`, which is the TypeScript's
+`LOCAL_ENGINE_BRAND` made a type, or a factory that makes one. The kernel's `Engine` carries no
+local brand, so an unconfigured plugin refuses every import before it opens anything, as the
+TypeScript does for any unbranded engine. A host whose kernel engine is local passes it as the asset
+engine. The cost: the TypeScript accepts a local kernel engine with no configuration and Rust does
+not. A kernel `Engine::is_local` would close the gap; that call is the controller's.
 
-Each `await` and `.then` is mirrored in `src/promise.rs`. An engine call awaited resumes three turns
-after it settles, an `async` function that returns a promise settles two turns after it, and
-`mutateLibrary`'s `result.finally(...)` settles three turns after `result`. The queue's ordering is
-pinned by `removals-are-serialized-per-library`, the `*-queued-*` cases and
-`edits-queued-behind-removals`, where a deferred `open` holds one mutation while others line up
-behind it. A page handle without `pieceInfo` costs the `await undefined` turn the TypeScript's
-`pieceInfo?.read(...)` does.
+The settings live in the kernel's JSON store. The asset engine is stored as a handle,
+`{"$assetEngine": n}`, into a table the registration owns, as the actions plugin stores a function
+identity. `get_settings()` decodes it; `settings_json()` shows the handle where the TypeScript shows
+the engine.
 
-## Where the port differs in shape
+The kernel's `SerialQueue` has no `signal` option. `mutate_library` (`services/binaries.rs`) adds
+it over the kernel queue as `serial-queue.ts` defines it, as the form, measurement and redaction
+plugins do: a fourth plugin waiting on the Task 14 kernel carry.
 
-The state's `libraries` and `assets` are `BTreeMap`s; the vectors compare the TypeScript's records
-unordered. A few malformed engine answers make the TypeScript throw a `TypeError` where the Rust
-carries on, and no vector sends one: a page layout without a `ref`, a registry entry pointing at a
-page the layout lacks, a created annotation without a `ref`. The default `random` is a clock-seeded
-xorshift, where the TypeScript uses `Math.random`.
+A render's bytes the host holds (`$hostBytes`) are read out and the render released
+(`release_host`), as before this port. A malformed page ref the kernel's `PageRef` can't hold is a
+`TypeError` with the port's own message, where the TypeScript calls the engine with it. A sibling
+plugin whose lookup throws reads as absent in `can_place`, `disarm` and materialization. No vector
+reaches any of these.
+
+The default QuickJS execution has no Rust counterpart: with scripting on and no sandbox factory,
+every sandbox build is refused (`NO_DEFAULT_SANDBOX`, `crates/plugins/actions/README.md`), so a
+dynamic stamp's arm fails where the TypeScript would load QuickJS. `no-sandbox-host` replays the
+case with no actions plugin, and no vector runs the default VM.
+
+## The ffi
+
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand in Task 13.24 and are not compiled until
+`epdf-ffi` builds (Task 13.33). The handle answers ids as before. Placements take `center` and
+answer the placed annotation's ref, `persist` lost its debounce, `ArmChanged` carries the asset, and
+`can_create_from_annotations` is new.
 
 ## Harness changes
 
-Two came with this port. The Rust fake engine now answers `DocumentHandle::has` for every
-`pages.*` member (present unless `lacks` names it) and every `page.annotations.*` member (present),
-as the TypeScript proxies already did (commit `beee89103`). And `stamp-fixtures.ts` gained a
-`console.warn` shim, a `Math.random` shim and the `stamp-persistence` driver, each mirrored in
-`src/harness.rs`.
+Task 13.24 needed two outside this crate, both dump-time only. The annotation records mirror strips
+its `$v` identity tag when the store is dumped (`records_json`,
+`crates/plugins/annotation/src/sync/records.rs`), and the form harness's diagnostics plugins have no
+state slice, as the generator's `definePlugin` declares none. The stamp vectors are the first to
+dump the whole state with those plugins installed.
 
 ## Coverage
+
+Stale since Task 13.24: the counts and lines below are the pre-13.24 port's, over code that no
+longer exists. Task 14 regenerates them.
 
 Across the whole corpus the generators reach 2,286 of the package's 2,305 statements and 633 of
 its 651 branches (`vectors/coverage.json`). The 19 statements left:
@@ -106,11 +123,14 @@ arms for an asset document without `actions`, and `placeAssetOnPages`' `?? []`.
 ## Pinned TypeScript behaviour
 
 `moveAsset` and `duplicateAsset` copy the page without its identifier: the copy gets a freshly
-minted `#...` name, so a moved stamp's `/Name` changes (`edit-move-and-copy-assets`).
-`placeAssetOnPages(..., 'all', ...)` on a document that is not open resolves with nothing applied
-rather than rejecting. A supplied preview whose MIME type is `''` keeps it (`??`, not `||`).
+minted `#...` name, so a moved stamp's `/Name` changes (`edit-move-and-copy-assets`). A supplied
+preview whose MIME type is `''` reads as `image/png`, since `resolveBinarySource` drops an empty
+type.
 
 ## Mutation testing
+
+Stale since Task 13.24: the counts and lines below are the pre-13.24 port's, over code that no
+longer exists. Task 14 regenerates them.
 
 `scripts/mutants.sh -p epdf-plugin-stamp --test-package epdf-plugin-stamp --file <file>`, file by
 file over every module but `harness.rs`, catches 239 of 251 viable mutants (228 caught, 11
