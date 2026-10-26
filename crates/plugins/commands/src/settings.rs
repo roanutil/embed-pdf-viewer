@@ -15,7 +15,10 @@
 //! are the same functions. The table hands out one handle per such value
 //! (the first definition it was given), so equal JSON is exactly
 //! `sameValue`, and an equal list reads back with the definitions it
-//! already had, as the TypeScript merge keeps the array it had.
+//! already had, as the TypeScript merge keeps the array it had. A list that
+//! changes reads back that first definition too for each element equal to
+//! one already given, where the TypeScript takes the new objects: a
+//! registered divergence (README), visible only as identity.
 
 use std::cell::RefCell;
 use std::rc::Rc;

@@ -21,9 +21,10 @@ kernel's settings store, so `update_settings`, `reset_settings` and `on_settings
 for any plugin. A definition or a family holds functions, so `settings.rs` stores each as a handle,
 `{"$command": n}` or `{"$commandFamily": n}`, into a table the registration owns. The table hands
 out one handle per definition that is equal by `sameValue` (data members equal, functions the same
-`Rc`), so a change that gives equal definitions changes nothing and reads back the definitions
-already there, as the TypeScript merge keeps its array. Each list keeps its `Rc` while a change
-leaves it equal (`a_settings_change_that_changes_nothing_fires_nothing`).
+`Rc`), so a change that gives an equal list changes nothing and keeps the definitions already
+there, as the TypeScript merge keeps the array it had. Each list keeps its `Rc` while a change
+leaves it equal (`a_settings_change_that_changes_nothing_fires_nothing`). A list that does change
+is not quite the TypeScript's: see the first divergence below.
 
 A configured list with an unparsable shortcut is not refused at construction. Every read that needs
 the configured commands throws the parse error instead (`a-bad-config-shortcut-refuses-the-kernel`),
@@ -48,9 +49,21 @@ not visited (`re-entrant-registry`, `a_walk_reads_the_ids_it_started_with`).
 A run that completes later keeps it pending; a signal rejects `operation-cancelled` without a
 failure event.
 
+A derivation or `run` that reads `c.get(&DOCUMENTS)` gets the kernel's documents capability
+unscoped. The TypeScript hands a document's context the `documentsInScope` view, whose calls
+default to that document; the Rust kernel has no such view yet (a Task 13.33 / Task 14 carry).
+`CommandCtx::document_id` is the command's document either way.
+
 ## Kept Rust-only divergences
 
 These are reached by no vector and stay divergent:
+
+- When the `commands` list changes as a whole, the TypeScript takes the new array with its own
+  objects, including any definition equal to one it had. Rust reads back the first definition the
+  table was given with that value, so `get_command` and `get_settings` can hand out the older `Rc`.
+  Every data member and function is the same, so nothing a command shows or runs differs; only the
+  definition's identity does. Matching it would mean repointing a handle on every change, which
+  would also rewrite what `reset_settings` restores.
 
 - U4 in part: a remover holds its registration weakly, but a definition closure that holds the
   strong capability still forms a cycle. `CommandsCapability::downgrade` gives closures a weak
