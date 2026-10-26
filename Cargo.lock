@@ -715,6 +715,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "epdf-plugin-outline"
+version = "0.0.0"
+dependencies = [
+ "build-support",
+ "epdf-kernel",
+ "epdf-plugin-actions",
+ "epdf-plugin-history",
+ "epdf-plugin-i18n",
+ "epdf-plugin-interaction",
+ "epdf-plugin-link",
+ "epdf-plugin-selection",
+ "epdf-plugin-stage",
+ "plugin-conformance",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "epdf-plugin-page-edit"
 version = "0.0.0"
 dependencies = [
