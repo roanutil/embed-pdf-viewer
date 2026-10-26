@@ -8,31 +8,41 @@
 //! logs what came back as `<name>:uses`. The generator
 //! (`tooling/plugin-conformance/src/suites/commands.ts`) documents the
 //! format; this is its Rust half.
+//!
+//! A definition prints as the vector wrote it, functions as
+//! `{"$function": true}`: the TypeScript hands back the object the app
+//! passed, members in its order. The adapter keeps each definition it
+//! decoded with that print, by `Rc`, for the case.
 
 use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined, undefined};
+use epdf_kernel::types::PluginScope;
+use epdf_kernel::{AnyPlugin, AnyToken, Error, Kernel, KernelOptions, is_undefined, undefined};
+use epdf_ui_core::shortcuts::KeyStroke;
+use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
 use serde_json::{Map, Value, json};
 
 use crate::contract::{
-    AccentDerivation, CommandCtx, CommandDef, CommandsConfig, Derivation, IconAccent, Panel,
+    AccentDerivation, CommandCtx, CommandDef, CommandItem, CommandsConfig, CommandsSettings,
+    Derivation, ExecuteOptions, IconAccent, MatchStrokeOptions, NotAllowedMode, Panel,
     RegisterCommandOptions, ResolvedCommand, RunFn, Shortcut,
 };
-use crate::model::{CommandsAction, CommandsState};
-use crate::registry::CommandRegistry;
-use crate::{
-    COMMANDS, CommandsCapability, commands_plugin, commands_reducer, initial_commands_state,
-    register_command, resolved_commands_equal,
-};
+use crate::registry::registered_command;
+use crate::{COMMANDS, CommandsCapability, plugin_parts, resolved_commands_equal};
 
 pub struct Commands;
 
-/// The TypeScript object literal's member order.
+/// The TypeScript object literal's member order (`controller.ts`, the
+/// settings calls spread first).
 const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "registerCommand",
     "registerCommands",
     "hasCommand",
@@ -44,11 +54,17 @@ const MEMBERS: &[&str] = &[
     "listShortcuts",
     "execute",
     "canExecute",
+    "getRefusal",
     "getDisabledCategories",
     "isCategoryDisabled",
     "disableCategory",
     "enableCategory",
     "setDisabledCategories",
+    "getDisabledCommands",
+    "isCommandDisabled",
+    "disableCommand",
+    "enableCommand",
+    "setDisabledCommands",
     "onExecuted",
     "onExecutionFailed",
     "matchStroke",
@@ -78,10 +94,126 @@ fn opt_string(object: &Map<String, Value>, key: &str) -> Option<String> {
     object.get(key).and_then(Value::as_str).map(str::to_string)
 }
 
+fn json_of<T: serde::Serialize>(value: &T) -> Value {
+    serde_json::to_value(value).unwrap_or(Value::Null)
+}
+
+thread_local! {
+    /// Removers kept by `remember` uses, per case (`build` resets it), as
+    /// the generator's factory keeps them.
+    static REMEMBERED: RefCell<HashMap<String, Rc<dyn Fn()>>> = RefCell::new(HashMap::new());
+    /// Each definition decoded in this case, with how it prints. Holding
+    /// the `Rc` keeps its address from being reused while it is a key.
+    static PRINTED: RefCell<Vec<(Rc<CommandDef>, Value)>> = const { RefCell::new(Vec::new()) };
+}
+
+fn reset_case() {
+    REMEMBERED.with(|r| r.borrow_mut().clear());
+    PRINTED.with(|p| p.borrow_mut().clear());
+}
+
+// ── printing ──────────────────────────────────────────────────────────────────
+
+/// A vector's definition as the TypeScript prints it: `$fn` specs become
+/// `{"$function": true}`.
+fn printed_from_vector(value: &Value) -> Value {
+    match value {
+        Value::Object(object) if object.contains_key("$fn") => json!({ "$function": true }),
+        Value::Object(object) => {
+            Value::Object(object.iter().map(|(k, v)| (k.clone(), printed_from_vector(v))).collect())
+        }
+        Value::Array(list) => Value::Array(list.iter().map(printed_from_vector).collect()),
+        other => other.clone(),
+    }
+}
+
+/// A definition this adapter did not decode, in the interface's member
+/// order.
+fn printed_from_def(def: &CommandDef) -> Value {
+    let mut out = Map::new();
+    let function = || json!({ "$function": true });
+    out.insert("id".into(), json!(def.id));
+    let mut put = |key: &str, value: Option<Value>| {
+        if let Some(value) = value {
+            out.insert(key.into(), value);
+        }
+    };
+    put("label", def.label.as_ref().map(|v| json!(v)));
+    put("labelKey", def.label_key.as_ref().map(|v| json!(v)));
+    put("icon", def.icon.as_ref().map(|v| json!(v)));
+    put("iconAccent", def.icon_accent.as_ref().map(|_| function()));
+    put(
+        "shortcut",
+        def.shortcut.as_ref().map(|s| match s {
+            Shortcut::One(s) => json!(s),
+            Shortcut::Many(list) => json!(list),
+        }),
+    );
+    put("shortcutInTextFields", def.shortcut_in_text_fields.map(|v| json!(v)));
+    put("categories", def.categories.as_ref().map(|v| json!(v)));
+    put("requires", def.requires.as_ref().map(|v| json!(v)));
+    put("allowed", def.allowed.as_ref().map(|_| function()));
+    put("notAllowedKey", def.not_allowed_key.as_ref().map(|v| json!(v)));
+    put("menu", def.menu.as_ref().map(|v| json!(v)));
+    put(
+        "panel",
+        def.panel.as_ref().map(|p| match p {
+            Panel::Id(id) => json!(id),
+            Panel::Target { id, exclusive, focus } => {
+                let mut target = Map::new();
+                target.insert("id".into(), json!(id));
+                if let Some(exclusive) = exclusive {
+                    target.insert("exclusive".into(), json!(exclusive));
+                }
+                if let Some(focus) = focus {
+                    target.insert("focus".into(), json!(focus));
+                }
+                Value::Object(target)
+            }
+        }),
+    );
+    put("modal", def.modal.as_ref().map(|v| json!(v)));
+    put("enabled", def.enabled.as_ref().map(|_| function()));
+    put("active", def.active.as_ref().map(|_| function()));
+    put("visible", def.visible.as_ref().map(|_| function()));
+    put("run", def.run.as_ref().map(|_| function()));
+    Value::Object(out)
+}
+
+fn print_def(def: &Rc<CommandDef>) -> Value {
+    PRINTED
+        .with(|p| p.borrow().iter().find(|(d, _)| Rc::ptr_eq(d, def)).map(|(_, v)| v.clone()))
+        .unwrap_or_else(|| printed_from_def(def))
+}
+
+fn print_item(item: &CommandItem) -> Value {
+    match item {
+        CommandItem::Command(def) => print_def(def),
+        CommandItem::Family(family) => json!({
+            "prefix": family.prefix,
+            "names": { "$function": true },
+            "command": { "$function": true },
+        }),
+    }
+}
+
+fn not_allowed_json(mode: NotAllowedMode) -> Value {
+    json_of(&mode)
+}
+
+fn print_settings(settings: &CommandsSettings) -> Value {
+    json!({
+        "commands": settings.commands.iter().map(print_item).collect::<Vec<_>>(),
+        "disabledCategories": *settings.disabled_categories,
+        "disabledCommands": *settings.disabled_commands,
+        "notAllowed": not_allowed_json(settings.not_allowed),
+    })
+}
+
 // ── scripted command functions ────────────────────────────────────────────────
 
 /// The canonical form of a `CommandCtx` in a callback's arguments. On a
-/// live harness its `core`, `get` and `tryGet` are markers the host resolves
+/// live harness its `get` and `tryGet` are markers the host resolves
 /// against the kernel, `{"$kernel": member, "doc": documentId}`; a trace
 /// prints each as `{"$function": true}`.
 fn ctx_json(c: &CommandCtx, live: bool) -> Value {
@@ -90,7 +222,7 @@ fn ctx_json(c: &CommandCtx, live: bool) -> Value {
     if let Some(args) = c.args() {
         out.insert("args".into(), args.clone());
     }
-    for member in ["core", "get", "tryGet"] {
+    for member in ["get", "tryGet"] {
         let shown = if live {
             json!({ "$kernel": member, "doc": c.document_id() })
         } else {
@@ -110,12 +242,6 @@ fn outcome_value(outcome: Outcome) -> Value {
     }
 }
 
-thread_local! {
-    /// Removers kept by `remember` uses, per case (`build` resets it), as
-    /// the generator's factory keeps them.
-    static REMEMBERED: RefCell<HashMap<String, Rc<dyn Fn()>>> = RefCell::new(HashMap::new());
-}
-
 /// One `uses` entry, done with the context a command function was handed.
 fn run_use(spec: &Value, c: &CommandCtx, h: &Harness) -> Value {
     if let Some(name) = spec.get("forget").and_then(Value::as_str) {
@@ -130,9 +256,13 @@ fn run_use(spec: &Value, c: &CommandCtx, h: &Harness) -> Value {
             }
         };
     }
-    if let Some(member) = spec.get("core").and_then(Value::as_str) {
-        let core = serde_json::to_value(&*c.core()).unwrap_or(Value::Null);
-        return json!({ "returned": core.get(member).cloned().unwrap_or_else(undefined) });
+    if let Some(member) = spec.get("context").and_then(Value::as_str) {
+        let returned = match member {
+            "documentId" => json!(c.document_id()),
+            "args" => c.args().cloned().unwrap_or_else(undefined),
+            _ => undefined(),
+        };
+        return json!({ "returned": returned });
     }
     let capability = if let Some(name) = spec.get("get").and_then(Value::as_str) {
         match c.get_any(&h.token(name, None)) {
@@ -231,16 +361,17 @@ fn run(spec: &Value, h: &Harness) -> RunFn {
 
 // ── decoding definitions ──────────────────────────────────────────────────────
 
-/// A `CommandDef` from a vector. Function members need a harness; a
-/// function case has none and never writes them.
-pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<CommandDef, Error> {
+/// A `CommandDef` from a vector, kept with its print. Function members need
+/// a harness; a function case has none and never writes them.
+pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<Rc<CommandDef>, Error> {
     let object = value.as_object().ok_or_else(|| bad("command", value))?;
     let func = |key: &str| {
         h.and_then(|h| object.get(key).filter(|v| v.get("$fn").is_some()).map(|spec| (spec, h)))
     };
-    Ok(CommandDef {
+    let def = Rc::new(CommandDef {
         id: opt_string(object, "id").ok_or_else(|| bad("command id", value))?,
-        label_key: opt_string(object, "labelKey").ok_or_else(|| bad("command labelKey", value))?,
+        label: opt_string(object, "label"),
+        label_key: opt_string(object, "labelKey"),
         icon: opt_string(object, "icon"),
         icon_accent: func("iconAccent").map(|(spec, h)| accent(spec, h)),
         shortcut: match object.get("shortcut") {
@@ -248,13 +379,18 @@ pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<CommandDef, Erro
             Some(list @ Value::Array(_)) => Some(Shortcut::Many(strings(Some(list)))),
             _ => None,
         },
+        shortcut_in_text_fields: object.get("shortcutInTextFields").and_then(Value::as_bool),
         categories: object.get("categories").map(|c| strings(Some(c))),
+        requires: object.get("requires").map(|c| strings(Some(c))),
+        allowed: func("allowed").map(|(spec, h)| derivation(spec, h)),
+        not_allowed_key: opt_string(object, "notAllowedKey"),
         menu: opt_string(object, "menu"),
         panel: match object.get("panel") {
             Some(Value::String(id)) => Some(Panel::Id(id.clone())),
             Some(Value::Object(target)) => Some(Panel::Target {
                 id: opt_string(target, "id").unwrap_or_default(),
                 exclusive: opt_string(target, "exclusive"),
+                focus: target.get("focus").and_then(Value::as_bool),
             }),
             _ => None,
         },
@@ -263,66 +399,36 @@ pub fn decode_def(value: &Value, h: Option<&Harness>) -> Result<CommandDef, Erro
         active: func("active").map(|(spec, h)| derivation(spec, h)),
         visible: func("visible").map(|(spec, h)| derivation(spec, h)),
         run: func("run").map(|(spec, h)| run(spec, h)),
-    })
+    });
+    PRINTED.with(|p| p.borrow_mut().push((def.clone(), printed_from_vector(value))));
+    Ok(def)
 }
 
-fn decode_config(raw: &Value, h: Option<&Harness>) -> Result<CommandsConfig, Error> {
+fn not_allowed_of(value: &Value) -> Result<NotAllowedMode, Error> {
+    serde_json::from_value(value.clone()).map_err(|e| bad("notAllowed", e))
+}
+
+/// A `DeepPartial<CommandsSettings>` from a vector; `undefined` is no
+/// config at all.
+fn decode_config(raw: &Value, h: Option<&Harness>) -> Result<Option<CommandsConfig>, Error> {
     if is_undefined(raw) {
-        return Ok(CommandsConfig::default());
+        return Ok(None);
     }
-    let commands = match raw.get("commands").and_then(Value::as_array) {
-        Some(list) => list.iter().map(|d| decode_def(d, h)).collect::<Result<_, _>>()?,
-        None => Vec::new(),
+    let member = |key: &str| raw.get(key).filter(|v| !is_undefined(v));
+    let commands = match member("commands").and_then(Value::as_array) {
+        Some(list) => Some(
+            list.iter()
+                .map(|d| decode_def(d, h).map(CommandItem::Command))
+                .collect::<Result<Vec<_>, _>>()?,
+        ),
+        None => None,
     };
-    Ok(CommandsConfig { commands, disabled_categories: strings(raw.get("disabledCategories")) })
-}
-
-fn json_of<T: serde::Serialize>(value: &T) -> Value {
-    serde_json::to_value(value).unwrap_or(Value::Null)
-}
-
-/// A definition as `getCommand` hands it back: its data members. Function
-/// members are not printed; no vector reads a definition that has them.
-fn def_json(def: &CommandDef) -> Value {
-    let mut out = Map::new();
-    out.insert("id".into(), json!(def.id));
-    out.insert("labelKey".into(), json!(def.label_key));
-    if let Some(icon) = &def.icon {
-        out.insert("icon".into(), json!(icon));
-    }
-    match &def.shortcut {
-        Some(Shortcut::One(s)) => {
-            out.insert("shortcut".into(), json!(s));
-        }
-        Some(Shortcut::Many(list)) => {
-            out.insert("shortcut".into(), json!(list));
-        }
-        None => {}
-    }
-    if let Some(categories) = &def.categories {
-        out.insert("categories".into(), json!(categories));
-    }
-    if let Some(menu) = &def.menu {
-        out.insert("menu".into(), json!(menu));
-    }
-    match &def.panel {
-        Some(Panel::Id(id)) => {
-            out.insert("panel".into(), json!(id));
-        }
-        Some(Panel::Target { id, exclusive }) => {
-            let mut target = Map::new();
-            target.insert("id".into(), json!(id));
-            if let Some(exclusive) = exclusive {
-                target.insert("exclusive".into(), json!(exclusive));
-            }
-            out.insert("panel".into(), Value::Object(target));
-        }
-        None => {}
-    }
-    if let Some(modal) = &def.modal {
-        out.insert("modal".into(), json!(modal));
-    }
-    Value::Object(out)
+    Ok(Some(CommandsConfig {
+        commands,
+        disabled_categories: member("disabledCategories").map(|v| strings(Some(v))),
+        disabled_commands: member("disabledCommands").map(|v| strings(Some(v))),
+        not_allowed: member("notAllowed").map(not_allowed_of).transpose()?,
+    }))
 }
 
 fn register_options(value: Option<&Value>) -> RegisterCommandOptions {
@@ -343,13 +449,14 @@ fn remover(result: Result<Rc<dyn Fn()>, Error>, h: &Harness) -> Outcome {
 }
 
 /// Subscribe a scripted `$fn` listener; the outcome is the unsubscribe.
-fn listen<E: serde::Serialize>(
+fn listen<E>(
     h: &Harness,
     spec: Option<&Value>,
+    print: impl Fn(&E) -> Value + 'static,
     subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> epdf_kernel::Unsubscribe,
 ) -> Outcome {
     let callback = h.callback(spec.unwrap_or(&Value::Null));
-    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![json_of(event)]) {
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![print(event)]) {
         Answer::Throws(error) => Err(error),
         _ => Ok(()),
     }));
@@ -359,14 +466,34 @@ fn listen<E: serde::Serialize>(
     })))
 }
 
+fn returned<T: serde::Serialize>(result: Result<T, Error>) -> Outcome {
+    match result {
+        Ok(value) => Outcome::Returned(json_of(&value)),
+        Err(error) => Outcome::Threw(error),
+    }
+}
+
+fn done() -> Outcome {
+    Outcome::undefined()
+}
+
 impl HarnessPlugin for Commands {
+    /// The suite's own names for the shell and i18n plugins it runs next
+    /// to this one (`commands-current-shell`, `commands-current-i18n`):
+    /// those plugins' adapters build them.
     fn factories(&self) -> Vec<&'static str> {
-        vec!["commands"]
+        vec!["commands", "commands-current-shell", "commands-current-i18n"]
     }
 
-    fn build(&self, _factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        REMEMBERED.with(|r| r.borrow_mut().clear());
-        Ok(commands_plugin(decode_config(config, Some(h))?))
+    fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
+        match factory {
+            "commands-current-shell" => epdf_plugin_shell::harness::Shell.build("shell", config, h),
+            "commands-current-i18n" => epdf_plugin_i18n::harness::I18n.build("i18n", config, h),
+            _ => {
+                reset_case();
+                Ok(plugin_parts(decode_config(config, Some(h))?).0)
+            }
+        }
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -384,12 +511,30 @@ impl HarnessPlugin for Commands {
         let id = str_arg(&args, 0).unwrap_or_default();
         let doc = str_arg(&args, 1);
         Some(match method {
+            "getSettings" => Outcome::Returned(print_settings(&cap.get_settings())),
+            "updateSettings" => match decode_config(arg(&args, 0).unwrap_or(&json!({})), Some(h)) {
+                Ok(changes) => {
+                    cap.update_settings(&changes.unwrap_or_default());
+                    done()
+                }
+                Err(error) => Outcome::Threw(error),
+            },
+            "resetSettings" => {
+                cap.reset_settings();
+                done()
+            }
+            "onSettingsChanged" => listen(
+                h,
+                arg(&args, 0),
+                |event: &crate::CommandsSettingsChanged| json!({ "settings": print_settings(&event.settings), "changed": event.changed }),
+                |f| cap.on_settings_changed(f),
+            ),
             "registerCommand" => match decode_def(arg(&args, 0).unwrap_or(&Value::Null), Some(h)) {
                 Ok(def) => remover(cap.register_command(def, register_options(arg(&args, 1))), h),
                 Err(error) => Outcome::Threw(error),
             },
             "registerCommands" => {
-                let defs: Result<Vec<CommandDef>, Error> = arg(&args, 0)
+                let defs: Result<Vec<Rc<CommandDef>>, Error> = arg(&args, 0)
                     .and_then(Value::as_array)
                     .into_iter()
                     .flatten()
@@ -402,50 +547,74 @@ impl HarnessPlugin for Commands {
                     Err(error) => Outcome::Threw(error),
                 }
             }
-            "hasCommand" => Outcome::Returned(json!(cap.has_command(id))),
-            "getCommand" => {
-                Outcome::Returned(cap.get_command(id).map_or(Value::Null, |d| def_json(&d)))
-            }
-            "listCommandIds" => Outcome::Returned(json!(cap.list_command_ids())),
-            "resolveCommand" => Outcome::Returned(json_of(&cap.resolve_command(id, doc))),
-            "listCommands" => Outcome::Returned(json_of(&cap.list_commands(str_arg(&args, 0)))),
-            "searchCommands" => Outcome::Returned(json_of(&cap.search_commands(id, doc))),
-            "listShortcuts" => Outcome::Returned(json_of(&cap.list_shortcuts())),
+            "hasCommand" => returned(cap.has_command(id)),
+            "getCommand" => match cap.get_command(id) {
+                Ok(def) => Outcome::Returned(def.map_or(Value::Null, |d| print_def(&d))),
+                Err(error) => Outcome::Threw(error),
+            },
+            "listCommandIds" => returned(cap.list_command_ids()),
+            "resolveCommand" => returned(cap.resolve_command(id, doc)),
+            "listCommands" => returned(cap.list_commands(str_arg(&args, 0))),
+            "searchCommands" => returned(cap.search_commands(id, doc)),
+            "listShortcuts" => returned(cap.list_shortcuts()),
             "execute" => {
                 let options = arg(&args, 1);
-                let document_id = options.and_then(|o| o.get("documentId")).and_then(Value::as_str);
-                let call_args =
-                    options.and_then(|o| o.get("args")).filter(|a| !is_undefined(a)).cloned();
-                Outcome::promise(cap.execute(id, document_id, call_args))
+                let member =
+                    |key: &str| options.and_then(|o| o.get(key)).filter(|v| !is_undefined(v));
+                Outcome::promise(cap.execute(
+                    id,
+                    ExecuteOptions {
+                        document_id:
+                            member("documentId").and_then(Value::as_str).map(str::to_string),
+                        args: member("args").cloned(),
+                        signal: None,
+                    },
+                ))
             }
-            "canExecute" => Outcome::Returned(json!(cap.can_execute(id, doc))),
-            "matchStroke" => {
-                let stroke = arg(&args, 0).map(|s| serde_json::from_value(scrub(s)));
-                let opts = arg(&args, 1).map(|o| serde_json::from_value(scrub(o)));
-                match (stroke, opts) {
-                    (Some(Ok(stroke)), Some(Ok(opts))) => Outcome::Returned(
-                        cap.match_stroke(&stroke, opts).map_or(Value::Null, Value::String),
-                    ),
-                    _ => Outcome::Threw(bad("matchStroke", "a stroke and options")),
-                }
-            }
-            "getMenuTarget" => Outcome::Returned(json_of(&cap.get_menu_target(id))),
-            "getDisabledCategories" => Outcome::Returned(json!(cap.get_disabled_categories())),
+            "canExecute" => returned(cap.can_execute(id, doc)),
+            "getRefusal" => returned(cap.get_refusal(id, doc)),
+            "getDisabledCategories" => Outcome::Returned(json!(*cap.get_disabled_categories())),
             "isCategoryDisabled" => Outcome::Returned(json!(cap.is_category_disabled(id))),
             "disableCategory" => {
                 cap.disable_category(id);
-                Outcome::undefined()
+                done()
             }
             "enableCategory" => {
                 cap.enable_category(id);
-                Outcome::undefined()
+                done()
             }
             "setDisabledCategories" => {
                 cap.set_disabled_categories(&strings(arg(&args, 0)));
-                Outcome::undefined()
+                done()
             }
-            "onExecuted" => listen(h, arg(&args, 0), |f| cap.on_executed(f)),
-            "onExecutionFailed" => listen(h, arg(&args, 0), |f| cap.on_execution_failed(f)),
+            "getDisabledCommands" => Outcome::Returned(json!(*cap.get_disabled_commands())),
+            "isCommandDisabled" => returned(cap.is_command_disabled(id)),
+            "disableCommand" => {
+                cap.disable_command(id);
+                done()
+            }
+            "enableCommand" => {
+                cap.enable_command(id);
+                done()
+            }
+            "setDisabledCommands" => {
+                cap.set_disabled_commands(&strings(arg(&args, 0)));
+                done()
+            }
+            "onExecuted" => listen(h, arg(&args, 0), json_of, |f| cap.on_executed(f)),
+            "onExecutionFailed" => {
+                listen(h, arg(&args, 0), json_of, |f| cap.on_execution_failed(f))
+            }
+            "matchStroke" => {
+                let stroke = arg(&args, 0).map(|s| serde_json::from_value::<KeyStroke>(scrub(s)));
+                let opts =
+                    arg(&args, 1).map(|o| serde_json::from_value::<MatchStrokeOptions>(scrub(o)));
+                match (stroke, opts) {
+                    (Some(Ok(stroke)), Some(Ok(opts))) => returned(cap.match_stroke(&stroke, opts)),
+                    _ => Outcome::Threw(bad("matchStroke", "a stroke and options")),
+                }
+            }
+            "getMenuTarget" => returned(cap.get_menu_target(id)),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }
@@ -460,21 +629,32 @@ impl HarnessPlugin for Commands {
 
 // ── function cases ────────────────────────────────────────────────────────────
 
-/// The reducer with its reference identity made visible. An action no
-/// variant decodes is the TypeScript's `default: return state`.
-fn f_reducer(args: &[Value]) -> Result<Value, Error> {
-    let state: CommandsState = serde_json::from_value(scrub(arg(args, 0).unwrap_or(&Value::Null)))
-        .map_err(|e| bad("state", e))?;
-    let action: Option<CommandsAction> =
-        arg(args, 1).and_then(|a| serde_json::from_value(scrub(a)).ok());
-    let next = action.and_then(|action| commands_reducer(&state, &action));
-    let shown =
-        serde_json::to_value(next.as_ref().unwrap_or(&state)).map_err(|e| bad("state", e))?;
-    Ok(json!({ "same": next.is_none(), "next": shown }))
+/// A kernel with no documents and the plugin registered with `config`: the
+/// workspace controller exists from construction, as `createTestContext`
+/// builds it.
+fn controller(config: Option<CommandsConfig>) -> Result<(Kernel, CommandsCapability), Error> {
+    let engine = Rc::new(AsEngine(FakeEngine::new(json!({ "documents": {} }))));
+    let kernel = Kernel::new(engine, vec![plugin_parts(config).0], KernelOptions::default())?;
+    let capability = kernel.capability(&COMMANDS, None)?;
+    Ok((kernel, capability))
 }
 
-fn f_initial(_: &[Value]) -> Result<Value, Error> {
-    serde_json::to_value(initial_commands_state(&[])).map_err(|e| bad("state", e))
+/// A settings mutation, with `same` the identity of the disabled-category
+/// list before and after.
+fn f_settings(args: &[Value]) -> Result<Value, Error> {
+    let config = decode_config(arg(args, 0).unwrap_or(&json!({})), None)?.unwrap_or_default();
+    let (_kernel, api) = controller(Some(config))?;
+    let before = api.get_disabled_categories();
+    match str_arg(args, 1) {
+        Some("disableCategory") => api.disable_category(str_arg(args, 2).unwrap_or_default()),
+        Some("enableCategory") => api.enable_category(str_arg(args, 2).unwrap_or_default()),
+        Some("setDisabledCategories") => api.set_disabled_categories(&strings(arg(args, 2))),
+        _ => {}
+    }
+    Ok(json!({
+        "same": Rc::ptr_eq(&before, &api.get_disabled_categories()),
+        "settings": print_settings(&api.get_settings()),
+    }))
 }
 
 fn resolved_arg(args: &[Value], i: usize) -> Result<Option<ResolvedCommand>, Error> {
@@ -496,54 +676,65 @@ fn f_equal_self(args: &[Value]) -> Result<Value, Error> {
     Ok(json!(resolved_commands_equal(a.as_ref(), a.as_ref())))
 }
 
-/// Register each definition into a fresh registry, in order: the entries,
-/// and the error that stopped it, if one did.
+/// Register each definition through a fresh controller, in order: the
+/// entries, and the error that stopped it, if one did.
 fn f_register(args: &[Value]) -> Result<Value, Error> {
-    let mut registry = CommandRegistry::new();
+    let (_kernel, api) = controller(None)?;
     let mut error = None;
     for def in arg(args, 0).and_then(Value::as_array).into_iter().flatten() {
-        let def = decode_def(def, None)?;
-        if let Err(e) = register_command(&mut registry, def, RegisterCommandOptions::default()) {
+        if let Err(e) = api.register_command(decode_def(def, None)?, Default::default()) {
             error = Some(e);
             break;
         }
     }
-    let entries: Vec<Value> = registry
-        .entries()
-        .into_iter()
-        .map(
-            |(id, entry)| json!({ "id": id, "shortcuts": entry.shortcuts, "parsed": entry.parsed }),
-        )
-        .collect();
+    let mut entries = Vec::new();
+    for id in api.list_command_ids()?.iter() {
+        let def = api.get_command(id)?.ok_or_else(|| bad("entry", id))?;
+        let entry = registered_command(def)?;
+        entries.push(json!({ "id": id, "shortcuts": entry.shortcuts, "parsed": entry.parsed }));
+    }
     Ok(match error {
         None => json!({ "entries": entries }),
         Some(error) => json!({ "entries": entries, "error": error.to_canonical() }),
     })
 }
 
-/// What `commandsPlugin(config)` builds: its identity and initial state.
-/// The definitions are registered when a controller is created, not here.
+/// What `commandsPlugin(config)` builds: its identity, scope and settings
+/// declaration, and that it has no state.
 fn f_plugin(args: &[Value]) -> Result<Value, Error> {
     let config = decode_config(arg(args, 0).unwrap_or(&undefined()), None)?;
-    let plugin = commands_plugin(config);
+    let (plugin, table) = plugin_parts(config);
+    let declaration = plugin.settings.clone().ok_or_else(|| bad("settings", "none"))?;
+    let mut settings = Map::new();
+    settings.insert("defaults".into(), declaration.defaults.clone());
+    if let Some(registered) = &declaration.registered {
+        let mut shown = registered.as_object().cloned().unwrap_or_default();
+        if let Some(commands) = shown.get_mut("commands") {
+            let items = table.items_of(commands).ok_or_else(|| bad("commands", &*commands))?;
+            *commands = Value::Array(items.iter().map(print_item).collect());
+        }
+        settings.insert("registered".into(), Value::Object(shown));
+    }
     let state = (plugin.initial_state)();
     Ok(json!({
         "id": plugin.id,
         "scope": match plugin.scope {
-            epdf_kernel::types::PluginScope::Workspace => "workspace",
-            epdf_kernel::types::PluginScope::Document => "document",
+            PluginScope::Workspace => "workspace",
+            PluginScope::Document => "document",
         },
-        "initialState": (plugin.to_json)(&*state),
+        "settings": settings,
+        "hasState": !is_undefined(&(plugin.to_json)(&*state)),
+        // The kernel has no `resolvesAnyCapability` yet: its guard applies.
+        "resolvesAnyCapability": false,
     }))
 }
 
 pub fn functions() -> FunctionTable {
     vec![
-        ("commandsReducer", f_reducer),
-        ("initialCommandsState", f_initial),
+        ("commandSettings", f_settings),
         ("resolvedCommandsEqual", f_equal),
         ("resolvedCommandsEqualSelf", f_equal_self),
-        ("registerCommand", f_register),
+        ("registerCurrentCommands", f_register),
         ("commandsPlugin", f_plugin),
     ]
 }

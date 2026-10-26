@@ -586,6 +586,7 @@ dependencies = [
 name = "epdf-plugin-commands"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "epdf-plugin-i18n",

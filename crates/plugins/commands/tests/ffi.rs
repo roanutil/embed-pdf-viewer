@@ -287,7 +287,8 @@ fn registry_reads_categories_and_shortcuts() {
         alt: false,
         shift: false,
     };
-    assert_eq!(block_on(commands.match_stroke(stroke, true)).unwrap().as_deref(), Some("zoom:in"));
+    let found = block_on(commands.match_stroke(stroke, true, false)).unwrap().unwrap();
+    assert_eq!((found.command_id.as_str(), found.refusal), ("zoom:in", None));
     assert_eq!(
         block_on(commands.menu_target("zoom:in".into())).unwrap().and_then(|m| m.menu).as_deref(),
         Some("zoom-menu")
