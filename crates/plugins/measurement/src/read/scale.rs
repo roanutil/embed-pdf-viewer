@@ -1,120 +1,126 @@
 //! `read/scale.ts`: the page scale, the vocabulary, readouts, and pure
 //! conversions in the page's scale.
 
-use epdf_annotation_core::measure::{DimensionInput, PdfMeasurement, measurement_readout};
-use epdf_annotation_core::{AnnotationRef, PageRef, PdfPoint, Point};
+use std::rc::Rc;
+
+use epdf_annotation_core::engine::measure::{DimensionInput, measurement_readout};
 use epdf_kernel::Error;
-use epdf_plugin_annotation::value::{get, pdf_point_of, str_of, truthy};
-use serde_json::Value;
+use epdf_kernel::geometry::Point;
+use serde_json::{Map, Value, json};
 
-use crate::contract::*;
+use crate::contract::{
+    CalibrationRequest, PageInput, PageScale, ScaleChangeReport, ScalePreset, no_readout,
+};
 use crate::controller::MeasurementCapability;
+use crate::units::{METRES, square_of};
 
-/// `Object.keys(METRES)`.
-pub const UNITS: &[&str] = &["pt", "mm", "cm", "m", "km", "in", "ft", "yd", "mi"];
+/// `UNITS`: `Object.keys(METRES)`.
+pub fn units() -> Vec<&'static str> {
+    METRES.iter().map(|(unit, _)| *unit).collect()
+}
 
-/// `[...UNITS.map(squareOf), 'ha', 'acre']`.
-pub const AREA_UNITS: &[&str] =
-    &["pt2", "mm2", "cm2", "m2", "km2", "in2", "ft2", "yd2", "mi2", "ha", "acre"];
+/// `AREA_UNITS`: each unit squared, then `ha` and `acre`.
+pub fn area_units() -> Vec<String> {
+    let mut list: Vec<String> = units().into_iter().map(square_of).collect();
+    list.extend(["ha".to_string(), "acre".to_string()]);
+    list
+}
 
-/// `measurementReadout(dto)` for an engine DTO read as JSON.
-pub fn readout_of_dto(dto: &Value) -> Readout {
-    let measure: Option<PdfMeasurement> = get(dto, "measure")
-        .filter(|m| truthy(Some(m)))
-        .and_then(|m| serde_json::from_value(m.clone()).ok());
-    let line_points = get(dto, "linePoints")
-        .filter(|lp| truthy(Some(lp)))
-        .map(|lp| (pdf_point_of(get(lp, "start")), pdf_point_of(get(lp, "end"))));
-    let vertices: Vec<PdfPoint> = get(dto, "vertices")
-        .and_then(Value::as_array)
-        .map(|vs| vs.iter().map(|v| pdf_point_of(Some(v))).collect())
-        .unwrap_or_default();
-    measurement_readout(&DimensionInput {
-        subtype: str_of(dto, "subtype").unwrap_or_default(),
-        intent: str_of(dto, "intent").unwrap_or_default(),
-        measure: measure.as_ref(),
-        line_points,
-        vertices,
-    })
+fn point(p: Point) -> Value {
+    json!({ "x": p.x, "y": p.y })
+}
+
+/// `measurementReadout(dto)` over a JSON object.
+fn readout(object: &Map<String, Value>) -> Value {
+    measurement_readout(&DimensionInput::of(object)).to_value()
 }
 
 impl MeasurementCapability {
-    /// Create authority and a ready scale on the page.
-    pub fn can_measure(&self, page: &PageRef) -> bool {
-        self.s().annotation.can_create() && self.s().scale_of(page).ready
+    /// May measure on the page: `annotations:create`, and the page's scale
+    /// has loaded.
+    pub fn can_measure(&self, page: impl Into<PageInput>) -> Result<bool, Error> {
+        Ok(self.core().cx.allows("annotations:create") && self.scale_of(page.into())?.ready)
     }
 
-    /// The resolved scale, its source and readiness.
-    pub fn get_page_scale(&self, page: &PageRef) -> PageScale {
-        self.s().scale_of(page)
+    /// The resolved scale, its source and readiness. The same `Rc` while
+    /// unchanged; a page that isn't there is not ready and has no measure.
+    pub fn get_page_scale(&self, page: impl Into<PageInput>) -> Result<Rc<PageScale>, Error> {
+        self.scale_of(page.into())
     }
 
     /// A scale change is in flight.
     pub fn is_busy(&self) -> bool {
-        self.s().state().pending > 0.0
+        self.core().cx.state().pending > 0.0
     }
 
-    /// The reports of the last scale change.
-    pub fn list_last_reports(&self) -> Vec<ScaleChangeReport> {
-        self.s().state().reports.clone()
+    /// The reports of the last scale change, one per page.
+    pub fn list_last_reports(&self) -> Rc<Vec<ScaleChangeReport>> {
+        self.core().cx.state().reports.clone()
     }
 
+    /// The `presets` setting.
     pub fn list_presets(&self) -> Vec<ScalePreset> {
-        self.0.presets.clone()
+        self.get_settings().presets
+    }
+
+    /// The `presets` setting as the store holds it.
+    pub fn list_presets_json(&self) -> Value {
+        self.settings_json().get("presets").cloned().unwrap_or(Value::Null)
     }
 
     pub fn list_units(&self) -> Vec<&'static str> {
-        UNITS.to_vec()
+        units()
     }
 
-    pub fn list_area_units(&self) -> Vec<&'static str> {
-        AREA_UNITS.to_vec()
+    pub fn list_area_units(&self) -> Vec<String> {
+        area_units()
     }
 
-    /// The formatted measurement of a measurement annotation.
-    pub fn get_readout(&self, r: &AnnotationRef) -> Readout {
-        match self.s().annotation.get_raw(r) {
-            Some(raw) if !raw.is_null() => readout_of_dto(&raw),
-            _ => Readout::Unavailable { unavailable: Unavailable::NotDimension },
+    /// The formatted measurement of a measurement annotation, or why there
+    /// is none (`NO_READOUT` for an annotation that isn't there).
+    pub fn get_readout(&self, reference: &Value) -> Value {
+        match self.core().annotation.get(reference) {
+            Some(Value::Object(raw)) => readout(&raw),
+            Some(_) => readout(&Map::new()),
+            None => no_readout(),
         }
     }
 
-    /// A distance in the page's scale, with no annotation. `Err` is a page
-    /// that is not in the document.
+    /// A distance between two page-space points in the page's scale: a pure
+    /// conversion, no annotation.
     pub fn measure_distance(
         &self,
-        page: &PageRef,
+        page: impl Into<PageInput>,
         from: Point,
         to: Point,
-    ) -> Result<Readout, Error> {
-        let measure = self.s().scale_of(page).measure;
-        let start = self.s().to_pdf(page, from)?;
-        let end = self.s().to_pdf(page, to)?;
-        Ok(measurement_readout(&DimensionInput {
-            subtype: "line",
-            intent: "LineDimension",
-            measure: measure.as_ref(),
-            line_points: Some((start, end)),
-            vertices: Vec::new(),
-        }))
+    ) -> Result<Value, Error> {
+        let measure = self.scale_of(page.into())?.measure.clone();
+        let mut dto = Map::new();
+        dto.insert("subtype".into(), json!("line"));
+        dto.insert("intent".into(), json!("line-dimension"));
+        dto.insert("measure".into(), measure);
+        dto.insert("linePoints".into(), json!({ "start": point(from), "end": point(to) }));
+        Ok(readout(&dto))
     }
 
-    /// An area in the page's scale, with no annotation.
-    pub fn measure_area(&self, page: &PageRef, vertices: &[Point]) -> Result<Readout, Error> {
-        let measure = self.s().scale_of(page).measure;
-        let vertices =
-            vertices.iter().map(|v| self.s().to_pdf(page, *v)).collect::<Result<Vec<_>, _>>()?;
-        Ok(measurement_readout(&DimensionInput {
-            subtype: "polygon",
-            intent: "PolygonDimension",
-            measure: measure.as_ref(),
-            line_points: None,
-            vertices,
-        }))
+    /// The area of a page-space polygon in the page's scale: a pure
+    /// conversion, no annotation.
+    pub fn measure_area(
+        &self,
+        page: impl Into<PageInput>,
+        vertices: &[Point],
+    ) -> Result<Value, Error> {
+        let measure = self.scale_of(page.into())?.measure.clone();
+        let mut dto = Map::new();
+        dto.insert("subtype".into(), json!("polygon"));
+        dto.insert("intent".into(), json!("polygon-dimension"));
+        dto.insert("measure".into(), measure);
+        dto.insert("vertices".into(), Value::Array(vertices.iter().copied().map(point).collect()));
+        Ok(readout(&dto))
     }
 
     /// Two points captured, awaiting a length.
     pub fn get_calibration_request(&self) -> Option<CalibrationRequest> {
-        self.s().state().calibration.clone()
+        self.core().cx.state().calibration.clone()
     }
 }

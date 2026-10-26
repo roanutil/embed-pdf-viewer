@@ -42,5 +42,12 @@ name = "conformance"
 required-features = ["harness"]
 
 [[test]]
+name = "behavior"
+required-features = ["harness"]
+
+[[test]]
 name = "ffi"
 required-features = ["uniffi"]
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

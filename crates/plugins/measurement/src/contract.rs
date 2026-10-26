@@ -1,47 +1,85 @@
-//! `contract.ts` and `host-contract.ts`: the public measurement vocabulary.
-//! The host lens equals the public one, so there is one set of types.
+//! `contract.ts`: the public measurement vocabulary. Measures, viewports and
+//! re-measurement reports are the engine's JSON (`PdfMeasure`,
+//! `PageMeasurementViewport`, the annotation plugin's `RecalibrationReport`),
+//! carried as the caller or the engine wrote them.
 
-use std::rc::Rc;
-
-use epdf_annotation_core::measure::PdfMeasurement;
-use epdf_annotation_core::{AnnotationRef, PageRef, PdfRect, Point};
 use epdf_kernel::Error;
-use epdf_plugin_annotation::{RecalibrationReport, SkipReason};
+use epdf_kernel::geometry::{PageRef, Point};
+use epdf_kernel::signal::AbortSignal;
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
-pub use epdf_annotation_core::measure::{MeasurementReadout, Readout, Unavailable};
+use crate::scale::default_presets;
+
+/// Changing a page's scale rewrites its measurement annotations
+/// (`services/store.ts`).
+pub const SCALE_PERMISSION: &str = "doc.annotate.modify";
+
+/// A page argument: a ref, or a zero-based index into the document's pages.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PageInput {
+    Ref(PageRef),
+    Index(f64),
+}
+
+impl From<PageRef> for PageInput {
+    fn from(page: PageRef) -> Self {
+        PageInput::Ref(page)
+    }
+}
+
+impl From<u32> for PageInput {
+    fn from(index: u32) -> Self {
+        PageInput::Index(index as f64)
+    }
+}
+
+impl PageInput {
+    /// A `PageRef | number` value. Anything else names no page.
+    pub fn from_json(value: &Value) -> PageInput {
+        match value {
+            Value::Number(n) => PageInput::Index(n.as_f64().unwrap_or(f64::NAN)),
+            other => PageRef::from_json(other).map_or(PageInput::Index(f64::NAN), PageInput::Ref),
+        }
+    }
+}
 
 /// `PageTarget`: one page, several pages, or every page of the document.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PageTarget {
-    Page(PageRef),
-    Pages(Vec<PageRef>),
     All,
+    Page(PageInput),
+    Pages(Vec<PageInput>),
 }
 
-impl<'de> Deserialize<'de> for PageTarget {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let value = Value::deserialize(d)?;
-        match &value {
-            Value::String(s) if s == "all" => Ok(PageTarget::All),
-            Value::Array(_) => serde_json::from_value(value).map(PageTarget::Pages),
-            _ => serde_json::from_value(value).map(PageTarget::Page),
-        }
-        .map_err(D::Error::custom)
+impl From<PageInput> for PageTarget {
+    fn from(page: PageInput) -> Self {
+        PageTarget::Page(page)
     }
 }
 
 impl From<PageRef> for PageTarget {
     fn from(page: PageRef) -> Self {
-        PageTarget::Page(page)
+        PageTarget::Page(PageInput::Ref(page))
     }
 }
 
-/// `ScalePreset`: one entry of the scale picker.
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
+impl PageTarget {
+    /// `'all'`, a list, or one page.
+    pub fn from_json(value: &Value) -> PageTarget {
+        match value {
+            Value::String(s) if s == "all" => PageTarget::All,
+            Value::Array(pages) => {
+                PageTarget::Pages(pages.iter().map(PageInput::from_json).collect())
+            }
+            other => PageTarget::Page(PageInput::from_json(other)),
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
 pub struct ScalePreset {
     pub id: String,
     pub label: String,
@@ -50,128 +88,142 @@ pub struct ScalePreset {
     pub unit: String,
 }
 
-/// `MeasurementConfig['defaultScale']`.
+/// `MeasurementSettings['defaultScale']`.
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefaultScale {
     Metric,
     Imperial,
-    Measure(Box<PdfMeasurement>),
+    /// A scale of the app's own, as JSON.
+    Measure(Value),
 }
 
-impl<'de> Deserialize<'de> for DefaultScale {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        let value = Value::deserialize(d)?;
-        match &value {
-            // `config.defaultScale === 'imperial' ? 'ft' : 'm'`: any other
-            // string is metric.
-            Value::String(s) if s == "imperial" => Ok(DefaultScale::Imperial),
-            Value::String(_) => Ok(DefaultScale::Metric),
-            _ => serde_json::from_value(value)
-                .map(|m| DefaultScale::Measure(Box::new(m)))
-                .map_err(D::Error::custom),
+impl DefaultScale {
+    pub fn to_json(&self) -> Value {
+        match self {
+            DefaultScale::Metric => json!("metric"),
+            DefaultScale::Imperial => json!("imperial"),
+            DefaultScale::Measure(measure) => measure.clone(),
+        }
+    }
+
+    pub fn from_json(value: &Value) -> DefaultScale {
+        match value {
+            Value::String(s) if s == "imperial" => DefaultScale::Imperial,
+            Value::Object(_) | Value::Array(_) | Value::Null => {
+                DefaultScale::Measure(value.clone())
+            }
+            _ => DefaultScale::Metric,
         }
     }
 }
 
-/// What the TypeScript reads from the global scope.
-#[derive(Clone, Default)]
-pub struct MeasurementHost {
-    /// `console.error(message, error)`: receives a throwing event
-    /// listener's error. `None` drops it.
-    pub console_error: Option<Rc<dyn Fn(&str, &Error)>>,
+/// The plugin's settings, registered with the kernel and shared by every
+/// document.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MeasurementSettings {
+    pub default_scale: DefaultScale,
+    pub presets: Vec<ScalePreset>,
 }
 
-/// `measurementPlugin(config)`. `host` is the Rust port's way in for what
-/// the TypeScript reads from the global scope.
-#[derive(Clone, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
+impl MeasurementSettings {
+    /// The settings as the kernel's JSON store holds them.
+    pub fn of(value: &Value) -> MeasurementSettings {
+        MeasurementSettings {
+            default_scale: DefaultScale::from_json(
+                value.get("defaultScale").unwrap_or(&Value::Null),
+            ),
+            presets: value
+                .get("presets")
+                .and_then(|p| serde_json::from_value(p.clone()).ok())
+                .unwrap_or_default(),
+        }
+    }
+}
+
+/// `MEASUREMENT_DEFAULTS`, as JSON.
+pub fn measurement_defaults() -> Value {
+    json!({ "defaultScale": "metric", "presets": default_presets() })
+}
+
+/// `MeasurementConfig`: either setting, each a whole value.
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct MeasurementConfig {
-    /// Fallback scale for uncalibrated pages. Default metric.
-    #[serde(default)]
     pub default_scale: Option<DefaultScale>,
-    /// The scale picker. Default: metric 1:1 to 1:200, imperial 1/4 and 1/8 in.
-    #[serde(default)]
     pub presets: Option<Vec<ScalePreset>>,
-    #[serde(skip)]
-    pub host: MeasurementHost,
 }
 
-/// `ScaleChangeOptions`.
-#[cfg_attr(feature = "uniffi", derive(uniffi::Record))]
-#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
+impl MeasurementConfig {
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        if let Some(scale) = &self.default_scale {
+            out.insert("defaultScale".into(), scale.to_json());
+        }
+        if let Some(presets) = &self.presets {
+            out.insert("presets".into(), json!(presets));
+        }
+        Value::Object(out)
+    }
+}
+
+/// `OperationOptions`.
+#[derive(Clone, Default)]
+pub struct OperationOptions {
+    pub signal: Option<AbortSignal>,
+}
+
+/// `ScaleChangeOptions`: `recalculate` re-measures the page's measurement
+/// annotations with the new scale; only `Some(false)` skips it.
+#[derive(Clone, Default)]
 pub struct ScaleChangeOptions {
-    /// Re-measure the page's measurement annotations with the new scale.
-    /// Default true.
-    #[cfg_attr(feature = "uniffi", uniffi(default = None))]
-    #[serde(default)]
+    pub signal: Option<AbortSignal>,
     pub recalculate: Option<bool>,
 }
 
-/// `calibrate`'s options: `applyTo` widens the write (default: the input
+/// `calibrate`'s options: `apply_to` widens the write (default: the input
 /// page).
-#[derive(Clone, Debug, Default, PartialEq, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Default)]
 pub struct CalibrateOptions {
-    #[serde(default)]
-    pub recalculate: Option<bool>,
-    #[serde(default)]
+    pub change: ScaleChangeOptions,
     pub apply_to: Option<PageTarget>,
 }
 
-/// `PageScale['source']`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ScaleSource {
-    Owned,
-    Foreign,
-    Default,
-}
-
-/// `PageScale`: the resolved scale, its source and readiness.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+/// `PageScale`.
+#[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct PageScale {
-    pub measure: Option<PdfMeasurement>,
-    pub source: ScaleSource,
+    /// The engine's `PdfMeasurement`, or `null`.
+    pub measure: Value,
+    /// `owned`, `foreign` or `default`.
+    pub source: &'static str,
     /// The page's viewports are known.
     pub ready: bool,
     /// The engine can persist a scale into the document.
     pub persistent: bool,
-    /// A `SerializedEngineError`.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// Why the last read of the page's viewports failed; the last known
+    /// viewports stay in effect.
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub error: Option<Value>,
 }
 
-/// `LOADING`: a page whose viewports are not known.
-pub const LOADING: PageScale = PageScale {
-    measure: None,
-    source: ScaleSource::Default,
-    ready: false,
-    persistent: false,
-    error: None,
-};
-
-/// `PageMeasurementViewport`: a scale region in PDF space; `owned` marks
-/// the one this plugin writes.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct MeasurementViewport {
-    pub bbox: PdfRect,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub name: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub measure: Option<PdfMeasurement>,
-    #[serde(default)]
-    pub owned: bool,
+impl PageScale {
+    pub fn to_json(&self) -> Value {
+        epdf_kernel::js::to_value(self)
+    }
 }
 
-impl MeasurementViewport {
-    /// The annotation plugin's view of it.
-    pub fn for_annotation(&self) -> epdf_plugin_annotation::PageMeasurementViewport {
-        epdf_plugin_annotation::PageMeasurementViewport {
-            bbox: self.bbox,
-            measure: self.measure.clone(),
-            owned: self.owned,
-        }
+/// `NO_PAGE_SCALE`: a page's scale where there is none to read.
+pub fn no_page_scale() -> PageScale {
+    PageScale {
+        measure: Value::Null,
+        source: "default",
+        ready: false,
+        persistent: false,
+        error: None,
     }
+}
+
+/// `NO_READOUT`.
+pub fn no_readout() -> Value {
+    json!({ "unavailable": "not-dimension" })
 }
 
 /// `CalibrationRequest`: two points captured by the calibrate tool,
@@ -187,41 +239,47 @@ pub struct CalibrationRequest {
 }
 
 /// `CalibrateInput['distance']`.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-pub struct KnownDistance {
+#[derive(Clone, Debug, PartialEq)]
+pub struct KnownLength {
     pub value: f64,
     pub unit: String,
 }
 
 /// `CalibrateInput`.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CalibrateInput {
-    pub page: PageRef,
+    pub page: PageInput,
     pub from: Point,
     pub to: Point,
-    /// The real-world length between the two points.
-    pub distance: KnownDistance,
+    pub distance: KnownLength,
 }
 
-/// `ScaleChangeReport`: a page's re-measurement, or the failed viewport
-/// write of one page of a multi-page change.
+/// `ScaleChangeReport`: the annotation plugin's `RecalibrationReport`, or a
+/// page whose scale write failed in a multi-page change.
 #[derive(Clone, Debug, PartialEq)]
 pub enum ScaleChangeReport {
-    Recalibrated(RecalibrationReport),
+    /// `{ page, scale, updated, skipped, failed, error? }`, as
+    /// `remeasurePage` answered it (or the same shape with nothing
+    /// re-measured).
+    Recalibrated(Value),
+    /// `{ page, updated: [], skipped: [], failed: [], scaleError }`.
     ScaleError { page: PageRef, scale_error: Value },
 }
 
 impl ScaleChangeReport {
-    pub fn page(&self) -> PageRef {
+    /// The page the report is about.
+    pub fn page(&self) -> Option<PageRef> {
         match self {
-            ScaleChangeReport::Recalibrated(r) => r.page,
-            ScaleChangeReport::ScaleError { page, .. } => *page,
+            ScaleChangeReport::Recalibrated(report) => {
+                report.get("page").and_then(PageRef::from_json)
+            }
+            ScaleChangeReport::ScaleError { page, .. } => Some(*page),
         }
     }
 
     pub fn to_json(&self) -> Value {
         match self {
-            ScaleChangeReport::Recalibrated(r) => r.to_json(),
+            ScaleChangeReport::Recalibrated(report) => report.clone(),
             ScaleChangeReport::ScaleError { page, scale_error } => json!({
                 "page": page,
                 "updated": [],
@@ -232,64 +290,34 @@ impl ScaleChangeReport {
         }
     }
 
-    /// Read one back from its JSON form.
-    pub fn from_json(value: &Value) -> Result<Self, String> {
-        let page: PageRef = serde_json::from_value(value.get("page").cloned().unwrap_or_default())
-            .map_err(|e| e.to_string())?;
-        if let Some(scale_error) = value.get("scaleError") {
-            return Ok(ScaleChangeReport::ScaleError { page, scale_error: scale_error.clone() });
+    pub fn from_json(value: &Value) -> Result<ScaleChangeReport, Error> {
+        match value.get("scaleError") {
+            Some(scale_error) if !epdf_kernel::is_undefined(scale_error) => {
+                let page = value.get("page").and_then(PageRef::from_json).ok_or_else(|| {
+                    Error::named("TypeError", "a scale error report names no page")
+                })?;
+                Ok(ScaleChangeReport::ScaleError { page, scale_error: scale_error.clone() })
+            }
+            _ => Ok(ScaleChangeReport::Recalibrated(value.clone())),
         }
-        let list =
-            |key: &str| value.get(key).and_then(Value::as_array).cloned().unwrap_or_default();
-        let aref = |v: &Value| -> Result<AnnotationRef, String> {
-            serde_json::from_value(v.clone()).map_err(|e| e.to_string())
-        };
-        let reason = |v: Option<&Value>| match v.and_then(Value::as_str) {
-            Some("no-authority") => Ok(SkipReason::NoAuthority),
-            Some("locked") => Ok(SkipReason::Locked),
-            Some("foreign-measure") => Ok(SkipReason::ForeignMeasure),
-            Some("unavailable") => Ok(SkipReason::Unavailable),
-            other => Err(format!("unknown skip reason {other:?}")),
-        };
-        Ok(ScaleChangeReport::Recalibrated(RecalibrationReport {
-            page,
-            scale: value.get("scale").cloned().unwrap_or(Value::Null),
-            error: value.get("error").cloned(),
-            updated: list("updated").iter().map(aref).collect::<Result<_, _>>()?,
-            skipped: list("skipped")
-                .iter()
-                .map(|s| {
-                    Ok((aref(s.get("ref").unwrap_or(&Value::Null))?, reason(s.get("reason"))?))
-                })
-                .collect::<Result<_, String>>()?,
-            failed: list("failed")
-                .iter()
-                .map(|f| {
-                    Ok((
-                        aref(f.get("ref").unwrap_or(&Value::Null))?,
-                        f.get("error").cloned().unwrap_or(Value::Null),
-                    ))
-                })
-                .collect::<Result<_, String>>()?,
-        }))
     }
 }
 
 impl Serialize for ScaleChangeReport {
-    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        self.to_json().serialize(s)
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_json().serialize(serializer)
     }
 }
 
 impl<'de> Deserialize<'de> for ScaleChangeReport {
-    fn deserialize<D: Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
-        ScaleChangeReport::from_json(&Value::deserialize(d)?).map_err(D::Error::custom)
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = Value::deserialize(deserializer)?;
+        ScaleChangeReport::from_json(&value).map_err(|e| D::Error::custom(e.message))
     }
 }
 
 /// `MeasurementKind`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum MeasurementKind {
     Distance,
     Perimeter,
@@ -304,42 +332,81 @@ impl MeasurementKind {
             MeasurementKind::Area => "area",
         }
     }
+
+    pub fn parse(kind: &str) -> Option<MeasurementKind> {
+        match kind {
+            "distance" => Some(MeasurementKind::Distance),
+            "perimeter" => Some(MeasurementKind::Perimeter),
+            "area" => Some(MeasurementKind::Area),
+            _ => None,
+        }
+    }
 }
 
 /// `CreateMeasurementInput`.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CreateMeasurementInput {
     pub kind: MeasurementKind,
-    pub page: PageRef,
+    pub page: PageInput,
     /// Page-space points: two for a distance, the vertices otherwise.
     pub points: Vec<Point>,
     /// The authoring tool whose defaults apply (defaults to the kind's own
     /// tool).
-    #[serde(default)]
     pub tool: Option<String>,
 }
 
 // ── events ──
 
 /// `MeasurementScaleChangedEvent`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct MeasurementScaleChangedEvent {
     pub page: PageRef,
     pub report: ScaleChangeReport,
 }
 
+impl MeasurementScaleChangedEvent {
+    pub fn to_json(&self) -> Value {
+        json!({ "page": self.page, "report": self.report.to_json() })
+    }
+}
+
 /// `CalibrationRequestedEvent`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CalibrationRequestedEvent {
     pub request: CalibrationRequest,
 }
 
+impl CalibrationRequestedEvent {
+    pub fn to_json(&self) -> Value {
+        json!({ "request": epdf_kernel::js::to_value(&self.request) })
+    }
+}
+
 /// `CalibrationCompletedEvent`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CalibrationCompletedEvent {
     pub page: PageRef,
 }
 
-/// `CalibrationDismissedEvent`: an empty object.
-#[derive(Clone, Debug, Default, PartialEq, Serialize)]
-pub struct CalibrationDismissedEvent {}
+impl CalibrationCompletedEvent {
+    pub fn to_json(&self) -> Value {
+        json!({ "page": self.page })
+    }
+}
+
+/// `CalibrationDismissedEvent`: `{}`.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct CalibrationDismissedEvent;
+
+impl CalibrationDismissedEvent {
+    pub fn to_json(&self) -> Value {
+        json!({})
+    }
+}
+
+/// The settings-change event, as the kernel's store reports it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct MeasurementSettingsChanged {
+    pub settings: MeasurementSettings,
+    pub changed: Vec<String>,
+}

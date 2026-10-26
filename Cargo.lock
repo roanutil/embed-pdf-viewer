@@ -684,6 +684,7 @@ dependencies = [
 name = "epdf-plugin-measurement"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-geometry",

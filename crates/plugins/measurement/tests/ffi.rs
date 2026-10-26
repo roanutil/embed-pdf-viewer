@@ -1,19 +1,22 @@
 #![cfg(feature = "uniffi")]
+//! The uniffi handle over a test kernel. Migrated by hand in Task 13.22 to
+//! the current plugin (page-space viewports from `page.measure.listViewports`,
+//! `rectilinear` measures, the annotation plugin's 13.17 records); not
+//! compiled until `epdf-ffi` builds again (Task 13.33).
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{CancelToken, KernelThread, PageRef, Point, ViewerError};
-use epdf_plugin_annotation::{AnnotationConfig, annotation_plugin};
+use epdf_plugin_annotation::annotation_plugin;
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_measurement::ffi::{
     MeasurementCalibrateInput, MeasurementCalibrateOptions, MeasurementEvent,
     MeasurementEventListener, MeasurementHandle, MeasurementPageTarget, MeasurementReading,
-    MeasurementScaleSource, PdfMeasurement, PdfNumberFormat, ScaleChangeReport,
+    MeasurementScaleChangeOptions as ScaleChangeOptions, MeasurementScaleSource, PdfMeasurement,
+    PdfNumberFormat, ScaleChangeReport,
 };
-use epdf_plugin_measurement::{
-    MEASUREMENT, MeasurementConfig, ScaleChangeOptions, measurement_plugin,
-};
+use epdf_plugin_measurement::{MEASUREMENT, MeasurementConfig, measurement_plugin};
 use futures::executor::block_on;
 use plugin_conformance::test_kernel::{Reply, TestKernel, TestSpec};
 use serde_json::{Value, json};
@@ -33,18 +36,34 @@ impl MeasurementEventListener for Events {
 const P1: PageRef = PageRef { page_object_number: 1 };
 const P2: PageRef = PageRef { page_object_number: 2 };
 
+fn page_ref(pon: u32) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": pon })
+}
+
 fn page(pon: u32, w: f64, h: f64) -> Value {
+    let b = json!({ "x": 0, "y": 0, "width": w, "height": h });
     json!({
-        "index": pon - 1, "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
+        "index": pon - 1, "ref": page_ref(pon),
         "label": null, "size": { "width": w, "height": h }, "rotation": 0, "userUnit": 1,
-        "boxes": {
-            "media": { "left": 0, "bottom": 0, "right": w, "top": h },
-            "crop": { "left": 0, "bottom": 0, "right": w, "top": h }
-        }
+        "tabOrder": null,
+        "pdfCropBox": { "left": 0, "bottom": 0, "right": w, "top": h },
+        "boxes": { "media": b, "crop": b, "bleed": b, "trim": b, "art": b }
     })
 }
 
-/// The `RL` measure the conformance vectors use: 1 in on paper is 1 m.
+/// `pages.scaleSet`, which the engine publishes before a scale write
+/// resolves.
+fn scale_set(pon: u32) -> Value {
+    json!({
+        "type": "pages.scaleSet",
+        "page": page_ref(pon),
+        "meta": { "affectedPages": [page_ref(pon)], "cacheDelta": null, "opId": "set", "undoable": true },
+        "origin": { "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null }
+    })
+}
+
+/// The rectilinear measure the conformance vectors use: 1 in on paper is
+/// 1 m.
 fn metric() -> PdfMeasurement {
     let format = |unit: &str, conversion: f64| PdfNumberFormat {
         unit: unit.into(),
@@ -59,7 +78,7 @@ fn metric() -> PdfMeasurement {
         label_position: None,
     };
     PdfMeasurement {
-        subtype: "RL".into(),
+        subtype: "rectilinear".into(),
         ratio: Some("1 in = 1 m".into()),
         x: Some(vec![format("m", 1.0 / 72.0)]),
         y: None,
@@ -79,17 +98,20 @@ fn spec(service: bool, foreign: bool, fail_pon: Option<u32>) -> TestSpec {
     let viewports: std::rc::Rc<std::cell::RefCell<std::collections::HashMap<u32, Value>>> =
         Default::default();
     if foreign {
-        viewports.borrow_mut().insert(1, json!([{
-            "bbox": { "left": 0, "bottom": 0, "right": 600, "top": 800 },
-            "name": "Acrobat", "owned": false,
-            "measure": serde_json::to_value(epdf_annotation_core::measure::PdfMeasurement::from(metric())).unwrap()
-        }]));
+        viewports.borrow_mut().insert(
+            1,
+            json!([{
+                "bbox": { "x": 0, "y": 0, "width": 600, "height": 800 },
+                "name": "Acrobat", "owned": false,
+                "measure": serde_json::to_value(metric()).unwrap()
+            }]),
+        );
     }
     let mut engine = json!({
         "documents": { "a": {
             "pages": [page(1, 600.0, 800.0), page(2, 400.0, 500.0)],
             "security": { "allows": "*" },
-            "responses": [{ "path": "annotations.listRawAll", "value": { "pages": [] } }]
+            "responses": [{ "path": "annotations.list", "value": { "annotations": [] } }]
         } }
     });
     if service {
@@ -98,8 +120,9 @@ fn spec(service: bool, foreign: bool, fail_pon: Option<u32>) -> TestSpec {
     let read = viewports.clone();
     let write = viewports.clone();
     TestSpec::new(engine)
-        .respond_page("page.measure.viewports", move |pon, _| {
-            Ok(Reply::value(read.borrow().get(&pon).cloned().unwrap_or(json!([]))))
+        .respond_page("page.measure.listViewports", move |pon, _| {
+            let list = read.borrow().get(&pon).cloned().unwrap_or(json!([]));
+            Ok(Reply::value(json!({ "viewports": list })))
         })
         .respond_page("page.measure.setScale", move |pon, args| {
             if Some(pon) == fail_pon {
@@ -116,12 +139,18 @@ fn spec(service: bool, foreign: bool, fail_pon: Option<u32>) -> TestSpec {
                 .collect();
             if let Some(measure) = args.first().filter(|m| !m.is_null()) {
                 list.push(json!({
-                    "bbox": { "left": 0, "bottom": 0, "right": 600, "top": 800 },
+                    "bbox": { "x": 0, "y": 0, "width": 600, "height": 800 },
                     "name": "EmbedPDF", "owned": true, "measure": measure
                 }));
             }
             all.insert(pon, Value::Array(list));
-            Ok(Reply::value(json!({})))
+            Ok(Reply {
+                value: json!({
+                    "page": page_ref(pon),
+                    "meta": { "affectedPages": [page_ref(pon)], "cacheDelta": null, "opId": "set", "undoable": true }
+                }),
+                events: vec![scale_set(pon)],
+            })
         })
 }
 
@@ -132,7 +161,7 @@ fn handle_over(
         TestKernel::open(
             vec![
                 interaction_plugin(InteractionConfig::default()),
-                annotation_plugin(AnnotationConfig::default()),
+                annotation_plugin(None),
                 measurement_plugin(MeasurementConfig::default()),
             ],
             spec(),
@@ -170,9 +199,9 @@ fn a_page_reads_loading_until_ensure_loaded() {
                 "security": { "allows": "*" },
                 "services": ["page.measure"],
                 "responses": [
-                    { "path": "annotations.listRawAll", "value": { "pages": [] } },
-                    { "path": "page.measure.viewports", "pon": 1, "value": [] },
-                    { "path": "page.measure.viewports", "pon": 2, "defer": "page-2" }
+                    { "path": "annotations.list", "value": { "annotations": [] } },
+                    { "path": "page.measure.listViewports", "pon": 1, "value": { "viewports": [] } },
+                    { "path": "page.measure.listViewports", "pon": 2, "defer": "page-2" }
                 ]
             } }
         }))
@@ -181,7 +210,9 @@ fn a_page_reads_loading_until_ensure_loaded() {
     assert!(!before.ready);
     assert_eq!(before.measure, None);
     let loaded = m.ensure_loaded(P2, token());
-    let settled = block_on(thread.call(|k| k.engine.settle("page-2", Ok(json!([]))))).unwrap();
+    let settled =
+        block_on(thread.call(|k| k.engine.settle("page-2", Ok(json!({ "viewports": [] })))))
+            .unwrap();
     assert!(settled, "page 2's viewport read was not pending");
     block_on(loaded).unwrap();
     let after = block_on(m.page_scale(P2)).unwrap();
@@ -276,7 +307,7 @@ fn measure_distance_reads_in_the_page_scale() {
         MeasurementReading::Value { readout } => {
             // `1 / 72` goes through `Math.fround`, as the TypeScript does.
             assert!((readout.value - 1.0).abs() < 1e-6, "{readout:?}");
-            assert_eq!(readout.label, "1 m");
+            assert_eq!(readout.label, "1.00 m");
         }
         other => panic!("{other:?}"),
     }
@@ -328,6 +359,11 @@ fn calibrating_writes_the_scale_and_completes() {
 
 #[test]
 fn without_a_service_the_scale_is_in_memory() {
+    // The defensive absent-service branch (`sync/viewports.ts:47`,
+    // `write/scale.ts:81`). It needs a fake that leaves `page.measure` out
+    // when `services` does not list it, which the TypeScript fake never
+    // does (it builds every page service); see the Task 13.22 report. 13.33
+    // keeps or drops this case with the fake.
     let (_thread, m) = handle_over(|| spec(false, false, None));
     block_on(m.set_scale(
         MeasurementPageTarget::Page { page: P1 },
