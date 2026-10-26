@@ -12,7 +12,7 @@
 #   bash platforms/apple/package-engine-framework.sh
 #
 # Writes .build/publish/EmbedPDFBindings.xcframework.zip and prints its SwiftPM
-# checksum on the last line. The unzipped XCFramework is also copied to
+# checksum on the last line. The zip is also extracted to
 # EmbedPDF/EmbedPDFBindings.xcframework, where Package.swift can point a local
 # binary target at it.
 set -euo pipefail
@@ -167,11 +167,23 @@ echo "creating the xcframework"
 xcodebuild -create-xcframework "${frameworks[@]}" \
   -output "$PUBLISH/$NAME.xcframework" > /dev/null
 # --keepParent puts NAME.xcframework at the top of the zip, which is the
-# layout SwiftPM expects of a binary target's archive.
-(cd "$PUBLISH" && ditto -c -k --keepParent "$NAME.xcframework" "$NAME.xcframework.zip")
+# layout SwiftPM expects of a binary target's archive. Without --norsrc and
+# --noextattr, ditto adds a ._ AppleDouble entry per file carrying its
+# extended attributes, such as com.apple.provenance.
+(cd "$PUBLISH" && ditto -c -k --norsrc --noextattr --keepParent \
+  "$NAME.xcframework" "$NAME.xcframework.zip")
+appledouble="$(zipinfo -1 "$PUBLISH/$NAME.xcframework.zip" | grep -c -E '(^|/)\._' || true)"
+if ((appledouble != 0)); then
+  echo "$NAME.xcframework.zip has $appledouble ._ entries" >&2
+  exit 1
+fi
 
-rm -rf "$APPLE/EmbedPDF/$NAME.xcframework"
-ditto "$PUBLISH/$NAME.xcframework" "$APPLE/EmbedPDF/$NAME.xcframework"
+# The local copy comes out of the zip, so the tests that run against it test
+# what gets published.
+rm -rf "$WORK/unzipped" "$APPLE/EmbedPDF/$NAME.xcframework"
+mkdir -p "$WORK/unzipped"
+ditto -x -k "$PUBLISH/$NAME.xcframework.zip" "$WORK/unzipped"
+mv "$WORK/unzipped/$NAME.xcframework" "$APPLE/EmbedPDF/$NAME.xcframework"
 
 echo
 echo "  $PUBLISH/$NAME.xcframework.zip"
