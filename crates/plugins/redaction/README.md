@@ -12,9 +12,9 @@ every mark takes its look from them. 57 cases replay (`cargo test -p epdf-plugin
 | `vectors/plugins/redaction.json` | scenario | 25 | the twins, marking from the selection, by area, by page and from search, the redact tool, the pending view and its reads, collateral, `unmark` and `clearPending` with skips and refusals, labels, self-scoped ownership, `apply`, `applyPages` and `applyAll`, refusals before and at the engine, the apply queue, remote applies, a throwing listener, closing mid-apply |
 | `vectors/plugins/redaction-functions.json` | function | 32 | the named session transitions, `markOf`, and `estimateCollateral` over a read-only `annotation.list` port |
 
-`mark-ownership-and-flags` needs the conformance fake to resolve `security.rawScope`, as
-`fake-engine.ts:491-535` does. The Rust fake does not yet (reported to the controller); every other
-case replays.
+All 57 replay. `mark-ownership-and-flags` needs the conformance fake to resolve
+`security.rawScope` through the shipping scope rules, as `fake-engine.ts:489-560` does; `840198fc3`
+(Ruling13.23) gave the Rust fake that.
 
 The scenarios run the real interaction, selection, annotation and search adapters beside this one.
 The generator is `tooling/plugin-conformance/src/suites/redaction.ts`. Its `redaction-search`
@@ -25,8 +25,9 @@ the TypeScript's turns, measured on the shipping kernel and plugins over the Typ
 `apply` and `applyAll`, 8 with a signal or through `applyPages`. A page's apply sends only the
 pending marks among its refs and leaves the other page's marks as they were. The pending view keeps
 its `Rc` while the annotation plane's list holds. A close mid-apply rejects `instance-closed`, reports
-the dropped `finishApply` once and publishes nothing. A refused apply rolls the flag back and the
-next queued apply still runs. A queued apply whose signal fires never starts, and one cancelled at
+the dropped `finishApply` once and publishes nothing. A refused apply rolls the flag back, keeps the
+last result and the marks, and the next queued apply still runs. A download started during an apply
+reads the file only after the apply settles (`onSettle` waits on the queue's `idle()`). A queued apply whose signal fires never starts, and one cancelled at
 the engine rejects at once with the caller's reason. `unmark` keeps skipped, failed and rejected
 apart, and each apply grant is checked on its own.
 
@@ -82,6 +83,18 @@ skips it and hands the decode error to the kernel's report. An engine record alw
 
 `apply` reads its refs' keys when called; the TypeScript reads them in the queue's turn. Only a
 JavaScript caller that changed the array in between could tell.
+
+Two harness edges no vector reaches. `apply` with no array throws the TypeScript's `TypeError`
+(`Cannot read properties of undefined (reading 'map')`), but the harness rejects it before the queue
+turn, since the Rust signature takes a slice. The function table's `markOf` refuses a `pageIndex`
+that is not a whole number with a `TypeError`, where the TypeScript passes any number through; the
+typed mark holds an `i64`.
+
+For 13.33 to decide: the ffi handle's `last_result` decodes the stored result each call, so after a
+remote event that names a page status the engine no longer writes (`failed`, `skipped`), every
+`last_result()` refuses `invalid-state` until the next apply replaces it
+(`a_retired_failed_status_is_refused_as_invalid_state` in `tests/ffi.rs`). Decoding once at the
+event, or dropping the undecodable result, are the alternatives.
 
 The kernel's serial queue has no `signal` option and no `idle()`. `write/apply.rs` keeps both over
 it, as the form and measurement plugins do; Task 14 carries moving them into the kernel.

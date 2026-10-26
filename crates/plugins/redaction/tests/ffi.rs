@@ -263,7 +263,7 @@ fn marking_matches_creates_a_mark_per_hit() {
     let ops = sent(&thread, "apply");
     assert_eq!(ops.len(), 2);
     assert!(ops.iter().all(|c| c["ops"][0]["data"]["quadPoints"].is_array()), "{ops:?}");
-    // A page filter that names no hit's page marks nothing.
+    // An empty page filter keeps no hit, so it marks nothing.
     let none = block_on(redaction.mark_matches(query(), Some(vec![]), token()));
     assert!(none.unwrap().is_empty());
 }

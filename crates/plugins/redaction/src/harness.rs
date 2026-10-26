@@ -176,7 +176,21 @@ fn call_capability(
         "updateLabel" => {
             Outcome::promise(cap.update_label(arg(args, 0), label_patch(&arg(args, 1)), none()))
         }
-        "apply" => Outcome::promise(cap.apply(&refs(&arg(args, 0)), none())),
+        "apply" => match arg(args, 0) {
+            Value::Array(list) => Outcome::promise(cap.apply(&list, none())),
+            // `refs.map(annotationKey)` in the queued operation
+            // (`write/apply.ts:60`): the promise rejects with the
+            // TypeError. The Rust signature takes a slice, so the harness
+            // rejects it here, before the queue turn.
+            other => {
+                let what = if other.is_null() { "null" } else { "undefined" };
+                let error = Error::named(
+                    "TypeError",
+                    format!("Cannot read properties of {what} (reading 'map')"),
+                );
+                Outcome::promise(epdf_kernel::rt::Promise::<RedactionApplyResult>::rejected(error))
+            }
+        },
         "applyPages" => Outcome::promise(cap.apply_pages(&page_targets(&arg(args, 0)), none())),
         "applyAll" => Outcome::promise(cap.apply_all(none())),
         "canMark" => Outcome::Returned(json!(cap.can_mark())),
@@ -248,8 +262,14 @@ fn set_last_result_fn(a: &[Value]) -> Result<Value, Error> {
     Ok(to_value(&*set_last_result(state_arg(a, 0)?, &result)))
 }
 
+/// `markOf(record, pageIndex)`. The typed mark holds a whole display index,
+/// so a `pageIndex` that is not one (which `markOf` would pass through) is
+/// refused rather than cast.
 fn mark_of_fn(a: &[Value]) -> Result<Value, Error> {
-    let index = arg(a, 1).as_f64().unwrap_or(f64::NAN);
+    let index =
+        arg(a, 1).as_f64().filter(|n| n.fract() == 0.0 && n.abs() <= i64::MAX as f64).ok_or_else(
+            || Error::named("TypeError", "[redaction harness] markOf takes a whole pageIndex"),
+        )?;
     Ok(to_value(&mark_of(&arg(a, 0), index as i64)?))
 }
 

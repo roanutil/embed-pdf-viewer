@@ -460,23 +460,82 @@ fn closing_mid_apply_rejects_and_publishes_nothing() {
 fn a_refused_apply_rolls_back_and_the_queue_goes_on() {
     let pages = vec![pr(1), pr(2)];
     let rig = Rig::new(vec![
+        apply_answer(json!({ "pages": pages }), pages.clone(), "first"),
         json!({
             "path": "redaction.apply",
             "times": 1,
             "error": { "name": "EngineError", "message": "permission denied", "code": "Refused" },
         }),
-        apply_answer(json!({ "pages": pages }), pages.clone(), "second"),
-        listing(Vec::new()),
+        apply_answer(json!({ "pages": pages }), pages.clone(), "third"),
+        // The confirmed applies re-read the pages; the marks stay in this fake.
+        listing(seed()),
     ]);
-    let first = rig.redaction.apply(&[obj(10, 1)], none());
-    let second = rig.redaction.apply_all(none());
-    let refused = failure(&first);
-    assert_eq!(refused.plugin_code(), Some(code::OPERATION_FAILED));
-    assert_eq!(refused.message, "permission denied");
-    let result = success(&second);
-    assert_eq!(result["meta"]["opId"], json!("second"));
+    success(&rig.redaction.apply_all(none()));
+    let previous = rig.redaction.get_last_result().expect("the first apply's result");
+    let marks = keys(&rig.redaction.list_pending(None));
+    assert_eq!(marks, vec![obj(10, 1), obj(12, 2)]);
+
+    let refused = rig.redaction.apply(&[obj(10, 1)], none());
+    let next = rig.redaction.apply_all(none());
+    let error = failure(&refused);
+    assert_eq!(error.plugin_code(), Some(code::OPERATION_FAILED));
+    assert_eq!(error.message, "permission denied");
+    assert_eq!(rig.calls_to("redaction.apply").len(), 3);
+
+    let result = success(&next);
+    assert_eq!(result["meta"]["opId"], json!("third"));
     assert!(!rig.redaction.is_applying());
-    assert_eq!(rig.calls_to("redaction.apply").len(), 2);
+    assert_ne!(*previous, *rig.redaction.get_last_result().unwrap());
+    assert_eq!(previous["meta"]["opId"], json!("first"));
+    assert_eq!(keys(&rig.redaction.list_pending(None)), marks);
+}
+
+/// A refused apply keeps the previous result: checked at the refusal,
+/// before any later apply confirms.
+#[test]
+fn a_refusal_keeps_the_last_result_and_the_marks() {
+    let pages = vec![pr(1), pr(2)];
+    let rig = Rig::new(vec![
+        apply_answer(json!({ "pages": pages }), pages.clone(), "first"),
+        json!({
+            "path": "redaction.apply",
+            "error": { "name": "EngineError", "message": "permission denied", "code": "Refused" },
+        }),
+        listing(seed()),
+    ]);
+    success(&rig.redaction.apply_all(none()));
+    let previous = rig.redaction.get_last_result().unwrap();
+    failure(&rig.redaction.apply(&[obj(10, 1)], none()));
+    assert!(Rc::ptr_eq(&previous, &rig.redaction.get_last_result().unwrap()));
+    assert!(!rig.redaction.is_applying());
+    assert_eq!(keys(&rig.redaction.list_pending(None)), vec![obj(10, 1), obj(12, 2)]);
+}
+
+/// `ctx.onSettle(() => queue.idle())`: a download started while an apply
+/// runs reads the file only after the apply settles, so the redacted
+/// content is never in it.
+#[test]
+fn a_download_waits_for_the_running_apply() {
+    let pages = vec![pr(1), pr(2)];
+    let mut slow = apply_answer(json!({ "pages": pages }), pages.clone(), "slow");
+    slow["defer"] = json!("slow");
+    let rig = Rig::new(vec![
+        slow,
+        listing(Vec::new()),
+        json!({ "path": "download", "value": { "$bytes": "" } }),
+    ]);
+    let applying = rig.redaction.apply_all(none());
+    rt::run_until_stalled();
+    let saving = rig.kernel.documents().save(Some("a"), None);
+    rt::run_until_stalled();
+    assert!(saving.peek().is_none());
+    assert!(rig.calls_to("download").is_empty());
+
+    rig.fake.settle("slow", Ok(apply_result(json!({ "pages": pages }), pages.clone(), "slow")));
+    success(&applying);
+    rt::run_until_stalled();
+    assert_eq!(rig.calls_to("download").len(), 1);
+    assert!(matches!(saving.peek(), Some(Ok(_))), "{:?}", saving.peek().map(|r| r.err()));
 }
 
 /// A queued apply whose signal fires while it waits never starts; one
@@ -684,4 +743,19 @@ fn page_lookups_refuse_with_not_found() {
     ));
     assert_eq!(refused.plugin_code(), Some(code::UNSUPPORTED));
     assert!(rig.calls_to("search.query").is_empty());
+}
+
+/// The function table's `markOf` refuses a `pageIndex` the typed mark
+/// cannot hold instead of casting it.
+#[test]
+fn mark_of_refuses_a_page_index_that_is_not_whole() {
+    let table = epdf_plugin_redaction::harness::functions();
+    let mark_of = table.iter().find(|(name, _)| *name == "markOf").unwrap().1;
+    let record = redact(10, 1, rect(1.0, 2.0, 3.0, 4.0));
+    let mark = mark_of(&[record.clone(), json!(1)]).unwrap();
+    assert_eq!(mark["pageIndex"], json!(1));
+    for index in [json!({ "$number": "NaN" }), json!(0.5), Value::Null] {
+        let error = mark_of(&[record.clone(), index]).unwrap_err();
+        assert_eq!(error.name, "TypeError");
+    }
 }
