@@ -4,8 +4,11 @@
 //! as generated TypeScript (`faces.generated.ts` for the layout numbers,
 //! `programs/<font>.generated.ts` for each OpenType program in base64). That
 //! output of `scripts/generate-standard-fonts.mjs` is the one copy of the
-//! data; this script reads it and writes `$OUT_DIR/faces.rs`, so the Rust and
-//! the TypeScript can't drift apart. It reads the generator's exact layout and
+//! data; this script reads it, so the Rust and the TypeScript can't drift
+//! apart. It writes `$OUT_DIR/faces.rs` (the layout numbers), each program
+//! decoded into `$OUT_DIR/<font>.otf` (14 files), and `$OUT_DIR/programs.rs`,
+//! the `PROGRAMS` table that `include_bytes!`es them, so a build that never
+//! loads a program can drop them. It reads the generator's exact layout and
 //! panics on any line it doesn't expect, rather than guess.
 //!
 //! The rpath: re-emitted for this crate's own test binaries. The conformance
