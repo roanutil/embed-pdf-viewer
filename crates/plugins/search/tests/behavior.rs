@@ -538,3 +538,25 @@ fn scans_settle_on_the_typescripts_turns() {
     assert_eq!(completed.get(), 6);
     assert_eq!(at.get(), 9);
 }
+
+/// `cancellable.ts:22`: a caller's signal aborted with a value that is not
+/// an error hands the engine that value as given, and `findAll` rejects
+/// `operation-cancelled`.
+#[test]
+fn a_callers_raw_abort_reason_reaches_the_engine_as_given() {
+    let rig = Rig::new(json!("*"), vec![defer("the", "slice")], false);
+    let signal = AbortSignal::new();
+    let options = SearchFindAllOptions { snippets: None, signal: Some(signal.clone()) };
+    let found = rig.search.find_all(q("the"), options);
+    rt::run_until_stalled();
+    signal.abort_value(Error::new("user left"), json!("user left"));
+    let error = settled(found).unwrap_err();
+    assert_eq!(
+        (code(&error), error.message.as_str()),
+        (Some("operation-cancelled"), "findAll aborted")
+    );
+    let aborts: Vec<Value> =
+        rig.engine().into_iter().filter(|e| e.get("abort").is_some()).collect();
+    assert_eq!(aborts.len(), 1);
+    assert_eq!(aborts[0]["reason"], json!("user left"));
+}

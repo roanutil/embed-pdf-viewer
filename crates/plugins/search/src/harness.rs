@@ -15,6 +15,7 @@ use std::rc::Rc;
 use std::sync::LazyLock;
 
 use epdf_kernel::geometry::PageRef;
+use epdf_kernel::lanes::js_string;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{
@@ -329,8 +330,17 @@ impl HarnessPlugin for Search {
         Some(match method {
             "abort" => {
                 let name = present(&args, 0).and_then(Value::as_str).unwrap_or_default();
-                let reason = present(&args, 1).map_or_else(dom_abort_error, Error::from_spec);
-                controller_named(name).abort(reason);
+                let controller = controller_named(name);
+                match present(&args, 1) {
+                    None => controller.abort(dom_abort_error()),
+                    Some(spec) if spec.get("$error").is_some() => {
+                        controller.abort(Error::from_spec(spec))
+                    }
+                    // `controller.abort(reason)` keeps any other value as given.
+                    Some(value) => {
+                        controller.abort_value(Error::new(js_string(value)), value.clone())
+                    }
+                }
                 Outcome::undefined()
             }
             other => not_a_function(other),

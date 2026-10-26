@@ -77,6 +77,9 @@ With no reason it is the platform's `AbortError` DOMException (`This operation w
 The engine sees an abort reason as the TypeScript passes it: `collect` uses the kernel's
 `cancellable`, which hands the engine the signal's JavaScript value (`AbortSignal::reason_value`), a
 lane's string such as `"superseded"` or a caller's error (Ruling13.20, `4ad664efd`).
+Closing the document aborts an in-flight slice with the kernel's `CancelledError`
+(`[kernel] cancelled: closed while opening: a`), as `kernel.ts:560` does even though the document
+had finished opening; the `close-races-*` cases pin it.
 
 The hit index is an `isize`, so `goToHit(1.5)` and `goToHit(NaN)` can't be expressed; the
 TypeScript reads `hits[1.5]`, which is `undefined`. `validateSearchQuery` and
@@ -87,6 +90,12 @@ re-export them.
 Not ported: inputs outside the TypeScript's types, which crash it. A query without `text`, a slice
 missing `matches`, and a `nextCursor` that is absent rather than `null` (the TypeScript loops on it
 forever; serde reads it as `null`).
+
+A request's query members go out in `SearchQuery`'s field order (`text`, `regex`, `matchCase`,
+`wholeWord`, `matchDiacritics`, `ignoreWhitespace`), where the TypeScript's `{...query}` keeps the
+caller's key order. Every vector writes `text` first and the flags in that order, so the strict
+replay can't tell; a caller that orders the flags otherwise sends the same request in another
+member order.
 
 ## Turns
 
