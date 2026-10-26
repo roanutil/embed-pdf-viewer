@@ -977,11 +977,12 @@ pub fn form_field_after(
             field.insert("maxLength".into(), limit.clone());
         }
         if let Some(value) = get(patch, "defaultValue") {
-            let text = if value.is_null() { String::new() } else { string_of(Some(value)) };
-            field.insert("defaultValue".into(), json!(text));
+            // `value ?? ''` and `scalar(value)`: the value as given.
+            let text = if value.is_null() { json!("") } else { value.clone() };
+            field.insert("defaultValue".into(), text);
             field.insert(
                 "defaultValueEntry".into(),
-                if value.is_null() { none() } else { scalar(&text) },
+                if value.is_null() { none() } else { json!({ "kind": "scalar", "value": value }) },
             );
         }
     }
@@ -1038,8 +1039,9 @@ pub fn default_entry_of_draft(draft: &Value) -> Result<Value, Error> {
         )?;
     }
     Ok(match family {
+        // `scalar(draft.defaultValue)`: the value as given.
         "text" | "combobox" => match default {
-            Some(default) => scalar(&string_of(Some(default))),
+            Some(default) => json!({ "kind": "scalar", "value": default }),
             None => none(),
         },
         "listbox" => choice_entry_of(&in_option_order(&options, &strings(default))),

@@ -33,6 +33,23 @@ pub struct WidgetPainting {
     pub scene: Vec<SceneNode>,
 }
 
+/// A widget row or field as the painter reads it. The TypeScript hands the
+/// engine's DTO to the painter as it is; here it is decoded first, and a DTO
+/// that no longer decodes is reported, not drawn (a Rust-only console line,
+/// `[form] the painter could not read a widget:`).
+fn decoded<T: serde::de::DeserializeOwned>(value: &Value) -> Option<T> {
+    match serde_json::from_value(value.clone()) {
+        Ok(decoded) => Some(decoded),
+        Err(error) => {
+            crate::console::error(
+                "[form] the painter could not read a widget:",
+                json!({ "message": error.to_string(), "value": value }),
+            );
+            None
+        }
+    }
+}
+
 /// `numberOf(ref)`: an object-number ref's number, else -1.
 fn number_of(reference: &Value) -> f64 {
     if str_of(reference, "kind") == Some("objectNumber") {
@@ -145,9 +162,9 @@ impl crate::controller::Core {
         let view = self.view();
         let field = field_for_widget(&view, number_of(get(row, "ref").unwrap_or(&Value::Null)))?;
         let text = self.formatted.text_of(field);
-        let mut widget: WidgetRow = serde_json::from_value(row.clone()).ok()?;
+        let mut widget: WidgetRow = decoded(row)?;
         widget.box_ = Some(bx);
-        let facts: FieldFacts = serde_json::from_value(field.clone()).ok()?;
+        let facts: FieldFacts = decoded(field)?;
         let shown = ShownValue { text, checked: None };
         let drawing = widget_drawing(&widget, &facts, &shown)?;
         Some(widget_scene(&drawing, &WidgetPlacement { box_: bx, rotation }))
@@ -169,9 +186,7 @@ impl crate::controller::Core {
     pub(crate) fn painter_of(&self, row: &Value) -> Painter {
         let view = self.view();
         let Some(field) = field_for_widget(&view, widget_number(row)) else { return Painter(None) };
-        let Ok(facts) = serde_json::from_value::<FieldFacts>(field.clone()) else {
-            return Painter(None);
-        };
+        let Some(facts) = decoded::<FieldFacts>(field) else { return Painter(None) };
         if !paints(facts.family()) {
             return Painter(None);
         }
@@ -193,8 +208,8 @@ impl crate::controller::Core {
         let number = number_of(reference);
         let row = widget_row_of(&view, number)?;
         let field = field_for_widget(&view, number)?;
-        let widget: WidgetRow = serde_json::from_value(row.clone()).ok()?;
-        let facts: FieldFacts = serde_json::from_value(field.clone()).ok()?;
+        let widget: WidgetRow = decoded(row)?;
+        let facts: FieldFacts = decoded(field)?;
         text_editor_layout(&widget, &facts, text)
     }
 }

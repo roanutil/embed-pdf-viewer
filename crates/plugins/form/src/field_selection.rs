@@ -33,11 +33,7 @@ impl FieldSelection {
         let by_number = reference.is_some_and(|r| {
             str_of(r, "kind") == Some("objectNumber") && {
                 let number = get(r, "objectNumber");
-                self.object_numbers.iter().any(|n| match (n, number) {
-                    (None, None) => true,
-                    (Some(a), Some(b)) => same_value_zero(a, b),
-                    _ => false,
-                })
+                self.object_numbers.iter().any(|n| same_value_zero(n.as_ref(), number))
             }
         });
         by_number || {
@@ -50,9 +46,11 @@ impl FieldSelection {
     }
 }
 
-/// `Set#has`'s SameValueZero over JSON values.
-fn same_value_zero(a: &Value, b: &Value) -> bool {
-    strict_eq(Some(a), Some(b))
+/// `Set#has`'s SameValueZero over JSON values (an absent value is
+/// `undefined`): `===`, except that `NaN` is the same as `NaN`.
+fn same_value_zero(a: Option<&Value>, b: Option<&Value>) -> bool {
+    let nan = |v: Option<&Value>| v.and_then(epdf_acrojs::js::number).is_some_and(f64::is_nan);
+    (nan(a) && nan(b)) || strict_eq(a, b)
 }
 
 /// `resolveFieldSelection(all, targets, exclude)`. `targets == None` (the
@@ -145,4 +143,23 @@ pub fn build_submit_entries<F: Borrow<Value>>(
         }
     }
     entries
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn same_value_zero_is_strict_equality_with_nan_equal_to_itself() {
+        let nan = epdf_kernel::js::number(f64::NAN);
+        assert!(same_value_zero(Some(&nan), Some(&nan)));
+        assert!(!same_value_zero(Some(&nan), Some(&json!(1))));
+        assert!(same_value_zero(Some(&json!(0)), Some(&json!(-0.0))));
+        assert!(same_value_zero(Some(&json!(7)), Some(&json!(7.0))));
+        assert!(!same_value_zero(Some(&json!(7)), Some(&json!("7"))));
+        assert!(same_value_zero(None, Some(&epdf_kernel::undefined())));
+        assert!(!same_value_zero(None, Some(&Value::Null)));
+    }
 }

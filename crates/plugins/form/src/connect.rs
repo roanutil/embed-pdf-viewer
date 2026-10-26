@@ -122,7 +122,8 @@ impl Core {
                 }));
             }
             let targets = get(node, "fields").and_then(Value::as_array).cloned();
-            let exclude = crate::value::truthy(get(node, "exclude"));
+            // `node.exclude`, passed as it is.
+            let exclude = get(node, "exclude").cloned().unwrap_or_else(epdf_kernel::undefined);
             let origin: ActionOrigin = action_context.origin;
             let running = core.reset_form_action(targets, exclude, Some(origin));
             Ok(Promise::spawn(async move {

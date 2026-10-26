@@ -11,6 +11,12 @@
 //!   as `actions-current` builds it;
 //! - `form-scripts-current` drives a [`FormScriptingController`] over a
 //!   realm the actions plugin mints for the document, on first use.
+//!
+//! One driver is not faithful: `resolveSubmitDataset`'s `diagnose`
+//! callback can't throw out of `buildSubmitEntries`, as it can in the
+//! TypeScript, because the actions plugin's resolver takes a `diagnose` that
+//! returns nothing (`epdf-plugin-actions` `host_contract.rs:249`). A throwing callback is dropped here; the three vector
+//! calls all pass one that doesn't throw.
 
 pub mod functions;
 
@@ -208,7 +214,7 @@ fn call_form(
         ),
         "getWidgetPainting" => Outcome::Returned(
             cap.get_widget_painting(&value(args, 0))
-                .map_or(Value::Null, |p| json!({ "scene": p.scene.len() })),
+                .map_or(Value::Null, |p| json!({ "scene": epdf_kernel::js::to_value(&p.scene) })),
         ),
         "getTextEditorLayout" => Outcome::Returned(
             cap.get_text_editor_layout(&value(args, 0), &crate::value::string_of(arg(args, 1)))
@@ -256,7 +262,7 @@ fn call_form(
         }
         "resetFormAction" => {
             let targets = arg(args, 0).and_then(Value::as_array).cloned();
-            let exclude = crate::value::truthy(arg(args, 1));
+            let exclude = arg(args, 1).cloned().unwrap_or_else(epdf_kernel::undefined);
             let origin: Option<ActionOrigin> = match arg(args, 2) {
                 Some(origin) => Some(epdf_kernel::js::from_value(origin)?),
                 None => None,

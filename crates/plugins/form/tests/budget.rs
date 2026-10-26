@@ -20,6 +20,15 @@ use epdf_plugin_form::{
 };
 use serde_json::{Value, json};
 
+/// Puts the host's clock back when the test ends, however it ends.
+struct ClockGuard;
+
+impl Drop for ClockGuard {
+    fn drop(&mut self) {
+        rt::set_monotonic_clock(None);
+    }
+}
+
 /// Each run takes 30 ms of wall time and none of the virtual clock.
 struct SlowSandbox {
     wall: Rc<Cell<f64>>,
@@ -86,6 +95,7 @@ fn the_transaction_budget_runs_on_wall_time() {
     let wall = Rc::new(Cell::new(0.0));
     let clock = wall.clone();
     rt::set_monotonic_clock(Some(Rc::new(move || clock.get())));
+    let _clock = ClockGuard;
 
     let fields: Vec<Value> = (1..=6).map(|n| text(n, n > 1)).collect();
     let order: Vec<Value> = (2..=6).map(field_ref).collect();
@@ -128,7 +138,6 @@ fn the_transaction_budget_runs_on_wall_time() {
     let commit = controller.commit(form, field_ref(1), json!({ "value": "2" }));
     rt::run_until_stalled();
     let result = commit.peek().expect("settled").expect("a result");
-    rt::set_monotonic_clock(None);
 
     assert_eq!(rt::now(), 0.0, "the virtual clock never moved");
     assert_eq!(result.status, ScriptStatus::Failed);

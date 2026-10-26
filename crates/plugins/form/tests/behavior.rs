@@ -111,10 +111,15 @@ fn a_whole_reset_reports_only_the_fields_it_moved() {
 
 /// A drag with the text tool and no annotation plugin writes the tool
 /// table's look (white inside, the palette's gray border, 12 point text),
-/// and the widget the view shows before the engine answers carries it.
+/// and the widget the view shows before the engine answers carries it: the
+/// write is held (`defer`), so `getWidget` reads the prediction, not the
+/// engine's canned answer.
 #[test]
 fn a_palette_placement_keeps_the_tool_look() {
     let mut placed = case("plugins/form-design.json", "a-thin-drag-is-a-drag");
+    let responses = placed["engine"]["documents"]["a"]["responses"].as_array_mut().unwrap();
+    let apply = responses.iter_mut().find(|r| r["path"] == "apply").unwrap();
+    apply["defer"] = json!("created");
     let steps = placed["steps"].as_array_mut().unwrap();
     let widget = json!({ "kind": "objectNumber", "page": object_ref(1), "objectNumber": 10002 });
     steps.push(form_call("getWidget", json!([widget])));
@@ -305,4 +310,60 @@ fn a_lost_object_number_leaves_the_held_pool() {
     assert_ne!(op["objectNumber"], json!(10001), "{op}");
     assert!(!op["widgetObjectNumbers"].as_array().unwrap().contains(&json!(10001)), "{op}");
     assert_eq!(listeners.borrow().len(), 1, "one subscription");
+}
+
+// ── the painter ─────────────────────────────────────────────────────────────
+
+/// No vector paints a widget, so this one does: a text field, a checkbox
+/// and a listbox from a vector's snapshot each decode for the painter and
+/// are drawn (an unchecked, borderless checkbox's scene is empty), and
+/// nothing reaches the console (a DTO the painter can no
+/// longer read is logged as `[form] the painter could not read a widget:`).
+#[test]
+fn the_painter_draws_a_text_field_a_checkbox_and_a_listbox() {
+    rt::reset();
+    let logged: Rc<RefCell<Vec<Value>>> = Rc::default();
+    let sink = logged.clone();
+    let previous = epdf_plugin_form::console::set_sink(Some(Rc::new(move |_, args| {
+        sink.borrow_mut().push(Value::Array(args));
+    })));
+    let mut spec = case("plugins/form-fill.json", "hydrates-on-open")["engine"].clone();
+    let list = spec["documents"]["a"]["responses"]
+        .as_array_mut()
+        .unwrap()
+        .iter_mut()
+        .find(|r| r["path"] == "forms.list")
+        .expect("the form");
+    // The case holds the read back; this one answers it at once.
+    list.as_object_mut().unwrap().remove("defer");
+    let snapshot = list["value"].clone();
+    let kernel = Kernel::new(
+        Rc::new(AsEngine(FakeEngine::new(spec))),
+        vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)],
+        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+    )
+    .unwrap();
+    let _ = kernel.start();
+    rt::run_until_stalled();
+    let _ = kernel.documents().open(
+        OpenSource::Input(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })),
+        OpenOptions::default(),
+    );
+    rt::run_until_stalled();
+    let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+    let mut painted = Vec::new();
+    for field in snapshot["fields"].as_array().unwrap() {
+        let family = field["family"].as_str().unwrap();
+        if !["text", "checkbox", "listbox"].contains(&family) {
+            continue;
+        }
+        let widget = &field["widgets"][0]["ref"];
+        let painting = form.get_widget_painting(widget);
+        assert!(painting.is_some(), "the {family} widget is drawn");
+        painted.push(family);
+    }
+    epdf_plugin_form::console::set_sink(previous);
+    painted.sort_unstable();
+    assert_eq!(painted, ["checkbox", "listbox", "text"]);
+    assert!(logged.borrow().is_empty(), "{:?}", logged.borrow());
 }

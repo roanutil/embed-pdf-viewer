@@ -32,11 +32,13 @@ impl crate::controller::Core {
     }
 
     /// `resetSelection(targets, exclude, origin, options)`: `None` when it
-    /// selects nothing; a refused reset rejects.
+    /// selects nothing; a refused reset rejects. `exclude` is the value as
+    /// given; `resolveFieldSelection`'s `exclude ? ... : ...` reads it as
+    /// JavaScript does.
     pub(crate) fn reset_selection(
         &self,
         targets: Option<Vec<Value>>,
-        exclude: bool,
+        exclude: Value,
         origin: ActionOrigin,
         signal: Option<AbortSignal>,
     ) -> Promise<Option<FillOutcome>> {
@@ -47,6 +49,7 @@ impl crate::controller::Core {
             }
             let index = me.view();
             // ISO 32000-2 Tables 241/242: a parent name resets its descendants too.
+            let exclude = crate::value::truthy(Some(&exclude));
             let selection = resolve_field_selection(index.fields(), targets.as_deref(), exclude);
             let refs: Vec<Value> = selection
                 .selected
@@ -85,7 +88,8 @@ impl crate::controller::Core {
                 return Ok(json!({ "fields": [] }));
             }
             let targets = refs.map(|refs| refs.iter().map(target_of).collect());
-            let outcome = me.reset_selection(targets, false, ActionOrigin::User, signal).await?;
+            let outcome =
+                me.reset_selection(targets, Value::Bool(false), ActionOrigin::User, signal).await?;
             let fields = match outcome {
                 Some(outcome) => fields_with_changed_values(&outcome.before, &outcome.after),
                 None => Vec::new(),
@@ -95,10 +99,11 @@ impl crate::controller::Core {
     }
 
     /// `resetFormAction(fields, exclude, origin)`: a ResetForm action.
+    /// `exclude` is the action node's member as it is (`node.exclude`).
     pub fn reset_form_action(
         &self,
         targets: Option<Vec<Value>>,
-        exclude: bool,
+        exclude: Value,
         origin: Option<ActionOrigin>,
     ) -> Promise<FormCommitResult> {
         let me = self.rc();

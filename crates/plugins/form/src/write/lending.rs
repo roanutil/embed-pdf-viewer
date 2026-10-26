@@ -11,6 +11,7 @@ use std::rc::{Rc, Weak};
 use epdf_annotation_core::json::Object;
 use epdf_annotation_core::record::ref_of;
 use epdf_annotation_core::types::{Authority, Effect, Model, Painter};
+use epdf_kernel::Error;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
 use epdf_plugin_annotation::AnnotationLender;
@@ -189,7 +190,15 @@ impl AnnotationLender for FormLender {
         let Some(core) = self.core() else { return Promise::resolved(Vec::new()) };
         let pictures = core.render_appearances(page, scale, signal);
         pictures.convert(|list| {
-            Ok(list.iter().map(|p| serde_json::to_value(p).unwrap_or(Value::Null)).collect())
+            // A picture that does not serialise rejects the read, rather
+            // than lending a `null` picture.
+            list.iter()
+                .map(|p| {
+                    serde_json::to_value(p).map_err(|e| {
+                        Error::new(format!("[form] a widget picture did not serialise: {e}"))
+                    })
+                })
+                .collect()
         })
     }
 }

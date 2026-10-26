@@ -51,7 +51,11 @@ fn look_of(widget: Option<&Value>) -> Map<String, Value> {
 /// checkbox's own value; none for other families.
 fn export_value_for(field: &Value) -> Option<Value> {
     match str_of(field, "family") {
-        Some("checkbox") => Some(get(field, "exportValue").cloned().unwrap_or(Value::Null)),
+        // `return field.exportValue`: absent stays absent (`undefined`), and
+        // the placement then carries no `exportValue`.
+        Some("checkbox") => {
+            get(field, "exportValue").filter(|v| !epdf_kernel::is_undefined(v)).cloned()
+        }
         Some("radio") => {
             let widgets = items(field, "widgets");
             let taken: Vec<String> =
