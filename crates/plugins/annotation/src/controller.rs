@@ -122,6 +122,12 @@ impl Core {
         parsed
     }
 
+    /// `getSettings()`: the settings now, as the app registered them over
+    /// the defaults.
+    pub fn get_settings(&self) -> Rc<Value> {
+        self.settings.get()
+    }
+
     /// `ctx.doc`, or `None` while there is none.
     pub(crate) fn doc(&self) -> Option<Rc<dyn DocumentHandle>> {
         self.cx.doc().ok()

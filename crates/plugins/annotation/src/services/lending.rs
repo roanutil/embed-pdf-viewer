@@ -139,3 +139,12 @@ impl Lending {
         Ok(if own_refs.is_empty() { None } else { Some(own_refs) })
     }
 }
+
+impl crate::controller::Core {
+    /// `lend(lender)` (host lens): a sibling plugin's records shown and
+    /// edited as annotations, one lender at a time; returns the release.
+    pub fn lend(&self, lender: Rc<dyn AnnotationLender>) -> Unsubscribe {
+        let cx = self.cx.clone();
+        self.lending.lend(lender, Rc::new(move || cx.notify()))
+    }
+}
