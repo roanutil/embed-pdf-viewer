@@ -211,33 +211,5 @@
     "zero-length-capture": [
       "$.actions[].action.scale"
     ]
-  },
-  "plugins/search-find-all.json": {
-    "find-all-walks-the-chain": [
-      "$.actions[].action.camera"
-    ]
-  },
-  "plugins/search-stage.json": {
-    "navigation-reveals-the-hit": [
-      "$.actions[].action.camera",
-      "$.state.plugins.stage::a.camera"
-    ],
-    "reveal-active-hit": [
-      "$.actions[].action.camera",
-      "$.state.plugins.stage::a.camera",
-      "$.outcome.returned"
-    ],
-    "reveal-config-anchor-null": [
-      "$.actions[].action.camera",
-      "$.state.plugins.stage::a.camera"
-    ],
-    "reveal-options-merge": [
-      "$.actions[].action.camera",
-      "$.state.plugins.stage::a.camera"
-    ],
-    "viewport-first-start-page": [
-      "$.actions[].action.camera",
-      "$.state.plugins.stage::a.camera"
-    ]
   }
 }
