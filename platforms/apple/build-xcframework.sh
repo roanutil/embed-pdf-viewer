@@ -63,6 +63,16 @@ SLICES=(
   "aarch64-apple-ios-sim:ios-sim-arm64"
 )
 
+# Panic messages and debug info embed the source path of every crate, which
+# for registry crates and the toolchain's std is under the builder's home
+# directory (759 `$HOME` strings per slice before this). The published archive
+# should not carry the builder's username, so rustc rewrites the prefixes. The
+# repo root goes last because rustc tries the last matching mapping first.
+# Appended to RUSTFLAGS rather than replacing it; no config in this repo sets
+# rustflags, so nothing is overridden. Paths with spaces would need
+# CARGO_ENCODED_RUSTFLAGS, which this does not handle.
+REMAP="--remap-path-prefix=$HOME=~ --remap-path-prefix=$ROOT=/embedpdf-viewer"
+
 rm -rf "$BUILD"
 mkdir -p "$BUILD"
 
@@ -87,7 +97,8 @@ for slice in "${SLICES[@]}"; do
   fi
 
   echo "building $rust"
-  (cd "$ROOT" && cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
+  (cd "$ROOT" && RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$REMAP" \
+    cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
     ${FEATURES[@]+"${FEATURES[@]}"})
 
   # One archive per slice, because `xcodebuild -create-xcframework` takes one

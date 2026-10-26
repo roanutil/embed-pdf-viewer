@@ -153,6 +153,14 @@ PLIST
   frameworks+=(-framework "$fw")
 done
 
+# The compiler writes build-path metadata beside the interfaces: .abi.json and
+# .swiftsourceinfo hold about 26 MB and 22 absolute source paths between them.
+# Clients build from the .swiftinterface, so neither is read.
+for slice in "${SLICES[@]}"; do
+  rm -f "$WORK/${slice%%:*}/$NAME.framework/Modules/$NAME.swiftmodule"/*.abi.json \
+    "$WORK/${slice%%:*}/$NAME.framework/Modules/$NAME.swiftmodule"/*.swiftsourceinfo
+done
+
 echo "creating the xcframework"
 # xcodebuild drops each binary .swiftmodule when a .swiftinterface sits beside
 # it, so clients always build the module from the interface.

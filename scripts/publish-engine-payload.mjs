@@ -195,6 +195,9 @@ function publishWasm() {
 
 function publishApple() {
   const ZIP = 'EmbedPDFBindings.xcframework.zip';
+  // A manifest that pinEngine can't rewrite would only be found after the
+  // upload, so find it before anything is built.
+  pinEngine('', '', true);
   // check-apple-engine.sh hashes the tree and compares it with the pin. Only
   // its verdicts (0, 1, 2) say what to do; anything else is gh, the manifest
   // or the hash failing, and building on a guess could upload over a release.
@@ -220,20 +223,46 @@ function publishApple() {
   // Published but not pinned: the checksum is in the release, so pin it from
   // there. Never upload to a tag that exists.
   if (check.status === 2) {
+    // A release made but not yet filled (a draft, or the zip not uploaded)
+    // has no digest worth pinning.
+    let release;
+    try {
+      release = JSON.parse(
+        run('gh', ['release', 'view', tag, '--repo', RELEASE_REPO, '--json', 'assets,isDraft']),
+      );
+    } catch (err) {
+      console.error(`couldn't read release ${tag} on ${RELEASE_REPO}: ${err.message}`);
+      process.exit(1);
+    }
+    if (release.isDraft || !release.assets.some((a) => a.name === ZIP)) {
+      console.error(
+        `release ${tag} on ${RELEASE_REPO} is incomplete (draft: ${release.isDraft}, ` +
+          `${ZIP} ${release.assets.some((a) => a.name === ZIP) ? 'present' : 'missing'}); ` +
+          `finish or delete it before pinning.`,
+      );
+      process.exit(1);
+    }
     const out = mkdtempSync(path.join(tmpdir(), 'apple-engine-'));
-    run('gh', [
-      'release',
-      'download',
-      tag,
-      '--repo',
-      RELEASE_REPO,
-      '--pattern',
-      '*.sha256',
-      '--dir',
-      out,
-    ]);
-    const line = readFileSync(path.join(out, `${ZIP}.sha256`), 'utf8').trim();
-    rmSync(out, { recursive: true, force: true });
+    let line;
+    try {
+      run('gh', [
+        'release',
+        'download',
+        tag,
+        '--repo',
+        RELEASE_REPO,
+        '--pattern',
+        '*.sha256',
+        '--dir',
+        out,
+      ]);
+      line = readFileSync(path.join(out, `${ZIP}.sha256`), 'utf8').trim();
+    } catch (err) {
+      console.error(`couldn't download ${ZIP}.sha256 from release ${tag}: ${err.message}`);
+      process.exit(1);
+    } finally {
+      rmSync(out, { recursive: true, force: true });
+    }
     const digest = line.match(new RegExp(`^([0-9a-f]{64})  ${ZIP.replaceAll('.', '\\.')}$`))?.[1];
     if (!digest) {
       console.error(`${tag}'s ${ZIP}.sha256 doesn't hold a digest: ${line}`);
@@ -323,7 +352,7 @@ function publishApple() {
 // Points Package.swift's binary target at a published release. Each constant
 // sits on its own line, and a second match would mean the manifest changed
 // shape under this script.
-function pinEngine(tag, checksum) {
+function pinEngine(tag, checksum, validateOnly = false) {
   let text = readFileSync(manifest, 'utf8');
   for (const [name, value] of [
     ['engineRelease', tag],
@@ -337,6 +366,7 @@ function pinEngine(tag, checksum) {
     }
     text = text.replace(line, `let ${name} = "${value}"`);
   }
+  if (validateOnly) return;
   if (dryRun) {
     console.log(`--dry-run: would pin Package.swift to ${tag}, checksum ${checksum}`);
     return;
