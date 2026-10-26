@@ -39,7 +39,8 @@ fn a_permission_refusal_keeps_its_details_whole() {
     let mut bare = Error::permission_denied("doc.forms.read", Some("list"));
     bare.members.remove("details");
     let error = to_plugin_error("form", &bare);
-    assert_eq!(error.members["details"], json!({"required":"doc.forms.read","context":"list"}));
+    assert_eq!(error.plugin_error_info()["permission"], Value::Null);
+    assert!(!error.members.contains_key("details"));
 }
 
 use epdf_kernel::{
