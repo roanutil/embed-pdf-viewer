@@ -50,6 +50,13 @@ pub struct CallFacts {
 pub trait Engine {
     fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>>;
     fn destroy(&self) -> EngineCall<()>;
+    /// `isLocalEngine(engine)`: the engine carries the local brand
+    /// (`LOCAL_ENGINE_BRAND`), so a plugin may open scratch documents on it
+    /// (stamp's library imports, `services/asset-engine.ts:56`). A cloud or
+    /// fake engine is unbranded; the native host overrides this (13.33).
+    fn is_local(&self) -> bool {
+        false
+    }
 }
 
 pub trait DocumentSecurity {
