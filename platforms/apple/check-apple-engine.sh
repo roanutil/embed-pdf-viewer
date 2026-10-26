@@ -11,6 +11,12 @@
 # Exit 2: the pin is stale but the tree's release exists; only the pin needs
 #         committing.
 #
+# Any other code is a hard error, not a verdict:
+#   64  bad arguments, or the manifest is missing or has no engineRelease line
+#   69  gh failed for a reason other than "release not found" (not installed,
+#       not authenticated, network, rate limit); the gh error is printed
+#   70  the tree's engine hash couldn't be computed
+#
 # scripts/publish-engine-payload.mjs branches on these codes.
 set -euo pipefail
 
@@ -31,8 +37,20 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-current="apple-engine-$(bash "$REPO_ROOT/platforms/apple/apple-engine-hash.sh")"
-pinned="$(sed -n 's/^let engineRelease = "\(.*\)"$/\1/p' "$MANIFEST")"
+if [[ ! -f "$MANIFEST" ]]; then
+  echo "no manifest at $MANIFEST" >&2
+  exit 64
+fi
+
+hash="$(bash "$REPO_ROOT/platforms/apple/apple-engine-hash.sh")" || {
+  echo "couldn't compute the engine hash" >&2
+  exit 70
+}
+current="apple-engine-$hash"
+pinned="$(sed -n 's/^let engineRelease = "\(.*\)"$/\1/p' "$MANIFEST")" || {
+  echo "couldn't read $MANIFEST" >&2
+  exit 64
+}
 if [[ -z "$pinned" ]]; then
   echo "no engineRelease line in $MANIFEST" >&2
   exit 64
@@ -45,9 +63,14 @@ fi
 
 echo "pinned:  $pinned"
 echo "current: $current"
-if gh release view "$current" --repo "$RUNTIME_REPO" >/dev/null 2>&1; then
+# Only gh's "release not found" means unpublished; any other failure must not
+# look like it, or a publish would rebuild and upload over an existing tag.
+if gh_err="$(gh release view "$current" --repo "$RUNTIME_REPO" 2>&1 >/dev/null)"; then
   echo "commit the bump: rerun the publish script to rewrite Package.swift"
   exit 2
+elif [[ "$gh_err" == *"release not found"* ]]; then
+  echo "publish it: node scripts/publish-engine-payload.mjs --only apple"
+  exit 1
 fi
-echo "publish it: node scripts/publish-engine-payload.mjs --only apple"
-exit 1
+echo "gh release view failed: $gh_err" >&2
+exit 69
