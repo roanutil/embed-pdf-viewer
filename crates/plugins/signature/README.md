@@ -54,7 +54,8 @@ For `epdf-viewer-host` and `epdf-web` (Task 13.33).
 |---|---|
 | `signature_plugin(SignatureConfig { mode, signer, trust, allow_certify, host })` | `signature_plugin(SignatureConfig { key, mode, trust, allow_certify })`, each `Option<Option<_>>` for "not given" and `null`; `SignatureHost` is `console::set_sink` |
 | `SignerSource::{Port, Thunk, Host { resolve, available }}` | `SignatureKey::{Port, Thunk}`. The mode follows the key setting, as `services/authority.ts` reads it: a host that wants `visual` until its slot holds a signer registers the mode or updates the key setting |
-| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts) |
+| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` keep the public field name `attribution` and send it as `signer`; 13.33 decides whether Swift renames it |
+| `SignerPort` as a setting | `SignatureKey::port(port)`, held by `Rc`: a clone is the same key, a port rebuilt from the same parts is another, as `!==` compares objects |
 | `create_signature_capability`, `signature_reducer`, `SignatureAction`, `ResourceStatus` | removed with the TypeScript; `get_status` answers the kernel's `mirror::ResourceStatus` |
 | `abort_pending()` | `cancel_pending(options)`, over `signatures.cancel` |
 | `can_sign()`, `can_fill()` | `can_sign(&field)`, `can_fill(&field)`: per field, by `ctx.allowsField`; new `can_read_revision()` |
@@ -69,18 +70,14 @@ at this commit. `SignatureHandle::abort_pending` is `cancel_pending`, `can_sign`
 a field, `SignatureEvent::Invalidating` is `InvalidationPredicted`, `SignatureSignerClaims` reads
 `signedAt`, and a signer completion's `fail` raises a plain error, which the verb answers as
 `operation-failed` with that cause, as a rejecting TypeScript signer port is answered
-(`sign-with-a-raw-signer`). `tests/ffi.rs` builds on `TestKernel::open`, which still reads the
-kernel's former string open answer. Known call sites: `crates/epdf-viewer-host` (`session.rs`,
+(`sign-with-a-raw-signer`). Known call sites: `crates/epdf-viewer-host` (`session.rs`,
 `api.rs`, `lib.rs`, `tests/common/mod.rs`, `tests/viewer_host.rs`) and `crates/epdf-web`
 (`src/adapters.rs`).
 
 ## Turn order
 
 Each TypeScript `await` is a plain `.await`, and `return promise` from an `async` function adopts it
-(`promise::adopt`). `await import('@embedpdf/core-signature')` is one turn here. Node 24.20.0 resumes it
-eight turns after the call for an already evaluated module (measured with a scratch probe), and the
-vectors pass at one and at two, so they don't observe it. The cost: a native caller racing a
-validation against another microtask chain can see a different interleaving than Node.
+(`promise::adopt`). The one exception is the dynamic import, listed below.
 
 ## Kept and new Rust-only divergences
 
@@ -89,9 +86,18 @@ None is reached by a vector.
 - The key and trust settings are stored as handles (`services/settings.rs`).
 - `strict_eq` compares two JSON objects as unequal (`js.rs`): a copy has no identity to share.
   `getSignature` compares widget object numbers, which are numbers or `undefined`.
-- `SealUnlessCancelled` forwards every call but `signatures.complete` to the guarded handle. The
-  TypeScript's stand-in has only `signatures`, so any other member would be a `TypeError`;
-  `epdf-signature-core`'s `sign` calls only `signatures.*`.
+- `SealUnlessCancelled` forwards every `DocumentHandle` member but `signatures.complete` to the
+  guarded handle. The TypeScript's stand-in has only `signatures`, so any other member would be a
+  `TypeError`; `epdf-signature-core`'s `sign` calls only `signatures.*`.
+- `await import('@embedpdf/core-signature')` is one turn (`sync/validation.rs` `import_module`),
+  Ruling13.25. Node 24.20.0 resumes it eight turns after the call for an already evaluated module
+  (measured with a scratch probe); module-load turns are the host's, not a contract, and the
+  vectors pass at one and at two. The cost: a native caller racing a validation against another
+  microtask chain can see a different interleaving than Node.
+- `PortTable` keeps every key and trust port it has handed a handle for, for the registration's
+  life: the store's registered value still names the first ones, and `resetSettings` must find
+  them. A host that swaps keys often grows the table by one entry per swap. Task 14 carries this
+  with stamp's `EngineTable` and interaction's `ToolTable`, which have the same shape.
 
 ## Pinned TypeScript behaviour
 

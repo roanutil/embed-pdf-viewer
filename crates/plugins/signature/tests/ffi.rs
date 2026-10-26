@@ -2,9 +2,7 @@
 //! Migrated by hand to the Task 13.25 plugin and not compiled until
 //! `epdf-ffi` builds (Task 13.33): the engine's current ref spelling, the
 //! `cancelPending` and per-field `can_sign`/`can_fill` verbs, and
-//! `SignatureEvent::InvalidationPredicted`. `TestKernel::open` reads the
-//! kernel's former string open answer, which 13.33 updates with the native
-//! host.
+//! `SignatureEvent::InvalidationPredicted`.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -89,8 +87,28 @@ fn spec() -> TestSpec {
     spec_listing(snapshot())
 }
 
+/// The form's one signature field, 14 (widget 15), as `forms.list` answers
+/// it.
+fn form_field_14() -> Value {
+    json!({
+        "ref": field(14), "name": "Sig14", "origin": "acroform", "readOnly": false,
+        "required": false, "noExport": false, "alternateName": null, "mappingName": null,
+        "valueEntry": { "kind": "none" }, "defaultValueEntry": { "kind": "none" },
+        "groupId": null, "createdBy": null, "createdAt": null, "filledBy": null,
+        "filledByName": null, "filledAt": null, "importedBy": null,
+        "widgets": [{ "ref": { "kind": "objectNumber", "page": page(), "objectNumber": 15 },
+                      "objectNumber": 15, "page": page() }],
+        "family": "signature"
+    })
+}
+
 /// `spec()`, with `signatures.list` answering `listed`.
 fn spec_listing(listed: Value) -> TestSpec {
+    spec_with(listed, json!("*"))
+}
+
+/// `spec_listing`, the session granted `allows` (`"*"` for everything).
+fn spec_with(listed: Value, allows: Value) -> TestSpec {
     let bx = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
     TestSpec::new(json!({
         "documents": { "a": {
@@ -98,7 +116,7 @@ fn spec_listing(listed: Value) -> TestSpec {
             "pages": [{ "index": 0, "ref": page(), "label": null,
                         "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
                         "boxes": { "media": bx, "crop": bx } }],
-            "security": { "allows": "*" },
+            "security": { "allows": allows },
             "services": ["signatures"]
         } }
     }))
@@ -109,7 +127,7 @@ fn spec_listing(listed: Value) -> TestSpec {
     .respond("signatures.downloadRevision", |_| Ok(Reply::value(json!({ "$bytes": "JVBERi0=" }))))
     .respond("forms.list", |_| {
         Ok(Reply::value(json!({ "formKind": "acroform", "needsAppearances": false,
-                                "calculationOrder": [], "fields": [] })))
+                                "calculationOrder": [], "fields": [form_field_14()] })))
     })
 }
 
@@ -209,13 +227,15 @@ fn analyze_changes_decodes_the_analysis() {
 
 #[test]
 fn mode_defaults_to_visual_without_a_key() {
-    let (_thread, s) = handle();
+    // Filling granted, signing not: `canSign` and `canFill` read the
+    // session's grants for the form's field 14 (`services/authority.ts`).
+    let grants =
+        || spec_with(snapshot(), json!(["doc.forms.read", "doc.forms.fill", "doc.download"]));
+    let (_thread, s) = handle_with(SignatureConfig::default, grants);
     assert_eq!(block_on(s.mode()).unwrap(), SignatureMode::Visual);
-    // Per field, by the session's grants; the form has no field 14, so
-    // neither verb is allowed on it.
     let field = FormFieldRef::ObjectNumber { field_object_number: 14 };
     assert!(!block_on(s.can_sign(field.clone())).unwrap());
-    assert!(!block_on(s.can_fill(field)).unwrap());
+    assert!(block_on(s.can_fill(field)).unwrap());
     assert!(!block_on(s.can_certify()).unwrap());
     assert!(!block_on(s.is_busy()).unwrap());
     assert_eq!(block_on(s.pending()).unwrap(), None);
@@ -354,23 +374,43 @@ fn signed_14() -> Value {
 fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
     spec()
         .respond("signatures.prepare", |_| {
-            Ok(Reply::value(json!({
+            let prepared = json!({
                 "signingId": "s1", "digest": { "$bytes": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=" },
                 "algorithm": "sha256", "byteRange": [0, 100, 200, 50], "contentsSize": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": { "baseSha256": "x", "editsVersion": 0 }, "expiresAt": null
-            })))
+            });
+            // The engine publishes the parked signing before it answers;
+            // the plugin's mirror folds it (`model.ts:143-144`).
+            let mut event = prepared.clone();
+            event["type"] = json!("signatures.prepared");
+            event["field"] = field(14);
+            event["origin"] = origin();
+            Ok(Reply { value: prepared, events: vec![event] })
         })
         .respond("signatures.complete", move |args| {
             *cms.lock().unwrap() = args.first().and_then(|a| a.get("cms")).cloned();
-            Ok(Reply::value(json!({
+            let completed = json!({
                 "status": "completed", "signature": signed_14(),
                 "version": { "sha256": "y", "byteLength": 500 },
                 "previous": { "baseSha256": "x", "editsVersion": 0 },
-                "protection": snapshot()["protection"].clone()
-            })))
+                "protection": snapshot()["protection"].clone(),
+                "meta": { "affectedPages": [], "cacheDelta": null, "opId": "s1", "undoable": false }
+            });
+            // The completion clears the parked signing and fires `onSigned`
+            // through the mirror (`model.ts:147-148`, `sync/signatures.ts:69-75`).
+            let mut event = completed.clone();
+            event["type"] = json!("signatures.completed");
+            event["signingId"] = json!("s1");
+            event["origin"] = origin();
+            Ok(Reply { value: completed, events: vec![event] })
         })
         .respond("signatures.cancel", |_| Ok(Reply::value(json!({ "status": "cancelled" }))))
+}
+
+/// A local session's event origin.
+fn origin() -> Value {
+    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null })
 }
 
 fn unsigned_input(s: &SignatureHandle) -> SignatureSignInput {
@@ -434,13 +474,11 @@ fn a_two_phase_signing_parks_then_completes() {
     ))
     .unwrap();
     assert_eq!(prepared.digest.len(), 32);
-    // The parked signing comes from the engine's `signatures.prepared`
-    // event (`sync/signatures.ts`), which this responder does not publish:
-    // the mirror has none.
-    assert_eq!(block_on(s.pending()).unwrap(), None);
+    assert_eq!(block_on(s.pending()).unwrap().map(|p| p.signing_id), Some("s1".to_string()));
     let done =
         block_on(s.complete_signature("s1".into(), vec![0x30, 0], CancelToken::new())).unwrap();
     assert!(done.signature.signed);
+    assert_eq!(block_on(s.pending()).unwrap(), None);
 }
 
 #[test]

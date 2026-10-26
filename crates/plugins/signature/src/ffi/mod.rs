@@ -372,7 +372,7 @@ impl SignatureHandle {
                     let key = signer
                         .map(|signer| ports::signer_port(signer, post))
                         .transpose()?
-                        .map(crate::SignatureKey::Port);
+                        .map(crate::SignatureKey::port);
                     Ok(open(c)?.sign(input.into_core(key), none()))
                 },
                 |v: Value| SignatureCompletion::from_json(&v).map_err(ViewerError::from),

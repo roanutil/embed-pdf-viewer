@@ -38,7 +38,7 @@ impl SignatureCapability {
                     None,
                     None,
                 )),
-                Some(SignatureKey::Port(port)) => Ok(port),
+                Some(SignatureKey::Port(port)) => Ok((*port).clone()),
                 Some(SignatureKey::Thunk(thunk)) => adopt(thunk()).await,
             }
         })

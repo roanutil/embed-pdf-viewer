@@ -60,26 +60,30 @@ impl SignatureMode {
 
 /// `SignatureKey`: the key that signs, a signer port or a function that
 /// returns one when someone signs (`SignerPort | (() => SignerPort |
-/// Promise<SignerPort>)`).
+/// Promise<SignerPort>)`). The port is held by `Rc`: the key setting is one
+/// value, and a clone of it is the same value, as a JavaScript object is.
 #[derive(Clone)]
 pub enum SignatureKey {
-    Port(SignerPort),
+    Port(Rc<SignerPort>),
     Thunk(Rc<dyn Fn() -> Promise<SignerPort>>),
 }
 
 impl SignatureKey {
-    /// The same setting value (`===`).
+    /// A port as the key setting.
+    pub fn port(port: SignerPort) -> SignatureKey {
+        SignatureKey::Port(Rc::new(port))
+    }
+
+    /// The same setting value: `===` on the key object, which is what the
+    /// settings store compares (`packages/core/main/src/settings.ts`). A
+    /// port rebuilt from the same parts (a new certificate chain over the
+    /// same `sign`) is a different value.
     pub fn same(&self, other: &SignatureKey) -> bool {
         match (self, other) {
             (SignatureKey::Thunk(a), SignatureKey::Thunk(b)) => {
                 std::ptr::addr_eq(Rc::as_ptr(a), Rc::as_ptr(b))
             }
-            (SignatureKey::Port(SignerPort::Cms(a)), SignatureKey::Port(SignerPort::Cms(b))) => {
-                std::ptr::addr_eq(Rc::as_ptr(&a.sign), Rc::as_ptr(&b.sign))
-            }
-            (SignatureKey::Port(SignerPort::Raw(a)), SignatureKey::Port(SignerPort::Raw(b))) => {
-                std::ptr::addr_eq(Rc::as_ptr(&a.sign), Rc::as_ptr(&b.sign))
-            }
+            (SignatureKey::Port(a), SignatureKey::Port(b)) => Rc::ptr_eq(a, b),
             _ => false,
         }
     }

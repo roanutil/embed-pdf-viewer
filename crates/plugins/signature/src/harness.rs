@@ -181,7 +181,7 @@ fn call_key(value: &Value, h: &Harness) -> Result<SignatureKey, Error> {
             })
         })));
     }
-    port_from(h.callback(value.get("sign").unwrap_or(&Value::Null)), value).map(SignatureKey::Port)
+    port_from(h.callback(value.get("sign").unwrap_or(&Value::Null)), value).map(SignatureKey::port)
 }
 
 /// `config.signer`: `{kind, answer, ...}`, `thunk` for a function.
@@ -194,7 +194,7 @@ fn config_key(spec: &Value, h: &Harness) -> Result<SignatureKey, Error> {
     }
     let port = port_from(h.callback(&sign), spec)?;
     if spec.get("thunk").and_then(Value::as_bool) != Some(true) {
-        return Ok(SignatureKey::Port(port));
+        return Ok(SignatureKey::port(port));
     }
     let h = h.clone();
     Ok(SignatureKey::Thunk(Rc::new(move || {

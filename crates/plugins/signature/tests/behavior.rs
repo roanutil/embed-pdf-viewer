@@ -120,17 +120,20 @@ fn an_imported_mark_reaches_the_field_as_a_sign_request() {
 }
 
 #[test]
-fn an_annotation_hit_keeps_precedence_over_the_armed_mark() {
+fn an_armed_mark_over_a_widget_never_lands_as_a_stamp() {
     let trace = replay("an-armed-mark-over-a-field");
-    // Over the signed field, the field with a value, and the text field: no
-    // placement and no request. The text field's widget is the annotation
-    // plugin's to select (priority 100 over placement's 95).
+    // Over the signed field and the field with a value (steps 5 to 8) the
+    // signature handler consumes the press. Over the text field (steps 9
+    // and 10) it declines, and the press still places no stamp: a widget
+    // hit outranks placement (`annotation-edit`, 100, over
+    // `annotation-place`, 95). The vector does not record the selection the
+    // edit handler makes, so this pins only that nothing is placed or asked.
     for (step, entry) in trace.iter().enumerate().take(11).skip(5) {
         assert!(paths(entry).is_empty(), "step {step} placed nothing");
         assert!(callbacks(entry).is_empty(), "step {step} asked nothing");
     }
     // The press over an empty area after a re-arm does place (step 12), so
-    // the quiet presses above were the hit, not a dead tool.
+    // the quiet presses above were not a dead tool.
     assert_eq!(paths(&trace[12]), ["apply"]);
 }
 
@@ -176,7 +179,7 @@ fn cms_key(on_sign: impl Fn() + 'static) -> SignatureKey {
     let spec =
         case("sign-one-shot")["plugins"][2]["config"]["signer"]["answer"]["resolves"].clone();
     let cms = epdf_kernel::bytes::Bytes::from_json(&spec).expect("cms bytes").0;
-    SignatureKey::Port(SignerPort::Cms(CmsSigner {
+    SignatureKey::port(SignerPort::Cms(CmsSigner {
         sign: Rc::new(move |_: CmsSignRequest| {
             on_sign();
             Promise::resolved(cms.clone())
@@ -276,6 +279,30 @@ fn a_settings_change_applies_at_once_and_replaces_the_key_whole() {
     signature
         .update_settings(&SignatureConfig { key: Some(Some(other.clone())), ..Default::default() });
     assert!(signature.get_settings().key.is_some_and(|k| k.same(&other) && !k.same(&key)));
+    // A port rebuilt from the same parts is another key, as a new object is
+    // to `!==`: the setting changes and reads back as the new port.
+    let changes = Rc::new(std::cell::Cell::new(0));
+    let heard = changes.clone();
+    let off = signature.on_settings_changed(move |event| {
+        assert_eq!(event.changed, ["key"]);
+        heard.set(heard.get() + 1);
+        Ok(())
+    });
+    let SignatureKey::Port(port) = &other else { panic!("a port") };
+    let rebuilt = SignatureKey::port((**port).clone());
+    signature.update_settings(&SignatureConfig {
+        key: Some(Some(rebuilt.clone())),
+        ..Default::default()
+    });
+    assert_eq!(changes.get(), 1);
+    assert!(signature.get_settings().key.is_some_and(|k| k.same(&rebuilt) && !k.same(&other)));
+    // The same key again changes nothing.
+    signature.update_settings(&SignatureConfig {
+        key: Some(Some(rebuilt.clone())),
+        ..Default::default()
+    });
+    assert_eq!(changes.get(), 1);
+    off.call();
     signature.reset_settings();
     assert!(signature.get_settings().key.is_none());
     assert_eq!(signature.get_mode(), SignatureMode::Visual);

@@ -9,7 +9,9 @@
 use std::rc::Rc;
 
 use epdf_kernel::bytes::Bytes;
-use epdf_kernel::engine::{Answer, CallFacts, DocumentHandle, DocumentSecurity, EngineCall};
+use epdf_kernel::engine::{
+    Answer, CallFacts, DocumentHandle, DocumentSecurity, EngineCall, ObjectNumbersLost,
+};
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::signal::AbortSignal;
@@ -100,6 +102,9 @@ impl DocumentHandle for SealUnlessCancelled {
     }
     fn subscribe(&self, listener: Rc<dyn Fn(&Value)>) -> Unsubscribe {
         self.doc.subscribe(listener)
+    }
+    fn on_lost_object_numbers(&self, listener: Rc<dyn Fn(&ObjectNumbersLost)>) -> Unsubscribe {
+        self.doc.on_lost_object_numbers(listener)
     }
     fn last_server_id(&self) -> Option<String> {
         self.doc.last_server_id()
