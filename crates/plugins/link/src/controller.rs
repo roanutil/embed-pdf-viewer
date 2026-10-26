@@ -84,10 +84,6 @@ pub(crate) struct Core {
     /// The framework's website openers, the latest first: the plugin never
     /// opens one itself.
     uri_openers: RefCell<Vec<UriOpener>>,
-    /// The kernel's report, reached through a capability event whose one
-    /// listener fails with what it is handed (`ctx.events.source` reports
-    /// a failing listener).
-    failures: EventHookSource<Error>,
 }
 
 /// `LinkHostCapability`, which includes the public `LinkCapability`: one
@@ -99,8 +95,6 @@ pub struct LinkCapability(pub(crate) Rc<Core>);
 pub fn create_link_controller(cx: ControllerContext) -> Result<(LinkCapability, ConnectFn), Error> {
     let activated = cx.event_source::<LinkActivatedEvent>();
     let loaded = cx.event_source::<LinkLoadedEvent>();
-    let failures = cx.event_source::<Error>();
-    cx.listen(failures.on(|error: &Error| Err(error.clone())));
     let reader = cx.clone();
     let announce = loaded.clone();
     let pages = cx.page_mirror(PageMirrorSpec {
@@ -151,7 +145,6 @@ pub fn create_link_controller(cx: ControllerContext) -> Result<(LinkCapability, 
         loaded,
         pages,
         uri_openers: RefCell::default(),
-        failures,
     }));
     let connected = api.clone();
     let connect: ConnectFn = Rc::new(move || crate::connect::connect_link(&connected.0.cx));
@@ -409,7 +402,7 @@ impl LinkCapability {
         const KINDS: &[&str] = &["xyz", "fit", "fitH", "fitV", "fitR", "fitB", "fitBH", "fitBV"];
         let kind = destination.get("kind").and_then(Value::as_str);
         if kind.is_some_and(|kind| KINDS.contains(&kind)) {
-            self.0.failures.emit(&Error::new(format!(
+            self.cx().report_error(&Error::new(format!(
                 "[link] the stage cannot read destination {destination}: {error}; revealed its page"
             )));
         }
