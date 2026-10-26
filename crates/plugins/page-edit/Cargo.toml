@@ -3,7 +3,7 @@ name = "epdf-plugin-page-edit"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/plugin/page-edit in Rust: document-scoped, PON-addressed page edits (rotate, move, delete, insert) over the engine handle, with the canEdit twin."
+description = "packages/plugin/page-edit in Rust: document-scoped page edits (rotate, reorder, delete, insert, duplicate, extract) staged as changes on the document's queue, by page ref or index, and the page selection."
 
 [lib]
 crate-type = ["rlib"]

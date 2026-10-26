@@ -4,7 +4,7 @@
 //! verb stages, turns from the rotation a pending change gives a page, and
 //! the selection over the confirmed page list.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 use std::sync::LazyLock;
 
@@ -89,13 +89,22 @@ struct Fixture {
     kernel: Kernel,
     fake: Rc<FakeEngine>,
     page_edit: PageEditCapability,
+    queue: ChangeQueue,
     staged: Rc<RefCell<Vec<Staged>>>,
+    /// The engine log's length at [`Fixture::mark`].
+    since: Cell<usize>,
 }
 
 impl Fixture {
+    /// Document `a`, opened.
     fn new(doc: Value) -> Fixture {
+        Fixture::over(json!({ "documents": { "a": doc } }), &[])
+    }
+
+    /// The engine `spec`, with `a` and then `others` opened.
+    fn over(spec: Value, others: &[&str]) -> Fixture {
         rt::reset();
-        let fake = FakeEngine::new(json!({ "documents": { "a": doc } }));
+        let fake = FakeEngine::new(spec);
         let kernel = Kernel::new(
             Rc::new(AsEngine(fake.clone())),
             vec![page_edit_plugin(), probe_plugin()],
@@ -104,10 +113,11 @@ impl Fixture {
         .unwrap();
         let _ = kernel.start();
         rt::run_until_stalled();
-        let _ = kernel
-            .documents()
-            .open(OpenSource::Input(json!({ "kind": "bytes", "id": "a" })), OpenOptions::default());
-        rt::run_until_stalled();
+        for id in std::iter::once(&"a").chain(others) {
+            let input = OpenSource::Input(json!({ "kind": "bytes", "id": id }));
+            let _ = kernel.documents().open(input, OpenOptions::default());
+            rt::run_until_stalled();
+        }
         let page_edit = kernel.capability(&PAGE_EDIT, Some("a")).unwrap();
         let staged = Rc::new(RefCell::new(Vec::new()));
         let log = staged.clone();
@@ -117,23 +127,23 @@ impl Fixture {
             log.borrow_mut().push((change.label().clone(), change.shows(), change.undo()));
             Ok(())
         });
-        let fixture = Fixture { kernel, fake, page_edit, staged };
+        let fixture = Fixture { kernel, fake, page_edit, queue, staged, since: Cell::new(0) };
         fixture.mark();
         fixture
     }
 
-    /// Forget the engine calls so far (the open's).
+    /// Forget the staged changes and the engine calls so far (the opens').
     fn mark(&self) {
         self.staged.borrow_mut().clear();
+        self.since.set(self.fake.log_len());
     }
 
-    /// The engine calls after the open, as `path`s.
+    /// The engine calls since [`Fixture::mark`], as `path`s.
     fn engine_paths(&self) -> Vec<String> {
         self.fake
-            .log_since(0)
+            .log_since(self.since.get())
             .iter()
             .filter_map(|call| call.get("path").and_then(Value::as_str).map(str::to_string))
-            .filter(|path| !matches!(path.as_str(), "open" | "pages.list" | "render.getPolicy"))
             .collect()
     }
 
@@ -268,12 +278,15 @@ fn each_edit_is_one_labelled_change_with_its_undo() {
     let none = OperationOptions::default;
     // Pages 10 (0°) and 20 (90°) turn to 90° and 180°: two ops, and the
     // undo turns each back.
-    let _ = settled(pe.rotate_by(refs(&[10, 20]), 90.0, none()));
-    let _ = settled(pe.set_rotation(refs(&[10, 30]), 180.0, none()));
-    let _ = settled(pe.reorder(vec![PageArg::Index(2.0)], PagePosition::Start, none()));
-    let _ = settled(pe.delete(refs(&[20]), none()));
-    let _ = settled(pe.insert_blank(InsertBlankOptions { count: Some(3.0), ..Default::default() }));
-    let _ = settled(pe.insert_from_bytes(Bytes(vec![1, 2, 3]), Default::default()));
+    settled(pe.rotate_by(refs(&[10, 20]), 90.0, none())).unwrap();
+    settled(pe.set_rotation(refs(&[10, 30]), 180.0, none())).unwrap();
+    settled(pe.reorder(vec![PageArg::Index(2.0)], PagePosition::Start, none())).unwrap();
+    settled(pe.delete(refs(&[20]), none())).unwrap();
+    let blank =
+        settled(pe.insert_blank(InsertBlankOptions { count: Some(3.0), ..Default::default() }));
+    assert_eq!(blank.unwrap(), PageEditInsertResult::default());
+    let copied = settled(pe.insert_from_bytes(Bytes(vec![1, 2, 3]), Default::default()));
+    assert_eq!(copied.unwrap(), PageEditInsertResult::default());
     settled(pe.duplicate(refs(&[10]), Default::default())).unwrap();
     assert_eq!(
         f.labels(),
@@ -378,4 +391,141 @@ fn an_insert_resolves_the_pages_the_engine_names() {
     let result = settled(f.page_edit.insert_blank(Default::default())).unwrap();
     assert_eq!(result.page_refs(), [pr(99)]);
     assert_eq!(f.pages().last(), Some(&(99, 0)));
+}
+
+/// A task that counts turns: each one is a JavaScript `await null` loop,
+/// started before the verbs, so it runs first in every turn.
+fn turn_counter() -> Rc<Cell<u32>> {
+    let turn = Rc::new(Cell::new(0));
+    let count = turn.clone();
+    rt::spawn(async move {
+        for _ in 0..64 {
+            rt::tick().await;
+            count.set(count.get() + 1);
+        }
+    });
+    turn
+}
+
+/// The turn each change is staged on, by label key.
+fn staged_turns(f: &Fixture, turn: &Rc<Cell<u32>>) -> Rc<RefCell<Vec<(String, u32)>>> {
+    let seen = Rc::new(RefCell::new(Vec::new()));
+    let (log, turn) = (seen.clone(), turn.clone());
+    let _ = f.queue.on_staged().on(move |change: &epdf_kernel::changes::PendingChange| {
+        let key = change.label()["key"].as_str().unwrap_or_default().to_string();
+        log.borrow_mut().push((key, turn.get()));
+        Ok(())
+    });
+    seen
+}
+
+fn racing_engine() -> Value {
+    let applied =
+        json!({ "path": "apply", "value": { "items": [{ "insertedPages": [] }], "meta": meta() } });
+    json!({
+        "defaultDocument": "src",
+        "documents": {
+            "a": doc(vec![applied], json!("*")),
+            "b": doc(vec![json!({ "path": "pages.extract", "value": { "$bytes": "BwgJ" } })], json!("*")),
+            "src": doc(vec![json!({ "path": "pages.extract", "value": { "$bytes": "BAUG" } })], json!("*")),
+        },
+    })
+}
+
+/// The turns are counted from the TypeScript, with the fake engine's
+/// answers already settled `AbortablePromise`s and the microtask queue
+/// first in, first out:
+///
+/// - `insertFromDocument` (`controller.ts:341`) awaits
+///   `mapErrors(() => other.pages.extract(refs))`. Inside, `return await`
+///   on the subclass promise takes the resolve-thenable job, its `then`
+///   reaction and the await's own (3); the verb's `await mapErrors(...)` is
+///   the 4th, and `insertBytes` stages there.
+/// - `insertFromBytes` with `pageIndexes` awaits `pagesOfBytes` (`:221`):
+///   `await mapErrors(open)` 4, `await mapErrors(pages.list)` 4,
+///   `return await mapErrors(pages.extract)` 4, `finally { await
+///   source.close() }` 3 (a subclass), then the verb's `await
+///   pagesOfBytes(...)` 1: it stages on turn 16.
+/// - With a signal, `ctx.cancellable` (`cancellable.ts:20`) returns a plain
+///   promise its `task.then` reaction settles (1), `mapErrors` resumes on
+///   the next (2) and the verb on the one after: turn 3.
+#[test]
+fn await_first_verbs_stage_on_the_typescripts_turns() {
+    let f = Fixture::over(racing_engine(), &["b"]);
+    let turn = turn_counter();
+    let seen = staged_turns(&f, &turn);
+    let options = InsertFromBytesOptions { page_indexes: Some(vec![1.0]), ..Default::default() };
+    let subset = f.page_edit.insert_from_bytes(Bytes(vec![1, 2, 3]), options);
+    let copy = f.page_edit.insert_from_document("b".into(), refs(&[20]), Default::default());
+    rt::run_until_stalled();
+    assert_eq!(*seen.borrow(), [("pages.insert".to_string(), 4), ("pages.insert".to_string(), 16)]);
+    // Both calls reach the engine at once (the open, b's extract); on turn
+    // 4 the subset lists its source, then the copy is sent; the subset
+    // extracts on 8 and closes on 12.
+    assert_eq!(
+        f.engine_paths(),
+        ["open", "pages.extract", "pages.list", "apply", "pages.extract", "close", "apply"]
+    );
+    assert!(subset.peek().is_some_and(|r| r.is_ok()) && copy.peek().is_some_and(|r| r.is_ok()));
+
+    let f = Fixture::over(racing_engine(), &["b"]);
+    let turn = turn_counter();
+    let seen = staged_turns(&f, &turn);
+    let options = PagePositionOptions { signal: Some(AbortSignal::new()), ..Default::default() };
+    let copy = f.page_edit.insert_from_document("b".into(), refs(&[20]), options);
+    rt::run_until_stalled();
+    assert_eq!(*seen.borrow(), [("pages.insert".to_string(), 3)]);
+    assert!(copy.peek().is_some_and(|r| r.is_ok()));
+}
+
+/// `controller.ts:60-62` (contract): a signal that fires after the change
+/// was staged rejects the verb `operation-cancelled`, and the change still
+/// applies.
+#[test]
+fn a_signal_fired_mid_flight_rejects_the_verb_and_the_edit_still_lands() {
+    let mut deferred = answer(
+        "pages.rotate",
+        "pages.rotated",
+        json!({ "pages": [pr(10).to_json()], "rotation": 90 }),
+        vec![
+            page(10, 0, 90, 100.0, 200.0),
+            page(20, 1, 90, 300.0, 400.0),
+            page(30, 2, 270, 500.0, 600.0),
+        ],
+    );
+    let value = deferred["value"].take();
+    deferred.as_object_mut().unwrap().remove("value");
+    deferred["defer"] = json!("rotate");
+    let f = Fixture::new(doc(vec![deferred], json!("*")));
+    let signal = AbortSignal::new();
+    let options = OperationOptions { signal: Some(signal.clone()) };
+    let rotate = f.page_edit.rotate_by(refs(&[10]), 90.0, options);
+    rt::run_until_stalled();
+    assert_eq!(f.labels().len(), 1);
+    assert!(!rotate.is_settled());
+    signal.abort(Error::new("stop"));
+    rt::run_until_stalled();
+    let error = rotate.peek().unwrap().unwrap_err();
+    assert_eq!(
+        (code(&error), error.message.as_str()),
+        (Some("operation-cancelled"), "operation cancelled")
+    );
+    assert_eq!(f.pages()[0], (10, 0), "nothing shows before the engine answers");
+    assert!(f.fake.settle("rotate", Ok(value)));
+    rt::run_until_stalled();
+    assert_eq!(f.pages()[0], (10, 90));
+    assert_eq!(f.engine_paths(), ["apply"]);
+}
+
+/// `inserted` (`controller.ts:149`) reads `'insertedPages' in item`: an
+/// array item answers `false` and resolves no pages; a primitive throws.
+#[test]
+fn an_insert_answer_item_is_read_with_the_in_operator() {
+    let items = |item: Value| json!({ "path": "apply", "times": 1, "value": { "items": [item], "meta": meta() } });
+    let f = Fixture::new(doc(vec![items(json!([])), items(json!(5))], json!("*")));
+    let none = settled(f.page_edit.insert_blank(Default::default())).unwrap();
+    assert_eq!(none, PageEditInsertResult::default());
+    let error = settled(f.page_edit.insert_blank(Default::default())).unwrap_err();
+    assert_eq!(error.name, "TypeError");
+    assert_eq!(error.message, "Cannot use 'in' operator to search for 'insertedPages' in 5");
 }

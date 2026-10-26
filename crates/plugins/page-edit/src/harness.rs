@@ -12,7 +12,7 @@ use serde_json::{Value, json};
 
 use crate::contract::{
     InsertBlankOptions, InsertFromBytesOptions, OperationOptions, PageArg, PageEditInsertResult,
-    PagePosition, PagePositionOptions, PdfSize,
+    PagePosition, PagePositionOptions, PdfSize, js_number,
 };
 use crate::{PAGE_EDIT, PageEditCapability, page_edit_plugin};
 
@@ -39,17 +39,10 @@ fn arg(args: &[Value], i: usize) -> Option<&Value> {
     args.get(i).filter(|v| !is_undefined(v))
 }
 
-/// A canonical number: plain, or `{"$number": ...}`.
+/// A canonical number: plain, or `{"$number": ...}` read as `Number(text)`.
+/// Anything else, `null` included, reads as `NaN`.
 fn number(value: Option<&Value>) -> f64 {
-    let Some(value) = value else { return f64::NAN };
-    if let Some(n) = value.as_f64() {
-        return n;
-    }
-    match value.get("$number").and_then(Value::as_str) {
-        Some("Infinity") => f64::INFINITY,
-        Some("-Infinity") => f64::NEG_INFINITY,
-        _ => f64::NAN,
-    }
+    value.and_then(js_number).unwrap_or(f64::NAN)
 }
 
 fn pages(value: Option<&Value>) -> Vec<PageArg> {

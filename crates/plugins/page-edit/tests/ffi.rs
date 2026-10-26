@@ -231,6 +231,13 @@ fn end_moves_the_block_after_the_pages_left_behind() {
     let layout = block_on(edit.move_pages(vec![P10], PageEditPlacement::End, token())).unwrap();
     let pons: Vec<u32> = layout.pages.iter().map(|p| p.page.page_object_number).collect();
     assert_eq!(pons, [11, 12, 10]);
+    // A page named twice moves once. `refsOf` keeps both refs
+    // (`controller.ts:64`), so that is now the engine's doing, as this test
+    // engine's partition does it.
+    let layout =
+        block_on(edit.move_pages(vec![P10, P10, P11], PageEditPlacement::End, token())).unwrap();
+    let pons: Vec<u32> = layout.pages.iter().map(|p| p.page.page_object_number).collect();
+    assert_eq!(pons, [12, 11, 10]);
     let unknown = PageRef { page_object_number: 99 };
     let error =
         block_on(edit.move_pages(vec![P10, unknown], PageEditPlacement::End, token())).unwrap_err();

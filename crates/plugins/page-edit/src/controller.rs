@@ -119,29 +119,24 @@ fn not_found(message: String) -> Error {
     plugin_error(code::NOT_FOUND, CAPABILITY, message, None, None)
 }
 
-/// `await` of an engine call that answers an `AbortablePromise` (the raw
-/// engine, a source document it opens, another document's handle): `await`
-/// adopts it as a thenable, the resolve-thenable job, the adopted promise's
-/// reaction, then the await's own.
-async fn await_adopted<T: Clone + 'static>(raw: Promise<T>) -> Result<T, Error> {
-    rt::tick().await;
-    let result = raw.await;
-    rt::tick().await;
-    result
-}
-
 /// `return promise` from an `async` function: the resolve-thenable job,
-/// then the reaction that settles the function's own promise.
+/// then the `then` reaction that settles the function's own promise. A
+/// `then` reaction, not an `await`, so an `AbortablePromise` costs no more.
 async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
-    promise.await
+    promise.reaction().await
 }
 
-/// `mapErrors(work)`: an engine call outside the guarded `ctx.doc` (another
-/// document, a scratch document), its failure mapped through
-/// `toPluginError`.
+/// `mapErrors(work)`'s body, `return await work()`: an engine call outside
+/// the guarded `ctx.doc` (another document, a scratch document), its failure
+/// mapped through `toPluginError`. A plain `.await` costs what JavaScript's
+/// does: three turns for the `AbortablePromise` the raw engine and its
+/// handles answer, one for the plain promise `ctx.cancellable` returns with
+/// a signal (`rt.rs`, `IntoFuture for Promise`). A caller's `await
+/// mapErrors(...)` is the turn after that, so call sites wrap it in
+/// [`rt::returned`].
 async fn map_errors<T: Clone + 'static>(work: Promise<T>) -> Result<T, Error> {
-    await_adopted(work).await.map_err(|error| to_plugin_error(CAPABILITY, &error))
+    work.await.map_err(|error| to_plugin_error(CAPABILITY, &error))
 }
 
 /// The memo behind `getSelected`: the answer for one registry and one state.
@@ -369,19 +364,27 @@ impl PageEditCapability {
     ) -> Promise<PageEditInsertResult> {
         Promise::spawn(async move {
             let item = rt::returned(Self::answer(change, signal)).await?;
-            let Some(Value::Object(item)) = item else {
-                let shown = match item {
-                    None => "undefined".to_string(),
-                    Some(value) => value.to_string(),
-                };
-                return Err(Error::named(
-                    "TypeError",
-                    format!("Cannot use 'in' operator to search for 'insertedPages' in {shown}"),
-                ));
-            };
-            let pages = match item.get("insertedPages") {
-                Some(Value::Array(pages)) => pages.clone(),
-                _ => Vec::new(),
+            // `'insertedPages' in item`: any object answers, an array too;
+            // `undefined` or a primitive throws.
+            let pages = match item {
+                Some(Value::Object(item)) => match item.get("insertedPages") {
+                    Some(Value::Array(pages)) => pages.clone(),
+                    _ => Vec::new(),
+                },
+                Some(Value::Array(_)) => Vec::new(),
+                other => {
+                    let shown = match other {
+                        Some(Value::String(text)) => text,
+                        Some(value) => value.to_string(),
+                        None => "undefined".to_string(),
+                    };
+                    return Err(Error::named(
+                        "TypeError",
+                        format!(
+                            "Cannot use 'in' operator to search for 'insertedPages' in {shown}"
+                        ),
+                    ));
+                }
             };
             Ok(PageEditInsertResult { pages })
         })
@@ -519,10 +522,12 @@ impl PageEditCapability {
             "id": format!("page-edit-source-{}", base36(rt::now())),
             "bytes": bytes.to_json(),
         });
-        let source = map_errors(engine.open(input, Some(json!({ "scope": ["*"] })))).await?;
+        let opened = engine.open(input, Some(json!({ "scope": ["*"] })));
+        let source = rt::returned(map_errors(opened)).await?;
         let copied = async {
             let listed = source.call("pages.list", None, Vec::new());
-            let layout = map_errors(cancellable(CAPABILITY, signal.clone(), listed)).await?;
+            let layout =
+                rt::returned(map_errors(cancellable(CAPABILITY, signal.clone(), listed))).await?;
             let pages = layout.get("pages").and_then(Value::as_array).cloned().unwrap_or_default();
             let mut refs = Vec::with_capacity(page_indexes.len());
             for index in page_indexes {
@@ -532,11 +537,11 @@ impl PageEditCapability {
                 refs.push(page.get("ref").cloned().unwrap_or(Value::Null));
             }
             let extracted = source.call("pages.extract", None, vec![Value::Array(refs)]);
-            map_errors(cancellable(CAPABILITY, signal, extracted)).await
+            rt::returned(map_errors(cancellable(CAPABILITY, signal, extracted))).await
         }
         .await;
         // `finally { await source.close() }`: a close failure wins, unmapped.
-        await_adopted(source.call("close", None, Vec::new())).await?;
+        source.call("close", None, Vec::new()).await?;
         copied
     }
 
@@ -722,8 +727,12 @@ impl PageEditCapability {
             // copied out: the engine refuses `doc.download` there with the
             // permission named.
             let extracted = other.call("pages.extract", None, vec![refs_json(&refs)]);
-            let bytes =
-                map_errors(cancellable(CAPABILITY, options.signal.clone(), extracted)).await?;
+            let bytes = rt::returned(map_errors(cancellable(
+                CAPABILITY,
+                options.signal.clone(),
+                extracted,
+            )))
+            .await?;
             adopt(this.insert_bytes(
                 PageVerb::Insert,
                 Some(refs.len() as f64),
