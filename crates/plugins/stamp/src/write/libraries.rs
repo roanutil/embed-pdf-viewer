@@ -97,7 +97,14 @@ fn size_of(layout: &Value) -> StampSize {
     StampSize { width: n("width"), height: n("height") }
 }
 
+/// `doc.page(ref)` reads `ref.objectNumber`: a missing ref is the
+/// TypeScript's `TypeError`. A ref the kernel's `PageRef` can't hold (not an
+/// object number) is refused with the port's own `TypeError`, where the
+/// TypeScript would call the engine with it.
 fn page_ref(value: &Value) -> Result<PageRef, Error> {
+    if nullish(value) {
+        return Err(crate::services::asset_engine::read_off(value, "objectNumber"));
+    }
     PageRef::from_json(value)
         .ok_or_else(|| Error::named("TypeError", format!("[stamp] not a page ref: {value}")))
 }
