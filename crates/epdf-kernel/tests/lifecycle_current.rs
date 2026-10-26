@@ -854,10 +854,18 @@ fn a_workspace_view_is_kept_per_document_and_dropped_on_rekey_and_close() {
             Rc::new(format!("view:{id}"))
         })
         .build();
+    // A document context held across the close keeps the session alive, so
+    // only the close-time clear can drop its views.
+    let held = Token::<epdf_kernel::plugin::Controller<Value, CoreAction>>::new("held");
+    let holder = define::<Value, CoreAction>("held")
+        .document_scoped()
+        .initial_state(|| json!(0))
+        .create(&held, |ctx| Ok((ctx, None)))
+        .build();
     let kernel = Kernel::new(
         Rc::new(QueueEngine(RefCell::new([first.clone()].into()))),
-        vec![plugin],
-        options(),
+        vec![plugin, holder],
+        KernelOptions { release_closed_sessions: false, ..options() },
     )
     .unwrap();
     run(kernel.start()).unwrap();
@@ -875,7 +883,13 @@ fn a_workspace_view_is_kept_per_document_and_dropped_on_rekey_and_close() {
     assert_eq!(built.get(), 2);
     land.resolve(Default::default());
     let _ = run(opening);
+    let kept = kernel.try_capability(&held, Some("renamed")).unwrap().unwrap();
+    let view = Rc::downgrade(&after);
+    drop(after);
+    assert!(view.upgrade().is_some(), "the session keeps its view while open");
     run(kernel.documents().close("renamed")).unwrap();
+    assert!(view.upgrade().is_none(), "close dropped the view (kernel.ts:568)");
+    drop(kept);
     assert_eq!(*kernel.capability(&token, Some("renamed")).unwrap(), "workspace");
     run(kernel.destroy()).unwrap();
 }
