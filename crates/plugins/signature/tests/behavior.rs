@@ -279,8 +279,10 @@ fn a_settings_change_applies_at_once_and_replaces_the_key_whole() {
     signature
         .update_settings(&SignatureConfig { key: Some(Some(other.clone())), ..Default::default() });
     assert!(signature.get_settings().key.is_some_and(|k| k.same(&other) && !k.same(&key)));
-    // A port rebuilt from the same parts is another key, as a new object is
-    // to `!==`: the setting changes and reads back as the new port.
+    // A port rebuilt from the same parts is another key here (identity, a
+    // Rust-only divergence: the TypeScript's `sameValue` would call a
+    // rebuilt CMS port no change). The setting changes and reads back as the
+    // new port.
     let changes = Rc::new(std::cell::Cell::new(0));
     let heard = changes.clone();
     let off = signature.on_settings_changed(move |event| {

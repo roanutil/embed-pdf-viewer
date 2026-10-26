@@ -74,10 +74,13 @@ impl SignatureKey {
         SignatureKey::Port(Rc::new(port))
     }
 
-    /// The same setting value: `===` on the key object, which is what the
-    /// settings store compares (`packages/core/main/src/settings.ts`). A
-    /// port rebuilt from the same parts (a new certificate chain over the
-    /// same `sign`) is a different value.
+    /// The same setting value, by identity: a clone of the key is the same
+    /// key, and a port rebuilt from the same parts is another. The
+    /// TypeScript store compares with `sameValue`
+    /// (`packages/core/main/src/settings.ts:204-218`), which deep-compares a
+    /// plain port object, so a CMS port rebuilt over the same `sign` is no
+    /// change there. A Rust-only divergence, as interaction's tools are
+    /// (README).
     pub fn same(&self, other: &SignatureKey) -> bool {
         match (self, other) {
             (SignatureKey::Thunk(a), SignatureKey::Thunk(b)) => {

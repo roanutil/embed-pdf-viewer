@@ -55,7 +55,7 @@ For `epdf-viewer-host` and `epdf-web` (Task 13.33).
 | `signature_plugin(SignatureConfig { mode, signer, trust, allow_certify, host })` | `signature_plugin(SignatureConfig { key, mode, trust, allow_certify })`, each `Option<Option<_>>` for "not given" and `null`; `SignatureHost` is `console::set_sink` |
 | `SignerSource::{Port, Thunk, Host { resolve, available }}` | `SignatureKey::{Port, Thunk}`. The mode follows the key setting, as `services/authority.ts` reads it: a host that wants `visual` until its slot holds a signer registers the mode or updates the key setting |
 | `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` keep the public field name `attribution` and send it as `signer`; 13.33 decides whether Swift renames it |
-| `SignerPort` as a setting | `SignatureKey::port(port)`, held by `Rc`: a clone is the same key, a port rebuilt from the same parts is another, as `!==` compares objects |
+| `SignerPort` as a setting | `SignatureKey::port(port)`, held by `Rc` and compared by identity: a clone is the same key, a port rebuilt from the same parts is another (a Rust-only divergence, below) |
 | `create_signature_capability`, `signature_reducer`, `SignatureAction`, `ResourceStatus` | removed with the TypeScript; `get_status` answers the kernel's `mirror::ResourceStatus` |
 | `abort_pending()` | `cancel_pending(options)`, over `signatures.cancel` |
 | `can_sign()`, `can_fill()` | `can_sign(&field)`, `can_fill(&field)`: per field, by `ctx.allowsField`; new `can_read_revision()` |
@@ -94,6 +94,14 @@ None is reached by a vector.
   (measured with a scratch probe); module-load turns are the host's, not a contract, and the
   vectors pass at one and at two. The cost: a native caller racing a validation against another
   microtask chain can see a different interleaving than Node.
+- The key and trust settings compare by identity (`SignatureKey::same`, the trust `Rc`), where the
+  TypeScript store's `sameValue` deep-compares plain objects
+  (`packages/core/main/src/settings.ts:204-218`, called at `:156` and `:191`). The consequence: a
+  CMS port rebuilt over the same `sign` function reports a settings change here and none in the
+  TypeScript. A raw port's chain is an array of `Uint8Array`s, which `sameValue` compares
+  element by element and each buffer by identity: a raw port rebuilt with new buffers is a change
+  on both sides, one reusing the same buffers and `sign` is a change only here. Task 13.11 made the same choice for
+  interaction's tools (`docs/research/rust-plugins-branch-review.md:92`).
 - `PortTable` keeps every key and trust port it has handed a handle for, for the registration's
   life: the store's registered value still names the first ones, and `resetSettings` must find
   them. A host that swaps keys often grows the table by one entry per swap. Task 14 carries this
