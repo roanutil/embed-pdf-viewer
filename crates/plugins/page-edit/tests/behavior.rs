@@ -478,7 +478,7 @@ fn await_first_verbs_stage_on_the_typescripts_turns() {
     assert!(copy.peek().is_some_and(|r| r.is_ok()));
 }
 
-/// `controller.ts:60-62` (contract): a signal that fires after the change
+/// `contract.ts:60-62`: a signal that fires after the change
 /// was staged rejects the verb `operation-cancelled`, and the change still
 /// applies.
 #[test]
