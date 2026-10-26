@@ -384,7 +384,8 @@ impl LinkHandle {
     }
 
     /// Every link in the document, loading pages as needed. Each item's
-    /// page is the one its annotation ref names.
+    /// page is the one its annotation ref names; a link whose ref names no
+    /// page is an `invalid-input` error rather than dropped.
     pub async fn all_links(&self) -> Result<Vec<LinkItem>, ViewerError> {
         self.bound
             .call_promise(
@@ -394,7 +395,12 @@ impl LinkHandle {
                         .as_array()
                         .into_iter()
                         .flatten()
-                        .filter_map(|l| page_of_link(l).map(|page| item(page, l)))
+                        .map(|l| {
+                            let page = page_of_link(l).ok_or_else(|| {
+                                invalid(format!("a link whose ref names no page: {l}"))
+                            })?;
+                            item(page, l)
+                        })
                         .collect::<Result<Vec<_>, Error>>()
                 },
             )

@@ -52,22 +52,37 @@ For the viewer host and `epdf-web` (Task 13.33).
 | `ensure_loaded(&PageRef)`, `list_all_links()` | `ensure_loaded(page, OperationOptions)`, `list_all_links(OperationOptions)` |
 | `get_input_label` | `get_label`, which takes either |
 | ffi `PdfLinkTarget`, `PdfDestination` members, `LinkHandle::with_report` | `target_json`, `destination_json`; activation no longer fails, so there is no report |
+| ffi `all_links` skipping a link with no page | an `invalid-input` error |
 
 `src/ffi.rs` and `tests/ffi.rs` were migrated by hand and are not compiled until `epdf-ffi` builds
-(Task 13.33).
+(Task 13.33). The viewer host's call sites move with them: `crates/epdf-viewer-host/src/session.rs:106`
+(`link_plugin(Default::default())`) and `crates/epdf-viewer-host/src/lib.rs:452`
+(`LinkHandle::with_report`).
 
 ## Where the port differs
 
 Kept Rust-only divergences, none reached by a vector:
 
-- A `goto` destination the stage's `PageDestination` cannot decode (an unknown `kind`) reports
-  `revealed` without moving the stage, where the TypeScript hands it to `goToDestination` as is.
+- A `goto` destination the stage's `PageDestination` cannot decode gets a bare reveal of its page,
+  which is what `goToDestination` does for an unknown `kind` (`revealOfDestination` has no spot for
+  it). For a known kind with a member the stage cannot read, the TypeScript places the camera from
+  that member; Rust reveals the page bare and sends the decode error to the kernel report
+  (`an_undecodable_destination_still_reveals_its_page`).
 - A context `page` that is not a `PageRef` is dropped from the action source, which the actions
   plugin types; the TypeScript passes it through.
 - `get_label` of a `uri` or `name` that is not a string answers its JSON text, where the TypeScript
   returns the value.
 - With the annotation plugin installed, `list_links` wraps the plugin's cached list in a fresh `Rc`,
   so identity is per call there.
+- `links_of` gives an `objectNumber` ref with no number the id `undefined`, where `annotationKey`
+  builds `"obj:undefined"`, and a `baseIndex` ref with no page the same, where the TypeScript throws.
+- A `null` list snapshot fails `annotations is not iterable`, where the TypeScript throws
+  `Cannot read properties of null (reading 'annotations')`.
+- `get_link_at` treats a link with no `bounds` as a miss, where the TypeScript throws reading it.
+- `resolve` reads a destination with no `page` as a page the document doesn't have, where
+  `pageRefsEqual` would throw reading off `undefined`.
+- The harness's scripted `registerUriOpener` reads a throwing opener as a refusal, since `UriOpener`
+  answers a `bool`; the TypeScript's throw leaves `activate`. No vector registers one.
 
 `loads_settle_on_the_typescripts_turns` pins the turns a load takes, measured on the TypeScript,
 including the three of the `.finally` that `page-mirror.ts:194` chains onto each load (kernel

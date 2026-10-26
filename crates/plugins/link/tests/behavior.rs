@@ -71,6 +71,8 @@ struct Rig {
     link: LinkCapability,
     stage: Option<StageCapability>,
     loaded: Rc<RefCell<Vec<Value>>>,
+    /// What reached the kernel's report.
+    reports: Rc<RefCell<Vec<String>>>,
 }
 
 impl Rig {
@@ -78,6 +80,8 @@ impl Rig {
     /// a stage when `stage` is set.
     fn new(responses: Vec<Value>, stage: bool) -> Rig {
         rt::reset();
+        let reports: Rc<RefCell<Vec<String>>> = Rc::default();
+        let heard_reports = reports.clone();
         let fake = FakeEngine::new(json!({ "documents": { "a": {
             "pages": [layout(1, 0), layout(2, 1)],
             "responses": responses,
@@ -89,9 +93,17 @@ impl Rig {
             plugins.push(stage_plugin(options));
         }
         plugins.push(link_plugin());
-        let kernel =
-            Kernel::new(Rc::new(AsEngine(fake.clone())), plugins, KernelOptions::default())
-                .expect("kernel");
+        let kernel = Kernel::new(
+            Rc::new(AsEngine(fake.clone())),
+            plugins,
+            KernelOptions {
+                report: Some(Rc::new(move |error: &Error| {
+                    heard_reports.borrow_mut().push(error.message.clone())
+                })),
+                ..KernelOptions::default()
+            },
+        )
+        .expect("kernel");
         kernel.start();
         rt::run_until_stalled();
         kernel.documents().open(
@@ -107,7 +119,7 @@ impl Rig {
             heard.borrow_mut().push(event.page.clone());
             Ok(())
         });
-        Rig { kernel, fake, link, stage, loaded }
+        Rig { kernel, fake, link, stage, loaded, reports }
     }
 
     /// How many `page.annotations.list` calls the engine saw.
@@ -449,4 +461,36 @@ fn loads_settle_on_the_typescripts_turns() {
     let _ = rig.link.ensure_loaded(PageRef::new(1), none());
     rt::run_until_stalled();
     assert_eq!(loaded.get(), 5);
+}
+
+/// `goToDestination` (`stage/src/navigation/reveal.ts:205-215`) reveals the
+/// destination's page even when `revealOfDestination` has no spot for it, so
+/// a destination the stage's type cannot decode still scrolls its page into
+/// view (a bare reveal). An
+/// unknown kind is silent, as in the TypeScript; a known kind with a member
+/// the stage cannot read is reported.
+#[test]
+fn an_undecodable_destination_still_reveals_its_page() {
+    for (destination, reported) in [
+        (json!({ "kind": "teleport", "page": pr(2) }), false),
+        (json!({ "kind": "fitR", "page": pr(2), "x": "left" }), true),
+    ] {
+        let rig = Rig::new(Vec::new(), true);
+        let stage = rig.stage.clone().unwrap();
+        stage.set_viewport_size(epdf_geometry::Size { width: 1000.0, height: 700.0 }).unwrap();
+        rt::run_until_stalled();
+        let before = stage.get_camera();
+        let goto = json!({ "kind": "goto", "destination": destination });
+        assert_eq!(rig.link.activate(&goto, None).outcome(), "revealed");
+        rt::run_until_stalled();
+        // A bare reveal (`revealAt` with no rect, anchor or zoom) scrolls the
+        // page into view and leaves the current page alone.
+        assert!(stage.get_camera().y > before.y, "{destination}");
+        assert_eq!(stage.get_current_page_index(), 0);
+        let reports = rig.reports.borrow();
+        assert_eq!(reports.len(), usize::from(reported), "{destination}: {reports:?}");
+        if reported {
+            assert!(reports[0].starts_with("[link] the stage cannot read destination"));
+        }
+    }
 }

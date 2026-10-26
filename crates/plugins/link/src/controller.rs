@@ -84,6 +84,10 @@ pub(crate) struct Core {
     /// The framework's website openers, the latest first: the plugin never
     /// opens one itself.
     uri_openers: RefCell<Vec<UriOpener>>,
+    /// The kernel's report, reached through a capability event whose one
+    /// listener fails with what it is handed (`ctx.events.source` reports
+    /// a failing listener).
+    failures: EventHookSource<Error>,
 }
 
 /// `LinkHostCapability`, which includes the public `LinkCapability`: one
@@ -95,6 +99,8 @@ pub struct LinkCapability(pub(crate) Rc<Core>);
 pub fn create_link_controller(cx: ControllerContext) -> Result<(LinkCapability, ConnectFn), Error> {
     let activated = cx.event_source::<LinkActivatedEvent>();
     let loaded = cx.event_source::<LinkLoadedEvent>();
+    let failures = cx.event_source::<Error>();
+    cx.listen(failures.on(|error: &Error| Err(error.clone())));
     let reader = cx.clone();
     let announce = loaded.clone();
     let pages = cx.page_mirror(PageMirrorSpec {
@@ -145,6 +151,7 @@ pub fn create_link_controller(cx: ControllerContext) -> Result<(LinkCapability, 
         loaded,
         pages,
         uri_openers: RefCell::default(),
+        failures,
     }));
     let connected = api.clone();
     let connect: ConnectFn = Rc::new(move || crate::connect::connect_link(&connected.0.cx));
@@ -363,9 +370,7 @@ impl LinkCapability {
                 let Some(stage) = stage else {
                     return LinkActivation::Destination { destination };
                 };
-                if let Ok(destination) = serde_json::from_value(destination) {
-                    stage.go_to_destination(&destination, None);
-                }
+                self.go_to_destination(&stage, &destination);
                 LinkActivation::Revealed
             }
             LinkResolution::Uri { uri } => {
@@ -379,6 +384,34 @@ impl LinkCapability {
             }
             LinkResolution::Named { name } => LinkActivation::Named { name },
             LinkResolution::Reported { .. } => LinkActivation::Reported { target: target.clone() },
+        }
+    }
+
+    /// `stage.goToDestination(destination)`. A destination the stage's
+    /// `PageDestination` cannot decode still reveals its page, as the
+    /// TypeScript does: `revealOfDestination` answers `undefined` for a kind
+    /// it does not know, and `goToDestination` reveals the page with no spot.
+    /// A known kind with a member the stage cannot read is reported too,
+    /// since the TypeScript would place the camera from that member.
+    fn go_to_destination(&self, stage: &epdf_plugin_stage::StageCapability, destination: &Value) {
+        let error = match serde_json::from_value(destination.clone()) {
+            Ok(decoded) => return stage.go_to_destination(&decoded, None),
+            Err(error) => error,
+        };
+        let page = destination.get("page").cloned().unwrap_or(Value::Null);
+        let target = match &page {
+            Value::Number(_) => number(&page).map(PageTarget::Index),
+            other => PageRef::from_json(other).map(PageTarget::Ref),
+        };
+        if let Some(target) = target {
+            stage.reveal(target, Some(epdf_plugin_stage::RevealOptions::default()));
+        }
+        const KINDS: &[&str] = &["xyz", "fit", "fitH", "fitV", "fitR", "fitB", "fitBH", "fitBV"];
+        let kind = destination.get("kind").and_then(Value::as_str);
+        if kind.is_some_and(|kind| KINDS.contains(&kind)) {
+            self.0.failures.emit(&Error::new(format!(
+                "[link] the stage cannot read destination {destination}: {error}; revealed its page"
+            )));
         }
     }
 

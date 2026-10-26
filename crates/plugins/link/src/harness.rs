@@ -140,6 +140,23 @@ fn call_capability(
         "getLabel" => Outcome::Returned(json!(cap.get_label(&arg(args, 0)))),
         "onActivated" => hook(h, args.first(), printable, |l| cap.on_activated(l)),
         "onLoaded" => hook(h, args.first(), LinkLoadedEvent::to_json, |l| cap.on_loaded(l)),
+        "registerUriOpener" => {
+            // A scripted opener: its answer's truthiness is whether it
+            // opened. A throw cannot cross `UriOpener`'s `bool`, so it reads
+            // as a refusal, where the TypeScript's throw leaves `activate`.
+            let callback = h.callback(args.first().unwrap_or(&Value::Null));
+            let off = cap.register_uri_opener(Rc::new(move |uri: &Value| {
+                match callback.call(vec![uri.clone()]) {
+                    Answer::Returns(value) => epdf_annotation_core::json::truthy(Some(&value)),
+                    Answer::Promise(_) => true,
+                    Answer::Throws(_) => false,
+                }
+            }));
+            Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                off.call();
+                Outcome::undefined()
+            })))
+        }
         "isNavigationEngaged" => Outcome::Returned(json!(cap.is_navigation_engaged())),
         other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
     })
