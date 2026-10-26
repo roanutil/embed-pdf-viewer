@@ -64,33 +64,6 @@
       "$.callbacks[].args[]"
     ]
   },
-  "plugins/link-functions.json": {
-    "set-another-page": [
-      "$.returned.state.pages.2[]"
-    ]
-  },
-  "plugins/link.json": {
-    "a-throwing-listener-throws-out-of-activate": [
-      "$.actions[].action.camera"
-    ],
-    "activate-destination-that-cannot-invert": [
-      "$.actions[].action.camera"
-    ],
-    "activate-dispatches-through-actions": [
-      "$.actions[].action.camera"
-    ],
-    "activate-reveals-smoothly": [
-      "$.actions[].action.camera",
-      "$.outcome.returned"
-    ],
-    "activate-reveals-through-the-stage": [
-      "$.actions[].action.camera",
-      "$.outcome.returned"
-    ],
-    "labels-and-resolution": [
-      "$.outcome.returned.options"
-    ]
-  },
   "plugins/measurement.json": {
     "calibration-flow": [
       "$.actions[].action.scale",
