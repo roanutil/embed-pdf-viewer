@@ -63,6 +63,25 @@ fn library(extra: Vec<Value>) -> Value {
     json!({ "local": true, "pages": pages, "responses": responses })
 }
 
+/// The fake engine with the local brand, as a native host's engine is.
+struct Branded(AsEngine);
+
+impl epdf_kernel::engine::Engine for Branded {
+    fn open(
+        &self,
+        input: Value,
+        options: Option<Value>,
+    ) -> epdf_kernel::engine::EngineCall<Rc<dyn epdf_kernel::engine::DocumentHandle>> {
+        epdf_kernel::engine::Engine::open(&self.0, input, options)
+    }
+    fn destroy(&self) -> epdf_kernel::engine::EngineCall<()> {
+        epdf_kernel::engine::Engine::destroy(&self.0)
+    }
+    fn is_local(&self) -> bool {
+        true
+    }
+}
+
 struct Rig {
     kernel: Kernel,
     fake: Rc<FakeEngine>,
@@ -75,6 +94,12 @@ impl Rig {
     /// library document for any other open, and the stamp plugin over a
     /// local port of the same engine (`local` false: none configured).
     fn with(document: Value, opens: Vec<Value>, local: bool) -> Rig {
+        Rig::over(document, opens, local, false)
+    }
+
+    /// [`Rig::with`], the kernel's engine carrying the local brand when
+    /// `branded`.
+    fn over(document: Value, opens: Vec<Value>, local: bool, branded: bool) -> Rig {
         rt::reset();
         let reports: Rc<RefCell<Vec<Error>>> = Rc::default();
         let heard = reports.clone();
@@ -83,7 +108,11 @@ impl Rig {
             "defaultDocument": "lib",
             "responses": opens,
         }));
-        let engine: Rc<dyn epdf_kernel::engine::Engine> = Rc::new(AsEngine(fake.clone()));
+        let engine: Rc<dyn epdf_kernel::engine::Engine> = if branded {
+            Rc::new(Branded(AsEngine(fake.clone())))
+        } else {
+            Rc::new(AsEngine(fake.clone()))
+        };
         let config = StampConfig {
             asset_engine: local
                 .then(|| Some(StampAssetEngine::Engine(LocalEngine::new(engine.clone())))),
@@ -479,4 +508,22 @@ fn a_setting_change_re_resolves_the_asset_engine() {
 
     rig.stamp.reset_settings();
     assert!(rig.stamp.get_settings().asset_engine.is_none());
+}
+
+/// `services/asset-engine.ts:56`: with nothing configured, the kernel's
+/// engine is used when it carries the local brand (`Engine::is_local`); an
+/// unbranded one is refused before any open.
+#[test]
+fn an_unconfigured_plugin_imports_on_a_local_kernel_engine() {
+    let rig = Rig::over(library(Vec::new()), Vec::new(), false, true);
+    let imported = success(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    assert_eq!(rig.calls_to("open"), 1, "the import opened on the kernel's engine");
+    assert_eq!(rig.stamp.list_libraries(None), vec![imported]);
+    assert!(rig.stamp.can_import());
+
+    let rig = Rig::over(library(Vec::new()), Vec::new(), false, false);
+    let refused = failure(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    assert_eq!(refused.plugin_code(), Some(code::UNSUPPORTED));
+    assert_eq!(rig.calls_to("open"), 0, "refused before open");
+    assert!(!rig.stamp.can_import());
 }

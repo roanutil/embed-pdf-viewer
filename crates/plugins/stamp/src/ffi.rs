@@ -13,8 +13,8 @@
 //! `{ page, center, targetWidth?, rotation? }` and resolves the placed
 //! annotation, whose ref the handle answers; persistence has no debounce
 //! (one store line per library, `persistence.ts`); `ArmChanged` carries the
-//! armed asset. The kernel engine carries no local brand, so a host whose
-//! engine is local passes it as the asset engine (`StampConfig::into_core`).
+//! armed asset. With no asset engine configured, the kernel's engine is
+//! used when `Engine::is_local` is true (the native host's override, 13.33).
 
 use std::rc::Rc;
 use std::sync::Arc;

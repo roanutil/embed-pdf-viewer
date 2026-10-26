@@ -18,8 +18,8 @@ replay with no member-order allowance and no outcome exception (`cargo test -p e
 setting: the TypeScript-measured turns of ten verbs (`verbs_settle_on_the_typescripts_turns`), a
 queued mutation cancelled before it starts, a cancel after the rewrite that keeps nothing, one
 queue per library, work in flight at teardown that completes where a cancel rejects, ghost renders
-cached per width, a library's assets going with it, and a setting change that re-resolves the asset
-engine.
+cached per width, a library's assets going with it, a setting change that re-resolves the asset
+engine, and an unconfigured import on a local kernel engine.
 
 ## Shape
 
@@ -57,11 +57,11 @@ module, so the harness calls `reset_id_sequence` when it builds the plugin.
 ## Where the port differs
 
 The asset engine is typed. `StampAssetEngine` is a `LocalEngine`, which is the TypeScript's
-`LOCAL_ENGINE_BRAND` made a type, or a factory that makes one. The kernel's `Engine` carries no
-local brand, so an unconfigured plugin refuses every import before it opens anything, as the
-TypeScript does for any unbranded engine. A host whose kernel engine is local passes it as the asset
-engine. The cost: the TypeScript accepts a local kernel engine with no configuration and Rust does
-not. A kernel `Engine::is_local` would close the gap; that call is the controller's.
+`LOCAL_ENGINE_BRAND` made a type, or a factory that makes one. With nothing configured the kernel's
+engine is used when `Engine::is_local` says it carries the brand (Ruling13.24, `7557d8a45`), as
+`isLocalEngine` reads it at `services/asset-engine.ts:56`; an unbranded engine, the cloud one or
+the conformance fake, is refused before any open. The native host's override lands in 13.33.
+`an_unconfigured_plugin_imports_on_a_local_kernel_engine` pins both cases.
 
 The settings live in the kernel's JSON store. The asset engine is stored as a handle,
 `{"$assetEngine": n}`, into a table the registration owns, as the actions plugin stores a function
@@ -88,7 +88,8 @@ case with no actions plugin, and no vector runs the default VM.
 `src/ffi.rs` and `tests/ffi.rs` were migrated by hand in Task 13.24 and are not compiled until
 `epdf-ffi` builds (Task 13.33). The handle answers ids as before. Placements take `center` and
 answer the placed annotation's ref, `persist` lost its debounce, `ArmChanged` carries the asset, and
-`can_create_from_annotations` is new.
+`can_create_from_annotations` is new. A host whose engine reports `is_local` needs no asset
+engine; `StampConfig::into_core` still takes one.
 
 ## Harness changes
 

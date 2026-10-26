@@ -7,7 +7,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use epdf_kernel::bytes::{Bytes, release_host};
-use epdf_kernel::engine::DocumentHandle;
+use epdf_kernel::engine::{DocumentHandle, Engine};
 use epdf_kernel::error::code;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::{Error, is_undefined, undefined};
@@ -77,9 +77,9 @@ pub(crate) fn bytes_of(value: &Value) -> Option<Vec<u8>> {
 /// The engine the asset engine setting resolved to.
 #[derive(Clone)]
 pub(crate) enum ResolvedEngine {
-    /// The kernel's engine. The kernel's `Engine` carries no local brand, so
-    /// the TypeScript's `isLocalEngine` is false for it.
-    Kernel,
+    /// The kernel's engine (`ctx.engine`), local or not: `Engine::is_local`
+    /// is the TypeScript's `isLocalEngine` brand check.
+    Kernel(Option<Rc<dyn Engine>>),
     Ready(LocalEngine),
     Pending(Promise<LocalEngine>),
 }
@@ -186,7 +186,7 @@ impl StampCapability {
         if stale {
             let configured = self.get_settings().asset_engine;
             let engine = match &configured {
-                None => ResolvedEngine::Kernel,
+                None => ResolvedEngine::Kernel(self.0.cx.engine()),
                 Some(StampAssetEngine::Engine(engine)) => ResolvedEngine::Ready(engine.clone()),
                 Some(StampAssetEngine::Factory(factory)) => {
                     let made = factory()?;
@@ -205,7 +205,7 @@ impl StampCapability {
             .borrow()
             .as_ref()
             .map(|r| r.engine.clone())
-            .unwrap_or(ResolvedEngine::Kernel))
+            .unwrap_or(ResolvedEngine::Kernel(None)))
     }
 
     /// `openAssetDocument(bytes)`: library PDFs are sliced and tagged
@@ -219,9 +219,11 @@ impl StampCapability {
                     rt::tick().await;
                     Some(engine)
                 }
-                ResolvedEngine::Kernel => {
+                // `if (!isLocalEngine(engine))`: the kernel's engine, used as
+                // it is when it carries the local brand.
+                ResolvedEngine::Kernel(engine) => {
                     rt::tick().await;
-                    None
+                    engine.filter(|engine| engine.is_local()).map(LocalEngine::new)
                 }
             };
             let Some(engine) = engine else {
