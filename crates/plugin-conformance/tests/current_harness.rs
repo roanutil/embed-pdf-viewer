@@ -251,3 +251,17 @@ fn successful_unlock_updates_security_on_the_same_handle() {
     assert_eq!(held.current(), current);
     assert_eq!(doc.security().password_prompt(), json!({"state":"none"}));
 }
+
+/// `TestKernel::open` reads the id out of the current `documents.open`
+/// answer, `{ document: { id } }`.
+#[test]
+fn test_kernel_opens_its_document_on_the_current_open_answer() {
+    rt::reset();
+    let kernel = plugin_conformance::test_kernel::TestKernel::open(
+        Vec::new(),
+        json!({ "documents": { "a": { "id": "a", "security": { "allows": "*" }, "pages": [] } } }),
+    )
+    .unwrap();
+    assert!(kernel.document_id.starts_with(plugin_conformance::test_kernel::DOCUMENT));
+    kernel.close().unwrap();
+}

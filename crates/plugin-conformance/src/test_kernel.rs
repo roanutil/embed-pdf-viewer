@@ -130,9 +130,10 @@ impl TestKernel {
             ),
             OpenOptions::default(),
         );
-        let document_id = settle(&opened)?
+        // `documents.open` answers `{ document: { id, ... } }`.
+        let document_id = settle(&opened)?["document"]["id"]
             .as_str()
-            .ok_or_else(|| Error::new("[test-kernel] open answered something that is not an id"))?
+            .ok_or_else(|| Error::new("[test-kernel] open answered no document id"))?
             .to_string();
         Ok(TestKernel { kernel, engine: fake, document_id })
     }
