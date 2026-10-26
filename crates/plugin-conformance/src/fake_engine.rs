@@ -5,6 +5,7 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+use epdf_engine::auth::scope;
 use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, Engine, EngineCall};
 use epdf_kernel::error::ErrorClass;
 use epdf_kernel::store::Unsubscribe;
@@ -712,9 +713,67 @@ struct FakeSecurity {
     spec: Value,
 }
 
+impl FakeSecurity {
+    /// `security.rawScope`: resolve through the shipping scope rules.
+    fn raw_scope(&self) -> Option<Vec<String>> {
+        let raw = self.spec.get("rawScope")?.as_array()?;
+        Some(raw.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+    }
+
+    /// `decodePdfBits(currentSecurityState.permissions.bits)`.
+    fn bits(&self) -> scope::PdfBits {
+        scope::decode_pdf_bits(self.state.borrow().0["permissions"]["bits"].as_i64())
+    }
+
+    /// `checkSetGroup(entity, groupId, identity.groupId, rawScope)`.
+    fn set_group(&self, entity: scope::CollabEntity, group: &str, raw: &[String]) -> bool {
+        let parsed = scope::parse_all(raw).unwrap_or_default();
+        let own = self.identity().get("groupId").and_then(Value::as_str).map(str::to_string);
+        scope::check_set_group(entity, group, own.as_deref(), &parsed)
+    }
+
+    /// `checkCollab(action, collabTargetOf(target), rawScope, identity, bits)`.
+    fn collab(&self, action: &str, target: &Value, raw: &[String]) -> bool {
+        let Some(action) = scope::CollabAction::parse(action) else { return false };
+        let text = |v: &Value, k: &str| {
+            v.get(k).and_then(Value::as_str).filter(|s| !s.is_empty()).map(str::to_string)
+        };
+        let identity = self.identity();
+        let claims = scope::IdentityClaims {
+            user_id: text(&identity, "userId"),
+            group_id: text(&identity, "groupId"),
+            groups: identity
+                .get("groups")
+                .and_then(Value::as_array)
+                .map(|g| g.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
+                .unwrap_or_default(),
+            display_name: text(&identity, "displayName"),
+        };
+        let target = scope::CollabTarget {
+            user_id: text(target, "userId"),
+            group_id: text(target, "groupId"),
+        };
+        let parsed = scope::parse_all(raw).unwrap_or_default();
+        scope::check_collab(action, &target, &parsed, &claims, self.bits())
+    }
+}
+
 impl DocumentSecurity for FakeSecurity {
-    fn allows_annotation(&self, action: &str, _target: &Value) -> bool {
+    fn allows_annotation(&self, action: &str, target: &Value) -> bool {
         self.spec["allowsAnnotation"][action].as_bool().unwrap_or_else(|| {
+            if let Some(raw) = self.raw_scope() {
+                if action == "set-group" {
+                    let group = target.get("groupId").and_then(Value::as_str).unwrap_or("");
+                    return self.set_group(scope::CollabEntity::Annotations, group, &raw);
+                }
+                if action != "create"
+                    && target.get("subtype").and_then(Value::as_str) == Some("widget")
+                {
+                    return self.allows("doc.forms.modify");
+                }
+                let target = if action == "create" { self.identity() } else { target.clone() };
+                return self.collab(action, &target, &raw);
+            }
             if action == "set-group" {
                 false
             } else {
@@ -726,8 +785,21 @@ impl DocumentSecurity for FakeSecurity {
             }
         })
     }
-    fn allows_field(&self, action: &str, _target: &Value) -> bool {
+    fn allows_field(&self, action: &str, target: &Value) -> bool {
         self.spec["allowsField"][action].as_bool().unwrap_or_else(|| {
+            if let Some(raw) = self.raw_scope() {
+                let group = target.get("groupId").and_then(Value::as_str);
+                if action == "set-group" {
+                    return self.set_group(scope::CollabEntity::Fields, group.unwrap_or(""), &raw);
+                }
+                let write = if action == "fill" {
+                    scope::FieldWriteAction::Fill
+                } else {
+                    scope::FieldWriteAction::Sign
+                };
+                let parsed = scope::parse_all(&raw).unwrap_or_default();
+                return scope::check_field_action(write, group, &parsed, self.bits());
+            }
             if action == "set-group" {
                 false
             } else {
@@ -740,15 +812,22 @@ impl DocumentSecurity for FakeSecurity {
         match self.spec.get("allows") {
             Some(Value::String(s)) if s == "*" => true,
             Some(Value::Array(list)) => list.iter().any(|c| c.as_str() == Some(capability)),
-            _ => false,
+            Some(_) => false,
+            None => self.raw_scope().is_some_and(|raw| {
+                let parsed = scope::parse_all(&raw).unwrap_or_default();
+                scope::DocCapability::parse(capability)
+                    .is_some_and(|c| scope::check_capability(c, &parsed, self.bits()))
+            }),
         }
     }
 
     fn allows_annotation_create(&self) -> bool {
-        self.spec
-            .get("allowsAnnotationCreate")
-            .and_then(Value::as_bool)
-            .unwrap_or_else(|| self.allows("doc.annotate.create"))
+        self.spec.get("allowsAnnotationCreate").and_then(Value::as_bool).unwrap_or_else(|| {
+            match self.raw_scope() {
+                Some(raw) => self.collab("create", &self.identity(), &raw),
+                None => self.allows("doc.annotate.create"),
+            }
+        })
     }
 
     fn allows_annotation_mutation(&self, action: &str, _target: &Value) -> bool {
@@ -764,6 +843,13 @@ impl DocumentSecurity for FakeSecurity {
     }
 
     fn effective_scope(&self) -> Vec<String> {
+        // `[...expandRawScope(rawScope, bits)].sort()`.
+        if let Some(raw) = self.raw_scope() {
+            let expanded = scope::expand_raw_scope(&raw, self.bits()).unwrap_or_default();
+            let mut names: Vec<String> = expanded.iter().map(|c| c.as_str().to_string()).collect();
+            names.sort();
+            return names;
+        }
         self.spec
             .get("scope")
             .and_then(Value::as_array)
