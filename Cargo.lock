@@ -730,6 +730,7 @@ dependencies = [
 name = "epdf-plugin-redaction"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-geometry",

@@ -1,10 +1,20 @@
 //! The redaction plugin through uniffi: one handle over the two-stage
 //! model (mark, then apply), typed records, one event enum. Every method
 //! hops to the kernel thread through `KernelBound`.
+//!
+//! Not compiled until `epdf-ffi` builds again (Task 13.33). Since Task 13.23
+//! the plugin carries annotation refs and apply results as the engine's
+//! records (JSON), so the records here decode them; a value that does not
+//! decode is an `invalid-state` error. Refs map onto `epdf_ffi::AnnotationRef`
+//! as the annotation handle maps them (`objectNumber`, `baseIndex` as
+//! `Index` with no revision); 13.33 may retype them against the renamed
+//! mirror. An apply result's pages are `applied` or `unchanged`: the
+//! engine's apply is all or nothing, so the retired `failed` and `skipped`
+//! statuses and the per-page error are gone.
 
+use std::rc::Rc;
 use std::sync::Arc;
 
-use epdf_annotation_core as core;
 use epdf_ffi::{
     AnnotationRef, CancelToken, KernelBound, KernelPost, PageRef, Rect, Subscription, ViewerError,
     to_u32,
@@ -12,17 +22,13 @@ use epdf_ffi::{
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::{Error, Unsubscribe};
 use epdf_plugin_search::SearchQuery;
-use serde::Deserialize;
-use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::RedactionCapability;
+use crate::{OperationOptions, PageTarget, RedactionCapability};
 
-fn decode<T: DeserializeOwned>(value: Value) -> Result<T, Error> {
-    serde_json::from_value(value).map_err(|e| {
-        Error::named("InvalidState", format!("[redaction] a value does not decode: {e}"))
-            .with("code", "invalid-state")
-    })
+fn invalid(message: impl Into<String>) -> Error {
+    Error::named("InvalidState", format!("[redaction] {}", message.into()))
+        .with("code", "invalid-state")
 }
 
 fn open(cap: &RedactionCapability) -> Result<&RedactionCapability, Error> {
@@ -38,20 +44,68 @@ fn open(cap: &RedactionCapability) -> Result<&RedactionCapability, Error> {
     Ok(cap)
 }
 
-fn ref_out(r: core::AnnotationRef) -> Result<AnnotationRef, Error> {
-    AnnotationRef::try_from(r)
+/// The cancel token carries the cancel; the plugin call takes none.
+fn none() -> OperationOptions {
+    OperationOptions::default()
 }
 
-fn refs_out(refs: Vec<core::AnnotationRef>) -> Result<Vec<AnnotationRef>, Error> {
-    refs.into_iter().map(ref_out).collect()
+fn whole(value: Option<&Value>, what: &str) -> Result<u32, Error> {
+    value
+        .and_then(Value::as_f64)
+        .filter(|n| n.fract() == 0.0 && *n >= 0.0 && *n <= u32::MAX as f64)
+        .map(|n| n as u32)
+        .ok_or_else(|| invalid(format!("{what} is not a whole number")))
 }
 
-fn refs_in(refs: Vec<AnnotationRef>) -> Vec<core::AnnotationRef> {
-    refs.into_iter().map(Into::into).collect()
+fn page_in(page: PageRef) -> epdf_kernel::geometry::PageRef {
+    epdf_kernel::geometry::PageRef::new(page.page_object_number)
 }
 
-fn json_ref(value: &Value) -> Result<AnnotationRef, Error> {
-    ref_out(decode(value.clone())?)
+fn page_out(page: &Value) -> Result<PageRef, Error> {
+    Ok(PageRef { page_object_number: whole(page.get("objectNumber"), "a page's object number")? })
+}
+
+fn page_json(page: PageRef) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": page.page_object_number })
+}
+
+/// An `AnnotationRef` as the engine writes it: an object number or a base
+/// index on its page.
+fn ref_json(reference: &AnnotationRef) -> Result<Value, Error> {
+    match reference {
+        AnnotationRef::ObjectNumber { page, annot_object_number } => Ok(json!({
+            "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number
+        })),
+        AnnotationRef::Index { page, index, .. } => Ok(json!({
+            "kind": "baseIndex", "page": page_json(*page), "baseIndex": index
+        })),
+        AnnotationRef::Nm { .. } => {
+            Err(invalid("the engine refers to annotations by number, not by /NM"))
+        }
+    }
+}
+
+fn refs_json(refs: &[AnnotationRef]) -> Result<Vec<Value>, Error> {
+    refs.iter().map(ref_json).collect()
+}
+
+fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
+    let page = page_out(reference.get("page").unwrap_or(&Value::Null))?;
+    match reference.get("kind").and_then(Value::as_str) {
+        Some("objectNumber") => Ok(AnnotationRef::ObjectNumber {
+            page,
+            annot_object_number: whole(
+                reference.get("objectNumber"),
+                "an annotation's object number",
+            )?,
+        }),
+        Some("baseIndex") => Ok(AnnotationRef::Index {
+            page,
+            index: whole(reference.get("baseIndex"), "an annotation's base index")?,
+            revision: Default::default(),
+        }),
+        _ => Err(invalid("a ref of a kind the engine does not write")),
+    }
 }
 
 // ── config ───────────────────────────────────────────────────────────────────
@@ -68,7 +122,9 @@ pub struct RedactionOverlayText {
     pub font_size: Option<f64>,
 }
 
-/// Defaults for marks this plugin creates.
+/// The overlay settings, any of them, over the defaults (black fill, white
+/// Helvetica label fitted to the area). Every mark takes its look from
+/// them.
 #[derive(Clone, Debug, Default, PartialEq, uniffi::Record)]
 pub struct RedactionConfig {
     /// CSS hex colour painted over the region on apply. Black when `None`.
@@ -81,15 +137,15 @@ pub struct RedactionConfig {
 impl From<RedactionConfig> for crate::RedactionConfig {
     fn from(c: RedactionConfig) -> Self {
         let overlay =
-            (c.fill.is_some() || c.overlay_text.is_some()).then(|| crate::RedactionOverlay {
+            (c.fill.is_some() || c.overlay_text.is_some()).then(|| crate::RedactionOverlayConfig {
                 fill: c.fill,
-                text: c.overlay_text.map(|t| crate::RedactionOverlayText {
+                text: c.overlay_text.map(|t| crate::RedactionOverlayTextConfig {
                     color: t.color,
                     font_family: t.font_family,
                     font_size: t.font_size,
                 }),
             });
-        crate::RedactionConfig { overlay, ..Default::default() }
+        crate::RedactionConfig { overlay }
     }
 }
 
@@ -116,28 +172,36 @@ pub struct RedactionMark {
     pub bounds: Rect,
     /// `/OverlayText`, when set.
     pub overlay_text: Option<String>,
+    /// Whether the label tiles the area.
+    pub repeat: bool,
 }
 
-impl TryFrom<crate::RedactionMark> for RedactionMark {
+impl TryFrom<&crate::RedactionMark> for RedactionMark {
     type Error = Error;
 
-    fn try_from(m: crate::RedactionMark) -> Result<Self, Error> {
+    fn try_from(m: &crate::RedactionMark) -> Result<Self, Error> {
         Ok(RedactionMark {
-            annotation_ref: ref_out(m.ref_)?,
-            page: m.page.into(),
+            annotation_ref: ref_out(&m.ref_)?,
+            page: PageRef { page_object_number: m.page.page_object_number },
             page_index: u32::try_from(m.page_index).ok(),
             kind: match m.kind {
                 crate::RedactionMarkKind::Area => RedactionMarkKind::Area,
                 crate::RedactionMarkKind::Text => RedactionMarkKind::Text,
             },
-            bounds: m.bounds.into(),
-            overlay_text: m.overlay_text.as_ref().and_then(Value::as_str).map(str::to_string),
+            bounds: Rect {
+                x: m.bounds.x,
+                y: m.bounds.y,
+                width: m.bounds.width,
+                height: m.bounds.height,
+            },
+            overlay_text: m.overlay_text.clone(),
+            repeat: m.repeat,
         })
     }
 }
 
-fn marks_out(list: Vec<crate::RedactionMark>) -> Result<Vec<RedactionMark>, Error> {
-    list.into_iter().map(RedactionMark::try_from).collect()
+fn marks_out(list: &[crate::RedactionMark]) -> Result<Vec<RedactionMark>, Error> {
+    list.iter().map(RedactionMark::try_from).collect()
 }
 
 /// What an apply would destroy beyond the marks: a client-side estimate.
@@ -164,7 +228,6 @@ impl TryFrom<RedactionLabelPatch> for crate::RedactionLabelPatch {
     type Error = Error;
 
     fn try_from(p: RedactionLabelPatch) -> Result<Self, Error> {
-        use core::js::Nullable;
         let overlay_text = match (p.overlay_text, p.clear_overlay_text) {
             (Some(_), true) => {
                 return Err(plugin_error(
@@ -175,9 +238,9 @@ impl TryFrom<RedactionLabelPatch> for crate::RedactionLabelPatch {
                     None,
                 ));
             }
-            (Some(text), false) => Nullable::Value(text),
-            (None, true) => Nullable::Null,
-            (None, false) => Nullable::Undefined,
+            (Some(text), false) => Some(Some(text)),
+            (None, true) => Some(None),
+            (None, false) => None,
         };
         Ok(crate::RedactionLabelPatch { overlay_text, repeat: p.repeat })
     }
@@ -189,14 +252,18 @@ pub struct RedactionSkipped {
     pub reason: String,
 }
 
+/// A mark `unmark` could not remove, with the `PluginErrorInfo`'s members.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct RedactionUnmarkFailure {
     pub annotation_ref: AnnotationRef,
+    pub code: String,
     pub message: String,
+    pub capability: String,
+    pub permission: Option<String>,
 }
 
 /// What `unmark` and `clear_pending` did: marks removed, refs that weren't
-/// pending marks, and deletes that failed.
+/// pending marks, and marks that could not be removed.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct RedactionUnmarkResult {
     pub applied: Vec<AnnotationRef>,
@@ -204,31 +271,33 @@ pub struct RedactionUnmarkResult {
     pub failed: Vec<RedactionUnmarkFailure>,
 }
 
-impl RedactionUnmarkResult {
-    fn from_json(value: &Value) -> Result<Self, Error> {
-        let list =
-            |key: &str| value.get(key).and_then(Value::as_array).cloned().unwrap_or_default();
+impl TryFrom<crate::BatchResult> for RedactionUnmarkResult {
+    type Error = Error;
+
+    fn try_from(batch: crate::BatchResult) -> Result<Self, Error> {
+        let text = |v: &Value, k: &str| v.get(k).and_then(Value::as_str).map(str::to_string);
         Ok(RedactionUnmarkResult {
-            applied: list("applied").iter().map(json_ref).collect::<Result<_, _>>()?,
-            skipped: list("skipped")
+            applied: batch.applied.iter().map(ref_out).collect::<Result<_, _>>()?,
+            skipped: batch
+                .skipped
                 .iter()
                 .map(|s| {
                     Ok(RedactionSkipped {
-                        annotation_ref: json_ref(&s["ref"])?,
-                        reason: s.get("reason").and_then(Value::as_str).unwrap_or_default().into(),
+                        annotation_ref: ref_out(&s.ref_)?,
+                        reason: s.reason.clone(),
                     })
                 })
                 .collect::<Result<_, Error>>()?,
-            failed: list("failed")
+            failed: batch
+                .failed
                 .iter()
                 .map(|f| {
                     Ok(RedactionUnmarkFailure {
-                        annotation_ref: json_ref(&f["ref"])?,
-                        message: f["error"]
-                            .get("message")
-                            .and_then(Value::as_str)
-                            .unwrap_or_default()
-                            .into(),
+                        annotation_ref: ref_out(&f.ref_)?,
+                        code: text(&f.error, "code").unwrap_or_default(),
+                        message: text(&f.error, "message").unwrap_or_default(),
+                        capability: text(&f.error, "capability").unwrap_or_default(),
+                        permission: text(&f.error, "permission"),
                     })
                 })
                 .collect::<Result<_, Error>>()?,
@@ -246,15 +315,11 @@ pub enum RedactionApplyScope {
     Annotations { refs: Vec<AnnotationRef> },
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize, uniffi::Enum)]
-#[serde(rename_all = "camelCase")]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
 pub enum RedactionPageStatus {
     Applied,
     /// The page had no marks, which is not a failure.
     Unchanged,
-    Failed,
-    /// Not attempted: an earlier page failed.
-    Skipped,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -264,8 +329,6 @@ pub struct RedactionPageResult {
     /// Annotations removed alongside the marks (popups, detached widgets),
     /// not the marks themselves.
     pub removed_annotation_count: u32,
-    /// Why the page failed: the engine error's message.
-    pub error: Option<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
@@ -273,73 +336,62 @@ pub struct RedactionApplyResult {
     pub scope: RedactionApplyScope,
     pub results: Vec<RedactionPageResult>,
     pub removed_annotation_count: u32,
+    /// The mutation's operation id (`meta.opId`).
+    pub op_id: Option<String>,
 }
 
 impl RedactionApplyResult {
-    /// The kernel's spelling (`engine-core`'s `RedactionApplyResult`), which
-    /// `translate.rs` turns the host's answer into. A remote apply hands the
-    /// plugin the whole `redaction.applied` event, which spreads the result's
-    /// members beside `type` and `origin`, so it decodes the same way.
+    /// engine-core's `RedactionApplyResult`: `{scope, results,
+    /// removedAnnotationCount, meta}`, the scope `{pages}` or
+    /// `{annotations}`.
     pub(crate) fn from_json(value: &Value) -> Result<Self, Error> {
-        #[derive(Deserialize)]
-        #[serde(tag = "kind", rename_all = "camelCase")]
-        enum Scope {
-            Pages { pages: Vec<core::PageRef> },
-            Annotations { refs: Vec<core::AnnotationRef> },
-        }
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Item {
-            page: core::PageRef,
-            status: RedactionPageStatus,
-            removed_annotation_count: u32,
-            /// engine-core's `SerializedEngineError`, or the native host's
-            /// bare message.
-            #[serde(default)]
-            error: Option<Value>,
-        }
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Dto {
-            scope: Scope,
-            results: Vec<Item>,
-            removed_annotation_count: u32,
-        }
-        let dto: Dto = decode(value.clone())?;
-        Ok(RedactionApplyResult {
-            scope: match dto.scope {
-                Scope::Pages { pages } => RedactionApplyScope::Pages {
-                    pages: pages.into_iter().map(Into::into).collect(),
-                },
-                Scope::Annotations { refs } => {
-                    RedactionApplyScope::Annotations { refs: refs_out(refs)? }
-                }
-            },
-            results: dto
-                .results
-                .into_iter()
-                .map(|i| RedactionPageResult {
-                    page: i.page.into(),
-                    status: i.status,
-                    removed_annotation_count: i.removed_annotation_count,
-                    error: i.error.and_then(|e| match e {
-                        Value::String(message) => Some(message),
-                        Value::Null => None,
-                        other => Some(
-                            other
-                                .get("message")
-                                .and_then(Value::as_str)
-                                .map_or_else(|| other.to_string(), str::to_string),
-                        ),
-                    }),
+        let list = |v: Option<&Value>| v.and_then(Value::as_array).cloned().unwrap_or_default();
+        let scope = value.get("scope").unwrap_or(&Value::Null);
+        let scope = if let Some(pages) = scope.get("pages") {
+            RedactionApplyScope::Pages {
+                pages: list(Some(pages)).iter().map(page_out).collect::<Result<_, _>>()?,
+            }
+        } else if let Some(refs) = scope.get("annotations") {
+            RedactionApplyScope::Annotations {
+                refs: list(Some(refs)).iter().map(ref_out).collect::<Result<_, _>>()?,
+            }
+        } else {
+            return Err(invalid("an apply scope names neither pages nor annotations"));
+        };
+        let results = list(value.get("results"))
+            .iter()
+            .map(|item| {
+                Ok(RedactionPageResult {
+                    page: page_out(item.get("page").unwrap_or(&Value::Null))?,
+                    status: match item.get("status").and_then(Value::as_str) {
+                        Some("applied") => RedactionPageStatus::Applied,
+                        Some("unchanged") => RedactionPageStatus::Unchanged,
+                        _ => return Err(invalid("a page status the engine does not write")),
+                    },
+                    removed_annotation_count: whole(
+                        item.get("removedAnnotationCount"),
+                        "a removed-annotation count",
+                    )?,
                 })
-                .collect(),
-            removed_annotation_count: dto.removed_annotation_count,
+            })
+            .collect::<Result<_, Error>>()?;
+        Ok(RedactionApplyResult {
+            scope,
+            results,
+            removed_annotation_count: whole(
+                value.get("removedAnnotationCount"),
+                "a removed-annotation count",
+            )?,
+            op_id: value
+                .get("meta")
+                .and_then(|m| m.get("opId"))
+                .and_then(Value::as_str)
+                .map(str::to_string),
         })
     }
 }
 
-fn applied(value: Value) -> Result<RedactionApplyResult, ViewerError> {
+fn applied(value: Rc<Value>) -> Result<RedactionApplyResult, ViewerError> {
     RedactionApplyResult::from_json(&value).map_err(Into::into)
 }
 
@@ -376,14 +428,18 @@ impl RedactionHandle {
     }
 }
 
+fn page_target(page: Option<PageRef>) -> Option<PageTarget> {
+    page.map(|p| PageTarget::Ref(page_in(p)))
+}
+
 #[uniffi::export]
 impl RedactionHandle {
     /// Pending marks, or those on one page.
     pub async fn pending(&self, page: Option<PageRef>) -> Result<Vec<RedactionMark>, ViewerError> {
         self.cap
             .call(move |c| {
-                let filter = crate::RedactionMarkFilter { page: page.map(Into::into) };
-                marks_out(open(c)?.list_pending(Some(&filter)))
+                let filter = crate::RedactionMarkFilter { page: page_target(page) };
+                marks_out(&open(c)?.list_pending(Some(filter)))
             })
             .await
     }
@@ -395,7 +451,8 @@ impl RedactionHandle {
         self.cap
             .call(move |c| {
                 open(c)?
-                    .get_pending(&annotation_ref.into())
+                    .get_pending(&ref_json(&annotation_ref)?)
+                    .as_ref()
                     .map(RedactionMark::try_from)
                     .transpose()
             })
@@ -404,10 +461,7 @@ impl RedactionHandle {
 
     pub async fn pending_count(&self, page: Option<PageRef>) -> Result<u32, ViewerError> {
         self.cap
-            .call(move |c| {
-                let page = page.map(core::PageRef::from);
-                to_u32(open(c)?.get_pending_count(page.as_ref()), "a pending count")
-            })
+            .call(move |c| to_u32(open(c)?.get_pending_count(page_target(page)), "a pending count"))
             .await
     }
 
@@ -419,11 +473,11 @@ impl RedactionHandle {
     ) -> Result<RedactionCollateral, ViewerError> {
         self.cap
             .call(move |c| {
-                let refs = refs.map(refs_in);
+                let refs = refs.as_deref().map(refs_json).transpose()?;
                 let estimate = open(c)?.estimate_collateral(refs.as_deref());
                 Ok(RedactionCollateral {
                     count: to_u32(estimate.count, "a collateral count")?,
-                    refs: estimate.refs.iter().map(json_ref).collect::<Result<_, _>>()?,
+                    refs: estimate.refs.iter().map(ref_out).collect::<Result<_, _>>()?,
                 })
             })
             .await
@@ -434,12 +488,12 @@ impl RedactionHandle {
     pub async fn mark_selection(
         &self,
         cancel: Arc<CancelToken>,
-    ) -> Result<Vec<AnnotationRef>, ViewerError> {
+    ) -> Result<Vec<RedactionMark>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                |c| Ok(open(c)?.mark_selection()),
-                |refs| refs_out(refs).map_err(ViewerError::from),
+                |c| Ok(open(c)?.mark_selection(none())),
+                |r| marks_out(&r.marks).map_err(ViewerError::from),
             )
             .await?
     }
@@ -450,15 +504,20 @@ impl RedactionHandle {
         page: PageRef,
         bounds: Rect,
         cancel: Arc<CancelToken>,
-    ) -> Result<AnnotationRef, ViewerError> {
+    ) -> Result<RedactionMark, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let bounds = json!({ "x": bounds.x, "y": bounds.y, "width": bounds.width, "height": bounds.height });
-                    open(c)?.mark_area(&page.into(), bounds)
+                    let bounds = epdf_geometry::Rect {
+                        x: bounds.x,
+                        y: bounds.y,
+                        width: bounds.width,
+                        height: bounds.height,
+                    };
+                    Ok(open(c)?.mark_area(PageTarget::Ref(page_in(page)), bounds, none()))
                 },
-                |r| ref_out(r).map_err(ViewerError::from),
+                |r| RedactionMark::try_from(&r.mark).map_err(ViewerError::from),
             )
             .await?
     }
@@ -467,12 +526,12 @@ impl RedactionHandle {
         &self,
         page: PageRef,
         cancel: Arc<CancelToken>,
-    ) -> Result<AnnotationRef, ViewerError> {
+    ) -> Result<RedactionMark, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| open(c)?.mark_page(&page.into()),
-                |r| ref_out(r).map_err(ViewerError::from),
+                move |c| Ok(open(c)?.mark_page(PageTarget::Ref(page_in(page)), none())),
+                |r| RedactionMark::try_from(&r.mark).map_err(ViewerError::from),
             )
             .await?
     }
@@ -483,17 +542,16 @@ impl RedactionHandle {
         query: SearchQuery,
         pages: Option<Vec<PageRef>>,
         cancel: Arc<CancelToken>,
-    ) -> Result<Vec<AnnotationRef>, ViewerError> {
+    ) -> Result<Vec<RedactionMark>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    Ok(open(c)?.mark_matches(
-                        query,
-                        pages.map(|p| p.into_iter().map(Into::into).collect()),
-                    ))
+                    let pages =
+                        pages.map(|p| p.into_iter().map(|p| PageTarget::Ref(page_in(p))).collect());
+                    Ok(open(c)?.mark_matches(query, pages, none()))
                 },
-                |refs| refs_out(refs).map_err(ViewerError::from),
+                |r| marks_out(&r.marks).map_err(ViewerError::from),
             )
             .await?
     }
@@ -507,8 +565,8 @@ impl RedactionHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.unmark(refs_in(refs))),
-                |v| RedactionUnmarkResult::from_json(&v).map_err(ViewerError::from),
+                move |c| Ok(open(c)?.unmark(refs_json(&refs)?, none())),
+                |batch| RedactionUnmarkResult::try_from(batch).map_err(ViewerError::from),
             )
             .await?
     }
@@ -520,8 +578,8 @@ impl RedactionHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                |c| Ok(open(c)?.clear_pending()),
-                |v| RedactionUnmarkResult::from_json(&v).map_err(ViewerError::from),
+                |c| Ok(open(c)?.clear_pending(none())),
+                |batch| RedactionUnmarkResult::try_from(batch).map_err(ViewerError::from),
             )
             .await?
     }
@@ -532,14 +590,16 @@ impl RedactionHandle {
         annotation_ref: AnnotationRef,
         patch: RedactionLabelPatch,
         cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
+    ) -> Result<RedactionMark, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.update_label(annotation_ref.into(), patch.try_into()?)),
-                |()| (),
+                move |c| {
+                    Ok(open(c)?.update_label(ref_json(&annotation_ref)?, patch.try_into()?, none()))
+                },
+                |r| RedactionMark::try_from(&r.mark).map_err(ViewerError::from),
             )
-            .await
+            .await?
     }
 
     /// Apply these pending marks. Irreversible.
@@ -549,7 +609,11 @@ impl RedactionHandle {
         cancel: Arc<CancelToken>,
     ) -> Result<RedactionApplyResult, ViewerError> {
         self.cap
-            .call_promise_cancellable(cancel, move |c| Ok(open(c)?.apply(&refs_in(refs))), applied)
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(open(c)?.apply(&refs_json(&refs)?, none())),
+                applied,
+            )
             .await?
     }
 
@@ -563,8 +627,9 @@ impl RedactionHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let pages: Vec<core::PageRef> = pages.into_iter().map(Into::into).collect();
-                    Ok(open(c)?.apply_pages(&pages))
+                    let pages: Vec<PageTarget> =
+                        pages.into_iter().map(|p| PageTarget::Ref(page_in(p))).collect();
+                    Ok(open(c)?.apply_pages(&pages, none()))
                 },
                 applied,
             )
@@ -577,11 +642,24 @@ impl RedactionHandle {
         &self,
         cancel: Arc<CancelToken>,
     ) -> Result<RedactionApplyResult, ViewerError> {
-        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.apply_all()), applied).await?
+        self.cap
+            .call_promise_cancellable(cancel, |c| Ok(open(c)?.apply_all(none())), applied)
+            .await?
     }
 
     pub async fn can_mark(&self) -> Result<bool, ViewerError> {
         self.cap.call(|c| Ok(open(c)?.can_mark())).await
+    }
+
+    pub async fn can_unmark(&self, annotation_ref: AnnotationRef) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_unmark(&ref_json(&annotation_ref)?))).await
+    }
+
+    pub async fn can_update_label(
+        &self,
+        annotation_ref: AnnotationRef,
+    ) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_update_label(&ref_json(&annotation_ref)?))).await
     }
 
     /// Whether the engine can apply and the session holds every capability
@@ -597,7 +675,7 @@ impl RedactionHandle {
     pub async fn last_result(&self) -> Result<Option<RedactionApplyResult>, ViewerError> {
         self.cap
             .call(|c| {
-                open(c)?.get_last_result().as_ref().map(RedactionApplyResult::from_json).transpose()
+                open(c)?.get_last_result().map(|r| RedactionApplyResult::from_json(&r)).transpose()
             })
             .await
     }
@@ -619,7 +697,7 @@ impl RedactionHandle {
                     let l = listener.clone();
                     let pending = c.on_pending_changed(move |e| {
                         l.on_event(RedactionEvent::PendingChanged {
-                            pages: e.pages.iter().map(|p| (*p).into()).collect(),
+                            pages: e.pages.iter().map(page_out).collect::<Result<_, _>>()?,
                         });
                         Ok(())
                     });
