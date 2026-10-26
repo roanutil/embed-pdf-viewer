@@ -22,13 +22,13 @@ pub fn cancellable<T: Clone + 'static>(
     let c = capability.clone();
     let cancel: Rc<dyn Fn(&crate::Error)> = Rc::new(move |_| {
         if let Some(abort) = &abort {
-            abort(s.reason().map(|e| e.to_canonical()));
+            abort(s.reason_value());
         }
         r.reject(plugin_error(
             "operation-cancelled",
             &c,
             "operation cancelled",
-            s.reason().map(|e| e.to_canonical()),
+            s.reason_value(),
             None,
         ));
     });
