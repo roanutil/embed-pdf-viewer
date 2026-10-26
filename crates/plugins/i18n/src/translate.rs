@@ -1,9 +1,14 @@
-//! `translate.ts`: the pure lookup core. State in, string out.
+//! `translate.ts`: the lookup, a key in and a string out. Pure, with no
+//! platform access (`Intl.PluralRules` is [`crate::plural`]).
 
-use crate::contract::{Param, Params, TranslateOptions, TranslationDictionary, TranslationNode};
-use crate::js::{Inherited, number_to_string};
-use crate::model::I18nState;
+use std::rc::Rc;
+
+use crate::contract::{
+    Locale, Param, Params, TranslateOptions, TranslationDictionary, TranslationNode,
+};
+use crate::js::{Inherited, JsRecord, number_to_string};
 use crate::plural::plural_category;
+use crate::strings::embedpdf_strings_for;
 
 /// What a dotted-path walk can land on. Beyond the dictionary's own nodes, a
 /// JavaScript walk also reaches what every object inherits: `node['toString']`
@@ -43,7 +48,8 @@ fn lookup<'a>(dict: Option<&'a TranslationDictionary>, key: &str) -> Option<Node
     Some(node)
 }
 
-/// A leaf hit is a string; a branch needs a plural pick via `count`.
+/// `resolveNode`: a string is the answer; a branch needs a plural form,
+/// picked by `params.count`.
 fn resolve_node<'a>(
     node: Option<Node<'a>>,
     locale: &str,
@@ -74,7 +80,8 @@ fn param_to_string(param: &Param) -> String {
     }
 }
 
-/// Replace `{slot}` markers (`/\{(\w+)\}/g`); unknown slots stay verbatim.
+/// `interpolate(text, params)`: fill in `{name}` slots (`/\{(\w+)\}/g`); a
+/// slot without a value stays as it is, so it shows while testing.
 pub fn interpolate(text: &str, params: Option<&Params>) -> String {
     let Some(params) = params else { return text.to_string() };
     let mut out = String::with_capacity(text.len());
@@ -107,26 +114,52 @@ pub fn interpolate(text: &str, params: Option<&Params>) -> String {
     out
 }
 
+/// `TranslationSources`: what a lookup reads, the two languages it tries
+/// and the app's strings.
+#[derive(Clone, Copy)]
+pub struct TranslationSources<'a> {
+    pub locale: &'a str,
+    pub fallback_locale: &'a str,
+    /// The app's loaded languages, by code.
+    pub locales: &'a JsRecord<Rc<Locale>>,
+}
+
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct TranslateResult {
     pub text: String,
-    /// False when the key missed every pack (text is then the fallback or the key).
+    /// False when no language has the key: `text` is then the fallback or
+    /// the key.
     pub found: bool,
 }
 
-/// Resolve a key: current locale → fallback locale → `options.fallback`
-/// (interpolated too) → the key itself.
+/// `stringIn`: a key in one language, the app's string, then EmbedPDF's own.
+fn string_in<'a>(
+    sources: &TranslationSources<'a>,
+    code: &str,
+    key: &str,
+    params: Option<&Params>,
+) -> Option<&'a str> {
+    let app = sources.locales.get(code).map(|locale| &locale.translations);
+    resolve_node(lookup(app, key), code, params)
+        .or_else(|| resolve_node(lookup(embedpdf_strings_for(code), key), code, params))
+}
+
+/// `translate(sources, key, options)`: a key's string in the current
+/// language (the key, then `options.fallback_key`), then the same in the
+/// fallback language, then `options.fallback` (with its slots filled too),
+/// then the key itself.
 pub fn translate(
-    state: &I18nState,
+    sources: &TranslationSources<'_>,
     key: &str,
     options: Option<&TranslateOptions>,
 ) -> TranslateResult {
     let params = options.and_then(|o| o.params.as_ref());
-    let pack = |code: &str| state.locales.get(code).map(|l| &l.translations);
-    let text =
-        resolve_node(lookup(pack(&state.locale), key), &state.locale, params).or_else(|| {
-            resolve_node(lookup(pack(&state.fallback_locale), key), &state.fallback_locale, params)
-        });
+    let fallback_key = options.and_then(|o| o.fallback_key.as_deref());
+    let in_language = |code: &str| {
+        string_in(sources, code, key, params)
+            .or_else(|| fallback_key.and_then(|k| string_in(sources, code, k, params)))
+    };
+    let text = in_language(sources.locale).or_else(|| in_language(sources.fallback_locale));
     if let Some(text) = text {
         return TranslateResult { text: interpolate(text, params), found: true };
     }

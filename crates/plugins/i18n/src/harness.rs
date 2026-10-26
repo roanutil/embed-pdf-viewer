@@ -3,9 +3,9 @@
 //! table the function suites call.
 //!
 //! A vector's config is JSON, so two members arrive as data: each loader is
-//! a `$fn` spec ([`Harness::callback`]), and the warn sink logs every warning
-//! as the callback `console.warn`, which is where the generator records the
-//! TypeScript's `console.warn`.
+//! a `$fn` spec ([`Harness::callback`]), and the plugin's `console.warn` is
+//! logged as the callback `console.warn`, which is where the generator
+//! records the TypeScript's `console.warn`.
 //!
 //! The runner reads a vector with `serde_json` and `preserve_order` (this
 //! crate declares it), so a config's `loaders` arrive as written, which is
@@ -22,18 +22,25 @@ use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome,
 use serde::de::DeserializeOwned;
 use serde_json::{Value, json};
 
-use crate::contract::{Loader, Param, Params, TranslateOptions, TranslationDictionary};
-use crate::js::JsRecord;
+use crate::contract::{LocaleLoader, OperationOptions, Param, Params, TranslateOptions};
+use crate::js::{Inherited, JsRecord};
+use crate::model::{self, I18nState};
 use crate::{
-    I18N, I18nAction, I18nCapability, I18nConfig, I18nState, Locale, i18n_plugin, i18n_reducer,
-    initial_i18n_state, interpolate, negotiate_locale, translate,
+    I18N, I18nCapability, I18nConfig, Locale, TranslationDictionary, TranslationSources,
+    i18n_plugin_warning_to, initial_i18n_state, interpolate, negotiate_locale, translate,
 };
 
 pub struct I18n;
 
-/// The TypeScript object literal's member order.
+/// The TypeScript object literal's member order: the settings calls spread
+/// first, then the plugin's own.
 const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "t",
+    "getTranslator",
     "hasKey",
     "getLocale",
     "getDirection",
@@ -107,13 +114,17 @@ fn params(value: &Value) -> Result<Params, Error> {
 }
 
 fn options(value: Option<&Value>) -> Result<Option<TranslateOptions>, Error> {
-    let Some(value) = value else { return Ok(None) };
+    let Some(value) = value.filter(|v| !v.is_null()) else { return Ok(None) };
     let params = match value.get("params").filter(|p| !is_undefined(p)) {
         Some(p) => Some(params(p)?),
         None => None,
     };
-    let fallback = value.get("fallback").and_then(Value::as_str).map(str::to_string);
-    Ok(Some(TranslateOptions { params, fallback }))
+    let text = |name: &str| value.get(name).and_then(Value::as_str).map(str::to_string);
+    Ok(Some(TranslateOptions {
+        params,
+        fallback_key: text("fallbackKey"),
+        fallback: text("fallback"),
+    }))
 }
 
 /// A `Promise<Value>` read as a `Promise<Locale>` at the moment it settles,
@@ -126,22 +137,24 @@ fn locale_promise(source: Promise<Value>) -> Promise<Locale> {
     promise
 }
 
+/// A vector's `I18nConfig`: the settings members it names, each loader a
+/// `$fn` spec.
 fn config(raw: &Value, h: &Harness) -> Result<I18nConfig, Error> {
-    let warn = h.clone();
-    let mut config = I18nConfig {
-        warn: Some(Rc::new(move |message: &str| warn.log("console.warn", vec![json!(message)]))),
-        ..Default::default()
-    };
-    if is_undefined(raw) {
+    let mut config = I18nConfig::default();
+    if is_undefined(raw) || raw.is_null() {
         return Ok(config);
     }
-    config.locale = raw.get("locale").and_then(Value::as_str).map(str::to_string);
+    match raw.get("locale") {
+        Some(Value::String(locale)) => config.locale = Some(Some(locale.clone())),
+        Some(Value::Null) => config.locale = Some(None),
+        _ => {}
+    }
     config.fallback_locale = raw.get("fallbackLocale").and_then(Value::as_str).map(str::to_string);
-    if let Some(locales) = raw.get("locales") {
+    if let Some(locales) = raw.get("locales").filter(|v| !is_undefined(v)) {
         config.locales = Some(decode("locales", locales)?);
     }
     if let Some(loaders) = raw.get("loaders").and_then(Value::as_object) {
-        let mut out: JsRecord<Loader> = JsRecord::new();
+        let mut out: JsRecord<LocaleLoader> = JsRecord::new();
         for (code, spec) in loaders {
             let callback = h.callback(spec);
             out.insert(
@@ -150,7 +163,7 @@ fn config(raw: &Value, h: &Harness) -> Result<I18nConfig, Error> {
                     Answer::Throws(error) => Err(error),
                     Answer::Promise(promise) => Ok(locale_promise(promise)),
                     Answer::Returns(value) => Ok(locale_promise(Promise::resolved(value))),
-                }),
+                }) as LocaleLoader,
             );
         }
         config.loaders = Some(out);
@@ -164,7 +177,11 @@ impl HarnessPlugin for I18n {
     }
 
     fn build(&self, _factory: &str, raw: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        Ok(i18n_plugin(config(raw, h)?))
+        let warn = h.clone();
+        Ok(i18n_plugin_warning_to(
+            config(raw, h)?,
+            Rc::new(move |message: &str| warn.log("console.warn", vec![json!(message)])),
+        ))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -189,10 +206,13 @@ impl HarnessPlugin for I18n {
             "getLocale" => Outcome::Returned(json!(cap.get_locale())),
             "getDirection" => Outcome::Returned(json!(cap.get_direction().as_str())),
             "listLocales" => {
-                Outcome::Returned(serde_json::to_value(cap.list_locales()).unwrap_or(Value::Null))
+                Outcome::Returned(serde_json::to_value(&*cap.list_locales()).unwrap_or(Value::Null))
             }
             "getLoadingLocale" => Outcome::Returned(json!(cap.get_loading_locale())),
-            "setLocale" => Outcome::promise_unit(cap.set_locale(&text(0))),
+            // No vector passes a signal.
+            "setLocale" => {
+                Outcome::promise_unit(cap.set_locale(&text(0), OperationOptions::default()))
+            }
             "registerLocale" => {
                 match decode::<Locale>("locale", arg(&args, 0).unwrap_or(&Value::Null)) {
                     Ok(locale) => {
@@ -216,8 +236,25 @@ impl HarnessPlugin for I18n {
                     Err(error) => Outcome::Threw(error),
                 }
             }
+            "updateSettings" => match config(arg(&args, 0).unwrap_or(&undefined()), h) {
+                Ok(changes) => {
+                    cap.update_settings(&changes);
+                    Outcome::undefined()
+                }
+                Err(error) => Outcome::Threw(error),
+            },
+            "resetSettings" => {
+                cap.reset_settings();
+                Outcome::undefined()
+            }
             "onLocaleChanged" => listen(h, arg(&args, 0), |f| cap.on_locale_changed(f)),
             "onLocaleLoadFailed" => listen(h, arg(&args, 0), |f| cap.on_locale_load_failed(f)),
+            // Their answers hold functions (the loaders, the translator),
+            // which no vector reads.
+            "getSettings" | "onSettingsChanged" | "getTranslator" => Outcome::Threw(bad(
+                method,
+                "returns functions the replay does not print; no vector calls it",
+            )),
             other => {
                 Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
             }
@@ -243,11 +280,29 @@ fn string_list(value: Option<&Value>) -> Vec<String> {
         .unwrap_or_default()
 }
 
+fn state_arg(args: &[Value]) -> Result<Rc<I18nState>, Error> {
+    decode("state", arg(args, 0).unwrap_or(&Value::Null)).map(Rc::new)
+}
+
+/// `TranslationSources`, as the vector writes it.
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct Sources {
+    locale: String,
+    fallback_locale: String,
+    locales: JsRecord<Rc<Locale>>,
+}
+
 fn f_translate(args: &[Value]) -> Result<Value, Error> {
-    let state: I18nState = decode("state", arg(args, 0).unwrap_or(&Value::Null))?;
+    let sources: Sources = decode("sources", arg(args, 0).unwrap_or(&Value::Null))?;
     let key = arg(args, 1).and_then(Value::as_str).unwrap_or_default();
     let options = options(arg(args, 2))?;
-    to_json(&translate(&state, key, options.as_ref()))
+    let sources = TranslationSources {
+        locale: &sources.locale,
+        fallback_locale: &sources.fallback_locale,
+        locales: &sources.locales,
+    };
+    to_json(&translate(&sources, key, options.as_ref()))
 }
 
 fn f_interpolate(args: &[Value]) -> Result<Value, Error> {
@@ -265,39 +320,70 @@ fn f_negotiate(args: &[Value]) -> Result<Value, Error> {
     Ok(json!(negotiate_locale(&available, &requested)))
 }
 
-/// `initialI18nState` reads only whether a loader exists, so the vector's
-/// loaders are placeholders: any member that is not `undefined`.
-fn f_initial(args: &[Value]) -> Result<Value, Error> {
-    let raw = arg(args, 0).cloned().unwrap_or_else(|| json!({}));
-    let mut config = I18nConfig {
-        locale: raw.get("locale").and_then(Value::as_str).map(str::to_string),
-        fallback_locale: raw.get("fallbackLocale").and_then(Value::as_str).map(str::to_string),
-        ..Default::default()
-    };
-    if let Some(locales) = raw.get("locales") {
-        config.locales = Some(decode("locales", locales)?);
-    }
-    if let Some(loaders) = raw.get("loaders").and_then(Value::as_object) {
-        let placeholder: Loader = Rc::new(|| Err(Error::new("placeholder")));
-        config.loaders = Some(
-            loaders
-                .iter()
-                .filter(|(_, v)| !is_undefined(v))
-                .map(|(k, _)| (k.clone(), placeholder.clone()))
-                .collect(),
-        );
-    }
-    to_json(&initial_i18n_state(&config))
+fn f_initial(_args: &[Value]) -> Result<Value, Error> {
+    to_json(&initial_i18n_state())
 }
 
-/// The reducer with its reference identity made visible. An action no
-/// variant decodes is the TypeScript's `default: return state`.
-fn f_reducer(args: &[Value]) -> Result<Value, Error> {
-    let state: I18nState = decode("state", arg(args, 0).unwrap_or(&Value::Null))?;
-    let action: Option<I18nAction> =
-        arg(args, 1).and_then(|a| serde_json::from_value(scrub(a)).ok());
-    let next = action.and_then(|action| i18n_reducer(&state, &action));
-    Ok(json!({ "same": next.is_none(), "next": to_json(next.as_ref().unwrap_or(&state))? }))
+/// `seedFromSettings(state, settings)` reads only whether a loader is there
+/// (`!== undefined`), so the vector's loaders are placeholders.
+fn f_seed(args: &[Value]) -> Result<Value, Error> {
+    let state = state_arg(args)?;
+    let settings = arg(args, 1).cloned().unwrap_or_else(|| json!({}));
+    let locales: Vec<Locale> = match settings.get("locales") {
+        Some(locales) => decode("locales", locales)?,
+        None => Vec::new(),
+    };
+    let fallback = settings.get("fallbackLocale").and_then(Value::as_str).unwrap_or_default();
+    let loaders = settings.get("loaders").and_then(Value::as_object);
+    let has_loader = |code: &str| {
+        loaders.and_then(|l| l.get(code)).is_some_and(|v| !is_undefined(v))
+            || Inherited::of(code).is_some()
+    };
+    let locale = settings.get("locale").and_then(Value::as_str);
+    to_json(&*model::seed_from_settings(&state, locale, fallback, &locales, has_loader))
+}
+
+fn f_merge(args: &[Value]) -> Result<Value, Error> {
+    let base: TranslationDictionary = decode("base", arg(args, 0).unwrap_or(&Value::Null))?;
+    let patch: TranslationDictionary = decode("patch", arg(args, 1).unwrap_or(&Value::Null))?;
+    to_json(&model::merge_translations(&base, &patch))
+}
+
+fn f_nest(args: &[Value]) -> Result<Value, Error> {
+    let dictionary: TranslationDictionary =
+        decode("dictionary", arg(args, 0).unwrap_or(&Value::Null))?;
+    to_json(&model::nest_keys(&dictionary))
+}
+
+fn code_arg(args: &[Value]) -> &str {
+    arg(args, 1).and_then(Value::as_str).unwrap_or_default()
+}
+
+fn f_set_locale(args: &[Value]) -> Result<Value, Error> {
+    to_json(&*model::set_locale(&state_arg(args)?, code_arg(args)))
+}
+
+fn f_register(args: &[Value]) -> Result<Value, Error> {
+    let locale: Locale = decode("locale", arg(args, 1).unwrap_or(&Value::Null))?;
+    to_json(&*model::register_locale(&state_arg(args)?, &locale))
+}
+
+fn f_unregister(args: &[Value]) -> Result<Value, Error> {
+    to_json(&*model::unregister_locale(&state_arg(args)?, code_arg(args)))
+}
+
+fn f_add(args: &[Value]) -> Result<Value, Error> {
+    let dictionary: TranslationDictionary =
+        decode("dictionary", arg(args, 2).unwrap_or(&Value::Null))?;
+    to_json(&*model::add_translations(&state_arg(args)?, code_arg(args), &dictionary))
+}
+
+fn f_start(args: &[Value]) -> Result<Value, Error> {
+    to_json(&*model::start_locale_load(&state_arg(args)?, code_arg(args)))
+}
+
+fn f_end(args: &[Value]) -> Result<Value, Error> {
+    to_json(&*model::end_locale_load(&state_arg(args)?, code_arg(args)))
 }
 
 /// `translate` over a pack whose branch names every CLDR category.
@@ -307,24 +393,20 @@ fn f_plurals(args: &[Value]) -> Result<Value, Error> {
     let pack = Locale {
         code: locale.into(),
         name: locale.into(),
-        dir: None,
+        direction: None,
         translations: decode("pack", &dictionary)?,
     };
-    let state = I18nState {
-        locale: locale.into(),
-        fallback_locale: locale.into(),
-        locales: [(locale.to_string(), pack)].into_iter().collect(),
-        loading: None,
-    };
+    let locales: JsRecord<Rc<Locale>> = [(locale.to_string(), Rc::new(pack))].into_iter().collect();
+    let sources = TranslationSources { locale, fallback_locale: locale, locales: &locales };
     let counts = arg(args, 1).and_then(Value::as_array).cloned().unwrap_or_default();
     let mut out = Vec::new();
     for count in &counts {
         let n = number(count).ok_or_else(|| bad("count", count))?;
         let options = TranslateOptions {
             params: Some([("count".to_string(), Param::Number(n))].into_iter().collect()),
-            fallback: None,
+            ..Default::default()
         };
-        out.push(json!(translate(&state, "k", Some(&options)).text));
+        out.push(json!(translate(&sources, "k", Some(&options)).text));
     }
     Ok(Value::Array(out))
 }
@@ -335,7 +417,15 @@ pub fn functions() -> FunctionTable {
         ("interpolate", f_interpolate),
         ("negotiateLocale", f_negotiate),
         ("initialI18nState", f_initial),
-        ("i18nReducer", f_reducer),
+        ("seedFromSettings", f_seed),
+        ("mergeTranslations", f_merge),
+        ("nestKeys", f_nest),
+        ("setLocale", f_set_locale),
+        ("registerLocale", f_register),
+        ("unregisterLocale", f_unregister),
+        ("addTranslations", f_add),
+        ("startLocaleLoad", f_start),
+        ("endLocaleLoad", f_end),
         ("plurals", f_plurals),
     ]
 }
