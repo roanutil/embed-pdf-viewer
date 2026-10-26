@@ -618,6 +618,11 @@ impl DocumentHandle for FakeHandle {
         if member.starts_with("page.annotations.") {
             return true;
         }
+        // Every page carries a `measure` service (fake-engine.ts:678), with
+        // no `lacks` or `services` gate.
+        if member == "page.measure" || member.starts_with("page.measure.") {
+            return true;
+        }
         // `forms` is a proxy too, with `submit` present only when `services`
         // lists it and every other member present unless `lacks` names it.
         if member.starts_with("forms.") && member != "forms.submit" {
