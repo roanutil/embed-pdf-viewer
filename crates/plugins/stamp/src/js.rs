@@ -30,6 +30,34 @@ pub fn optional_object(value: &Value, key: &str) -> Map<String, Value> {
     value.get(key).and_then(Value::as_object).cloned().unwrap_or_default()
 }
 
+/// `ref.objectNumber`, as `doc.page(ref)` reads it: a missing ref is the
+/// TypeScript's `TypeError`. A ref the kernel's `PageRef` can't hold (no
+/// whole object number) is refused with the port's own `TypeError`, where
+/// the TypeScript would call the engine with it.
+pub fn page_ref(value: &Value) -> Result<epdf_kernel::geometry::PageRef, Error> {
+    if nullish(value) {
+        return Err(read_off(value, "objectNumber"));
+    }
+    epdf_kernel::geometry::PageRef::from_json(value)
+        .ok_or_else(|| Error::named("TypeError", format!("[stamp] not a page ref: {value}")))
+}
+
+/// `expression.method(...)` on what should be an array: reading the method
+/// off `null` or `undefined`, or calling a member that is not a function,
+/// is the TypeScript's `TypeError`.
+pub fn array<'a>(
+    value: &'a Value,
+    expression: &str,
+    method: &str,
+) -> Result<&'a Vec<Value>, Error> {
+    if nullish(value) {
+        return Err(read_off(value, method));
+    }
+    value.as_array().ok_or_else(|| {
+        Error::named("TypeError", format!("{expression}.{method} is not a function"))
+    })
+}
+
 /// `return promise` from an `async` function: the resolve-thenable job,
 /// then the `then` reaction that settles the function's own promise.
 pub async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {

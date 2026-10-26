@@ -122,15 +122,15 @@ fn importing_non_pdf_bytes_is_refused() {
 }
 
 #[test]
-fn a_library_the_engine_cannot_open_fails_with_a_typed_error() {
+fn an_unconfigured_library_write_is_refused_before_open() {
     let (_thread, stamp, _) = handle();
-    // No asset engine is configured and the kernel's carries no local
-    // brand, so creating a library's blank PDF is refused before any open;
-    // the refusal arrives as a kernel error and nothing is created.
+    // No asset engine is configured and the test kernel's engine reports no
+    // local brand (`Engine::is_local`), so creating a library's blank PDF is
+    // refused before any open; nothing is created.
     let error =
         block_on(stamp.create_library("Mine".into(), Default::default(), CancelToken::new()))
             .unwrap_err();
-    assert!(matches!(error, ViewerError::Kernel { .. }), "{error:?}");
+    assert_eq!(code(&error), Some("unsupported"), "{error:?}");
     assert!(block_on(stamp.libraries(None)).unwrap().is_empty());
 }
 

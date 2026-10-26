@@ -13,7 +13,7 @@ use serde_json::{Value, json};
 use crate::blank_library::blank_library_pdf;
 use crate::contract::{AddAssetInput, MarkSource};
 use crate::controller::StampCapability;
-use crate::js::{adopt, member, nullish};
+use crate::js::{adopt, member, nullish, page_ref};
 use crate::services::asset_engine::{bytes_of, call, close, page_call, read_off};
 use crate::services::errors::stamp_error;
 
@@ -82,8 +82,7 @@ impl StampCapability {
                     ));
                 };
                 let reference = scratch.get("ref").cloned().unwrap_or_else(undefined);
-                let pon =
-                    reference.get("objectNumber").and_then(Value::as_f64).unwrap_or(0.0) as u32;
+                let pon = page_ref(&reference)?.page_object_number;
                 let created = match &mark {
                     MarkSource::Ink { strokes, color, stroke_width } => {
                         let color = hex_color(color.as_deref().unwrap_or("#1d2b53"))?;

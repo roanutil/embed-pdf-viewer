@@ -150,6 +150,14 @@ impl StampCapability {
         })
     }
 
+    /// The raw store event, for a caller that prints the settings JSON.
+    pub fn on_settings_changed_json(
+        &self,
+        listener: impl Fn(&Value, &[String]) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.settings.events.on(move |event| listener(&event.settings, &event.changed))
+    }
+
     // ── events (services, not areas) ──
 
     /// `onLibraryChanged`: a library's bytes changed (subscribe to persist).

@@ -94,20 +94,51 @@ pub const MEMBERS: &[&str] = &[
 
 // ── the host ──────────────────────────────────────────────────────────────────
 
+thread_local! {
+    /// Whether a case has the stamp host installed (`release` in
+    /// `stamp-current-fixtures.ts`).
+    static INSTALLED: Cell<bool> = const { Cell::new(false) };
+}
+
+/// The installed host, put back as it was when the case's kernel (which
+/// holds the plugin, and with it this guard) is dropped: `restoreStampHost`
+/// on `onCaseEnd`.
+struct HostGuard {
+    sink: Option<crate::console::ConsoleSink>,
+    random: Option<crate::console::RandomSource>,
+}
+
+impl Drop for HostGuard {
+    fn drop(&mut self) {
+        crate::console::set_sink(self.sink.take());
+        crate::console::set_random(self.random.take());
+        INSTALLED.with(|i| i.set(false));
+    }
+}
+
 /// `installStampHost(env)`: this case's `Math.random` and `[stamp]`
-/// console lines.
-fn install_host(h: &Harness) {
+/// console lines. Other lines go to the console that was there. Once per
+/// case, as the generator refuses a second install.
+fn install_host(h: &Harness) -> Result<HostGuard, Error> {
+    if INSTALLED.with(|i| i.replace(true)) {
+        return Err(Error::new("[stamp-current] install once per case"));
+    }
     let calls = Rc::new(Cell::new(0u64));
-    crate::console::set_random(Some(Rc::new(move || {
+    let random = crate::console::set_random(Some(Rc::new(move || {
         let n = calls.get();
         calls.set(n + 1);
         ((n % 62) as f64 + 0.5) / 62.0
     })));
     let log = h.clone();
-    crate::console::set_sink(Some(Rc::new(move |level, args| {
+    let previous: Rc<RefCell<Option<crate::console::ConsoleSink>>> = Rc::default();
+    let fallback = previous.clone();
+    let sink = crate::console::set_sink(Some(Rc::new(move |level, args| {
         let stamped =
             args.first().and_then(Value::as_str).is_some_and(|s| s.starts_with("[stamp]"));
         if !stamped {
+            if let Some(previous) = fallback.borrow().clone() {
+                previous(level, args);
+            }
             return;
         }
         match level {
@@ -115,6 +146,8 @@ fn install_host(h: &Harness) {
             _ => log.log("console.warn", args),
         }
     })));
+    *previous.borrow_mut() = sink.clone();
+    Ok(HostGuard { sink, random })
 }
 
 /// `localAssetEngine(engine)`: a typed local port over the table engine.
@@ -193,9 +226,9 @@ impl Engine for Forwarding {
     }
 }
 
-fn stamp_current(config: &Value, h: &Harness) -> AnyPlugin {
+fn stamp_current(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
     reset_id_sequence();
-    install_host(h);
+    let host = Rc::new(install_host(h)?);
     let bound: Rc<RefCell<Option<Rc<dyn Engine>>>> = Rc::default();
     let forwarding: Rc<dyn Engine> = Rc::new(Forwarding(bound.clone()));
     let input = |k: &str| config.get(k).filter(|v| !is_undefined(v));
@@ -207,14 +240,16 @@ fn stamp_current(config: &Value, h: &Harness) -> AnyPlugin {
         dynamic: input("dynamic").and_then(Value::as_bool),
     };
     let (table, registered) = register(&registered);
-    crate::stamp_plugin_creating(
+    Ok(crate::stamp_plugin_creating(
         table,
         Some(registered),
         Rc::new(move |cx, table| {
+            // The plugin holds the host for as long as the case's kernel.
+            let _ = &host;
             *bound.borrow_mut() = cx.engine();
             crate::create_stamp_controller(cx, table)
         }),
-    )
+    ))
 }
 
 // ── persistence drivers ───────────────────────────────────────────────────────
@@ -561,7 +596,40 @@ fn call_stamp(
 ) -> Result<Outcome, Error> {
     let arg = |i: usize| args.get(i).filter(|v| !is_undefined(v));
     Ok(match method {
+        // The asset engine prints as its handle in the store,
+        // `{"$assetEngine": n}`, where the TypeScript prints the engine.
         "getSettings" => Outcome::Returned((*cap.settings_json()).clone()),
+        "updateSettings" => {
+            let changes = arg(0);
+            let asset_engine = match member(changes, "assetEngine") {
+                None => None,
+                Some(Value::Null) => Some(None),
+                Some(other) => {
+                    return Err(Error::new(format!(
+                        "[stamp harness] an asset engine a vector can name is null, got {other}"
+                    )));
+                }
+            };
+            cap.update_settings(&StampConfig {
+                asset_engine,
+                preview_width: member(changes, "previewWidth").and_then(Value::as_f64),
+                dynamic: member(changes, "dynamic").and_then(Value::as_bool),
+            });
+            Outcome::undefined()
+        }
+        "onSettingsChanged" => {
+            let callback = h.callback(arg(0).unwrap_or(&Value::Null));
+            let off = cap.on_settings_changed_json(move |settings, changed| {
+                match callback.call(vec![json!({ "settings": settings, "changed": changed })]) {
+                    Answer::Throws(error) => Err(error),
+                    _ => Ok(()),
+                }
+            });
+            Outcome::Returned(h.register_fn(Rc::new(move |_| {
+                off.call();
+                Outcome::undefined()
+            })))
+        }
         "resetSettings" => {
             cap.reset_settings();
             Outcome::undefined()
@@ -746,7 +814,7 @@ impl HarnessPlugin for Stamp {
         Ok(match factory {
             "stamp-current-persistence" => persistence_plugin(config, h, false),
             "stamp-mutation-persistence" => persistence_plugin(config, h, true),
-            _ => stamp_current(config, h),
+            _ => stamp_current(config, h)?,
         })
     }
 

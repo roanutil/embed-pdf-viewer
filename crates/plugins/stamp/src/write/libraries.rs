@@ -10,7 +10,6 @@ use epdf_kernel::bytes::Bytes;
 use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::code;
-use epdf_kernel::geometry::PageRef;
 use epdf_kernel::js::number_to_string;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::{Error, undefined};
@@ -22,7 +21,8 @@ use crate::contract::*;
 use crate::controller::StampCapability;
 use crate::convention::*;
 use crate::js::{
-    adopt, entry_name, entry_string, entry_string_array, member, nullish, optional_object,
+    adopt, array, entry_name, entry_string, entry_string_array, member, nullish, optional_object,
+    page_ref,
 };
 use crate::model::{add_asset, add_library, remove_library, set_library};
 use crate::services::asset_engine::{bytes_of, call, close, page_call, uid};
@@ -95,18 +95,6 @@ fn size_of(layout: &Value) -> StampSize {
     let size = layout.get("size");
     let n = |k: &str| size.and_then(|s| s.get(k)).and_then(Value::as_f64).unwrap_or(f64::NAN);
     StampSize { width: n("width"), height: n("height") }
-}
-
-/// `doc.page(ref)` reads `ref.objectNumber`: a missing ref is the
-/// TypeScript's `TypeError`. A ref the kernel's `PageRef` can't hold (not an
-/// object number) is refused with the port's own `TypeError`, where the
-/// TypeScript would call the engine with it.
-fn page_ref(value: &Value) -> Result<PageRef, Error> {
-    if nullish(value) {
-        return Err(crate::services::asset_engine::read_off(value, "objectNumber"));
-    }
-    PageRef::from_json(value)
-        .ok_or_else(|| Error::named("TypeError", format!("[stamp] not a page ref: {value}")))
 }
 
 impl StampCapability {
@@ -252,7 +240,8 @@ impl StampCapability {
                 "a canonical stamp library PDF must contain at least one page",
             ));
         }
-        let pages: Vec<Value> = member(&layout, "pages")?.as_array().cloned().unwrap_or_default();
+        // `layout.pages.map(...)`
+        let pages: Vec<Value> = array(&member(&layout, "pages")?, "layout.pages", "map")?.clone();
 
         // Library identity: /Title (Acrobat), then format version 1
         // PieceInfo, then the caller's fallback.
@@ -284,9 +273,14 @@ impl StampCapability {
         });
 
         // The registry: /Names /Pages keys `identifier=label` naming pages.
-        let named_pages = layout.get("namedPages").filter(|v| !nullish(v));
-        let entries: Vec<Value> =
-            named_pages.and_then(Value::as_array).cloned().unwrap_or_default();
+        // `layout.namedPages ?? []`; only `undefined` means the engine has no
+        // registry (`=== undefined`), so `null` reads as an empty one.
+        let named_pages = layout.get("namedPages").filter(|v| !epdf_kernel::is_undefined(v));
+        let entries: Vec<Value> = named_pages
+            .filter(|v| !v.is_null())
+            .and_then(Value::as_array)
+            .cloned()
+            .unwrap_or_default();
         let is_page = |entry: &Value| {
             entry.get("target").and_then(|t| t.get("kind")).and_then(Value::as_str) == Some("page")
         };

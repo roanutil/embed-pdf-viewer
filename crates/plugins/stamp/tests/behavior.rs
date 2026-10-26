@@ -208,7 +208,8 @@ fn reacts_on<T: Clone + 'static>(promise: &Promise<T>, turn: &Rc<Cell<u32>>) -> 
 /// and the turn read in `promise.then`: createLibrary 18, updateLibrary 21,
 /// deleteLibrary 5 (an unknown one 5 too: the queue runs either way),
 /// exportLibrary 1, importLibrary 66, createAsset of a PDF 37, deleteAsset
-/// 18 (an unknown one 2: no queue), renderAssetPreview 17.
+/// 18 (an unknown one 2: no queue), renderAssetPreview 17, moveAsset 52,
+/// duplicateAsset 35, and createAsset with no library (one of its own) 54.
 #[test]
 fn verbs_settle_on_the_typescripts_turns() {
     let rig = Rig::new();
@@ -285,6 +286,38 @@ fn verbs_settle_on_the_typescripts_turns() {
     let turn = turn_counter();
     let preview = rig.stamp.render_asset_preview(&id, 64.0, none());
     assert_eq!(reacts_on(&preview, &turn), 17, "renderAssetPreview");
+
+    // Libraries `a` and `b`, and stamp `X` in `a`.
+    let two = || {
+        let rig = Rig::new();
+        for id in ["a", "b"] {
+            let options = CreateLibraryOptions { id: Some(id.into()), ..Default::default() };
+            success(&rig.stamp.create_library(id, options));
+        }
+        let input = AddAssetInput {
+            library_id: Some("a".into()),
+            name: Some("X".into()),
+            source: Some(pdf()),
+            ..Default::default()
+        };
+        success(&rig.stamp.create_asset(input, none()));
+        rig
+    };
+
+    let rig = two();
+    let turn = turn_counter();
+    assert_eq!(reacts_on(&rig.stamp.move_asset("a:X", "b", none()), &turn), 52, "moveAsset");
+
+    let rig = two();
+    let turn = turn_counter();
+    let copy = rig.stamp.duplicate_asset("a:X", None, none());
+    assert_eq!(reacts_on(&copy, &turn), 35, "duplicateAsset");
+
+    let rig = Rig::new();
+    let turn = turn_counter();
+    let input = AddAssetInput { name: Some("X".into()), source: Some(pdf()), ..Default::default() };
+    let created = rig.stamp.create_asset(input, none());
+    assert_eq!(reacts_on(&created, &turn), 54, "createAsset into a library of its own");
 }
 
 /// The open the second mutation would make, held: the first `open` (the

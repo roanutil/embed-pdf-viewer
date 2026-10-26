@@ -32,7 +32,7 @@ use serde_json::{Value, json};
 
 use crate::contract::*;
 use crate::controller::StampCapability;
-use crate::js::{adopt, member, nullish};
+use crate::js::{adopt, array, member, nullish, page_ref};
 use crate::model::{arm_asset, disarm_documents};
 use crate::services::asset_engine::{call, close, image_to_preview, page_call, render_options};
 use crate::services::binaries::AssetBinary;
@@ -238,16 +238,23 @@ impl StampCapability {
         let page_number = page.get("objectNumber").and_then(Value::as_f64);
         let snapshot = call(doc, "forms.list", Vec::new()).await?;
         let fields = member(&snapshot, "fields")?;
-        let has_selected_page_field = fields.as_array().into_iter().flatten().any(|field| {
-            field.get("widgets").and_then(Value::as_array).into_iter().flatten().any(|widget| {
+        // `snapshot.fields.some((field) => field.widgets.some(...))`
+        let mut has_selected_page_field = false;
+        for field in array(&fields, "snapshot.fields", "some")? {
+            let widgets = member(field, "widgets")?;
+            let on_page = array(&widgets, "field.widgets", "some")?.iter().any(|widget| {
                 widget
                     .get("page")
                     .filter(|p| !nullish(p))
                     .and_then(|p| p.get("objectNumber"))
                     .and_then(Value::as_f64)
                     == page_number
-            })
-        });
+            });
+            if on_page {
+                has_selected_page_field = true;
+                break;
+            }
+        }
         if !has_selected_page_field {
             return Ok(Placement::Template(binary.clone()));
         }
@@ -275,11 +282,10 @@ impl StampCapability {
                     if nullish(&tree) {
                         return Ok(Vec::new());
                     }
+                    // `tree?.nameTreeScripts.map(...)`
                     let scripts = member(&tree, "nameTreeScripts")?;
-                    scripts
-                        .as_array()
-                        .into_iter()
-                        .flatten()
+                    array(&scripts, "tree.nameTreeScripts", "map")?
+                        .iter()
                         .map(|entry| {
                             java_script_program_from_action_tree(
                                 entry.get("action").unwrap_or(&Value::Null),
@@ -352,7 +358,7 @@ impl StampCapability {
         let bytes = crate::services::asset_engine::bytes_of(
             &call(doc, "pages.extract", vec![json!([page])]).await?,
         );
-        let pon = page.get("objectNumber").and_then(Value::as_f64).unwrap_or(0.0) as u32;
+        let pon = page_ref(&page)?.page_object_number;
         let image = page_call(
             doc,
             "page.render.image",

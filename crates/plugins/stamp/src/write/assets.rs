@@ -18,7 +18,7 @@ use serde_json::{Value, json};
 use crate::contract::*;
 use crate::controller::StampCapability;
 use crate::convention::*;
-use crate::js::{adopt, member, nullish};
+use crate::js::{adopt, member, page_ref};
 use crate::model::{add_asset, remove_asset, set_asset};
 use crate::services::asset_engine::{bytes_of, call, close, page_call};
 use crate::services::binaries::AssetBinary;
@@ -235,7 +235,7 @@ impl StampCapability {
                 .and_then(|p| p.first())
                 .cloned()
                 .unwrap_or_else(undefined);
-            let pon = page_number(&page)?;
+            let pon = page_ref(&page)?.page_object_number;
             let width = size.get("width").cloned().unwrap_or_else(undefined);
             let height = size.get("height").cloned().unwrap_or_else(undefined);
             page_call(
@@ -286,7 +286,7 @@ impl StampCapability {
                 "the new page is missing from the library layout",
             ));
         };
-        let pon = page_number(&page)?;
+        let pon = page_ref(&page)?.page_object_number;
         // Insert copies the page only: register it in the same mutation.
         call(
             doc,
@@ -363,7 +363,8 @@ impl StampCapability {
                 ));
             };
             let layout = this.page_of(&document_id, page)?;
-            let pon = page_number(&layout.get("ref").cloned().unwrap_or_else(undefined))?;
+            let pon =
+                page_ref(&layout.get("ref").cloned().unwrap_or_else(undefined))?.page_object_number;
             // The engine flattens the selection into a fresh single-page PDF:
             // the same placement whole-page flatten uses, aimed at a new page.
             let exported = cancellable(
@@ -637,12 +638,4 @@ impl StampCapability {
             adopt(this.create_asset_now(input, options)).await
         }))
     }
-}
-
-/// A page ref's object number, as `doc.page(ref)` reads it.
-fn page_number(page: &Value) -> Result<u32, Error> {
-    if nullish(page) {
-        return Err(crate::services::asset_engine::read_off(page, "objectNumber"));
-    }
-    Ok(page.get("objectNumber").and_then(Value::as_f64).unwrap_or(0.0) as u32)
 }
