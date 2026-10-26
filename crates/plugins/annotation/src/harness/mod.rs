@@ -722,8 +722,21 @@ fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &H
             Outcome::Returned(remover(h, a.register_behavior(behavior)))
         }
         "getBehaviorFor" => {
+            // The behavior object as its registrant built it: `id`, then
+            // `matches` and `engaged` as callable refs, registered in that
+            // order (link.json's `link-nav-behavior` calls both).
             let behavior = a.get_behavior_for(&object(args, 0));
-            Outcome::Returned(behavior.map_or(Value::Null, |b| json!({ "id": b.id() })))
+            Outcome::Returned(behavior.map_or(Value::Null, |b| {
+                let id = b.id();
+                let held = b.clone();
+                let matches = h.register_fn(Rc::new(move |args: Vec<Value>| {
+                    Outcome::Returned(json!(held.matches(&object(&args, 0))))
+                }));
+                let engaged = h.register_fn(Rc::new(move |args: Vec<Value>| {
+                    Outcome::Returned(json!(b.engaged(&object(&args, 0))))
+                }));
+                json!({ "id": id, "matches": matches, "engaged": engaged })
+            }))
         }
         "pruneEngagedSelection" => {
             a.prune_engaged_selection();
