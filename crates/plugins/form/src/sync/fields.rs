@@ -12,7 +12,7 @@ use epdf_kernel::rt::Promise;
 use epdf_kernel::{Controller, Error};
 use serde_json::{Value, json};
 
-use crate::model::{FieldIndex, Folded, fold_form_event, index_loaded_fields};
+use crate::model::{Folded, Snapshot, fold_form_event, index_loaded_fields};
 use crate::services::events::Events;
 use crate::services::index_cache::IndexCache;
 use crate::sync::predict::predict_form_op;
@@ -27,7 +27,7 @@ pub fn create_fields_mirror(
     // What `fields.get()` reads inside a load: the value every applied
     // change left (the mirror announces each one), so the closures need no
     // handle on the mirror itself.
-    let empty = Rc::new(FieldIndex::default().to_mirror());
+    let empty = Rc::new(IndexCache::empty_value());
     let latest: Rc<RefCell<Rc<Value>>> = Rc::new(RefCell::new(empty.clone()));
 
     let (load_latest, load_indexes) = (latest.clone(), indexes.clone());
@@ -40,7 +40,8 @@ pub fn create_fields_mirror(
         Promise::spawn(async move {
             let snapshot = call.await?;
             let previous = indexes.index(&latest.borrow().clone());
-            let next = Rc::new(index_loaded_fields(&previous, Rc::new(snapshot)));
+            // The engine's answer is ours: taken apart, not copied.
+            let next = Rc::new(index_loaded_fields(&previous, Rc::new(Snapshot::new(snapshot))));
             Ok(Loaded { value: (*indexes.value(&next)).clone(), cursor: None })
         })
     });
@@ -76,10 +77,11 @@ pub fn create_fields_mirror(
     let changed_indexes = indexes.clone();
     spec.changed = Some(Rc::new(move |change| {
         *latest.borrow_mut() = change.next.clone();
+        changed_indexes.pin(&change.next);
         if change.cause == "load" {
             let next = changed_indexes.index(&change.next);
-            if let Some(snapshot) = &next.snapshot {
-                resynced.emit(&json!({ "snapshot": **snapshot }));
+            if let Some(snapshot) = next.whole_snapshot() {
+                resynced.emit(&json!({ "snapshot": *snapshot }));
             }
             return Ok(());
         }

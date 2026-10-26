@@ -6,6 +6,7 @@
 //! one type, as the TypeScript's two lenses are one object.
 
 use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 
 use epdf_kernel::cancellable::cancellable;
@@ -52,6 +53,8 @@ pub struct Core {
     pub(crate) recalculating: Cell<bool>,
     /// The text typed in each field and not written yet, by field key.
     pub(crate) drafts: RefCell<IndexMap<String, (Value, String)>>,
+    /// `listWidgets`' memo, by page: the items it made, and from what.
+    pub(crate) widget_items: RefCell<HashMap<String, crate::read::widgets::WidgetItems>>,
     /// The widget hover pump, made on first use.
     pub(crate) widget_pump: RefCell<Option<epdf_plugin_actions::HoverPump>>,
 }
@@ -207,6 +210,7 @@ pub fn create_form_controller(
         scripting: ScriptingSeam::default(),
         recalculating: Cell::new(false),
         drafts: RefCell::new(IndexMap::new()),
+        widget_items: RefCell::new(HashMap::new()),
         widget_pump: RefCell::new(None),
     });
     core.watch_formatted_texts()?;

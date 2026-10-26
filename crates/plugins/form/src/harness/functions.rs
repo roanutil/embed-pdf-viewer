@@ -15,7 +15,7 @@ use serde_json::{Value, json};
 use crate::engine::{encode_field_ref_key, to_field_ref};
 use crate::field_selection::{build_submit_entries, resolve_field_selection};
 use crate::model::{
-    FieldIndex, Folded, PageWidget, empty_field_index, field_by_key, field_for_widget,
+    FieldIndex, Folded, PageWidget, Snapshot, empty_field_index, field_by_key, field_for_widget,
     field_key_of, fold_form_event, index_fields, index_loaded_fields, initial_form_state,
     page_widgets_json, page_widgets_of, page_widgets_of_json, remove_widgets, upsert_fields,
     upsert_widgets, widget_at, widget_row_of,
@@ -37,8 +37,8 @@ fn index(args: &[Value], i: usize) -> Rc<FieldIndex> {
     Rc::new(FieldIndex::from_json(&value(args, i)))
 }
 
-fn snapshot(args: &[Value], i: usize) -> Rc<Value> {
-    Rc::new(value(args, i))
+fn snapshot(args: &[Value], i: usize) -> Rc<Snapshot> {
+    Rc::new(Snapshot::new(value(args, i)))
 }
 
 fn list(args: &[Value], i: usize) -> Vec<Value> {

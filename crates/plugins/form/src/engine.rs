@@ -168,12 +168,12 @@ pub fn reordered_list(
 
 /// `reorderPart(list, inPart, order, keyOf)`: the items `in_part` picks
 /// take `order`'s order in their slots; the rest keep theirs.
-pub fn reorder_part(
-    list: &[Value],
-    in_part: &dyn Fn(&Value) -> bool,
+pub fn reorder_part<T: Clone>(
+    list: &[T],
+    in_part: &dyn Fn(&T) -> bool,
     order: &[String],
-    key_of: &dyn Fn(&Value) -> String,
-) -> Vec<Value> {
+    key_of: &dyn Fn(&T) -> String,
+) -> Vec<T> {
     let part: Vec<usize> = (0..list.len()).filter(|&i| in_part(&list[i])).collect();
     let mut by_key: HashMap<String, usize> = HashMap::new();
     for &i in &part {

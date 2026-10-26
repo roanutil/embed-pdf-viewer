@@ -1,0 +1,227 @@
+//! M21: the form shares its snapshot across folds, predictions and fills,
+//! the way the TypeScript shares it by reference. A change replaces one
+//! field (or one widget row) and keeps every other one, so a large form
+//! pays no copy per keystroke. The guard is a count, not a clock:
+//! `snapshot_copies` counts every whole-snapshot copy, and these runs make
+//! none. Each run has a hang ceiling, nothing finer.
+//!
+//! `listWidgets` is memoized as the TypeScript's `memoByKey` is: the same
+//! list while the form, the session's rights and `fillable` stay the same.
+
+use std::rc::Rc;
+use std::sync::mpsc;
+use std::time::Duration;
+
+use epdf_kernel::kernel::OpenSource;
+use epdf_kernel::{Kernel, KernelOptions, OpenOptions, rt};
+use epdf_plugin_form::model::{
+    FieldIndex, Folded, Snapshot, field_by_key, fold_form_event, index_fields, snapshot_copies,
+};
+use epdf_plugin_form::sync::predict::predict_form_op;
+use epdf_plugin_form::{FORM, form_plugin};
+use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
+use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
+use serde_json::{Value, json};
+
+/// Long enough that only a hang trips it.
+const CEILING: Duration = Duration::from_secs(120);
+
+fn object_ref(n: usize) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": n })
+}
+
+fn widget_ref(n: usize) -> Value {
+    json!({ "kind": "objectNumber", "page": object_ref(1), "objectNumber": 10_000 + n })
+}
+
+fn field(n: usize, value: &str) -> Value {
+    json!({
+        "ref": object_ref(n), "name": format!("f{n}"), "origin": "acroform",
+        "readOnly": false, "required": false, "noExport": false,
+        "alternateName": null, "mappingName": null,
+        "valueEntry": { "kind": "text", "value": value },
+        "defaultValueEntry": { "kind": "none" },
+        "groupId": null, "createdBy": null, "createdAt": null,
+        "filledBy": null, "filledByName": null, "filledAt": null, "importedBy": null,
+        "widgets": [{ "ref": widget_ref(n), "objectNumber": 10_000 + n, "page": object_ref(1) }],
+        "family": "text", "value": value, "defaultValue": "", "maxLength": null,
+        "multiline": false, "password": false, "comb": false,
+    })
+}
+
+fn row(n: usize) -> Value {
+    json!({
+        "subtype": "widget", "ref": widget_ref(n), "page": object_ref(1),
+        "rect": { "x": 10, "y": n as f64 * 2.0, "width": 100, "height": 2 },
+    })
+}
+
+fn snapshot(fields: usize) -> Value {
+    json!({
+        "formKind": "acroform",
+        "needsAppearances": false,
+        "fields": (1..=fields).map(|n| field(n, "")).collect::<Vec<_>>(),
+        "widgets": (1..=fields).map(row).collect::<Vec<_>>(),
+        "calculationOrder": [],
+    })
+}
+
+fn indexed(fields: usize) -> Rc<FieldIndex> {
+    Rc::new(index_fields(Rc::new(Snapshot::new(snapshot(fields))), Default::default()))
+}
+
+fn value_set(n: usize, value: &str) -> Value {
+    json!({ "type": "forms.valueSet", "field": field(n, value), "widgets": [] })
+}
+
+fn set_value(n: usize, value: &str) -> Value {
+    json!({ "type": "forms.setValue", "field": object_ref(n), "value": { "value": value } })
+}
+
+/// Run `body` on its own thread, failing past the ceiling.
+fn within_ceiling(body: impl FnOnce() + Send + 'static) {
+    let (done, finished) = mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        body();
+        let _ = done.send(());
+    });
+    match finished.recv_timeout(CEILING) {
+        Ok(()) => worker.join().expect("the run"),
+        Err(mpsc::RecvTimeoutError::Disconnected) => {
+            std::panic::resume_unwind(worker.join().expect_err("the run panicked"))
+        }
+        Err(mpsc::RecvTimeoutError::Timeout) => panic!("the run passed {CEILING:?}"),
+    }
+}
+
+#[test]
+fn a_fold_replaces_one_field_and_shares_the_rest() {
+    let index = indexed(50);
+    let before = snapshot_copies();
+    let Folded::Index(next) = fold_form_event(&index, &value_set(7, "typed")) else {
+        panic!("a value fold keeps the index");
+    };
+    assert_eq!(snapshot_copies(), before, "the fold copied the snapshot");
+    for (at, (old, new)) in index.fields().iter().zip(next.fields()).enumerate() {
+        assert_eq!(Rc::ptr_eq(old, new), at != 6, "field {}", at + 1);
+    }
+    let (old, new) = (index.snapshot.as_ref().unwrap(), next.snapshot.as_ref().unwrap());
+    assert_eq!(old.widgets().as_ptr(), new.widgets().as_ptr(), "the widget rows are shared");
+    assert_eq!(field_by_key(&next, "obj:7"), Some(&field(7, "typed")));
+    assert_eq!(field_by_key(&index, "obj:7"), Some(&field(7, "")), "the old index keeps its field");
+    // `{ ...snapshot, fields }` keeps the member order, and putting the
+    // whole together once is the one copy.
+    let whole = new.whole();
+    assert_eq!(snapshot_copies(), before + 1);
+    let keys: Vec<&String> = whole.as_object().unwrap().keys().collect();
+    assert_eq!(keys, ["formKind", "needsAppearances", "fields", "widgets", "calculationOrder"]);
+    assert_eq!(whole["fields"][6], field(7, "typed"));
+    assert!(Rc::ptr_eq(&whole, &new.whole()), "kept once put together");
+    assert_eq!(snapshot_copies(), before + 1);
+}
+
+#[test]
+fn a_large_form_folds_and_predicts_without_a_copy() {
+    within_ceiling(|| {
+        const FIELDS: usize = 5_000;
+        let mut current = indexed(FIELDS);
+        let before = snapshot_copies();
+        for i in 0..50 {
+            let n = i * 25 % FIELDS + 1;
+            current = predict_form_op(&current, &set_value(n, "predicted"));
+            current = match fold_form_event(&current, &value_set(n, "confirmed")) {
+                Folded::Index(next) => next,
+                Folded::Reload => panic!("a value fold keeps the index"),
+            };
+        }
+        assert_eq!(snapshot_copies(), before, "a fold or a prediction copied the snapshot");
+        assert_eq!(field_by_key(&current, "obj:26"), Some(&field(26, "confirmed")));
+        assert_eq!(current.fields().len(), FIELDS);
+    });
+}
+
+fn page_row() -> Value {
+    let size = json!({ "x": 0, "y": 0, "width": 600, "height": 800 });
+    json!({
+        "index": 0, "ref": object_ref(1), "label": null,
+        "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1, "tabOrder": null,
+        "pdfCropBox": { "left": 0, "bottom": 0, "right": 600, "top": 800 },
+        "boxes": { "media": size, "crop": size, "bleed": size, "trim": size, "art": size }
+    })
+}
+
+/// A kernel whose document has `fields` text fields and holds every write.
+fn kernel_with(fields: usize) -> (Kernel, Rc<FakeEngine>) {
+    rt::reset();
+    let fake = FakeEngine::new(json!({
+        "documents": { "a": {
+            "pages": [page_row()],
+            "security": { "allows": "*" },
+            "responses": [
+                { "path": "forms.list", "value": snapshot(fields) },
+                { "path": "apply", "defer": "applied" }
+            ]
+        } }
+    }));
+    let kernel = Kernel::new(
+        Rc::new(AsEngine(fake.clone())),
+        vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)],
+        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+    )
+    .expect("the kernel");
+    let _ = kernel.start();
+    rt::run_until_stalled();
+    let _ = kernel.documents().open(
+        OpenSource::Input(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })),
+        OpenOptions::default(),
+    );
+    rt::run_until_stalled();
+    (kernel, fake)
+}
+
+/// Fills the engine has not answered, folds of what it did, and the reads
+/// a control makes after each: no whole-snapshot copy among them.
+#[test]
+fn fills_folds_and_reads_share_the_live_form() {
+    within_ceiling(|| {
+        const FIELDS: usize = 500;
+        let (kernel, fake) = kernel_with(FIELDS);
+        let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+        assert_eq!(form.list(None).len(), FIELDS, "the form is read");
+        let page = object_ref(1);
+        let before = snapshot_copies();
+        let mut pending = Vec::new();
+        for i in 0..15 {
+            let n = i * 25 + 1;
+            pending.push(form.set_value(object_ref(n), json!({ "value": "typed" }), None));
+            rt::run_until_stalled();
+            assert_eq!(form.get_value(&object_ref(n)), Some(json!({ "value": "typed" })));
+            assert_eq!(form.list_widgets(&page).len(), FIELDS);
+            fake.emit("a", &value_set(n + 1, "elsewhere")).expect("the event");
+            rt::run_until_stalled();
+            assert_eq!(form.get_value(&object_ref(n + 1)), Some(json!({ "value": "elsewhere" })));
+        }
+        assert_eq!(snapshot_copies(), before, "a fill, fold or read copied the snapshot");
+        // `getSnapshot` puts the form together once, and keeps it.
+        let whole = form.get_snapshot().expect("the snapshot");
+        assert!(Rc::ptr_eq(&whole, &form.get_snapshot().expect("again")));
+        assert_eq!(snapshot_copies(), before + 1);
+        drop(pending);
+    });
+}
+
+#[test]
+fn the_fill_projection_is_reference_stable() {
+    let (kernel, _fake) = kernel_with(3);
+    let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+    let page = object_ref(1);
+    let items = form.list_widgets(&page);
+    assert_eq!(items.len(), 3);
+    assert!(Rc::ptr_eq(&items, &form.list_widgets(&page)), "the same list while nothing changed");
+    let _pending = form.set_value(object_ref(2), json!({ "value": "typed" }), None);
+    rt::run_until_stalled();
+    let after = form.list_widgets(&page);
+    assert!(!Rc::ptr_eq(&items, &after), "a new list for a new form");
+    assert_eq!(after[1]["value"], json!("typed"), "{}", after[1]);
+    assert!(Rc::ptr_eq(&after, &form.list_widgets(&page)));
+}

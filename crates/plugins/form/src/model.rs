@@ -56,10 +56,160 @@ pub fn field_key_of(field: &Value) -> FieldKey {
 /// A JavaScript record of numbers by key (`Record<string, number>`).
 pub type Positions = IndexMap<String, f64>;
 
+thread_local! {
+    static SNAPSHOT_COPIES: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// How many times this thread copied a whole snapshot: a [`Snapshot`] read
+/// from a borrowed value, or one put back together as JSON. Folds,
+/// predictions and fills share the snapshot's parts and copy none, so a
+/// test can hold this still across them (the M21 guard).
+pub fn snapshot_copies() -> usize {
+    SNAPSHOT_COPIES.with(std::cell::Cell::get)
+}
+
+fn count_copy() {
+    SNAPSHOT_COPIES.with(|c| c.set(c.get() + 1));
+}
+
+/// The engine's `FormSnapshot`, its `fields` and `widgets` held apart, one
+/// `Rc` each and one `Rc` per item. A change replaces one member and shares
+/// the others, the way `{ ...snapshot, fields }` shares them in the
+/// TypeScript: an upsert copies pointers, never fields.
+#[derive(Debug)]
+pub struct Snapshot {
+    /// Every other member, in order; `fields` and `widgets` keep their
+    /// places as `null` when they were lists.
+    rest: Rc<Value>,
+    fields: Option<Rc<Vec<Rc<Value>>>>,
+    widgets: Option<Rc<Vec<Rc<Value>>>>,
+    /// The snapshot as one value, put together on the first read that needs
+    /// it (`getSnapshot`, the scripts, `resynced`).
+    whole: std::cell::OnceCell<Rc<Value>>,
+}
+
+impl PartialEq for Snapshot {
+    fn eq(&self, other: &Snapshot) -> bool {
+        self.rest == other.rest
+            && self.fields() == other.fields()
+            && self.widgets() == other.widgets()
+    }
+}
+
+fn take_list(rest: &mut Value, key: &str) -> Option<Rc<Vec<Rc<Value>>>> {
+    let slot = rest.as_object_mut()?.get_mut(key)?;
+    let Value::Array(list) = slot.take() else { return None };
+    Some(Rc::new(list.into_iter().map(Rc::new).collect()))
+}
+
+impl Snapshot {
+    /// A snapshot the engine handed over, taken apart without a copy.
+    pub fn new(mut value: Value) -> Snapshot {
+        let fields = take_list(&mut value, "fields");
+        let widgets = take_list(&mut value, "widgets");
+        // `take_list` left `null` behind only where it took a list; a member
+        // that was not one is still in place.
+        Snapshot { rest: Rc::new(value), fields, widgets, whole: Default::default() }
+    }
+
+    /// A snapshot read from a borrowed value: one copy.
+    pub fn of(value: &Value) -> Snapshot {
+        count_copy();
+        Snapshot::new(value.clone())
+    }
+
+    /// `snapshot[key]` for a member other than the two lists.
+    pub fn get(&self, key: &str) -> Option<&Value> {
+        get(&self.rest, key)
+    }
+
+    /// `snapshot[key]` as a list, empty when it is not one.
+    pub fn items(&self, key: &str) -> &[Value] {
+        items(&self.rest, key)
+    }
+
+    pub fn fields(&self) -> &[Rc<Value>] {
+        self.fields.as_deref().map_or(&[], Vec::as_slice)
+    }
+
+    pub fn widgets(&self) -> &[Rc<Value>] {
+        self.widgets.as_deref().map_or(&[], Vec::as_slice)
+    }
+
+    /// `{ ...snapshot, [key]: value }` for a member other than the lists.
+    pub fn with_member(&self, key: &str, value: Value) -> Snapshot {
+        let mut rest = self.rest.as_object().cloned().unwrap_or_default();
+        rest.insert(key.to_string(), value);
+        Snapshot {
+            rest: Rc::new(Value::Object(rest)),
+            fields: self.fields.clone(),
+            widgets: self.widgets.clone(),
+            whole: Default::default(),
+        }
+    }
+
+    /// `rest` with a list's place made, for a snapshot that had none.
+    fn rest_with_place(&self, key: &str, had: bool) -> Rc<Value> {
+        if had {
+            return self.rest.clone();
+        }
+        let mut rest = self.rest.as_object().cloned().unwrap_or_default();
+        rest.insert(key.to_string(), Value::Null);
+        Rc::new(Value::Object(rest))
+    }
+
+    /// `{ ...snapshot, fields }`: the widgets and every other member shared.
+    pub fn with_fields(&self, fields: Vec<Rc<Value>>) -> Snapshot {
+        Snapshot {
+            rest: self.rest_with_place("fields", self.fields.is_some()),
+            fields: Some(Rc::new(fields)),
+            widgets: self.widgets.clone(),
+            whole: Default::default(),
+        }
+    }
+
+    /// `{ ...snapshot, widgets }`: the fields and every other member shared.
+    pub fn with_widgets(&self, widgets: Vec<Rc<Value>>) -> Snapshot {
+        Snapshot {
+            rest: self.rest_with_place("widgets", self.widgets.is_some()),
+            fields: self.fields.clone(),
+            widgets: Some(Rc::new(widgets)),
+            whole: Default::default(),
+        }
+    }
+
+    /// The snapshot as one value, put together once (one copy) and kept.
+    pub fn whole(&self) -> Rc<Value> {
+        self.whole
+            .get_or_init(|| {
+                count_copy();
+                Rc::new(self.to_json())
+            })
+            .clone()
+    }
+
+    fn to_json(&self) -> Value {
+        let Some(rest) = self.rest.as_object() else { return (*self.rest).clone() };
+        let list = |l: &Option<Rc<Vec<Rc<Value>>>>| {
+            l.as_ref().map(|l| Value::Array(l.iter().map(|v| (**v).clone()).collect()))
+        };
+        let mut out = Map::new();
+        for (key, value) in rest {
+            let taken = match key.as_str() {
+                "fields" => list(&self.fields),
+                "widgets" => list(&self.widgets),
+                _ => None,
+            };
+            out.insert(key.clone(), taken.unwrap_or_else(|| value.clone()));
+        }
+        Value::Object(out)
+    }
+}
+
 /// `FieldIndex`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FieldIndex {
-    pub snapshot: Option<Rc<Value>>,
+    pub snapshot: Option<Rc<Snapshot>>,
     /// Field key to index into `snapshot.fields`.
     pub by_key: Positions,
     /// Full name to index into `snapshot.fields`.
@@ -90,29 +240,34 @@ fn positions_of(value: Option<&Value>) -> Positions {
 }
 
 /// `position === undefined ? null : list[position] ?? null`.
-fn at<'a>(list: &'a [Value], position: Option<&f64>) -> Option<&'a Value> {
+fn at<'a>(list: &'a [Rc<Value>], position: Option<&f64>) -> Option<&'a Value> {
     let position = *position?;
     if position < 0.0 || position.fract() != 0.0 {
         return None;
     }
-    list.get(position as usize)
+    list.get(position as usize).map(|v| &**v)
 }
 
 impl FieldIndex {
     /// `snapshot.fields`, none without a snapshot.
-    pub fn fields(&self) -> &[Value] {
-        self.snapshot.as_deref().map_or(&[], |s| items(s, "fields"))
+    pub fn fields(&self) -> &[Rc<Value>] {
+        self.snapshot.as_deref().map_or(&[], Snapshot::fields)
     }
 
     /// `snapshot.widgets`, none without a snapshot.
-    pub fn widgets(&self) -> &[Value] {
-        self.snapshot.as_deref().map_or(&[], |s| items(s, "widgets"))
+    pub fn widgets(&self) -> &[Rc<Value>] {
+        self.snapshot.as_deref().map_or(&[], Snapshot::widgets)
+    }
+
+    /// `snapshot` as one value (see [`Snapshot::whole`]).
+    pub fn whole_snapshot(&self) -> Option<Rc<Value>> {
+        self.snapshot.as_deref().map(Snapshot::whole)
     }
 
     /// The index as the TypeScript object prints.
     pub fn to_json(&self) -> Value {
         json!({
-            "snapshot": self.snapshot.as_deref().cloned().unwrap_or(Value::Null),
+            "snapshot": self.whole_snapshot().as_deref().cloned().unwrap_or(Value::Null),
             "byKey": positions_json(&self.by_key),
             "byName": positions_json(&self.by_name),
             "byWidget": positions_json(&self.by_widget),
@@ -124,30 +279,14 @@ impl FieldIndex {
     /// An index as a caller wrote it, its records as given (consistent or not).
     pub fn from_json(value: &Value) -> FieldIndex {
         FieldIndex {
-            snapshot: get(value, "snapshot").filter(|s| !s.is_null()).cloned().map(Rc::new),
+            snapshot: get(value, "snapshot")
+                .filter(|s| !s.is_null())
+                .map(|s| Rc::new(Snapshot::of(s))),
             by_key: positions_of(get(value, "byKey")),
             by_name: positions_of(get(value, "byName")),
             by_widget: positions_of(get(value, "byWidget")),
             row_by_widget: positions_of(get(value, "rowByWidget")),
             picture_versions: positions_of(get(value, "pictureVersions")),
-        }
-    }
-
-    /// What the `fields` mirror holds: the snapshot and the picture
-    /// versions; the records are derived again when it is read.
-    pub fn to_mirror(&self) -> Value {
-        json!({
-            "snapshot": self.snapshot.as_deref().cloned().unwrap_or(Value::Null),
-            "pictureVersions": positions_json(&self.picture_versions),
-        })
-    }
-
-    /// The index a mirror value holds.
-    pub fn from_mirror(value: &Value) -> FieldIndex {
-        let picture_versions = positions_of(get(value, "pictureVersions"));
-        match get(value, "snapshot").filter(|s| !s.is_null()) {
-            Some(snapshot) => index_fields(Rc::new(snapshot.clone()), picture_versions),
-            None => FieldIndex { picture_versions, ..FieldIndex::default() },
         }
     }
 }
@@ -158,12 +297,12 @@ pub fn empty_field_index() -> FieldIndex {
 }
 
 /// `indexFields(snapshot, pictureVersions)`.
-pub fn index_fields(snapshot: Rc<Value>, picture_versions: Positions) -> FieldIndex {
+pub fn index_fields(snapshot: Rc<Snapshot>, picture_versions: Positions) -> FieldIndex {
     let mut by_key = Positions::new();
     let mut by_name = Positions::new();
     let mut by_widget = Positions::new();
     let mut row_by_widget = Positions::new();
-    for (position, field) in items(&snapshot, "fields").iter().enumerate() {
+    for (position, field) in snapshot.fields().iter().enumerate() {
         let position = position as f64;
         by_key.insert(field_key_of(field), position);
         let name = crate::value::string_of(get(field, "name"));
@@ -175,7 +314,7 @@ pub fn index_fields(snapshot: Rc<Value>, picture_versions: Positions) -> FieldIn
             }
         }
     }
-    for (position, row) in items(&snapshot, "widgets").iter().enumerate() {
+    for (position, row) in snapshot.widgets().iter().enumerate() {
         let reference = get(row, "ref").unwrap_or(&Value::Null);
         if str_of(reference, "kind") == Some("objectNumber") {
             let n = get(reference, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN);
@@ -193,18 +332,21 @@ pub fn index_fields(snapshot: Rc<Value>, picture_versions: Positions) -> FieldIn
 }
 
 /// `reindex(index, snapshot)`: keeping the index's picture versions.
-fn reindex(index: &FieldIndex, snapshot: Value) -> FieldIndex {
-    index_fields(Rc::new(snapshot), index.picture_versions.clone())
+fn reindex(index: &FieldIndex, snapshot: Snapshot) -> Rc<FieldIndex> {
+    Rc::new(index_fields(Rc::new(snapshot), index.picture_versions.clone()))
 }
 
-/// `{ ...snapshot, [key]: value }`.
-fn with_snapshot_member(index: &FieldIndex, key: &'static str, value: Value) -> Value {
-    crate::value::spread(index.snapshot.as_deref().unwrap_or(&Value::Null), [(key, value)])
+/// `{ ...snapshot, [key]: value }`, the lists shared.
+pub fn with_snapshot_member(index: &FieldIndex, key: &str, value: Value) -> Rc<FieldIndex> {
+    match &index.snapshot {
+        Some(snapshot) => reindex(index, snapshot.with_member(key, value)),
+        None => reindex(index, Snapshot::new(json!({ key: value }))),
+    }
 }
 
 /// `indexLoadedFields(previous, snapshot)`: every picture version moves past
 /// the one it had; a new widget starts at 0.
-pub fn index_loaded_fields(previous: &FieldIndex, snapshot: Rc<Value>) -> FieldIndex {
+pub fn index_loaded_fields(previous: &FieldIndex, snapshot: Rc<Snapshot>) -> FieldIndex {
     let mut versions = Positions::new();
     for (number, version) in &previous.picture_versions {
         // `Number(number)` as the key again: the same key for every key a
@@ -212,7 +354,7 @@ pub fn index_loaded_fields(previous: &FieldIndex, snapshot: Rc<Value>) -> FieldI
         let key = number_key(crate::value::string_to_number(number));
         versions.insert(key, version + 1.0);
     }
-    for row in items(&snapshot, "widgets") {
+    for row in snapshot.widgets() {
         let n = widget_number(row);
         if n > 0.0 {
             versions.entry(number_key(n)).or_insert(0.0);
@@ -232,26 +374,28 @@ pub fn upsert_fields(index: &Rc<FieldIndex>, fields: &[Value]) -> Rc<FieldIndex>
     if fields.is_empty() {
         return index.clone();
     }
-    let mut next: Vec<Value> = items(snapshot, "fields").to_vec();
+    // `[...snapshot.fields]`: the pointers, not the fields.
+    let mut next: Vec<Rc<Value>> = snapshot.fields().to_vec();
     for field in fields {
-        match index.by_key.get(&field_key_of(field)) {
-            None => next.push(field.clone()),
+        let field = Rc::new(field.clone());
+        match index.by_key.get(&field_key_of(&field)) {
+            None => next.push(field),
             Some(position) => {
                 let position = *position;
                 if position >= 0.0 && position.fract() == 0.0 {
                     let at = position as usize;
                     if at < next.len() {
-                        next[at] = field.clone();
+                        next[at] = field;
                     } else {
                         // A position past the end writes there, leaving holes.
-                        next.resize(at, Value::Null);
-                        next.push(field.clone());
+                        next.resize(at, Rc::new(Value::Null));
+                        next.push(field);
                     }
                 }
             }
         }
     }
-    Rc::new(reindex(index, with_snapshot_member(index, "fields", Value::Array(next))))
+    reindex(index, snapshot.with_fields(next))
 }
 
 /// A widget row's object number, `0` for a ref of another kind.
@@ -267,11 +411,12 @@ pub fn upsert_widgets(index: &Rc<FieldIndex>, rows: &[Value]) -> Rc<FieldIndex> 
     }
     // `new Map(rows.map(...))`: a later row under the same number wins, at
     // the first one's place.
-    let mut incoming: IndexMap<String, Value> = IndexMap::new();
+    let mut incoming: IndexMap<String, Rc<Value>> = IndexMap::new();
     for row in rows {
-        incoming.insert(number_key(widget_number(row)), row.clone());
+        incoming.insert(number_key(widget_number(row)), Rc::new(row.clone()));
     }
-    let mut next: Vec<Value> = items(snapshot, "widgets")
+    let mut next: Vec<Rc<Value>> = snapshot
+        .widgets()
         .iter()
         .map(|row| match incoming.shift_remove(&number_key(widget_number(row))) {
             Some(replaced) => replaced,
@@ -279,7 +424,7 @@ pub fn upsert_widgets(index: &Rc<FieldIndex>, rows: &[Value]) -> Rc<FieldIndex> 
         })
         .collect();
     next.extend(incoming.into_values());
-    Rc::new(reindex(index, with_snapshot_member(index, "widgets", Value::Array(next))))
+    reindex(index, snapshot.with_widgets(next))
 }
 
 /// `reorderWidgetRows(index, page, order)`: the page's rows in `order`, in
@@ -289,7 +434,7 @@ pub fn reorder_widget_rows(
     page: &Value,
     order: &[Value],
 ) -> Rc<FieldIndex> {
-    let Some(_) = &index.snapshot else { return index.clone() };
+    let Some(snapshot) = &index.snapshot else { return index.clone() };
     let page_number = get(page, "objectNumber").cloned();
     let on_page = |row: &Value| {
         crate::value::strict_eq(
@@ -299,13 +444,14 @@ pub fn reorder_widget_rows(
     };
     let keys: Vec<String> = order.iter().map(annotation_key).collect();
     let key_of = |row: &Value| annotation_key(get(row, "ref").unwrap_or(&Value::Null));
-    let widgets = reorder_part(index.widgets(), &on_page, &keys, &key_of);
-    Rc::new(reindex(index, with_snapshot_member(index, "widgets", Value::Array(widgets))))
+    let in_part = |row: &Rc<Value>| on_page(row);
+    let widgets = reorder_part(index.widgets(), &in_part, &keys, &|row: &Rc<Value>| key_of(row));
+    reindex(index, snapshot.with_widgets(widgets))
 }
 
 /// `removeWidgets(index, gone)`: drop the rows of widgets that went.
 pub fn remove_widgets(index: &Rc<FieldIndex>, gone: &[Value]) -> Rc<FieldIndex> {
-    let Some(_) = &index.snapshot else { return index.clone() };
+    let Some(snapshot) = &index.snapshot else { return index.clone() };
     if gone.is_empty() {
         return index.clone();
     }
@@ -313,7 +459,7 @@ pub fn remove_widgets(index: &Rc<FieldIndex>, gone: &[Value]) -> Rc<FieldIndex> 
         .iter()
         .map(|w| number_key(get(w, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN)))
         .collect();
-    let widgets: Vec<Value> = index
+    let widgets: Vec<Rc<Value>> = index
         .widgets()
         .iter()
         .filter(|row| !numbers.contains(&number_key(widget_number(row))))
@@ -322,14 +468,14 @@ pub fn remove_widgets(index: &Rc<FieldIndex>, gone: &[Value]) -> Rc<FieldIndex> 
     if widgets.len() == index.widgets().len() {
         return index.clone();
     }
-    Rc::new(reindex(index, with_snapshot_member(index, "widgets", Value::Array(widgets))))
+    reindex(index, snapshot.with_widgets(widgets))
 }
 
 /// `removeField(index, ref)`.
 pub fn remove_field(index: &Rc<FieldIndex>, reference: &Value) -> Rc<FieldIndex> {
-    let Some(_) = &index.snapshot else { return index.clone() };
+    let Some(snapshot) = &index.snapshot else { return index.clone() };
     let by_number = str_of(reference, "kind") == Some("objectNumber");
-    let fields: Vec<Value> = index
+    let fields: Vec<Rc<Value>> = index
         .fields()
         .iter()
         .filter(|field| {
@@ -349,7 +495,7 @@ pub fn remove_field(index: &Rc<FieldIndex>, reference: &Value) -> Rc<FieldIndex>
     if fields.len() == index.fields().len() {
         return index.clone();
     }
-    Rc::new(reindex(index, with_snapshot_member(index, "fields", Value::Array(fields))))
+    reindex(index, snapshot.with_fields(fields))
 }
 
 /// What a fold leaves: the index, or a request to read the form again.
@@ -467,10 +613,9 @@ fn fold_form_facts(index: &Rc<FieldIndex>, event: &Value) -> Folded {
             let field = get(event, "field").cloned().unwrap_or(Value::Null);
             let created = upsert_widgets(&upsert_fields(index, &[field]), widgets);
             let formed = match &created.snapshot {
-                Some(s) if str_of(s, "formKind") == Some("none") => Rc::new(reindex(
-                    &created,
-                    with_snapshot_member(&created, "formKind", json!("acroform")),
-                )),
+                Some(s) if s.get("formKind").and_then(Value::as_str) == Some("none") => {
+                    with_snapshot_member(&created, "formKind", json!("acroform"))
+                }
                 _ => created,
             };
             with_calculation_order(&formed, order)
@@ -537,7 +682,7 @@ pub fn with_calculation_order(index: &Rc<FieldIndex>, order: Option<&Value>) -> 
         return index.clone();
     }
     let order = Value::Array(order.as_array().cloned().unwrap_or_default());
-    Rc::new(reindex(index, with_snapshot_member(index, "calculationOrder", order)))
+    with_snapshot_member(index, "calculationOrder", order)
 }
 
 /// `fieldByKey(index, key)`.
@@ -586,7 +731,7 @@ pub fn fields_with_changed_values(previous: &FieldIndex, next: &FieldIndex) -> V
             None => true,
             Some(before) => value_entry_json(before) != value_entry_json(field),
         })
-        .cloned()
+        .map(|field| (**field).clone())
         .collect()
 }
 

@@ -232,7 +232,7 @@ impl crate::controller::Core {
     fn recalculate_now(&self, scripts: FormScripts, origin: ActionOrigin) -> Promise<()> {
         let me = self.rc();
         Promise::spawn(async move {
-            let Some(shown) = me.view().snapshot.clone() else { return Ok(()) };
+            let Some(shown) = me.view().whole_snapshot() else { return Ok(()) };
             let script = scripts.recalculate(shown).await?;
             me.surface(
                 Surfaced {
@@ -263,11 +263,11 @@ impl crate::controller::Core {
         begun: &Begun,
         plan: &FillScripts,
     ) -> Option<Promise<FormScriptResult>> {
-        let shown = self.view().snapshot.clone()?;
+        let shown = self.view().whole_snapshot()?;
         Some(match plan {
             FillScripts::Commit { field, value } => {
                 // The value's own scripts read the form without it.
-                let form = self.base_of(begun).snapshot.clone().unwrap_or(shown);
+                let form = self.base_of(begun).whole_snapshot().unwrap_or(shown);
                 scripts.commit(form, field.clone(), value.clone())
             }
             FillScripts::Activate { field, action } => {
@@ -489,7 +489,7 @@ impl crate::controller::Core {
             let calculates = index
                 .snapshot
                 .as_deref()
-                .map(|s| crate::value::items(s, "calculationOrder").iter().any(|r| !r.is_null()))
+                .map(|s| s.items("calculationOrder").iter().any(|r| !r.is_null()))
                 .unwrap_or(false);
             if core.script_controller().is_none() || !calculates {
                 return Ok(());

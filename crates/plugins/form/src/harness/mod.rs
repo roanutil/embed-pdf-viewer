@@ -195,7 +195,9 @@ fn call_form(
         "getSelectedField" => Outcome::Returned(or_null(cap.get_selected_field())),
         "validate" => Outcome::Returned(cap.validate()),
         "exportValues" => Outcome::Returned(cap.export_values()),
-        "listWidgets" => Outcome::Returned(Value::Array(cap.list_widgets(&value(args, 0)))),
+        "listWidgets" => {
+            Outcome::Returned(Value::Array((*cap.list_widgets(&value(args, 0))).clone()))
+        }
         "listShownWidgets" => Outcome::Returned(Value::Array(
             cap.list_shown_widgets(&value(args, 0)).iter().map(|w| w.to_json()).collect(),
         )),

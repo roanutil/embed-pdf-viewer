@@ -94,7 +94,7 @@ impl crate::controller::Core {
         if self.scripting.warmed.get() {
             return;
         }
-        let Some(snapshot) = form.snapshot.clone() else { return };
+        let Some(snapshot) = form.whole_snapshot() else { return };
         let Some(scripts) = self.scripts_for(form) else { return };
         self.scripting.warmed.set(true);
         // The first write starts the realm, and reports why it can't.

@@ -3,12 +3,22 @@
 //! fill projection with the session's fill permission folded in, and the
 //! widget hit test.
 
+use std::rc::Rc;
+
 use epdf_kernel::rt::Promise;
 use serde_json::{Value, json};
 
-use crate::model::{Box, WidgetHit, page_widgets_of, widget_at};
+use crate::model::{Box, FieldIndex, WidgetHit, page_widgets_of, widget_at};
 use crate::read::fill_items::fill_items;
-use crate::value::{get, str_of};
+use crate::value::{get, number_key, str_of};
+
+/// One page's `listWidgets` answer and what it was made from.
+pub(crate) struct WidgetItems {
+    index: Rc<FieldIndex>,
+    rights: String,
+    fillable: Value,
+    items: Rc<Vec<Value>>,
+}
 
 /// `isFillableByHand(fillable, family)`.
 fn is_fillable_by_hand(fillable: Option<&Value>, family: &Value) -> bool {
@@ -52,12 +62,29 @@ impl crate::controller::Core {
             }
     }
 
-    /// `listWidgets(page)`: each widget on a page, as a fill control draws it.
-    pub fn list_widgets(&self, page: &Value) -> Vec<Value> {
-        let Some(number) = self.page_number_of(page) else { return Vec::new() };
+    /// `listWidgets(page)`: each widget on a page, as a fill control draws
+    /// it. The same list while the form, the session's rights and the
+    /// `fillable` setting stay the same (`memoByKey` in the TypeScript).
+    pub fn list_widgets(&self, page: &Value) -> Rc<Vec<Value>> {
+        let Some(number) = self.page_number_of(page) else { return Rc::new(Vec::new()) };
         let index = self.view();
+        let rights = self.rights_key();
+        let fillable = self.settings_now().get("fillable").cloned().unwrap_or(Value::Null);
+        let key = number_key(number);
+        if let Some(kept) = self.widget_items.borrow().get(&key)
+            && Rc::ptr_eq(&kept.index, &index)
+            && kept.rights == rights
+            && kept.fillable == fillable
+        {
+            return kept.items.clone();
+        }
         let widgets = page_widgets_of(&index, number);
-        fill_items(&index, number, Some(&widgets), &|field| self.may_write(field))
+        let items =
+            Rc::new(fill_items(&index, number, Some(&widgets), &|field| self.may_write(field)));
+        self.widget_items
+            .borrow_mut()
+            .insert(key, WidgetItems { index, rights, fillable, items: items.clone() });
+        items
     }
 
     /// `getPageBox(page)`: the page's content box, for page-bound placement.

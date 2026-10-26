@@ -67,6 +67,10 @@ name = "budget"
 required-features = ["harness"]
 
 [[test]]
+name = "sharing"
+required-features = ["harness"]
+
+[[test]]
 name = "engine_cross_check"
 
 [[test]]

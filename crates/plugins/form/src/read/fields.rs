@@ -104,7 +104,7 @@ fn is_empty(field: &Value) -> bool {
 impl crate::controller::Core {
     /// `getSnapshot()`: everything at once; `None` before the first read.
     pub fn get_snapshot(&self) -> Option<Rc<Value>> {
-        self.view().snapshot.clone()
+        self.view().whole_snapshot()
     }
 
     /// `getStatus()`: whether the form is read.
@@ -117,7 +117,7 @@ impl crate::controller::Core {
         self.view()
             .snapshot
             .as_deref()
-            .and_then(|s| get(s, "formKind").cloned())
+            .and_then(|s| s.get("formKind").cloned())
             .unwrap_or_else(|| json!("none"))
     }
 
@@ -159,7 +159,7 @@ impl crate::controller::Core {
     pub fn list(&self, filter: Option<&Value>) -> Vec<Value> {
         let index = self.view();
         let all = index.fields();
-        let Some(filter) = filter else { return all.to_vec() };
+        let Some(filter) = filter else { return all.iter().map(|f| (**f).clone()).collect() };
         let page_arg = get(filter, "page");
         let page =
             page_arg.and_then(|p| self.get_page(p)).and_then(|info| get(&info, "ref").cloned());
@@ -181,7 +181,7 @@ impl crate::controller::Core {
                         })
                     })
             })
-            .cloned()
+            .map(|field| (**field).clone())
             .collect()
     }
 
@@ -233,7 +233,7 @@ impl crate::controller::Core {
             .fields()
             .iter()
             .filter(|f| truthy(get(f, "required")) && is_empty(f) && self.may_fill(f))
-            .map(|f| (f.clone(), self.place_of(f)))
+            .map(|f| ((**f).clone(), self.place_of(f)))
             .collect();
         // `Array#sort` is stable; a NaN difference counts as equal.
         missing.sort_by(|(_, a), (_, b)| {

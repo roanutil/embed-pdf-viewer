@@ -51,7 +51,7 @@ impl FormLender {
 }
 
 fn rows(index: &FieldIndex) -> Rc<Vec<Rc<Value>>> {
-    Rc::new(index.widgets().iter().map(|row| Rc::new(row.clone())).collect())
+    Rc::new(index.widgets().to_vec())
 }
 
 impl Core {

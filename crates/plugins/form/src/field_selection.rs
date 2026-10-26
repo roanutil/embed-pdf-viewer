@@ -2,6 +2,8 @@
 //! (ISO 32000 Tables 241/242) and SubmitForm (Tables 239/240), and the pure
 //! submission dataset builder.
 
+use std::borrow::Borrow;
+
 use epdf_plugin_actions::{
     ActionDiagnostic, ActionDiagnosticCode, FormSubmissionEntry, PdfActionTargetRef, SubmitIntent,
 };
@@ -56,8 +58,8 @@ fn same_value_zero(a: &Value, b: &Value) -> bool {
 /// `resolveFieldSelection(all, targets, exclude)`. `targets == None` (the
 /// key absent) selects everything and ignores `exclude`; `[]` with include
 /// selects nothing, `[]` with exclude everything.
-pub fn resolve_field_selection(
-    all: &[Value],
+pub fn resolve_field_selection<F: Borrow<Value>>(
+    all: &[F],
     targets: Option<&[PdfActionTargetRef]>,
     exclude: bool,
 ) -> FieldSelection {
@@ -66,7 +68,7 @@ pub fn resolve_field_selection(
             names: Vec::new(),
             object_numbers: Vec::new(),
             everything: true,
-            selected: all.to_vec(),
+            selected: all.iter().map(|f| f.borrow().clone()).collect(),
         };
     };
     let names = targets
@@ -81,7 +83,12 @@ pub fn resolve_field_selection(
         .collect();
     let mut selection =
         FieldSelection { names, object_numbers, everything: false, selected: Vec::new() };
-    selection.selected = all.iter().filter(|f| selection.listed(f) != exclude).cloned().collect();
+    selection.selected = all
+        .iter()
+        .map(Borrow::borrow)
+        .filter(|f| selection.listed(f) != exclude)
+        .cloned()
+        .collect();
     selection
 }
 
@@ -89,8 +96,8 @@ pub fn resolve_field_selection(
 /// from a live field list (NoExport veto, buttons and signatures never
 /// contribute, an unsupported `/V` is always diagnosed, a valueless field is
 /// name-only under IncludeNoValueFields).
-pub fn build_submit_entries(
-    fields: &[Value],
+pub fn build_submit_entries<F: Borrow<Value>>(
+    fields: &[F],
     intent: &SubmitIntent,
     diagnose: &dyn Fn(ActionDiagnostic),
 ) -> Vec<FormSubmissionEntry> {

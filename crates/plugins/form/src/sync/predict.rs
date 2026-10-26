@@ -20,9 +20,9 @@ use crate::engine::{
     widgets_after_display,
 };
 use crate::model::{
-    FieldIndex, FieldKey, field_by_key, field_by_ref, field_for_widget, field_key_of, index_fields,
-    remove_field, remove_widgets, reorder_widget_rows, upsert_fields, upsert_widgets,
-    widget_number, widget_row_of, with_calculation_order,
+    FieldIndex, FieldKey, field_by_key, field_by_ref, field_for_widget, field_key_of, remove_field,
+    remove_widgets, reorder_widget_rows, upsert_fields, upsert_widgets, widget_number,
+    widget_row_of, with_calculation_order, with_snapshot_member,
 };
 use crate::value::{get, items, str_of, truthy};
 
@@ -60,7 +60,7 @@ fn reset_targets(index: &FieldIndex) -> Vec<Value> {
         .fields()
         .iter()
         .filter(|f| str_of(f, "family").is_some_and(|family| RESET_FAMILIES.contains(&family)))
-        .cloned()
+        .map(|f| (**f).clone())
         .collect()
 }
 
@@ -137,7 +137,8 @@ fn predict_once(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, ep
             let Some(snapshot) = &index.snapshot else { return Ok(index.clone()) };
             let own = get(&field, "ref").cloned().unwrap_or(Value::Null);
             let gone = remove_widgets(&remove_field(index, &own), items(&field, "widgets"));
-            let order: Vec<Value> = items(snapshot, "calculationOrder")
+            let order: Vec<Value> = snapshot
+                .items("calculationOrder")
                 .iter()
                 .filter(|r| !same_field(r, &own))
                 .cloned()
@@ -204,7 +205,8 @@ fn predict_once(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, ep
         }
         "forms.reorderCalculations" => {
             let Some(snapshot) = &index.snapshot else { return Ok(index.clone()) };
-            let order: Vec<Value> = items(snapshot, "calculationOrder")
+            let order: Vec<Value> = snapshot
+                .items("calculationOrder")
                 .iter()
                 .filter(|r| !r.is_null())
                 .cloned()
@@ -264,9 +266,8 @@ fn created_field(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, e
         })
         .collect();
     let created = form_field_of_draft(&draft, &FieldDraftContext { object_number, widgets })?;
-    let formed = if str_of(&snapshot, "formKind") == Some("none") {
-        let next = crate::value::spread(&snapshot, [("formKind", json!("acroform"))]);
-        Rc::new(index_fields(Rc::new(next), index.picture_versions.clone()))
+    let formed = if snapshot.get("formKind").and_then(Value::as_str) == Some("none") {
+        with_snapshot_member(index, "formKind", json!("acroform"))
     } else {
         index.clone()
     };
@@ -274,7 +275,7 @@ fn created_field(index: &Rc<FieldIndex>, op: &Value) -> Result<Rc<FieldIndex>, e
     let next = with_fields(&formed, &[created]);
     let calculates = get(&draft, "actions").and_then(|a| get(a, "calculate"));
     Ok(if truthy(calculates) {
-        let mut order = items(&snapshot, "calculationOrder").to_vec();
+        let mut order = snapshot.items("calculationOrder").to_vec();
         order.push(created_ref);
         with_calculation_order(&next, Some(&Value::Array(order)))
     } else {
@@ -397,7 +398,7 @@ fn undo_of_op(index: &FieldIndex, op: &Value) -> Vec<Value> {
                 .snapshot
                 .as_deref()
                 .map(|s| {
-                    items(s, "calculationOrder").iter().filter(|r| !r.is_null()).cloned().collect()
+                    s.items("calculationOrder").iter().filter(|r| !r.is_null()).cloned().collect()
                 })
                 .unwrap_or_default();
             vec![
