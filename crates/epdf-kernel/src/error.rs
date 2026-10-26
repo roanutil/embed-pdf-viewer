@@ -308,19 +308,25 @@ pub fn to_plugin_error(capability: &str, error: &Error) -> Error {
     match error.class {
         ErrorClass::Plugin => return error.clone(),
         ErrorClass::PermissionDenied => {
-            let mut details = Map::new();
-            if let Some(required) = error.members.get("required") {
-                details.insert("required".into(), required.clone());
-            }
-            if let Some(context) = error.members.get("context") {
-                details.insert("context".into(), context.clone());
-            }
+            // TS passes `error.details` through whole (`anyOf`, `refs`
+            // included); the top-level members are the fallback for a
+            // refusal built without them.
+            let details = error.members.get("details").cloned().unwrap_or_else(|| {
+                let mut details = Map::new();
+                if let Some(required) = error.members.get("required") {
+                    details.insert("required".into(), required.clone());
+                }
+                if let Some(context) = error.members.get("context") {
+                    details.insert("context".into(), context.clone());
+                }
+                Value::Object(details)
+            });
             return plugin_error(
                 code::PERMISSION_DENIED,
                 capability,
                 error.message.clone(),
                 Some(error.to_canonical()),
-                Some(Value::Object(details)),
+                Some(details),
             );
         }
         ErrorClass::Cancelled => {

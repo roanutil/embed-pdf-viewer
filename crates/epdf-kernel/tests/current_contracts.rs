@@ -26,6 +26,22 @@ fn current_engine_errors_keep_permission_and_conflict_details() {
     assert_eq!(error.plugin_error_info()["permission"], "annotations:update");
 }
 
+#[test]
+fn a_permission_refusal_keeps_its_details_whole() {
+    let refused = Error::permission_denied("doc.forms.modify", Some("placement"))
+        .with("details", json!({"required":"doc.forms.modify","anyOf":["doc.forms.modify"]}));
+    let error = to_plugin_error("form", &refused);
+    assert_eq!(error.plugin_error_info()["permission"], "doc.forms.modify");
+    assert_eq!(
+        error.members["details"],
+        json!({"required":"doc.forms.modify","anyOf":["doc.forms.modify"]})
+    );
+    let mut bare = Error::permission_denied("doc.forms.read", Some("list"));
+    bare.members.remove("details");
+    let error = to_plugin_error("form", &bare);
+    assert_eq!(error.members["details"], json!({"required":"doc.forms.read","context":"list"}));
+}
+
 use epdf_kernel::{
     Promise,
     changes::{DocumentChanges, StagedChange},
