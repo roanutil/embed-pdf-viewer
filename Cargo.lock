@@ -665,6 +665,7 @@ dependencies = [
 name = "epdf-plugin-link"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-geometry",
@@ -675,7 +676,6 @@ dependencies = [
  "epdf-plugin-stage",
  "futures",
  "plugin-conformance",
- "serde",
  "serde_json",
  "uniffi",
 ]

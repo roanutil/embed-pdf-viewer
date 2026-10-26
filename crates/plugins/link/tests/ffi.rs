@@ -1,14 +1,21 @@
 #![cfg(feature = "uniffi")]
+//! Not compiled until `epdf-ffi` builds again (Task 13.33). Migrated by
+//! hand in Task 13.21: current page-space link records, JSON targets and
+//! destinations, and `resolve` answering a page destination (the stage
+//! reveal happens on activation). `a_target_that_does_not_decode_is_invalid_state`
+//! became `an_unknown_target_kind_is_carried_and_reported`: targets are the
+//! engine's records, so no decode can fail, and the TypeScript reports a
+//! kind it does not follow.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{KernelThread, PageRef, PdfDestination, PdfLinkTarget, Point, ViewerError};
+use epdf_ffi::{KernelThread, PageRef, Point, ViewerError};
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_link::ffi::{
     LinkActivation, LinkEvent, LinkEventListener, LinkHandle, LinkInput, LinkResolution,
 };
-use epdf_plugin_link::{LINK, LinkConfig, link_plugin};
+use epdf_plugin_link::{LINK, link_plugin};
 use epdf_plugin_stage::{StagePluginOptions, stage_plugin};
 use futures::executor::block_on;
 use plugin_conformance::test_kernel::{DOCUMENT, Reply, TestKernel, TestSpec};
@@ -18,21 +25,27 @@ const PAGE_1: PageRef = PageRef { page_object_number: 1 };
 const PAGE_3: PageRef = PageRef { page_object_number: 3 };
 
 fn page(pon: u32, index: u32) -> Value {
-    let box_ = json!({ "left": 0, "bottom": 0, "right": 600, "top": 400 });
-    json!({ "index": index, "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
+    let box_ = json!({ "x": 0, "y": 0, "width": 600, "height": 400 });
+    json!({ "index": index, "ref": { "kind": "objectNumber", "objectNumber": pon },
         "label": null, "size": { "width": 600, "height": 400 }, "rotation": 0, "userUnit": 1,
         "boxes": { "media": box_, "crop": box_ } })
 }
 
+/// A current link record on page 1; `rect` is page space, `[x, y, width,
+/// height]`, y-down.
 fn link(object: u32, rect: [f64; 4], target: Value) -> Value {
     json!({
         "subtype": "link",
+        "page": { "kind": "objectNumber", "objectNumber": 1 },
         "target": target,
-        "flags": { "hidden": false, "noView": false },
-        "ref": { "kind": "objectNumber", "page": { "kind": "objectNumber", "pageObjectNumber": 1 },
-                 "annotObjectNumber": object },
-        "rect": { "left": rect[0], "bottom": rect[1], "right": rect[2], "top": rect[3] }
+        "ref": { "kind": "objectNumber", "page": { "kind": "objectNumber", "objectNumber": 1 },
+                 "objectNumber": object },
+        "rect": { "x": rect[0], "y": rect[1], "width": rect[2], "height": rect[3] }
     })
+}
+
+fn target_of(json: &str) -> Value {
+    serde_json::from_str(json).unwrap()
 }
 
 /// Page 1 of `features.pdf`, as the native engine lists it, plus a small
@@ -41,13 +54,13 @@ fn spec(extra: Vec<Value>) -> TestSpec {
     let mut annotations = vec![
         link(
             8,
-            [40.0, 300.0, 320.0, 330.0],
+            [40.0, 70.0, 280.0, 30.0],
             json!({ "kind": "goto", "destination":
-            { "kind": "xyz", "page": { "kind": "objectNumber", "pageObjectNumber": 3 }, "left": 0, "top": 400, "zoom": 0 } }),
+            { "kind": "xyz", "page": { "kind": "objectNumber", "objectNumber": 3 }, "x": 0, "y": 0, "zoom": 0 } }),
         ),
         link(
             9,
-            [40.0, 240.0, 360.0, 270.0],
+            [40.0, 130.0, 320.0, 30.0],
             json!({ "kind": "uri", "uri": "https://example.invalid/target" }),
         ),
     ];
@@ -77,10 +90,7 @@ impl LinkEventListener for Events {
 
 fn handle_with(stage: bool, extra: Vec<Value>) -> (KernelThread<TestKernel>, Arc<LinkHandle>) {
     let thread = KernelThread::spawn(move |_| {
-        let mut plugins = vec![
-            interaction_plugin(InteractionConfig::default()),
-            link_plugin(LinkConfig::default()),
-        ];
+        let mut plugins = vec![interaction_plugin(InteractionConfig::default()), link_plugin()];
         if stage {
             plugins.push(stage_plugin(StagePluginOptions::default()));
         }
@@ -118,13 +128,14 @@ fn links_appear_once_the_page_loads() {
     assert_eq!(links.len(), 2);
     assert_eq!(links[0].id, "obj:8");
     assert_eq!(links[0].page, PAGE_1);
-    // y-down page space: 400 - 330 = 70.
+    // Page space, as the record holds it.
     assert_eq!(
         (links[0].bounds.x, links[0].bounds.y, links[0].bounds.width, links[0].bounds.height),
         (40.0, 70.0, 280.0, 30.0)
     );
-    assert!(
-        matches!(&links[1].target, PdfLinkTarget::Uri { uri } if uri == "https://example.invalid/target")
+    assert_eq!(
+        target_of(&links[1].target_json),
+        json!({ "kind": "uri", "uri": "https://example.invalid/target" })
     );
     assert!(!links[0].has_action);
 }
@@ -137,8 +148,7 @@ fn every_page_s_links_come_back_from_all_links() {
 
 #[test]
 fn the_smallest_link_under_a_point_wins() {
-    let small =
-        link(10, [100.0, 310.0, 120.0, 320.0], json!({ "kind": "named", "name": "NextPage" }));
+    let small = link(10, [100.0, 80.0, 20.0, 10.0], json!({ "kind": "named", "name": "NextPage" }));
     let (_thread, link) = handle_with(false, vec![small]);
     block_on(link.ensure_loaded(PAGE_1)).unwrap();
     let hit = block_on(link.link_at(PAGE_1, Point { x: 110.0, y: 85.0 })).unwrap().unwrap();
@@ -148,12 +158,16 @@ fn the_smallest_link_under_a_point_wins() {
 }
 
 #[test]
-fn a_target_that_does_not_decode_is_invalid_state() {
-    let odd = link(11, [400.0, 10.0, 420.0, 20.0], json!({ "kind": "teleport" }));
+fn an_unknown_target_kind_is_carried_and_reported() {
+    let odd = link(11, [400.0, 380.0, 20.0, 10.0], json!({ "kind": "teleport" }));
     let (_thread, link) = handle_with(false, vec![odd]);
     block_on(link.ensure_loaded(PAGE_1)).unwrap();
-    let error = block_on(link.links(PAGE_1)).unwrap_err();
-    assert_eq!(code(&error), Some("invalid-state"), "{error:?}");
+    let links = block_on(link.links(PAGE_1)).unwrap();
+    assert_eq!(target_of(&links[2].target_json), json!({ "kind": "teleport" }));
+    let input = LinkInput::Link { page: PAGE_1, id: "obj:11".into() };
+    assert_eq!(block_on(link.label(input.clone())).unwrap(), "Link");
+    assert!(matches!(block_on(link.activate(input)).unwrap(),
+        LinkActivation::Reported { target_json } if target_of(&target_json) == json!({ "kind": "teleport" })));
 }
 
 #[test]
@@ -174,19 +188,19 @@ fn without_a_stage_a_goto_link_reports_its_destination() {
     let (_thread, link) = loaded();
     let activation = block_on(link.activate_at(PAGE_1, Point { x: 100.0, y: 85.0 })).unwrap();
     assert!(matches!(activation,
-        Some(LinkActivation::Destination { destination: PdfDestination::Xyz { page, .. } }) if page == PAGE_3));
+        Some(LinkActivation::Destination { destination_json })
+            if target_of(&destination_json)["page"] == json!({ "kind": "objectNumber", "objectNumber": 3 })));
 }
 
 #[test]
 fn with_a_stage_a_goto_link_reveals_its_page() {
     let (_thread, link) = handle_with(true, vec![]);
     block_on(link.ensure_loaded(PAGE_1)).unwrap();
-    let resolution = block_on(
-        link.resolve(PdfLinkTarget::Goto { destination: PdfDestination::Fit { page: PAGE_3 } }),
-    )
-    .unwrap();
+    let fit = json!({ "kind": "fit", "page": { "kind": "objectNumber", "objectNumber": 3 } });
+    let resolution =
+        block_on(link.resolve(json!({ "kind": "goto", "destination": fit }).to_string())).unwrap();
     assert!(
-        matches!(resolution, LinkResolution::Reveal { page, page_index: 2, .. } if page == PAGE_3)
+        matches!(resolution, LinkResolution::Destination { destination_json } if target_of(&destination_json) == fit)
     );
     let activation = block_on(link.activate_at(PAGE_1, Point { x: 100.0, y: 85.0 })).unwrap();
     assert_eq!(activation, Some(LinkActivation::Revealed));
@@ -214,9 +228,13 @@ fn a_label_names_the_target() {
         "https://example.invalid/target"
     );
     assert_eq!(
-        block_on(link.label(LinkInput::Target {
-            target: PdfLinkTarget::Goto { destination: PdfDestination::Fit { page: PAGE_3 } }
-        }))
+        block_on(
+            link.label(LinkInput::Target {
+                target_json: json!({ "kind": "goto", "destination":
+                { "kind": "fit", "page": { "kind": "objectNumber", "objectNumber": 3 } } })
+                .to_string()
+            })
+        )
         .unwrap(),
         "Go to destination"
     );
@@ -367,7 +385,7 @@ fn a_link_activated_by_id_dispatches_with_its_page() {
         ACTIONS, ActionExecutorResult, ActionSource, ActionsConfig, OpenSequence, actions_plugin,
     };
     let mut scripted =
-        link(12, [400.0, 10.0, 420.0, 20.0], json!({ "kind": "named", "name": "Mark" }));
+        link(12, [400.0, 380.0, 20.0, 10.0], json!({ "kind": "named", "name": "Mark" }));
     scripted["actions"] = json!({ "activate": { "root": { "type": "named", "subtype": "Named",
         "name": "Mark", "next": [] }, "incomplete": false, "warningFlags": 0, "warnings": [] } });
     let thread = KernelThread::spawn(move |_| {
@@ -375,7 +393,7 @@ fn a_link_activated_by_id_dispatches_with_its_page() {
             ActionsConfig { open_sequence: Some(OpenSequence::Off), ..Default::default() };
         let plugins = vec![
             interaction_plugin(InteractionConfig::default()),
-            link_plugin(LinkConfig::default()),
+            link_plugin(),
             actions_plugin(actions),
         ];
         TestKernel::open(plugins, spec(vec![scripted]))
