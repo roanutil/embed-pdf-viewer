@@ -1,7 +1,8 @@
 import path from 'node:path';
 
 // Every workspace crate that package `root` links (normal and build
-// dependencies), as sorted crate directory names. Registry crates are left out.
+// dependencies), as sorted crate directories relative to the workspace's
+// crates/ (`epdf-engine`, `plugins/actions`). Registry crates are left out.
 export function linkedLocalCrates(metadata, root) {
   const nodes = new Map(metadata.resolve.nodes.map((n) => [n.id, n]));
   const packages = new Map(metadata.packages.map((p) => [p.id, p]));
@@ -18,7 +19,12 @@ export function linkedLocalCrates(metadata, root) {
   return [...linked]
     .map((id) => packages.get(id))
     .filter((p) => !p.source)
-    .map((p) => path.basename(path.dirname(p.manifest_path)))
+    .map((p) =>
+      path
+        .relative(path.join(metadata.workspace_root, 'crates'), path.dirname(p.manifest_path))
+        .split(path.sep)
+        .join('/'),
+    )
     .sort();
 }
 

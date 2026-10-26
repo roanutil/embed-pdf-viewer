@@ -7,10 +7,12 @@
 # checkout needs from it.
 #
 # APPLE_CRATES is every workspace crate epdf-viewer-host links (normal and
-# build dependencies). scripts/publish-engine-payload.mjs checks it against
+# build dependencies), as its directory under crates/, which for the plugins
+# is plugins/<name>. scripts/publish-engine-payload.mjs checks it against
 # `cargo metadata` before it publishes, so a new dependency fails there
 # rather than going unhashed. Tests, benches, examples and docs don't reach
-# the framework and are left out.
+# the framework and are left out. A listed crate with no files is a path that
+# doesn't exist, and fails rather than hashing nothing.
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -23,20 +25,33 @@ sha256_file() {
   fi
 }
 
-APPLE_CRATES=(acrojs actions annotation annotation-core build-support commands epdf-engine epdf-ffi epdf-kernel epdf-uniffi epdf-viewer-host form geometry i18n interaction link measurement metadata page-edit pdfium pdfium-sys plugin-conformance redaction render search selection shell signature signature-core stage stage-core stamp ui-core view-manager)
+APPLE_CRATES=(build-support epdf-engine epdf-ffi epdf-kernel epdf-uniffi epdf-viewer-host pdfium pdfium-sys plugin-conformance plugins/acrojs plugins/actions plugins/annotation plugins/annotation-core plugins/commands plugins/form plugins/geometry plugins/i18n plugins/interaction plugins/link plugins/measurement plugins/metadata plugins/page-edit plugins/redaction plugins/render plugins/search plugins/selection plugins/shell plugins/signature plugins/signature-core plugins/stage plugins/stage-core plugins/stamp plugins/ui-core plugins/view-manager)
 INPUTS=(
   "Cargo.toml"
   "Cargo.lock"
   "rust-toolchain.toml"
   "platforms/apple/build-xcframework.sh"
   "platforms/apple/package-engine-framework.sh"
+  # FORK_RECIPE and the iOS sync policy decide how the PDFium slices build.
+  "perf-compare/scripts/build-arm.mjs"
 )
 for crate in "${APPLE_CRATES[@]}"; do
+  count=0
   while IFS= read -r rel; do
     INPUTS+=("$rel")
+    count=$((count + 1))
   done < <(git -C "$REPO_ROOT" ls-files "crates/$crate" |
-    grep -v -E '^crates/[^/]+/(tests|benches|examples)/|\.md$' | LC_ALL=C sort)
+    grep -v -E "^crates/$crate/(tests|benches|examples)/|\.md$" | LC_ALL=C sort)
+  if ((count == 0)); then
+    echo "APPLE_CRATES lists $crate, but crates/$crate has no tracked files" >&2
+    exit 1
+  fi
 done
+# uniffi-bindgen generates the Swift the framework compiles. It isn't linked,
+# so it isn't in APPLE_CRATES.
+while IFS= read -r rel; do
+  INPUTS+=("$rel")
+done < <(git -C "$REPO_ROOT" ls-files crates/uniffi-bindgen | grep -v '\.md$' | LC_ALL=C sort)
 
 ACC=""
 for rel in "${INPUTS[@]}"; do

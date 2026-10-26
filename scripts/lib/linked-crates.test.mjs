@@ -2,14 +2,15 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { linkedLocalCrates, listedCrates } from './linked-crates.mjs';
 
-function pkg(name, source = null) {
-  return { id: name, name, source, manifest_path: `/repo/crates/${name}/Cargo.toml` };
+function pkg(name, source = null, dir = name) {
+  return { id: name, name, source, manifest_path: `/repo/crates/${dir}/Cargo.toml` };
 }
 function dep(pkg, kind) {
   return { pkg, dep_kinds: [{ kind }] };
 }
 function fixture(extra = {}) {
   return {
+    workspace_root: '/repo',
     packages: [pkg('a'), pkg('b'), pkg('c'), pkg('d'), ...(extra.packages ?? [])],
     resolve: {
       nodes: [
@@ -37,6 +38,15 @@ test('linkedLocalCrates drops registry crates', () => {
     deps: [dep('serde', null)],
   });
   assert.deepEqual(linkedLocalCrates(metadata, 'a'), ['a', 'b', 'c']);
+});
+
+test('linkedLocalCrates names a nested crate by its path under crates/', () => {
+  const metadata = fixture({
+    packages: [pkg('actions', null, 'plugins/actions')],
+    nodes: [{ id: 'actions', deps: [] }],
+    deps: [dep('actions', null)],
+  });
+  assert.deepEqual(linkedLocalCrates(metadata, 'a'), ['a', 'b', 'c', 'plugins/actions']);
 });
 
 test('listedCrates reads the array line', () => {
