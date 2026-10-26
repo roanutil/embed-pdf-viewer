@@ -714,6 +714,7 @@ dependencies = [
 name = "epdf-plugin-page-edit"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-geometry",
  "epdf-kernel",
