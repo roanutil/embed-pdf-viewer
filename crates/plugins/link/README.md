@@ -69,6 +69,6 @@ Kept Rust-only divergences, none reached by a vector:
 - With the annotation plugin installed, `list_links` wraps the plugin's cached list in a fresh `Rc`,
   so identity is per call there.
 
-The fresh-read turn counts differ from the TypeScript by three turns: `page-mirror.ts:194` chains a
-`.finally` onto each load that the kernel's `PageMirror::load` does not model. That is the kernel's to
-repair; `loads_settle_on_the_typescripts_turns` pins the counts that already agree.
+`loads_settle_on_the_typescripts_turns` pins the turns a load takes, measured on the TypeScript,
+including the three of the `.finally` that `page-mirror.ts:194` chains onto each load (kernel
+`6e678f93b`).

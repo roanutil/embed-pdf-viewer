@@ -393,22 +393,37 @@ fn reacts_on<T: Clone + 'static>(promise: Promise<T>, turn: &Rc<Cell<u32>>) -> R
 /// The turns were measured on the TypeScript (the real kernel, link and
 /// interaction plugins over the conformance fake engine, whose answer is an
 /// already settled `AbortablePromise`), with the counter above and
-/// `promise.then(() => at = turn)`: a cached page reacts on 2 (the `async`
-/// function's `await` of a settled promise), a page not in the document on
-/// 1 (an `async` function that throws before its first `await`), and
-/// `onLoaded` fires on 5, as the mirror stores the read.
-///
-/// The TypeScript's fresh reads react on 10 (`ensureLoaded`), 11 (with a
-/// signal) and 12 (`listAllLinks` over two pages); Rust reacts on 7, 8 and
-/// 9. The three turns are the `.finally` that `page-mirror.ts:194` chains
-/// onto every load, which the kernel's `PageMirror::load`
-/// (`crates/epdf-kernel/src/page_mirror.rs:212-280`) settles without. That
-/// is the kernel's to repair (Task 13.21 report); these cases join this
-/// test when it is.
+/// `promise.then(() => at = turn)`: a fresh `ensureLoaded` reacts on 10,
+/// with a signal on 11 (`cancellable.ts` settles its own promise one turn
+/// after the mirror's), `listAllLinks` over two fresh pages on 12, a cached
+/// page on 2 (the `async` function's `await` of a settled promise), a page
+/// not in the document on 1 (an `async` function that throws before its
+/// first `await`), and `onLoaded` fires on 5, as the mirror stores the
+/// read. The fresh reads include the three turns of the `.finally` that
+/// `page-mirror.ts:194` chains onto every load (kernel `6e678f93b`).
 #[test]
 fn loads_settle_on_the_typescripts_turns() {
     let responses = || vec![list(1, vec![link(1, 1, json!({}))]), list(2, Vec::new())];
     let none = OperationOptions::default;
+
+    let rig = Rig::new(responses(), false);
+    let turn = turn_counter();
+    let fresh = reacts_on(rig.link.ensure_loaded(PageRef::new(1), none()), &turn);
+    rt::run_until_stalled();
+    assert_eq!(fresh.get(), 10);
+
+    let rig = Rig::new(responses(), false);
+    let turn = turn_counter();
+    let signal = AbortSignal::new();
+    let signalled = reacts_on(rig.link.ensure_loaded(PageRef::new(1), with_signal(&signal)), &turn);
+    rt::run_until_stalled();
+    assert_eq!(signalled.get(), 11);
+
+    let rig = Rig::new(responses(), false);
+    let turn = turn_counter();
+    let all = reacts_on(rig.link.list_all_links(none()), &turn);
+    rt::run_until_stalled();
+    assert_eq!(all.get(), 12);
 
     let rig = Rig::new(responses(), false);
     let turn = turn_counter();
