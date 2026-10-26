@@ -27,6 +27,10 @@ function ensureEmsdk(version) {
 }
 
 const RUNTIME_SRC = 'packages/engine/runtime/runtime-src';
+const FORK_TARGETS = ['wasm32-eh', 'ios-arm64', 'ios-sim-arm64'];
+// One list for every target, so the fork's deps-sync.stamp (which records it)
+// stays valid when one checkout builds wasm and iOS in turn.
+const FORK_TARGET_OS_LIST = 'emscripten ios';
 const FORK_TARGET = 'wasm32-eh';
 // Bump to rebuild every cached fork archive. Not tied to this file's hash,
 // because a fork build takes minutes and most edits here don't touch it.
@@ -71,21 +75,34 @@ function seedDeps(src) {
   return true;
 }
 
+// The fork's clang must run on this host. A seeded checkout can carry the
+// Linux one (gclient never removes a clang another target_os fetched), which
+// the wasm32-eh build never invokes but every iOS build does.
+function hostClangWorks(src) {
+  const clang = path.join(src, 'third_party/llvm-build/Release+Asserts/bin/clang');
+  if (!existsSync(clang)) return false;
+  const magic = readFileSync(clang).subarray(0, 4).toString('hex');
+  return ['cffaedfe', 'cafebabe'].includes(magic);
+}
+
 // Builds the PDFium fork at the worktree's recorded runtime-src commit, for
-// the wasm32-eh target the Rust engine core links against. No fork release
-// publishes wasm32-eh yet (engine-runtime-build.json marks it pending), and
-// the Rust core calls fork functions newer than the published wasm32 archive,
-// so the Rust-core recipes can't use a published archive. Cached by commit.
-export function buildFork(dir) {
+// the wasm32-eh target the Rust engine core links against, or an iOS target
+// the Swift package's XCFramework is made from. No fork release publishes
+// wasm32-eh yet (engine-runtime-build.json marks it pending), and the Rust
+// core calls fork functions newer than the published wasm32 archive, so the
+// Rust-core recipes can't use a published archive. Cached by commit and target.
+export function buildFork(dir, target = FORK_TARGET) {
+  if (!FORK_TARGETS.includes(target)) throw new Error(`unknown fork target ${target}`);
+  const ios = target.startsWith('ios-');
   const [, , sha] = git(['ls-tree', 'HEAD', RUNTIME_SRC], dir).split(/\s+/);
   const root = path.join(workDir(), 'fork', sha);
   const src = path.join(root, 'runtime-src');
-  const stampFile = path.join(root, `${FORK_TARGET}.json`);
+  const stampFile = path.join(root, `${target}.json`);
   if (existsSync(stampFile)) {
     const stamp = JSON.parse(readFileSync(stampFile, 'utf8'));
     if (stamp.recipe === FORK_RECIPE && existsSync(stamp.staging)) return stamp;
   }
-  console.log(`  building fork ${sha.slice(0, 9)} for ${FORK_TARGET}`);
+  console.log(`  building fork ${sha.slice(0, 9)} for ${target}`);
   const seededMarker = path.join(root, 'seeded');
   if (!existsSync(path.join(src, '.git'))) {
     rmSync(root, { recursive: true, force: true });
@@ -111,28 +128,34 @@ export function buildFork(dir) {
   // The fork's GN toolchain compiles with //third_party/emsdk and nothing else
   // (build/toolchain/wasm/BUILD.gn), so the version goes there, as the fork's
   // release workflow puts it.
-  const forkEmsdk = path.join(src, 'third_party/emsdk');
-  if (!existsSync(forkEmsdk)) sh(`git clone https://github.com/emscripten-core/emsdk.git ${forkEmsdk}`, src);
-  sh(`./emsdk install ${EH_EMSDK_VERSION} && ./emsdk activate ${EH_EMSDK_VERSION}`, forkEmsdk);
-  const env = path.join(forkEmsdk, 'emsdk_env.sh');
+  // iOS targets use the fork's own clang and the Xcode SDK instead.
+  let source = '';
+  if (!ios) {
+    const forkEmsdk = path.join(src, 'third_party/emsdk');
+    if (!existsSync(forkEmsdk)) sh(`git clone https://github.com/emscripten-core/emsdk.git ${forkEmsdk}`, src);
+    sh(`./emsdk install ${EH_EMSDK_VERSION} && ./emsdk activate ${EH_EMSDK_VERSION}`, forkEmsdk);
+    source = `source ${path.join(forkEmsdk, 'emsdk_env.sh')} && `;
+  }
   const artifacts = path.join(root, 'artifacts');
   // Ninja doesn't track the compiler's version, so a build after a toolchain
   // change would reuse objects the old one produced.
-  rmSync(path.join(src, 'out/embedpdf-runtime', FORK_TARGET), { recursive: true, force: true });
+  rmSync(path.join(src, 'out/embedpdf-runtime', target), { recursive: true, force: true });
   sh(
-    `source ${env} && scripts/embedpdf-runtime/build-target.sh ${FORK_TARGET} && scripts/embedpdf-runtime/package-target.sh ${FORK_TARGET}`,
+    `${source}scripts/embedpdf-runtime/build-target.sh ${target} && scripts/embedpdf-runtime/package-target.sh ${target}`,
     src,
     {
       PATH: `${depotTools}:${process.env.PATH}`,
       DEPOT_TOOLS_UPDATE: '0',
-      PDF_RUNTIME_TARGET_OS_LIST: 'emscripten',
+      PDF_RUNTIME_TARGET_OS_LIST: FORK_TARGET_OS_LIST,
       // Seeded deps match this commit's DEPS but were synced for another
-      // target_os, which would otherwise force a full gclient resync.
-      PDF_RUNTIME_SYNC: seeded ? 'skip' : 'auto',
+      // target_os, which would otherwise force a full gclient resync. iOS
+      // resyncs ('always', which also replaces llvm-build) only when the
+      // clang there can't run on this host.
+      PDF_RUNTIME_SYNC: ios ? (hostClangWorks(src) ? 'skip' : 'always') : seeded ? 'skip' : 'auto',
       PDF_RUNTIME_ARTIFACT_DIR: artifacts,
     },
   );
-  const staging = path.join(src, 'out/embedpdf-runtime-staging', FORK_TARGET);
+  const staging = path.join(src, 'out/embedpdf-runtime-staging', target);
   const lib = path.join(staging, 'lib/libembedpdf.a');
   const stamp = { recipe: FORK_RECIPE, sha, seeded, staging, libSha256: sha256(readFileSync(lib)) };
   writeFileSync(stampFile, JSON.stringify(stamp, null, 2));
