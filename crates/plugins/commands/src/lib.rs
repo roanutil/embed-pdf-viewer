@@ -62,9 +62,8 @@ pub(crate) fn plugin_parts(config: Option<CommandsConfig>) -> (AnyPlugin, Rc<Com
         // own, and those commands open nothing.
         .optional(I18N.any())
         .optional(SHELL.any())
-        // `resolvesAnyCapability: true` (command definitions come from the
-        // app and may use any capability) and `inScope` wait on the kernel,
-        // which has neither yet (Task 13.29, NEEDS_CONTEXT).
+        // Command definitions come from the app and may use any capability.
+        .resolves_any_capability()
         .settings(SettingsDeclaration {
             defaults: settings::defaults_json(),
             registered,
@@ -74,6 +73,9 @@ pub(crate) fn plugin_parts(config: Option<CommandsConfig>) -> (AnyPlugin, Rc<Com
             let table = table.clone();
             move |cx| Ok((create_commands_controller(cx, table.clone())?, None))
         })
+        // Inside a document's scope, a call that leaves out the document is
+        // for that one.
+        .in_scope(|commands: &CommandsCapability, document_id| commands.in_scope(document_id))
         .build();
     (plugin, table)
 }

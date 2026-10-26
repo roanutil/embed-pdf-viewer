@@ -724,8 +724,7 @@ fn f_plugin(args: &[Value]) -> Result<Value, Error> {
         },
         "settings": settings,
         "hasState": !is_undefined(&(plugin.to_json)(&*state)),
-        // The kernel has no `resolvesAnyCapability` yet: its guard applies.
-        "resolvesAnyCapability": false,
+        "resolvesAnyCapability": plugin.resolves_any_capability,
     }))
 }
 

@@ -4,11 +4,13 @@
 (`packages/plugin/commands/src/{controller,registry,services/availability,write/turning-off}.ts`).
 `cargo test -p epdf-plugin-commands` replays `vectors/plugins/commands/functions.json` (54 cases) and
 `vectors/plugins/commands/plugin.json` (25 scenarios), with no member-order allowance or outcome
-exception. 72 of the 79 pass on the kernel as it stands. The other 7 need two kernel members the
-port is waiting on, `resolvesAnyCapability` and `inScope` (see "Waiting on the kernel").
-`tests/behavior.rs` pins what the vectors can't print.
+exception, all 79 of them. `tests/behavior.rs` pins what the vectors can't print.
 
 The plugin is workspace-scoped, has no state slice, and declares i18n and the shell as optional.
+It sets `resolves_any_capability()`, so a command's `get` reaches tokens the plugin never declared
+(`command-ctx`), and `in_scope`, so a capability the kernel resolves for a document is that
+document's view: a call that leaves out the document reads that one (`command-ctx` step 12,
+`the_kernel_hands_out_the_scoped_view`). `CommandsCapability::in_scope(document_id)` is the view.
 The modules follow the TypeScript files: `contract.rs`, `registry.rs`, `controller.rs`,
 `availability.rs` (`services/availability.ts`) and `turning_off.rs` (`write/turning-off.ts`).
 
@@ -69,22 +71,14 @@ U1 (the `MenuTarget` type is ui-core's), U2 (`preserve_order`) and U8 stay as th
 `register_commands` failure that leaves earlier registrations without a remover, is shared with the
 TypeScript.
 
-## Waiting on the kernel
-
-The TypeScript plugin sets `resolvesAnyCapability: true`, so a command's `get` reaches tokens the
-plugin never declared, and `inScope`, so a capability resolved for a document reads that document
-when a call leaves it out. The Rust kernel has neither: its development guard refuses undeclared
-tokens (`command-ctx` step 0), and it hands out the workspace capability unscoped (`command-ctx`
-step 12). The six `commandsPlugin` function cases print `resolvesAnyCapability: false` for the same
-reason. `CommandsCapability::in_scope(document_id)` is the scoped view itself, so the gap is only
-the kernel's hook.
-
 ## Native exposure
 
 `src/ffi.rs` and `tests/ffi.rs` are migrated by hand (fallible reads, `focus` on a panel,
 `match_stroke` with its refusal) and not compiled until Task 13.33 rebuilds `epdf-ffi`. The
 settings calls, `get_refusal`, per-command turning off, families, `requires` and `allowed`, an
-`execute` signal and the scoped view are not exposed yet.
+`execute` signal and the scoped view are not exposed yet. `crates/epdf-web/src/exports.rs:27-33`
+still documents a `ctx.core` marker on a command's context, which the harness no longer emits
+(the current `CommandContext` has no `core`); that is a Task 13.33 carry.
 
 ## Coverage and mutation testing
 

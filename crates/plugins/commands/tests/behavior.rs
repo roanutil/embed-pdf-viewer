@@ -797,3 +797,32 @@ fn after_the_kernel_reads_of_the_registry_survive_and_document_reads_refuse() {
     assert_eq!(failed.message, destroyed);
     assert!(rig.reports.borrow().is_empty(), "{:?}", rig.reports.borrow());
 }
+
+#[test]
+fn the_kernel_hands_out_the_scoped_view() {
+    let seen: Rc<RefCell<Vec<Option<String>>>> = Rc::default();
+    let log = seen.clone();
+    let rig = rig_with(
+        Some(config(vec![CommandDef {
+            run: Some(Rc::new(move |c| {
+                log.borrow_mut().push(c.document_id().map(str::to_string));
+                Ok(None)
+            })),
+            ..def("go")
+        }])),
+        Vec::new(),
+        json!({ "a": document(json!("*")), "b": document(json!("*")) }),
+    );
+    rig.open("a");
+    rig.open("b");
+    let ran = |cap: &CommandsCapability| {
+        settle(&cap.execute("go", ExecuteOptions::default())).unwrap();
+        seen.borrow_mut().pop().flatten()
+    };
+    // Resolved for a document, the capability is that document's view,
+    // every time it is asked for; without one, the active document's.
+    let scoped = rig.kernel.capability(&COMMANDS, Some("a")).unwrap();
+    assert_eq!(ran(&scoped).as_deref(), Some("a"));
+    assert_eq!(ran(&rig.kernel.capability(&COMMANDS, Some("a")).unwrap()).as_deref(), Some("a"));
+    assert_eq!(ran(&rig.kernel.capability(&COMMANDS, None).unwrap()).as_deref(), Some("b"));
+}
