@@ -541,6 +541,14 @@ impl ControllerContext {
         }
     }
 
+    /// Hand an error to the kernel's report. The TypeScript context has no
+    /// such member; a Rust plugin uses it for a failure only its typed
+    /// boundary can have (a member that does not decode), which the
+    /// TypeScript would carry on with.
+    pub fn report_error(&self, error: &Error) {
+        (self.report())(error);
+    }
+
     /// `ctx.doc`: the guarded handle. A workspace plugin has no bound
     /// document; reading it there is an error, as is a session without a
     /// handle yet.
