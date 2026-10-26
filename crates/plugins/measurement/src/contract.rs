@@ -126,17 +126,22 @@ pub struct MeasurementSettings {
 }
 
 impl MeasurementSettings {
-    /// The settings as the kernel's JSON store holds them.
-    pub fn of(value: &Value) -> MeasurementSettings {
-        MeasurementSettings {
+    /// The settings as the kernel's JSON store holds them. The TypeScript
+    /// hands back the object as written; the typed read refuses a `presets`
+    /// value that is not a list of presets rather than reading it as none.
+    pub fn of(value: &Value) -> Result<MeasurementSettings, Error> {
+        let presets = value.get("presets").unwrap_or(&Value::Null);
+        Ok(MeasurementSettings {
             default_scale: DefaultScale::from_json(
                 value.get("defaultScale").unwrap_or(&Value::Null),
             ),
-            presets: value
-                .get("presets")
-                .and_then(|p| serde_json::from_value(p.clone()).ok())
-                .unwrap_or_default(),
-        }
+            presets: serde_json::from_value(presets.clone()).map_err(|e| {
+                Error::named(
+                    "TypeError",
+                    format!("[measurement] the presets setting is not a list of presets: {e}"),
+                )
+            })?,
+        })
     }
 }
 

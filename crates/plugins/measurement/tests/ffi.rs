@@ -358,12 +358,17 @@ fn calibrating_writes_the_scale_and_completes() {
 }
 
 #[test]
+#[ignore = "13.33: needs a handle whose has(\"page.measure\") is false; the fake builds it on every page since 83fb65435"]
 fn without_a_service_the_scale_is_in_memory() {
     // The defensive absent-service branch (`sync/viewports.ts:47`,
-    // `write/scale.ts:81`). It needs a fake that leaves `page.measure` out
-    // when `services` does not list it, which the TypeScript fake never
-    // does (it builds every page service); see the Task 13.22 report. 13.33
-    // keeps or drops this case with the fake.
+    // `write/scale.ts:81`): a scale kept in memory, not persistent. Since
+    // `83fb65435` (Ruling13.22) the fake answers `page.measure` on every
+    // page, as `fake-engine.ts:678` does, with no `services` or `lacks`
+    // gate, and `TestKernel` forwards `has` to it (`test_kernel.rs:238`).
+    // So `spec(false, ..)` takes the service path and the last assertion
+    // would fail. 13.33 rewrites this over a `TestHandle` that answers
+    // `has("page.measure")` false (a `TestSpec` hook it would add), or
+    // drops it by ruling.
     let (_thread, m) = handle_over(|| spec(false, false, None));
     block_on(m.set_scale(
         MeasurementPageTarget::Page { page: P1 },

@@ -622,7 +622,7 @@ impl MeasurementHandle {
     }
 
     pub async fn presets(&self) -> Result<Vec<ScalePreset>, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.list_presets())).await
+        self.cap.call(|c| open(c)?.list_presets()).await
     }
 
     pub async fn units(&self) -> Result<Vec<String>, ViewerError> {

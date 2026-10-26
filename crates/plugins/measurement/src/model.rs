@@ -29,8 +29,10 @@ pub struct MeasurementState {
     pub calibration: Option<CalibrationRequest>,
     pub reports: Rc<Vec<ScaleChangeReport>>,
     /// Page object number → why the last read of the page's viewports
-    /// failed (a serialized engine error).
-    pub load_errors: BTreeMap<u32, Value>,
+    /// failed (a serialized engine error). Shared, so a page's scale can
+    /// tell a recorded error from an equal one recorded again, as the
+    /// TypeScript's identity check does.
+    pub load_errors: BTreeMap<u32, Rc<Value>>,
     /// Page object number → the page's viewports, when the engine has no
     /// page measure service.
     pub local_viewports: BTreeMap<u32, Value>,
@@ -84,7 +86,7 @@ pub fn record_load_error(
     error: Value,
 ) -> Rc<MeasurementState> {
     let mut next = (**state).clone();
-    next.load_errors.insert(page_object_number, error);
+    next.load_errors.insert(page_object_number, Rc::new(error));
     Rc::new(next)
 }
 

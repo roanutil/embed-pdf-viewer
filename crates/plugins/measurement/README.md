@@ -15,10 +15,8 @@ registered with the kernel (`defaultScale`, replaced whole, and `presets`). 64 c
 The scenarios run the real interaction and annotation adapters beside this one, because the plugin
 requires both. The generator is `tooling/plugin-conformance/src/suites/measurement.ts`.
 
-Thirteen of the 19 scenarios need the conformance fake to answer `has("page.measure")` as the
-TypeScript fake does, which builds every page service (`fake-engine.ts:678`). The Rust fake
-(`crates/plugin-conformance/src/fake_engine.rs:602`) only reports it when `services` lists it, so
-those cases take the session-only branch until the fake is repaired. See the Task 13.22 report.
+The conformance fake gives every page a `measure` service, as the TypeScript fake does
+(`fake-engine.ts:678`; Ruling13.22, `83fb65435`).
 
 `tests/behavior.rs` covers what the brief asks beyond the printed traces: the three read states
 `pageScaleOf` projects, a calibration capture that ends where the drag's last `move` left it (the
@@ -44,8 +42,10 @@ so a member the caller wrote survives a round trip, and the write preflight
 (`assertWritableMeasure`, annotation-core's) refuses a malformed measure with the TypeScript's
 message. A page argument is `PageInput`, a `PageRef` or a display index; `PageTarget` adds `All` and a
 list. `get_page_scale` returns an `Rc<PageScale>` that stays the same while the page's viewports,
-read state, layout and default scale do. It is a `Result` because the TypeScript throws when the
-`defaultScale` setting cannot be built in the page's user unit.
+read state, layout and default scale do. It is a `Result` because the TypeScript throws there: when
+the `defaultScale` setting cannot be built in the page's user unit, and when the registry still
+names the page after the document handle is gone. A read whose answer has no `viewports` leaves the
+page not ready, as the TypeScript's `undefined` does.
 
 ## Migrating from the pre-13.22 API
 
@@ -80,7 +80,8 @@ when `doc.page(page).measure` is undefined. The current engine contract requires
 the TypeScript fake supplies it on every page, so no vector reaches either branch: the vectors cover
 the required service and its refusals. The port keeps both branches line for line
 (`sync/viewports.rs`, `write/scale.rs::save`) without a case of its own, as the Task 12b ruling on
-malformed absent services asks.
+malformed absent services asks. `tests/ffi.rs` `without_a_service_the_scale_is_in_memory` is
+ignored until 13.33 gives the test kernel a handle that answers `has("page.measure")` false.
 
 ## Where the port differs
 
@@ -97,6 +98,11 @@ Kept Rust-only divergences, none reached by a vector:
   store it.
 - A malformed measure is read as annotation-core reads it, loosely, where its README lists the kept
   differences.
+- The typed `get_settings` and `list_presets` refuse a `presets` setting that is not a list of
+  presets with a `TypeError`; the TypeScript hands back whatever was written, as `settings_json`
+  still does.
+
+These are registered in `docs/research/rust-plugins-branch-review.md`, "Status".
 
 `write/scale.rs` keeps each page's queue tail beside the kernel's `SerialQueue`, because a download
 waits on `queue.idle()` (`ctx.onSettle`) and the kernel queue has no `idle`.

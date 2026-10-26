@@ -101,8 +101,10 @@ impl MeasurementCapability {
 
     // ── settings (`SettingsApi<MeasurementSettings>`) ──
 
-    /// The settings in effect.
-    pub fn get_settings(&self) -> MeasurementSettings {
+    /// The settings in effect. `Err` for a `presets` value the typed read
+    /// cannot hold (one written as JSON past the typed API);
+    /// [`settings_json`](Self::settings_json) reads it as it is.
+    pub fn get_settings(&self) -> Result<MeasurementSettings, Error> {
         MeasurementSettings::of(&self.0.settings.get())
     }
 
@@ -128,14 +130,15 @@ impl MeasurementCapability {
         self.0.settings.store.reset_settings();
     }
 
-    /// The settings changed.
+    /// The settings changed. A change the typed read cannot hold goes to
+    /// the kernel's report instead of the listener.
     pub fn on_settings_changed(
         &self,
         listener: impl Fn(&MeasurementSettingsChanged) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
         self.0.settings.events.on(move |event| {
             listener(&MeasurementSettingsChanged {
-                settings: MeasurementSettings::of(&event.settings),
+                settings: MeasurementSettings::of(&event.settings)?,
                 changed: event.changed.clone(),
             })
         })

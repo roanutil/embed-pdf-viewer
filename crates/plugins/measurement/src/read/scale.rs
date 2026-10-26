@@ -58,9 +58,9 @@ impl MeasurementCapability {
         self.core().cx.state().reports.clone()
     }
 
-    /// The `presets` setting.
-    pub fn list_presets(&self) -> Vec<ScalePreset> {
-        self.get_settings().presets
+    /// The `presets` setting; `Err` as [`get_settings`](Self::get_settings).
+    pub fn list_presets(&self) -> Result<Vec<ScalePreset>, Error> {
+        Ok(self.get_settings()?.presets)
     }
 
     /// The `presets` setting as the store holds it.

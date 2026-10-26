@@ -33,7 +33,10 @@ use crate::units::serialize_error;
 pub(crate) struct ScaleMemo {
     viewports: Option<Rc<Value>>,
     status: ResourceStatus,
-    error: Option<Value>,
+    error: Option<Rc<Value>>,
+    /// The registry the page's layout row came from. A registry is replaced
+    /// whole, every row new (`kernel.ts:1178-1186` takes `layout.pages` from
+    /// the event), so this is the TypeScript's key on the layout object.
     pages: Option<Rc<Value>>,
     persistent: bool,
     settings: Rc<Value>,
@@ -56,9 +59,16 @@ fn fallback_of(settings: &Value, layout: Option<&PageRow>) -> Result<Value, Erro
 }
 
 /// The engine can persist a scale into the document (`doc.page(page).measure
-/// !== undefined`).
-fn is_persistent(cx: &MeasurementContext) -> bool {
-    cx.doc().is_ok_and(|doc| doc.has("page.measure"))
+/// !== undefined`). `Err` where reading `ctx.doc` throws: the registry still
+/// names the page after the handle is gone.
+fn is_persistent(cx: &MeasurementContext) -> Result<bool, Error> {
+    Ok(cx.doc()?.has("page.measure"))
+}
+
+/// A mirrored value that is the TypeScript's `undefined`: a read whose
+/// answer had no `viewports`.
+fn absent(value: &Value) -> bool {
+    epdf_kernel::is_undefined(value)
 }
 
 /// The page's viewports as the TypeScript spreads them (`[...next]`).
@@ -102,7 +112,11 @@ pub(crate) fn create_viewport_mirror(
                     return Ok(cx.state().local_viewports.get(&pon).cloned().unwrap_or(json!([])));
                 }
                 match doc.call("page.measure.listViewports", Some(pon), Vec::new()).await {
-                    Ok(list) => Ok(list.get("viewports").cloned().unwrap_or(Value::Null)),
+                    // An answer without `viewports` is `undefined` there:
+                    // the page stays not ready and `changed` skips it.
+                    Ok(list) => {
+                        Ok(list.get("viewports").cloned().unwrap_or_else(epdf_kernel::undefined))
+                    }
                     Err(error) => {
                         // A read the closing document cut short is no page's
                         // error, and there's no state left.
@@ -121,7 +135,9 @@ pub(crate) fn create_viewport_mirror(
     let store = settings.clone();
     let annotation = annotation.clone();
     let changed = Rc::new(move |change: PageMirrorChange| {
-        let Some(next) = change.next.filter(|_| change.cause != "drop") else { return Ok(()) };
+        let Some(next) = change.next.filter(|next| change.cause != "drop" && !absent(next)) else {
+            return Ok(());
+        };
         let Some(page) = PageRef::from_json(&change.page) else { return Ok(()) };
         writer.update_state(|s| clear_load_error(&s, page.page_object_number));
         if let Some(layout) = rows.find(PageInput::Ref(page)) {
@@ -153,17 +169,20 @@ impl MeasurementCapability {
         let core = self.core();
         let pon = page.page_object_number;
         let key = page.to_json();
-        let viewports = core.viewports.get(&key);
+        let viewports = core.viewports.get(&key).filter(|v| !absent(v));
         let status = core.viewports.get_status(&key);
         let error = core.cx.state().load_errors.get(&pon).cloned();
         let layout = core.registry.find(PageInput::Ref(page));
         let pages = layout.as_ref().and_then(|_| core.registry.pages());
-        let persistent = layout.is_some() && is_persistent(&core.cx);
+        let persistent = match layout {
+            Some(_) => is_persistent(&core.cx)?,
+            None => false,
+        };
         let settings = core.settings.get();
         if let Some(memo) = core.scales.borrow().get(&pon)
             && same(&memo.viewports, &viewports)
             && memo.status == status
-            && memo.error == error
+            && same(&memo.error, &error)
             && same(&memo.pages, &pages)
             && memo.persistent == persistent
             && Rc::ptr_eq(&memo.settings, &settings)
@@ -174,7 +193,7 @@ impl MeasurementCapability {
         let scale = Rc::new(page_scale_of(&PageScaleInputs {
             viewports: viewports.as_deref(),
             status,
-            error: error.as_ref(),
+            error: error.as_deref(),
             size: layout.as_ref().map(PageRow::size),
             fallback: &fallback,
             persistent,
@@ -290,7 +309,9 @@ impl MeasurementCapability {
             let Some(core) = this.upgrade() else { return Ok(()) };
             for page in core.registry.refs() {
                 let key = page.to_json();
-                let Some(known) = core.viewports.get(&key) else { continue };
+                let Some(known) = core.viewports.get(&key).filter(|v| !absent(v)) else {
+                    continue;
+                };
                 let layout = core.registry.find(PageInput::Ref(page));
                 let fallback = fallback_of(&event.settings, layout.as_ref())?;
                 core.annotation.set_page_viewports(&key, Some(viewport_list(&known)), fallback);
