@@ -877,6 +877,7 @@ dependencies = [
 name = "epdf-plugin-view-manager"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",

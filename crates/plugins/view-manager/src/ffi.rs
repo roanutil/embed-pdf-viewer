@@ -63,15 +63,17 @@ impl ViewManagerHandle {
 impl ViewManagerHandle {
     /// Panes in display order (`listPanes`).
     pub async fn panes(&self) -> Result<Vec<PaneInfo>, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.list_panes())).await
+        self.cap
+            .call(|c| Ok(open(c)?.list_panes().iter().map(|pane| (**pane).clone()).collect()))
+            .await
     }
 
     pub async fn pane(&self, id: String) -> Result<Option<PaneInfo>, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.get_pane(&id))).await
+        self.cap.call(move |c| Ok(open(c)?.get_pane(&id).map(|pane| (*pane).clone()))).await
     }
 
     pub async fn pane_order(&self) -> Result<Vec<String>, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_pane_order())).await
+        self.cap.call(|c| Ok(open(c)?.get_pane_order().to_vec())).await
     }
 
     pub async fn focused_pane_id(&self) -> Result<Option<String>, ViewerError> {
@@ -127,9 +129,14 @@ impl ViewManagerHandle {
             .await
     }
 
-    /// A new pane showing the document. Answers the new pane's id.
-    pub async fn split_pane(&self, document_id: String) -> Result<String, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.split_pane(&document_id))).await
+    /// A new pane showing the document, beside `from` (or the focused
+    /// pane), focused. Answers the new pane's id.
+    pub async fn split_pane(
+        &self,
+        document_id: String,
+        from: Option<String>,
+    ) -> Result<String, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.split_pane(&document_id, from.as_deref()))).await
     }
 
     /// A document the pane doesn't hold is ignored.

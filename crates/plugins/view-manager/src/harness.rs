@@ -1,29 +1,20 @@
 //! The conformance adapter: how `crates/plugin-conformance` builds this
-//! plugin from a vector and calls its capability by name, and the function
-//! table the reducer suite calls.
+//! plugin from a vector and calls its capability by name, and the table of
+//! named model transitions the reducer suite calls.
 //!
-//! Two factories. `view-manager` is the plugin as this crate builds it; the
-//! generator installs the TypeScript's through a wrapper that hides `doc`
-//! from the controller's context spread (see the crate README).
-//! `view-manager-as-shipped` is the TypeScript plugin unmodified, whose
-//! spread reads the workspace `doc` getter and throws while the kernel is
-//! constructed. The Rust port has no spread, so this factory reproduces the
-//! read: it reads `cx.doc()` before building the controller, which refuses
-//! the same way.
+//! Two factories, `view-manager` and `view-manager-as-shipped`, both the
+//! plugin as it ships: the generator registers the same `viewManagerPlugin()`
+//! under each name.
 
 use std::any::Any;
 use std::rc::Rc;
 
-use epdf_kernel::plugin::{Created, PluginDef};
 use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined};
 use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome, scrub};
 use serde_json::{Value, json};
 
-use crate::model::{ViewManagerAction, ViewManagerState};
-use crate::{
-    VIEW_MANAGER, ViewManagerCapability, initial_view_manager_state, view_manager_plugin,
-    view_manager_reducer,
-};
+use crate::model::{self, ViewManagerState};
+use crate::{VIEW_MANAGER, ViewManagerCapability, view_manager_plugin};
 
 pub struct ViewManager;
 
@@ -54,9 +45,10 @@ fn arg(args: &[Value], i: usize) -> Option<&Value> {
     args.get(i).filter(|v| !is_undefined(v))
 }
 
-/// A canonical number: plain, or `{"$number": ...}`; `None` when absent.
+/// A canonical number: plain, or `{"$number": ...}`; `None` when absent
+/// or `null` (`index == null`).
 fn number(value: Option<&Value>) -> Option<f64> {
-    let value = value?;
+    let value = value.filter(|v| !v.is_null())?;
     value.as_f64().or_else(|| match value.get("$number").and_then(Value::as_str) {
         Some("Infinity") => Some(f64::INFINITY),
         Some("-Infinity") => Some(f64::NEG_INFINITY),
@@ -85,41 +77,14 @@ fn listen<E: serde::Serialize>(
     })))
 }
 
-/// The TypeScript plugin as it ships: building its controller reads the
-/// workspace `doc` getter, which throws.
-fn as_shipped() -> AnyPlugin {
-    let plugin = view_manager_plugin();
-    let create = plugin.create.clone().expect("a v3 plugin");
-    Rc::new(PluginDef {
-        id: plugin.id.clone(),
-        token: plugin.token.clone(),
-        scope: plugin.scope,
-        requires: plugin.requires.clone(),
-        optional: plugin.optional.clone(),
-        initial_state: plugin.initial_state.clone(),
-        reducer: plugin.reducer.clone(),
-        to_json: plugin.to_json.clone(),
-        to_text: plugin.to_text.clone(),
-        capability: None,
-        init: None,
-        effects: None,
-        create: Some(Rc::new(move |cx| -> Result<Created, Error> {
-            cx.doc()?;
-            create(cx)
-        })),
-    })
-}
-
 impl HarnessPlugin for ViewManager {
     fn factories(&self) -> Vec<&'static str> {
         vec!["view-manager", "view-manager-as-shipped"]
     }
 
-    fn build(&self, factory: &str, _config: &Value, _h: &Harness) -> Result<AnyPlugin, Error> {
-        Ok(match factory {
-            "view-manager-as-shipped" => as_shipped(),
-            _ => view_manager_plugin(),
-        })
+    /// `view-manager` and `view-manager-as-shipped` build the same plugin.
+    fn build(&self, _factory: &str, _config: &Value, _h: &Harness) -> Result<AnyPlugin, Error> {
+        Ok(view_manager_plugin())
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
@@ -138,7 +103,7 @@ impl HarnessPlugin for ViewManager {
         let returned = |value: Value| Outcome::Returned(value);
         let done = || Outcome::undefined();
         Some(match method {
-            "listPanes" => returned(json_of(&cap.list_panes())),
+            "listPanes" => returned(json_of(&*cap.list_panes())),
             "getPane" => returned(json_of(&cap.get_pane(text(0)))),
             "getPaneOrder" => returned(json!(cap.get_pane_order())),
             "getFocusedPaneId" => returned(json!(cap.get_focused_pane_id())),
@@ -165,7 +130,10 @@ impl HarnessPlugin for ViewManager {
                 cap.set_focused_pane(arg(&args, 0).and_then(Value::as_str));
                 done()
             }
-            "splitPane" => returned(json!(cap.split_pane(text(0)))),
+            "splitPane" => {
+                let from = arg(&args, 1).and_then(|o| o.get("from")).and_then(Value::as_str);
+                returned(json!(cap.split_pane(text(0), from)))
+            }
             "setActiveDocument" => {
                 cap.set_active_document(text(0), arg(&args, 1).and_then(Value::as_str));
                 done()
@@ -210,24 +178,104 @@ fn bad(what: &str, e: impl std::fmt::Display) -> Error {
     Error::new(format!("[view-manager harness] {what}: {e}"))
 }
 
-/// The reducer with its reference identity made visible. An action no
-/// variant decodes is the TypeScript's `default: return state`.
-fn f_reducer(args: &[Value]) -> Result<Value, Error> {
-    let state: ViewManagerState =
-        serde_json::from_value(scrub(arg(args, 0).unwrap_or(&Value::Null)))
-            .map_err(|e| bad("state", e))?;
-    let action: Option<ViewManagerAction> =
-        arg(args, 1).and_then(|a| serde_json::from_value(scrub(a)).ok());
-    let next = action.and_then(|action| view_manager_reducer(&state, &action));
-    let shown =
-        serde_json::to_value(next.as_ref().unwrap_or(&state)).map_err(|e| bad("state", e))?;
-    Ok(json!({ "same": next.is_none(), "next": shown }))
+// ── the transition table ─────────────────────────────────────────────────────
+
+fn state(args: &[Value]) -> Result<Rc<ViewManagerState>, Error> {
+    serde_json::from_value(scrub(arg(args, 0).unwrap_or(&Value::Null)))
+        .map(Rc::new)
+        .map_err(|e| bad("state", e))
+}
+
+fn text(args: &[Value], i: usize) -> &str {
+    arg(args, i).and_then(Value::as_str).unwrap_or_default()
+}
+
+fn shown(state: &ViewManagerState) -> Result<Value, Error> {
+    serde_json::to_value(state).map_err(|e| bad("state", e))
 }
 
 fn f_initial(_: &[Value]) -> Result<Value, Error> {
-    serde_json::to_value(initial_view_manager_state()).map_err(|e| bad("state", e))
+    shown(&model::initial_view_manager_state())
+}
+
+fn f_next_pane_id(args: &[Value]) -> Result<Value, Error> {
+    Ok(json!(model::next_pane_id(&*state(args)?)))
+}
+
+fn f_pane_of_document(args: &[Value]) -> Result<Value, Error> {
+    Ok(json!(model::pane_of_document(&*state(args)?, text(args, 1))))
+}
+
+fn f_create_pane(args: &[Value]) -> Result<Value, Error> {
+    shown(&model::create_pane(&state(args)?, number(arg(args, 1))))
+}
+
+fn f_remove_pane(args: &[Value]) -> Result<Value, Error> {
+    shown(&model::remove_pane(&state(args)?, text(args, 1)))
+}
+
+fn f_move_pane(args: &[Value]) -> Result<Value, Error> {
+    let to_index = number(arg(args, 2)).unwrap_or(f64::NAN);
+    shown(&model::move_pane(&state(args)?, text(args, 1), to_index))
+}
+
+fn f_set_focused_pane(args: &[Value]) -> Result<Value, Error> {
+    shown(&model::set_focused_pane(&state(args)?, arg(args, 1).and_then(Value::as_str)))
+}
+
+fn f_set_active_document(args: &[Value]) -> Result<Value, Error> {
+    let document_id = arg(args, 2).and_then(Value::as_str);
+    shown(&model::set_active_document(&state(args)?, text(args, 1), document_id))
+}
+
+fn f_add_document(args: &[Value]) -> Result<Value, Error> {
+    let index = number(arg(args, 3));
+    shown(&model::add_document(&state(args)?, text(args, 1), text(args, 2), index))
+}
+
+fn f_remove_document(args: &[Value]) -> Result<Value, Error> {
+    shown(&model::remove_document(&state(args)?, text(args, 1), text(args, 2)))
+}
+
+fn f_move_document_within(args: &[Value]) -> Result<Value, Error> {
+    let to_index = number(arg(args, 3)).unwrap_or(f64::NAN);
+    shown(&model::move_document_within(&state(args)?, text(args, 1), text(args, 2), to_index))
+}
+
+fn f_move_document_between(args: &[Value]) -> Result<Value, Error> {
+    let (from, to, document_id) = (text(args, 1), text(args, 2), text(args, 3));
+    let to_index = number(arg(args, 4));
+    shown(&model::move_document_between(&state(args)?, from, to, document_id, to_index))
+}
+
+fn f_rename_document(args: &[Value]) -> Result<Value, Error> {
+    shown(&model::rename_document(&state(args)?, text(args, 1), text(args, 2)))
+}
+
+fn f_reconcile(args: &[Value]) -> Result<Value, Error> {
+    let open: Vec<String> = arg(args, 1)
+        .and_then(Value::as_array)
+        .map(|ids| ids.iter().filter_map(|id| id.as_str().map(str::to_string)).collect())
+        .unwrap_or_default();
+    let prefer = arg(args, 2).and_then(Value::as_str);
+    shown(&model::reconcile(&state(args)?, &open, prefer))
 }
 
 pub fn functions() -> FunctionTable {
-    vec![("viewManagerReducer", f_reducer), ("initialViewManagerState", f_initial)]
+    vec![
+        ("initialViewManagerState", f_initial),
+        ("nextPaneId", f_next_pane_id),
+        ("paneOfDocument", f_pane_of_document),
+        ("createPane", f_create_pane),
+        ("removePane", f_remove_pane),
+        ("movePane", f_move_pane),
+        ("setFocusedPane", f_set_focused_pane),
+        ("setActiveDocument", f_set_active_document),
+        ("addDocument", f_add_document),
+        ("removeDocument", f_remove_document),
+        ("moveDocumentWithin", f_move_document_within),
+        ("moveDocumentBetween", f_move_document_between),
+        ("renameDocument", f_rename_document),
+        ("reconcile", f_reconcile),
+    ]
 }
