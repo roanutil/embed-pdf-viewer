@@ -353,13 +353,18 @@ thread_local! {
     static DIAGNOSTICS: RefCell<(Option<Harness>, bool, bool)> = const { RefCell::new((None, false, false)) };
 }
 
-/// A diagnostics plugin: an empty workspace capability.
+/// A diagnostics plugin: an empty workspace capability. The generator's
+/// `definePlugin` declares no state, so the plugin has no slice: its state
+/// is `undefined`, which a printed state leaves out.
 #[derive(Clone)]
 pub struct Diagnostics;
 
 fn diagnostics_plugin(name: &str, h: &Harness) -> AnyPlugin {
     let token: Token<Diagnostics> = Token::from_any(h.token(name, None));
-    define::<Value, Value>(name).capability(&token, |_| Ok(Diagnostics)).build()
+    define::<Value, Value>(name)
+        .initial_state(epdf_kernel::undefined)
+        .capability(&token, |_| Ok(Diagnostics))
+        .build()
 }
 
 /// Install the console sink this case asked for, then forget the request.
