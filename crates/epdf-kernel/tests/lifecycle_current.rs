@@ -832,3 +832,50 @@ fn a_page_mirror_subscribes_to_the_handle_at_creation_between_the_kernel_and_con
     assert_eq!(document.events.listener_count(), subscribed_before_open);
     run(kernel.destroy()).unwrap();
 }
+
+/// `workspaceViewOf` (kernel.ts:1005): a workspace capability resolved for
+/// a document is its `inScope` view, the same object on every call; a
+/// rekey drops it (kernel.ts:537, "a view is bound to the id it was built
+/// for") and so does close (kernel.ts:568).
+#[test]
+fn a_workspace_view_is_kept_per_document_and_dropped_on_rekey_and_close() {
+    rt::reset();
+    let first = doc(false);
+    *first.id.borrow_mut() = "renamed".into();
+    let (snapshot, land) = Promise::pending();
+    *first.page_answer.borrow_mut() = Some(snapshot);
+    let token = Token::<Rc<String>>::new("scoped");
+    let built = Rc::new(Cell::new(0));
+    let count = built.clone();
+    let plugin = define::<Value, CoreAction>("scoped")
+        .create(&token, |_| Ok((Rc::new("workspace".to_string()), None)))
+        .in_scope(move |_: &Rc<String>, id: &str| {
+            count.set(count.get() + 1);
+            Rc::new(format!("view:{id}"))
+        })
+        .build();
+    let kernel = Kernel::new(
+        Rc::new(QueueEngine(RefCell::new([first.clone()].into()))),
+        vec![plugin],
+        options(),
+    )
+    .unwrap();
+    run(kernel.start()).unwrap();
+    let unscoped = kernel.capability(&token, None).unwrap();
+    assert_eq!(*unscoped, "workspace");
+    let opening = kernel.documents().open(input(), OpenOptions::default());
+    let before = kernel.capability(&token, Some("doc")).unwrap();
+    assert_eq!(*before, "view:doc");
+    assert!(Rc::ptr_eq(&before, &kernel.capability(&token, Some("doc")).unwrap()));
+    assert_eq!(built.get(), 1);
+    rt::run_until_stalled();
+    assert!(kernel.documents().has("renamed"));
+    let after = kernel.capability(&token, Some("renamed")).unwrap();
+    assert_eq!(*after, "view:renamed", "the rekey dropped the view built for the ticket id");
+    assert_eq!(built.get(), 2);
+    land.resolve(Default::default());
+    let _ = run(opening);
+    run(kernel.documents().close("renamed")).unwrap();
+    assert_eq!(*kernel.capability(&token, Some("renamed")).unwrap(), "workspace");
+    run(kernel.destroy()).unwrap();
+}

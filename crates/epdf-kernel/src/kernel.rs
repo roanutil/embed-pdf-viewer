@@ -593,6 +593,8 @@ impl Inner {
         self.sessions.borrow_mut().delete(&previous_id);
         *session.id.borrow_mut() = next_id.to_string();
         self.sessions.borrow_mut().set(next_id.to_string(), session.clone());
+        // A view is bound to the id it was built for (kernel.ts:537).
+        session.views.borrow_mut().clear();
         if let Some(slot) = core.pending.get(&previous_id).cloned() {
             let next = next_id.to_string();
             self.set_core(
@@ -662,6 +664,7 @@ impl Inner {
             if is_current {
                 this.sessions.borrow_mut().delete(&id);
             }
+            s.views.borrow_mut().clear();
             this.events.closed.emit(&serde_json::json!({ "documentId": id }));
             // Nothing retries a closed session, and something may hold it
             // long after: its source goes now, and with it the host's bytes

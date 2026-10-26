@@ -1177,7 +1177,10 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
         self.in_scope = Some(Rc::new(move |api: &Rc<dyn Any>, document_id: &str| {
             match api.downcast_ref::<C>() {
                 Some(api) => Rc::new(view(api, document_id)) as Rc<dyn Any>,
-                None => api.clone(),
+                None => {
+                    debug_assert!(false, "inScope declared for a capability of another type");
+                    api.clone()
+                }
             }
         }));
         self
