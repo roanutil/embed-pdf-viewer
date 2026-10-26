@@ -1,8 +1,17 @@
-//! `services/`: plugin-private services every area is built on (not the
-//! kernel): the store (on [`crate::FormCapability`] itself), the event
-//! hooks, authority, the sibling planes (fields of [`crate::controller::Core`]),
-//! the scripting seam and the one serial mutation queue.
+//! `services/`: what every area is built on. The form's mirror (the field
+//! tree and every widget row) is `sync::fields`; here are who may fill in
+//! which field, the events, the sibling plugins, the scripting seam, the
+//! one write queue, the texts this session's format scripts wrote, the
+//! object numbers a create takes, and the widgets' pictures and looks.
 
-pub mod authority;
+pub mod design;
 pub mod events;
+pub mod formatted;
+pub mod index_cache;
+pub mod looks;
+pub mod object_numbers;
+pub mod pictures;
+pub mod queue;
+pub mod rights;
 pub mod scripting;
+pub mod siblings;

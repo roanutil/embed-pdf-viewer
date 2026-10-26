@@ -602,14 +602,18 @@ dependencies = [
 name = "epdf-plugin-form"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-acrojs",
  "epdf-annotation-core",
+ "epdf-engine",
  "epdf-ffi",
+ "epdf-form-core",
  "epdf-geometry",
  "epdf-kernel",
  "epdf-plugin-actions",
  "epdf-plugin-annotation",
  "epdf-plugin-interaction",
+ "epdf-plugin-render",
  "futures",
  "indexmap",
  "plugin-conformance",

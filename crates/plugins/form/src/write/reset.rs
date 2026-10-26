@@ -1,261 +1,120 @@
-//! `write/reset.ts`: resets. The shared reset core (one effects batch, a
-//! re-read, then the V/C/F recalculation when scripting is on) is ridden by
-//! both doors, the `/ResetForm` executor and the public `reset` and
-//! `resetAll`, so the two can never diverge.
+//! `write/reset.ts`: resets, one shared core (one fill: the reset, then the
+//! recalculation when the document's scripts run) used by both the
+//! ResetForm action executor and the public `reset`, so the two cannot
+//! diverge. A reset resets the fields it selects that the user may fill in:
+//! another signer's fields stay as they are.
 
-use epdf_acrojs::{ScriptDiagnostic, ScriptDiagnosticCode};
-use epdf_kernel::Error;
-use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::rt::Promise;
-use epdf_plugin_actions::{ActionOrigin, PdfActionTargetRef};
+use epdf_kernel::signal::AbortSignal;
+use epdf_plugin_actions::ActionOrigin;
 use serde_json::{Value, json};
 
-use crate::contract::{
-    BatchFailure, BatchResult, FormCommitResult, FormCommitStatus, ResetAllOptions,
-};
-use crate::controller::{FormCapability, key_of};
-use crate::core::model::{Msg, field_by_key};
+use crate::contract::{FormCommitResult, FormCommitStatus};
 use crate::field_selection::resolve_field_selection;
-use crate::promise::{adopt, await_engine};
-use crate::value::{get, str_of, string_of};
+use crate::model::{field_by_ref, fields_with_changed_values};
+use crate::value::{get, str_of};
+use crate::write::fill::{FillOutcome, FillRequest, FillScripts};
 
-fn not_scripted() -> FormCommitResult {
-    FormCommitResult::bare(FormCommitStatus::Unchanged, false)
+/// `targetOf(ref)`: a field ref as an action's target.
+fn target_of(reference: &Value) -> Value {
+    if str_of(reference, "kind") == Some("objectNumber") {
+        json!({ "kind": "objectNumber", "objectNumber": get(reference, "objectNumber").cloned().unwrap_or(Value::Null) })
+    } else {
+        json!({ "kind": "name", "name": get(reference, "name").cloned().unwrap_or(Value::Null) })
+    }
 }
 
-fn is_refused(entry: &Value) -> bool {
-    matches!(str_of(entry, "status"), Some("failed" | "rejected"))
-}
+impl crate::controller::Core {
+    /// `resettable(field)`: the engine refuses push button and signature
+    /// refs, and another signer's fields are theirs.
+    fn resettable(&self, field: &Value) -> bool {
+        !matches!(str_of(field, "family"), Some("pushbutton" | "signature")) && self.may_fill(field)
+    }
 
-fn effect_entries(result: Option<&Value>) -> Vec<Value> {
-    result.and_then(|r| get(r, "results")).and_then(Value::as_array).cloned().unwrap_or_default()
-}
-
-/// Buttons and signatures have nothing to restore: the engine's batch
-/// applier refuses them outright.
-fn resettable_refs(selected: &[Value]) -> Vec<Value> {
-    selected
-        .iter()
-        .filter(|f| !matches!(str_of(f, "family"), Some("pushbutton" | "signature")))
-        .map(|f| get(f, "ref").cloned().unwrap_or_else(epdf_kernel::undefined))
-        .collect()
-}
-
-fn fields_of(snapshot: &Value) -> Vec<Value> {
-    get(snapshot, "fields").and_then(Value::as_array).cloned().unwrap_or_default()
-}
-
-impl FormCapability {
-    /// `applyResetBatch(refs, origin)`: one effects batch, a re-read, then
-    /// the `/CO` recalculation when scripting is on. `origin` is kept through
-    /// the recalculation's surfacing.
-    async fn apply_reset_batch(
+    /// `resetSelection(targets, exclude, origin, options)`: `None` when it
+    /// selects nothing; a refused reset rejects.
+    pub(crate) fn reset_selection(
         &self,
-        refs: Vec<Value>,
+        targets: Option<Vec<Value>>,
+        exclude: bool,
         origin: ActionOrigin,
-    ) -> Result<FormCommitResult, Error> {
-        let doc = self.doc().ok_or_else(|| Error::new("no document"))?;
-        if !doc.has("forms.applyEffects") {
-            let result = FormCommitResult {
-                diagnostics: vec![ScriptDiagnostic {
-                    code: ScriptDiagnosticCode::UnsupportedApi,
-                    message: "this engine has no form-effects batch door".into(),
-                }],
-                ..not_scripted()
-            };
-            self.surface_via_actions(&result, origin)?;
-            return Ok(result);
-        }
-        // Zero refs never reach the engine: `[]` with include resets nothing.
-        if refs.is_empty() {
-            return Ok(not_scripted());
-        }
-        let effects = json!([{ "kind": "reset", "refs": refs }]);
-        let effects_result =
-            await_engine(doc.call("forms.applyEffects", None, vec![effects])).await?;
-        let reset_failed = effect_entries(Some(&effects_result)).iter().any(is_refused);
-        self.refresh().await?;
-        if reset_failed {
-            return Ok(FormCommitResult {
-                effects_result: Some(effects_result),
-                ..FormCommitResult::bare(FormCommitStatus::Failed, false)
-            });
-        }
-        // Acrobat recalculates after a reset; boot rides along lazily.
-        let mut recalc = None;
-        if let Some(scripting) = &self.0.scripting {
-            let result = scripting.recalculate().await?;
-            self.surface_via_actions(&result, origin)?;
-            if result.effects_result.is_some() {
-                self.refresh().await?;
+        signal: Option<AbortSignal>,
+    ) -> Promise<Option<FillOutcome>> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            if me.view().snapshot.is_none() {
+                me.fields.settled().await?;
             }
-            recalc = Some(result);
-        }
-        Ok(FormCommitResult {
-            status: FormCommitStatus::Applied,
-            scripted: recalc.is_some(),
-            effects_result: Some(effects_result),
-            ui_effects: recalc.as_ref().map(|r| r.ui_effects.clone()).unwrap_or_default(),
-            diagnostics: recalc.as_ref().map(|r| r.diagnostics.clone()).unwrap_or_default(),
-            error: recalc.and_then(|r| r.error),
+            let index = me.view();
+            // ISO 32000-2 Tables 241/242: a parent name resets its descendants too.
+            let selection = resolve_field_selection(index.fields(), targets.as_deref(), exclude);
+            let refs: Vec<Value> = selection
+                .selected
+                .iter()
+                .filter(|f| me.resettable(f))
+                .map(|f| get(f, "ref").cloned().unwrap_or(Value::Null))
+                .collect();
+            if refs.is_empty() {
+                return Ok(None);
+            }
+            let request = FillRequest {
+                label: Some(json!({ "key": "form.reset", "count": refs.len() })),
+                ops: vec![json!({ "type": "forms.reset", "fields": refs })],
+                scripts: Some(FillScripts::Recalculate),
+                origin,
+            };
+            // `return fill(...)` from an async function: adopted.
+            Ok(Some(crate::promise::adopt(me.fill(request, signal)).await?))
         })
     }
 
-    /// Host lens: `resetFormAction(fields, exclude, origin = 'user')`. One
-    /// ResetForm action: the ISO selection over a fresh read, buttons and
-    /// signatures skipped, one batch.
+    /// `reset(refs, options)`: each field's default, for the fields given,
+    /// or every field you may fill in, then the calculations. Resolves
+    /// `{ fields }`, the fields it changed.
+    pub fn reset(&self, refs: Option<Vec<Value>>, signal: Option<AbortSignal>) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            // A field you name is one you mean: one you may not fill in
+            // refuses the reset.
+            for reference in refs.iter().flatten() {
+                if let Some(field) = field_by_ref(&me.view(), reference).cloned() {
+                    me.assert_may_fill(&field, "form.reset")?;
+                }
+            }
+            if refs.as_ref().is_some_and(Vec::is_empty) {
+                return Ok(json!({ "fields": [] }));
+            }
+            let targets = refs.map(|refs| refs.iter().map(target_of).collect());
+            let outcome = me.reset_selection(targets, false, ActionOrigin::User, signal).await?;
+            let fields = match outcome {
+                Some(outcome) => fields_with_changed_values(&outcome.before, &outcome.after),
+                None => Vec::new(),
+            };
+            Ok(json!({ "fields": fields }))
+        })
+    }
+
+    /// `resetFormAction(fields, exclude, origin)`: a ResetForm action.
     pub fn reset_form_action(
         &self,
-        targets: Option<Vec<PdfActionTargetRef>>,
+        targets: Option<Vec<Value>>,
         exclude: bool,
         origin: Option<ActionOrigin>,
     ) -> Promise<FormCommitResult> {
-        let origin = origin.unwrap_or(ActionOrigin::User);
-        let this = self.clone();
-        self.0.queue.run(move || {
-            Ok(Promise::spawn(async move {
-                let doc = this.doc().ok_or_else(|| Error::new("no document"))?;
-                let snapshot = await_engine(doc.call("forms.list", None, Vec::new())).await?;
-                let fields = fields_of(&snapshot);
-                let selection = resolve_field_selection(&fields, targets.as_deref(), exclude);
-                let refs = resettable_refs(&selection.selected);
-                let batch = {
-                    let this = this.clone();
-                    Promise::spawn(async move { this.apply_reset_batch(refs, origin).await })
-                };
-                adopt(batch).await
-            }))
-        })
-    }
-
-    /// `resetAll({fields, exclude})`: reset the form, a set of fields, or
-    /// everything but a set of fields.
-    pub fn reset_all(&self, options: ResetAllOptions) -> Promise<BatchResult> {
-        let this = self.clone();
+        let me = self.rc();
         Promise::spawn(async move {
-            this.assert_fill("form.resetAll")?;
-            let targets: Option<Vec<Value>> = options.fields.as_ref().map(|fields| {
-                fields
-                    .iter()
-                    .map(|r| {
-                        if str_of(r, "kind") == Some("objectNumber") {
-                            json!({ "kind": "objectNumber", "objectNumber": crate::value::member(r, "fieldObjectNumber") })
-                        } else {
-                            json!({ "kind": "name", "name": crate::value::member(r, "name") })
-                        }
-                    })
-                    .collect()
-            });
-            let exclude = options.exclude.unwrap_or(false);
-            let snapshot = match this.model().snapshot.clone() {
-                Some(snapshot) => snapshot,
-                None => {
-                    let doc = this.doc().ok_or_else(|| Error::new("no document"))?;
-                    std::rc::Rc::new(await_engine(doc.call("forms.list", None, Vec::new())).await?)
-                }
+            let outcome = me
+                .reset_selection(targets, exclude, origin.unwrap_or(ActionOrigin::User), None)
+                .await?;
+            let Some(outcome) = outcome else {
+                return Ok(FormCommitResult::bare(FormCommitStatus::Unchanged, false));
             };
-            let fields = fields_of(&snapshot);
-            let selection = resolve_field_selection(&fields, targets.as_deref(), exclude);
-            let refs = resettable_refs(&selection.selected);
-            let result = this.reset_form_action(targets, exclude, Some(ActionOrigin::User)).await?;
-            if result.status == FormCommitStatus::Failed {
-                let failed: Vec<Value> = effect_entries(result.effects_result.as_ref())
-                    .iter()
-                    .filter(|e| is_refused(e))
-                    .flat_map(|e| {
-                        get(e, "fields")
-                            .and_then(Value::as_array)
-                            .cloned()
-                            .unwrap_or_default()
-                            .into_iter()
-                            .map(|f| get(&f, "ref").cloned().unwrap_or(Value::Null))
-                    })
-                    .collect();
-                let failed_keys: Vec<String> = failed.iter().map(key_of).collect();
-                return Ok(BatchResult {
-                    applied: refs.into_iter().filter(|r| !failed_keys.contains(&key_of(r))).collect(),
-                    skipped: Vec::new(),
-                    failed: failed
-                        .into_iter()
-                        .map(|entry| BatchFailure {
-                            entry,
-                            error: json!({ "code": "operation-failed", "message": "reset failed", "capability": "form" }),
-                        })
-                        .collect(),
-                });
+            // The action ran, even on fields already at their defaults.
+            let mut result = outcome.result;
+            if result.status == FormCommitStatus::Unchanged {
+                result.status = FormCommitStatus::Applied;
             }
-            Ok(BatchResult { applied: refs, skipped: Vec::new(), failed: Vec::new() })
-        })
-    }
-
-    /// `reset(ref)`: restore one field's default value, through the same
-    /// batch and recalculation a ResetForm action takes.
-    pub fn reset(&self, field_ref: Value) -> Promise<()> {
-        let this = self.clone();
-        Promise::spawn(async move {
-            this.assert_fill("form.reset")?;
-            let key = key_of(&field_ref);
-            let queued = {
-                let this = this.clone();
-                this.0.queue.clone().run(move || {
-                    Ok(Promise::spawn(async move {
-                        let Some(doc) = this.doc() else { return Ok(()) };
-                        this.apply(Msg::WriteStart { key: key.clone() });
-                        let outcome: Result<(), Error> = async {
-                            if doc.has("forms.applyEffects") {
-                                let batch = {
-                                    let (this, field_ref) = (this.clone(), field_ref.clone());
-                                    Promise::spawn(async move {
-                                        this.apply_reset_batch(vec![field_ref], ActionOrigin::User)
-                                            .await
-                                    })
-                                };
-                                let result = batch.await?;
-                                if result.status == FormCommitStatus::Failed {
-                                    let message = effect_entries(result.effects_result.as_ref())
-                                        .iter()
-                                        .find(|e| is_refused(e))
-                                        .and_then(|e| get(e, "error"))
-                                        .and_then(|e| get(e, "message"))
-                                        .filter(|m| !m.is_null())
-                                        .map(|m| string_of(Some(m)))
-                                        .unwrap_or_else(|| "reset failed".into());
-                                    return Err(plugin_error(
-                                        code::OPERATION_FAILED,
-                                        "form",
-                                        message,
-                                        None,
-                                        None,
-                                    ));
-                                }
-                                match field_by_key(&this.model(), &key) {
-                                    Some(field) => {
-                                        this.apply(Msg::WriteDone { key: key.clone(), field })
-                                    }
-                                    None => this.apply(Msg::WriteFailed { key: key.clone() }),
-                                }
-                            } else {
-                                let result = await_engine(doc.call(
-                                    "forms.reset",
-                                    None,
-                                    vec![field_ref.clone()],
-                                ))
-                                .await?;
-                                let field = get(&result, "field").cloned().unwrap_or(Value::Null);
-                                this.apply(Msg::WriteDone { key: key.clone(), field });
-                            }
-                            Ok(())
-                        }
-                        .await;
-                        if let Err(error) = outcome {
-                            this.apply(Msg::WriteFailed { key });
-                            return Err(to_plugin_error("form", &error));
-                        }
-                        Ok(())
-                    }))
-                })
-            };
-            adopt(queued).await
+            Ok(result)
         })
     }
 }

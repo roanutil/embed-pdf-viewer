@@ -1,265 +1,383 @@
-//! `write/fields.ts`: design mode. Fields and widgets are created, patched,
-//! deleted, attached and detached through `doc.forms`; the widget plane is
-//! nudged to re-read pages whose widget population changed.
+//! `write/fields.ts`: building the form. Every design verb is one change on
+//! the document's queue (`ctx.changes`): it shows at once (the fields
+//! mirror predicts it), it is a step of the history, and it resolves with
+//! the engine's answer. A create takes its field's and widgets' object
+//! numbers first, so their refs are final from the first frame and the new
+//! widget can be selected straight away.
 
-use epdf_geometry::js::{max, min};
 use epdf_kernel::Error;
-use epdf_kernel::error::{code, plugin_error};
-use epdf_kernel::geometry::PageRef;
+use epdf_kernel::changes::{PendingChange, StagedChange};
+use epdf_kernel::error::{code, to_plugin_error};
 use epdf_kernel::rt::Promise;
-use serde_json::{Value, json};
-use std::collections::HashSet;
+use epdf_kernel::signal::AbortSignal;
+use serde_json::{Map, Value, json};
 
-use crate::contract::{CreateFieldInput, CreatedField};
-use crate::controller::{FormCapability, key_of};
-use crate::core::fill_items::page_of;
-use crate::core::model::{Box, Msg, field_by_key};
-use crate::promise::await_engine;
-use crate::value::{get, num, str_of, truthy};
+use crate::controller::CAPABILITY;
+use crate::engine::{draft_writes_scripts, writes_scripts};
+use crate::model::{Box, field_by_ref, widget_row_of};
+use crate::sync::predict::undo_look_of;
+use crate::value::{get, items, str_of};
+use crate::write::next_in_line::next_in_line;
 
-fn page_ref_of(value: Option<&Value>) -> Option<PageRef> {
-    value.and_then(PageRef::from_json)
+/// `LOOK`: a widget's look, as `addWidget()` copies it from the field's
+/// last widget onto the new one.
+const LOOK: [&str; 12] = [
+    "color",
+    "interiorColor",
+    "strokeWidth",
+    "borderStyle",
+    "dashArray",
+    "fontFamily",
+    "fontSize",
+    "fontColor",
+    "textAlign",
+    "caption",
+    "checkStyle",
+    "rotation",
+];
+
+fn look_of(widget: Option<&Value>) -> Map<String, Value> {
+    let mut look = Map::new();
+    let Some(widget) = widget else { return look };
+    for name in LOOK {
+        if let Some(value) = get(widget, name).filter(|v| !v.is_null()) {
+            look.insert(name.to_string(), value.clone());
+        }
+    }
+    look
 }
 
-impl FormCapability {
-    /// `nudgeAnnotations(pages)`: re-read each page once on the annotation
-    /// plane, unawaited.
-    fn nudge_annotations(&self, pages: &[PageRef]) {
-        let Some(annotation) = &self.0.annotation else { return };
-        let mut seen: Vec<u32> = Vec::new();
-        for page in pages {
-            if seen.contains(&page.page_object_number) {
-                continue;
+/// `exportValueFor(field)`: a radio group's next free `Choice<n>`, a
+/// checkbox's own value; none for other families.
+fn export_value_for(field: &Value) -> Option<Value> {
+    match str_of(field, "family") {
+        Some("checkbox") => Some(get(field, "exportValue").cloned().unwrap_or(Value::Null)),
+        Some("radio") => {
+            let widgets = items(field, "widgets");
+            let taken: Vec<String> =
+                widgets.iter().map(|w| crate::value::string_of(get(w, "exportValue"))).collect();
+            let mut n = widgets.len() + 1;
+            while taken.contains(&format!("Choice{n}")) {
+                n += 1;
             }
-            seen.push(page.page_object_number);
-            annotation
-                .reload_page(epdf_annotation_core::PageRef::new(page.page_object_number))
-                .ignore();
+            Some(json!(format!("Choice{n}")))
         }
+        _ => None,
+    }
+}
+
+/// `isMerged(field)`: the field's dictionary is its only widget's too.
+fn is_merged(field: &Value) -> bool {
+    let reference = get(field, "ref").unwrap_or(&Value::Null);
+    str_of(reference, "kind") == Some("objectNumber")
+        && items(field, "widgets").iter().any(|w| {
+            crate::value::strict_eq(get(w, "objectNumber"), get(reference, "objectNumber"))
+        })
+}
+
+const MODIFY: &str = "doc.forms.modify";
+const SCRIPT: &str = "doc.forms.script";
+
+impl crate::controller::Core {
+    /// `allow(operation, scripts)`.
+    fn allow(&self, operation: &str, scripts: bool) -> Result<(), Error> {
+        self.assert_allowed(MODIFY, operation)?;
+        if scripts {
+            self.assert_allowed(SCRIPT, operation)?;
+        }
+        Ok(())
     }
 
-    /// `autoName(family)`: `text_1`, `text_2`, ... against the current
-    /// snapshot.
-    fn auto_name(&self, family: &str) -> String {
-        let model = self.model();
-        let names = model
-            .snapshot
-            .as_ref()
-            .and_then(|s| get(s, "fields"))
-            .and_then(Value::as_array)
-            .into_iter()
-            .flatten()
-            .filter_map(|f| str_of(f, "name"));
-        next_auto_name(family, names)
+    /// `stage(verb, op)`: one design op as its own change.
+    fn stage_design(&self, verb: &str, op: Value) -> Result<PendingChange, Error> {
+        let undo = undo_look_of(&self.view(), std::slice::from_ref(&op));
+        let mut change = StagedChange::ops(json!({ "key": format!("form.{verb}") }), vec![op]);
+        change.undo = undo;
+        self.cx.changes()?.stage(change)
     }
 
-    async fn place_field(&self, input: CreateFieldInput) -> Result<CreatedField, Error> {
-        let page = input.page;
-        let pon = f64::from(page.page_object_number);
-        let space = self.cx().try_for_page(page);
-        let (Some(doc), Some(space)) = (self.doc(), space) else {
-            return Err(plugin_error(
-                code::NOT_READY,
-                "form",
-                "createField: document/page not ready",
-                None,
-                None,
-            ));
-        };
-        // Placement is page-bound: intersect the box with the page.
-        let bounds = self.get_page_box(page).unwrap_or_default();
-        let b = input.bounds;
-        let x = max(bounds.x, min(b.x, bounds.width));
-        let y = max(bounds.y, min(b.y, bounds.height));
-        let bx = Box {
-            x,
-            y,
-            width: max(0.0, min(b.x + b.width, bounds.width) - x),
-            height: max(0.0, min(b.y + b.height, bounds.height) - y),
-        };
-        if bx.width < 1.0 || bx.height < 1.0 {
-            return Err(plugin_error(
-                code::INVALID_INPUT,
-                "form",
-                "createField: degenerate bounds (size the box before placing)",
-                None,
-                None,
-            ));
-        }
-        let family = input.family.as_str();
-        let name = match &input.name {
-            Some(name) => name.clone(),
-            None => self.auto_name(family),
-        };
-        let rect = space.page_rect_to_pdf(epdf_kernel::geometry::Rect {
-            x: bx.x,
-            y: bx.y,
-            width: bx.width,
-            height: bx.height,
-        });
-        let mut placement = json!({
-            "page": page.to_json(),
-            "rect": {
-                "left": crate::value::number(rect.left),
-                "right": crate::value::number(rect.right),
-                "top": crate::value::number(rect.top),
-                "bottom": crate::value::number(rect.bottom),
-            },
-        });
-        if let Some(appearance) = input.appearance.filter(|a| truthy(Some(a))) {
-            placement["appearance"] = appearance;
-        }
-        let draft = match family {
-            "radio" => {
-                let mut widget = placement;
-                widget["onState"] = json!("option1");
-                json!({ "family": family, "name": name, "widgets": [widget] })
+    /// `answer(change, options)`: the engine's answer to a staged design
+    /// change, its one item.
+    fn answer(&self, change: PendingChange, signal: Option<AbortSignal>) -> Promise<Value> {
+        let answer = self.cancellable(signal, change.result());
+        Promise::spawn(async move {
+            match answer.await {
+                Ok(result) => Ok(items(&result, "items").first().cloned().unwrap_or(Value::Null)),
+                Err(error) => Err(to_plugin_error(CAPABILITY, &error)),
             }
-            "combobox" | "listbox" => json!({
-                "family": family,
-                "name": name,
-                "widget": placement,
-                "options": match &input.options {
-                    Some(options) => json!(options),
-                    None => json!([
-                        { "label": "Option 1", "value": "Option 1" },
-                        { "label": "Option 2", "value": "Option 2" },
-                    ]),
-                },
-            }),
-            _ => json!({ "family": family, "name": name, "widget": placement }),
-        };
-        let result = await_engine(doc.call("forms.createField", None, vec![draft])).await?;
-        self.refresh().await?;
-        self.apply(Msg::ClearGeom { page_object_number: Some(pon) });
-        // Await the annotation-plane reload so the widget is selectable.
-        if let Some(annotation) = &self.0.annotation {
-            annotation
-                .reload_page(epdf_annotation_core::PageRef::new(page.page_object_number))
-                .await?;
-        }
-        let field = get(&result, "field").cloned().unwrap_or_else(epdf_kernel::undefined);
-        let widget = get(&field, "widgets")
-            .and_then(Value::as_array)
-            .and_then(|widgets| widgets.iter().find(|w| page_of(w) == Some(pon)))
-            .cloned();
-        Ok(CreatedField { field, widget })
-    }
-
-    /// `createField(input)`: a field with one widget at a page-space box,
-    /// clamped to the page, auto-named unless named.
-    pub fn create_field(&self, input: CreateFieldInput) -> Promise<CreatedField> {
-        let this = self.clone();
-        self.0.queue.run(move || Ok(Promise::spawn(async move { this.place_field(input).await })))
-    }
-
-    /// `updateField(ref, patch)`.
-    pub fn update_field(&self, field_ref: Value, patch: Value) -> Promise<()> {
-        let this = self.clone();
-        self.0.queue.run(move || {
-            Ok(Promise::spawn(async move {
-                let Some(doc) = this.doc() else { return Ok(()) };
-                await_engine(doc.call("forms.updateField", None, vec![field_ref, patch])).await?;
-                this.refresh().await
-            }))
         })
     }
 
-    /// `deleteField(ref)`: the field and its widgets.
-    pub fn delete_field(&self, field_ref: Value) -> Promise<()> {
-        let this = self.clone();
-        self.0.queue.run(move || {
-            Ok(Promise::spawn(async move {
-                let Some(doc) = this.doc() else { return Ok(()) };
-                let pages: Vec<PageRef> = field_by_key(&this.model(), &key_of(&field_ref))
-                    .and_then(|f| get(&f, "widgets").and_then(Value::as_array).cloned())
-                    .into_iter()
-                    .flatten()
-                    .filter(|w| truthy(get(w, "page")))
-                    .filter_map(|w| page_ref_of(get(&w, "page")))
-                    .collect();
-                await_engine(doc.call("forms.deleteField", None, vec![field_ref])).await?;
-                this.refresh().await?;
-                let mut seen: Vec<u32> = Vec::new();
-                for page in &pages {
-                    if !seen.contains(&page.page_object_number) {
-                        seen.push(page.page_object_number);
-                        this.apply(Msg::ClearGeom {
-                            page_object_number: Some(f64::from(page.page_object_number)),
-                        });
+    /// `create(draft, options)`: a field with a widget for each place it
+    /// shows. Resolves `{ field }`.
+    pub fn create(&self, draft: Value, signal: Option<AbortSignal>) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            me.allow("form.create", draft_writes_scripts(&draft))?;
+            // The field, then each widget, in the draft's order.
+            let count = 1 + items(&draft, "widgets").len();
+            let numbers = match me.take_numbers_now(count)? {
+                Some(numbers) => numbers,
+                None => me.take_numbers(count).await?,
+            };
+            let op = json!({
+                "type": "forms.create",
+                "draft": draft,
+                "objectNumber": numbers[0],
+                "widgetObjectNumbers": &numbers[1..],
+            });
+            let change = me.stage_design("create", op)?;
+            let item = me.answer(change, signal).await?;
+            Ok(json!({ "field": get(&item, "field").cloned().unwrap_or(Value::Null) }))
+        })
+    }
+
+    /// `addWidget(ref, placement, options)`: the field in one more place.
+    /// Resolves `{ field, widget }`.
+    pub fn add_widget(
+        &self,
+        reference: Value,
+        placement: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            me.allow("form.addWidget", writes_scripts(get(&placement, "actions")))?;
+            let index = me.view();
+            let Some(field) = field_by_ref(&index, &reference).cloned() else {
+                return Err(me.error(code::NOT_FOUND, "no form field has this ref"));
+            };
+            let rows: Vec<Value> = items(&field, "widgets")
+                .iter()
+                .filter_map(|w| {
+                    let n = get(w, "objectNumber").and_then(Value::as_f64).unwrap_or(f64::NAN);
+                    widget_row_of(&index, n).cloned()
+                })
+                .collect();
+            let last = rows.last();
+            let page = get(&placement, "page")
+                .filter(|p| !p.is_null())
+                .or_else(|| last.and_then(|l| get(l, "page")))
+                .cloned();
+            let Some(page) = page.filter(|p| crate::value::truthy(Some(p))) else {
+                return Err(me.error(
+                    code::INVALID_INPUT,
+                    "the field shows on no page: give `page` and `rect`",
+                ));
+            };
+            let size = me.get_page(&page).and_then(|info| get(&info, "size").cloned());
+            let on_page: Vec<&Value> = rows
+                .iter()
+                .filter(|row| {
+                    crate::value::strict_eq(
+                        get(row, "page").and_then(|p| get(p, "objectNumber")),
+                        get(&page, "objectNumber"),
+                    )
+                })
+                .collect();
+            let given = get(&placement, "rect")
+                .filter(|r| !r.is_null())
+                .or_else(|| get(&placement, "box").filter(|b| !b.is_null()))
+                .cloned();
+            let rect = match given {
+                Some(rect) => Some(rect),
+                None => match &size {
+                    Some(size) if !on_page.is_empty() => {
+                        let boxes: Vec<Box> = on_page
+                            .iter()
+                            .map(|row| Box::read(get(row, "box").unwrap_or(&Value::Null)))
+                            .collect();
+                        let n = |k: &str| get(size, k).and_then(Value::as_f64).unwrap_or(f64::NAN);
+                        Some(next_in_line(&boxes, n("width"), n("height")).to_json())
                     }
-                }
-                this.nudge_annotations(&pages);
-                Ok(())
-            }))
+                    _ => None,
+                },
+            };
+            let Some(rect) = rect else {
+                return Err(me.error(
+                    code::INVALID_INPUT,
+                    "no widget of the field on that page: give `rect`",
+                ));
+            };
+            let export_value = get(&placement, "exportValue")
+                .filter(|v| !v.is_null())
+                .cloned()
+                .or_else(|| export_value_for(&field));
+            let split = is_merged(&field);
+            let count = if split { 2 } else { 1 };
+            let numbers = match me.take_numbers_now(count)? {
+                Some(numbers) => numbers,
+                None => me.take_numbers(count).await?,
+            };
+            let object_number = numbers[0];
+            // `{ ...lookOf(last), ...placement, page, rect?, exportValue? }`.
+            let mut full = look_of(last);
+            for (key, value) in placement.as_object().into_iter().flatten() {
+                full.insert(key.clone(), value.clone());
+            }
+            full.insert("page".into(), page);
+            if !crate::value::truthy(get(&placement, "box")) {
+                full.insert("rect".into(), rect);
+            }
+            if let Some(export_value) = export_value {
+                full.insert("exportValue".into(), export_value);
+            }
+            let mut op = Map::new();
+            op.insert("type".into(), json!("forms.addWidget"));
+            op.insert("field".into(), get(&field, "ref").cloned().unwrap_or(Value::Null));
+            op.insert("placement".into(), Value::Object(full));
+            op.insert("objectNumber".into(), json!(object_number));
+            if split {
+                op.insert("splitObjectNumber".into(), json!(numbers[1]));
+            }
+            let change = me.stage_design("addWidget", Value::Object(op))?;
+            let item = me.answer(change, signal).await?;
+            let widgets = items(&item, "widgets");
+            let widget = widgets
+                .iter()
+                .find(|row| {
+                    let r = get(row, "ref").unwrap_or(&Value::Null);
+                    str_of(r, "kind") == Some("objectNumber")
+                        && get(r, "objectNumber").and_then(Value::as_f64)
+                            == Some(f64::from(object_number))
+                })
+                .or_else(|| widgets.last())
+                .cloned()
+                .unwrap_or(Value::Null);
+            Ok(
+                json!({ "field": get(&item, "field").cloned().unwrap_or(Value::Null), "widget": widget }),
+            )
         })
     }
 
-    fn relink_widget(&self, path: &'static str, field_ref: Value, widget: Value) -> Promise<()> {
-        let this = self.clone();
-        self.0.queue.run(move || {
-            Ok(Promise::spawn(async move {
-                let Some(doc) = this.doc() else { return Ok(()) };
-                let page = get(&widget, "page").cloned().unwrap_or(Value::Null);
-                await_engine(doc.call(path, None, vec![field_ref, widget])).await?;
-                this.refresh().await?;
-                this.apply(Msg::ClearGeom {
-                    page_object_number: Some(num(&page, "pageObjectNumber").unwrap_or(f64::NAN)),
-                });
-                if let Some(page) = PageRef::from_json(&page) {
-                    this.nudge_annotations(&[page]);
-                }
-                Ok(())
-            }))
+    /// One design verb: allowed, staged, answered, its item read.
+    fn design(
+        &self,
+        operation: &'static str,
+        verb: &'static str,
+        scripts: bool,
+        op: Value,
+        signal: Option<AbortSignal>,
+        read: fn(&Value) -> Value,
+    ) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            me.allow(operation, scripts)?;
+            let change = me.stage_design(verb, op)?;
+            let item = me.answer(change, signal).await?;
+            Ok(read(&item))
         })
     }
 
-    /// `detachWidget(ref, widget)`: the widget stays as an inert
-    /// annotation; the field survives.
-    pub fn detach_widget(&self, field_ref: Value, widget: Value) -> Promise<()> {
-        self.relink_widget("forms.detachWidget", field_ref, widget)
+    /// `update(ref, patch, options)`: resolves `{ field }`.
+    pub fn update(
+        &self,
+        reference: Value,
+        patch: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let scripts = writes_scripts(get(&patch, "actions"));
+        let op = json!({ "type": "forms.update", "field": reference, "patch": patch });
+        self.design(
+            "form.update",
+            "update",
+            scripts,
+            op,
+            signal,
+            |item| json!({ "field": get(item, "field").cloned().unwrap_or(Value::Null) }),
+        )
     }
 
-    /// `attachWidget(ref, widget)`: link an inert widget annotation to a
-    /// field.
-    pub fn attach_widget(&self, field_ref: Value, widget: Value) -> Promise<()> {
-        self.relink_widget("forms.attachWidget", field_ref, widget)
-    }
-}
-
-/// The first `{family}_{n}`, from `n = 1`, that is not in `names`: the
-/// TypeScript's `Set` and `has` loop, linear in the field count.
-fn next_auto_name<'a>(family: &str, names: impl Iterator<Item = &'a str>) -> String {
-    let names: HashSet<&str> = names.collect();
-    let mut n = 1u64;
-    let mut name = format!("{family}_{n}");
-    while names.contains(name.as_str()) {
-        n += 1;
-        name = format!("{family}_{n}");
-    }
-    name
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn auto_name_takes_the_first_free_number() {
-        let names = ["text_1", "text_3", "check_2", "text_2x"];
-        assert_eq!(next_auto_name("text", names.into_iter()), "text_2");
-        assert_eq!(next_auto_name("check", names.into_iter()), "check_1");
-        assert_eq!(next_auto_name("radio", std::iter::empty()), "radio_1");
+    /// `reorderCalculations(fields, position, options)`.
+    pub fn reorder_calculations(
+        &self,
+        fields: Value,
+        position: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let op =
+            json!({ "type": "forms.reorderCalculations", "fields": fields, "position": position });
+        self.design("form.reorderCalculations", "reorderCalculations", false, op, signal, |item| {
+            json!({ "calculationOrder": get(item, "calculationOrder").cloned().unwrap_or(Value::Null) })
+        })
     }
 
-    #[test]
-    fn auto_name_is_linear_in_the_field_count() {
-        // 50,000 taken names in a row: the old `Vec::contains` loop made
-        // 1.25 billion string comparisons here, about 7 s in a debug build.
-        let names: Vec<String> = (1..=50_000).map(|n| format!("text_{n}")).collect();
-        let started = std::time::Instant::now();
-        let name = next_auto_name("text", names.iter().map(String::as_str));
-        assert_eq!(name, "text_50001");
-        assert!(started.elapsed() < std::time::Duration::from_secs(2), "{:?}", started.elapsed());
+    /// `delete(ref, options)`.
+    pub fn delete(&self, reference: Value, signal: Option<AbortSignal>) -> Promise<Value> {
+        let op = json!({ "type": "forms.delete", "field": reference });
+        self.design("form.delete", "delete", false, op, signal, |_| epdf_kernel::undefined())
+    }
+
+    /// `removeWidget(ref, widget, options)`: resolves `{ field }`.
+    pub fn remove_widget(
+        &self,
+        reference: Value,
+        widget: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let op = json!({ "type": "forms.removeWidget", "field": reference, "widget": widget });
+        self.design(
+            "form.removeWidget",
+            "removeWidget",
+            false,
+            op,
+            signal,
+            |item| json!({ "field": get(item, "field").cloned().unwrap_or(Value::Null) }),
+        )
+    }
+
+    /// `updateWidget(widget, patch, options)`: resolves `{ widget }`.
+    pub fn update_widget(
+        &self,
+        widget: Value,
+        patch: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let op = json!({ "type": "forms.updateWidget", "widget": widget, "patch": patch });
+        self.design(
+            "form.updateWidget",
+            "updateWidget",
+            false,
+            op,
+            signal,
+            |item| json!({ "widget": get(item, "widget").cloned().unwrap_or(Value::Null) }),
+        )
+    }
+
+    /// `deleteWidget(widget, options)`: resolves `{ field }`.
+    pub fn delete_widget(&self, widget: Value, signal: Option<AbortSignal>) -> Promise<Value> {
+        let op = json!({ "type": "forms.deleteWidget", "widget": widget });
+        self.design(
+            "form.deleteWidget",
+            "deleteWidget",
+            false,
+            op,
+            signal,
+            |item| json!({ "field": get(item, "field").cloned().unwrap_or(Value::Null) }),
+        )
+    }
+
+    /// `repair(options)`: a repair reads the whole form and fixes it where it
+    /// stands, not a change of ops. `options` is the repair's own options
+    /// (`None` when the caller gave none).
+    pub fn repair(&self, options: Option<Value>, signal: Option<AbortSignal>) -> Promise<Value> {
+        let me = self.rc();
+        Promise::spawn(async move {
+            me.allow("form.repair", false)?;
+            let run = {
+                let me = me.clone();
+                let signal = signal.clone();
+                move || -> Result<Promise<Value>, Error> {
+                    let doc = me.doc_or_throw()?;
+                    let args = match options {
+                        Some(options) => vec![options],
+                        None => Vec::new(),
+                    };
+                    Ok(me.cancellable(signal, doc.call("forms.repair", None, args)))
+                }
+            };
+            let queued = me.enqueue.run(run, signal);
+            crate::promise::adopt(queued).await
+        })
     }
 }

@@ -1,115 +1,61 @@
-//! `services/events.ts`: the six confirmed-change hooks, disposed with the
-//! plugin. A failing listener is reported through `console.error`
-//! (`[form] event listener failed:`), never to its siblings.
-
-use std::rc::Rc;
+//! `services/events.ts`: the plugin's events. Fact events fire from the
+//! fields mirror (`sync/fields.rs`). Payloads are the TypeScript's event
+//! objects, as JSON.
 
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::scope::Teardown;
 use epdf_kernel::{Controller, Error, Unsubscribe};
+use serde_json::Value;
 
-use crate::contract::*;
-use crate::controller::FormCapability;
-use crate::model::{FormAction, FormState};
-
-pub(crate) struct FormEvents {
-    pub value_changed: EventHookSource<FormValueChangedEvent>,
-    pub field_created: EventHookSource<FormFieldChangedEvent>,
-    pub field_updated: EventHookSource<FormFieldChangedEvent>,
-    pub field_deleted: EventHookSource<FormFieldChangedEvent>,
-    pub validation_rejected: EventHookSource<FormValidationRejectedEvent>,
-    pub resynced: EventHookSource<FormResyncedEvent>,
+pub struct Events {
+    pub value_changed: EventHookSource<Value>,
+    pub field_created: EventHookSource<Value>,
+    pub field_updated: EventHookSource<Value>,
+    pub field_deleted: EventHookSource<Value>,
+    pub validation_rejected: EventHookSource<Value>,
+    pub resynced: EventHookSource<Value>,
 }
 
-impl FormEvents {
-    pub fn new(
-        cx: &Controller<FormState, FormAction>,
-        console_error: Option<Rc<dyn Fn(&str, &Error)>>,
-    ) -> Self {
-        let report: Rc<dyn Fn(&Error)> = Rc::new(move |error: &Error| {
-            if let Some(sink) = &console_error {
-                sink("[form] event listener failed:", error);
-            }
-        });
-        let events = FormEvents {
-            value_changed: EventHookSource::new(Some(report.clone())),
-            field_created: EventHookSource::new(Some(report.clone())),
-            field_updated: EventHookSource::new(Some(report.clone())),
-            field_deleted: EventHookSource::new(Some(report.clone())),
-            validation_rejected: EventHookSource::new(Some(report.clone())),
-            resynced: EventHookSource::new(Some(report)),
-        };
-        let all = (
-            events.value_changed.clone(),
-            events.field_created.clone(),
-            events.field_updated.clone(),
-            events.field_deleted.clone(),
-            events.validation_rejected.clone(),
-            events.resynced.clone(),
-        );
-        let teardown: Teardown = Box::new(move || {
-            all.0.dispose();
-            all.1.dispose();
-            all.2.dispose();
-            all.3.dispose();
-            all.4.dispose();
-            all.5.dispose();
-            Ok(None)
-        });
-        cx.defer(teardown);
-        events
+impl Events {
+    /// `createEvents(ctx)`.
+    pub fn new(cx: &Controller<Value, Value>) -> Events {
+        Events {
+            value_changed: cx.event_source(),
+            field_created: cx.event_source(),
+            field_updated: cx.event_source(),
+            field_deleted: cx.event_source(),
+            validation_rejected: cx.event_source(),
+            resynced: cx.event_source(),
+        }
     }
 }
 
-impl FormCapability {
-    /// `onValueChanged(listener)`: a confirmed value change, programmatic,
-    /// script and remote writes alike.
-    pub fn on_value_changed(
-        &self,
-        listener: impl Fn(&FormValueChangedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.value_changed.on(listener)
-    }
+macro_rules! hooks {
+    ($($(#[$doc:meta])* $name:ident => $source:ident;)*) => {
+        impl crate::controller::Core {
+            $(
+                $(#[$doc])*
+                pub fn $name(
+                    &self,
+                    listener: impl Fn(&Value) -> Result<(), Error> + 'static,
+                ) -> Unsubscribe {
+                    self.events.$source.on(listener)
+                }
+            )*
+        }
+    };
+}
 
-    /// `onFieldCreated(listener)`.
-    pub fn on_field_created(
-        &self,
-        listener: impl Fn(&FormFieldChangedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.field_created.on(listener)
-    }
-
-    /// `onFieldUpdated(listener)`: an update, or a widget attached or
-    /// detached.
-    pub fn on_field_updated(
-        &self,
-        listener: impl Fn(&FormFieldChangedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.field_updated.on(listener)
-    }
-
-    /// `onFieldDeleted(listener)`: `field` is null.
-    pub fn on_field_deleted(
-        &self,
-        listener: impl Fn(&FormFieldChangedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.field_deleted.on(listener)
-    }
-
-    /// `onValidationRejected(listener)`: the document's scripts refused a
-    /// validated write.
-    pub fn on_validation_rejected(
-        &self,
-        listener: impl Fn(&FormValidationRejectedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.validation_rejected.on(listener)
-    }
-
-    /// `onResynced(listener)`: the snapshot was replaced wholesale.
-    pub fn on_resynced(
-        &self,
-        listener: impl Fn(&FormResyncedEvent) -> Result<(), Error> + 'static,
-    ) -> Unsubscribe {
-        self.0.events.resynced.on(listener)
-    }
+hooks! {
+    /// `onValueChanged`: a field's value changed, whoever changed it.
+    on_value_changed => value_changed;
+    /// `onFieldCreated`: a field was added.
+    on_field_created => field_created;
+    /// `onFieldUpdated`: a field's settings or widgets changed.
+    on_field_updated => field_updated;
+    /// `onFieldDeleted`: a field was removed.
+    on_field_deleted => field_deleted;
+    /// `onValidationRejected`: the form's own validation refused a value.
+    on_validation_rejected => validation_rejected;
+    /// `onResynced`: the whole form was read.
+    on_resynced => resynced;
 }

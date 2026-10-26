@@ -1,16 +1,23 @@
-//! `scripting/controller.ts`: the K/V/C/F transaction. One commit runs,
-//! inside one realm transaction, the document boot (once per realm), the
-//! keystroke pair, validate, the `/CO` calculation chain and format, over a
-//! detached field overlay, then commits the canonical effects as one engine
-//! batch.
+//! `scripting/controller.ts`: the K/V/C/F passes. Keystroke, validate,
+//! calculate and format scripts over one working copy of the form
+//! (`overlay.rs`), inside one realm transaction. The controller reads the
+//! form it is given and returns what the scripts changed; writing it is the
+//! caller's, inside the same transaction, so the next transaction reads the
+//! form with it.
 //!
 //! The controller never owns a realm. It rides a realm port: this
-//! document's own (the actions plugin's `script_realm`) or a detached one the
-//! actions plugin mints with `create_detached_script_realm` for a document
-//! that is not displayed (stamp's asset documents). Either way the owner
-//! disposes the realm; [`FormScriptingController::dispose`] only fences
-//! further transactions.
+//! document's own (the actions plugin's `script_realm`) or a detached one
+//! the actions plugin mints for a document that is not displayed. Either
+//! way the owner disposes the realm; [`FormScriptingController::dispose`]
+//! only fences further transactions.
+//!
+//! Kept divergence H4: the transaction's time budget runs on the host's
+//! monotonic clock (`rt::monotonic_now`), not the virtual one. A real host
+//! runs a whole K/V/C/F chain inside one drain, where the virtual clock
+//! stands still, so the TypeScript's `Date.now()` arithmetic would never
+//! run out (`tests/budget.rs`).
 
+use std::any::Any;
 use std::cell::Cell;
 use std::rc::Rc;
 
@@ -21,49 +28,70 @@ use epdf_acrojs::{
     script_fields_from_snapshot,
 };
 use epdf_kernel::Error;
-use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::types::DocumentMeta;
 use epdf_plugin_actions::ScriptPhase;
+use serde::Serialize;
 use serde_json::{Value, json};
 
 use super::overlay::*;
 use super::results::*;
-use crate::contract::{FormCommitResult, FormCommitStatus, FormUiEffect};
-use crate::promise::{adopt, adopted, await_engine};
-use crate::value::{get, json_stringify, str_of, truthy, utf16_slice};
+use crate::contract::FormUiEffect;
+use crate::value::{get, items, truthy, utf16_slice};
 
-/// A transaction body: what runs while the realm is held.
-pub type TransactionBody =
-    Box<dyn FnOnce(ScriptTransaction) -> Result<Promise<FormCommitResult>, Error>>;
-
-/// The realm's transaction port: `transaction(body)`.
-pub type TransactionPort = Rc<dyn Fn(TransactionBody) -> Promise<FormCommitResult>>;
+/// A value a realm transaction carries, whatever the body made.
+pub type AnyPromise = Promise<Rc<dyn Any>>;
+/// What runs while the realm is held.
+pub type TransactionBody = Box<dyn FnOnce(ScriptTransaction) -> Result<AnyPromise, Error>>;
+/// The realm's transaction port (`ScriptTransaction`): one at a time.
+pub type TransactionPort = Rc<dyn Fn(TransactionBody) -> AnyPromise>;
 
 /// `FormScriptingControllerOptions`.
 pub struct FormScriptingControllerOptions {
-    pub doc: Rc<dyn DocumentHandle>,
+    /// What the scripts read of the document: its name, page count and pages.
     pub document: Rc<dyn Fn() -> Option<DocumentMeta>>,
-    /// The K/V/C/F pipeline runs wholly inside one transaction: snapshot
-    /// fetch, every pass, and the engine commit.
+    /// The realm's transaction port.
     pub transaction: TransactionPort,
-    /// The transaction aggregate the realm owner enforces.
+    /// The transaction aggregate the realm owner hands over.
     pub budget: Option<ScriptBudget>,
 }
 
-// ── the controller ────────────────────────────────────────────────────────────
+/// How the scripts took a write.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ScriptStatus {
+    Accepted,
+    Rejected,
+    Failed,
+}
 
-struct ControllerInner {
-    doc: Rc<dyn DocumentHandle>,
+/// `FormScriptResult`: what the form's scripts made of one write, before
+/// anything is written.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FormScriptResult {
+    pub status: ScriptStatus,
+    /// What the scripts changed in the form, in the order to write it.
+    pub effects: Vec<Value>,
+    /// What the document's open scripts changed: written even when the
+    /// value is refused.
+    pub boot_effects: Vec<Value>,
+    pub ui_effects: Vec<FormUiEffect>,
+    pub diagnostics: Vec<ScriptDiagnostic>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error: Option<ScriptExecutionError>,
+}
+
+struct Inner {
     document: Rc<dyn Fn() -> Option<DocumentMeta>>,
     transaction: TransactionPort,
-    transaction_budget: Option<ScriptBudget>,
+    budget: Option<ScriptBudget>,
     disposed: Cell<bool>,
 }
 
 /// `FormScriptingController`.
 #[derive(Clone)]
-pub struct FormScriptingController(Rc<ControllerInner>);
+pub struct FormScriptingController(Rc<Inner>);
 
 /// `createFormScriptingController(options)`.
 pub fn create_form_scripting_controller(
@@ -72,18 +100,149 @@ pub fn create_form_scripting_controller(
     FormScriptingController::new(options)
 }
 
+/// `FormScripts`: the scripts one transaction can run.
+#[derive(Clone)]
+pub struct FormScripts {
+    inner: Rc<Inner>,
+    txn: ScriptTransaction,
+}
+
+impl FormScripts {
+    /// A field's new value through its keystroke and validate scripts, then
+    /// the calculations and the formats. `form` is the form without it.
+    pub fn commit(&self, form: Rc<Value>, field: Value, value: Value) -> Promise<FormScriptResult> {
+        Promise::spawn(run(
+            self.inner.clone(),
+            self.txn.clone(),
+            form,
+            Some(field),
+            Some(value),
+            None,
+        ))
+    }
+
+    /// One widget's activation action (`/A`, with `/Next`).
+    pub fn activate(
+        &self,
+        form: Rc<Value>,
+        field: Value,
+        action: Value,
+    ) -> Promise<FormScriptResult> {
+        Promise::spawn(run(
+            self.inner.clone(),
+            self.txn.clone(),
+            form,
+            Some(field),
+            None,
+            Some(action),
+        ))
+    }
+
+    /// The document's open scripts (once per realm) and the calculations.
+    pub fn recalculate(&self, form: Rc<Value>) -> Promise<FormScriptResult> {
+        Promise::spawn(run(self.inner.clone(), self.txn.clone(), form, None, None, None))
+    }
+}
+
+impl FormScriptingController {
+    pub fn new(options: FormScriptingControllerOptions) -> Self {
+        let FormScriptingControllerOptions { document, transaction, budget } = options;
+        FormScriptingController(Rc::new(Inner {
+            document,
+            transaction,
+            budget,
+            disposed: Cell::new(false),
+        }))
+    }
+
+    /// The realm belongs to its owner: this only fences further transactions.
+    pub fn dispose(&self) {
+        self.0.disposed.set(true);
+    }
+
+    /// One realm transaction: `body` runs its scripts and writes what they
+    /// changed before the next transaction starts.
+    pub fn transaction<T: Clone + 'static>(
+        &self,
+        body: impl FnOnce(FormScripts) -> Result<Promise<T>, Error> + 'static,
+    ) -> Promise<T> {
+        if self.0.disposed.get() {
+            return Promise::rejected(Error::new("Form scripting controller is disposed"));
+        }
+        let inner = self.0.clone();
+        let wrapped: TransactionBody = Box::new(move |txn| {
+            let made = body(FormScripts { inner, txn })?;
+            Ok(made.convert(|value: &T| Ok(Rc::new(value.clone()) as Rc<dyn Any>)))
+        });
+        (self.0.transaction)(wrapped).convert(|any: &Rc<dyn Any>| {
+            any.downcast_ref::<T>()
+                .cloned()
+                .ok_or_else(|| Error::new("[form] a transaction answered another type"))
+        })
+    }
+
+    /// Load the realm before the first write needs it: the scripts' engine
+    /// starts, and the open scripts run, their effects kept for the first
+    /// write. Nothing is written.
+    pub fn warm(&self, form: Rc<Value>) -> Promise<()> {
+        let this = self.clone();
+        Promise::spawn(async move {
+            if this.0.disposed.get() {
+                return Ok(());
+            }
+            let budget = this.0.budget.clone().unwrap_or(DEFAULT_SCRIPT_BUDGET);
+            let body: TransactionBody = Box::new(move |txn| {
+                let fields = script_fields_from_snapshot(&form)?;
+                let world = ScriptWorldInput {
+                    fields,
+                    annots: None,
+                    annot_pages: None,
+                    annots_cover_document: None,
+                    page_number: None,
+                    event: ScriptEventInput::of(ScriptEventKind::NameTreeBoot),
+                };
+                Ok(txn
+                    .run("", world, Some(budget))
+                    .convert(|o: &ScriptOutput| Ok(Rc::new(o.clone()) as Rc<dyn Any>)))
+            });
+            (this.0.transaction)(body).await?;
+            Ok(())
+        })
+    }
+
+    /// `commit` in a transaction of its own.
+    pub fn commit(&self, form: Rc<Value>, field: Value, value: Value) -> Promise<FormScriptResult> {
+        self.transaction(move |scripts| Ok(scripts.commit(form, field, value)))
+    }
+
+    /// `activate` in a transaction of its own.
+    pub fn activate(
+        &self,
+        form: Rc<Value>,
+        field: Value,
+        action: Value,
+    ) -> Promise<FormScriptResult> {
+        self.transaction(move |scripts| Ok(scripts.activate(form, field, action)))
+    }
+
+    /// `recalculate` in a transaction of its own.
+    pub fn recalculate(&self, form: Rc<Value>) -> Promise<FormScriptResult> {
+        self.transaction(move |scripts| Ok(scripts.recalculate(form)))
+    }
+}
+
 enum Run {
     Output(std::boxed::Box<ScriptOutput>),
     Error(ScriptExecutionError),
 }
 
-/// The per-transaction accumulators the TypeScript closes over.
+/// The accumulators `run` closes over.
 struct Pass {
     txn: ScriptTransaction,
     page_number: f64,
     budget: ScriptBudget,
     execution_ms: f64,
-    aggregate_output_size: f64,
+    aggregate_output_size: usize,
     ui_effects: Vec<FormUiEffect>,
     diagnostics: Vec<ScriptDiagnostic>,
 }
@@ -106,15 +265,15 @@ impl Pass {
         output: &ScriptOutput,
         phase: ScriptPhase,
     ) -> Option<ScriptExecutionError> {
-        let size = json_stringify(&serde_json::to_value(output).unwrap_or(Value::Null)).len();
-        self.aggregate_output_size += size as f64;
+        let text = crate::value::json_stringify(&epdf_kernel::js::to_value(output));
+        self.aggregate_output_size += utf8_length(&text);
         self.ui_effects.extend(output.ui_effects.iter().map(|effect| FormUiEffect {
             effect: effect.clone(),
             phase,
             origin: None,
         }));
         self.diagnostics.extend(output.diagnostics.iter().cloned());
-        if self.aggregate_output_size > self.budget.max_output_bytes {
+        if self.aggregate_output_size as f64 > self.budget.max_output_bytes {
             return Some(budget_error(format!(
                 "Form script transaction output exceeded {} bytes",
                 epdf_geometry::js::number_to_string(self.budget.max_output_bytes)
@@ -137,8 +296,7 @@ impl Pass {
         let Some(remaining) = self.remaining_budget() else {
             return Run::Error(budget_error("Form script transaction timed out"));
         };
-        // Wall time, not the virtual clock: on a real host the whole chain
-        // runs inside one drain, where the virtual clock stands still.
+        // H4: wall time, not the virtual clock.
         let started_at = rt::monotonic_now();
         let output = match self.txn.run(source, input, Some(remaining)).await {
             Ok(output) => output,
@@ -151,8 +309,38 @@ impl Pass {
         }
     }
 
-    fn failed(&mut self, error: ScriptExecutionError) -> FormCommitResult {
-        failed(std::mem::take(&mut self.ui_effects), std::mem::take(&mut self.diagnostics), error)
+    fn failed(&mut self, error: ScriptExecutionError) -> FormScriptResult {
+        FormScriptResult {
+            status: ScriptStatus::Failed,
+            effects: Vec::new(),
+            boot_effects: Vec::new(),
+            ui_effects: std::mem::take(&mut self.ui_effects),
+            diagnostics: std::mem::take(&mut self.diagnostics),
+            error: Some(error),
+        }
+    }
+
+    /// The value is refused; the open scripts' effects are still written.
+    fn rejected(&mut self, boot_effects: Vec<Value>) -> FormScriptResult {
+        FormScriptResult {
+            status: ScriptStatus::Rejected,
+            effects: Vec::new(),
+            boot_effects,
+            ui_effects: std::mem::take(&mut self.ui_effects),
+            diagnostics: std::mem::take(&mut self.diagnostics),
+            error: None,
+        }
+    }
+}
+
+fn failed_now(error: ScriptExecutionError) -> FormScriptResult {
+    FormScriptResult {
+        status: ScriptStatus::Failed,
+        effects: Vec::new(),
+        boot_effects: Vec::new(),
+        ui_effects: Vec::new(),
+        diagnostics: Vec::new(),
+        error: Some(error),
     }
 }
 
@@ -160,120 +348,68 @@ fn event(kind: ScriptEventKind) -> ScriptEventInput {
     ScriptEventInput::of(kind)
 }
 
-impl FormScriptingController {
-    pub fn new(options: FormScriptingControllerOptions) -> Self {
-        let FormScriptingControllerOptions { doc, document, transaction, budget } = options;
-        FormScriptingController(Rc::new(ControllerInner {
-            doc,
-            document,
-            transaction,
-            transaction_budget: budget,
-            disposed: Cell::new(false),
-        }))
-    }
-
-    /// The realm belongs to its owner: this only fences further
-    /// transactions.
-    pub fn dispose(&self) {
-        self.0.disposed.set(true);
-    }
-
-    /// `commit(ref, proposed)`: one originating-client value transaction.
-    pub fn commit(&self, field_ref: Value, proposed: Value) -> Promise<FormCommitResult> {
-        let this = self.clone();
-        let proposed = Some(proposed).filter(|v| !epdf_kernel::is_undefined(v));
-        Promise::spawn(async move { adopt(this.transact(Some(field_ref), proposed, None)).await })
-    }
-
-    /// `activate(ref, action)`: one widget's activation action.
-    pub fn activate(&self, field_ref: Value, action: Value) -> Promise<FormCommitResult> {
-        let this = self.clone();
-        Promise::spawn(
-            async move { adopt(this.transact(Some(field_ref), None, Some(action))).await },
-        )
-    }
-
-    /// `recalculate()`: the lazy boot plus the `/CO` chain, with no user
-    /// field change. The anchor resolves inside the transaction.
-    pub fn recalculate(&self) -> Promise<FormCommitResult> {
-        let this = self.clone();
-        Promise::spawn(async move { adopt(this.transact(None, None, None)).await })
-    }
-
-    fn transact(
-        &self,
-        ref_input: Option<Value>,
-        proposed: Option<Value>,
-        activation: Option<Value>,
-    ) -> Promise<FormCommitResult> {
-        let inner = self.0.clone();
-        Promise::spawn(async move {
-            if inner.disposed.get() {
-                return Err(Error::new("Form scripting controller is disposed"));
-            }
-            let body_inner = inner.clone();
-            let body: TransactionBody = Box::new(move |txn| {
-                Ok(Promise::spawn(transact_body(body_inner, txn, ref_input, proposed, activation)))
-            });
-            adopt((inner.transaction)(body)).await
-        })
-    }
-}
-
 /// `javaScriptProgramFromActionTree(tree)`, a throw as a script error.
 fn program_of(tree: &Value) -> Result<String, ScriptExecutionError> {
     java_script_program_from_action_tree(tree).map_err(|error| script_error(error.message))
 }
 
-async fn transact_body(
-    inner: Rc<ControllerInner>,
+/// `this.run(txn, snapshot, refInput, proposed, activation)`.
+async fn run(
+    inner: Rc<Inner>,
     txn: ScriptTransaction,
+    snapshot: Rc<Value>,
     ref_input: Option<Value>,
     proposed: Option<Value>,
     activation: Option<Value>,
-) -> Result<FormCommitResult, Error> {
-    let snapshot = await_engine(inner.doc.call("forms.list", None, Vec::new())).await?;
-    let calculation_order: Vec<Value> =
-        get(&snapshot, "calculationOrder").and_then(Value::as_array).cloned().unwrap_or_default();
-    let field_ref = ref_input.filter(|r| !r.is_null()).or_else(|| {
+) -> Result<FormScriptResult, Error> {
+    let calculation_order = items(&snapshot, "calculationOrder").to_vec();
+    // Recalculate's anchor: the first live `/CO` field, else the first field.
+    let asked = ref_input.or_else(|| {
         calculation_order
             .iter()
             .find(|c| !c.is_null() && snapshot_field(&snapshot, c).is_some())
             .cloned()
-            .or_else(|| snapshot_fields(&snapshot).first().and_then(|f| get(f, "ref")).cloned())
+            .or_else(|| items(&snapshot, "fields").first().and_then(|f| get(f, "ref")).cloned())
     });
-    let Some(field_ref) = field_ref else {
-        return Ok(FormCommitResult::bare(FormCommitStatus::Unchanged, true));
+    let Some(asked) = asked else {
+        return Ok(FormScriptResult {
+            status: ScriptStatus::Accepted,
+            effects: Vec::new(),
+            boot_effects: Vec::new(),
+            ui_effects: Vec::new(),
+            diagnostics: Vec::new(),
+            error: None,
+        });
     };
-    let Some(target) = snapshot_field(&snapshot, &field_ref).cloned() else {
-        return Ok(failed(
-            Vec::new(),
-            Vec::new(),
-            script_error(format!("Form field '{}' no longer exists", ref_key(&field_ref))),
-        ));
+    let Some(target) = snapshot_field(&snapshot, &asked).cloned() else {
+        return Ok(failed_now(script_error(format!(
+            "Form field '{}' no longer exists",
+            ref_key(&asked)
+        ))));
     };
+    // The scripts know the field by its own ref, whichever ref asked for it.
+    let field_ref = get(&target, "ref").cloned().unwrap_or(Value::Null);
 
     let original = script_fields_from_snapshot(&snapshot)?;
     let mut overlay = Overlay {
         fields: original.clone(),
         original,
-        reset_keys: Vec::new(),
-        appearances: Vec::new(),
+        reset_keys: Default::default(),
+        appearances: Default::default(),
     };
     let Some(target_index) = field_index(&overlay.fields, &field_ref) else {
-        return Ok(failed(
-            Vec::new(),
-            Vec::new(),
-            script_error(format!("Form field '{}' has no script view", ref_key(&field_ref))),
-        ));
+        return Ok(failed_now(script_error(format!(
+            "Form field '{}' has no script view",
+            ref_key(&field_ref)
+        ))));
     };
 
     let has_proposed_value = proposed.is_some();
     let mut proposed_value = overlay.fields[target_index].value.clone();
     if let Some(proposed) = proposed.as_ref().filter(|p| truthy(Some(p))) {
         match script_value_from_form_value(&overlay.fields[target_index], proposed) {
-            Ok(value) => proposed_value = value,
-            Err(error) => return Ok(failed(Vec::new(), Vec::new(), script_error(error.message))),
+            Ok(value) => proposed_value = Some(value),
+            Err(error) => return Ok(failed_now(script_error(error.message))),
         }
     }
 
@@ -281,9 +417,9 @@ async fn transact_body(
     let mut pass = Pass {
         txn: txn.clone(),
         page_number: page_number_for(meta.as_ref(), &target),
-        budget: inner.transaction_budget.clone().unwrap_or(DEFAULT_SCRIPT_BUDGET),
+        budget: inner.budget.clone().unwrap_or(DEFAULT_SCRIPT_BUDGET),
         execution_ms: 0.0,
-        aggregate_output_size: 0.0,
+        aggregate_output_size: 0,
         ui_effects: Vec::new(),
         diagnostics: Vec::new(),
     };
@@ -335,10 +471,11 @@ async fn transact_body(
     let actions = get(&target, "actions");
     let tree_of =
         |key: &str| actions.and_then(|a| get(a, key)).filter(|t| truthy(Some(t))).cloned();
+    let text_field = crate::value::str_of(&target, "family") == Some("text");
 
     if activation.is_none()
         && has_proposed_value
-        && str_of(&target, "family") == Some("text")
+        && text_field
         && let Some(keystroke) = tree_of("keystroke")
     {
         let program = match program_of(&keystroke) {
@@ -368,7 +505,7 @@ async fn transact_body(
                 ))),
                 Run::Output(output) => {
                     if !output.event.rc {
-                        return adopted(finish_rejected(&inner, boot_effects, pass)).await;
+                        return Ok(pass.rejected(boot_effects));
                     }
                     apply_effects(&mut overlay, &output.form_effects)?;
                     let ev = &output.event;
@@ -400,7 +537,7 @@ async fn transact_body(
                 ))),
                 Run::Output(output) => {
                     if !output.event.rc {
-                        return adopted(finish_rejected(&inner, boot_effects, pass)).await;
+                        return Ok(pass.rejected(boot_effects));
                     }
                     apply_effects(&mut overlay, &output.form_effects)?;
                     proposed_value = Some(output.event.value.clone());
@@ -411,7 +548,7 @@ async fn transact_body(
 
     if activation.is_none() && has_proposed_value {
         overlay.fields[target_index].value = proposed_value.clone();
-        overlay.remove_reset(&ref_key(&field_ref));
+        overlay.reset_keys.remove(&ref_key(&field_ref));
     }
 
     if activation.is_none()
@@ -439,7 +576,7 @@ async fn transact_body(
                 ))),
                 Run::Output(output) => {
                     if !output.event.rc {
-                        return adopted(finish_rejected(&inner, boot_effects, pass)).await;
+                        return Ok(pass.rejected(boot_effects));
                     }
                     overlay.fields[target_index].value = Some(output.event.value.clone());
                     apply_effects(&mut overlay, &output.form_effects)?;
@@ -538,59 +675,10 @@ async fn transact_body(
         );
         return Ok(pass.failed(budget_error(message)));
     }
-    if effects.is_empty() {
-        return Ok(FormCommitResult {
-            ui_effects: pass.ui_effects,
-            diagnostics: pass.diagnostics,
-            ..FormCommitResult::bare(FormCommitStatus::Unchanged, true)
-        });
-    }
-    if !inner.doc.has("forms.applyEffects") {
-        return Ok(pass.failed(script_error("This engine does not support batched form effects")));
-    }
-
-    let effects_result =
-        await_engine(inner.doc.call("forms.applyEffects", None, vec![Value::Array(effects)]))
-            .await?;
-    let status = status_from_effects(&effects_result);
-    Ok(FormCommitResult {
-        status,
-        scripted: true,
-        effects_result: Some(effects_result),
-        ui_effects: pass.ui_effects,
-        diagnostics: pass.diagnostics,
-        error: (status == FormCommitStatus::Failed)
-            .then(|| script_error("One or more native form effects failed")),
-    })
-}
-
-/// `finishRejected(bootEffects, uiEffects, diagnostics)`: a rejected value
-/// still commits the boot's effects.
-async fn finish_rejected(
-    inner: &ControllerInner,
-    boot_effects: Vec<Value>,
-    mut pass: Pass,
-) -> Result<FormCommitResult, Error> {
-    if boot_effects.is_empty() {
-        return Ok(FormCommitResult {
-            ui_effects: pass.ui_effects,
-            diagnostics: pass.diagnostics,
-            ..FormCommitResult::bare(FormCommitStatus::Rejected, true)
-        });
-    }
-    if !inner.doc.has("forms.applyEffects") {
-        return Ok(pass.failed(script_error("Batched form effects are unavailable")));
-    }
-    let effects_result =
-        await_engine(inner.doc.call("forms.applyEffects", None, vec![Value::Array(boot_effects)]))
-            .await?;
-    if status_from_effects(&effects_result) == FormCommitStatus::Failed {
-        return Ok(pass.failed(script_error("A name-tree boot effect failed")));
-    }
-    Ok(FormCommitResult {
-        status: FormCommitStatus::Rejected,
-        scripted: true,
-        effects_result: Some(effects_result),
+    Ok(FormScriptResult {
+        status: ScriptStatus::Accepted,
+        effects,
+        boot_effects,
         ui_effects: pass.ui_effects,
         diagnostics: pass.diagnostics,
         error: None,

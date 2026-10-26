@@ -7,14 +7,15 @@ use epdf_plugin_actions::{
 };
 use serde_json::Value;
 
-use crate::value::{get, num, str_of, string_of, truthy};
+use crate::value::{get, str_of, strict_eq, string_of, truthy};
 
 /// What `resolveFieldSelection` resolves: the selection, and which fields
 /// the target list addressed (directly or through a subtree).
 pub struct FieldSelection {
     names: Vec<String>,
-    /// `None` is a target without an object number (`undefined`).
-    object_numbers: Vec<Option<f64>>,
+    /// Each target's `objectNumber`, `None` for one without
+    /// (`undefined`, which a `Set` holds like any value).
+    object_numbers: Vec<Option<Value>>,
     /// `targets === null`: nothing is ever listed.
     everything: bool,
     pub selected: Vec<Value>,
@@ -26,14 +27,20 @@ impl FieldSelection {
         if self.everything {
             return false;
         }
-        let r = get(field, "ref");
-        let by_number = r.is_some_and(|r| {
-            let number = num(r, "fieldObjectNumber");
-            str_of(r, "kind") == Some("objectNumber") && self.object_numbers.contains(&number)
+        let reference = get(field, "ref");
+        let by_number = reference.is_some_and(|r| {
+            str_of(r, "kind") == Some("objectNumber") && {
+                let number = get(r, "objectNumber");
+                self.object_numbers.iter().any(|n| match (n, number) {
+                    (None, None) => true,
+                    (Some(a), Some(b)) => same_value_zero(a, b),
+                    _ => false,
+                })
+            }
         });
         by_number || {
-            let name = get(field, "name");
-            self.names.iter().any(|target| match name.and_then(Value::as_str) {
+            let name = get(field, "name").and_then(Value::as_str);
+            self.names.iter().any(|target| match name {
                 Some(name) => name == target || name.starts_with(&format!("{target}.")),
                 None => false,
             })
@@ -41,8 +48,13 @@ impl FieldSelection {
     }
 }
 
-/// `resolveFieldSelection(all, targets, exclude)`. `targets == None` (the key
-/// absent) selects everything and ignores `exclude`; `[]` with include
+/// `Set#has`'s SameValueZero over JSON values.
+fn same_value_zero(a: &Value, b: &Value) -> bool {
+    strict_eq(Some(a), Some(b))
+}
+
+/// `resolveFieldSelection(all, targets, exclude)`. `targets == None` (the
+/// key absent) selects everything and ignores `exclude`; `[]` with include
 /// selects nothing, `[]` with exclude everything.
 pub fn resolve_field_selection(
     all: &[Value],
@@ -65,7 +77,7 @@ pub fn resolve_field_selection(
     let object_numbers = targets
         .iter()
         .filter(|t| str_of(t, "kind") == Some("objectNumber"))
-        .map(|t| num(t, "objectNumber"))
+        .map(|t| get(t, "objectNumber").cloned())
         .collect();
     let mut selection =
         FieldSelection { names, object_numbers, everything: false, selected: Vec::new() };
@@ -101,7 +113,7 @@ pub fn build_submit_entries(
             }
             continue;
         }
-        if truthy(get(field, "flags").and_then(|f| get(f, "noExport"))) {
+        if truthy(get(field, "noExport")) {
             if explicit {
                 unsupported(format!(
                     "submit: '{name}' carries the NoExport flag — the veto is unconditional (ISO 12.7.6.2), skipped"

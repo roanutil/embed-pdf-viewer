@@ -3,7 +3,7 @@ name = "epdf-plugin-form"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/plugin/form in Rust: the field plane (reactive snapshot over doc.forms, the fill projection, value writes and reset, interchange, field design and the draw-to-place handler, ISO field selection) and the K/V/C/F scripting transaction over the actions plugin's script realm."
+description = "packages/plugin/form in Rust: the field plane. The form's fields and widget rows held in a mirror of the engine's, this session's fills and designs shown on top until the engine answers them, the fill projection, values, resets, interchange and field design, the palette's draw-to-place handler, widgets lent to the annotation plugin in design mode, and the K/V/C/F scripting pipeline over the actions plugin's realm."
 
 [lib]
 crate-type = ["rlib"]
@@ -19,6 +19,7 @@ harness = [
   "epdf-plugin-interaction/harness",
   "epdf-plugin-actions/harness",
   "epdf-plugin-annotation/harness",
+  "epdf-plugin-render/harness",
 ]
 # The uniffi exports (`ffi` module), for `epdf-viewer-host`.
 uniffi = ["dep:uniffi", "dep:epdf-ffi"]
@@ -27,10 +28,12 @@ uniffi = ["dep:uniffi", "dep:epdf-ffi"]
 epdf-kernel = { path = "../../epdf-kernel" }
 epdf-geometry = { path = "../geometry", default-features = false }
 epdf-annotation-core = { path = "../annotation-core", default-features = false }
+epdf-form-core = { path = "../form-core", default-features = false }
 epdf-acrojs = { path = "../acrojs", default-features = false }
 epdf-plugin-interaction = { path = "../interaction", default-features = false }
 epdf-plugin-actions = { path = "../actions", default-features = false }
 epdf-plugin-annotation = { path = "../annotation", default-features = false }
+epdf-plugin-render = { path = "../render", default-features = false }
 indexmap = { version = "2", features = ["serde"] }
 serde = { version = "1", features = ["derive", "rc"] }
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
@@ -38,17 +41,33 @@ plugin-conformance = { path = "../../plugin-conformance", optional = true }
 epdf-ffi = { path = "../../epdf-ffi", optional = true }
 uniffi = { version = "=0.32.0", optional = true }
 
+[build-dependencies]
+build-support = { path = "../../build-support" }
+
 [dev-dependencies]
 futures = { version = "0.3", default-features = false, features = ["std", "executor"] }
 plugin-conformance = { path = "../../plugin-conformance" }
+
+# The engine's own copy of the value rules, for the cross-check of
+# `src/engine.rs` (`tests/engine_cross_check.rs`, Ruling13.15). Native only:
+# epdf-engine links PDFium, and this crate builds for wasm32.
+[target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
+epdf-engine = { path = "../../epdf-engine" }
 
 [[test]]
 name = "conformance"
 required-features = ["harness"]
 
 [[test]]
-name = "api"
+name = "behavior"
 required-features = ["harness"]
+
+[[test]]
+name = "budget"
+required-features = ["harness"]
+
+[[test]]
+name = "engine_cross_check"
 
 [[test]]
 name = "ffi"

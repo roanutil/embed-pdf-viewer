@@ -234,3 +234,23 @@ mod key_order_tests {
         assert_eq!(keys, ["0", "2", "10", "4294967294", "b", "a", "02", "4294967295", "-1", "1.5"]);
     }
 }
+
+/// `v[key]` as an array's items; none when it is not an array.
+pub fn items<'a>(v: &'a Value, key: &str) -> &'a [Value] {
+    get(v, key).and_then(Value::as_array).map_or(&[], Vec::as_slice)
+}
+
+/// `{ ...v, key: value, ... }`: each member replaced in place, or appended
+/// when new, as a spread over an object literal leaves them.
+pub fn spread(v: &Value, members: impl IntoIterator<Item = (&'static str, Value)>) -> Value {
+    let mut out = v.as_object().cloned().unwrap_or_default();
+    for (key, value) in members {
+        out.insert(key.to_string(), value);
+    }
+    Value::Object(out)
+}
+
+/// `String(n)` for a number used as an object key.
+pub fn number_key(n: f64) -> String {
+    epdf_geometry::js::number_to_string(n)
+}

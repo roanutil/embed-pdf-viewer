@@ -1,6 +1,4 @@
-//! `scripting/`: the K/V/C/F transaction ([`controller`]), its overlay and
-//! its result shaping. `/scripting` in the TypeScript exports
-//! [`controller::create_form_scripting_controller`].
+//! `scripting/`: the K/V/C/F pipeline (`@embedpdf/plugin-form/scripting`).
 
 pub mod controller;
 pub mod overlay;
