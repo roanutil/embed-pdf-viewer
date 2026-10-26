@@ -28,7 +28,8 @@ use crate::record::JsRecord;
 
 /// A surface's open flag, exclusivity tag, props and focus request. A name
 /// the plugin finds on `Object.prototype` (`toString`) has no flag there;
-/// it reads as closed here.
+/// it reads as closed here. Not `Eq`, because `focus_request` is an `f64`
+/// (the JavaScript number). 13.33: check no Swift caller needs `Hashable`.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ShellSurface {
     pub id: String,
@@ -165,7 +166,7 @@ impl From<&crate::ShellSnapshot> for ShellSnapshot {
                     props_json: surface.props.as_ref().map(props_to_json),
                 })
                 .collect(),
-            open_menus: snapshot.open_menus.clone(),
+            open_menus: (*snapshot.open_menus).clone(),
         }
     }
 }
@@ -182,7 +183,7 @@ impl TryFrom<ShellSnapshot> for crate::ShellSnapshot {
                 Ok((s.id, SnapshotSurface::new(s.open, s.exclusive, props)))
             })
             .collect::<Result<JsRecord<SnapshotSurface>, Error>>()?;
-        Ok(crate::ShellSnapshot { surfaces, open_menus: snapshot.open_menus })
+        Ok(crate::ShellSnapshot { surfaces, open_menus: std::rc::Rc::new(snapshot.open_menus) })
     }
 }
 

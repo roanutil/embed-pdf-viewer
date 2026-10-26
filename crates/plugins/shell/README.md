@@ -28,7 +28,9 @@ record at 0.
 `getSurface`, `listOpenSurfaces` and `getSnapshot` are TypeScript `memoByKey`/`memo` reads. Rust
 returns `Rc`s that stay the same while their input record, `surfaces` map or state is the same
 `Rc`, and each memo holds the input `Rc` it compares with `Rc::ptr_eq`. `listOpenMenus` hands out
-the state's own `Rc<Vec<String>>`. The `surfaceOf` cache has no bound, as in the TypeScript.
+the state's own `Rc<Vec<String>>`, and `snapshot_of` shares that same `Rc` as the snapshot's
+`open_menus`, as `snapshotOf` shares the array. The `surfaceOf` cache has no bound, as in the
+TypeScript.
 
 ## Pinned TypeScript behaviour
 
@@ -45,13 +47,25 @@ and the view spreads nothing from it. `SurfaceState::record` is `None` for that 
 `close` on the same names read as absent on both sides, and `toggleSurface('valueOf')` opens an own
 surface (`toggle-proto-member-opens`).
 
-Two inputs are not ported. A surface id of `__proto__` sets the prototype of the TypeScript's
+Four inputs are not ported. A surface id of `__proto__` sets the prototype of the TypeScript's
 record instead of adding a surface, so the surface is readable through `isOpen` but never listed,
 and the next transition's spread drops it; Rust stores it as an ordinary id. And
 `updateSurfaceProps('toString', props)` finds the inherited function and stores `{props}` with no
 open flag under that id; Rust ignores it, as it ignores any unknown id. A record object with a
 member no surface record has (`{open: true, extra: 1}` in a snapshot) loses that member in Rust,
-where the TypeScript spread keeps it. No vector reaches any of the three.
+where the TypeScript spread keeps it. And a state record without `open` or `focusRequest`, or a
+snapshot record without `open`, is refused when decoded (`missing field`), where the TypeScript
+takes it and reads the member as `undefined` (an absent `focusRequest` would make the next focused
+open `NaN`). Every record the shell itself writes has both members, so only a hand-built state or
+snapshot reaches this. No vector reaches any of the four.
+
+## Coverage
+
+Before Task 13.28 this README said the shell suites reached all 341 statements and 103 branches of
+the TypeScript package. That figure measured the suites before Task 12 regenerated them against the
+current TypeScript, so it is stale; it was not remeasured for this port.
+
+## Mutation testing
 
 The mutation results recorded before Task 13.28 (77 of 79 viable mutants caught) measured the old
 reducer port and no longer describe this code; the task did not rerun `scripts/mutants.sh`.

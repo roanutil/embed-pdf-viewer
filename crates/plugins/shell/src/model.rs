@@ -461,7 +461,7 @@ pub fn snapshot_of(state: &ShellState) -> ShellSnapshot {
             (id.to_string(), surface)
         })
         .collect();
-    ShellSnapshot { surfaces, open_menus: (*state.open_menus).clone() }
+    ShellSnapshot { surfaces, open_menus: state.open_menus.clone() }
 }
 
 /// `applySnapshot(_state, snapshot)`: every surface `{ ...surface,
@@ -483,6 +483,6 @@ pub fn apply_snapshot(_state: &Rc<ShellState>, snapshot: &ShellSnapshot) -> Rc<S
         .collect();
     Rc::new(ShellState {
         surfaces: Rc::new(surfaces),
-        open_menus: Rc::new(snapshot.open_menus.clone()),
+        open_menus: Rc::new((*snapshot.open_menus).clone()),
     })
 }

@@ -83,7 +83,8 @@ pub struct OpenSurfaceOptions {
 pub struct ShellSnapshot {
     pub surfaces: JsRecord<SnapshotSurface>,
     /// Open dropdown menus, in opening order (last = topmost).
-    pub open_menus: Vec<String>,
+    /// `snapshotOf` shares the state's array, as the TypeScript does.
+    pub open_menus: Rc<Vec<String>>,
 }
 
 /// `SurfaceOpenedEvent`.

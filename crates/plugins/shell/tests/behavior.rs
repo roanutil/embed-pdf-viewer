@@ -111,6 +111,8 @@ fn reads_keep_their_identity_until_their_input_changes() {
     assert!(Rc::ptr_eq(&snapshot, &shell.get_snapshot()));
     let menus = shell.list_open_menus();
     assert!(Rc::ptr_eq(&menus, &shell.list_open_menus()));
+    // `snapshotOf` shares the state's menu array.
+    assert!(Rc::ptr_eq(&snapshot.open_menus, &menus));
 
     // A menu write changes neither surface read, and the menu list is new.
     shell.open_menu("file");
