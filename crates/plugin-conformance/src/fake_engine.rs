@@ -5,6 +5,9 @@ use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::rc::Rc;
 
+// The shipping scope rules live in the engine, which is native only: on
+// wasm32 a fake `rawScope` is not resolved.
+#[cfg(not(target_arch = "wasm32"))]
 use epdf_engine::auth::scope;
 use epdf_kernel::engine::{DocumentHandle, DocumentSecurity, Engine, EngineCall};
 use epdf_kernel::error::ErrorClass;
@@ -720,11 +723,13 @@ impl FakeSecurity {
         Some(raw.iter().filter_map(|s| s.as_str().map(str::to_string)).collect())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// `decodePdfBits(currentSecurityState.permissions.bits)`.
     fn bits(&self) -> scope::PdfBits {
         scope::decode_pdf_bits(self.state.borrow().0["permissions"]["bits"].as_i64())
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// `checkSetGroup(entity, groupId, identity.groupId, rawScope)`.
     fn set_group(&self, entity: scope::CollabEntity, group: &str, raw: &[String]) -> bool {
         let parsed = scope::parse_all(raw).unwrap_or_default();
@@ -732,6 +737,7 @@ impl FakeSecurity {
         scope::check_set_group(entity, group, own.as_deref(), &parsed)
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     /// `checkCollab(action, collabTargetOf(target), rawScope, identity, bits)`.
     fn collab(&self, action: &str, target: &Value, raw: &[String]) -> bool {
         let Some(action) = scope::CollabAction::parse(action) else { return false };
@@ -759,8 +765,10 @@ impl FakeSecurity {
 }
 
 impl DocumentSecurity for FakeSecurity {
+    #[cfg_attr(target_arch = "wasm32", allow(unused_variables))]
     fn allows_annotation(&self, action: &str, target: &Value) -> bool {
         self.spec["allowsAnnotation"][action].as_bool().unwrap_or_else(|| {
+            #[cfg(not(target_arch = "wasm32"))]
             if let Some(raw) = self.raw_scope() {
                 if action == "set-group" {
                     let group = target.get("groupId").and_then(Value::as_str).unwrap_or("");
@@ -785,8 +793,10 @@ impl DocumentSecurity for FakeSecurity {
             }
         })
     }
+    #[cfg_attr(target_arch = "wasm32", allow(unused_variables))]
     fn allows_field(&self, action: &str, target: &Value) -> bool {
         self.spec["allowsField"][action].as_bool().unwrap_or_else(|| {
+            #[cfg(not(target_arch = "wasm32"))]
             if let Some(raw) = self.raw_scope() {
                 let group = target.get("groupId").and_then(Value::as_str);
                 if action == "set-group" {
@@ -813,6 +823,9 @@ impl DocumentSecurity for FakeSecurity {
             Some(Value::String(s)) if s == "*" => true,
             Some(Value::Array(list)) => list.iter().any(|c| c.as_str() == Some(capability)),
             Some(_) => false,
+            #[cfg(target_arch = "wasm32")]
+            None => false,
+            #[cfg(not(target_arch = "wasm32"))]
             None => self.raw_scope().is_some_and(|raw| {
                 let parsed = scope::parse_all(&raw).unwrap_or_default();
                 scope::DocCapability::parse(capability)
@@ -824,8 +837,9 @@ impl DocumentSecurity for FakeSecurity {
     fn allows_annotation_create(&self) -> bool {
         self.spec.get("allowsAnnotationCreate").and_then(Value::as_bool).unwrap_or_else(|| {
             match self.raw_scope() {
+                #[cfg(not(target_arch = "wasm32"))]
                 Some(raw) => self.collab("create", &self.identity(), &raw),
-                None => self.allows("doc.annotate.create"),
+                _ => self.allows("doc.annotate.create"),
             }
         })
     }
@@ -844,6 +858,7 @@ impl DocumentSecurity for FakeSecurity {
 
     fn effective_scope(&self) -> Vec<String> {
         // `[...expandRawScope(rawScope, bits)].sort()`.
+        #[cfg(not(target_arch = "wasm32"))]
         if let Some(raw) = self.raw_scope() {
             let expanded = scope::expand_raw_scope(&raw, self.bits()).unwrap_or_default();
             let mut names: Vec<String> = expanded.iter().map(|c| c.as_str().to_string()).collect();
