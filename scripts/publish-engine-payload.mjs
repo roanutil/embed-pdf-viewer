@@ -26,6 +26,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildFork, linkRustCore } from '../perf-compare/scripts/build-arm.mjs';
+import { linkedLocalCrates, listedCrates } from './lib/linked-crates.mjs';
 
 const RELEASE_REPO = 'roanutil/embed-pdf-runtime';
 const TARGET = 'wasm32';
@@ -74,28 +75,9 @@ if (!status.startsWith(' ')) {
 const metadata = JSON.parse(
   run('cargo', ['metadata', '--format-version', '1'], { maxBuffer: 1 << 28 }),
 );
-const nodes = new Map(metadata.resolve.nodes.map((n) => [n.id, n]));
-const packages = new Map(metadata.packages.map((p) => [p.id, p]));
-const linked = new Set();
-const stack = [metadata.packages.find((p) => p.name === 'epdf-wasm').id];
-while (stack.length) {
-  const id = stack.pop();
-  if (linked.has(id)) continue;
-  linked.add(id);
-  for (const dep of nodes.get(id).deps) {
-    if (dep.dep_kinds.some((k) => k.kind === null || k.kind === 'build')) stack.push(dep.pkg);
-  }
-}
-const local = [...linked]
-  .map((id) => packages.get(id))
-  .filter((p) => !p.source)
-  .map((p) => path.basename(path.dirname(p.manifest_path)))
-  .sort();
+const local = linkedLocalCrates(metadata, 'epdf-wasm');
 const hashScript = readFileSync(path.join(runtime, 'scripts/runtime-payload-hash.sh'), 'utf8');
-const listed = hashScript
-  .match(/^RUST_CRATES=\((.*)\)$/m)[1]
-  .split(/\s+/)
-  .sort();
+const listed = listedCrates(hashScript, 'RUST_CRATES');
 if (local.join() !== listed.join()) {
   console.error(
     `RUST_CRATES in runtime-payload-hash.sh is (${listed.join(' ')}),\n` +
