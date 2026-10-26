@@ -31457,7 +31457,9 @@
               "position": {
                 "before": {
                   "kind": "objectNumber",
-                  "objectNumber": null
+                  "objectNumber": {
+                    "$number": "NaN"
+                  }
                 }
               }
             }
@@ -31475,7 +31477,9 @@
               "position": {
                 "before": {
                   "kind": "objectNumber",
-                  "objectNumber": null
+                  "objectNumber": {
+                    "$number": "Infinity"
+                  }
                 }
               }
             }
@@ -50447,7 +50451,9 @@
             },
             {
               "pageIndexes": [
-                null
+                {
+                  "$number": "Infinity"
+                }
               ]
             }
           ]
@@ -50465,7 +50471,9 @@
             },
             {
               "pageIndexes": [
-                null
+                {
+                  "$number": "-Infinity"
+                }
               ]
             }
           ]
@@ -50483,7 +50491,9 @@
             },
             {
               "pageIndexes": [
-                null
+                {
+                  "$number": "NaN"
+                }
               ]
             }
           ]

@@ -38,6 +38,10 @@ registerPlugin('page-edit', {
 });
 onCaseEnd(restoreCaseEntropy);
 const p10 = (r: 0 | 90 | 180 | 270) => [page(10, 0, r), three[1], three[2]];
+/** A step argument JSON can carry: NaN and ±Infinity travel as `$number`. */
+const arg = (n: number): number =>
+  Number.isFinite(n) ? n : ({ $number: String(n) } as unknown as number);
+
 const r90 = rotated([pr(10)], 90, p10(90));
 const r180 = rotated([pr(10)], 180, p10(180));
 const d20 = deleted([pr(20)], [three[0], { ...three[2], index: 1 }]);
@@ -225,7 +229,9 @@ const cases: ScenarioCase[] = [
     'Index positions retired; invalid numeric neighbour arguments now reject not-found without TypeErrors, explicit size does not bypass validation.',
     [],
     [
-      ...[1.5, NaN, Infinity].map((n) => edit('insertBlank', [{ position: { before: pr(n) } }])),
+      ...[1.5, NaN, Infinity].map((n) =>
+        edit('insertBlank', [{ position: { before: pr(arg(n)) } }]),
+      ),
       edit('insertBlank', [{ position: { before: pr(1.5) }, size: { width: 3, height: 4 } }]),
     ],
   ),
@@ -360,7 +366,7 @@ const cases: ScenarioCase[] = [
       { op: 'advance', ms: 1234567890 },
       copy('insertFromBytes', undefined, { pageIndexes: [1] }),
       ...[-1, 1.5, -0.5, Infinity, -Infinity, NaN, 1e20, 1e21, 1e-7].map((n) =>
-        copy('insertFromBytes', undefined, { pageIndexes: [n] }),
+        copy('insertFromBytes', undefined, { pageIndexes: [arg(n)] }),
       ),
     ],
   ),
