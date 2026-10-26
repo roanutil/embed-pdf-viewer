@@ -32,7 +32,13 @@ and the turns each verb settles on, measured on the TypeScript with `tsx`.
 
 None is reached by a vector or by the engine's answers.
 
-- `changed_keys` reads the keys of an object only. TypeScript's `Object.keys` on a non-null
-  primitive `next` (a string, say) lists its indices; here it lists nothing.
+- `changed_keys` reads the keys of an object only. TypeScript's `Object.keys` on a truthy
+  primitive `previous` or `next` (a string, say) lists its indices: `changedKeys('ab', {A: '1'})`
+  is `['0', '1', 'A']`, where Rust gives `["A"]`. Keys of an object come in `Object.keys` order
+  (array indices first, ascending), as the TypeScript lists them.
+- `can_update` reads through the kernel's `allows`, which answers `false` when the session has no
+  handle, so the writes refuse with `permission-denied` there. The TypeScript's `ctx.allows` and
+  `ctx.assertAllowed` throw instead (`packages/core/main/src/context.ts:251-256`). Page-edit's
+  `can_edit` has the same divergence.
 - A mirror load with no document handle rejects with an `Error`. The TypeScript would throw a
   `TypeError` reading `doc.metadata`; the kernel always hands a mirror its guarded handle.

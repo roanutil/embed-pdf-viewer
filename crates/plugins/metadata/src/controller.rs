@@ -64,7 +64,7 @@ fn mirror_spec(
         let call = doc.map(|doc| doc.call(path, None, Vec::new()));
         Promise::spawn(async move {
             let Some(call) = call else {
-                return Err(Error::new("[metadata] the mirror has no document"));
+                return Err(Error::new("[metadata] no document"));
             };
             Ok(Loaded { value: call.await?, cursor: None })
         })
