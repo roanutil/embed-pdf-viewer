@@ -813,6 +813,7 @@ name = "epdf-plugin-signature"
 version = "0.0.0"
 dependencies = [
  "base64",
+ "build-support",
  "epdf-annotation-core",
  "epdf-ffi",
  "epdf-kernel",

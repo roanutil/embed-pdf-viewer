@@ -1,14 +1,18 @@
-//! `contract.ts` (with `token.ts` and `host-contract.ts`): the public
-//! signature vocabulary. Engine DTOs (`FormFieldRef`, `SignatureSnapshot`,
-//! `SignatureDTO`, `SignatureCompleteResult`, verdicts) stay the engine's
-//! JSON, as `epdf-signature-core` keeps them.
+//! `contract.ts` (with `token.ts`): the public signature vocabulary: the
+//! act of signing (one-shot and two-phase), visual fills, validation, the
+//! sign-here flow, and the facts about a document's signatures. Engine DTOs
+//! (`FormFieldRef`, `SignatureSnapshot`, `SignatureDTO`,
+//! `SignatureCompleteResult`, verdicts) stay the engine's JSON, as
+//! `epdf-signature-core` keeps them.
 
 use std::rc::Rc;
 use std::sync::LazyLock;
 
+use epdf_kernel::Token;
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{Error, Token};
-use epdf_signature_core::{SignerPort, TrustPort};
+use epdf_kernel::signal::AbortSignal;
+use epdf_plugin_stamp::{StampAsset, StampLibrary};
+use epdf_signature_core::{SignerPort, TrustPort, ValidationTime};
 use serde::Serialize;
 use serde_json::{Value, json};
 
@@ -26,58 +30,101 @@ pub static SIGNATURE: LazyLock<Token<SignatureCapability>> = LazyLock::new(|| {
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum SignatureMode {
-    /// Seal the field with the configured signer.
+    /// Seal the field with the configured key (the mark is the appearance).
     Sign,
     /// Draw the mark into the field without sealing.
     Visual,
-    /// Neither: `onSignRequested` fires and the chrome decides.
+    /// Neither: `onSignRequested` fires so the chrome can decide.
     Ask,
 }
 
-/// A key holder: a port, or a thunk that resolves one per signing
-/// (`SignerPort | (() => Promise<SignerPort>)`).
-#[derive(Clone)]
-pub enum SignerSource {
-    Port(SignerPort),
-    Thunk(Rc<dyn Fn() -> Promise<SignerPort>>),
-    /// A native host's signer slot, which may be empty: `resolve` per
-    /// signing, and `available` says whether a signer is set now, which
-    /// `getMode` and `canSign` read where the TypeScript reads `config.signer`.
-    Host {
-        resolve: Rc<dyn Fn() -> Promise<SignerPort>>,
-        available: Rc<dyn Fn() -> bool>,
-    },
-}
-
-impl SignerSource {
-    /// Whether this source has a signer to offer now.
-    pub fn is_available(&self) -> bool {
+impl SignatureMode {
+    pub fn as_str(self) -> &'static str {
         match self {
-            SignerSource::Host { available, .. } => available(),
-            _ => true,
+            SignatureMode::Sign => "sign",
+            SignatureMode::Visual => "visual",
+            SignatureMode::Ask => "ask",
+        }
+    }
+
+    /// The mode a settings string names; anything else is no mode.
+    pub fn from_name(name: &str) -> Option<SignatureMode> {
+        match name {
+            "sign" => Some(SignatureMode::Sign),
+            "visual" => Some(SignatureMode::Visual),
+            "ask" => Some(SignatureMode::Ask),
+            _ => None,
         }
     }
 }
 
-/// What the host supplies beside the config: the TypeScript's
-/// `globalThis.console?.error`, which the plugin reports background
-/// failures and failing listeners to.
-#[derive(Clone, Default)]
-pub struct SignatureHost {
-    pub console_error: Option<Rc<dyn Fn(&str, &Error)>>,
+/// `SignatureKey`: the key that signs, a signer port or a function that
+/// returns one when someone signs (`SignerPort | (() => SignerPort |
+/// Promise<SignerPort>)`).
+#[derive(Clone)]
+pub enum SignatureKey {
+    Port(SignerPort),
+    Thunk(Rc<dyn Fn() -> Promise<SignerPort>>),
 }
 
-/// `SignatureConfig`.
+impl SignatureKey {
+    /// The same setting value (`===`).
+    pub fn same(&self, other: &SignatureKey) -> bool {
+        match (self, other) {
+            (SignatureKey::Thunk(a), SignatureKey::Thunk(b)) => {
+                std::ptr::addr_eq(Rc::as_ptr(a), Rc::as_ptr(b))
+            }
+            (SignatureKey::Port(SignerPort::Cms(a)), SignatureKey::Port(SignerPort::Cms(b))) => {
+                std::ptr::addr_eq(Rc::as_ptr(&a.sign), Rc::as_ptr(&b.sign))
+            }
+            (SignatureKey::Port(SignerPort::Raw(a)), SignatureKey::Port(SignerPort::Raw(b))) => {
+                std::ptr::addr_eq(Rc::as_ptr(&a.sign), Rc::as_ptr(&b.sign))
+            }
+            _ => false,
+        }
+    }
+}
+
+/// `SignatureSettings`: what `signaturePlugin(config)` registers over
+/// [`signature_defaults`], and `updateSettings()` changes for every
+/// document. A key and a trust port are one value each: a change replaces
+/// them whole.
+#[derive(Clone, Default)]
+pub struct SignatureSettings {
+    /// The key: a raw signer (the CMS is built here) or a CMS signer (a
+    /// service builds it); `None` for none.
+    pub key: Option<SignatureKey>,
+    /// What a mark does in a field; `None` is `sign` with a key, else
+    /// `visual`.
+    pub mode: Option<SignatureMode>,
+    /// The certificates you trust, for checking signatures. Without them a
+    /// verdict is at best `valid-untrusted`.
+    pub trust: Option<Rc<dyn TrustPort>>,
+    /// Let a first signature be a certification (still needs
+    /// `doc.sign.certify`).
+    pub allow_certify: bool,
+}
+
+/// `SIGNATURE_DEFAULTS`.
+pub fn signature_defaults() -> SignatureSettings {
+    SignatureSettings::default()
+}
+
+/// `SignatureConfig = Partial<SignatureSettings>`: any of the settings.
+/// The outer `Option` is "not given"; `Some(None)` is an explicit `null`.
 #[derive(Clone, Default)]
 pub struct SignatureConfig {
-    pub mode: Option<SignatureMode>,
-    pub signer: Option<SignerSource>,
-    /// Trust anchors for validation. None: every verdict tops out at
-    /// `valid-untrusted`.
-    pub trust: Option<Rc<dyn TrustPort>>,
-    /// Let the UI offer a certification. Default false.
+    pub key: Option<Option<SignatureKey>>,
+    pub mode: Option<Option<SignatureMode>>,
+    pub trust: Option<Option<Rc<dyn TrustPort>>>,
     pub allow_certify: Option<bool>,
-    pub host: SignatureHost,
+}
+
+/// `onSettingsChanged`'s event.
+#[derive(Clone)]
+pub struct SignatureSettingsChanged {
+    pub settings: SignatureSettings,
+    pub changed: Vec<String>,
 }
 
 /// `Mark`: a stamp-plugin asset, or bytes the embedder brings (a
@@ -98,14 +145,25 @@ impl Mark {
     }
 }
 
-/// `SignFieldInput`. `field`, `attribution`, `certify` and `lock` stay the
-/// engine's JSON.
+/// `OperationOptions`.
+#[derive(Clone, Default)]
+pub struct OperationOptions {
+    pub signal: Option<AbortSignal>,
+}
+
+/// `SignFieldInput`. `field`, `signer`, `certify` and `lock` stay the
+/// engine's JSON (`FormFieldRef`, `SignatureSignerInput`, `{permission}`,
+/// `FieldLockSpec`); `appearance` is a `BinarySource`.
 #[derive(Clone)]
 pub struct SignFieldInput {
     pub field: Value,
     pub mark: Option<Mark>,
-    pub signer: Option<SignerSource>,
-    pub attribution: Option<Value>,
+    /// A per-call key; the `key` setting otherwise.
+    pub key: Option<SignatureKey>,
+    /// What the signature dictionary says about the signer; the name
+    /// defaults to the certificate's subject.
+    pub signer: Option<Value>,
+    /// Instead of the mark: a ready one-page appearance PDF.
     pub appearance: Option<Value>,
     pub certify: Option<Value>,
     pub lock: Option<Value>,
@@ -117,8 +175,8 @@ impl SignFieldInput {
         SignFieldInput {
             field,
             mark: Some(mark),
+            key: None,
             signer: None,
-            attribution: None,
             appearance: None,
             certify: None,
             lock: None,
@@ -126,13 +184,14 @@ impl SignFieldInput {
     }
 }
 
-/// `PrepareSignatureInput`.
+/// `PrepareSignatureInput`: two-phase signing, step one: everything but the
+/// key.
 #[derive(Clone, Default)]
 pub struct PrepareSignatureInput {
     pub field: Value,
     pub mark: Option<Mark>,
     pub appearance: Option<Value>,
-    pub attribution: Option<Value>,
+    pub signer: Option<Value>,
     pub certify: Option<Value>,
     pub lock: Option<Value>,
     pub sub_filter: Option<Value>,
@@ -140,7 +199,7 @@ pub struct PrepareSignatureInput {
 }
 
 /// `SIGNATURES_LIBRARY_KIND`: the stamp-library kind that holds people's
-/// marks.
+/// marks, one library per person.
 pub const SIGNATURES_LIBRARY_KIND: &str = "signatures";
 /// `SIGNATURE_MARK_NAME`.
 pub const SIGNATURE_MARK_NAME: &str = "signature";
@@ -160,7 +219,49 @@ pub fn mark_role_of(name: &str) -> MarkRole {
     if name == INITIALS_MARK_NAME { MarkRole::Initials } else { MarkRole::Signature }
 }
 
-/// `SignaturePending`.
+/// `SignerRow`: one person in a signatures picker, a library of kind
+/// `signatures` with its marks split by role.
+#[derive(Clone, Debug, PartialEq)]
+pub struct SignerRow {
+    pub library_id: String,
+    pub name: String,
+    pub library: StampLibrary,
+    /// Every full signature of the person, in the library's order.
+    pub signatures: Vec<StampAsset>,
+    /// The person's initials, or `None` when the library has none.
+    pub initials: Option<StampAsset>,
+}
+
+/// `signerRowsOf(libraries, assets)`: one row per library of kind
+/// `signatures`, in the order of `libraries`. A pure derivation over the
+/// stamp plugin's `listLibraries` and `listAssets`.
+pub fn signer_rows_of(libraries: &[StampLibrary], assets: &[StampAsset]) -> Vec<SignerRow> {
+    libraries
+        .iter()
+        .filter(|library| library.kind == SIGNATURES_LIBRARY_KIND)
+        .map(|library| {
+            let own: Vec<&StampAsset> =
+                assets.iter().filter(|asset| asset.library_id == library.id).collect();
+            SignerRow {
+                library_id: library.id.clone(),
+                name: library.name.clone(),
+                library: library.clone(),
+                signatures: own
+                    .iter()
+                    .filter(|asset| mark_role_of(&asset.name) == MarkRole::Signature)
+                    .map(|asset| (*asset).clone())
+                    .collect(),
+                initials: own
+                    .iter()
+                    .find(|asset| mark_role_of(&asset.name) == MarkRole::Initials)
+                    .map(|asset| (*asset).clone()),
+            }
+        })
+        .collect()
+}
+
+/// `SignaturePending`: a signature prepared in two steps and not completed
+/// yet.
 #[derive(Clone, Debug, PartialEq, Serialize, serde::Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SignaturePending {
@@ -168,7 +269,8 @@ pub struct SignaturePending {
     pub field: Value,
 }
 
-/// `PlaceMarkResult`.
+/// `PlaceMarkResult`: sealed, drawn, handed to the chrome (mode `ask`), or
+/// placed as a stamp.
 #[derive(Clone, Debug, PartialEq)]
 pub enum PlaceMarkResult {
     Signed { field: Value, result: Value },
@@ -192,28 +294,38 @@ impl PlaceMarkResult {
     }
 }
 
-/// Where `placeMark` puts a mark: into a field, or freely (a stamp).
+/// Where `placeMark` puts a mark: into a field (`{ field }`), or freely (a
+/// `StampPlacement` as JSON: `page`, `center`, `targetWidth`, ...).
 #[derive(Clone, Debug, PartialEq)]
 pub enum PlaceTarget {
     Field(Value),
-    Free(epdf_plugin_annotation::StampPlacement),
+    Free(Value),
 }
 
 // ── events ──
 
-/// `SignatureSignedEvent`.
+/// `SignatureSignedEvent`: a signing completed, in this session or another:
+/// the confirmed `signatures.completed` fact.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SignatureSignedEvent {
+    /// The sealed field, by its durable object-number ref.
     pub field: Value,
     pub result: Value,
     pub origin: Value,
 }
 
-/// `SignatureFieldEvent`.
+/// `SignatureFilledEvent`: this session's `fillField()` drew a mark into a
+/// field.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct SignatureFieldEvent {
+pub struct SignatureFilledEvent {
     pub field: Value,
-    pub origin: Value,
+}
+
+/// `SignatureClearedEvent`: this session's `clearField()` took a drawn mark
+/// out of a field.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+pub struct SignatureClearedEvent {
+    pub field: Value,
 }
 
 /// `SignatureValidatedEvent`.
@@ -228,10 +340,10 @@ pub struct SignatureProtectionChangedEvent {
     pub protection: Value,
 }
 
-/// `SignatureInvalidatingEvent`: an unsaved edit just turned a signature
-/// that held into one a save would invalidate. Once per edge.
+/// `SignatureInvalidationPredictedEvent`: an unsaved edit just turned a
+/// signature that held into one a save would invalidate. Once per edge.
 #[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct SignatureInvalidatingEvent {
+pub struct SignatureInvalidationPredictedEvent {
     pub field: Value,
     pub detail: String,
 }
@@ -242,7 +354,8 @@ pub struct SignatureTargetChangedEvent {
     pub field: Value,
 }
 
-/// `SignatureSignRequestedEvent`.
+/// `SignatureSignRequestedEvent`: mode `ask`, a mark met a field and the
+/// chrome decides.
 #[derive(Clone, Debug, PartialEq)]
 pub struct SignatureSignRequestedEvent {
     pub field: Value,
@@ -255,8 +368,17 @@ impl Serialize for SignatureSignRequestedEvent {
     }
 }
 
-/// `SignatureInspectionRequestedEvent`.
+/// `SignatureInspectionRequestedEvent`: a signed field was activated.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct SignatureInspectionRequestedEvent {
     pub field: Value,
+}
+
+/// `SignatureValidateOptions`: the moment the certificates are judged at
+/// (now by default), and `persisted` or `working-copy` (the default).
+#[derive(Clone, Default)]
+pub struct SignatureValidateOptions {
+    pub at: Option<ValidationTime>,
+    pub until: Option<String>,
+    pub signal: Option<AbortSignal>,
 }
