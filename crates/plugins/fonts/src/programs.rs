@@ -1,13 +1,12 @@
 //! `standard/programs.ts`: the standard faces as programs a renderer can
-//! load, each built-in face in an OpenType font, decoded the first time it's
-//! asked for (about 20 KB each).
+//! load, each built-in face in an OpenType font (about 20 KB each), decoded
+//! from the package's base64 when the crate builds.
 
 use std::sync::OnceLock;
 
 use serde::Serialize;
 
-use crate::base64::decode_base64;
-use crate::{FontStyle, StandardFont, face};
+use crate::{FontStyle, PROGRAMS, StandardFont, face};
 
 /// A font program a renderer can mount: its bytes, the CSS family it goes by,
 /// and its style. Serializes to its data members, as the TypeScript object
@@ -27,11 +26,10 @@ pub struct FontProgram {
 impl FontProgram {
     /// The bytes, the same slice every time. The TypeScript's `load()` is
     /// asynchronous because it imports the program's module on demand, and
-    /// retries a failed import; here the program is in the binary, so the
-    /// first call decodes it and none can fail.
+    /// retries a failed import; here the program is in the binary, decoded
+    /// when the crate built, so no call can fail.
     pub fn load(&self) -> &'static [u8] {
-        static BYTES: [OnceLock<Vec<u8>>; 14] = [const { OnceLock::new() }; 14];
-        BYTES[self.font as usize].get_or_init(|| decode_base64(face(self.font).program))
+        PROGRAMS[self.font as usize]
     }
 }
 
@@ -52,8 +50,8 @@ pub fn font_program_family(hash: &str) -> String {
 
 /// The face's program, the same value every time.
 pub fn standard_font_program(font: StandardFont) -> &'static FontProgram {
-    static PROGRAMS: [OnceLock<FontProgram>; 14] = [const { OnceLock::new() }; 14];
-    PROGRAMS[font as usize].get_or_init(|| {
+    static MADE: [OnceLock<FontProgram>; 14] = [const { OnceLock::new() }; 14];
+    MADE[font as usize].get_or_init(|| {
         let hash = face(font).program_hash;
         let standard = font.face();
         FontProgram {

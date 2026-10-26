@@ -17,6 +17,7 @@
 //! | `StandardFont`, `STANDARD_FONTS` (`engine-core`) | [`StandardFont`], [`StandardFont::ALL`] |
 //! | `STANDARD_FACES` (`engine-core`) | [`StandardFont::face`] |
 
+#[cfg(any(feature = "harness", test))]
 mod base64;
 mod css;
 mod font;
@@ -31,8 +32,9 @@ pub use font::{FontStyle, StandardFace, StandardFamily, StandardFont, UnknownSta
 pub use metrics::{StandardFontMetrics, standard_font_metrics};
 pub use programs::{FontProgram, font_program_family, standard_font_program};
 
-/// One standard face's generated layout numbers and program
-/// (`faces.generated.ts`, `programs/<font>.generated.ts`).
+/// One standard face's generated layout numbers (`faces.generated.ts`). Its
+/// program is in [`PROGRAMS`], apart, so a build that never loads one keeps
+/// none.
 struct FaceData {
     /// In 1/1000 em, as the engine's text layout reads them: the face's font box.
     ascent: i32,
@@ -43,11 +45,13 @@ struct FaceData {
     code_points: &'static [u32],
     /// Each one's advance in 1/1000 em, in the same order.
     advances: &'static [u32],
-    /// The OpenType program, base64.
-    program: &'static str,
 }
 
 include!(concat!(env!("OUT_DIR"), "/faces.rs"));
+
+// `PROGRAMS`: each face's OpenType program (`programs/<font>.generated.ts`),
+// decoded from its base64 by `build.rs`, in `STANDARD_FONTS` order.
+include!(concat!(env!("OUT_DIR"), "/programs.rs"));
 
 fn face(font: StandardFont) -> &'static FaceData {
     &FACES[font as usize]

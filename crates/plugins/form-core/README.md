@@ -52,9 +52,8 @@ depending on it adds no PDFium. A `glyphs` node holds its font program as a `Fon
 
 ## What it costs a binary
 
-`epdf-fonts` keeps all 14 OpenType programs in one static table, about 420 KB of base64, and this
-crate reads that table for metrics. The linker keeps the whole table: a release build of
-`tests/behavior.rs` with `--no-default-features`, which never calls `FontProgram::load`, still holds
-all 14 programs (435,050 bytes of base64). Nothing links `epdf-form-core` into `epdf-web` yet. When
-the form plugin does, splitting the programs out of the metrics table in `epdf-fonts` would keep
-them out of a build that only lays text out.
+`epdf-fonts` keeps the 14 OpenType programs in a static table apart from the metrics this crate
+reads (Task 13.18, Ruling13.5(b)), so a build that never calls `FontProgram::load` leaves them out.
+Before the split the linker kept them all: a release build of `tests/behavior.rs` with
+`--no-default-features` held all 14 programs (435,050 bytes of base64). The form plugin links this
+crate into `epdf-web`; the size a wasm32 build pays is in `crates/plugins/fonts/README.md`.

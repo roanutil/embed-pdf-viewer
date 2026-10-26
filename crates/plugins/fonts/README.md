@@ -22,23 +22,26 @@ the metrics' advances.
 
 There's one copy of it, the TypeScript package's generated output. `build.rs` reads
 `packages/core/fonts/src/standard/faces.generated.ts` and the 14 `programs/<font>.generated.ts`
-files and writes `$OUT_DIR/faces.rs`. It follows the generator's exact line layout and panics on
+files and writes `$OUT_DIR/faces.rs`, the layout numbers, and `$OUT_DIR/programs.rs`, which
+includes each program decoded from its base64 into a file of its own. It follows the generator's exact line layout and panics on
 anything else: an unexpected line, a face list or order other than `STANDARD_FONTS`, an advance
 count that differs from the code points, a program that isn't padded base64. A regenerated face set
 flows into Rust on the next build or stops it.
 
 The cost is that the crate builds only inside this repository, which every host build already
-requires. It also compiles all 14 programs in, about 420 KB of base64, where the TypeScript splits
-each into a module it imports on demand (`packages/core/fonts/src/standard/programs.ts:10-25`).
-Nothing links the crate into `epdf-web` yet. When the form painter does, embedding
-build-time-decoded bytes would be about 25% smaller and skip the runtime decode.
+requires. The TypeScript splits each program into a module it imports on demand
+(`packages/core/fonts/src/standard/programs.ts:10-25`); here the programs are a static table apart
+from the metrics (Task 13.18, Ruling13.5(b)), so a build that never calls `FontProgram::load`
+leaves them out. The form plugin brings this crate into `epdf-web`. A release wasm32 probe that only
+reads metrics is 34,554 bytes (461,992 when the programs sat in the metrics table as base64); one
+that also loads a program is 358,996 (467,202 before).
 
 ## Where the port differs
 
 `FontProgram::load` is synchronous and can't fail. The TypeScript's `load()` returns a promise
 because it imports the program's module on demand, and drops a failed import so the next call
-retries (`packages/core/fonts/src/standard/programs.ts:54-63`). Here the program is in the binary:
-the first call decodes it and every call returns the same `&'static [u8]`.
+retries (`packages/core/fonts/src/standard/programs.ts:54-63`). Here the program is in the binary,
+decoded when the crate built, and every call returns the same `&'static [u8]`.
 
 The API takes `StandardFont`, so an unknown name can't reach it. The TypeScript's type forbids one
 too, but at runtime it throws a `TypeError` reading off the missing face: `Cannot read properties of
@@ -59,7 +62,8 @@ practice. `tests/behavior.rs` pins the Rust choice.
 
 `decode_base64` assumes the text is a whole number of 4-character groups. The TypeScript throws
 `RangeError` from `new Uint8Array` for any other length (`packages/core/fonts/src/base64.ts:8`).
-`build.rs` checks every program, and nothing else calls it.
+`build.rs` checks every program and decodes it with its own copy of the same loop; the crate's
+copy serves only the harness's `decodeBase64` cases.
 
 `StandardFontMetrics::advance` takes a `u32` where the TypeScript takes any number. Its `Map` only
 matches the integer keys, so the harness turns `NaN`, fractions and negatives into a miss.
