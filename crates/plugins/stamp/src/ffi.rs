@@ -2,14 +2,23 @@
 //! no document and every placement names one.
 //!
 //! A `BinarySource` crosses as bytes and becomes `{"$bytes": base64}`
-//! here; the plugin's batch results and engine errors are JSON and decode
-//! into typed records, and a value that does not decode is
+//! here; the plugin's placements, batch results and engine errors are JSON
+//! and decode into typed records, and a value that does not decode is
 //! `invalid-state`.
+//!
+//! Not compiled until `epdf-ffi` builds again (Task 13.33). Migrated by
+//! hand in Task 13.24 to the current verbs: the writes resolve the library
+//! or asset they made, so the handle answers its id as before; `arm_asset`
+//! and the placements take the document in their options; a placement is
+//! `{ page, center, targetWidth?, rotation? }` and resolves the placed
+//! annotation, whose ref the handle answers; persistence has no debounce
+//! (one store line per library, `persistence.ts`); `ArmChanged` carries the
+//! armed asset. The kernel engine carries no local brand, so a host whose
+//! engine is local passes it as the asset engine (`StampConfig::into_core`).
 
 use std::rc::Rc;
 use std::sync::Arc;
 
-use epdf_annotation_core as ac;
 use epdf_ffi::{
     AnnotationRef, CancelToken, HostError, KernelBound, KernelPost, PageRef, Point,
     RegistrationHandle, Size, Subscription, ViewerError,
@@ -17,15 +26,17 @@ use epdf_ffi::{
 use epdf_kernel::bytes::Bytes;
 use epdf_kernel::rt::Promise;
 use epdf_kernel::{Error, Unsubscribe};
-use serde_json::Value;
+use serde_json::{Value, json};
 
 use crate::persistence::{
     PersistOptions, StampLibraryStore as CoreStore, StoredLibrary, persist_stamp_libraries,
     restore_stamp_libraries,
 };
 use crate::{
-    AddAssetInput, AssetPatch, CreateLibraryOptions, ImportLibraryOptions, LibraryPatch,
-    MarkSource, StampAssetKind, StampCapability, StampLibraryChangeReason, StampLibraryFilter,
+    AddAssetInput, CreateLibraryOptions, ImportLibraryOptions, MarkSource, OperationOptions,
+    PageSelection, PageTarget, StampArmOptions, StampAssetKind, StampAssetPatch as CorePatch,
+    StampCapability, StampDocumentOptions, StampLibraryChangeReason, StampLibraryFilter,
+    StampLibraryPatch as CoreLibraryPatch, StampSize,
 };
 
 fn invalid_state(what: &str, e: impl std::fmt::Display) -> Error {
@@ -37,8 +48,86 @@ fn source(bytes: Vec<u8>) -> Value {
     Bytes(bytes).to_json()
 }
 
-fn annotation_out(r: &ac::AnnotationRef) -> Result<AnnotationRef, ViewerError> {
-    AnnotationRef::try_from(r).map_err(ViewerError::from)
+/// The cancel token carries the cancel; the plugin call takes none.
+fn none() -> OperationOptions {
+    OperationOptions::default()
+}
+
+fn on(document_id: String) -> StampDocumentOptions {
+    StampDocumentOptions { document_id: Some(document_id), signal: None }
+}
+
+fn whole(value: Option<&Value>, what: &str) -> Result<u32, Error> {
+    value
+        .and_then(Value::as_f64)
+        .filter(|n| n.fract() == 0.0 && *n >= 0.0 && *n <= u32::MAX as f64)
+        .map(|n| n as u32)
+        .ok_or_else(|| invalid_state(what, "not a whole number"))
+}
+
+fn page_json(page: PageRef) -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": page.page_object_number })
+}
+
+fn page_out(page: &Value) -> Result<PageRef, Error> {
+    Ok(PageRef { page_object_number: whole(page.get("objectNumber"), "a page ref")? })
+}
+
+/// An engine annotation ref, as the annotation handle maps it.
+fn ref_out(reference: &Value) -> Result<AnnotationRef, Error> {
+    let page = page_out(reference.get("page").unwrap_or(&Value::Null))?;
+    match reference.get("kind").and_then(Value::as_str) {
+        Some("objectNumber") => Ok(AnnotationRef::ObjectNumber {
+            page,
+            annot_object_number: whole(reference.get("objectNumber"), "an annotation ref")?,
+        }),
+        Some("baseIndex") => Ok(AnnotationRef::Index {
+            page,
+            index: whole(reference.get("baseIndex"), "an annotation ref")?,
+            revision: Default::default(),
+        }),
+        _ => Err(invalid_state("an annotation ref", reference)),
+    }
+}
+
+fn ref_json(reference: &AnnotationRef) -> Result<Value, Error> {
+    match reference {
+        AnnotationRef::ObjectNumber { page, annot_object_number } => Ok(json!({
+            "kind": "objectNumber", "page": page_json(*page), "objectNumber": annot_object_number
+        })),
+        AnnotationRef::Index { page, index, .. } => Ok(json!({
+            "kind": "baseIndex", "page": page_json(*page), "baseIndex": index
+        })),
+        AnnotationRef::Nm { .. } => {
+            Err(invalid_state("an annotation ref", "the engine refers by number, not by /NM"))
+        }
+    }
+}
+
+/// A placed annotation's ref: `{ annotation }`'s, or an `Annotation`'s.
+fn placed_ref(annotation: &Value) -> Result<AnnotationRef, Error> {
+    ref_out(annotation.get("ref").unwrap_or(&Value::Null))
+}
+
+/// `StampPlacement` (or its `Omit<'page'>`) as the annotation plugin takes it.
+fn placement(
+    page: Option<PageRef>,
+    center: Point,
+    target_width: Option<f64>,
+    rotation: Option<f64>,
+) -> Value {
+    let mut out = serde_json::Map::new();
+    if let Some(page) = page {
+        out.insert("page".into(), page_json(page));
+    }
+    out.insert("center".into(), json!({ "x": center.x, "y": center.y }));
+    if let Some(width) = target_width {
+        out.insert("targetWidth".into(), json!(width));
+    }
+    if let Some(rotation) = rotation {
+        out.insert("rotation".into(), json!(rotation));
+    }
+    Value::Object(out)
 }
 
 // ── config ──────────────────────────────────────────────────────────────────
@@ -55,13 +144,12 @@ pub struct StampConfig {
 }
 
 impl StampConfig {
-    /// The plugin's config with the host's asset engine.
-    pub fn into_core(self, asset_engine: Option<crate::AssetEngine>) -> crate::StampConfig {
+    /// The plugin's config with the host's asset engine, a local one.
+    pub fn into_core(self, asset_engine: Option<crate::StampAssetEngine>) -> crate::StampConfig {
         crate::StampConfig {
-            asset_engine,
+            asset_engine: asset_engine.map(Some),
             preview_width: self.preview_width,
             dynamic: self.dynamic,
-            host: crate::StampHost::default(),
         }
     }
 }
@@ -119,7 +207,7 @@ impl From<crate::StampAsset> for StampAsset {
             kind: a.kind,
             name: a.name,
             label: a.label,
-            size: a.size.into(),
+            size: Size { width: a.size.width, height: a.size.height },
             page: a.page.into(),
             subject: a.subject,
             categories: a.categories,
@@ -137,7 +225,10 @@ pub struct StampAssetPreview {
 
 impl From<crate::StampAssetPreview> for StampAssetPreview {
     fn from(p: crate::StampAssetPreview) -> Self {
-        StampAssetPreview { bytes: p.bytes, mime_type: p.mime_type }
+        StampAssetPreview {
+            bytes: p.byte_vec(),
+            mime_type: p.mime_type.as_ref().and_then(Value::as_str).map(str::to_string),
+        }
     }
 }
 
@@ -226,7 +317,7 @@ impl From<StampAddAssetInput> for AddAssetInput {
             source: i.source.map(source),
             mark: i.mark.map(Into::into),
             preview: i.preview.map(source),
-            size: i.size.map(Into::into),
+            size: i.size.map(|s| StampSize { width: s.width, height: s.height }),
         }
     }
 }
@@ -254,6 +345,7 @@ impl From<StampImportOptions> for ImportLibraryOptions {
             kind: o.kind,
             library_kind: o.library_kind,
             asset_name: None,
+            signal: None,
         }
     }
 }
@@ -313,6 +405,7 @@ pub struct StampBatchFailure {
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct StampBatchResult {
+    /// The placed annotations' refs.
     pub applied: Vec<AnnotationRef>,
     pub skipped: Vec<PageRef>,
     pub failed: Vec<StampBatchFailure>,
@@ -322,30 +415,20 @@ impl TryFrom<crate::BatchResult> for StampBatchResult {
     type Error = Error;
 
     fn try_from(r: crate::BatchResult) -> Result<Self, Error> {
-        let annotation = |v: Value| {
-            let core: ac::AnnotationRef =
-                serde_json::from_value(v).map_err(|e| invalid_state("a placed annotation", e))?;
-            AnnotationRef::try_from(&core)
-        };
-        let page = |v: Value| {
-            epdf_kernel::geometry::PageRef::from_json(&v)
-                .map(PageRef::from)
-                .ok_or_else(|| invalid_state("a skipped page", &v))
-        };
         let failure = |f: crate::BatchFailure| {
             let code = f.error.get("code").and_then(Value::as_str);
             let message = f.error.get("message").and_then(Value::as_str);
             match (code, message) {
                 (Some(code), Some(message)) => Ok(StampBatchFailure {
-                    page: f.page.into(),
+                    page: page_out(&f.page)?,
                     error: StampErrorInfo { code: code.into(), detail: message.into() },
                 }),
                 _ => Err(invalid_state("a placement error", &f.error)),
             }
         };
         Ok(StampBatchResult {
-            applied: r.applied.into_iter().map(annotation).collect::<Result<_, _>>()?,
-            skipped: r.skipped.into_iter().map(page).collect::<Result<_, _>>()?,
+            applied: r.applied.iter().map(placed_ref).collect::<Result<_, _>>()?,
+            skipped: r.skipped.iter().map(page_out).collect::<Result<_, _>>()?,
             failed: r.failed.into_iter().map(failure).collect::<Result<_, _>>()?,
         })
     }
@@ -385,9 +468,10 @@ pub enum StampEvent {
         asset_id: String,
         library_id: String,
     },
+    /// A stamp was armed on the document, or disarmed (`None`).
     ArmChanged {
         document_id: String,
-        asset_id: Option<String>,
+        asset: Option<StampAsset>,
     },
 }
 
@@ -495,7 +579,7 @@ impl StampHandle {
         self.cap.call(move |c| Ok(c.get_asset(&id).map(Into::into))).await
     }
 
-    /// The cached preview, made at import. `None` before then.
+    /// The cached thumbnail, made at import. `None` before then.
     pub async fn asset_preview(
         &self,
         id: String,
@@ -503,7 +587,7 @@ impl StampHandle {
         self.cap.call(move |c| Ok(c.get_asset_preview(&id).map(Into::into))).await
     }
 
-    /// A fresh render `width` device pixels wide.
+    /// A render `width` device pixels wide, cached per width.
     pub async fn render_asset_preview(
         &self,
         id: String,
@@ -513,7 +597,7 @@ impl StampHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(c.render_asset_preview(&id, width)),
+                move |c| Ok(c.render_asset_preview(&id, width, none())),
                 |p: Option<crate::StampAssetPreview>| p.map(Into::into),
             )
             .await
@@ -530,12 +614,23 @@ impl StampHandle {
         id: String,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<u8>, ViewerError> {
-        self.cap.call_promise_cancellable(cancel, move |c| Ok(c.export_library(&id)), |b| b).await
+        self.cap
+            .call_promise_cancellable(cancel, move |c| Ok(c.export_library(&id, none())), |b| b)
+            .await
     }
 
     /// Whether `document_id` (or the active document) can take a stamp.
     pub async fn can_place(&self, document_id: Option<String>) -> Result<bool, ViewerError> {
         self.cap.call(move |c| Ok(c.can_place(document_id.as_deref()))).await
+    }
+
+    /// Whether annotations of `document_id` (or the active document) may
+    /// become a stamp (`doc.download`).
+    pub async fn can_create_from_annotations(
+        &self,
+        document_id: Option<String>,
+    ) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(c.can_create_from_annotations(document_id.as_deref()))).await
     }
 
     pub async fn can_import(&self) -> Result<bool, ViewerError> {
@@ -557,10 +652,11 @@ impl StampHandle {
                         id: options.id,
                         kind: options.kind,
                         categories: options.categories,
+                        signal: None,
                     };
                     Ok(c.create_library(&name, opts))
                 },
-                |id| id,
+                |library: crate::StampLibrary| library.id,
             )
             .await
     }
@@ -575,16 +671,16 @@ impl StampHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let patch = LibraryPatch { name: patch.name, categories: patch.categories };
-                    Ok(c.update_library(&id, patch))
+                    let patch = CoreLibraryPatch { name: patch.name, categories: patch.categories };
+                    Ok(c.update_library(&id, patch, none()))
                 },
-                |()| (),
+                |_: crate::StampLibrary| (),
             )
             .await
     }
 
     /// Import a library PDF. Returns the new library's id. `invalid-input`
-    /// (the engine's `InvalidArg`) for bytes that aren't a PDF.
+    /// for bytes that aren't a PDF.
     pub async fn import_library(
         &self,
         bytes: Vec<u8>,
@@ -595,7 +691,7 @@ impl StampHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| Ok(c.import_library(source(bytes), options.into())),
-                |id| id,
+                |library: crate::StampLibrary| library.id,
             )
             .await
     }
@@ -605,7 +701,9 @@ impl StampHandle {
         id: String,
         cancel: Arc<CancelToken>,
     ) -> Result<(), ViewerError> {
-        self.cap.call_promise_cancellable(cancel, move |c| Ok(c.delete_library(&id)), |()| ()).await
+        self.cap
+            .call_promise_cancellable(cancel, move |c| Ok(c.delete_library(&id, none())), |()| ())
+            .await
     }
 
     /// Returns the new asset's id.
@@ -615,12 +713,17 @@ impl StampHandle {
         cancel: Arc<CancelToken>,
     ) -> Result<String, ViewerError> {
         self.cap
-            .call_promise_cancellable(cancel, move |c| Ok(c.create_asset(input.into())), |id| id)
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(c.create_asset(input.into(), none())),
+                |asset: crate::StampAsset| asset.id,
+            )
             .await
     }
 
-    /// Needs `page.annotations.exportAppearance`, which the native engine
-    /// has not mapped: answers `unsupported` there.
+    /// Annotations on a page of `document_id` become one stamp. Needs
+    /// `page.annotations.exportAppearance`, which the native engine has
+    /// not mapped: answers `unsupported` there.
     pub async fn create_asset_from_annotations(
         &self,
         document_id: String,
@@ -629,25 +732,19 @@ impl StampHandle {
         input: StampAddAssetInput,
         cancel: Arc<CancelToken>,
     ) -> Result<String, ViewerError> {
-        // The plugin says `NotImplemented` when the document's engine can't
-        // export appearances, which through this host is always the case;
-        // it crosses as `unsupported`, as every engine code is mapped.
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let refs = annotations
-                        .into_iter()
-                        .map(|a| epdf_kernel::js::to_value(&ac::AnnotationRef::from(a)))
-                        .collect();
+                    let refs = annotations.iter().map(ref_json).collect::<Result<Vec<_>, _>>()?;
                     Ok(c.create_asset_from_annotations(
-                        &document_id,
-                        page.into(),
+                        PageTarget::Ref(page.into()),
                         refs,
                         input.into(),
+                        on(document_id),
                     ))
                 },
-                |id| id,
+                |asset: crate::StampAsset| asset.id,
             )
             .await
     }
@@ -665,10 +762,10 @@ impl StampHandle {
                     let subject =
                         if patch.clear_subject { Some(None) } else { patch.subject.map(Some) };
                     let patch =
-                        AssetPatch { label: patch.label, subject, categories: patch.categories };
-                    Ok(c.update_asset(&id, patch))
+                        CorePatch { label: patch.label, subject, categories: patch.categories };
+                    Ok(c.update_asset(&id, patch, none()))
                 },
-                |()| (),
+                |_: crate::StampAsset| (),
             )
             .await
     }
@@ -678,7 +775,9 @@ impl StampHandle {
         id: String,
         cancel: Arc<CancelToken>,
     ) -> Result<(), ViewerError> {
-        self.cap.call_promise_cancellable(cancel, move |c| Ok(c.delete_asset(&id)), |()| ()).await
+        self.cap
+            .call_promise_cancellable(cancel, move |c| Ok(c.delete_asset(&id, none())), |()| ())
+            .await
     }
 
     /// Returns the asset's new id (ids carry the library).
@@ -691,8 +790,8 @@ impl StampHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(c.move_asset(&id, &to_library_id)),
-                |id| id,
+                move |c| Ok(c.move_asset(&id, &to_library_id, none())),
+                |asset: crate::StampAsset| asset.id,
             )
             .await
     }
@@ -704,7 +803,11 @@ impl StampHandle {
         cancel: Arc<CancelToken>,
     ) -> Result<String, ViewerError> {
         self.cap
-            .call_promise_cancellable(cancel, move |c| Ok(c.duplicate_asset(&id, label)), |id| id)
+            .call_promise_cancellable(
+                cancel,
+                move |c| Ok(c.duplicate_asset(&id, label, none())),
+                |asset: crate::StampAsset| asset.id,
+            )
             .await
     }
 
@@ -719,20 +822,28 @@ impl StampHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(c.arm_asset(&document_id, &asset_id, target_width)),
+                move |c| {
+                    let options = StampArmOptions {
+                        document_id: Some(document_id),
+                        target_width,
+                        signal: None,
+                    };
+                    Ok(c.arm_asset(&asset_id, options))
+                },
                 |()| (),
             )
             .await
     }
 
-    /// Place `asset_id` on `page` of `document_id` at `at` (page space).
+    /// Place `asset_id` on `page` of `document_id`, its middle on `center`
+    /// (page space). Returns the placed annotation's ref.
     #[allow(clippy::too_many_arguments)]
     pub async fn place_asset(
         &self,
         document_id: String,
         asset_id: String,
         page: PageRef,
-        at: Point,
+        center: Point,
         target_width: Option<f64>,
         rotation: Option<f64>,
         cancel: Arc<CancelToken>,
@@ -741,15 +852,13 @@ impl StampHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let placement = epdf_plugin_annotation::StampPlacement {
-                        page: page.into(),
-                        at: at.into(),
-                        target_width,
-                        rotation,
-                    };
-                    Ok(c.place_asset(&document_id, &asset_id, placement))
+                    let at = placement(Some(page), center, target_width, rotation);
+                    Ok(c.place_asset(&asset_id, at, on(document_id)))
                 },
-                |placed: ac::AnnotationRef| annotation_out(&placed),
+                |placed: Value| {
+                    placed_ref(placed.get("annotation").unwrap_or(&Value::Null))
+                        .map_err(ViewerError::from)
+                },
             )
             .await?
     }
@@ -761,7 +870,7 @@ impl StampHandle {
         document_id: String,
         asset_id: String,
         pages: Option<Vec<PageRef>>,
-        at: Point,
+        center: Point,
         target_width: Option<f64>,
         rotation: Option<f64>,
         cancel: Arc<CancelToken>,
@@ -770,15 +879,14 @@ impl StampHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let pages = pages.map(|p| p.into_iter().map(Into::into).collect());
-                    Ok(c.place_asset_on_pages(
-                        &document_id,
-                        &asset_id,
-                        pages,
-                        at.into(),
-                        target_width,
-                        rotation,
-                    ))
+                    let pages = match pages {
+                        None => PageSelection::All,
+                        Some(pages) => PageSelection::Pages(
+                            pages.into_iter().map(|p| PageTarget::Ref(p.into())).collect(),
+                        ),
+                    };
+                    let at = placement(None, center, target_width, rotation);
+                    Ok(c.place_asset_on_pages(&asset_id, pages, at, on(document_id)))
                 },
                 |r: crate::BatchResult| StampBatchResult::try_from(r).map_err(ViewerError::from),
             )
@@ -786,18 +894,23 @@ impl StampHandle {
     }
 
     pub async fn disarm(&self, document_id: String) -> Result<(), ViewerError> {
-        self.cap.call(move |c| c.disarm(&document_id)).await
+        self.cap
+            .call(move |c| {
+                c.disarm(Some(&document_id));
+                Ok(())
+            })
+            .await
     }
 
     pub async fn armed_asset(
         &self,
         document_id: String,
     ) -> Result<Option<StampAsset>, ViewerError> {
-        self.cap.call(move |c| Ok(c.get_armed_asset(&document_id).map(Into::into))).await
+        self.cap.call(move |c| Ok(c.get_armed_asset(Some(&document_id)).map(Into::into))).await
     }
 
     /// Load every library `store` holds. Returns the restored ids. A stored
-    /// library that fails to import is skipped.
+    /// library that fails to import is skipped and logged.
     pub async fn restore(
         &self,
         store: Arc<dyn StampLibraryStore>,
@@ -806,21 +919,21 @@ impl StampHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(restore_stamp_libraries(c, Rc::new(ForeignStore(store)), None)),
+                move |c| Ok(restore_stamp_libraries(c, Rc::new(ForeignStore(store)))),
                 |ids| ids,
             )
             .await
     }
 
-    /// Write each changed library to `store`, debounced (`None` is 250 ms),
-    /// except the ids in `except`. Runs until `unregister`, which flushes
-    /// pending writes, or until the viewer is destroyed. Dropping the
-    /// handle keeps it running, as every `RegistrationHandle` does.
+    /// Write each changed library to `store`, except the ids in `except`:
+    /// one line of store work per library, a burst of changes one save.
+    /// Runs until `unregister` (work already asked for still finishes) or
+    /// until the viewer is destroyed. Dropping the handle keeps it running,
+    /// as every `RegistrationHandle` does.
     pub async fn persist(
         &self,
         store: Arc<dyn StampLibraryStore>,
         except: Vec<String>,
-        debounce_ms: Option<f64>,
     ) -> Result<Arc<RegistrationHandle>, ViewerError> {
         let post = self.post.clone();
         self.cap
@@ -828,10 +941,9 @@ impl StampHandle {
                 let stop = persist_stamp_libraries(
                     c,
                     Rc::new(ForeignStore(store)),
-                    PersistOptions { except, debounce_ms },
-                    None,
+                    PersistOptions { except },
                 );
-                Ok(RegistrationHandle::new(post, move || stop()))
+                Ok(RegistrationHandle::new(post, move || stop.call()))
             })
             .await
     }
@@ -917,7 +1029,7 @@ fn subscribe_all(c: &StampCapability, l: Arc<dyn StampEventListener>) -> Vec<Uns
         c.on_arm_changed(move |e| {
             l.on_event(StampEvent::ArmChanged {
                 document_id: e.document_id.clone(),
-                asset_id: e.asset_id.clone(),
+                asset: asset(e.asset.as_ref()),
             });
             Ok(())
         }),

@@ -101,6 +101,7 @@ fn required<T: serde::de::DeserializeOwned, E: serde::de::Error>(
 // ── descriptors ───────────────────────────────────────────────────────────────
 
 /// `StampAssetKind`.
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum StampAssetKind {
@@ -586,6 +587,7 @@ pub struct BatchResult {
 // ── events ────────────────────────────────────────────────────────────────────
 
 /// `StampLibraryChangedEvent['reason']`.
+#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum StampLibraryChangeReason {

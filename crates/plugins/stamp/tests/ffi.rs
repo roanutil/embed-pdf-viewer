@@ -4,6 +4,9 @@
 //! bytes, so these pin the handle's own behaviour: listing, unknown ids,
 //! arming errors, events and persistence over a fake store. The host tests
 //! and the Swift tests cover import over real PDFium.
+//!
+//! Migrated by hand in Task 13.24; not compiled until `epdf-ffi` builds
+//! again (Task 13.33).
 
 use std::sync::{Arc, Mutex};
 
@@ -121,8 +124,9 @@ fn importing_non_pdf_bytes_is_refused() {
 #[test]
 fn a_library_the_engine_cannot_open_fails_with_a_typed_error() {
     let (_thread, stamp, _) = handle();
-    // The fake engine opens no documents, so creating a library's blank PDF
-    // fails; the failure arrives as a kernel error and nothing is created.
+    // No asset engine is configured and the kernel's carries no local
+    // brand, so creating a library's blank PDF is refused before any open;
+    // the refusal arrives as a kernel error and nothing is created.
     let error =
         block_on(stamp.create_library("Mine".into(), Default::default(), CancelToken::new()))
             .unwrap_err();
@@ -138,7 +142,7 @@ fn an_engine_that_cannot_export_appearances_answers_unsupported() {
     // native engine, where the member is absent.
     let spec = json!({ "documents": { "a": { "id": "a", "security": { "allows": "*" },
         "services": [],
-        "pages": [{ "index": 0, "ref": { "kind": "objectNumber", "pageObjectNumber": 1 },
+        "pages": [{ "index": 0, "ref": { "kind": "objectNumber", "objectNumber": 1 },
             "label": null, "size": { "width": 600, "height": 800 }, "rotation": 0 }] } } });
     let thread = KernelThread::spawn(move |_| {
         let spec = TestSpec::new(spec).respond_page("page.annotations.exportAppearance", |_, _| {
@@ -196,8 +200,7 @@ fn a_store_that_throws_fails_the_restore_with_its_error() {
 #[test]
 fn persist_returns_a_registration_that_unregisters_once() {
     let (thread, stamp, _) = handle();
-    let registration =
-        block_on(stamp.persist(Arc::new(Store::default()), Vec::new(), None)).unwrap();
+    let registration = block_on(stamp.persist(Arc::new(Store::default()), Vec::new())).unwrap();
     registration.unregister();
     registration.unregister();
     block_on(thread.call(|_| ())).unwrap();
