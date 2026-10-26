@@ -20,6 +20,9 @@ queued mutation cancelled before it starts, a cancel after the rewrite that keep
 queue per library, work in flight at teardown that completes where a cancel rejects, ghost renders
 cached per width, a library's assets going with it, a setting change that re-resolves the asset
 engine, and an unconfigured import on a local kernel engine.
+`the_settings_verbs_replay_and_the_host_is_restored` in `tests/conformance.rs` drives
+`onSettingsChanged`, `updateSettings`, `getSettings` and `resetSettings` through the adapter and
+checks the case's console and random are put back when its kernel goes.
 
 ## Shape
 
@@ -61,7 +64,9 @@ The asset engine is typed. `StampAssetEngine` is a `LocalEngine`, which is the T
 engine is used when `Engine::is_local` says it carries the brand (Ruling13.24, `7557d8a45`), as
 `isLocalEngine` reads it at `services/asset-engine.ts:56`; an unbranded engine, the cloud one or
 the conformance fake, is refused before any open. The native host's override lands in 13.33.
-`an_unconfigured_plugin_imports_on_a_local_kernel_engine` pins both cases.
+`an_unconfigured_plugin_imports_on_a_local_kernel_engine` pins both cases. The web host's
+`JsEngine` (`crates/epdf-web/src/engine.rs:193`) keeps the default `false` too: until 13.33 forwards
+the JS brand, a web viewer over a local WASM engine with no `assetEngine` refuses every import.
 
 The settings live in the kernel's JSON store. The asset engine is stored as a handle,
 `{"$assetEngine": n}`, into a table the registration owns, as the actions plugin stores a function
@@ -73,10 +78,14 @@ it over the kernel queue as `serial-queue.ts` defines it, as the form, measureme
 plugins do: a fourth plugin waiting on the Task 14 kernel carry.
 
 A render's bytes the host holds (`$hostBytes`) are read out and the render released
-(`release_host`), as before this port. A malformed page ref the kernel's `PageRef` can't hold is a
-`TypeError` with the port's own message, where the TypeScript calls the engine with it. A sibling
-plugin whose lookup throws reads as absent in `can_place`, `disarm` and materialization. No vector
-reaches any of these.
+(`release_host`), as before this port. A page ref with no object number is the TypeScript's
+`TypeError`; one the kernel's `PageRef` can't hold otherwise is a `TypeError` with the port's own
+message, where the TypeScript calls the engine with it (`js::page_ref`). A sibling plugin whose
+lookup throws reads as absent in `can_place`, `disarm` and materialization. A library or asset id
+that `Object.prototype` holds (`constructor`, `toString`) is an unknown id here, where the
+TypeScript's `state.libraries[id]` finds the inherited function: `getAsset('toString')` returns it
+and `setLibrary` takes the id as known. Rust keeps the plain lookup, the choice Ruling13.7 made for
+kind names. No vector reaches any of these.
 
 The default QuickJS execution has no Rust counterpart: with scripting on and no sandbox factory,
 every sandbox build is refused (`NO_DEFAULT_SANDBOX`, `crates/plugins/actions/README.md`), so a
