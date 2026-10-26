@@ -74,20 +74,15 @@ With no reason it is the platform's `AbortError` DOMException (`This operation w
 
 ## Where the port differs in shape
 
-The engine sees an abort reason as the TypeScript passes it. A lane aborts its run with a string
-(`'superseded'`, `'cancelled'`, `'cleared'`, `'instance-closed'`), and the kernel's `AbortSignal`
-carries it as an error whose message is that string. The kernel's `cancellable` hands the engine
-every reason in its error form, which would print `{"$error": ...}` where `search.json` records
-`"superseded"`. So `controller.rs` keeps a private `cancellable`, the same race as `cancellable.ts`,
-told by the caller whether the reason is a lane's string or a caller's error. The cost is a second
-copy of a small kernel function; a kernel `AbortSignal` that carries a string reason would retire
-it.
+The engine sees an abort reason as the TypeScript passes it: `collect` uses the kernel's
+`cancellable`, which hands the engine the signal's JavaScript value (`AbortSignal::reason_value`), a
+lane's string such as `"superseded"` or a caller's error (Ruling13.20, `4ad664efd`).
 
 The hit index is an `isize`, so `goToHit(1.5)` and `goToHit(NaN)` can't be expressed; the
-TypeScript reads `hits[1.5]`, which is `undefined`. A caller's signal aborted with a non-`Error`
-reason isn't ported either. `validateSearchQuery` and `validateSearchRegex`, which `contract.ts`
-re-exports from engine-core, live in `crates/epdf-engine/src/features/search/mod.rs`, which links
-PDFium, so this crate doesn't re-export them.
+TypeScript reads `hits[1.5]`, which is `undefined`. `validateSearchQuery` and
+`validateSearchRegex`, which `contract.ts` re-exports from engine-core, live in
+`crates/epdf-engine/src/features/search/mod.rs`, which links PDFium, so this crate doesn't
+re-export them.
 
 Not ported: inputs outside the TypeScript's types, which crash it. A query without `text`, a slice
 missing `matches`, and a `nextCursor` that is absent rather than `null` (the TypeScript loops on it

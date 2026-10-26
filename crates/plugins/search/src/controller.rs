@@ -20,6 +20,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_geometry::bounds_of_rects;
+use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::{CallFacts, CallPriority, decode};
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::event_hook::EventHookSource;
@@ -63,70 +64,6 @@ fn error_info(error: &Error) -> PluginErrorInfo {
         capability: text("capability"),
         permission: error.member("permission").and_then(Value::as_str).map(str::to_string),
     }
-}
-
-/// The value an aborted signal's reason reaches the engine as:
-/// `abortable.abort?.(signal.reason)`. A lane aborts its run with a string
-/// (`'superseded'`, `'cancelled'`, `'cleared'`, `'instance-closed'`), which
-/// the kernel's `AbortSignal` carries as an error whose message is that
-/// string; a caller's controller aborts with an error.
-type ReasonOf = fn(&Error) -> Value;
-
-fn lane_reason(reason: &Error) -> Value {
-    Value::String(reason.message.clone())
-}
-
-fn error_reason(reason: &Error) -> Value {
-    reason.to_canonical()
-}
-
-/// `ctx.cancellable(signal, task)` (`cancellable.ts`): race an engine call
-/// against the signal. When it fires, the call is aborted with the signal's
-/// reason and the returned promise rejects `operation-cancelled` at once.
-/// The kernel's `cancellable` hands the engine every reason in its error
-/// form; a lane's reasons are strings in the TypeScript, so this one takes
-/// the reason's form from the caller.
-fn cancellable(
-    signal: Option<&AbortSignal>,
-    task: Promise<Value>,
-    reason_of: ReasonOf,
-) -> Promise<Value> {
-    let Some(signal) = signal else {
-        return task;
-    };
-    let (result, resolver) = Promise::pending();
-    let abort = task.abort_handle();
-    let (s, r) = (signal.clone(), resolver.clone());
-    let cancel: Rc<dyn Fn(&Error)> = Rc::new(move |_| {
-        let reason = s.reason();
-        if let Some(abort) = &abort {
-            abort(reason.as_ref().map(reason_of));
-        }
-        r.reject(plugin_error(
-            code::OPERATION_CANCELLED,
-            CAPABILITY,
-            "operation cancelled",
-            reason.as_ref().map(reason_of),
-            None,
-        ));
-    });
-    // Listened to even after a cancel: settling a settled promise changes
-    // nothing, and the call's late rejection is never left unhandled.
-    let registration = if signal.aborted() {
-        cancel(&signal.reason().unwrap_or_else(|| Error::new("cancelled")));
-        None
-    } else {
-        Some(signal.on_abort(cancel))
-    };
-    let signal = signal.clone();
-    rt::spawn(async move {
-        let answer = task.reaction().await;
-        if let Some(id) = registration {
-            signal.remove(id);
-        }
-        resolver.settle(answer.map_err(|e| to_plugin_error(CAPABILITY, &e)));
-    });
-    result
 }
 
 struct Events {
@@ -354,7 +291,6 @@ struct Scan<'a> {
     from: Option<PageRef>,
     snippets: Option<bool>,
     signal: Option<AbortSignal>,
-    reason_of: ReasonOf,
 }
 
 /// One cursor loop over budgeted slices: permission fallback (snippets to
@@ -390,7 +326,9 @@ async fn collect(core: &Core, scan: Scan<'_>, sink: &dyn CollectSink) -> Result<
                 let request = serde_json::to_value(&request).unwrap_or(Value::Null);
                 let facts = CallFacts { priority: Some(CallPriority::Low), view: None };
                 let call = doc.call_with(&facts, "search.query", None, vec![request]);
-                cancellable(signal, call, scan.reason_of).await.and_then(decode::<SearchSlice>)
+                cancellable(CAPABILITY, scan.signal.clone(), call)
+                    .await
+                    .and_then(decode::<SearchSlice>)
             }
             Err(error) => Err(error),
         };
@@ -627,7 +565,6 @@ impl SearchCapability {
                             from,
                             snippets: None,
                             signal: Some(run.signal.clone()),
-                            reason_of: lane_reason,
                         };
                         let complete = rt::returned(collect(&core, scan, &sink)).await?;
                         if !complete {
@@ -892,7 +829,6 @@ impl SearchCapability {
                 from: None,
                 snippets: options.snippets,
                 signal: options.signal,
-                reason_of: error_reason,
             };
             let complete = rt::returned(collect(&core, scan, &sink)).await?;
             if !complete {
