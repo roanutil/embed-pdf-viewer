@@ -1,362 +1,551 @@
-//! `write/placement.ts`: arm an asset on a document (the next click places)
-//! or place it without the pointer. Form-backed stamps are executable
-//! templates only until placement: they are evaluated on an isolated copy
-//! under the target document's detached script realm, so neither the
-//! canonical library nor its reusable page extraction becomes target, user
-//! or time specific.
+//! `write/placement.ts`: arm an asset on a document (the next click
+//! places) or place it without the pointer. Form-backed stamps are
+//! executable templates only until placement: they are evaluated on an
+//! isolated copy under the target document's detached script realm, so
+//! neither the canonical library nor its reusable per-page extraction
+//! becomes target, user or time specific.
 
+use std::any::Any;
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use epdf_acrojs::java_script_program_from_action_tree;
-use epdf_annotation_core::AnnotationRef;
-use epdf_kernel::bytes::Bytes;
+use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::DocumentHandle;
-use epdf_kernel::error::to_plugin_error;
-use epdf_kernel::geometry::PageRef;
-use epdf_kernel::rt::{self, Promise};
-use epdf_kernel::types::DocumentMeta;
+use epdf_kernel::error::{code, to_plugin_error};
+use epdf_kernel::rt::Promise;
+use epdf_kernel::signal::AbortSignal;
+use epdf_kernel::types::{DocStatus, DocumentMeta};
 use epdf_kernel::{Error, undefined};
 use epdf_plugin_actions::{
-    ACTIONS, ActionOrigin, ScriptCommitContext, ScriptRealmKind, ScriptRealmTarget,
+    ACTIONS, ActionOrigin, ActionsCapability, DetachedScriptRealm, PhasedUiEffect,
+    ScriptCommitContext, ScriptCommitSurface, ScriptDocument, ScriptRealmKind, ScriptRealmTarget,
 };
-use epdf_plugin_annotation::{ANNOTATION, StampPlacement, StampPreview, StampToolInput};
-use epdf_plugin_form::services::scripting::commit_surface;
-use epdf_plugin_form::{
-    FormCommitStatus, FormScriptingController, FormScriptingControllerOptions, TransactionBody,
+use epdf_plugin_annotation::write::stamps::{StampInput, StampPreview};
+use epdf_plugin_annotation::{ANNOTATION, AnnotationCapability};
+use epdf_plugin_form::engine::form_effect_ops;
+use epdf_plugin_form::scripting::controller::{
+    FormScriptingController, FormScriptingControllerOptions, ScriptStatus, TransactionBody,
     TransactionPort,
 };
 use serde_json::{Value, json};
 
 use crate::contract::*;
 use crate::controller::StampCapability;
-use crate::promise::{adopt, await_engine};
-use crate::services::asset_engine::{
-    bytes_of, call, close, image_to_preview, page_call, render_options,
-};
+use crate::js::{adopt, member, nullish};
+use crate::model::{arm_asset, disarm_documents};
+use crate::services::asset_engine::{call, close, image_to_preview, page_call, render_options};
 use crate::services::binaries::AssetBinary;
-use crate::value::{get, num, str_of};
-use crate::write::libraries::pon_of_ref;
+use crate::services::errors::{
+    CAPABILITY, not_found, permission_denied, stamp_error, throw_if_cancelled, verb,
+};
+use crate::write::libraries::bytes_json;
 
-/// A JavaScript value in a template literal.
-fn js_string(value: Option<&Value>) -> String {
-    match value {
-        Some(Value::String(s)) => s.clone(),
-        Some(Value::Number(n)) => {
-            epdf_geometry::js::number_to_string(n.as_f64().unwrap_or(f64::NAN))
+/// What a placement places: the asset's own bytes and preview (the
+/// template), or an evaluated copy.
+#[derive(Clone)]
+enum Placement {
+    Template(AssetBinary),
+    Materialized(AssetBinary),
+}
+
+impl Placement {
+    fn binary(&self) -> &AssetBinary {
+        match self {
+            Placement::Template(binary) | Placement::Materialized(binary) => binary,
         }
-        Some(Value::Bool(b)) => b.to_string(),
-        Some(Value::Null) => "null".to_string(),
-        _ => "undefined".to_string(),
     }
-}
-
-/// The asset document's name-tree boot programs, read lazily once per realm.
-fn boot_sources(
-    doc: Rc<dyn DocumentHandle>,
-) -> Rc<dyn Fn() -> Result<Promise<Vec<String>>, Error>> {
-    Rc::new(move || {
-        let read = doc.has("actions").then(|| doc.call("actions.read", None, Vec::new()));
-        Ok(Promise::spawn(async move {
-            let Some(read) = read else { return Ok(Vec::new()) };
-            let tree = await_engine(read).await?;
-            if tree.is_null() {
-                return Ok(Vec::new());
-            }
-            get(&tree, "nameTreeScripts")
-                .and_then(Value::as_array)
-                .into_iter()
-                .flatten()
-                .map(|entry| {
-                    java_script_program_from_action_tree(
-                        get(entry, "action").unwrap_or(&Value::Null),
-                    )
-                })
-                .collect::<Result<Vec<_>, _>>()
-        }))
-    })
-}
-
-/// What placement arms: the template, or a materialized page.
-struct Placement {
-    binary: AssetBinary,
-    materialized: bool,
 }
 
 impl StampCapability {
-    /// `stampPayload(asset, placement, materialized)`: the payload both entry
-    /// points hand the annotation plugin.
-    fn stamp_payload(&self, asset: &StampAsset, placement: &Placement) -> StampToolInput {
-        let cache_key = (!placement.materialized).then_some(asset.id.as_str());
-        StampToolInput {
-            source: placement.binary.bytes.clone().map_or_else(undefined, |b| Bytes(b).to_json()),
+    /// The annotation plugin owns the arm itself and drops it on its own (a
+    /// tool switch, a closed document). Forget those arms here too, so
+    /// `getArmedAsset` and `onArmChanged` follow: `ctx.watch(droppedArms,
+    /// ...)`, over the ids joined by newlines as the TypeScript compares
+    /// them.
+    pub(crate) fn watch_dropped_arms(&self) -> Result<(), Error> {
+        let reader = self.clone();
+        let dropped_arms = move || -> String {
+            reader
+                .state()
+                .armed
+                .keys()
+                .filter(|id| !reader.annotation_is_armed(id))
+                .cloned()
+                .collect::<Vec<_>>()
+                .join("\n")
+        };
+        let previous = RefCell::new(dropped_arms());
+        let updater = self.clone();
+        let unsubscribe = self.cx().subscribe(Rc::new(move || {
+            let next = dropped_arms();
+            if *previous.borrow() == next {
+                return Ok(());
+            }
+            *previous.borrow_mut() = next.clone();
+            if !next.is_empty() {
+                let ids: Vec<String> = next.split('\n').map(str::to_string).collect();
+                updater.update_state(|s| disarm_documents(s, &ids));
+            }
+            Ok(())
+        }));
+        self.cx().listen(unsubscribe);
+        Ok(())
+    }
+
+    /// `ctx.tryForDocument(AnnotationHostToken, id)?.stamps.isArmed()`.
+    fn annotation_is_armed(&self, document_id: &str) -> bool {
+        matches!(
+            self.cx().try_for_document(&ANNOTATION, document_id),
+            Ok(Some(annotation)) if annotation.stamps_is_armed()
+        )
+    }
+
+    /// `stampPayload(asset, placement, materialized)`: the one payload both
+    /// entry points hand the annotation plugin: artwork, a resolution-aware
+    /// ghost, true size, and the identity a placement writes (`/Name` the
+    /// identifier, `/Subj` the subject override or label).
+    fn stamp_payload(&self, asset: &StampAsset, placement: &Placement) -> StampInput {
+        let binary = placement.binary();
+        let cache_key = match placement {
+            Placement::Template(_) => Some(asset.id.as_str()),
+            Placement::Materialized(_) => None,
+        };
+        StampInput {
+            source: binary.bytes.clone().map_or_else(undefined, bytes_json),
             target_width: None,
-            name: Some(asset.name.clone()),
-            subject: Some(asset.subject.clone().unwrap_or_else(|| asset.label.clone())),
-            preview: Some(StampPreview::Provider(self.ghost_provider(
-                placement.binary.bytes.clone(),
-                placement.binary.preview.clone(),
+            name: Some(json!(asset.name)),
+            subject: Some(json!(asset.subject.clone().unwrap_or_else(|| asset.label.clone()))),
+            preview: Some(StampPreview::Provider(self.annotation_ghost(
+                binary.bytes.clone(),
+                binary.preview.clone(),
                 cache_key,
             ))),
-            intrinsic_size: Some(asset.size),
+            intrinsic_size: Some((asset.size.width, asset.size.height)),
         }
     }
 
-    /// `materializeForPlacement(documentId, asset, bin)`.
-    async fn materialize_for_placement(
+    /// `materializeForPlacement(documentId, asset, binary)`. The realm comes
+    /// from the target document's actions plugin: a detached realm under
+    /// that document's policy and environment, with its own sandbox and none
+    /// of the viewer realm's globals. No actions plugin, scripting off, or
+    /// `dynamic: false`: the template is armed as it is.
+    fn materialize_for_placement(
         &self,
         document_id: &str,
         asset: &StampAsset,
-        bin: AssetBinary,
+        binary: &AssetBinary,
+    ) -> Promise<Placement> {
+        let this = self.clone();
+        let (document_id, asset, binary) = (document_id.to_string(), asset.clone(), binary.clone());
+        Promise::spawn(async move {
+            if !this.get_settings().dynamic {
+                return Ok(Placement::Template(binary));
+            }
+            let actions = this.cx().try_for_document(&ACTIONS, &document_id).ok().flatten();
+            let Some(actions) = actions.filter(ActionsCapability::is_scripting_enabled) else {
+                return Ok(Placement::Template(binary));
+            };
+            let documents = this.documents()?;
+            let ready = documents.get(&document_id).is_some_and(|d| d.status == DocStatus::Ready);
+            let meta = this.cx().core().documents.get(&document_id).cloned();
+            let (true, Some(meta)) = (ready, meta) else {
+                return Err(stamp_error(
+                    code::NOT_FOUND,
+                    format!("document '{document_id}' is not open"),
+                ));
+            };
+            // What the scripts read of the document they stamp: its name,
+            // page count and pages, as they were when the arm began.
+            let target_document = Rc::new(DocumentMeta {
+                pages: Rc::new(Value::Array(documents.list_pages(Some(&document_id)))),
+                ..meta
+            });
+
+            // A page extraction does not retain catalog-owned AcroForm and
+            // action structures. Canonical assets evaluate from the whole
+            // library PDF, then extract only their selected page after
+            // flatten.
+            let canonical =
+                this.0.binaries.library_binaries.borrow().get(&asset.library_id).cloned();
+            let has_canonical = canonical.as_ref().is_some_and(Option::is_some);
+            let source = match canonical.flatten() {
+                Some(bytes) => bytes,
+                None => binary.bytes.clone().unwrap_or_default(),
+            };
+            let doc = this.open_asset_document(source).await?;
+            // Cleanup protection starts the moment the temporary document
+            // exists: realm and controller failures must not leak it.
+            let realm: Rc<RefCell<Option<DetachedScriptRealm>>> = Rc::default();
+            let scripting: Rc<RefCell<Option<FormScriptingController>>> = Rc::default();
+            let body = this
+                .evaluate(
+                    &doc,
+                    &actions,
+                    &asset,
+                    &binary,
+                    has_canonical,
+                    target_document,
+                    &realm,
+                    &scripting,
+                )
+                .await;
+            if let Some(scripting) = scripting.borrow_mut().take() {
+                scripting.dispose();
+            }
+            if let Some(realm) = realm.borrow_mut().take() {
+                realm.dispose();
+            }
+            close(&doc, body).await
+        })
+    }
+
+    /// The body of `materializeForPlacement`'s `try`, on the opened copy.
+    #[allow(clippy::too_many_arguments)]
+    async fn evaluate(
+        &self,
+        doc: &Rc<dyn DocumentHandle>,
+        actions: &ActionsCapability,
+        asset: &StampAsset,
+        binary: &AssetBinary,
+        has_canonical: bool,
+        target_document: Rc<DocumentMeta>,
+        realm_slot: &Rc<RefCell<Option<DetachedScriptRealm>>>,
+        scripting_slot: &Rc<RefCell<Option<FormScriptingController>>>,
     ) -> Result<Placement, Error> {
-        let template = || Placement { binary: bin.clone(), materialized: false };
-        if self.0.config.dynamic == Some(false) {
-            return Ok(template());
-        }
-        let actions = self.cx().try_for_document(&ACTIONS, document_id).ok().flatten();
-        let Some(actions) = actions.filter(|a| a.is_scripting_enabled()) else {
-            return Ok(template());
-        };
-        let Some(target_meta) = self.cx().core().documents.get(document_id).cloned() else {
-            return Err(Error::engine(
-                "NotFound",
-                format!("[stamp] target document '{document_id}' is not open"),
+        let layout = call(doc, "pages.list", Vec::new()).await?;
+        let pages = member(&layout, "pages")?;
+        let selected = pages.as_array().and_then(|pages| {
+            pages
+                .iter()
+                .find(|page| {
+                    page.get("ref").and_then(|r| r.get("objectNumber")).and_then(Value::as_f64)
+                        == Some(f64::from(asset.page.page_object_number))
+                })
+                .cloned()
+        });
+        let Some(selected) = selected else {
+            return Err(stamp_error(
+                code::INVALID_INPUT,
+                if has_canonical {
+                    format!("canonical page {} no longer exists", asset.page.page_object_number)
+                } else {
+                    "a loose dynamic stamp asset must contain exactly one page".to_string()
+                },
             ));
         };
-        // A page extraction does not keep catalog-owned AcroForm and action
-        // structures: canonical assets evaluate from the whole library PDF.
-        let canonical = self.0.library_binaries.borrow().get(&asset.library_id).cloned().flatten();
-        let source = canonical.clone().or_else(|| bin.bytes.clone()).unwrap_or_default();
-        let doc = rt::returned(self.open_asset_document(source)).await?;
-        let mut realm = None;
-        let mut scripting: Option<FormScriptingController> = None;
-        let body = async {
-            let layout = await_engine(call(&doc, "pages.list", Vec::new())).await?;
-            let pages = get(&layout, "pages").and_then(Value::as_array).cloned().unwrap_or_default();
-            let wanted = asset.page.page_object_number;
-            let selected = pages.iter().find(|p| get(p, "ref").and_then(pon_of_ref) == Some(wanted)).cloned();
-            let Some(selected) = selected else {
-                let message = if canonical.is_some() {
-                    format!("[stamp] canonical page {wanted} no longer exists")
-                } else {
-                    "[stamp] a loose dynamic stamp asset must contain exactly one page".to_string()
-                };
-                return Err(Error::engine("InvalidArg", message));
-            };
-            let selected_pon = get(&selected, "ref").and_then(|r| num(r, "pageObjectNumber"));
-            let snapshot = await_engine(call(&doc, "forms.list", Vec::new())).await?;
-            let fields = get(&snapshot, "fields").and_then(Value::as_array).cloned().unwrap_or_default();
-            let has_selected_page_field = fields.iter().any(|field| {
-                get(field, "widgets").and_then(Value::as_array).is_some_and(|widgets| {
-                    widgets.iter().any(|w| {
-                        get(w, "page").filter(|p| !p.is_null()).and_then(|p| num(p, "pageObjectNumber"))
-                            == selected_pon
-                    })
-                })
-            });
-            if !has_selected_page_field {
-                return Ok(template());
-            }
-            if !doc.has("pages.flatten") || !doc.has("pages.extract") {
-                return Err(Error::engine(
-                    "NotImplemented",
-                    "[stamp] dynamic PDF stamps need an asset engine with pages.flatten and pages.extract",
-                ));
-            }
-            // Scripts observe the target document's metadata and boot from the
-            // asset document's own name tree.
-            let meta = target_meta.clone();
-            let document: Rc<dyn Fn() -> Option<DocumentMeta>> = Rc::new(move || Some(meta.clone()));
-            let minted = actions
-                .create_detached_script_realm(ScriptRealmTarget {
-                    doc: doc.clone(),
-                    document: document.clone(),
-                    boot_sources: boot_sources(doc.clone()),
-                })
-                .ok_or_else(|| Error::new("[stamp] scripting is off"))?;
-            realm = Some(minted.clone());
-            let port = minted.clone();
-            let transaction: TransactionPort = Rc::new(move |body: TransactionBody| port.transaction(body));
-            let controller = FormScriptingController::new(FormScriptingControllerOptions {
-                doc: doc.clone(),
-                document,
-                transaction,
-                budget: Some(minted.budget().clone()),
-            });
-            scripting = Some(controller.clone());
-            let result = controller.recalculate().await?;
-            actions.surface_script_commit(
-                &commit_surface(&result),
-                ScriptCommitContext { origin: ActionOrigin::User, realm: ScriptRealmKind::Detached },
-            )?;
-            if result.status == FormCommitStatus::Failed {
-                let message = result
-                    .error
-                    .as_ref()
-                    .map_or("native form effect failed".to_string(), |e| e.message.clone());
-                return Err(Error::engine(
-                    "Unknown",
-                    format!("[stamp] dynamic stamp scripting failed: {message}"),
-                ));
-            }
-            let page = get(&selected, "ref").cloned().unwrap_or(Value::Null);
-            let flattened =
-                await_engine(call(&doc, "pages.flatten", vec![json!([page]), json!("display")])).await?;
-            let results = get(&flattened, "results").and_then(Value::as_array).cloned().unwrap_or_default();
-            if let Some(failed) =
-                results.iter().find(|r| matches!(str_of(r, "status"), Some("failed" | "skipped")))
-            {
-                let page_of = get(failed, "page").and_then(|p| get(p, "pageObjectNumber"));
-                return Err(Error::engine(
-                    "Unknown",
-                    format!("[stamp] dynamic stamp flatten failed for page {}", js_string(page_of)),
-                ));
-            }
-            let bytes = await_engine(call(&doc, "pages.extract", vec![json!([page])])).await?;
-            let pon = pon_of_ref(&page).unwrap_or(0);
-            doc.page_index(pon)?;
-            let render =
-                page_call(&doc, "page.render.image", pon, vec![render_options(self.preview_width(), false)]);
-            let image = await_engine(render).await?;
-            Ok(Placement {
-                binary: AssetBinary { bytes: bytes_of(&bytes), preview: Some(image_to_preview(&image)?) },
-                materialized: true,
+        let page = selected.get("ref").cloned().unwrap_or_else(undefined);
+        let page_number = page.get("objectNumber").and_then(Value::as_f64);
+        let snapshot = call(doc, "forms.list", Vec::new()).await?;
+        let fields = member(&snapshot, "fields")?;
+        let has_selected_page_field = fields.as_array().into_iter().flatten().any(|field| {
+            field.get("widgets").and_then(Value::as_array).into_iter().flatten().any(|widget| {
+                widget
+                    .get("page")
+                    .filter(|p| !nullish(p))
+                    .and_then(|p| p.get("objectNumber"))
+                    .and_then(Value::as_f64)
+                    == page_number
             })
+        });
+        if !has_selected_page_field {
+            return Ok(Placement::Template(binary.clone()));
         }
-        .await;
-        if let Some(scripting) = &scripting {
-            scripting.dispose();
+        if !doc.has("pages.flatten") || !doc.has("pages.extract") {
+            return Err(stamp_error(
+                code::UNSUPPORTED,
+                "dynamic PDF stamps need an asset engine with pages.flatten and pages.extract",
+            ));
         }
-        if let Some(realm) = &realm {
-            realm.dispose();
+
+        // Scripts observe the target document's metadata (Acrobat's dynamic
+        // stamp contract: `documentFileName` is the document being stamped)
+        // and boot from the asset document's own name tree.
+        let observed = target_document.clone();
+        let booting = doc.clone();
+        let target = ScriptRealmTarget {
+            doc: doc.clone(),
+            document: Rc::new(move || Some(ScriptDocument::from((*observed).clone()))),
+            boot_sources: Rc::new(move || {
+                // `doc.actions` is a required service of the engine
+                // contract, so `doc.actions ? ... : null` always reads it.
+                let read = booting.call("actions.get", None, Vec::new());
+                Ok(Promise::spawn(async move {
+                    let tree = read.await?;
+                    if nullish(&tree) {
+                        return Ok(Vec::new());
+                    }
+                    let scripts = member(&tree, "nameTreeScripts")?;
+                    scripts
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .map(|entry| {
+                            java_script_program_from_action_tree(
+                                entry.get("action").unwrap_or(&Value::Null),
+                            )
+                        })
+                        .collect::<Result<Vec<_>, _>>()
+                }))
+            }),
+        };
+        let Some(realm) = actions.create_detached_script_realm(target) else {
+            return Ok(Placement::Template(binary.clone()));
+        };
+        *realm_slot.borrow_mut() = Some(realm.clone());
+        let port = realm.clone();
+        let transaction: TransactionPort =
+            Rc::new(move |body: TransactionBody| port.transaction::<Rc<dyn Any>>(body));
+        let document = target_document.clone();
+        let scripting = FormScriptingController::new(FormScriptingControllerOptions {
+            document: Rc::new(move || Some((*document).clone())),
+            transaction,
+            budget: Some(realm.budget().clone()),
+        });
+        *scripting_slot.borrow_mut() = Some(scripting.clone());
+        // The copy is the stamp's own: what its scripts calculate is written
+        // to it, in the same transaction, before it is flattened.
+        let form = Rc::new(snapshot);
+        let writer = doc.clone();
+        let result = scripting
+            .transaction(move |scripts| {
+                Ok(Promise::spawn(async move {
+                    let calculated = scripts.recalculate(form).await?;
+                    if calculated.status == ScriptStatus::Accepted && !calculated.effects.is_empty()
+                    {
+                        let ops = form_effect_ops(&calculated.effects);
+                        writer.call("apply", None, vec![json!({ "ops": ops })]).await?;
+                    }
+                    Ok(calculated)
+                }))
+            })
+            .await?;
+        actions.surface_script_commit(
+            &ScriptCommitSurface {
+                ui_effects: result
+                    .ui_effects
+                    .iter()
+                    .map(|e| PhasedUiEffect { effect: e.effect.clone(), phase: e.phase })
+                    .collect(),
+                diagnostics: result.diagnostics.clone(),
+                error: result.error.clone(),
+            },
+            &ScriptCommitContext {
+                origin: ActionOrigin::User,
+                realm: ScriptRealmKind::Detached,
+                source: None,
+            },
+        )?;
+        if result.status == ScriptStatus::Failed {
+            let why = result
+                .error
+                .as_ref()
+                .map_or_else(|| "native form effect failed".to_string(), |e| e.message.clone());
+            return Err(stamp_error(
+                code::OPERATION_FAILED,
+                format!("dynamic stamp scripting failed: {why}"),
+            ));
         }
-        close(&doc, body).await
+
+        // All or nothing: a page that fails to flatten throws.
+        call(doc, "pages.flatten", vec![json!([page]), json!({ "usage": "display" })]).await?;
+        let bytes = crate::services::asset_engine::bytes_of(
+            &call(doc, "pages.extract", vec![json!([page])]).await?,
+        );
+        let pon = page.get("objectNumber").and_then(Value::as_f64).unwrap_or(0.0) as u32;
+        let image = page_call(
+            doc,
+            "page.render.image",
+            pon,
+            vec![render_options(self.get_settings().preview_width, false)],
+        )
+        .await?;
+        Ok(Placement::Materialized(AssetBinary { bytes, preview: Some(image_to_preview(&image)?) }))
     }
 
-    fn asset_and_binary(&self, asset_id: &str) -> Result<(StampAsset, AssetBinary), Error> {
+    /// `assetOf(assetId)`: an asset and its bytes, or `not-found`.
+    fn asset_of(&self, asset_id: &str) -> Result<(StampAsset, AssetBinary), Error> {
         let asset = self.state().assets.get(asset_id).cloned();
-        let bin = self.0.binaries.borrow().get(asset_id).cloned();
-        match (asset, bin) {
-            (Some(asset), Some(bin)) => Ok((asset, bin)),
-            _ => Err(Error::engine("NotFound", format!("[stamp] unknown asset '{asset_id}'"))),
+        let binary = self.0.binaries.binaries.borrow().get(asset_id).cloned();
+        match (asset, binary) {
+            (Some(asset), Some(binary)) => Ok((asset, binary)),
+            _ => Err(not_found("asset", asset_id)),
         }
     }
 
-    /// `armAsset(documentId, assetId, {targetWidth})`: the next click on that
-    /// document places the asset, through its annotation plugin.
-    pub fn arm_asset(
-        &self,
-        document_id: &str,
-        asset_id: &str,
-        target_width: Option<f64>,
-    ) -> Promise<()> {
-        let this = self.clone();
-        let (document_id, asset_id) = (document_id.to_string(), asset_id.to_string());
-        Promise::spawn(async move {
-            let (asset, bin) = this.asset_and_binary(&asset_id)?;
-            let placement =
-                rt::returned(this.materialize_for_placement(&document_id, &asset, bin)).await?;
-            let annotation = this.cx().for_document(&ANNOTATION, &document_id)?;
-            let input = StampToolInput { target_width, ..this.stamp_payload(&asset, &placement) };
-            annotation.arm_stamp(input).await?;
-            this.0.armed_by_document.borrow_mut().insert(document_id.clone(), asset_id.clone());
-            this.0
-                .events
-                .arm_changed
-                .emit(&StampArmChangedEvent { document_id, asset_id: Some(asset_id) });
+    /// `assertMayPlace(documentId, operation)`: placing is annotation work,
+    /// refused where the document's annotation plugin refuses a create.
+    fn assert_may_place(&self, document_id: &str, operation: &str) -> Result<(), Error> {
+        if self.can_place(Some(document_id)) {
             Ok(())
-        })
+        } else {
+            Err(permission_denied("annotations:create", operation))
+        }
     }
 
-    /// `getArmedAsset(documentId)`: what this plugin armed, while the
-    /// annotation plugin still holds a stamp.
-    pub fn get_armed_asset(&self, document_id: &str) -> Option<StampAsset> {
-        let asset_id = self.0.armed_by_document.borrow().get(document_id).cloned()?;
-        let annotation = self.cx().try_for_document(&ANNOTATION, document_id).ok().flatten()?;
-        if !annotation.has_armed_stamp() {
+    /// `ctx.forDocument(AnnotationToken, documentId)`.
+    fn annotation_of(&self, document_id: &str) -> Result<AnnotationCapability, Error> {
+        self.cx().for_document(&ANNOTATION, document_id)
+    }
+
+    /// `armAsset(assetId, options)`: the next click on the document places
+    /// it, with a preview under the pointer. Rejects `not-found` for an
+    /// unknown asset, `permission-denied` without `annotations:create`.
+    pub fn arm_asset(&self, asset_id: &str, options: StampArmOptions) -> Promise<()> {
+        let this = self.clone();
+        let asset_id = asset_id.to_string();
+        verb(Promise::spawn(async move {
+            let signal = options.signal.clone();
+            throw_if_cancelled(signal.as_ref())?;
+            let document_id = this.target_of(options.document_id.as_deref())?;
+            let (asset, binary) = this.asset_of(&asset_id)?;
+            this.assert_may_place(&document_id, "stamp.armAsset")?;
+            let placement = cancellable(
+                CAPABILITY,
+                signal.clone(),
+                this.materialize_for_placement(&document_id, &asset, &binary),
+            )
+            .await?;
+            throw_if_cancelled(signal.as_ref())?;
+            // The placement itself remains one `stamps.arm` call: dynamic
+            // evaluation has already produced an ephemeral static page and
+            // matching preview at this boundary.
+            let annotation = this.annotation_of(&document_id)?;
+            let mut payload = this.stamp_payload(&asset, &placement);
+            payload.target_width = options.target_width;
+            annotation.stamps_arm(payload, signal).await?;
+            this.update_state(|s| arm_asset(s, &document_id, &asset_id));
+            Ok(())
+        }))
+    }
+
+    /// `getArmedAsset(documentId)`: the stamp the next click on the document
+    /// places. An arm the annotation plugin just dropped reads as nothing
+    /// armed, even before the watch forgets it.
+    pub fn get_armed_asset(&self, document_id: Option<&str>) -> Option<StampAsset> {
+        let id = self.document_id_of(document_id)?;
+        let state = self.state();
+        let asset_id = state.armed.get(&id)?;
+        if !self.annotation_is_armed(&id) {
             return None;
         }
-        self.state().assets.get(&asset_id).cloned()
+        state.assets.get(asset_id).cloned()
     }
 
-    /// `placeAsset(documentId, assetId, placement)`: place without the
-    /// pointer; answers the placed annotation's ref.
+    /// `disarm(documentId)`: disarm the stamp without placing it.
+    pub fn disarm(&self, document_id: Option<&str>) {
+        let Some(id) = self.document_id_of(document_id) else { return };
+        if let Ok(Some(annotation)) = self.cx().try_for_document(&ANNOTATION, &id) {
+            annotation.stamps_disarm();
+        }
+        self.update_state(|s| disarm_documents(s, &[id]));
+    }
+
+    /// `placeOn(documentId, assetId, placement, signal)`: place on one
+    /// document, its permission already checked.
+    fn place_on(
+        &self,
+        document_id: &str,
+        asset_id: &str,
+        placement: Value,
+        signal: Option<AbortSignal>,
+    ) -> Promise<Value> {
+        let this = self.clone();
+        let (document_id, asset_id) = (document_id.to_string(), asset_id.to_string());
+        Promise::spawn(async move {
+            let (asset, binary) = this.asset_of(&asset_id)?;
+            let materialized = cancellable(
+                CAPABILITY,
+                signal.clone(),
+                this.materialize_for_placement(&document_id, &asset, &binary),
+            )
+            .await?;
+            throw_if_cancelled(signal.as_ref())?;
+            let annotation = this.annotation_of(&document_id)?;
+            let payload = this.stamp_payload(&asset, &materialized);
+            adopt(annotation.stamps_place(payload, &placement, signal)).await
+        })
+    }
+
+    /// `placeAsset(assetId, placement, options)`: place a stamp without the
+    /// pointer, its middle on `center`. Resolves `{ annotation }`.
     pub fn place_asset(
         &self,
-        document_id: &str,
         asset_id: &str,
-        placement: StampPlacement,
-    ) -> Promise<AnnotationRef> {
+        placement: Value,
+        options: StampDocumentOptions,
+    ) -> Promise<Value> {
         let this = self.clone();
-        let (document_id, asset_id) = (document_id.to_string(), asset_id.to_string());
-        Promise::spawn(async move {
-            let (asset, bin) = this.asset_and_binary(&asset_id)?;
-            let materialized =
-                rt::returned(this.materialize_for_placement(&document_id, &asset, bin)).await?;
-            let annotation = this.cx().for_document(&ANNOTATION, &document_id)?;
-            adopt(annotation.place_stamp(this.stamp_payload(&asset, &materialized), placement))
-                .await
-        })
+        let asset_id = asset_id.to_string();
+        verb(Promise::spawn(async move {
+            throw_if_cancelled(options.signal.as_ref())?;
+            let document_id = this.target_of(options.document_id.as_deref())?;
+            this.asset_of(&asset_id)?;
+            this.assert_may_place(&document_id, "stamp.placeAsset")?;
+            adopt(this.place_on(&document_id, &asset_id, placement, options.signal)).await
+        }))
     }
 
-    /// `placeAssetOnPages(documentId, assetId, pages, placement)`: one asset
-    /// at the same page-relative placement on every page (`None`) or the
-    /// ones listed; each failure is reported by its page.
+    /// `placeAssetOnPages(assetId, pages, placement, options)`: one stamp at
+    /// the same spot on several pages, or on all. Every page is resolved
+    /// before the first placement; a cancel stops the batch, and what was
+    /// placed stays placed.
     pub fn place_asset_on_pages(
         &self,
-        document_id: &str,
         asset_id: &str,
-        pages: Option<Vec<PageRef>>,
-        at: epdf_geometry::Point,
-        target_width: Option<f64>,
-        rotation: Option<f64>,
+        pages: PageSelection,
+        placement: Value,
+        options: StampDocumentOptions,
     ) -> Promise<BatchResult> {
         let this = self.clone();
-        let (document_id, asset_id) = (document_id.to_string(), asset_id.to_string());
-        Promise::spawn(async move {
-            let targets: Vec<PageRef> = match pages {
-                Some(pages) => pages,
-                None => this
-                    .cx()
-                    .core()
-                    .documents
-                    .get(&document_id)
-                    .and_then(|d| d.pages.as_array().cloned())
-                    .unwrap_or_default()
+        let asset_id = asset_id.to_string();
+        verb(Promise::spawn(async move {
+            let signal = options.signal.clone();
+            throw_if_cancelled(signal.as_ref())?;
+            let document_id = this.target_of(options.document_id.as_deref())?;
+            this.asset_of(&asset_id)?;
+            this.assert_may_place(&document_id, "stamp.placeAssetOnPages")?;
+            let targets: Vec<Value> = match pages {
+                PageSelection::All => this
+                    .documents()?
+                    .list_pages(Some(&document_id))
                     .iter()
-                    .filter_map(|p| get(p, "ref").and_then(PageRef::from_json))
+                    .map(|page| page.get("ref").cloned().unwrap_or_else(undefined))
                     .collect(),
+                PageSelection::Pages(pages) => pages
+                    .into_iter()
+                    .map(|page| {
+                        let layout = this.page_of(&document_id, page)?;
+                        Ok(layout.get("ref").cloned().unwrap_or_else(undefined))
+                    })
+                    .collect::<Result<_, Error>>()?,
             };
-            let mut out = BatchResult::default();
+            let mut result = BatchResult::default();
             for page in targets {
-                let placement = StampPlacement {
-                    page: epdf_annotation_core::PageRef::new(page.page_object_number),
-                    at,
-                    target_width,
-                    rotation,
+                let mut at = match &placement {
+                    Value::Object(object) => object.clone(),
+                    _ => serde_json::Map::new(),
                 };
-                match this.place_asset(&document_id, &asset_id, placement).await {
-                    Ok(placed) => out.applied.push(epdf_kernel::js::to_value(&placed)),
-                    Err(error) => out.failed.push(BatchFailure {
-                        page,
-                        error: to_plugin_error("stamp", &error).plugin_error_info(),
-                    }),
+                at.insert("page".into(), page.clone());
+                match this
+                    .place_on(&document_id, &asset_id, Value::Object(at), signal.clone())
+                    .await
+                {
+                    Ok(placed) => result
+                        .applied
+                        .push(placed.get("annotation").cloned().unwrap_or_else(undefined)),
+                    Err(error) => {
+                        let refused = to_plugin_error(CAPABILITY, &error);
+                        if refused.plugin_code() == Some(code::OPERATION_CANCELLED) {
+                            return Err(refused);
+                        }
+                        result
+                            .failed
+                            .push(BatchFailure { page, error: refused.plugin_error_info() });
+                    }
                 }
             }
-            Ok(out)
-        })
-    }
-
-    /// `disarm(documentId)`: announces a change only when something was
-    /// armed. `Err` is the kernel's missing-capability throw.
-    pub fn disarm(&self, document_id: &str) -> Result<(), Error> {
-        let was = self.0.armed_by_document.borrow_mut().remove(document_id);
-        self.cx().for_document(&ANNOTATION, document_id)?.disarm_stamp();
-        if was.is_some() {
-            self.0.events.arm_changed.emit(&StampArmChangedEvent {
-                document_id: document_id.to_string(),
-                asset_id: None,
-            });
-        }
-        Ok(())
+            Ok(result)
+        }))
     }
 }

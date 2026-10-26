@@ -1,32 +1,106 @@
-//! `contract.ts`, `token.ts` and `host-contract.ts`: the public stamp
-//! vocabulary, the token, and the configuration. A library IS a PDF: its
+//! `contract.ts`: the public stamp vocabulary. A library is a PDF: its
 //! `/Title` is the name, its `/Names /Pages` registry the assets, its pages
 //! the artwork, `/PieceInfo` only what has no standard home.
+//!
+//! The descriptors are plain objects in the TypeScript, built by object
+//! literals and spreads, so their member order depends on which literal
+//! built them and which later spread added a member. [`StampLibrary`],
+//! [`StampAsset`] and [`crate::model::StampState`] carry that order
+//! ([`Members`]) and serialize in it.
 
 use std::rc::Rc;
-use std::sync::LazyLock;
 
-use epdf_geometry::Size;
-use epdf_kernel::engine::Engine;
+use epdf_kernel::Error;
+use epdf_kernel::engine::{DocumentHandle, Engine, EngineCall};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{Error, Token};
-use epdf_plugin_actions::page_ref_json;
+use epdf_kernel::signal::AbortSignal;
+use serde::de::Error as _;
+use serde::ser::SerializeMap;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
-use crate::controller::StampCapability;
+pub use crate::convention::DEFAULT_LIBRARY_KIND;
+pub use crate::token::STAMP;
 
-/// `StampToken`.
-pub static STAMP: LazyLock<Token<StampCapability>> = LazyLock::new(|| {
-    Token::with_hint(
-        "stamp",
-        "add stampPlugin() from '@embedpdf/plugin-stamp' to your plugins list",
-    )
-});
+// ── member order ──────────────────────────────────────────────────────────────
+
+/// The member order of a plain object: the order its literal named its
+/// members, then each member a later assignment added. A member deleted
+/// (`delete next.subject`) leaves the order; one set to `undefined` stays in
+/// it and prints nothing.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Members(Rc<Vec<&'static str>>);
+
+impl Members {
+    pub fn of(keys: &[&'static str]) -> Members {
+        Members(Rc::new(keys.to_vec()))
+    }
+
+    pub fn keys(&self) -> &[&'static str] {
+        &self.0
+    }
+
+    pub fn has(&self, key: &str) -> bool {
+        self.0.contains(&key)
+    }
+
+    /// `object[key] = value`: a new member goes last.
+    pub fn ensure(&mut self, key: &'static str) {
+        if !self.has(key) {
+            Rc::make_mut(&mut self.0).push(key);
+        }
+    }
+
+    /// `delete object[key]`.
+    pub fn remove(&mut self, key: &str) {
+        if self.has(key) {
+            Rc::make_mut(&mut self.0).retain(|k| *k != key);
+        }
+    }
+
+    /// The order the members of `object` arrived in, among `known`.
+    pub fn read(object: &Map<String, Value>, known: &[&'static str]) -> Members {
+        Members(Rc::new(
+            object
+                .keys()
+                .filter_map(|k| known.iter().find(|n| **n == k.as_str()).copied())
+                .collect(),
+        ))
+    }
+}
+
+/// A JSON object member, in the order serde reads it.
+fn object_of<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<Map<String, Value>, D::Error> {
+    match Value::deserialize(deserializer)? {
+        Value::Object(map) => Ok(map),
+        other => Err(D::Error::custom(format!("expected an object, got {other}"))),
+    }
+}
+
+fn member<T: serde::de::DeserializeOwned, E: serde::de::Error>(
+    object: &Map<String, Value>,
+    key: &str,
+) -> Result<Option<T>, E> {
+    match object.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(value) if epdf_kernel::is_undefined(value) => Ok(None),
+        Some(value) => serde_json::from_value(value.clone()).map(Some).map_err(E::custom),
+    }
+}
+
+fn required<T: serde::de::DeserializeOwned, E: serde::de::Error>(
+    object: &Map<String, Value>,
+    key: &str,
+) -> Result<T, E> {
+    member(object, key)?.ok_or_else(|| E::custom(format!("missing member {key}")))
+}
+
+// ── descriptors ───────────────────────────────────────────────────────────────
 
 /// `StampAssetKind`.
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum StampAssetKind {
@@ -36,13 +110,19 @@ pub enum StampAssetKind {
 }
 
 /// `StampLibraryKind`: open; the plugin defines `stamps` (the default) and
-/// `signatures`.
+/// `signatures`, an embedder may define its own.
 pub type StampLibraryKind = String;
 
+/// An asset's intrinsic size in PDF points.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub struct StampSize {
+    pub width: f64,
+    pub height: f64,
+}
+
 /// `StampAsset`: one asset's serializable descriptor. The bytes and the
-/// cached preview live in the binary sidecar, never in the store.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+/// cached preview live in the binaries resource, never in state.
+#[derive(Clone, Debug, PartialEq)]
 pub struct StampAsset {
     /// Derived and stable: `${libraryId}:${name}`.
     pub id: String,
@@ -53,27 +133,97 @@ pub struct StampAsset {
     pub name: String,
     /// What the picker shows and the placed annotation's default `/Subj`.
     pub label: String,
-    /// Intrinsic size in PDF points.
-    pub size: Size,
+    pub size: StampSize,
     /// The library page that is this asset.
-    #[serde(with = "page_ref_json")]
     pub page: PageRef,
-    /// An explicit `/Subj` override.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    /// An explicit `/Subj` override (PieceInfo).
     pub subject: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub categories: Option<Vec<String>>,
+    pub members: Members,
 }
 
-/// `StampLibrary`.
-///
-/// The TypeScript builds a library with two object literals whose member
-/// order differs: `createLibrary` writes `{ id, name, kind, assetIds,
-/// categories? }` and `importLibrary` writes `{ id, name, kind, locale?,
-/// categories, assetIds }` (`write/libraries.ts`). Every later copy spreads
-/// the original, so a library keeps its literal's order for life;
-/// [`member_order`](Self::member_order) records which one, and the
-/// serialization follows it.
+const ASSET_MEMBERS: [&str; 9] =
+    ["id", "libraryId", "kind", "name", "label", "size", "page", "subject", "categories"];
+
+impl StampAsset {
+    /// The literal both `importLibrary` and `createAsset` write:
+    /// `{ id, libraryId, kind, name, label, size, page, ...subject?,
+    /// ...categories? }`, the two optional members present only when given.
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        id: String,
+        library_id: String,
+        kind: StampAssetKind,
+        name: String,
+        label: String,
+        size: StampSize,
+        page: PageRef,
+        subject: Option<String>,
+        categories: Option<Vec<String>>,
+    ) -> StampAsset {
+        let mut members = Members::of(&ASSET_MEMBERS[..7]);
+        if subject.is_some() {
+            members.ensure("subject");
+        }
+        if categories.is_some() {
+            members.ensure("categories");
+        }
+        StampAsset { id, library_id, kind, name, label, size, page, subject, categories, members }
+    }
+}
+
+impl Serialize for StampAsset {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut out = serializer.serialize_map(None)?;
+        for key in self.members.keys() {
+            match *key {
+                "id" => out.serialize_entry(key, &self.id)?,
+                "libraryId" => out.serialize_entry(key, &self.library_id)?,
+                "kind" => out.serialize_entry(key, &self.kind)?,
+                "name" => out.serialize_entry(key, &self.name)?,
+                "label" => out.serialize_entry(key, &self.label)?,
+                "size" => out.serialize_entry(key, &self.size)?,
+                "page" => out.serialize_entry(key, &self.page)?,
+                "subject" => {
+                    if let Some(subject) = &self.subject {
+                        out.serialize_entry(key, subject)?;
+                    }
+                }
+                "categories" => {
+                    if let Some(categories) = &self.categories {
+                        out.serialize_entry(key, categories)?;
+                    }
+                }
+                _ => {}
+            }
+        }
+        out.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for StampAsset {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let object = object_of(deserializer)?;
+        Ok(StampAsset {
+            id: required(&object, "id")?,
+            library_id: required(&object, "libraryId")?,
+            kind: required(&object, "kind")?,
+            name: required(&object, "name")?,
+            label: required(&object, "label")?,
+            size: required(&object, "size")?,
+            page: required(&object, "page")?,
+            subject: member(&object, "subject")?,
+            categories: member(&object, "categories")?,
+            members: Members::read(&object, &ASSET_MEMBERS),
+        })
+    }
+}
+
+/// `StampLibrary`. `createLibrary` writes `{ id, name, kind, assetIds,
+/// ...categories? }`; `importLibrary` writes `{ id, name, kind, ...locale?,
+/// categories, assetIds }`, where `categories` is a member even when it is
+/// `undefined`. Later copies spread the original, so a library keeps its
+/// literal's order for life.
 #[derive(Clone, Debug, PartialEq)]
 pub struct StampLibrary {
     /// PieceInfo `Id`: stable while the title is editable.
@@ -81,45 +231,69 @@ pub struct StampLibrary {
     pub name: String,
     /// PieceInfo `Kind`: `stamps`, `signatures`, or an embedder's own.
     pub kind: StampLibraryKind,
-    /// Asset ids in display order.
-    pub asset_ids: Vec<String>,
+    /// PieceInfo `Locale`: the language of the labels.
     pub locale: Option<String>,
     pub categories: Option<Vec<String>>,
-    /// The object literal that built the library, which fixes its member
-    /// order.
-    pub member_order: StampLibraryMemberOrder,
+    /// Asset ids in display order.
+    pub asset_ids: Vec<String>,
+    pub members: Members,
 }
 
-/// Which `write/libraries.ts` literal built a [`StampLibrary`].
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum StampLibraryMemberOrder {
-    /// `createLibrary`: `assetIds` before `locale` and `categories`.
-    #[default]
-    Created,
-    /// `importLibrary`: `locale` and `categories` before `assetIds`.
-    Imported,
+const LIBRARY_MEMBERS: [&str; 6] = ["id", "name", "kind", "locale", "categories", "assetIds"];
+
+impl StampLibrary {
+    /// `createLibrary`'s literal.
+    pub fn created(
+        id: String,
+        name: String,
+        kind: StampLibraryKind,
+        categories: Option<Vec<String>>,
+    ) -> StampLibrary {
+        let mut members = Members::of(&["id", "name", "kind", "assetIds"]);
+        if categories.is_some() {
+            members.ensure("categories");
+        }
+        StampLibrary { id, name, kind, locale: None, categories, asset_ids: Vec::new(), members }
+    }
+
+    /// `importLibrary`'s literal.
+    pub fn imported(
+        id: String,
+        name: String,
+        kind: StampLibraryKind,
+        locale: Option<String>,
+        categories: Option<Vec<String>>,
+    ) -> StampLibrary {
+        let members = if locale.is_some() {
+            Members::of(&["id", "name", "kind", "locale", "categories", "assetIds"])
+        } else {
+            Members::of(&["id", "name", "kind", "categories", "assetIds"])
+        };
+        StampLibrary { id, name, kind, locale, categories, asset_ids: Vec::new(), members }
+    }
 }
 
 impl Serialize for StampLibrary {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        use serde::ser::SerializeStruct;
-        let len = 4 + usize::from(self.locale.is_some()) + usize::from(self.categories.is_some());
-        let mut out = serializer.serialize_struct("StampLibrary", len)?;
-        out.serialize_field("id", &self.id)?;
-        out.serialize_field("name", &self.name)?;
-        out.serialize_field("kind", &self.kind)?;
-        let imported = self.member_order == StampLibraryMemberOrder::Imported;
-        if !imported {
-            out.serialize_field("assetIds", &self.asset_ids)?;
-        }
-        if let Some(locale) = &self.locale {
-            out.serialize_field("locale", locale)?;
-        }
-        if let Some(categories) = &self.categories {
-            out.serialize_field("categories", categories)?;
-        }
-        if imported {
-            out.serialize_field("assetIds", &self.asset_ids)?;
+        let mut out = serializer.serialize_map(None)?;
+        for key in self.members.keys() {
+            match *key {
+                "id" => out.serialize_entry(key, &self.id)?,
+                "name" => out.serialize_entry(key, &self.name)?,
+                "kind" => out.serialize_entry(key, &self.kind)?,
+                "locale" => {
+                    if let Some(locale) = &self.locale {
+                        out.serialize_entry(key, locale)?;
+                    }
+                }
+                "categories" => {
+                    if let Some(categories) = &self.categories {
+                        out.serialize_entry(key, categories)?;
+                    }
+                }
+                "assetIds" => out.serialize_entry(key, &self.asset_ids)?,
+                _ => {}
+            }
         }
         out.end()
     }
@@ -127,136 +301,157 @@ impl Serialize for StampLibrary {
 
 impl<'de> Deserialize<'de> for StampLibrary {
     fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        #[derive(Deserialize)]
-        #[serde(rename_all = "camelCase")]
-        struct Fields {
-            id: String,
-            name: String,
-            kind: StampLibraryKind,
-            asset_ids: Vec<String>,
-            #[serde(default)]
-            locale: Option<String>,
-            #[serde(default)]
-            categories: Option<Vec<String>>,
-        }
-        // The members arrive in document order (`preserve_order`), which is
-        // the order the object that produced them had.
-        let members = serde_json::Map::<String, Value>::deserialize(deserializer)?;
-        let position = |key: &str| members.keys().position(|k| k == key);
-        let asset_ids_at = position("assetIds");
-        let imported = ["locale", "categories"]
-            .iter()
-            .filter_map(|key| position(key))
-            .any(|at| asset_ids_at.is_some_and(|a| at < a));
-        let f: Fields =
-            serde_json::from_value(Value::Object(members)).map_err(serde::de::Error::custom)?;
+        let object = object_of(deserializer)?;
         Ok(StampLibrary {
-            id: f.id,
-            name: f.name,
-            kind: f.kind,
-            asset_ids: f.asset_ids,
-            locale: f.locale,
-            categories: f.categories,
-            member_order: if imported {
-                StampLibraryMemberOrder::Imported
-            } else {
-                StampLibraryMemberOrder::Created
-            },
+            id: required(&object, "id")?,
+            name: required(&object, "name")?,
+            kind: required(&object, "kind")?,
+            locale: member(&object, "locale")?,
+            categories: member(&object, "categories")?,
+            asset_ids: member(&object, "assetIds")?.unwrap_or_default(),
+            members: Members::read(&object, &LIBRARY_MEMBERS),
         })
     }
 }
 
-/// `StampLibraryChange['reason']`.
-#[cfg_attr(feature = "uniffi", derive(uniffi::Enum))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum StampLibraryChangeReason {
-    Created,
-    Imported,
-    Updated,
-    AssetAdded,
-    AssetUpdated,
-    AssetRemoved,
-    Removed,
-}
+// ── settings ──────────────────────────────────────────────────────────────────
 
-/// `StampLibraryChange`: why a library's canonical bytes changed.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StampLibraryChange {
-    pub library_id: String,
-    pub reason: StampLibraryChangeReason,
-}
-
-/// `StampLibraryEvent`: `library` is null once deleted.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StampLibraryEvent {
-    pub library_id: String,
-    pub library: Option<StampLibrary>,
-}
-
-/// `StampAssetEvent`: `asset` is null once deleted.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StampAssetEvent {
-    pub asset_id: String,
-    pub library_id: String,
-    pub asset: Option<StampAsset>,
-}
-
-/// `StampArmChangedEvent`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct StampArmChangedEvent {
-    pub document_id: String,
-    pub asset_id: Option<String>,
-}
-
-/// `StampAssetPreview`: a cached, paintable render. `bytes` is `None` when
-/// the engine's render answered no bytes.
-#[derive(Clone, Debug, PartialEq)]
-pub struct StampAssetPreview {
-    pub bytes: Option<Vec<u8>>,
-    pub mime_type: Option<String>,
-}
-
-/// What an asset-engine factory answers: `Engine | Promise<Engine>`.
+/// A local engine: one stamp libraries can be sliced and tagged on. The
+/// TypeScript brands it (`LOCAL_ENGINE_BRAND`) and checks the brand with
+/// `isLocalEngine`; here the type is the brand. Whoever wraps an engine in
+/// it vouches that its documents are local ones.
 #[derive(Clone)]
-pub enum AssetEngineRef {
-    Ready(Rc<dyn Engine>),
-    Pending(Promise<Rc<dyn Engine>>),
+pub struct LocalEngine(Rc<dyn Engine>);
+
+impl LocalEngine {
+    pub fn new(engine: Rc<dyn Engine>) -> LocalEngine {
+        LocalEngine(engine)
+    }
+
+    pub fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
+        self.0.open(input, options)
+    }
+
+    pub fn destroy(&self) -> EngineCall<()> {
+        self.0.destroy()
+    }
+
+    pub fn engine(&self) -> &Rc<dyn Engine> {
+        &self.0
+    }
+
+    /// The same engine.
+    pub fn same(&self, other: &LocalEngine) -> bool {
+        std::ptr::addr_eq(Rc::as_ptr(&self.0), Rc::as_ptr(&other.0))
+    }
 }
 
-/// `StampConfig['assetEngine']`: an engine used as is, or a factory called
-/// (and memoized) on the first open and destroyed on teardown.
+/// What an asset-engine factory answers: `LocalEngine | Promise<LocalEngine>`.
 #[derive(Clone)]
-pub enum AssetEngine {
-    Instance(Rc<dyn Engine>),
-    Factory(Rc<dyn Fn() -> Result<AssetEngineRef, Error>>),
+pub enum MadeAssetEngine {
+    Ready(LocalEngine),
+    Pending(Promise<LocalEngine>),
 }
 
-/// The ambient values the TypeScript reads. `console_error` and
-/// `console_warn` receive `[stamp]` reports (`None` drops them); `random`
-/// is `Math.random`, which a minted identifier draws from.
-#[derive(Clone, Default)]
-pub struct StampHost {
-    pub console_error: Option<Rc<dyn Fn(&str, &Error)>>,
-    pub console_warn: Option<Rc<dyn Fn(&str, Option<&Error>)>>,
-    pub random: Option<Rc<dyn Fn() -> f64>>,
+/// An asset-engine factory. `Err` is a synchronous throw.
+pub type AssetEngineFactory = Rc<dyn Fn() -> Result<MadeAssetEngine, Error>>;
+
+/// `StampAssetEngine`: the local engine stamp libraries open in, or a
+/// function that makes one. A function is called on the first import, not
+/// at startup, and its engine is destroyed with the plugin.
+#[derive(Clone)]
+pub enum StampAssetEngine {
+    Engine(LocalEngine),
+    Factory(AssetEngineFactory),
 }
 
-/// `StampConfig`.
+impl StampAssetEngine {
+    /// The same setting value (`===`).
+    pub fn same(&self, other: &StampAssetEngine) -> bool {
+        match (self, other) {
+            (StampAssetEngine::Engine(a), StampAssetEngine::Engine(b)) => a.same(b),
+            (StampAssetEngine::Factory(a), StampAssetEngine::Factory(b)) => {
+                std::ptr::addr_eq(Rc::as_ptr(a), Rc::as_ptr(b))
+            }
+            _ => false,
+        }
+    }
+}
+
+/// `StampSettings`.
+#[derive(Clone)]
+pub struct StampSettings {
+    /// The engine stamp libraries open in. `None` uses the viewer's own
+    /// engine, which must then be local.
+    pub asset_engine: Option<StampAssetEngine>,
+    /// The width of a stamp's thumbnail, in device pixels.
+    pub preview_width: f64,
+    /// Fill in a dynamic stamp's form fields when it's armed or placed.
+    pub dynamic: bool,
+}
+
+/// `STAMP_DEFAULTS`.
+pub fn stamp_defaults() -> StampSettings {
+    StampSettings { asset_engine: None, preview_width: 256.0, dynamic: true }
+}
+
+/// `StampConfig`: any of the settings, over the defaults. `asset_engine`
+/// is `Some(None)` for an explicit `null`.
 #[derive(Clone, Default)]
 pub struct StampConfig {
-    /// The asset engine port. `None` uses the kernel's engine.
-    pub asset_engine: Option<AssetEngine>,
-    /// Cached preview width in device pixels. Default 256.
+    pub asset_engine: Option<Option<StampAssetEngine>>,
     pub preview_width: Option<f64>,
-    /// Evaluate form-backed (dynamic) PDF assets on arm. Default `true`.
-    /// Scripting itself is the target document's actions plugin's switch.
     pub dynamic: Option<bool>,
-    pub host: StampHost,
+}
+
+/// `onSettingsChanged`'s event.
+#[derive(Clone)]
+pub struct StampSettingsChanged {
+    pub settings: StampSettings,
+    pub changed: Vec<String>,
+}
+
+// ── verbs ─────────────────────────────────────────────────────────────────────
+
+/// `OperationOptions`.
+#[derive(Clone, Default)]
+pub struct OperationOptions {
+    pub signal: Option<AbortSignal>,
+}
+
+/// `StampDocumentOptions`: which document a placing verb acts on; left out,
+/// the active one.
+#[derive(Clone, Default)]
+pub struct StampDocumentOptions {
+    pub document_id: Option<String>,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `StampArmOptions`.
+#[derive(Clone, Default)]
+pub struct StampArmOptions {
+    pub document_id: Option<String>,
+    /// Placed width in PDF points; the stamp's own width by default.
+    pub target_width: Option<f64>,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `CreateLibraryOptions`.
+#[derive(Clone, Default)]
+pub struct CreateLibraryOptions {
+    /// The library's id; a fresh one when left out or taken.
+    pub id: Option<String>,
+    /// What the library is for. Default `'stamps'`.
+    pub kind: Option<StampLibraryKind>,
+    pub categories: Option<Vec<String>>,
+    pub signal: Option<AbortSignal>,
+}
+
+/// `StampLibraryPatch`.
+#[derive(Clone, Debug, Default)]
+pub struct StampLibraryPatch {
+    pub name: Option<String>,
+    pub categories: Option<Vec<String>>,
 }
 
 /// `ImportLibraryOptions`.
@@ -265,14 +460,18 @@ pub struct ImportLibraryOptions {
     /// Fallback name when the PDF carries no `/Title`. Default `'Stamps'`.
     pub name: Option<String>,
     pub categories: Option<Vec<String>>,
+    /// Kind stamped onto every imported asset.
     pub kind: Option<StampAssetKind>,
+    /// What the file is for; overrides what the file says.
     pub library_kind: Option<StampLibraryKind>,
-    /// Fallback per-page labels for a plain PDF, by page index.
-    pub asset_name: Option<Rc<dyn Fn(f64) -> Option<String>>>,
+    /// Fallback per-page labels for a plain PDF, by page index. `Ok(None)`
+    /// is the function answering `undefined`; `Err` a throw.
+    pub asset_name: Option<Rc<dyn Fn(f64) -> Result<Option<String>, Error>>>,
+    pub signal: Option<AbortSignal>,
 }
 
 /// `MarkSource`: how a mark is authored. Sources are `BinarySource`s as
-/// canonical JSON.
+/// canonical JSON. Ink points are in points, from the top-left, y down.
 #[derive(Clone, Debug, PartialEq)]
 pub enum MarkSource {
     Ink { strokes: Vec<Vec<(f64, f64)>>, color: Option<String>, stroke_width: Option<f64> },
@@ -285,8 +484,12 @@ pub enum MarkSource {
 /// JSON.
 #[derive(Clone, Debug, Default)]
 pub struct AddAssetInput {
+    /// Target library; omitted, a new single-asset library named after the
+    /// asset.
     pub library_id: Option<String>,
+    /// The identifier (placed `/Name`); omitted, a fresh Acrobat-style one.
     pub name: Option<String>,
+    /// Picker text and default `/Subj`. Defaults to `name`.
     pub label: Option<String>,
     pub kind: Option<StampAssetKind>,
     pub subject: Option<String>,
@@ -294,30 +497,44 @@ pub struct AddAssetInput {
     pub source: Option<Value>,
     pub mark: Option<MarkSource>,
     pub preview: Option<Value>,
-    pub size: Option<Size>,
+    pub size: Option<StampSize>,
 }
 
-/// `createLibrary`'s options.
+/// `StampAssetPatch`: `subject` is `Some(None)` for `null` (drop the
+/// override).
 #[derive(Clone, Debug, Default)]
-pub struct CreateLibraryOptions {
-    pub id: Option<String>,
-    pub kind: Option<StampLibraryKind>,
-    pub categories: Option<Vec<String>>,
-}
-
-/// `updateLibrary`'s patch.
-#[derive(Clone, Debug, Default)]
-pub struct LibraryPatch {
-    pub name: Option<String>,
-    pub categories: Option<Vec<String>>,
-}
-
-/// `updateAsset`'s patch: `subject` is `Some(None)` for null (clear it).
-#[derive(Clone, Debug, Default)]
-pub struct AssetPatch {
+pub struct StampAssetPatch {
     pub label: Option<String>,
     pub subject: Option<Option<String>>,
     pub categories: Option<Vec<String>>,
+}
+
+/// `StampAssetPreview`: a cached, paintable render. `bytes` is `None` when
+/// the render answered none (the TypeScript's `undefined`), which prints
+/// nothing.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StampAssetPreview {
+    pub bytes: Option<Value>,
+    pub mime_type: Option<Value>,
+}
+
+impl StampAssetPreview {
+    /// `{ bytes, mimeType }` as JSON, absent members left out.
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        if let Some(bytes) = &self.bytes {
+            out.insert("bytes".into(), bytes.clone());
+        }
+        if let Some(mime_type) = &self.mime_type {
+            out.insert("mimeType".into(), mime_type.clone());
+        }
+        Value::Object(out)
+    }
+
+    /// The bytes as a byte array, when they are one.
+    pub fn byte_vec(&self) -> Option<Vec<u8>> {
+        self.bytes.as_ref().and_then(epdf_kernel::bytes::Bytes::from_json).map(|b| b.0)
+    }
 }
 
 /// `StampLibraryFilter`: one kind or several.
@@ -334,18 +551,84 @@ pub struct StampAssetFilter {
     pub category: Option<String>,
 }
 
-/// One failed entry of a `BatchResult`.
+/// A page argument: a ref, or a display index.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum PageTarget {
+    Ref(PageRef),
+    Index(f64),
+}
+
+/// `placeAssetOnPages`' pages: a list, or `'all'`.
+#[derive(Clone, Debug, PartialEq)]
+pub enum PageSelection {
+    All,
+    Pages(Vec<PageTarget>),
+}
+
+/// One failed page of a `BatchResult`.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 pub struct BatchFailure {
-    #[serde(rename = "ref", with = "page_ref_json")]
-    pub page: PageRef,
+    /// The page's ref, as the registry holds it.
+    #[serde(rename = "ref")]
+    pub page: Value,
+    /// `PluginErrorInfo`.
     pub error: Value,
 }
 
-/// `BatchResult<AnnotationRef, PageRef>`.
+/// `BatchResult<Annotation, PageRef>`.
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 pub struct BatchResult {
     pub applied: Vec<Value>,
     pub skipped: Vec<Value>,
     pub failed: Vec<BatchFailure>,
+}
+
+// ── events ────────────────────────────────────────────────────────────────────
+
+/// `StampLibraryChangedEvent['reason']`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum StampLibraryChangeReason {
+    Created,
+    Imported,
+    Updated,
+    AssetAdded,
+    AssetUpdated,
+    AssetRemoved,
+    Removed,
+}
+
+/// `StampLibraryChangedEvent`: a library's bytes changed, and why.
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StampLibraryChangedEvent {
+    pub library_id: String,
+    pub reason: StampLibraryChangeReason,
+}
+
+/// `StampLibraryCreatedEvent`, `StampLibraryUpdatedEvent` and
+/// `StampLibraryDeletedEvent` (`library: null`).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StampLibraryEvent {
+    pub library_id: String,
+    pub library: Option<StampLibrary>,
+}
+
+/// `StampAssetCreatedEvent`, `StampAssetUpdatedEvent` and
+/// `StampAssetDeletedEvent` (`asset: null`).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StampAssetEvent {
+    pub asset_id: String,
+    pub library_id: String,
+    pub asset: Option<StampAsset>,
+}
+
+/// `StampArmChangedEvent`: armed, or disarmed (`asset: null`).
+#[derive(Clone, Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StampArmChangedEvent {
+    pub document_id: String,
+    pub asset: Option<StampAsset>,
 }

@@ -27,11 +27,11 @@ fn placement_matches_the_typescript() {
 }
 
 #[test]
-fn the_v3_surface_matches_the_typescript() {
+fn the_current_surface_matches_the_typescript() {
     assert_suite("plugins/stamp-api.json", &registry(), &Vec::new());
 }
 
 #[test]
-fn reducer_matches_the_typescript() {
+fn transitions_match_the_typescript() {
     assert_suite("plugins/stamp-functions.json", &Registry::new(), &harness::functions());
 }

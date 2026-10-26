@@ -1,230 +1,199 @@
-//! `write/marks.ts`: authoring. A drawn or typed mark rendered to a one-page
-//! PDF (the annotation is authored on a scratch page and its appearance
-//! exported), a page of a PDF as a single-page PDF, and the bytes an asset
-//! is made from.
+//! `write/marks.ts`: authoring. A drawn or typed mark rendered to a
+//! one-page PDF (the annotation is authored on a scratch page and exported
+//! the way "stamp from selection" exports), a page of a PDF as a
+//! single-page PDF, and the bytes an asset is made from.
 
-use epdf_kernel::Error;
-use epdf_kernel::rt;
-use epdf_plugin_annotation::binary::resolve_binary_source;
+use epdf_kernel::error::code;
+use epdf_kernel::js::number_to_string;
+use epdf_kernel::rt::Promise;
+use epdf_kernel::{Error, undefined};
+use epdf_plugin_annotation::binary::{WireResource, resolve_binary_source};
 use serde_json::{Value, json};
 
 use crate::blank_library::blank_library_pdf;
 use crate::contract::{AddAssetInput, MarkSource};
 use crate::controller::StampCapability;
-use crate::promise::await_engine;
-use crate::services::asset_engine::{bytes_of, call, close, page_call};
-use crate::value::{get, num};
-use crate::write::libraries::pon_of_ref;
+use crate::js::{adopt, member, nullish};
+use crate::services::asset_engine::{bytes_of, call, close, page_call, read_off};
+use crate::services::errors::stamp_error;
 
-/// The bytes an asset is made from.
-pub(crate) struct ResolvedSource {
-    pub bytes: Vec<u8>,
-}
-
-/// `hexColor(hex)`: `#rrggbb` to the engine's sRGB triplet.
-fn hex_color(hex: &str) -> Result<Value, Error> {
-    let trimmed = hex.trim();
-    let digits = trimmed.strip_prefix('#').unwrap_or(trimmed);
-    if digits.len() != 6 || !digits.chars().all(|c| c.is_ascii_hexdigit()) {
-        return Err(Error::engine(
-            "InvalidArg",
-            format!("[stamp] mark color must be #rrggbb, got '{hex}'"),
+/// `hexColor(hex)`: a mark's `#rrggbb` color, checked before anything is
+/// drawn.
+fn hex_color(hex: &str) -> Result<String, Error> {
+    let color = hex.trim();
+    let valid = color.len() == 7
+        && color.starts_with('#')
+        && color[1..].bytes().all(|b| b.is_ascii_hexdigit());
+    if !valid {
+        return Err(stamp_error(
+            code::INVALID_INPUT,
+            format!("mark color must be #rrggbb, got '{hex}'"),
         ));
     }
-    let n = u32::from_str_radix(digits, 16).unwrap_or(0);
-    Ok(json!({ "r": (n >> 16) & 0xff, "g": (n >> 8) & 0xff, "b": n & 0xff }))
+    Ok(color.to_string())
 }
 
-fn number(x: f64) -> Value {
-    epdf_plugin_annotation::value::number(x)
-}
-
-/// `inkBounds(strokes, strokeWidth)`: the rect an ink mark occupies, padded
-/// by its stroke.
-fn ink_bounds(strokes: &[Vec<(f64, f64)>], stroke_width: f64) -> Result<Value, Error> {
-    let (mut left, mut bottom, mut right, mut top) =
-        (f64::INFINITY, f64::INFINITY, f64::NEG_INFINITY, f64::NEG_INFINITY);
-    for stroke in strokes {
-        for &(x, y) in stroke {
-            if x < left {
-                left = x;
-            }
-            if x > right {
-                right = x;
-            }
-            if y < bottom {
-                bottom = y;
-            }
-            if y > top {
-                top = y;
-            }
-        }
+/// `inkListOf(strokes)`: an ink mark's strokes, as the engine takes them; a
+/// mark needs at least one point.
+fn ink_list_of(strokes: &[Vec<(f64, f64)>]) -> Result<Value, Error> {
+    if !strokes.iter().any(|stroke| !stroke.is_empty()) {
+        return Err(stamp_error(code::INVALID_INPUT, "an ink mark needs at least one point"));
     }
-    if !left.is_finite() {
-        return Err(Error::engine("InvalidArg", "[stamp] an ink mark needs at least one point"));
-    }
-    let pad = stroke_width;
-    Ok(json!({
-        "left": number(left - pad),
-        "bottom": number(bottom - pad),
-        "right": number(right + pad),
-        "top": number(top + pad),
-    }))
+    Ok(Value::Array(
+        strokes
+            .iter()
+            .map(|stroke| {
+                Value::Array(stroke.iter().map(|(x, y)| json!({ "x": x, "y": y })).collect())
+            })
+            .collect(),
+    ))
 }
 
-/// `textBounds(text, fontSize)`: a generous box; the export crops to the
-/// glyphs.
+/// `textBounds(text, fontSize)`: a generous box for typed text. The export
+/// keeps the whole box, so the text is centered in it.
 fn text_bounds(text: &str, font_size: f64) -> Value {
-    let length = text.encode_utf16().count().max(1) as f64;
+    let length = text.encode_utf16().count() as f64;
     json!({
-        "left": 0,
-        "bottom": 0,
-        "right": number(length * font_size * 0.75 + font_size),
-        "top": number(font_size * 1.6),
+        "x": 0,
+        "y": 0,
+        "width": length.max(1.0) * font_size * 0.75 + font_size,
+        "height": font_size * 1.6,
     })
 }
 
 impl StampCapability {
-    /// `renderMark(mark)`: a drawn or typed mark as a one-page PDF.
-    async fn render_mark(&self, mark: &MarkSource) -> Result<Vec<u8>, Error> {
-        let doc = rt::returned(self.open_asset_document(blank_library_pdf())).await?;
-        let body = async {
-            let layout = await_engine(call(&doc, "pages.list", Vec::new())).await?;
-            let scratch = get(&layout, "pages").and_then(Value::as_array).and_then(|p| p.first()).cloned();
-            let Some(scratch) = scratch else {
-                return Err(Error::engine("Unknown", "[stamp] no scratch page"));
-            };
-            let pon = get(&scratch, "ref").and_then(pon_of_ref).unwrap_or(0);
-            doc.page_index(pon)?;
-            if !doc.has("page.annotations.exportAppearance") {
-                return Err(Error::engine(
-                    "NotImplemented",
-                    "[stamp] authoring a mark needs an asset engine that can export annotation appearances",
-                ));
+    /// `renderMark(mark)`: a drawn or typed mark rendered to a one-page PDF,
+    /// a fresh page the size of the mark, paths kept as paths, the font
+    /// subset-embedded.
+    fn render_mark(&self, mark: MarkSource) -> Promise<Vec<u8>> {
+        let opening = self.open_asset_document(blank_library_pdf());
+        Promise::spawn(async move {
+            let doc = opening.await?;
+            let body = async {
+                let layout = call(&doc, "pages.list", Vec::new()).await?;
+                let pages = member(&layout, "pages")?;
+                if nullish(&pages) {
+                    return Err(read_off(&pages, "0"));
+                }
+                let Some(scratch) = pages.as_array().and_then(|p| p.first()).cloned() else {
+                    return Err(stamp_error(
+                        code::OPERATION_FAILED,
+                        "the scratch document has no page",
+                    ));
+                };
+                let reference = scratch.get("ref").cloned().unwrap_or_else(undefined);
+                let pon =
+                    reference.get("objectNumber").and_then(Value::as_f64).unwrap_or(0.0) as u32;
+                let created = match &mark {
+                    MarkSource::Ink { strokes, color, stroke_width } => {
+                        let color = hex_color(color.as_deref().unwrap_or("#1d2b53"))?;
+                        let draft = json!({
+                            "subtype": "ink",
+                            "inkList": ink_list_of(strokes)?,
+                            "color": color,
+                            "strokeWidth": stroke_width.unwrap_or(2.0),
+                        });
+                        page_call(&doc, "page.annotations.create", pon, vec![draft]).await?
+                    }
+                    MarkSource::Text { text, font_family, color, font_size } => {
+                        let color = hex_color(color.as_deref().unwrap_or("#1d2b53"))?;
+                        let size = font_size.unwrap_or(36.0);
+                        let draft = json!({
+                            "subtype": "free-text",
+                            "intent": "free-text",
+                            "contents": text,
+                            "fontFamily": font_family,
+                            "fontSize": size,
+                            "textAlign": "center",
+                            "verticalAlign": "middle",
+                            "box": text_bounds(text, size),
+                            "fontColor": color,
+                            "strokeWidth": 0,
+                        });
+                        page_call(&doc, "page.annotations.create", pon, vec![draft]).await?
+                    }
+                    MarkSource::Image { .. } | MarkSource::Pdf { .. } => {
+                        return Err(Error::new("[stamp] renderMark takes an ink or text mark"));
+                    }
+                };
+                let annotation = member(&created, "annotation")?;
+                let reference = member(&annotation, "ref")?;
+                let exported = page_call(
+                    &doc,
+                    "page.annotations.exportAppearance",
+                    pon,
+                    vec![json!([reference])],
+                )
+                .await?;
+                Ok(bytes_of(&exported).unwrap_or_default())
             }
-            let draft = match mark {
-                MarkSource::Ink { strokes, color, stroke_width } => {
-                    let color = hex_color(color.as_deref().unwrap_or("#1d2b53"))?;
-                    let width = stroke_width.unwrap_or(2.0);
-                    let ink: Vec<Value> = strokes
-                        .iter()
-                        .map(|s| json!(s.iter().map(|&(x, y)| json!({ "x": number(x), "y": number(y) })).collect::<Vec<_>>()))
-                        .collect();
-                    json!({
-                        "subtype": "ink",
-                        "inkList": ink,
-                        "rect": ink_bounds(strokes, width)?,
-                        "color": color,
-                        "strokeWidth": number(width),
-                    })
-                }
-                MarkSource::Text { text, font_family, color, font_size } => {
-                    let color = hex_color(color.as_deref().unwrap_or("#1d2b53"))?;
-                    let size = font_size.unwrap_or(36.0);
-                    json!({
-                        "subtype": "free-text",
-                        "intent": "free-text",
-                        "contents": text,
-                        "fontFamily": font_family,
-                        "fontSize": number(size),
-                        "textAlign": "left",
-                        "rect": text_bounds(text, size),
-                        "fontColor": color,
-                        "strokeWidth": 0,
-                    })
-                }
-                _ => unreachable!("render_mark takes an ink or text mark"),
-            };
-            let created =
-                await_engine(page_call(&doc, "page.annotations.create", pon, vec![draft])).await?;
-            let created_ref = get(&created, "created").and_then(|c| get(c, "ref")).cloned();
-            let Some(created_ref) = created_ref else {
-                return Err(crate::services::asset_engine::read_off(
-                    get(&created, "created").unwrap_or(&epdf_kernel::undefined()),
-                    "ref",
-                ));
-            };
-            let exported = await_engine(page_call(
-                &doc,
-                "page.annotations.exportAppearance",
-                pon,
-                vec![json!([created_ref])],
-            ))
-            .await?;
-            Ok(bytes_of(&exported).unwrap_or_default())
-        }
-        .await;
-        close(&doc, body).await
+            .await;
+            close(&doc, body).await
+        })
     }
 
     /// `extractPage(bytes, pageIndex)`: one page of a PDF as a single-page
-    /// PDF.
-    async fn extract_page(&self, bytes: Vec<u8>, page_index: f64) -> Result<Vec<u8>, Error> {
-        let doc = rt::returned(self.open_asset_document(bytes)).await?;
-        let body = async {
-            let layout = await_engine(call(&doc, "pages.list", Vec::new())).await?;
-            let pages =
-                get(&layout, "pages").and_then(Value::as_array).cloned().unwrap_or_default();
-            let page = (page_index >= 0.0 && page_index.fract() == 0.0)
-                .then(|| pages.get(page_index as usize).cloned())
-                .flatten();
-            let Some(page) = page else {
-                return Err(Error::engine(
-                    "InvalidArg",
-                    format!(
-                        "[stamp] the PDF has no page {} ({} pages)",
-                        epdf_geometry::js::number_to_string(page_index),
-                        epdf_geometry::js::number_to_string(
-                            num(&layout, "pageCount").unwrap_or(f64::NAN)
-                        )
-                    ),
-                ));
-            };
-            let page_ref = get(&page, "ref").cloned().unwrap_or(Value::Null);
-            let extracted =
-                await_engine(call(&doc, "pages.extract", vec![json!([page_ref])])).await?;
-            Ok(bytes_of(&extracted).unwrap_or_default())
-        }
-        .await;
-        close(&doc, body).await
+    /// PDF (a `pdf` mark with `pageIndex`).
+    fn extract_page(&self, bytes: Vec<u8>, page_index: f64) -> Promise<Vec<u8>> {
+        let opening = self.open_asset_document(bytes);
+        Promise::spawn(async move {
+            let doc = opening.await?;
+            let body = async {
+                let layout = call(&doc, "pages.list", Vec::new()).await?;
+                let pages = member(&layout, "pages")?;
+                let page = (page_index >= 0.0 && page_index.fract() == 0.0)
+                    .then(|| pages.as_array().and_then(|p| p.get(page_index as usize)).cloned())
+                    .flatten();
+                let Some(page) = page else {
+                    let count = layout.get("pageCount").cloned().unwrap_or_else(undefined);
+                    let count =
+                        count.as_f64().map_or_else(|| "undefined".to_string(), number_to_string);
+                    return Err(stamp_error(
+                        code::INVALID_INPUT,
+                        format!(
+                            "the PDF has no page {} ({count} pages)",
+                            number_to_string(page_index)
+                        ),
+                    ));
+                };
+                let reference = page.get("ref").cloned().unwrap_or_else(undefined);
+                Ok(bytes_of(&call(&doc, "pages.extract", vec![json!([reference])]).await?)
+                    .unwrap_or_default())
+            }
+            .await;
+            close(&doc, body).await
+        })
     }
 
-    /// `resolveAssetSource(input)`: the caller's `source`, or its `mark`
-    /// authored into bytes.
-    pub(crate) async fn resolve_asset_source(
-        &self,
-        input: &AddAssetInput,
-    ) -> Result<ResolvedSource, Error> {
+    /// `resolveAssetSource(input)`: the bytes an asset is made from, the
+    /// caller's `source`, or its `mark` authored into one.
+    pub(crate) fn resolve_asset_source(&self, input: &AddAssetInput) -> Promise<WireResource> {
         if input.source.is_some() == input.mark.is_some() {
-            return Err(Error::engine(
-                "InvalidArg",
-                "[stamp] addAsset takes exactly one of `source` / `mark`",
+            return Promise::rejected(stamp_error(
+                code::INVALID_INPUT,
+                "createAsset takes exactly one of `source` / `mark`",
             ));
         }
-        let adopt_source = |source: &Value| {
-            let promise = resolve_binary_source(source);
-            async move {
-                // `return resolveBinarySource(source)` from an async function.
-                let resolved = crate::promise::adopt(promise).await?;
-                Ok::<_, Error>(ResolvedSource { bytes: resolved.bytes })
+        let this = self.clone();
+        let source = input.source.clone();
+        let mark = input.mark.clone();
+        Promise::spawn(async move {
+            if let Some(source) = source {
+                return adopt(resolve_binary_source(&source)).await;
             }
-        };
-        if let Some(source) = &input.source {
-            return adopt_source(source).await;
-        }
-        match input.mark.as_ref().expect("checked above") {
-            MarkSource::Image { source } => adopt_source(source).await,
-            MarkSource::Pdf { source, page_index } => {
-                let resolved = resolve_binary_source(source).await?;
-                let resolved = ResolvedSource { bytes: resolved.bytes };
-                let Some(page_index) = page_index else { return Ok(resolved) };
-                let bytes = rt::returned(self.extract_page(resolved.bytes, *page_index)).await?;
-                Ok(ResolvedSource { bytes })
+            let Some(mark) = mark else { unreachable!("one of source / mark is present") };
+            let made = |bytes: Vec<u8>| WireResource { bytes, mime_type: None, name: None };
+            match mark {
+                MarkSource::Image { source } => adopt(resolve_binary_source(&source)).await,
+                MarkSource::Pdf { source, page_index } => {
+                    let resolved = resolve_binary_source(&source).await?;
+                    match page_index {
+                        None => Ok(resolved),
+                        Some(index) => Ok(made(this.extract_page(resolved.bytes, index).await?)),
+                    }
+                }
+                ink_or_text => Ok(made(this.render_mark(ink_or_text).await?)),
             }
-            mark => {
-                let bytes = rt::returned(self.render_mark(mark)).await?;
-                Ok(ResolvedSource { bytes })
-            }
-        }
+        })
     }
 }

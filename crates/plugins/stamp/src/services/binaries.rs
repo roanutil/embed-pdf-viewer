@@ -1,55 +1,91 @@
-//! `services/binaries.ts`: the binary sidecar of the serializable store
-//! (asset bytes and cached previews, the canonical library PDFs, the ghost
-//! render caches) and the per-library mutation queue.
+//! `services/binaries.ts`: the binaries resource. Asset bytes and cached
+//! previews, the canonical library PDFs, and the ghost render caches. State
+//! holds only the serializable descriptors; everything binary lives here,
+//! next to the per-library mutation queue that orders whole-PDF rewrites.
 
-use epdf_kernel::rt::{self, Promise};
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use epdf_kernel::Error;
+use epdf_kernel::error::{code, plugin_error};
+use epdf_kernel::rt::Promise;
+use epdf_kernel::signal::AbortSignal;
 
 use crate::contract::StampAssetPreview;
 use crate::controller::StampCapability;
-use crate::promise::{adopt, finally};
+use crate::services::errors::CAPABILITY;
 
-/// One asset's placement bytes and cached preview. `bytes` is `None` when
-/// the engine's extraction answered no bytes.
+/// One asset's placement bytes (a one-page PDF) and its cached preview.
+/// `bytes` is `None` when the engine's extraction answered no bytes.
 #[derive(Clone, Debug, PartialEq)]
 pub struct AssetBinary {
     pub bytes: Option<Vec<u8>>,
     pub preview: Option<StampAssetPreview>,
 }
 
+/// Ghost renders of one asset (or one arm), by device pixel width.
+pub type GhostCache = Rc<RefCell<HashMap<u64, Promise<Option<StampAssetPreview>>>>>;
+
+/// A `Map` key for a width: `SameValueZero`, so `-0` is `0` and every `NaN`
+/// is one key.
+pub(crate) fn width_key(width: f64) -> u64 {
+    if width.is_nan() {
+        f64::NAN.to_bits()
+    } else if width == 0.0 {
+        0f64.to_bits()
+    } else {
+        width.to_bits()
+    }
+}
+
+#[derive(Default)]
+pub struct Binaries {
+    /// Asset bytes and the cached preview, by asset id.
+    pub binaries: RefCell<HashMap<String, AssetBinary>>,
+    /// The durable source of truth for a canonical library: the rewritten
+    /// whole PDF. `None` is a save that answered no bytes.
+    pub library_binaries: RefCell<HashMap<String, Option<Vec<u8>>>>,
+    /// Ghost renders, one cache per asset id.
+    pub ghost_renders: RefCell<HashMap<String, GhostCache>>,
+}
+
+impl Binaries {
+    /// `createBinaries`' cleanup.
+    pub(crate) fn clear(&self) {
+        self.binaries.borrow_mut().clear();
+        self.ghost_renders.borrow_mut().clear();
+        self.library_binaries.borrow_mut().clear();
+    }
+}
+
 impl StampCapability {
-    /// `mutateLibrary(libraryId, mutation)`: whole-PDF rewrites run one at a
-    /// time per library.
+    /// `mutateLibrary(libraryId, mutation, signal)`: whole-PDF rewrites are
+    /// serialized per library (`ctx.serialQueue('library:<id>')`), or two
+    /// concurrent appends could both start from the same bytes and lose one
+    /// page. A mutation whose signal fired while it waited never starts.
+    ///
+    /// The kernel's `SerialQueue` has no `signal` option; this keeps the one
+    /// `serial-queue.ts` defines over it, as the form, measurement and
+    /// redaction plugins do (a Task 14 kernel carry).
     pub(crate) fn mutate_library<T: Clone + 'static>(
         &self,
         library_id: &str,
         mutation: impl FnOnce() -> Promise<T> + 'static,
+        signal: Option<AbortSignal>,
     ) -> Promise<T> {
-        let previous = self.0.library_mutation_tails.borrow().get(library_id).cloned();
-        // `(previous ?? Promise.resolve()).then(mutation)`
-        let result = Promise::spawn(async move {
-            match previous {
-                Some(previous) => {
-                    let _ = previous.await;
-                }
-                None => rt::tick().await,
-            }
-            adopt(mutation()).await
-        });
-        let tail = {
-            let result = result.clone();
-            Promise::spawn(async move {
-                let _ = result.await;
-                Ok(())
-            })
-        };
-        self.0.library_mutation_tails.borrow_mut().insert(library_id.to_string(), tail.clone());
-        let inner = self.0.clone();
-        let key = library_id.to_string();
-        finally(result, move || {
-            let current = inner.library_mutation_tails.borrow().get(&key).cloned();
-            if current.is_some_and(|current| current.same(&tail)) {
-                inner.library_mutation_tails.borrow_mut().remove(&key);
-            }
+        let queue = self.0.cx.serial_queue(&format!("library:{library_id}"));
+        queue.run(move || match signal.filter(AbortSignal::aborted) {
+            // A rejected promise, not a throw: `tail.then(start, start)`
+            // adopts what `start` returns.
+            Some(signal) => Ok(Promise::rejected(plugin_error(
+                code::OPERATION_CANCELLED,
+                CAPABILITY,
+                "cancelled before it started",
+                signal.reason_value(),
+                None,
+            ))),
+            None => Ok::<_, Error>(mutation()),
         })
     }
 }
