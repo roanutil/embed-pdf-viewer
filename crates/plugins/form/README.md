@@ -42,7 +42,12 @@ since `epdf-engine` links PDFium and this crate builds for wasm32 (Ruling13.15).
 Engine records stay `serde_json::Value`. The snapshot (`model::Snapshot`) holds its `fields` and
 `widgets` apart, one `Rc` per item. The kernel's mirror holds JSON and copies each value it writes,
 so the `fields` mirror's value is a token, `{ "$fieldIndex": n }`, naming a `FieldIndex` that
-`services/index_cache.rs` keeps: the 256 used last and the confirmed one. The index's records (`byKey`, `byWidget` and so on) are kept
+`services/index_cache.rs` keeps: the 256 used last and the confirmed one. The store never shows the
+token. The mirror's `to_json` (`MirrorSpec::to_json`, `640a17350`) prints the whole index when the
+store is dumped, `snapshot`, `byKey`, `byName`, `byWidget`, `rowByWidget` and `pictureVersions` in
+that order, as `signature.json` and `stamp-*.json` dump `form::a/mirror/fields`
+(`the_fields_mirror_cell_dumps_the_whole_field_index` holds it to `signature.json`
+`reads-over-the-snapshot`). The index's records (`byKey`, `byWidget` and so on) are kept
 as JavaScript objects order them, integer-like keys first, so they print and iterate as the
 TypeScript's do.
 
@@ -72,7 +77,10 @@ and `getSelectedField` build a new value per call where the TypeScript returns t
 its inputs stay the same. That divergence is named in the register and carried to Task 14. A reader
 comparing by reference re-renders more often; no value differs.
 
-Four Rust-only console lines and errors have no TypeScript counterpart. A widget row or field the
+Five Rust-only console lines and errors have no TypeScript counterpart. A token the cache no longer
+holds, which the confirmed value's pin and the view's recency should make impossible, is logged as
+`[form] the fields mirror named a form it no longer keeps:` and shows the confirmed form
+(`services/index_cache.rs`). A widget row or field the
 painter can no longer decode is logged as `[form] the painter could not read a widget:` and not
 drawn (`services/looks.rs`); the TypeScript has no decode step. A `surface` that throws inside
 `fill_soon`'s failure path is logged as `[form] surfacing a fill failure threw:`
