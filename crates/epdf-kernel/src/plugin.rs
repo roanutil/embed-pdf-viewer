@@ -709,7 +709,7 @@ impl ControllerContext {
                     &format!("{prefix}/{name}"),
                     Rc::new(|_, _| None),
                     Rc::new(initial),
-                    Rc::new(|v| v.downcast_ref::<Value>().unwrap().clone()),
+                    Rc::new(crate::mirror::cell_json),
                     Some(instance.clone()),
                 );
                 let revoke = lease.clone();

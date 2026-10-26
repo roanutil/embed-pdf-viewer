@@ -89,6 +89,30 @@ pub struct MirrorSpec {
         Rc<dyn Fn(Option<Rc<dyn DocumentHandle>>, Vec<Value>, AbortSignal) -> Promise<Merge>>,
     >,
     pub changed: Option<Rc<dyn Fn(MirrorChange) -> Result<(), Error>>>,
+    /// The JSON a store dump shows for a value, when the value itself is a
+    /// stand-in for a typed one (form's shared `FieldIndex`). Called only
+    /// when the store cell is serialised, never on a write.
+    pub to_json: Option<Rc<dyn Fn(&Value) -> Value>>,
+}
+/// A mirror's store cell: `{ value, status }`, kept by pointer and
+/// serialised only when the store is dumped (see [`cell_json`]).
+pub struct MirrorCell {
+    value: Rc<Value>,
+    status: ResourceStatus,
+    to_json: Option<Rc<dyn Fn(&Value) -> Value>>,
+}
+/// The JSON of a cell leased through [`MirrorEnvironment::cell`]: a
+/// [`MirrorCell`], or the plain value a page mirror writes.
+pub fn cell_json(state: &dyn std::any::Any) -> Value {
+    if let Some(cell) = state.downcast_ref::<MirrorCell>() {
+        let value = match &cell.to_json {
+            Some(to_json) => to_json(&cell.value),
+            None => (*cell.value).clone(),
+        };
+        json!({"value":value,"status":cell.status.as_str()})
+    } else {
+        state.downcast_ref::<Value>().cloned().unwrap_or(Value::Null)
+    }
 }
 impl MirrorSpec {
     pub fn new(
@@ -107,6 +131,7 @@ impl MirrorSpec {
             predict: None,
             load_pages: None,
             changed: None,
+            to_json: None,
         }
     }
 }
@@ -134,13 +159,7 @@ impl MirrorEnvironment {
             changes,
             events,
             cell: Rc::new(move |name, initial| {
-                store.lease(
-                    name,
-                    Rc::new(|_, _| None),
-                    Rc::new(initial),
-                    Rc::new(|v| v.downcast_ref::<Value>().unwrap().clone()),
-                    None,
-                )
+                store.lease(name, Rc::new(|_, _| None), Rc::new(initial), Rc::new(cell_json), None)
             }),
             notify: Rc::new(|| {}),
             report: Rc::new(|_| {}),
@@ -169,10 +188,12 @@ struct Inner {
 }
 impl Mirror {
     pub fn new(spec: MirrorSpec, env: MirrorEnvironment) -> Self {
-        let cell = (env.cell)(
-            &format!("mirror/{}", spec.name),
-            json!({"value":spec.initial,"status":"idle"}),
-        );
+        let shown = match &spec.to_json {
+            Some(to_json) => to_json(&spec.initial),
+            None => spec.initial.clone(),
+        };
+        let cell =
+            (env.cell)(&format!("mirror/{}", spec.name), json!({"value":shown,"status":"idle"}));
         let initial = Rc::new(spec.initial.clone());
         let this = Self(Rc::new(Inner {
             spec,
@@ -221,7 +242,8 @@ impl Mirror {
         }
         *self.0.value.borrow_mut() = value.clone();
         self.0.status.set(status);
-        self.0.cell.write(Rc::new(json!({"value":*value,"status":status.as_str()})))
+        let to_json = self.0.spec.to_json.clone();
+        self.0.cell.write(Rc::new(MirrorCell { value, status, to_json }))
     }
     fn announce(&self, change: MirrorChange) {
         if let Some(f) = &self.0.spec.changed {

@@ -655,3 +655,56 @@ fn a_cancellable_call_releases_its_signal_once_it_succeeds() {
         assert_eq!(signal.listener_count(), 0, "round {round}: released on success");
     }
 }
+
+#[test]
+fn a_mirror_cell_shows_its_value_through_to_json_only_when_dumped() {
+    use epdf_kernel::store::Store;
+    use std::cell::Cell;
+    rt::reset();
+    let q = DocumentChanges::new(
+        Rc::new(|_, _| Promise::resolved(json!({"applied":true}))),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let events = EventHookSource::new(None);
+    let store = Store::new(Rc::new(|_| {}));
+    let mut env = MirrorEnvironment::detached(events.clone(), AbortSignal::new(), q);
+    let leases = store.clone();
+    env.cell = Rc::new(move |name, initial| {
+        leases.lease(
+            name,
+            Rc::new(|_, _| None),
+            Rc::new(initial),
+            Rc::new(epdf_kernel::mirror::cell_json),
+            None,
+        )
+    });
+    let shown = Rc::new(Cell::new(0));
+    let mut spec = MirrorSpec::new(
+        "tokens",
+        json!({"token":0}),
+        Rc::new(|_, _| Promise::resolved(Loaded { value: json!({"token":1}), cursor: None })),
+        Rc::new(|_, event| Ok(Fold::Value(Rc::new(json!({"token":event["value"]}))))),
+    );
+    let calls = shown.clone();
+    spec.to_json = Some(Rc::new(move |value| {
+        calls.set(calls.get() + 1);
+        json!({"shown":value["token"]})
+    }));
+    let mirror = Mirror::new(spec, env);
+    assert_eq!(
+        store.slice_json("mirror/tokens").unwrap(),
+        json!({"value":{"shown":0},"status":"idle"})
+    );
+    mirror.start();
+    rt::run_until_stalled();
+    events.emit(&json!({"type":"metadata.changed","value":2}));
+    let writes = shown.get();
+    assert_eq!(*mirror.get(), json!({"token":2}));
+    assert_eq!(shown.get(), writes, "a write never serialises");
+    assert_eq!(
+        store.slice_json("mirror/tokens").unwrap(),
+        json!({"value":{"shown":2},"status":"ready"})
+    );
+    assert_eq!(shown.get(), writes + 1);
+}
