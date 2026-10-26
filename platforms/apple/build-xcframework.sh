@@ -37,7 +37,12 @@ done
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 OUT="$ROOT/platforms/apple/EmbedPDF"
 BUILD="$ROOT/platforms/apple/.build"
-LIB_ROOT="$ROOT/packages/engine/runtime/build/libpdfium"
+LIB_ROOT="${LIB_ROOT:-$ROOT/packages/engine/runtime/build/libpdfium}"
+# pdfium-sys reads its headers and archive from PDF_RUNTIME_LIB_DIR
+# (crates/build-support/src/lib.rs), so cargo links the same slices the
+# check below looks at. Setting LIB_ROOT to the fork's staging root is how
+# the release script builds without fetching.
+export PDF_RUNTIME_LIB_DIR="$LIB_ROOT"
 PROFILE="${PROFILE:-release}"
 # Where cargo puts what it builds: CARGO_TARGET_DIR, a config's
 # build.target-dir, or $ROOT/target. `cargo metadata` resolves all three.
