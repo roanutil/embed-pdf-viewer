@@ -411,6 +411,8 @@ fn instrument(plugin: AnyPlugin, h: &Harness) -> AnyPlugin {
         init: plugin.init.clone(),
         effects: plugin.effects.clone(),
         create: None,
+        resolves_any_capability: plugin.resolves_any_capability,
+        in_scope: plugin.in_scope.clone(),
     };
     let h = h.clone();
     // Printed through the slice's own JSON, as the TypeScript records the

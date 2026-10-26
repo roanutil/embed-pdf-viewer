@@ -200,6 +200,9 @@ struct Session {
     engine_op: RefCell<Option<Rc<dyn Fn(Option<Value>)>>>,
     cancel: AbortSignal,
     capabilities: RefCell<Vec<(*const PluginDef, Rc<dyn Any>)>>,
+    /// Workspace capabilities as this document's scope sees them
+    /// (`inScope`), by token.
+    views: RefCell<Vec<(AnyToken, Rc<dyn Any>)>>,
     /// The `connect` halves of `create`, run in the effects phase.
     connectors: RefCell<Vec<(*const PluginDef, ConnectFn)>>,
     leases: RefCell<Vec<(*const PluginDef, SliceLease)>>,
@@ -461,6 +464,7 @@ impl Inner {
                 engine_op: RefCell::new(None),
                 cancel: AbortSignal::new(),
                 capabilities: RefCell::new(Vec::new()),
+                views: RefCell::new(Vec::new()),
                 connectors: RefCell::new(Vec::new()),
                 leases: RefCell::new(Vec::new()),
                 closing: RefCell::new(None),
@@ -964,6 +968,31 @@ impl Inner {
         self.sessions.borrow().get(&id)
     }
 
+    /// `workspaceViewOf`: a workspace capability as a document's scope sees
+    /// it, built once per document and kept on the session. Without a
+    /// document, or for one the kernel doesn't know, the capability itself.
+    fn workspace_view_of(
+        &self,
+        token: &AnyToken,
+        capability: Rc<dyn Any>,
+        document_id: Option<&str>,
+    ) -> Rc<dyn Any> {
+        let in_scope = self
+            .plan
+            .ordered
+            .iter()
+            .find(|p| p.token.as_ref() == Some(token) && p.scope != PluginScope::Document)
+            .and_then(|p| p.in_scope.clone());
+        let session = document_id.and_then(|id| self.sessions.borrow().get(id));
+        let (Some(in_scope), Some(session)) = (in_scope, session) else { return capability };
+        if let Some((_, view)) = session.views.borrow().iter().find(|(t, _)| t == token) {
+            return view.clone();
+        }
+        let view = in_scope(&capability, &session.id());
+        session.views.borrow_mut().push((token.clone(), view.clone()));
+        view
+    }
+
     fn workspace_capability(&self, token: &AnyToken) -> Option<Rc<dyn Any>> {
         self.workspace_capabilities
             .borrow()
@@ -1023,7 +1052,7 @@ impl Inner {
     ) -> Result<Rc<dyn Any>, Error> {
         self.guard_usable(&format!("capability(\"{}\")", token.name()))?;
         if let Some(capability) = self.workspace_capability(token) {
-            return Ok(capability);
+            return Ok(self.workspace_view_of(token, capability, document_id));
         }
         let Some(provider) = self.plan.provider_of(token).cloned() else {
             return Err(Error::new(format!("No capability \"{}\".", token.name())));
@@ -1074,7 +1103,7 @@ impl Inner {
             return Ok(None);
         }
         if let Some(capability) = self.workspace_capability(token) {
-            return Ok(Some(capability));
+            return Ok(Some(self.workspace_view_of(token, capability, document_id)));
         }
         let Some(provider) = self.plan.provider_of(token).cloned() else { return Ok(None) };
         let Some(session) = self.session_of(document_id) else { return Ok(None) };

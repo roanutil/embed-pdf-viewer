@@ -670,6 +670,8 @@ impl HarnessPlugin for SignatureHarness {
             effects: None,
             create: None,
             settings: None,
+            resolves_any_capability: false,
+            in_scope: None,
         }))
     }
 

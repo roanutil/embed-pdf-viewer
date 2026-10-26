@@ -47,6 +47,8 @@ pub struct Created {
 }
 /// `create`: the controller hook, run once per instance.
 pub type CreateFn = Rc<dyn Fn(ControllerContext) -> Result<Created, Error>>;
+/// `inScope`: a workspace capability as a document's scope sees it.
+pub type InScopeFn = Rc<dyn Fn(&Rc<dyn Any>, &str) -> Rc<dyn Any>>;
 
 pub struct PluginDef {
     pub settings: Option<crate::settings::SettingsDeclaration>,
@@ -66,6 +68,12 @@ pub struct PluginDef {
     /// The v3 controller hook. A plugin declares either `create` or
     /// `capability` and `effects`.
     pub create: Option<CreateFn>,
+    /// `resolvesAnyCapability`: the development guard lets the plugin
+    /// resolve tokens it did not declare.
+    pub resolves_any_capability: bool,
+    /// `inScope`, for a workspace plugin: its capability as a document's
+    /// scope sees it.
+    pub in_scope: Option<InScopeFn>,
 }
 
 pub type AnyPlugin = Rc<PluginDef>;
@@ -129,6 +137,7 @@ pub struct PluginContext {
     session: Option<Rc<dyn SessionView>>,
     lease: SliceLease,
     declared: Rc<Vec<AnyToken>>,
+    resolves_any: bool,
     reported_closed: Rc<Cell<bool>>,
 }
 
@@ -182,6 +191,7 @@ impl PluginContext {
             session,
             lease,
             declared: Rc::new(declared_tokens(plugin)),
+            resolves_any: plugin.resolves_any_capability,
             reported_closed: Rc::new(Cell::new(false)),
         })
     }
@@ -190,7 +200,7 @@ impl PluginContext {
     /// is refused. The Rust kernel always runs it, as the vectors were
     /// generated in development.
     fn guard(&self, token: &AnyToken) -> Result<(), Error> {
-        if self.declared.contains(token) {
+        if self.resolves_any || self.declared.contains(token) {
             return Ok(());
         }
         Err(Error::new(format!(
@@ -1116,6 +1126,8 @@ pub struct PluginBuilder<S, A> {
     effects: Option<EffectsFn>,
     create: Option<CreateFn>,
     settings: Option<crate::settings::SettingsDeclaration>,
+    resolves_any_capability: bool,
+    in_scope: Option<InScopeFn>,
 }
 
 pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
@@ -1133,6 +1145,8 @@ pub fn define<S, A>(id: impl Into<String>) -> PluginBuilder<S, A> {
         effects: None,
         create: None,
         settings: None,
+        resolves_any_capability: false,
+        in_scope: None,
     }
 }
 
@@ -1149,6 +1163,24 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
 
     pub fn document_scoped(self) -> Self {
         self.scope(PluginScope::Document)
+    }
+
+    /// `resolvesAnyCapability: true`.
+    pub fn resolves_any_capability(mut self) -> Self {
+        self.resolves_any_capability = true;
+        self
+    }
+
+    /// `inScope(api, documentId)`: how the workspace capability looks from
+    /// a document's scope.
+    pub fn in_scope<C: 'static>(mut self, view: impl Fn(&C, &str) -> C + 'static) -> Self {
+        self.in_scope = Some(Rc::new(move |api: &Rc<dyn Any>, document_id: &str| {
+            match api.downcast_ref::<C>() {
+                Some(api) => Rc::new(view(api, document_id)) as Rc<dyn Any>,
+                None => api.clone(),
+            }
+        }));
+        self
     }
 
     pub fn requires(mut self, token: &AnyToken) -> Self {
@@ -1278,6 +1310,8 @@ impl<S: Serialize + 'static, A: Action> PluginBuilder<S, A> {
             init: self.init,
             effects: self.effects,
             create: self.create,
+            resolves_any_capability: self.resolves_any_capability,
+            in_scope: self.in_scope,
         })
     }
 }

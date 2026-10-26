@@ -107,6 +107,8 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         init: None,
         effects: None,
         create,
+        resolves_any_capability: false,
+        in_scope: None,
     }))
 }
 
