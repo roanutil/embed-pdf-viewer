@@ -147,11 +147,7 @@ impl HarnessPlugin for ViewManager {
                 done()
             }
             "moveDocumentWithin" => {
-                cap.move_document_within(
-                    text(0),
-                    text(1),
-                    number(arg(&args, 2)).unwrap_or(f64::NAN),
-                );
+                cap.move_document_within(text(0), text(1), number(arg(&args, 2)));
                 done()
             }
             "moveDocumentBetween" => {
@@ -238,7 +234,7 @@ fn f_remove_document(args: &[Value]) -> Result<Value, Error> {
 }
 
 fn f_move_document_within(args: &[Value]) -> Result<Value, Error> {
-    let to_index = number(arg(args, 3)).unwrap_or(f64::NAN);
+    let to_index = number(arg(args, 3));
     shown(&model::move_document_within(&state(args)?, text(args, 1), text(args, 2), to_index))
 }
 

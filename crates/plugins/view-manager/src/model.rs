@@ -273,12 +273,13 @@ pub fn remove_document(
 }
 
 /// `moveDocumentWithin(state, paneId, documentId, toIndex)`: reorder a tab
-/// inside its pane.
+/// inside its pane. `toIndex` goes to `insertAt`, so `None` (`undefined`
+/// or `null`) appends.
 pub fn move_document_within(
     state: &Rc<ViewManagerState>,
     pane_id: &str,
     document_id: &str,
-    to_index: f64,
+    to_index: Option<f64>,
 ) -> Rc<ViewManagerState> {
     let Some(pane) = state.panes.get(pane_id) else { return state.clone() };
     if !pane.document_ids.iter().any(|d| d == document_id) {
@@ -287,7 +288,7 @@ pub fn move_document_within(
     let without: Vec<String> =
         pane.document_ids.iter().filter(|d| *d != document_id).cloned().collect();
     let next =
-        Pane { document_ids: insert_at(&without, document_id, Some(to_index)), ..(**pane).clone() };
+        Pane { document_ids: insert_at(&without, document_id, to_index), ..(**pane).clone() };
     Rc::new(with_pane(state, Rc::new(next)))
 }
 
@@ -310,7 +311,7 @@ pub fn move_document_between(
     }
     if from_pane_id == to_pane_id {
         let to_index = to_index.unwrap_or(to.document_ids.len() as f64);
-        return move_document_within(state, to_pane_id, document_id, to_index);
+        return move_document_within(state, to_pane_id, document_id, Some(to_index));
     }
     let next_from = without_document(from, document_id);
     let next_to = Pane {

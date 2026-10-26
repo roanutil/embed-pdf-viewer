@@ -25,22 +25,30 @@ The pane record is a `JsRecord` in JavaScript property order, because `Object.va
 the `onDocumentMoved` events.
 
 Index arguments are JavaScript numbers. `insertAt` and `movePane` clamp with `Math.min`/`Math.max`
-(NaN propagates) and then `slice`, which truncates a fraction and reads NaN as 0; the Rust helpers
-in `model.rs` do the same, and the action types serialize a non-finite index as
-`{"$number": "NaN"}`, as the trace prints it.
+(NaN propagates) and then `slice`, which truncates a fraction and reads NaN as 0, and `insertAt`
+appends for an index that is `undefined` or `null`. The Rust helpers in `model.rs` do the same,
+with `None` as the absent index.
 
 ## Coverage
 
-The view-manager suites reach every statement and branch of the TypeScript package: 530 of 530
-statements and 155 of 155 branches.
+The coverage measured before this port (530 of 530 statements and 155 of 155 branches) describes
+the reducer-based TypeScript package. It was not re-measured for Task 13.30.
 
 ## Not ported
 
-Pane ids that name `Object.prototype` members are not ported. `panes['toString']` is truthy in the
-TypeScript, so `setFocusedPane('toString')` followed by an open makes the reconcile spread
-`target.documentIds` of a function and throw a `TypeError` inside the `connect` watch, which the
-store reports. The Rust transitions have no error path, and they treat those ids as absent. The same holds for an
-`order` entry with no pane, which only a hand-built state can contain.
+Pane ids that name `Object.prototype` members are not ported; the Rust transitions treat them as
+absent, the choice Ruling13.7 made for kind names. `panes['toString']` finds a function in the
+TypeScript, which changes three paths:
+
+- `setFocusedPane('toString')` followed by an open makes the reconcile spread `target.documentIds`
+  of a function and throw a `TypeError` inside the `connect` watch, which the store reports.
+- `addDocument('toString', id)` throws a `TypeError` to the caller (`pane.documentIds.includes`,
+  `model.ts:127`).
+- `setActiveDocument('toString', null)` spreads the function into `{ activeDocumentId: null }` and
+  writes it under the key `undefined` (`model.ts:116`).
+
+Rust ignores all three. An `order` entry with no pane, which only a hand-built state can contain, is
+skipped where the TypeScript's `state.panes[id].documentIds` throws.
 
 The mutation results recorded before this port (137 of 140 viable mutants caught) describe the
 reducer-based code and were not re-run for Task 13.30.

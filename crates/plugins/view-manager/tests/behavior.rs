@@ -275,3 +275,17 @@ fn reads_keep_their_identity_until_their_input_changes() {
     assert!(Rc::ptr_eq(&after, &vm.list_panes()));
     assert!(vm.get_pane("ghost").is_none());
 }
+
+#[test]
+fn a_tab_moved_with_no_index_goes_last() {
+    let rig = Rig::new();
+    let vm = rig.vm();
+    for id in ["a", "b", "c"] {
+        rig.open(id);
+    }
+    // `insertAt(without, documentId, toIndex)` appends for `toIndex == null`.
+    vm.move_document_within("pane-1", "a", None);
+    assert_eq!(layout(&vm), ["pane-1: b,c,a (a)"]);
+    vm.move_document_within("pane-1", "a", Some(f64::NAN));
+    assert_eq!(layout(&vm), ["pane-1: a,b,c (a)"]);
+}

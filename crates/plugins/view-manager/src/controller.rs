@@ -214,8 +214,8 @@ impl ViewManagerCapability {
         self.update(|state| model::remove_document(state, pane_id, document_id));
     }
 
-    /// Move a tab to another place inside its pane.
-    pub fn move_document_within(&self, pane_id: &str, document_id: &str, to_index: f64) {
+    /// Move a tab to another place inside its pane; `None` appends.
+    pub fn move_document_within(&self, pane_id: &str, document_id: &str, to_index: Option<f64>) {
         self.update(|state| model::move_document_within(state, pane_id, document_id, to_index));
     }
 
@@ -281,10 +281,10 @@ impl ViewManagerCapability {
             let prefer = this.state().focused_pane_id.clone();
             this.update(|state| model::reconcile(state, open, prefer.as_deref()));
         };
-        let initial = documents.get_order();
-        sync(&initial, &[]);
-        // `ctx.watch(() => documents.getOrder(), sync, sameIds)`.
-        let previous = RefCell::new(initial);
+        sync(&documents.get_order(), &[]);
+        // `ctx.watch(() => documents.getOrder(), sync, sameIds)`: the
+        // baseline is read after the initial sync, as `watch` reads it.
+        let previous = RefCell::new(documents.get_order());
         let unsubscribe = self.0.cx.subscribe(Rc::new(move || {
             let next = documents.get_order();
             if *previous.borrow() == next {

@@ -191,7 +191,7 @@ impl ViewManagerHandle {
     ) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.move_document_within(&pane_id, &document_id, f64::from(to_index));
+                open(c)?.move_document_within(&pane_id, &document_id, Some(f64::from(to_index)));
                 Ok(())
             })
             .await
