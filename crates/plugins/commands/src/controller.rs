@@ -313,11 +313,16 @@ impl CommandsCapability {
         if let Some(menu) = truthy(&def.menu) {
             shell.toggle_menu(menu);
         } else if let Some((panel, exclusive)) = panel_target(def) {
-            let options =
-                OpenSurfaceOptions { exclusive: exclusive.map(str::to_string), props: None };
+            // `focus: panel.focus` (controller.ts:355) is Task 13.29's to port.
+            let options = OpenSurfaceOptions {
+                exclusive: exclusive.map(str::to_string),
+                props: None,
+                focus: false,
+            };
             shell.toggle(panel, Some(options));
         } else if let Some(modal) = truthy(&def.modal) {
-            let options = OpenSurfaceOptions { exclusive: Some("modal".into()), props: None };
+            let options =
+                OpenSurfaceOptions { exclusive: Some("modal".into()), props: None, focus: false };
             shell.toggle(modal, Some(options));
         }
     }

@@ -3,65 +3,113 @@
 //! open and the app owns their UI. An `exclusive` tag closes every other
 //! open surface carrying the same tag.
 
+use std::rc::Rc;
 use std::sync::LazyLock;
 
 use epdf_kernel::Token;
-use serde::{Deserialize, Serialize};
+use serde::ser::{Serialize, SerializeMap, Serializer};
+use serde::{Deserialize, Serialize as DeriveSerialize};
 use serde_json::Value;
 
 use crate::controller::ShellCapability;
-use crate::model::SurfaceRecord;
+use crate::model::{SnapshotSurface, SurfaceRecord};
 use crate::record::JsRecord;
 
 /// Opaque props passed at open (which annotation a style panel edits, say).
 pub type SurfaceProps = serde_json::Map<String, Value>;
 
-/// `SurfaceState`: a surface record with its id.
-#[derive(Clone, Debug, PartialEq, Serialize)]
+/// `SurfaceState`: `{ id, ...record }`, the record's members in its own
+/// order.
+#[derive(Clone, Debug, PartialEq)]
 pub struct SurfaceState {
     pub id: String,
     /// `None` only for an id naming an `Object.prototype` member the
     /// surface records do not own: the TypeScript's lookup finds the
-    /// inherited function, and its view is `{id}` alone.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub open: Option<bool>,
-    /// The exclusivity tag the surface was opened with, if any.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub exclusive: Option<String>,
-    /// Opaque props passed at open.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub props: Option<SurfaceProps>,
+    /// inherited function, and its spread adds nothing to `{ id }`.
+    pub record: Option<Rc<SurfaceRecord>>,
 }
 
+impl SurfaceState {
+    /// `open`; `false` for an inherited name.
+    pub fn open(&self) -> bool {
+        self.record.as_ref().is_some_and(|record| record.open)
+    }
+
+    /// The exclusivity tag the surface was opened with, if any.
+    pub fn exclusive(&self) -> Option<&str> {
+        self.record.as_ref()?.exclusive.as_deref()
+    }
+
+    /// Opaque props passed at open.
+    pub fn props(&self) -> Option<&SurfaceProps> {
+        self.record.as_ref()?.props.as_ref()
+    }
+
+    /// How many opens asked for focus since the surface opened: 0 when none
+    /// did, and again once it closes.
+    pub fn focus_request(&self) -> f64 {
+        self.record.as_ref().map_or(0.0, |record| record.focus_request)
+    }
+}
+
+impl Serialize for SurfaceState {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let mut map = serializer.serialize_map(None)?;
+        map.serialize_entry("id", &self.id)?;
+        if let Some(record) = &self.record {
+            record.serialize_into(&mut map)?;
+        }
+        map.end()
+    }
+}
+
+/// `OpenSurfaceOptions`.
 #[derive(Clone, Debug, Default, PartialEq, Deserialize)]
 pub struct OpenSurfaceOptions {
     #[serde(default)]
     pub exclusive: Option<String>,
     #[serde(default)]
     pub props: Option<SurfaceProps>,
+    /// Ask for the cursor: raises the surface's `focusRequest` by one, also
+    /// when it is open already.
+    #[serde(default)]
+    pub focus: bool,
 }
 
-/// `ShellSnapshot`: everything the shell holds, serializable for persist
-/// and restore. It is the state itself.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+/// `ShellSnapshot`: everything the shell holds but the focus requests,
+/// serializable for persist and restore.
+#[derive(Clone, Debug, Default, PartialEq, DeriveSerialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ShellSnapshot {
-    pub surfaces: JsRecord<SurfaceRecord>,
+    pub surfaces: JsRecord<SnapshotSurface>,
     /// Open dropdown menus, in opening order (last = topmost).
     pub open_menus: Vec<String>,
 }
 
-/// `SurfaceEvent`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct SurfaceEvent {
+/// `SurfaceOpenedEvent`.
+#[derive(Clone, Debug, PartialEq, DeriveSerialize)]
+pub struct SurfaceOpenedEvent {
     pub id: String,
+    /// The props it was opened with.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub props: Option<SurfaceProps>,
 }
 
-/// `MenuEvent`.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-pub struct MenuEvent {
+/// `SurfaceClosedEvent`.
+#[derive(Clone, Debug, PartialEq, DeriveSerialize)]
+pub struct SurfaceClosedEvent {
+    pub id: String,
+}
+
+/// `MenuOpenedEvent`.
+#[derive(Clone, Debug, PartialEq, DeriveSerialize)]
+pub struct MenuOpenedEvent {
+    pub id: String,
+}
+
+/// `MenuClosedEvent`.
+#[derive(Clone, Debug, PartialEq, DeriveSerialize)]
+pub struct MenuClosedEvent {
     pub id: String,
 }
 

@@ -801,6 +801,7 @@ dependencies = [
 name = "epdf-plugin-shell"
 version = "0.0.0"
 dependencies = [
+ "build-support",
  "epdf-ffi",
  "epdf-kernel",
  "futures",

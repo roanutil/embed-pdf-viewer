@@ -1,4 +1,6 @@
 #![cfg(feature = "uniffi")]
+//! Migrated by hand to the 13.28 port; not compiled until Task 13.33 brings
+//! `epdf-ffi` back.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
@@ -6,7 +8,7 @@ use std::sync::{Arc, Mutex};
 use epdf_ffi::{KernelThread, ViewerError};
 use epdf_plugin_shell::ffi::{
     ShellEvent, ShellEventListener, ShellHandle, ShellMenuEvent, ShellOpenOptions, ShellSnapshot,
-    ShellSurface, ShellSurfaceEvent,
+    ShellSnapshotSurface, ShellSurface, ShellSurfaceClosedEvent, ShellSurfaceOpenedEvent,
 };
 use epdf_plugin_shell::{SHELL, shell_plugin};
 use futures::executor::block_on;
@@ -42,7 +44,7 @@ fn code(error: &ViewerError) -> Option<&str> {
 }
 
 fn tagged(tag: &str) -> Option<ShellOpenOptions> {
-    Some(ShellOpenOptions { exclusive: Some(tag.into()), props_json: None })
+    Some(ShellOpenOptions { exclusive: Some(tag.into()), props_json: None, focus: false })
 }
 
 #[test]
@@ -51,6 +53,7 @@ fn an_opened_surface_reads_back_with_its_props() {
     let options = ShellOpenOptions {
         exclusive: None,
         props_json: Some(r#"{"annotationId":"a1","page":3}"#.into()),
+        focus: true,
     };
     block_on(shell.open_surface("style".into(), Some(options))).unwrap();
     assert!(block_on(shell.is_open("style".into())).unwrap());
@@ -60,6 +63,7 @@ fn an_opened_surface_reads_back_with_its_props() {
     let props: serde_json::Value =
         serde_json::from_str(surface.props_json.as_deref().unwrap()).unwrap();
     assert_eq!(props, serde_json::json!({ "annotationId": "a1", "page": 3 }));
+    assert_eq!(surface.focus_request, 1.0);
     assert_eq!(block_on(shell.surface("never".into())).unwrap(), None);
 }
 
@@ -67,7 +71,8 @@ fn an_opened_surface_reads_back_with_its_props() {
 fn props_that_are_not_an_object_are_invalid_input() {
     let (_thread, shell) = handle();
     for bad in ["[1,2]", "3", "{not json"] {
-        let options = ShellOpenOptions { exclusive: None, props_json: Some(bad.into()) };
+        let options =
+            ShellOpenOptions { exclusive: None, props_json: Some(bad.into()), focus: false };
         let error = block_on(shell.open_surface("style".into(), Some(options))).unwrap_err();
         assert_eq!(code(&error), Some("invalid-input"), "{bad}: {error:?}");
         let error = block_on(shell.update_surface_props("style".into(), bad.into())).unwrap_err();
@@ -91,10 +96,10 @@ fn an_exclusive_open_closes_its_siblings_and_says_so() {
         seen,
         [
             ShellEvent::SurfaceClosed {
-                event: ShellSurfaceEvent { id: "thumbnails".into(), props_json: None }
+                event: ShellSurfaceClosedEvent { id: "thumbnails".into() }
             },
             ShellEvent::SurfaceOpened {
-                event: ShellSurfaceEvent { id: "search".into(), props_json: None }
+                event: ShellSurfaceOpenedEvent { id: "search".into(), props_json: None }
             },
         ]
     );
@@ -118,11 +123,9 @@ fn exclusive_events_follow_property_order_not_close_first() {
         seen,
         [
             ShellEvent::SurfaceOpened {
-                event: ShellSurfaceEvent { id: "a".into(), props_json: None }
+                event: ShellSurfaceOpenedEvent { id: "a".into(), props_json: None }
             },
-            ShellEvent::SurfaceClosed {
-                event: ShellSurfaceEvent { id: "b".into(), props_json: None }
-            },
+            ShellEvent::SurfaceClosed { event: ShellSurfaceClosedEvent { id: "b".into() } },
         ]
     );
 }
@@ -171,8 +174,8 @@ fn a_snapshot_with_bad_props_is_refused_whole() {
     let (_thread, shell) = handle();
     let snapshot = ShellSnapshot {
         surfaces: vec![
-            ShellSurface { id: "ok".into(), open: true, exclusive: None, props_json: None },
-            ShellSurface {
+            ShellSnapshotSurface { id: "ok".into(), open: true, exclusive: None, props_json: None },
+            ShellSnapshotSurface {
                 id: "bad".into(),
                 open: true,
                 exclusive: None,
@@ -192,7 +195,13 @@ fn an_inherited_name_reads_as_closed() {
     let surface = block_on(shell.surface("toString".into())).unwrap().unwrap();
     assert_eq!(
         surface,
-        ShellSurface { id: "toString".into(), open: false, exclusive: None, props_json: None }
+        ShellSurface {
+            id: "toString".into(),
+            open: false,
+            exclusive: None,
+            props_json: None,
+            focus_request: 0.0,
+        }
     );
     assert!(!block_on(shell.is_open("toString".into())).unwrap());
 }
