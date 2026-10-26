@@ -4,7 +4,7 @@
 duplicate and extract pages, each edit one change of the document's history, plus the page
 selection. The vectors are `vectors/plugins/page-edit.json`, 19 scenario cases written by
 `tooling/plugin-conformance/src/suites/page-edit.ts` (`cargo test -p epdf-plugin-page-edit`).
-17 of them replay; the other two wait on a generator repair described under "Open".
+All 19 replay.
 
 The modules follow the TypeScript files. `contract.rs` is `contract.ts` with the token `PAGE_EDIT`,
 `model.rs` is `model.ts` (`selected` returns the state itself when nothing changes, so it writes
@@ -20,6 +20,13 @@ the engine answers. Nothing predicts pages: the layout changes when the engine's
 which is before the verb settles. `rotate_by` turns from the rotation the pending changes give a
 page, so two quick quarter turns are a half turn, and stages the undo as each page turned back.
 
+The awaits take the TypeScript's turns, so verbs that await before staging stage in the same order
+as there. A plain `.await` already costs what JavaScript's does (three turns for the
+`AbortablePromise` the raw engine and its handles answer), and the turn a caller spends resuming
+after an `async` helper is `rt::returned`. `await_first_verbs_stage_on_the_typescripts_turns` in
+`tests/behavior.rs` derives the counts from `controller.ts`: `insertFromDocument` stages on turn 4,
+`insertFromBytes` with `pageIndexes` on turn 16, and `insertFromDocument` with a signal on turn 3.
+
 ## Where the port differs in shape
 
 Verbs take an options struct with `signal: Option<AbortSignal>`, where the TypeScript takes
@@ -33,6 +40,12 @@ number printed as the TypeScript prints it (`page 1.5 is not in this document`).
 `PageEditInsertResult.pages` holds the engine's `insertedPages` as given. An `insertedPages` that
 is not an array reads as `[]`, where the TypeScript resolves whatever the engine sent.
 
+`extract` rejects `[page-edit] extract answered no bytes` when the engine's answer is not a bytes
+value, where the TypeScript resolves whatever the engine sent. `Bytes` can't hold anything else.
+
+A `$number` in a vector reads as JavaScript's `Number(text)` (`contract.rs` `string_to_number`), a
+copy of the kernel's private one in `crates/epdf-kernel/src/mirror.rs:630`.
+
 `can_edit` and `can_extract` read through the kernel's `allows`, which answers `false` when the
 session has no handle. The TypeScript's `ctx.allows` throws there.
 
@@ -42,17 +55,6 @@ it go. The TypeScript holds the bytes in memory and has nothing to release.
 A position object with neither `after` nor `before` can't be expressed by `PagePosition`. The
 harness reads it as `Before` a page that isn't there, so it refuses `not-found`; the TypeScript
 throws a `TypeError` from `pageRefsEqual`. No vector sends one.
-
-## Open
-
-`add-blank-fractional-index` (steps 3 and 4) and `insert-a-subset-names-the-missing-index` (steps 7
-to 9) pass `NaN`, `Infinity` and `-Infinity` as step arguments, and the generator writes the steps
-with `JSON.stringify`, so the vector holds `null` for all three
-(`tooling/plugin-conformance/src/suites/page-edit.ts:228` and `:362`). The expected messages still
-name the real number, so no replay can reproduce them from the input. Other suites author
-`{ $number: 'NaN' }` in steps (`annotation-tools.ts:471`), which `decodeValue` in `scenario.ts:589`
-turns back into the number. The repair is the same there, then regenerating the vector. Until then
-the harness reads a `null` number as `NaN`, which matches the `NaN` steps by coincidence.
 
 ## Migrating from the pre-13.19 API
 
