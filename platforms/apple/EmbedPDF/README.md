@@ -7,9 +7,9 @@ access, document lifetime, surrounding controls, and persistence.
 The package declares iOS 17 or later, macOS 14 or later, and Swift tools 6.2.
 The engine build supports arm64 iOS devices/simulators and native macOS on
 Apple silicon and Intel. Use Xcode 27.1 or later with the pinned engine binary.
-The existing iOS-only engine pin must be replaced by a verified iOS/macOS
-release before downloaded macOS builds work; contributors can build the local
-engine using the [Apple contributor notes](../README.md).
+SwiftPM downloads the compiled engine for both platforms; consumers do not need
+Rust or a PDFium build. For local engine development, use the
+[Apple contributor notes](../README.md).
 
 To test a prepared local engine on macOS from this directory:
 

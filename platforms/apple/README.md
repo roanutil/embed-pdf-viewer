@@ -2,8 +2,8 @@
 
 The Swift package provides `EmbedPDF` and `EmbedPDFUI` for iOS 17 and macOS 14
 and later. Native engine builds cover arm64 iOS devices/simulators and macOS
-arm64/x86_64. The downloadable engine must include matching slices; an old
-iOS-only pin does not gain macOS support from the manifest declaration alone.
+arm64/x86_64. SwiftPM downloads the compiled engine for both platforms; local
+contributor builds produce the same platform slices.
 
 ```bash
 bash platforms/apple/build-xcframework.sh
