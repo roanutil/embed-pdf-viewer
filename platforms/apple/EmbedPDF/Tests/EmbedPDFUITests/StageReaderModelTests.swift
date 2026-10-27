@@ -65,6 +65,13 @@ struct StageReaderModelTests {
       await change.value
       await end.value
     }
+    // The host clock runs frames, so the spring-back after the last end
+    // animates. Wait for the motion to stop, bounded so a bracket that never
+    // closes still fails.
+    let deadline = ContinuousClock.now + .seconds(20)
+    while try await model.stage.isMoving(), ContinuousClock.now < deadline {
+      try await Task.sleep(for: .milliseconds(50))
+    }
     let camera = try await model.stage.camera()
     expectNoDifference(camera, resting)
   }
