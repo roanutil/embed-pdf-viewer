@@ -1182,5 +1182,5 @@ fn a_page_mirror_copies_no_read_until_the_store_is_dumped() {
     assert_eq!(cells.keys().next().map(String::as_str), Some("obj:1"));
     // `setEntry` takes the key out and puts it back last, as
     // `{ [key]: _replaced, ...rest }` then `{ ...rest, [key]: entry }` do.
-    assert_eq!(cells.keys().last().map(String::as_str), Some("obj:7"));
+    assert_eq!(cells.keys().next_back().map(String::as_str), Some("obj:7"));
 }
