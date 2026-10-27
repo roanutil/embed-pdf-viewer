@@ -11,7 +11,7 @@
 #   bash platforms/apple/build-xcframework.sh
 #
 # Produces the generated inputs of platforms/apple/EmbedPDF/ : the binary target
-# EmbedPDFFFI.xcframework (device and simulator slices), the generated Swift in
+# EmbedPDFFFI.xcframework (iOS device/simulator and universal macOS), Swift in
 # Sources/EmbedPDFBindings, and the test fixtures. Package.swift is tracked.
 #
 #   bash platforms/apple/build-xcframework.sh --experimental-manual-bridge
@@ -61,6 +61,8 @@ fi
 SLICES=(
   "aarch64-apple-ios:ios-arm64"
   "aarch64-apple-ios-sim:ios-sim-arm64"
+  "aarch64-apple-darwin:darwin-static-arm64"
+  "x86_64-apple-darwin:darwin-static-x64"
 )
 
 # Panic messages and debug info embed the source path of every crate, which
@@ -97,7 +99,9 @@ for slice in "${SLICES[@]}"; do
   fi
 
   echo "building $rust"
-  (cd "$ROOT" && RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$REMAP" \
+  (cd "$ROOT" && EMBEDPDF_FORK_TARGET="$fork" \
+    MACOSX_DEPLOYMENT_TARGET=14.0 IPHONEOS_DEPLOYMENT_TARGET=17.0 \
+    RUSTFLAGS="${RUSTFLAGS:+$RUSTFLAGS }$REMAP" \
     cargo build -p epdf-viewer-host --target "$rust" --profile "$PROFILE" \
     ${FEATURES[@]+"${FEATURES[@]}"})
 
@@ -162,52 +166,28 @@ MODULEMAP
 fi
 
 echo "creating the xcframework"
+mkdir -p "$BUILD/macos-universal"
+lipo -create "$BUILD/darwin-static-arm64/libEmbedPDFFFI.a" \
+  "$BUILD/darwin-static-x64/libEmbedPDFFFI.a" \
+  -output "$BUILD/macos-universal/libEmbedPDFFFI.a"
 rm -rf "$OUT/EmbedPDFFFI.xcframework"
 xcodebuild -create-xcframework \
   -library "$BUILD/ios-arm64/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
   -library "$BUILD/ios-sim-arm64/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
+  -library "$BUILD/macos-universal/libEmbedPDFFFI.a" -headers "$BUILD/headers" \
   -output "$OUT/EmbedPDFFFI.xcframework" > /dev/null
 
 mkdir -p "$OUT/Sources/EmbedPDFBindings"
 rm -f "$OUT/Sources/EmbedPDFBindings"/*.swift
 cp "$BUILD/generated"/*.swift "$OUT/Sources/EmbedPDFBindings/"
 
-# The tests read the same fixtures the Rust tests read. SwiftPM will only
-# bundle resources that live inside the package, so they are copied rather than
-# referenced, and `.gitignore`d rather than committed twice.
-TEST_TARGETS=(EmbedPDFBindingsSmokeTests EmbedPDFTests EmbedPDFUITests)
 if [[ $EXPERIMENTAL == 1 ]]; then
-  TEST_TARGETS+=(EmbedPDFBridgeBenchmarks)
+  bash "$ROOT/platforms/apple/copy-test-fixtures.sh" --experimental-manual-bridge
+else
+  bash "$ROOT/platforms/apple/copy-test-fixtures.sh"
 fi
-# Repo-relative files every test bundle gets, one per line. Each plugin plan
-# appends its own after the last plan's lines. Entries are expanded
-# unquoted, so a glob copies every match.
-FIXTURES=(
-  pdfium-multiplatform-prototype/fixtures/report.pdf
-  pdfium-multiplatform-prototype/fixtures/colors.pdf
-  pdfium-multiplatform-prototype/fixtures/encrypted-hello.pdf
-  tooling/viewer-e2e/fixtures/features.pdf
-  tooling/engine-conformance/fixtures/annotation_kinds.pdf
-  tooling/engine-conformance/fixtures/tiny.png
-  tooling/engine-conformance/fixtures/form_fields.pdf
-  packages/default-stamps/en/stamps.pdf
-  tooling/engine-conformance/fixtures/document_actions.pdf
-  crates/test-support/fixtures/measure-foreign-viewport.pdf
-  packages/engine/main/test/fixtures/signed_two_approvals.pdf
-  packages/engine/main/test/fixtures/signed_certified.pdf
-  packages/engine/main/test/fixtures/unsigned_sigfield.pdf
-  packages/engine/main/test/fixtures/signature_artwork.pdf
-  packages/engine/main/test/fixtures/signature-compat/keys/TEST-ONLY-*.pem
-)
-for tests in "${TEST_TARGETS[@]}"; do
-  mkdir -p "$OUT/Tests/$tests/Fixtures"
-  for fixture in "${FIXTURES[@]}"; do
-    # shellcheck disable=SC2086
-    cp "$ROOT"/$fixture "$OUT/Tests/$tests/Fixtures/"
-  done
-done
 
 echo
 echo "  $OUT/EmbedPDFFFI.xcframework"
-xcodebuild -version | head -1
+xcodebuild -version | sed -n '1p'
 lipo -info "$OUT/EmbedPDFFFI.xcframework"/*/libEmbedPDFFFI.a 2>/dev/null | sed 's/^/  /'

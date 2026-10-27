@@ -9,6 +9,7 @@ channel = "1.98.0"
 # Cost: the first cargo command in a fresh checkout downloads seven std copies.
 targets = [
   "aarch64-apple-darwin",
+  "x86_64-apple-darwin",
   "aarch64-apple-ios",
   "aarch64-apple-ios-sim",
   "wasm32-unknown-emscripten",
