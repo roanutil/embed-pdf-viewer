@@ -25,7 +25,7 @@ sha256_file() {
   fi
 }
 
-APPLE_CRATES=(build-support epdf-engine epdf-ffi epdf-kernel epdf-uniffi epdf-viewer-host pdfium pdfium-sys plugin-conformance plugins/acrojs plugins/actions plugins/annotation plugins/annotation-core plugins/commands plugins/form plugins/geometry plugins/i18n plugins/interaction plugins/link plugins/measurement plugins/metadata plugins/page-edit plugins/redaction plugins/render plugins/search plugins/selection plugins/shell plugins/signature plugins/signature-core plugins/stage plugins/stage-core plugins/stamp plugins/ui-core plugins/view-manager)
+APPLE_CRATES=(build-support epdf-engine epdf-ffi epdf-kernel epdf-uniffi epdf-viewer-host pdfium pdfium-sys plugin-conformance plugins/acrojs plugins/actions plugins/annotation plugins/annotation-core plugins/attachment plugins/commands plugins/fonts plugins/form plugins/form-core plugins/geometry plugins/history plugins/i18n plugins/interaction plugins/link plugins/measurement plugins/metadata plugins/outline plugins/page-edit plugins/redaction plugins/render plugins/search plugins/selection plugins/shell plugins/signature plugins/signature-core plugins/stage plugins/stage-core plugins/stamp plugins/ui-core plugins/view-manager)
 INPUTS=(
   "Cargo.toml"
   "Cargo.lock"
