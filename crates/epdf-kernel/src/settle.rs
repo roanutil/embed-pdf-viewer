@@ -16,15 +16,18 @@ pub type PrintWrap = Wrap<()>;
 
 /// Flush failures are reported after all flushes finish. Caller or document
 /// cancellation stops waiting immediately; flushes receive the combined signal.
+///
+/// `stop.abort()` takes no reason in `settle.ts`, so the flushes' signal
+/// carries the platform's: a `DOMException` named `AbortError`.
 pub fn settle(flushes: Vec<SettleFlush>, signals: Vec<AbortSignal>, report: Report) -> Promise<()> {
     let stop = AbortSignal::new();
     let mut listeners = Vec::new();
     for signal in signals {
         if signal.aborted() {
-            stop.abort(Error::new("settling stopped"));
+            stop.abort(Error::dom_abort());
         } else {
             let abort = stop.clone();
-            let id = signal.on_abort(Rc::new(move |_| abort.abort(Error::new("settling stopped"))));
+            let id = signal.on_abort(Rc::new(move |_| abort.abort(Error::dom_abort())));
             listeners.push((signal, id));
         }
     }
@@ -88,4 +91,45 @@ pub fn run_wrapped<T: Clone + 'static>(wraps: Vec<Wrap<T>>, read: WrappedRun<T>)
         });
     }
     run()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+
+    use super::*;
+    use crate::rt;
+
+    /// `stop.abort()` with no reason (`settle.ts:28`): a flush's signal
+    /// reads the platform's `AbortError`, whether the caller's signal fired
+    /// before the settle or during it.
+    #[test]
+    fn a_flush_sees_the_platform_abort_reason() {
+        for before in [true, false] {
+            rt::reset();
+            let seen: Rc<RefCell<Option<AbortSignal>>> = Rc::default();
+            let keep = seen.clone();
+            let (never, _hold) = Promise::<()>::pending();
+            let flush: SettleFlush = Rc::new(move |signal| {
+                *keep.borrow_mut() = Some(signal);
+                Ok(Some(never.clone()))
+            });
+            let caller = AbortSignal::new();
+            if before {
+                caller.abort(Error::new("caller"));
+            }
+            let settled = settle(vec![flush], vec![caller.clone()], Rc::new(|_| {}));
+            if !before {
+                caller.abort(Error::new("caller"));
+            }
+            rt::run_until_stalled();
+            let signal = seen.borrow().clone().expect("the flush ran");
+            let reason = signal.reason().expect("aborted");
+            assert_eq!(
+                (reason.name.as_str(), reason.message.as_str()),
+                ("AbortError", "This operation was aborted")
+            );
+            assert_eq!(settled.peek().unwrap().unwrap_err().message, "settling was cancelled");
+        }
+    }
 }

@@ -100,6 +100,12 @@ impl Error {
         error
     }
 
+    /// `controller.abort()` with no reason: the platform's `DOMException`,
+    /// named `AbortError`, with Node's and the browsers' message.
+    pub fn dom_abort() -> Self {
+        Error::named("AbortError", "This operation was aborted")
+    }
+
     /// `new AbortError(reason)`: the message rules of `AbortError.ts`.
     pub fn abort(reason: Option<Value>) -> Self {
         let message = match &reason {
