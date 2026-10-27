@@ -23,13 +23,16 @@ epdf-kernel = { path = "../epdf-kernel" }
 epdf-manual-bridge = { path = "../epdf-manual-bridge", optional = true }
 epdf-plugin-actions = { path = "../plugins/actions", default-features = false, features = ["uniffi"] }
 epdf-plugin-annotation = { path = "../plugins/annotation", default-features = false, features = ["uniffi"] }
+epdf-plugin-attachment = { path = "../plugins/attachment", default-features = false }
 epdf-plugin-form = { path = "../plugins/form", default-features = false, features = ["uniffi"] }
+epdf-plugin-history = { path = "../plugins/history", default-features = false }
 epdf-plugin-commands = { path = "../plugins/commands", default-features = false, features = ["uniffi"] }
 epdf-plugin-i18n = { path = "../plugins/i18n", default-features = false, features = ["uniffi"] }
 epdf-plugin-interaction = { path = "../plugins/interaction", default-features = false, features = ["uniffi"] }
 epdf-plugin-link = { path = "../plugins/link", default-features = false, features = ["uniffi"] }
 epdf-plugin-measurement = { path = "../plugins/measurement", default-features = false, features = ["uniffi"] }
 epdf-plugin-metadata = { path = "../plugins/metadata", default-features = false, features = ["uniffi"] }
+epdf-plugin-outline = { path = "../plugins/outline", default-features = false }
 epdf-plugin-page-edit = { path = "../plugins/page-edit", default-features = false, features = ["uniffi"] }
 epdf-plugin-redaction = { path = "../plugins/redaction", default-features = false, features = ["uniffi"] }
 epdf-plugin-render = { path = "../plugins/render", default-features = false, features = ["uniffi"] }

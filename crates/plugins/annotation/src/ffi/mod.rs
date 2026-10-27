@@ -33,7 +33,6 @@ mod tools;
 use epdf_ffi::{AnnotationRef, PageRef, PluginErrorInfo, Point, Rect};
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
-use serde::de::DeserializeOwned;
 use serde_json::{Map, Value, json};
 
 use crate::AnnotationCapability;
@@ -51,13 +50,6 @@ pub use threads::{
     AnnotationThreadsHandle,
 };
 pub use tools::{AnnotationProperty, AnnotationTool, AnnotationToolsHandle};
-
-pub(crate) fn decode<T: DeserializeOwned>(value: Value) -> Result<T, Error> {
-    serde_json::from_value(value).map_err(|e| {
-        Error::named("InvalidState", format!("[annotation] a value does not decode: {e}"))
-            .with("code", "invalid-state")
-    })
-}
 
 pub(crate) fn invalid(message: impl Into<String>) -> Error {
     plugin_error(code::INVALID_INPUT, "annotation", message.into(), None, None)
@@ -148,10 +140,6 @@ pub(crate) fn point_json(point: Point) -> Value {
     json!({ "x": point.x, "y": point.y })
 }
 
-pub(crate) fn rect_json(rect: Rect) -> Value {
-    json!({ "x": rect.x, "y": rect.y, "width": rect.width, "height": rect.height })
-}
-
 pub(crate) fn rect_out(rect: &Value) -> Rect {
     let n = |k: &str| rect.get(k).and_then(Value::as_f64).unwrap_or(0.0);
     Rect { x: n("x"), y: n("y"), width: n("width"), height: n("height") }
@@ -238,16 +226,6 @@ impl From<AnnotationFilter> for crate::read::annotations::AnnotationFilter {
             pages: f.pages.map(|pages| pages.into_iter().map(page_json).collect()),
             subtype: f.subtype,
         }
-    }
-}
-
-pub(crate) fn plugin_error_info(error: &Error) -> PluginErrorInfo {
-    let info = error.plugin_error_info();
-    PluginErrorInfo {
-        code: info.get("code").and_then(Value::as_str).unwrap_or("unknown").into(),
-        message: info.get("message").and_then(Value::as_str).unwrap_or(&error.message).into(),
-        capability: info.get("capability").and_then(Value::as_str).unwrap_or("annotation").into(),
-        permission: info.get("permission").and_then(Value::as_str).map(str::to_string),
     }
 }
 

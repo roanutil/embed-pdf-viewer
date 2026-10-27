@@ -1,42 +1,33 @@
-//! Kernel engine calls as host wire requests, and back.
+//! Kernel engine calls as host wire requests, and back: the job each method
+//! of upstream's local document handle builds (`packages/engine/main/src/
+//! document/Local*Service.ts`, `wirePack({...})`), for `epdf-engine`'s host,
+//! which answers upstream's worker payloads without their tags.
 //!
-//! The kernel speaks member chains (`crates/epdf-kernel/src/engine.rs`); the
-//! host speaks wire kinds (`crates/epdf-engine/src/host.rs`). On the web the
-//! two hops are `engine-bridge.ts` and `@embedpdf/engine`'s worker protocol;
-//! here they are this one table.
+//! The kernel speaks member chains (`crates/epdf-kernel/src/engine.rs`) with
+//! the engine's current DTOs, so a request is the method's arguments under
+//! the keys its `wirePack` names, and an answer is the payload member its
+//! service returns. What remains here is host wire adaptation, not shape
+//! conversion:
 //!
-//! A page travels as the `page: PageRef` (or `pages: PageRef[]`) that
-//! `worker-protocol.ts` spells and the host reads (`host.rs` `page_field`);
-//! `tooling/engine-conformance/vectors/wire/requests.json` pins the keys. The
-//! host answers pages the same way (`PageLayout.ref`, `SearchMatch.page`, an
-//! annotation's `page`, a widget's `page` and `ref`), so the kernel reads
-//! them as they arrive.
-//!
-//! The kernel still spells refs as this branch's wire did before the
-//! catch-up: a `PageRef`'s number is `pageObjectNumber`, an annotation
-//! ref's is `annotObjectNumber` and a form field ref's is
-//! `fieldObjectNumber`. The host spells all three `objectNumber`, as
-//! upstream does (595bdc6c7). `translate` respells a request on the way out
-//! and `decode` respells an answer on the way back, so the kernel keeps its
-//! spelling until Task 13 ports it.
-//!
-//! A kernel path that maps onto a kind upstream removed or renamed goes to
-//! the kind that replaced it: the kernel's page structure edits are
-//! `document.apply` changes of one page op each ([`kernel_pages`]), and its
-//! `signatures.abort` is `signatures.cancel` (7bccc4f35).
-//!
-//! Answers are read the host's way, which is not the TypeScript worker's in
-//! two respects: the host sends a result bare where the worker tags it
-//! (`{tag, snapshot}`), and wraps a mutation's result with its sequence and
-//! event. Where the host and the `engine-core` DTOs still differ for a mapped
-//! kind (a raster's pixel format, a field edit's bare field) it is filled in
-//! here, and a render request leaves its encode options behind. A shape the
-//! host did not send is an error, never a guess.
+//! - the job envelope each `wirePack` carries: `effect`, `jobId`, an `opId`
+//!   for a write (the caller's `WriteOptions.opId`, else a fresh one, as
+//!   `opIdOf` does) and the handle's `authority` where the kind takes one;
+//! - bytes: a `{"$bytes"}` (or `{"$hostBytes"}`) value inside a request goes
+//!   as a payload the request names `{"payload": n}`, as `wirePack`'s
+//!   transfer list does, and a `{"payload": n}` in an answer comes back as
+//!   `{"$bytes"}`; a whole-file answer (a download, an extract) is parked in
+//!   the `HostTable` as `{"$hostBytes": id}`;
+//! - numbers: the kernel's numbers are JavaScript numbers (`17.0`), and the
+//!   host's serde reads a whole one as an integer, so whole numbers go as
+//!   integers;
+//! - a page raster stays raw pixels in the `HostTable` behind `$host`, as
+//!   the render plugin and its uniffi export read them, where the
+//!   TypeScript encodes an image; the stamp plugin's asset engine encodes.
 
-use epdf_engine::host::{Host, HostResponse};
+use epdf_engine::host::{AUTHORITY_KINDS, HostResponse, RequestEffect, WRITE_KINDS};
 use epdf_kernel::Error;
 use epdf_kernel::geometry::PageRef;
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 
 use crate::host_table::HostTable;
 
@@ -47,232 +38,203 @@ pub struct WireCall {
 }
 
 pub enum Decode {
+    /// No value (`void`).
+    Unit,
     /// The result as the host sent it.
     Result,
-    /// The first of the result's `pages`: one page's annotation listing.
-    FirstPage,
+    /// The result, or `null` when the host answered `null`.
+    OptionalResult,
     /// One member of the result, which must be there.
     Field(&'static str),
-    /// A `PageListSnapshot`, which must name every page by its `ref`.
-    PageList,
-    /// A `SearchSlice`, which must name every match's `page`.
-    SearchSlice,
-    /// A mutation: `{result, mutationSequence, event}`. Answers `result`
-    /// and hands back the event to publish.
+    /// An object holding only this member of the result (`{ viewports }`).
+    Only(&'static str),
+    /// A write: `{result, mutationSequence, event?|events?}`. Answers
+    /// `result` and hands back the events to publish first.
     Mutation,
-    /// [`Decode::Result`] for an answer that holds form records (a form,
-    /// signatures): the field records and field refs go back to the
-    /// kernel's spelling first ([`to_kernel_form_records`]).
-    FormResult,
-    /// [`Decode::Mutation`] for a form or signature write, whose result and
-    /// event hold form records.
-    FormMutation,
-    /// [`Decode::FormResult`], answering one member of the result, which
-    /// must be there: `signatures.list`'s `snapshot`, `signatures.analyze`'s
-    /// `analysis`.
-    FormResultField(&'static str),
-    /// `signatures.cancel`'s `{ result }`, its `cancelled` status the
-    /// kernel's `aborted`.
-    SigningCancel,
-    /// `pages.render`'s `raster` (`PageRaster`: width, height, stride and
-    /// pixel format) beside the answer's `page` and `area`, with the pixels
-    /// moved into the `HostTable` behind a `$host` id, plus a raw-pixel
-    /// `source` carrying the byte count, as the render plugin and its ffi
-    /// read them.
-    Raster,
-    Unit,
-    /// An annotation's embedded file: the result (`name`, `mimeType`,
-    /// `size`), with the payload parked in the `HostTable` as `data`.
-    AttachmentContent,
-    /// `redaction.apply`: [`Decode::Mutation`], with the result's and the
-    /// event's `scope` put back into the kernel's spelling
-    /// ([`to_kernel_redaction_scope`]).
-    RedactionMutation,
-    /// A page mutation: `Mutation`, whose result and event must carry a
-    /// layout that names every page by its `ref` (the kernel's page registry
-    /// and the page-edit plugin read it).
-    PageMutation,
-    /// A byte payload (an extracted PDF), parked in the `HostTable` and
-    /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
+    /// `{ result }` beside an optional notice event (`signatures.prepare`,
+    /// `signatures.cancel`).
+    Inner,
+    /// The first payload as `{"$bytes"}`: a resource, a signature's
+    /// `/Contents`, a digest.
+    Bytes,
+    /// The first payload parked in the `HostTable` as `{"$hostBytes": id}`:
+    /// a whole file read once (a download, an extract).
     HostBytes,
-    /// Bytes in the first payload, put back into the result as `bytes`
-    /// (`{"$bytes": base64}`), as the form plugin reads an export.
-    ExportBytes,
-    /// `pages.renderEncoded`: the answer's `image` (`EncodedImageWire`:
-    /// type, width, height), the encoded bytes as the payload, answered as
-    /// the `PageImage` a local engine gives the stamp plugin
-    /// (`source.kind == "bytes"`).
+    /// `pages.render`: the raster's fields beside `page` and `area`, the
+    /// pixels in the `HostTable` behind `$host` with a raw-pixel `source`.
+    Raster,
+    /// `annotations.renderAppearances`: `{page, appearances}`, each
+    /// appearance's raster as [`Decode::Raster`] makes a page's.
+    Appearances,
+    /// `pages.renderEncoded` on the asset engine: the `PageImage` a local
+    /// engine gives (`source.kind == "bytes"`).
     Encoded,
-    /// A read that answers `null` for nothing there (`pieceInfo.read` for
-    /// an application with no entry), else the result as the host sent it.
-    OptionalResult,
-    /// The first payload itself, as `{"$bytes": base64}`: a signature's
-    /// `/Contents`, a digest, a revision's bytes.
-    InlineBytes,
-    /// The result's own `result`, with the first payload put under this key
-    /// as `{"$bytes": base64}` in place of the `{payload}` that names it
-    /// (`signatures.prepare`'s digest).
-    ResultWithBytes(&'static str),
+    /// `pages.geometry` as `page.text.layout`'s `{"$textLayout": snapshot}`.
+    TextLayout,
 }
 
-/// A decoded answer: the call's value, and the document event a mutation
-/// published, if it published one.
+/// A decoded answer: the call's value, and the document events the write
+/// published, in order.
 #[derive(Debug)]
 pub struct Decoded {
     pub value: Value,
-    pub event: Option<Value>,
+    pub events: Vec<Value>,
+}
+
+/// What a request needs from the handle it is for.
+pub struct Client {
+    /// `guard.changeAuthority()`: the handle's authority, on the wire.
+    pub authority: Value,
+    /// `guard.can(capability)`.
+    pub allows: Box<dyn Fn(&str) -> bool>,
 }
 
 fn coded(code: &str, message: String) -> Error {
     Error::new(message).with("code", code)
 }
 
-/// Every kernel path `route` maps, for `maps`' namespace check. A path added
-/// to `route` goes here too, one per line, in plan order;
-/// `every_routed_path_is_listed` checks the two agree.
+fn invalid(message: String) -> Error {
+    coded("invalid-input", format!("[epdf-viewer-host] {message}"))
+}
+
+/// Every kernel path a request maps, one per line, for `maps`' namespace
+/// check. `every_routed_path_is_listed` checks it against `route`.
 pub const PATHS: &[&str] = &[
     "close",
     "pages.list",
-    "metadata.read",
+    "metadata.get",
     "metadata.update",
-    "page.text.read",
-    "page.geometry.read",
-    "page.render.image",
-    "search.query",
-    "page.annotations.list",
-    "annotations.listRawAll",
-    "page.annotations.create",
-    "page.annotations.update",
-    "page.annotations.delete",
-    "page.annotations.downloadFile",
+    "metadata.custom.get",
+    "metadata.custom.update",
+    "actions.get",
+    "outline.get",
+    "attachments.list",
+    "attachments.download",
+    "annotations.list",
+    "annotations.export",
+    "annotations.import",
+    "apply",
+    "forms.list",
+    "forms.export",
+    "forms.import",
+    "forms.repair",
+    "forms.setSignatureAppearance",
+    "pages.extract",
+    "pages.flatten",
+    "pages.setName",
+    "pages.removeName",
+    "pieceInfo.get",
+    "pieceInfo.update",
     "redaction.apply",
-    "page.measure.viewports",
+    "search.query",
+    "signatures.list",
+    "signatures.getContents",
+    "signatures.getDigest",
+    "signatures.downloadRevision",
+    "signatures.analyze",
+    "signatures.prepare",
+    "signatures.complete",
+    "signatures.cancel",
+    "download",
+    "downloadLayer",
+    "document.version",
+    "page.annotations.list",
+    "page.annotations.create",
+    "page.annotations.downloadResource",
+    "page.annotations.exportAppearance",
+    "page.annotations.renderAppearances",
+    "page.forms.renderAppearances",
+    "page.measure.listViewports",
     "page.measure.setScale",
-    "pages.move",
+    "page.pieceInfo.get",
+    "page.pieceInfo.update",
+    "page.render.image",
+    "page.text.get",
+    "page.text.layout",
+];
+
+/// Paths the native handle answers itself, without one wire request each:
+/// `render.getPolicy` (the local engine's own policy) and the page-structure
+/// verbs, each a one-op `apply` (`pageVerbs`).
+pub const LOCAL_PATHS: &[&str] = &[
+    "render.getPolicy",
+    "pages.reorder",
     "pages.rotate",
     "pages.delete",
     "pages.insert",
     "pages.insertBlank",
-    "pages.extract",
-    "actions.read",
-    "forms.list",
-    "forms.setValue",
-    "forms.reset",
-    "forms.applyEffects",
-    "forms.exportData",
-    "forms.importData",
-    "forms.repair",
-    "forms.createField",
-    "forms.updateField",
-    "forms.deleteField",
-    "forms.attachWidget",
-    "forms.detachWidget",
-    "pieceInfo.read",
-    "page.pieceInfo.read",
-    "pieceInfo.update",
-    "page.pieceInfo.update",
-    "pages.setName",
-    "pages.removeName",
-    "pages.flatten",
-    "download",
-    "signatures.list",
-    "signatures.contents",
-    "signatures.digest",
-    "signatures.revisionBytes",
-    "signatures.analyze",
-    "signatures.prepare",
-    "signatures.complete",
-    "signatures.abort",
-    "document.version",
-    "forms.setSignatureAppearance",
 ];
 
-/// Feature names a plugin checks with `doc.has` that are neither a path nor
-/// a namespace of one (`document.versioned`). One per line, in plan order.
-pub const FLAGS: &[&str] = &["document.versioned"];
-
-/// Whether `translate` maps `path`; or, for a bare namespace such as
-/// `redaction`, any listed path under it; or a listed flag. This is what
-/// `DocumentHandle::has` answers, and the plugins ask all three ways
-/// (`doc.has("forms.applyEffects")`, `doc.has("redaction")`,
-/// `doc.has("document.versioned")`).
+/// Whether the native handle has `path`; or, for a bare namespace such as
+/// `redaction`, any path under it. This is what `DocumentHandle::has`
+/// answers. `downloadLayer` is the local engine's, and every other optional
+/// member the local engine has is listed (`page.measure`, `pages.extract`,
+/// `pages.flatten`, `render`); `forms.submit` (the cloud's) is not.
 pub fn maps(path: &str) -> bool {
-    route(path).is_some()
-        || FLAGS.contains(&path)
-        || PATHS.iter().any(|p| p.strip_prefix(path).is_some_and(|rest| rest.starts_with('.')))
+    let listed = |p: &&str| *p == path || p.strip_prefix(path).is_some_and(|r| r.starts_with('.'));
+    PATHS.iter().any(listed) || LOCAL_PATHS.iter().any(listed)
 }
 
-/// The wire kind and result decoding for a kernel path.
+/// The wire kind and answer of one kernel path.
 fn route(path: &str) -> Option<(&'static str, Decode)> {
     Some(match path {
         "close" => ("close", Decode::Unit),
-        "pages.list" => ("pages.list", Decode::PageList),
-        "metadata.read" => ("metadata.read", Decode::Result),
+        "pages.list" => ("pages.list", Decode::Result),
+        "metadata.get" => ("metadata.read", Decode::Field("metadata")),
         "metadata.update" => ("metadata.update", Decode::Mutation),
-        "page.text.read" => ("pages.text", Decode::Result),
-        "page.geometry.read" => ("pages.geometry", Decode::Result),
-        "page.render.image" => ("pages.render", Decode::Raster),
-        "search.query" => ("search.query", Decode::SearchSlice),
-        // Answered in the kernel's shape by `call_host` (`kernel_annotations`).
-        "page.annotations.list" => ("annotations.list", Decode::FirstPage),
-        "annotations.listRawAll" => ("annotations.list", Decode::Result),
-        "page.annotations.create" => ("annotations.create", Decode::Mutation),
-        "page.annotations.update" => ("annotations.update", Decode::Mutation),
-        "page.annotations.delete" => ("annotations.delete", Decode::Mutation),
-        "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
-        "redaction.apply" => ("redaction.apply", Decode::RedactionMutation),
-        "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
-        "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
-        // Page structure: one page op of a `document.apply` change each
-        // (119685ea4), answered in the kernel's shape by `kernel_pages`.
-        "pages.move" | "pages.rotate" | "pages.delete" | "pages.insert" | "pages.insertBlank" => {
-            ("document.apply", Decode::PageMutation)
-        }
+        "metadata.custom.get" => ("metadata.readCustom", Decode::Field("custom")),
+        "metadata.custom.update" => ("metadata.updateCustom", Decode::Mutation),
+        "actions.get" => ("actions.read", Decode::Field("snapshot")),
+        "outline.get" => ("outline.read", Decode::Field("outline")),
+        "attachments.list" => ("attachments.list", Decode::Result),
+        "attachments.download" => ("attachments.readFile", Decode::Bytes),
+        "annotations.list" | "page.annotations.list" => ("annotations.list", Decode::Result),
+        "annotations.export" => ("annotations.export", Decode::Field("bundle")),
+        "annotations.import" => ("annotations.import", Decode::Mutation),
+        "apply" => ("document.apply", Decode::Mutation),
+        "forms.list" => ("forms.list", Decode::Result),
+        "forms.export" => ("forms.export", Decode::Field("bundle")),
+        "forms.import" => ("forms.import", Decode::Mutation),
+        "forms.repair" => ("forms.repair", Decode::Mutation),
+        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::Mutation),
         "pages.extract" => ("pages.extract", Decode::HostBytes),
-        "actions.read" => ("actions.read", Decode::Result),
-        "forms.list" => ("forms.list", Decode::FormResult),
-        "forms.setValue" => ("forms.setValue", Decode::FormMutation),
-        "forms.reset" => ("forms.reset", Decode::FormMutation),
-        // Removed upstream (98e5c270c): a `document.apply` change, answered
-        // in the kernel's shape by `call_host` (`kernel_forms`).
-        "forms.applyEffects" => ("forms.applyEffects", Decode::FormMutation),
-        // A form bundle as one file, both ways, in place of the FDF and
-        // XFDF upstream removed (7f0b73a3c): answered by `call_host`
-        // (`kernel_forms`) until Task 13 moves the kernel to upstream's
-        // `export` and `import`.
-        "forms.exportData" => ("forms.export", Decode::ExportBytes),
-        "forms.importData" => ("forms.import", Decode::FormMutation),
-        "forms.repair" => ("forms.repair", Decode::FormMutation),
-        "forms.createField" => ("forms.createField", Decode::FormMutation),
-        "forms.updateField" => ("forms.updateField", Decode::FormMutation),
-        "forms.deleteField" => ("forms.deleteField", Decode::FormMutation),
-        // Removed upstream (d7bd2d277): `kernel_forms` refuses it.
-        "forms.attachWidget" => ("forms.attachWidget", Decode::FormMutation),
-        "forms.detachWidget" => ("forms.detachWidget", Decode::FormMutation),
-        "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
-        // `void`, as the TypeScript resolves it, and no event to hand back.
-        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Unit),
-        "pages.setName" => ("pages.setName", Decode::PageMutation),
-        "pages.removeName" => ("pages.removeName", Decode::PageMutation),
-        // Not `PageMutation`: a flatten answers per-page results, each with
-        // the `page` the stamp plugin reads, and no layout.
         "pages.flatten" => ("pages.flatten", Decode::Mutation),
+        "pages.setName" => ("pages.setName", Decode::Mutation),
+        "pages.removeName" => ("pages.removeName", Decode::Mutation),
+        "pieceInfo.get" | "page.pieceInfo.get" => ("pieceInfo.read", Decode::OptionalResult),
+        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
+        "redaction.apply" => ("redaction.apply", Decode::Mutation),
+        "search.query" => ("search.query", Decode::Result),
+        "signatures.list" => ("signatures.list", Decode::Field("snapshot")),
+        "signatures.getContents" => ("signatures.contents", Decode::Bytes),
+        "signatures.getDigest" => ("signatures.digest", Decode::Bytes),
+        "signatures.downloadRevision" => ("signatures.revisionBytes", Decode::Bytes),
+        "signatures.analyze" => ("signatures.analyze", Decode::Field("analysis")),
+        "signatures.prepare" => ("signatures.prepare", Decode::Inner),
+        "signatures.complete" => ("signatures.complete", Decode::Mutation),
+        "signatures.cancel" => ("signatures.cancel", Decode::Inner),
         "download" => ("document.saveBuffer", Decode::HostBytes),
-        "signatures.list" => ("signatures.list", Decode::FormResultField("snapshot")),
-        "signatures.contents" => ("signatures.contents", Decode::InlineBytes),
-        "signatures.digest" => ("signatures.digest", Decode::InlineBytes),
-        "signatures.revisionBytes" => ("signatures.revisionBytes", Decode::InlineBytes),
-        "signatures.analyze" => ("signatures.analyze", Decode::FormResultField("analysis")),
-        "signatures.prepare" => ("signatures.prepare", Decode::ResultWithBytes("digest")),
-        "signatures.complete" => ("signatures.complete", Decode::FormMutation),
-        // Renamed `signatures.cancel` upstream (7bccc4f35).
-        "signatures.abort" => ("signatures.cancel", Decode::SigningCancel),
-        // `{ tag: 'document.version'; version }`: the kernel takes the version.
+        "downloadLayer" => ("document.saveLayerBuffer", Decode::HostBytes),
         "document.version" => ("document.version", Decode::Field("version")),
-        "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::FormMutation),
+        "page.annotations.create" => ("annotations.create", Decode::Mutation),
+        "page.annotations.exportAppearance" => ("annotations.exportAppearance", Decode::Bytes),
+        "page.annotations.renderAppearances" | "page.forms.renderAppearances" => {
+            ("annotations.renderAppearances", Decode::Appearances)
+        }
+        "page.measure.listViewports" => ("measure.viewports", Decode::Only("viewports")),
+        "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
+        "page.render.image" => ("pages.render", Decode::Raster),
+        "page.text.get" => ("pages.text", Decode::Result),
+        "page.text.layout" => ("pages.geometry", Decode::TextLayout),
+        // `downloadResource(ref, role)` reads the file or the appearance
+        // stream; the role picks the kind (see `translate`).
+        "page.annotations.downloadResource" => ("annotations.readFile", Decode::Bytes),
         _ => return None,
     })
 }
+
+/// `ATTACHMENT_LIMITS.decodedBytes`: the most a file read decodes.
+const ATTACHMENT_DECODED_BYTES: u64 = 256 * 1024 * 1024;
 
 pub fn translate(
     doc: &str,
@@ -280,2673 +242,272 @@ pub fn translate(
     pon: Option<u32>,
     args: &[Value],
     job: u64,
+    client: &Client,
 ) -> Result<WireCall, Error> {
-    let (kind, decode) = route(path).ok_or_else(|| {
-        coded("unsupported", format!("[epdf-viewer-host] the native engine has no \"{path}\" yet"))
+    let (mut kind, decode) = route(path).ok_or_else(|| {
+        coded("unsupported", format!("[epdf-viewer-host] the native engine has no \"{path}\""))
     })?;
+    let arg = |i: usize| args.get(i).filter(|v| !is_absent(v)).cloned();
     let page = || {
-        pon.map(|pon| PageRef::new(pon).to_json()).ok_or_else(|| {
-            coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
-        })
+        pon.map(|pon| PageRef::new(pon).to_json())
+            .ok_or_else(|| invalid(format!("{path} needs a page")))
     };
-    let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
+    // `WriteOptions` (`{opId}`), at the argument index each method takes it.
+    let options_at = |i: usize| arg(i).unwrap_or(Value::Null);
+    let mut body = Map::new();
     let mut payloads = Vec::new();
-    if kind == "document.apply" {
-        let op = kernel_pages::op(path, args, &mut payloads)?;
-        let mut request = serde_json::json!({
-            "kind": kind, "effect": "write", "jobId": job, "docId": doc,
-            "change": { "ops": [op] },
-        });
-        to_wire_refs(&mut request);
-        return Ok(WireCall { request, payloads, decode });
-    }
-    let extra: Vec<(&str, Value)> = match kind {
-        "metadata.update" => vec![("patch", arg(0))],
-        "pages.text" | "pages.geometry" => vec![("page", page()?)],
-        "pages.render" => vec![("page", page()?), ("options", render_options(arg(0)))],
-        "search.query" => vec![("request", search_request(arg(0))?)],
-        "annotations.list" if path == "page.annotations.list" => {
-            vec![("pages", Value::Array(vec![page()?]))]
+    let put = |body: &mut Map<String, Value>, key: &str, value: Option<Value>| {
+        if let Some(value) = value {
+            body.insert(key.into(), value);
         }
-        "annotations.list" => Vec::new(),
-        "annotations.create" => {
-            let (draft, resources) = normalize_binary(arg(0), &mut payloads)?;
-            let draft = wire_refs_in(path, draft)?;
-            vec![("page", page()?), ("draft", draft), ("resources", resources)]
+    };
+    let options = match path {
+        "metadata.update" | "metadata.custom.update" => {
+            put(&mut body, "patch", arg(0));
+            options_at(1)
         }
-        "annotations.update" => {
-            let (patch, resources) = normalize_binary(arg(1), &mut payloads)?;
-            let patch = wire_refs_in(path, patch)?;
-            vec![("ref", wire_ref(path, arg(0))?), ("patch", patch), ("resources", resources)]
+        "attachments.download" => {
+            put(&mut body, "ref", arg(0));
+            body.insert("maxDecodedBytes".into(), ATTACHMENT_DECODED_BYTES.into());
+            Value::Null
         }
-        "annotations.delete" => vec![("ref", wire_ref(path, arg(0))?)],
-        "annotations.readFile" => {
-            vec![("page", page()?), ("ref", wire_ref(path, arg(0))?)]
+        "annotations.list" => {
+            put(&mut body, "pages", arg(0).and_then(|o| o.get("pages").cloned()));
+            Value::Null
         }
-        "redaction.apply" => vec![("scope", redaction_scope_out(path, arg(0))?)],
-        "measure.viewports" => vec![("page", page()?)],
-        "measure.setScale" => vec![("page", page()?)],
-        "pages.extract" => vec![("pages", page_refs(path, &arg(0))?)],
-        "forms.setValue" => {
-            vec![("ref", wire_field_ref(path, arg(0))?), ("value", arg(1))]
+        "page.annotations.list" => {
+            body.insert("pages".into(), json!([page()?]));
+            Value::Null
         }
-        "forms.reset" | "forms.deleteField" => vec![("ref", wire_field_ref(path, arg(0))?)],
-        "forms.applyEffects" => {
-            let mut effects = wire_refs_in(path, arg(0))?;
-            whole_field_refs(path, &mut effects)?;
-            vec![("effects", effects)]
+        "annotations.export" | "forms.export" => {
+            body.insert("selection".into(), arg(0).unwrap_or_else(|| json!({})));
+            Value::Null
         }
-        "forms.export" => vec![("format", arg(0))],
+        "annotations.import" => {
+            let options = options_at(1);
+            put(&mut body, "bundle", arg(0));
+            put(&mut body, "pages", member(&options, "pages"));
+            body.insert(
+                "attribution".into(),
+                member(&options, "attribution").unwrap_or_else(|| "restore".into()),
+            );
+            options
+        }
+        "apply" => {
+            put(&mut body, "change", arg(0));
+            options_at(1)
+        }
         "forms.import" => {
-            let data = epdf_kernel::bytes::Bytes::from_json(&arg(0)).ok_or_else(|| {
-                coded("invalid-input", format!("[epdf-viewer-host] {path} needs bytes"))
-            })?;
-            payloads.push(data.0);
-            vec![("format", arg(1))]
+            let options = options_at(1);
+            put(&mut body, "bundle", arg(0));
+            put(&mut body, "pages", member(&options, "pages"));
+            body.insert(
+                "attribution".into(),
+                member(&options, "attribution").unwrap_or_else(|| "restore".into()),
+            );
+            body.insert("values".into(), member(&options, "values").unwrap_or(Value::Bool(true)));
+            body.insert("mayScript".into(), (client.allows)("doc.forms.script").into());
+            options
         }
         "forms.repair" => {
-            let bake = arg(0).get("bakeAppearances").cloned().unwrap_or(Value::Bool(false));
-            vec![("bakeAppearances", bake)]
+            let options = options_at(0);
+            body.insert(
+                "bakeAppearances".into(),
+                member(&options, "bakeAppearances").unwrap_or(Value::Bool(false)),
+            );
+            options
         }
-        "forms.createField" => {
-            let mut draft = arg(0);
-            whole_placements(path, &mut draft)?;
-            vec![("draft", draft)]
+        "forms.setSignatureAppearance" => {
+            put(&mut body, "ref", arg(0));
+            // The PDF is the request's payload 0 (`[pdf]`).
+            let appearance = arg(1).unwrap_or(Value::Null);
+            payloads.push(bytes_member(&appearance, "pdf", path)?);
+            options_at(2)
         }
-        "forms.updateField" => {
-            vec![("ref", wire_field_ref(path, arg(0))?), ("patch", arg(1))]
+        "pages.extract" => {
+            put(&mut body, "pages", arg(0));
+            if let Some(flatten) = resolve_page_extract(&options_at(1), &*client.allows)? {
+                body.insert("flatten".into(), flatten);
+            }
+            Value::Null
         }
-        "forms.attachWidget" | "forms.detachWidget" => {
-            // The widget's `AnnotationRef`, as `FormMutator` takes it; the
-            // engine refuses one that is not by object number.
-            let widget = arg(1);
-            let on_state = widget.get("onState").cloned().unwrap_or(Value::Null);
-            vec![
-                ("ref", wire_field_ref(path, arg(0))?),
-                ("widget", wire_ref(path, without(widget, "onState"))?),
-                ("onState", on_state),
-            ]
-        }
-        "pieceInfo.read" if path == "page.pieceInfo.read" => {
-            vec![("page", page()?), ("application", arg(0))]
-        }
-        "pieceInfo.read" => vec![("application", arg(0))],
-        "pieceInfo.update" if path == "page.pieceInfo.update" => {
-            vec![("page", page()?), ("application", arg(0)), ("patch", arg(1))]
-        }
-        "pieceInfo.update" => vec![("application", arg(0)), ("patch", arg(1))],
-        "pages.setName" => {
-            let input = arg(0);
-            let page = input.get("page").and_then(PageRef::from_json).ok_or_else(|| {
-                coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
-            })?;
-            vec![
-                ("name", input.get("name").cloned().unwrap_or(Value::Null)),
-                ("page", page.to_json()),
-                ("replace", input.get("replace").cloned().unwrap_or(Value::Null)),
-            ]
-        }
-        "pages.removeName" => vec![("name", arg(0).get("name").cloned().unwrap_or(Value::Null))],
         "pages.flatten" => {
-            vec![("pages", page_refs(path, &arg(0))?), ("usage", arg(1))]
+            let options = options_at(1);
+            put(&mut body, "pages", arg(0));
+            body.insert(
+                "usage".into(),
+                member(&options, "usage").unwrap_or_else(|| "display".into()),
+            );
+            options
         }
-        "document.saveBuffer" => vec![("mode", save_mode(path, &arg(0))?)],
-        "signatures.list" => {
-            vec![("workingCopy", arg(0).get("workingCopy").cloned().unwrap_or(Value::Null))]
+        "pages.setName" => {
+            if let Some(Value::Object(input)) = arg(0) {
+                body.extend(input);
+            }
+            options_at(1)
         }
-        "signatures.contents" => vec![("ref", wire_field_ref(path, arg(0))?)],
-        "signatures.digest" => {
-            vec![("ref", wire_field_ref(path, arg(0))?), ("algorithm", arg(1))]
+        "pages.removeName" => {
+            put(&mut body, "name", arg(0).and_then(|i| i.get("name").cloned()));
+            options_at(1)
         }
-        "signatures.revisionBytes" => {
-            vec![("revisionIndex", whole(path, "revisionIndex", &arg(0))?)]
+        "pieceInfo.get" | "page.pieceInfo.get" => {
+            if path == "page.pieceInfo.get" {
+                body.insert("page".into(), page()?);
+            }
+            put(&mut body, "application", arg(0));
+            Value::Null
+        }
+        "pieceInfo.update" | "page.pieceInfo.update" => {
+            if path == "page.pieceInfo.update" {
+                body.insert("page".into(), page()?);
+            }
+            put(&mut body, "application", arg(0));
+            put(&mut body, "patch", arg(1));
+            options_at(2)
+        }
+        "redaction.apply" => {
+            put(&mut body, "scope", arg(0));
+            options_at(1)
+        }
+        "search.query" => {
+            put(&mut body, "request", arg(0));
+            Value::Null
+        }
+        "signatures.getContents" => {
+            put(&mut body, "ref", arg(0));
+            Value::Null
+        }
+        "signatures.getDigest" => {
+            put(&mut body, "ref", arg(0));
+            put(&mut body, "algorithm", arg(1));
+            Value::Null
+        }
+        "signatures.downloadRevision" => {
+            put(&mut body, "revisionIndex", arg(0));
+            Value::Null
         }
         "signatures.analyze" => {
-            let mut input = arg(0);
-            for pointer in ["/since/signatureIndex", "/since/revisionIndex", "/until/revisionIndex"]
-            {
-                whole_at(path, &mut input, pointer)?;
-            }
-            vec![("input", input)]
+            put(&mut body, "input", arg(0));
+            Value::Null
         }
         "signatures.prepare" => {
-            let mut input = wire_field_ref(path, arg(0))?;
-            for pointer in ["/certify/permission", "/lock/permission", "/contentsSize"] {
-                whole_at(path, &mut input, pointer)?;
-            }
-            // The kernel's `attribution` is upstream's `signer` (7bccc4f35).
-            if let Some(map) = input.as_object_mut()
-                && let Some(attribution) = map.remove("attribution")
-            {
-                map.insert("signer".into(), attribution);
-            }
-            // The artwork travels as a payload the appearance names; no
-            // artwork, no appearance. Upstream takes a one-page PDF and no
-            // page index.
-            if let Some(appearance) = input.get_mut("appearance") {
-                let pdf = appearance.get("pdf").and_then(epdf_kernel::bytes::Bytes::from_json);
-                match pdf {
-                    Some(pdf) => {
-                        *appearance = serde_json::json!({ "pdf": { "payload": payloads.len() } });
-                        payloads.push(pdf.0);
-                    }
-                    None => {
-                        input.as_object_mut().map(|m| m.remove("appearance"));
-                    }
-                }
-            }
-            vec![("input", input)]
+            put(&mut body, "input", arg(0));
+            options_at(1)
         }
         "signatures.complete" => {
-            let mut input = arg(0);
-            payloads.push(bytes_at(&input, "cms", path)?);
-            whole_at(path, &mut input, "/expectedVersion/editsVersion")?;
-            vec![("input", without(input, "cms"))]
+            // The CMS is the request's payload 0, beside the input.
+            let mut input = arg(0).unwrap_or(Value::Null);
+            payloads.push(bytes_member(&input, "cms", path)?);
+            if let Some(input) = input.as_object_mut() {
+                input.remove("cms");
+            }
+            body.insert("input".into(), input);
+            options_at(1)
         }
-        "signatures.cancel" => vec![("signingId", arg(0))],
-        // Upstream draws a one-page PDF and takes no page index.
-        "forms.setSignatureAppearance" => {
-            payloads.push(bytes_at(&arg(1), "pdf", path)?);
-            vec![("ref", wire_field_ref(path, arg(0))?)]
+        "signatures.cancel" => {
+            put(&mut body, "signingId", arg(0));
+            options_at(1)
         }
-        _ => vec![],
+        "download" => {
+            body.insert("mode".into(), save_mode(path, &options_at(0))?);
+            Value::Null
+        }
+        "page.annotations.create" => {
+            let options = options_at(1);
+            body.insert("page".into(), page()?);
+            put(&mut body, "draft", arg(0));
+            put(&mut body, "objectNumber", member(&options, "objectNumber"));
+            put(&mut body, "resources", member(&options, "resources"));
+            options
+        }
+        "page.annotations.downloadResource" => {
+            body.insert("page".into(), page()?);
+            put(&mut body, "ref", arg(0));
+            if arg(1).as_ref().and_then(Value::as_str) == Some("file") {
+                body.insert("maxDecodedBytes".into(), ATTACHMENT_DECODED_BYTES.into());
+            } else {
+                kind = "annotations.readAppearance";
+            }
+            Value::Null
+        }
+        "page.annotations.exportAppearance" => {
+            body.insert("page".into(), page()?);
+            put(&mut body, "refs", arg(0));
+            Value::Null
+        }
+        "page.annotations.renderAppearances" | "page.forms.renderAppearances" => {
+            body.insert("page".into(), page()?);
+            let family =
+                if path == "page.forms.renderAppearances" { "widgets" } else { "annotations" };
+            body.insert("family".into(), family.into());
+            put(&mut body, "options", arg(0).map(render_options));
+            Value::Null
+        }
+        "page.measure.listViewports" | "page.text.get" | "page.text.layout" => {
+            body.insert("page".into(), page()?);
+            Value::Null
+        }
+        "page.measure.setScale" => {
+            body.insert("page".into(), page()?);
+            // `PdfMeasure | null`: a cleared scale is an explicit `null`.
+            body.insert("measure".into(), arg(0).unwrap_or(Value::Null));
+            options_at(1)
+        }
+        "page.render.image" => {
+            body.insert("page".into(), page()?);
+            body.insert("options".into(), render_options(arg(0).unwrap_or_else(|| json!({}))));
+            Value::Null
+        }
+        _ => Value::Null,
     };
     let mut request = Map::new();
     request.insert("kind".into(), kind.into());
-    request.insert("jobId".into(), job.into());
-    request.insert("docId".into(), doc.into());
-    for (key, value) in extra {
-        if !value.is_null() && !epdf_kernel::is_undefined(&value) {
-            request.insert(key.into(), value);
-        }
+    if let Some(effect) = RequestEffect::of(kind) {
+        request.insert("effect".into(), effect.as_str().into());
     }
-    // `PdfMeasure | null`: a cleared scale is an explicit `null`, which the
-    // loop above would drop.
-    if kind == "measure.setScale" {
-        let measure = arg(0);
-        let measure = if epdf_kernel::is_undefined(&measure) { Value::Null } else { measure };
-        request.insert("measure".into(), measure);
+    request.insert("jobId".into(), job.into());
+    if WRITE_KINDS.contains(&kind) {
+        request.insert("opId".into(), op_id_of(&options)?.into());
+    }
+    request.insert("docId".into(), doc.into());
+    request.extend(body);
+    if AUTHORITY_KINDS.contains(&kind) {
+        request.insert("authority".into(), client.authority.clone());
     }
     let mut request = Value::Object(request);
-    to_wire_refs(&mut request);
+    to_payloads(&mut request, &mut payloads)?;
+    whole_numbers(&mut request);
     Ok(WireCall { request, payloads, decode })
 }
 
-/// The host kinds whose answers hold form field records, decoded as
-/// [`Decode::FormResult`] or [`Decode::FormMutation`].
-const FORM_RECORD_KINDS: &[&str] = &[
-    "forms.list",
-    "forms.setValue",
-    "forms.reset",
-    "forms.applyEffects",
-    "forms.import",
-    "forms.repair",
-    "forms.createField",
-    "forms.updateField",
-    "forms.attachWidget",
-    "forms.detachWidget",
-    "forms.setSignatureAppearance",
-];
-
-/// [`Host::call`] for a request this module built or passed on, with the
-/// envelope upstream's client gives every job filled in where the kernel
-/// left it out ([`Host::fill_envelope`]). Dead once Task 13 gives the kernel
-/// its own envelope.
-fn wire_call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
-    let mut request = request.clone();
-    host.fill_envelope(&mut request);
-    host.call(&request.to_string(), payloads)
-}
-
-/// Send one translated request to `host` through [`Host::call`], answered
-/// in the kernel's shape where it differs.
-pub fn call_host(host: &mut Host, json: &str, payloads: Vec<Vec<u8>>) -> HostResponse {
-    let Ok(mut request) = serde_json::from_str::<Value>(json) else {
-        // Not JSON: the host's own refusal says so.
-        return host.call(json, payloads);
-    };
-    let kind = request.get("kind").and_then(Value::as_str).unwrap_or_default().to_owned();
-    // `translate` builds a `document.apply` for the kernel's page edits
-    // only.
-    if kind == "document.apply" {
-        return kernel_pages::call(host, &request, payloads);
-    }
-    if let Some(response) = metadata::kernel_call(host, &kind, &request) {
-        return response;
-    }
-    if kernel_forms::KINDS.contains(&kind.as_str()) {
-        let response = kernel_forms::call(host, &kind, &request, payloads);
-        return page_space::with_raw_field_flags(host, &request, response);
-    }
-    if kind == "annotations.list" {
-        return kernel_annotations::listing(host, &request);
-    }
-    // Both rewrite the request in place; it is sent re-serialized either
-    // way, with its envelope filled in.
-    base_index_refs(host, &mut request);
-    if kind == "annotations.create" {
-        return kernel_create::call(host, &request, payloads);
-    }
-    if kind == "annotations.update" {
-        return kernel_update::call(host, &request, payloads);
-    }
-    if kind == "annotations.delete" {
-        return kernel_delete::call(host, &request, payloads);
-    }
-    page_space::render_target_to_page_space(host, &mut request);
-    page_space::scale_to_page_space(host, &mut request);
-    let response = wire_call(host, &request, payloads);
-    let response = page_space::answer_to_file_space(host, &kind, &request, response);
-    if FORM_RECORD_KINDS.contains(&kind.as_str()) {
-        page_space::with_raw_field_flags(host, &request, response)
-    } else {
-        response
+/// `close` for a document, with no handle to ask: the cleanup for an open
+/// that will not hand out a document.
+pub fn close_request(doc: &str, job: u64) -> WireCall {
+    WireCall {
+        request: json!({ "kind": "close", "effect": "close", "jobId": job, "docId": doc }),
+        payloads: Vec::new(),
+        decode: Decode::Unit,
     }
 }
 
-/// The kernel's metadata, and the host's (Task 8.6).
-///
-/// The kernel reads one `DocumentMetadata` with the custom keys under
-/// `custom` and the dates as `created` and `modified`, and writes one patch
-/// in the same spelling. The host answers upstream's: `metadata.read` the
-/// standard fields with `createdAt` and `modifiedAt`, `metadata.readCustom`
-/// the custom keys, and the two writes apart (a4b8259f7, fd175ba50).
-/// [`call_host`] reads both and folds them, and runs a kernel patch as one
-/// `document.apply` change, so a patch touching both halves is still one
-/// write. Dead once Task 13 ports the kernel.
-mod metadata {
-    use epdf_engine::host::{Host, HostResponse};
-    use serde_json::{Map, Value, json};
-
-    /// The kernel's `metadata.read` and `metadata.update`, answered in the
-    /// kernel's spelling; `None` for any other kind.
-    pub(super) fn kernel_call(
-        host: &mut Host,
-        kind: &str,
-        request: &Value,
-    ) -> Option<HostResponse> {
-        let answer = match kind {
-            "metadata.read" => {
-                read(host, request).map(|metadata| (json!({ "result": metadata }), Vec::new()))
-            }
-            "metadata.update" => update(host, request),
-            _ => return None,
-        };
-        Some(match answer {
-            Ok((envelope, payloads)) => HostResponse { json: envelope.to_string(), payloads },
-            Err(response) => response,
-        })
-    }
-
-    /// The same document as `request`, and its job id.
-    fn on_document(request: &Value, kind: &str) -> Value {
-        let mut call = json!({ "kind": kind, "jobId": request.get("jobId").cloned() });
-        for key in ["docId", "layerName"] {
-            if let Some(value) = request.get(key) {
-                call[key] = value.clone();
-            }
-        }
-        call
-    }
-
-    /// One call, answering its `result`, or the whole response when it is
-    /// an error.
-    fn send(host: &mut Host, call: &Value) -> Result<(Value, HostResponse), HostResponse> {
-        let response = super::wire_call(host, call, Vec::new());
-        let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
-        match envelope.get("result") {
-            Some(result) if envelope.get("error").is_none() => Ok((result.clone(), response)),
-            _ => Err(response),
-        }
-    }
-
-    /// Both halves of the dictionary, in the kernel's spelling.
-    fn read(host: &mut Host, request: &Value) -> Result<Value, HostResponse> {
-        // `{ metadata }` and `{ custom }`.
-        let (mut metadata, _) = send(host, &on_document(request, "metadata.read"))?;
-        let mut metadata = metadata["metadata"].take();
-        let (mut custom, _) = send(host, &on_document(request, "metadata.readCustom"))?;
-        let custom = custom["custom"].take();
-        if let Some(fields) = metadata.as_object_mut() {
-            let created = fields.remove("createdAt").unwrap_or(Value::Null);
-            let modified = fields.remove("modifiedAt").unwrap_or(Value::Null);
-            fields.insert("created".into(), created);
-            fields.insert("modified".into(), modified);
-            fields.insert("custom".into(), custom);
-        }
-        Ok(metadata)
-    }
-
-    /// A kernel patch as one change: the standard fields as a
-    /// `metadata.update` op (the dates renamed), the custom keys as a
-    /// `metadata.updateCustom` op. Answers the mutation the kernel decodes:
-    /// the whole dictionary, the sequence, and one `metadata.updated` event,
-    /// with the change's payloads (a layer's artifact).
-    fn update(host: &mut Host, request: &Value) -> Result<(Value, Vec<Vec<u8>>), HostResponse> {
-        let mut standard = match request.get("patch") {
-            Some(Value::Object(patch)) => patch.clone(),
-            _ => Map::new(),
-        };
-        let custom = standard.remove("custom");
-        for (kernel, wire) in [("created", "createdAt"), ("modified", "modifiedAt")] {
-            if let Some(value) = standard.remove(kernel) {
-                standard.insert(wire.into(), value);
-            }
-        }
-        let mut ops = Vec::new();
-        if !standard.is_empty() || !matches!(custom, Some(Value::Object(_))) {
-            ops.push(json!({ "type": "metadata.update", "patch": standard }));
-        }
-        if let Some(custom @ Value::Object(_)) = custom {
-            ops.push(json!({ "type": "metadata.updateCustom", "patch": custom }));
-        }
-        let mut apply = on_document(request, "document.apply");
-        apply["effect"] = json!("write");
-        apply["change"] = json!({ "ops": ops });
-        let (applied, response) = send(host, &apply)?;
-        let metadata = read(host, request)?;
-        let mut answer = json!({
-            "result": { "metadata": metadata },
-            "mutationSequence": applied["mutationSequence"],
-        });
-        if let Some(origin) =
-            applied["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"])
-        {
-            answer["event"] =
-                json!({ "type": "metadata.updated", "metadata": metadata, "origin": origin });
-        }
-        Ok((json!({ "result": answer }), response.payloads))
-    }
+/// `pages.workingSet`: bookkeeping, never answered.
+pub fn working_set_request(doc: &str, job: u64, view: &str, pages: Value) -> Value {
+    let mut request = json!({
+        "kind": "pages.workingSet", "jobId": job, "docId": doc, "view": view, "pages": pages,
+    });
+    whole_numbers(&mut request);
+    request
 }
 
-/// The kernel's form value writes (Task 8.20).
-///
-/// The kernel writes a value in this branch's old spelling
-/// (`{type: "text", value}`, `{type: "toggle", state}` by on-state,
-/// `{type: "choice", values}`), resets one field, and sends a script's
-/// effects as one `forms.applyEffects` batch that answers each effect's
-/// status. Upstream takes a value as a read returns it (`{value}`,
-/// `{checked}`, `{selectedValues}`), resets `refs`, and runs a script's
-/// effects as `document.apply` ops, all or none (98e5c270c). [`call`]
-/// reads the form to spell each value as its field takes it, sends the
-/// upstream request, and answers in the kernel's shape: `{field,
-/// changedWidgets}` and a `form.valueChanged` event for a value write or a
-/// reset; `{results, changedWidgets, meta}` and `form.effectsApplied` for a
-/// batch, every effect `rejected` with the refusal when the change was
-/// refused, since nothing of it landed; and `form.repaired` for a repair,
-/// with its counter `needAppearancesCleared`. Field records go back to the
-/// file's coordinates. Dead once Task 13 ports the kernel.
-mod kernel_forms {
-    use epdf_engine::host::{Host, HostResponse};
-    use serde_json::{Value, json};
-
-    /// The kinds [`call`] answers.
-    pub(super) const KINDS: &[&str] = &[
-        "forms.export",
-        "forms.import",
-        "forms.setValue",
-        "forms.reset",
-        "forms.applyEffects",
-        "forms.repair",
-        "forms.createField",
-        "forms.updateField",
-        "forms.deleteField",
-        "forms.attachWidget",
-        "forms.detachWidget",
-        "forms.setSignatureAppearance",
-    ];
-
-    /// The kernel's call `kind`, one of [`KINDS`], answered in its shape.
-    pub(super) fn call(
-        host: &mut Host,
-        kind: &str,
-        request: &Value,
-        payloads: Vec<Vec<u8>>,
-    ) -> HostResponse {
-        let answer = match kind {
-            "forms.setValue" => set_value(host, request),
-            "forms.reset" => reset(host, request),
-            "forms.applyEffects" => apply_effects(host, request),
-            "forms.createField" => create_field(host, request),
-            "forms.updateField" => field_edit(host, request, "forms.updateField"),
-            "forms.deleteField" => delete_field(host, request),
-            "forms.attachWidget" => Err(attach_retired()),
-            "forms.detachWidget" => field_edit(host, request, "forms.detachWidget"),
-            "forms.export" => export_bundle(host, request),
-            "forms.import" => import_bundle(host, request, payloads),
-            "forms.setSignatureAppearance" => signature_appearance(host, request, payloads),
-            _ => repair(host, request, payloads),
-        };
-        match answer {
-            Ok((envelope, payloads)) => HostResponse { json: envelope.to_string(), payloads },
-            Err(response) => response,
-        }
-    }
-
-    type Answer = Result<(Value, Vec<Vec<u8>>), HostResponse>;
-
-    /// One call, answering the envelope's `result` and the response, or the
-    /// whole response when it is an error.
-    fn send(host: &mut Host, call: &Value) -> Result<(Value, HostResponse), HostResponse> {
-        let response = super::wire_call(host, call, Vec::new());
-        let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
-        if envelope.get("error").is_some() {
-            return Err(response);
-        }
-        match envelope.get_mut("result") {
-            Some(result) => {
-                let result = result.take();
-                Ok((result, response))
-            }
-            None => Err(response),
-        }
-    }
-
-    fn on_document(request: &Value, kind: &str) -> Value {
-        let mut call = json!({ "kind": kind, "jobId": request.get("jobId").cloned() });
-        for key in ["docId", "layerName", "opId", "authority"] {
-            if let Some(value) = request.get(key) {
-                call[key] = value.clone();
-            }
-        }
-        call
-    }
-
-    /// The form's fields, as `forms.list` reads them.
-    fn fields(host: &mut Host, request: &Value) -> Result<Vec<Value>, HostResponse> {
-        let (form, _) = send(host, &on_document(request, "forms.list"))?;
-        Ok(form["fields"].as_array().cloned().unwrap_or_default())
-    }
-
-    fn field_of<'f>(fields: &'f [Value], reference: &Value) -> Option<&'f Value> {
-        fields.iter().find(|field| {
-            field["ref"] == *reference
-                || (reference["kind"] == "fqn" && field["name"] == reference["name"])
-        })
-    }
-
-    /// A kernel value as its field takes it now. A value already in
-    /// upstream's spelling goes as it came; one that fits no field goes in
-    /// the shape the host refuses, so the refusal is the host's.
-    pub(super) fn wire_value(field: Option<&Value>, value: &Value) -> Value {
-        let family = field.and_then(|f| f["family"].as_str()).unwrap_or_default();
-        match value.get("type").and_then(Value::as_str) {
-            Some("text") => json!({ "value": value.get("value").cloned().unwrap_or(Value::Null) }),
-            Some("toggle") => {
-                let state = value.get("state").and_then(Value::as_str);
-                let Some(state) = state else { return json!({ "value": null }) };
-                // The widget with that on-state, by its export value.
-                let export = field
-                    .and_then(|f| f["widgets"].as_array())
-                    .and_then(|w| w.iter().find(|w| w["onState"] == state))
-                    .and_then(|w| w["exportValue"].as_str())
-                    .unwrap_or(state);
-                json!({ "value": export })
-            }
-            Some("choice") => {
-                let values = value.get("values").cloned().unwrap_or_else(|| json!([]));
-                match (family, values.as_array().map(Vec::len)) {
-                    ("combobox", Some(0)) => json!({ "value": null }),
-                    ("combobox", Some(1)) => json!({ "value": values[0] }),
-                    _ => json!({ "selectedValues": values }),
-                }
-            }
-            _ => value.clone(),
-        }
-    }
-
-    /// A field record answered in page space, in the file's coordinates.
-    fn field_in_file_space(
-        host: &Host,
-        request: &Value,
-        field: Value,
-    ) -> Result<Value, HostResponse> {
-        let mut records = json!({ "fields": [field] });
-        records = super::page_space::form_records_in_file_space(host, request, records)
-            .map_err(|message| refusal(&message))?;
-        Ok(records["fields"][0].take())
-    }
-
-    fn refusal(message: &str) -> HostResponse {
-        HostResponse {
-            json: json!({ "error": { "name": "EngineError", "code": "WireFormat",
-                "message": message } })
-            .to_string(),
-            payloads: Vec::new(),
-        }
-    }
-
-    /// The kernel's mutation envelope.
-    fn mutation(result: Value, sequence: &Value, event: Option<Value>) -> Value {
-        let mut answer = json!({ "result": result, "mutationSequence": sequence });
-        if let Some(event) = event {
-            answer["event"] = event;
-        }
-        json!({ "result": answer })
-    }
-
-    /// `{type: kernel, origin, ...result}`.
-    fn kernel_event(kind: &str, origin: Option<&Value>, result: &Value) -> Option<Value> {
-        let origin = origin?;
-        let mut event = json!({ "type": kind, "origin": origin });
-        if let (Some(event), Some(fields)) = (event.as_object_mut(), result.as_object()) {
-            for (key, value) in fields {
-                event.insert(key.clone(), value.clone());
-            }
-        }
-        Some(event)
-    }
-
-    fn set_value(host: &mut Host, request: &Value) -> Answer {
-        let fields = fields(host, request)?;
-        let reference = request.get("ref").cloned().unwrap_or(Value::Null);
-        let value = wire_value(field_of(&fields, &reference), &request["value"]);
-        let mut call = on_document(request, "forms.setValue");
-        call["effect"] = json!("write");
-        call["ref"] = reference;
-        call["value"] = value;
-        let (answer, response) = send(host, &call)?;
-        let field = field_in_file_space(host, request, answer["result"]["field"].clone())?;
-        let result = json!({
-            "field": field,
-            "changedWidgets": answer["result"]["meta"]["changedWidgets"],
-        });
-        let event = kernel_event("form.valueChanged", answer["event"].get("origin"), &result);
-        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
-    }
-
-    fn reset(host: &mut Host, request: &Value) -> Answer {
-        let reference = request.get("ref").cloned().unwrap_or(Value::Null);
-        let mut call = on_document(request, "forms.reset");
-        call["effect"] = json!("write");
-        call["refs"] = json!([reference]);
-        let (answer, response) = send(host, &call)?;
-        // The field read back: the one the reset changed, or as it is.
-        let field = match answer["result"]["fields"].get(0) {
-            Some(field) => field.clone(),
-            None => {
-                let fields = fields(host, request)?;
-                field_of(&fields, &reference).cloned().unwrap_or(Value::Null)
-            }
-        };
-        let field = field_in_file_space(host, request, field)?;
-        let result = json!({
-            "field": field,
-            "changedWidgets": answer["result"]["meta"]["changedWidgets"],
-        });
-        let origin = answer["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"]);
-        let event = kernel_event("form.valueChanged", origin, &result);
-        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
-    }
-
-    /// An engine refusal, as the host answers one.
-    fn engine_refusal(error: &epdf_engine::error::EngineError) -> HostResponse {
-        HostResponse { json: json!({ "error": error.to_wire() }).to_string(), payloads: Vec::new() }
-    }
-
-    /// The kernel's `exportData(format)`: every field as a form bundle
-    /// (`forms.export`), written as one file (`FormTransfer.stringify`).
-    /// FDF and XFDF went upstream (7f0b73a3c); the kernel's API still names
-    /// a format, which the answer echoes until Task 13 moves the kernel to
-    /// upstream's `export`.
-    fn export_bundle(host: &mut Host, request: &Value) -> Answer {
-        use epdf_engine::features::transfer::bundle::BundleKind;
-        use epdf_engine::features::transfer::{Bundle, codec, limits::DEFAULT_BUNDLE_LIMITS};
-        let mut call = on_document(request, "forms.export");
-        call["effect"] = json!("snapshot");
-        call["selection"] = json!({});
-        let response = super::wire_call(host, &call, Vec::new());
-        let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
-        let Some(Value::Object(manifest)) = envelope.pointer("/result/bundle").cloned() else {
-            return Err(response);
-        };
-        let mut manifest = manifest;
-        let slots = manifest.remove("resources").unwrap_or(Value::Null);
-        let resources = slots
-            .as_object()
-            .into_iter()
-            .flatten()
-            .map(|(id, slot)| {
-                let at = slot["payload"].as_u64().unwrap_or(u64::MAX) as usize;
-                response
-                    .payloads
-                    .get(at)
-                    .map(|bytes| (id.clone(), bytes.clone()))
-                    .ok_or_else(|| refusal(&format!("resource {id} names no payload")))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let text = codec::stringify(
-            BundleKind::Form,
-            &Bundle { manifest, resources },
-            &DEFAULT_BUNDLE_LIMITS,
-        )
-        .map_err(|e| engine_refusal(&e))?;
-        let format =
-            request.get("format").filter(|f| f.is_string()).cloned().unwrap_or(json!("xfdf"));
-        let bytes = text.into_bytes();
-        Ok((json!({ "result": { "format": format, "size": bytes.len() } }), vec![bytes]))
-    }
-
-    /// The kernel's `importData(bytes, format)`: a form bundle's file
-    /// (`FormTransfer.parse`), its values filled into the fields of the
-    /// same name (`forms.importValues`, stamped as the session's, as the
-    /// FDF import it replaces filled them). Answered as the kernel reads an
-    /// import: the form read afresh, as `{snapshot}`.
-    fn import_bundle(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
-        use epdf_engine::features::transfer::bundle::BundleKind;
-        use epdf_engine::features::transfer::{codec, limits::DEFAULT_BUNDLE_LIMITS};
-        let Some(file) = payloads.into_iter().next() else {
-            return Err(refusal("an import carries the bundle's file"));
-        };
-        let text = String::from_utf8(file).map_err(|_| {
-            engine_refusal(&epdf_engine::error::EngineError::with_message(
-                epdf_engine::error::EngineErrorCode::InvalidArg,
-                "the file is not a form bundle",
-            ))
-        })?;
-        let bundle = codec::parse(BundleKind::Form, &text, &DEFAULT_BUNDLE_LIMITS)
-            .map_err(|e| engine_refusal(&e))?;
-        let mut manifest = bundle.manifest;
-        let mut slots = serde_json::Map::new();
-        let mut bytes = Vec::new();
-        for (id, resource) in bundle.resources {
-            slots.insert(id, json!({ "payload": bytes.len() }));
-            bytes.push(resource);
-        }
-        manifest.insert("resources".into(), Value::Object(slots));
-        let mut call = on_document(request, "forms.importValues");
-        call["effect"] = json!("write");
-        call["bundle"] = Value::Object(manifest);
-        call["attribution"] = json!("stamp");
-        let response = super::wire_call(host, &call, bytes);
-        let envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
-        if envelope.get("error").is_some() {
-            return Err(response);
-        }
-        let (form, _) = send(host, &on_document(request, "forms.list"))?;
-        let snapshot = super::page_space::form_records_in_file_space(host, request, form)
-            .map_err(|message| refusal(&message))?;
-        Ok((
-            mutation(
-                json!({ "snapshot": snapshot }),
-                &envelope["result"]["mutationSequence"],
-                None,
-            ),
-            response.payloads,
-        ))
-    }
-
-    /// An effect as the op upstream runs for it (`formEffectOps`).
-    fn op_of(effect: &Value, fields: &[Value]) -> Value {
-        let reference = effect.get("ref").cloned().unwrap_or(Value::Null);
-        match effect.get("kind").and_then(Value::as_str) {
-            Some("setValue") => json!({ "type": "forms.setValue", "field": reference,
-                "value": wire_value(field_of(fields, &reference), &effect["value"]) }),
-            Some("setDisplay") => json!({ "type": "forms.setDisplay", "field": reference,
-                "display": effect["display"] }),
-            Some("setAppearanceText") => json!({ "type": "forms.setAppearanceText",
-                "field": reference, "text": effect["text"] }),
-            Some("reset") => json!({ "type": "forms.reset", "fields": effect["refs"] }),
-            _ => effect.clone(),
-        }
-    }
-
-    fn apply_effects(host: &mut Host, request: &Value) -> Answer {
-        let effects = request["effects"].as_array().cloned().unwrap_or_default();
-        let fields = fields(host, request)?;
-        let ops: Vec<Value> = effects.iter().map(|effect| op_of(effect, &fields)).collect();
-        let mut call = on_document(request, "document.apply");
-        call["effect"] = json!("write");
-        call["change"] = json!({ "ops": ops });
-        let (answer, response) = match send(host, &call) {
-            Ok(sent) => sent,
-            Err(refused) => {
-                // Refused whole: nothing landed, and every effect says why.
-                let envelope: Value = serde_json::from_str(&refused.json).unwrap_or(Value::Null);
-                let error = envelope.get("error").cloned().unwrap_or(Value::Null);
-                let results: Vec<Value> = (0..effects.len())
-                    .map(|index| {
-                        json!({ "index": index, "status": "rejected", "fields": [],
-                        "changedWidgets": [], "error": error })
-                    })
-                    .collect();
-                let result = json!({ "results": results, "changedWidgets": [], "meta": null });
-                return Ok((mutation(result, &Value::Null, None), Vec::new()));
-            }
-        };
-        let items = answer["result"]["items"].as_array().cloned().unwrap_or_default();
-        let mut results = Vec::new();
-        let mut all_changed: Vec<Value> = Vec::new();
-        let mut wrote = false;
-        for (index, item) in items.iter().enumerate() {
-            let changed = item["meta"]["changedWidgets"].as_array().cloned().unwrap_or_default();
-            let touched: Vec<Value> = match item.get("field") {
-                Some(field) => vec![field.clone()],
-                None => item["fields"].as_array().cloned().unwrap_or_default(),
-            };
-            let applied = match item["type"].as_str() {
-                Some("forms.reset") => !touched.is_empty(),
-                _ => !changed.is_empty(),
-            };
-            wrote |= applied;
-            let mut converted = Vec::new();
-            for field in touched {
-                converted.push(field_in_file_space(host, request, field)?);
-            }
-            for widget in &changed {
-                if !all_changed.contains(widget) {
-                    all_changed.push(widget.clone());
-                }
-            }
-            results.push(json!({
-                "index": index,
-                "status": if applied { "applied" } else { "unchanged" },
-                "fields": converted,
-                "changedWidgets": changed,
-            }));
-        }
-        let meta = if wrote { answer["result"]["meta"].clone() } else { Value::Null };
-        let result = json!({ "results": results, "changedWidgets": all_changed, "meta": meta });
-        let origin = answer["events"].as_array().and_then(|e| e.last()).map(|e| &e["origin"]);
-        let event = if wrote { kernel_event("form.effectsApplied", origin, &result) } else { None };
-        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
-    }
-
-    /// The kernel's draft (a `widget` or `widgets`, each placement's `rect`
-    /// in the file's coordinates, a toggle's `onState`, its look under
-    /// `appearance` with `{r, g, b}` colours) as upstream's v3 draft: every
-    /// placement under `widgets`, in page space, its `exportValue`, its look
-    /// flat on it as `#rrggbb`.
-    fn v3_draft(host: &Host, request: &Value, draft: &Value) -> Result<Value, HostResponse> {
-        let Some(map) = draft.as_object() else { return Ok(draft.clone()) };
-        let mut draft = map.clone();
-        let mut placements: Vec<Value> = Vec::new();
-        if let Some(widget) = draft.remove("widget") {
-            placements.push(widget);
-        }
-        if let Some(Value::Array(widgets)) = draft.remove("widgets") {
-            placements.extend(widgets);
-        }
-        if placements.is_empty() {
-            return Ok(Value::Object(draft));
-        }
-        let mut box_of = super::page_space::visible_boxes(host, request);
-        let mut converted = Vec::new();
-        for placement in placements {
-            let Value::Object(mut placement) = placement else {
-                return Err(refusal("a widget placement is an object"));
-            };
-            if let Some(state) = placement.remove("onState") {
-                placement.insert("exportValue".into(), state);
-            }
-            if let Some(Value::Object(look)) = placement.remove("appearance") {
-                for (key, value) in look {
-                    placement.insert(key.clone(), style_value(&key, value));
-                }
-            }
-            let rect: Option<epdf_engine::geom::PdfRect> =
-                placement.get("rect").and_then(|r| serde_json::from_value(r.clone()).ok());
-            let page: Option<epdf_engine::identity::PageRef> =
-                placement.get("page").and_then(|p| serde_json::from_value(p.clone()).ok());
-            if let (Some(rect), Some(page)) = (rect, page) {
-                let visible = box_of(page.object_number()).map_err(|e| refusal(&e.message))?;
-                let rect = epdf_engine::geom::normalize_pdf_rect(rect);
-                placement.insert(
-                    "rect".into(),
-                    json!(epdf_engine::page_space::page_rect_of(rect, visible)),
-                );
-            }
-            converted.push(Value::Object(placement));
-        }
-        draft.insert("widgets".into(), Value::Array(converted));
-        Ok(Value::Object(draft))
-    }
-
-    /// A kernel style value as upstream's write takes it: a colour as
-    /// `#rrggbb`, an alignment by name.
-    fn style_value(key: &str, value: Value) -> Value {
-        let channel = |key: &str| value.get(key).and_then(Value::as_f64);
-        if let (Some(r), Some(g), Some(b)) = (channel("r"), channel("g"), channel("b")) {
-            return Value::String(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8));
-        }
-        if key == "textAlign"
-            && let Some(code) = value.as_u64()
-        {
-            return json!(
-                ["left", "center", "right"].get(code as usize).copied().unwrap_or("left")
-            );
-        }
-        value
-    }
-
-    /// The kernel's `{field, meta}`, the field in the file's coordinates,
-    /// and its event under the kernel's name.
-    fn kernel_field_answer(
-        host: &Host,
-        request: &Value,
-        answer: &Value,
-        kernel_event_type: &str,
-    ) -> Result<Value, HostResponse> {
-        let field = field_in_file_space(host, request, answer["result"]["field"].clone())?;
-        let result = json!({ "field": field, "meta": answer["result"]["meta"] });
-        let event = kernel_event(kernel_event_type, answer["event"].get("origin"), &result);
-        Ok(mutation(result, &answer["mutationSequence"], event))
-    }
-
-    /// `forms.createField`: the kernel's draft as upstream's.
-    fn create_field(host: &mut Host, request: &Value) -> Answer {
-        let mut call = request.clone();
-        call["draft"] = v3_draft(host, request, &request["draft"])?;
-        call["effect"] = json!("write");
-        let (answer, response) = send(host, &call)?;
-        Ok((kernel_field_answer(host, request, &answer, "form.fieldCreated")?, response.payloads))
-    }
-
-    /// `forms.updateField` and `forms.detachWidget`: the request as it came,
-    /// the answer as the kernel reads it.
-    fn field_edit(host: &mut Host, request: &Value, kind: &str) -> Answer {
-        let mut call = request.clone();
-        call["effect"] = json!("write");
-        if let Some(map) = call.as_object_mut() {
-            map.remove("onState");
-        }
-        let (answer, response) = send(host, &call)?;
-        let event =
-            if kind == "forms.updateField" { "form.fieldUpdated" } else { "form.widgetDetached" };
-        Ok((kernel_field_answer(host, request, &answer, event)?, response.payloads))
-    }
-
-    /// `forms.setSignatureAppearance`: the PDF as payload 0; the answer as
-    /// the kernel reads a field edit, its event the kernel's
-    /// `form.fieldUpdated`.
-    fn signature_appearance(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
-        let mut call = request.clone();
-        call["effect"] = json!("write");
-        let response = super::wire_call(host, &call, payloads);
-        let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
-        if envelope.get("error").is_some() {
-            return Err(response);
-        }
-        let Some(answer) = envelope.get_mut("result").map(Value::take) else {
-            return Err(response);
-        };
-        Ok((kernel_field_answer(host, request, &answer, "form.fieldUpdated")?, response.payloads))
-    }
-
-    /// `forms.deleteField`: the kernel reads what went as
-    /// `deletedFieldObjectNumber` and `removedWidgets`.
-    fn delete_field(host: &mut Host, request: &Value) -> Answer {
-        let mut call = request.clone();
-        call["effect"] = json!("write");
-        let (answer, response) = send(host, &call)?;
-        let meta = &answer["result"]["meta"];
-        let result = json!({
-            "deletedFieldObjectNumber": meta["changedFields"][0]["objectNumber"],
-            "removedWidgets": meta["changedWidgets"],
-            "meta": meta,
-        });
-        let event = kernel_event("form.fieldDeleted", answer["event"].get("origin"), &result);
-        Ok((mutation(result, &answer["mutationSequence"], event), response.payloads))
-    }
-
-    /// Upstream removed `forms.attachWidget` (d7bd2d277): a field gains a
-    /// widget with `forms.addWidget`, which makes a new one. An inert
-    /// widget can't join a field, so the kernel's call is refused until
-    /// Task 13 moves the kernel to `addWidget`.
-    fn attach_retired() -> HostResponse {
-        HostResponse {
-            json: json!({ "error": { "name": "EngineError", "code": "NotImplemented",
-                "message": "forms.attachWidget went upstream (d7bd2d277): add a widget to a \
-                    field with forms.addWidget" } })
-            .to_string(),
-            payloads: Vec::new(),
-        }
-    }
-
-    fn repair(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> Answer {
-        let response = super::wire_call(host, request, payloads);
-        let mut envelope: Value = serde_json::from_str(&response.json).unwrap_or(Value::Null);
-        if envelope.get("error").is_some() {
-            return Err(response);
-        }
-        let rename = |object: &mut Value| {
-            if let Some(map) = object.as_object_mut()
-                && let Some(cleared) = map.remove("needsAppearancesCleared")
-            {
-                map.insert("needAppearancesCleared".into(), cleared);
-            }
-        };
-        let answer = &mut envelope["result"];
-        rename(&mut answer["result"]);
-        if let Some(event) = answer.get_mut("event").filter(|e| e.is_object()) {
-            rename(event);
-            event["type"] = json!("form.repaired");
-        }
-        Ok((envelope, response.payloads))
-    }
-}
-
-/// The kernel's page structure edits (Task 8.18).
-///
-/// Upstream runs them as ops of `document.apply` (119685ea4): `pages.move`
-/// is `pages.reorder`, and every position names a neighbour page or an end
-/// (`ListPosition`, 1233d1349). The kernel still names an index, as this
-/// branch's wire did: `pages.move`'s in the pages left once the block is
-/// out, an insert's among the pages there are. [`op`] builds the page op
-/// with the kernel's `destIndex` where its `position` goes, and [`call`]
-/// turns it into the neighbour at that index of the document as it is now,
-/// sends the change, and answers it as the kernel decodes a page mutation:
-/// the op's item as the result (its layout in the file's coordinates) and
-/// its one event under the kernel's name (`pages.moved` for upstream's
-/// `pages.reordered`). Dead once Task 13 ports the kernel.
-mod kernel_pages {
-    use epdf_engine::error::{EngineError, EngineErrorCode};
-    use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::session::registry::SessionKey;
-    use epdf_kernel::Error;
-    use serde_json::{Value, json};
-
-    /// The page op a kernel page path names, its bytes moved into
-    /// `payloads`.
-    pub(super) fn op(
-        path: &str,
-        args: &[Value],
-        payloads: &mut Vec<Vec<u8>>,
-    ) -> Result<Value, Error> {
-        let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
-        let mut op = match path {
-            "pages.rotate" => json!({
-                "type": "pages.rotate",
-                "pages": super::page_refs(path, &arg(0))?,
-                "rotation": super::whole(path, "rotation", &arg(1))?,
-            }),
-            "pages.move" => json!({
-                "type": "pages.reorder",
-                "pages": super::page_refs(path, &arg(0))?,
-                "destIndex": super::whole(path, "destIndex", &arg(1))?,
-            }),
-            "pages.delete" => {
-                json!({ "type": "pages.delete", "pages": super::page_refs(path, &arg(0))? })
-            }
-            "pages.insertBlank" => {
-                let spec = arg(0);
-                let mut wire = json!({ "size": spec.get("size").cloned().unwrap_or(Value::Null) });
-                let count = super::optional_whole(path, "count", spec.get("count"))?;
-                if !count.is_null() {
-                    wire["count"] = count;
-                }
-                json!({ "type": "pages.insertBlank", "spec": wire })
-            }
-            "pages.insert" => {
-                payloads.push(super::pdf_bytes(path, &arg(0))?);
-                json!({ "type": "pages.insert", "source": { "payload": 0 } })
-            }
-            _ => unreachable!("routed to document.apply: {path}"),
-        };
-        if matches!(path, "pages.insertBlank" | "pages.insert") {
-            let at = super::optional_whole(path, "destIndex", args.get(1))?;
-            if !at.is_null() {
-                op["destIndex"] = at;
-            }
-        }
-        Ok(op)
-    }
-
-    /// Send the change, its op's `destIndex` turned into a `position`, and
-    /// answer it as the kernel decodes a page mutation.
-    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
-        match send(host, request, payloads) {
-            Ok(response) => response,
-            Err(error) => HostResponse {
-                json: json!({ "error": error.to_wire() }).to_string(),
-                payloads: Vec::new(),
-            },
-        }
-    }
-
-    fn send(
-        host: &mut Host,
-        request: &Value,
-        payloads: Vec<Vec<u8>>,
-    ) -> Result<HostResponse, EngineError> {
-        let mut request = request.clone();
-        let index = request
-            .pointer_mut("/change/ops/0")
-            .and_then(Value::as_object_mut)
-            .and_then(|op| op.remove("destIndex"));
-        if let Some(at) = index {
-            let order = page_order(host, &request)?;
-            let at = at.as_u64().ok_or_else(|| malformed("destIndex is a whole number"))? as usize;
-            let op = &mut request["change"]["ops"][0];
-            op["position"] = position_at(op, &order, at)?;
-        }
-        let response = super::wire_call(host, &request, payloads);
-        let mut envelope: Value =
-            serde_json::from_str(&response.json).map_err(|e| malformed(e.to_string()))?;
-        if envelope.get("error").is_some() {
-            return Ok(response);
-        }
-        let answer = &mut envelope["result"];
-        let mut item = answer["result"]["items"][0].take();
-        let mut event = answer["events"][0].take();
-        if let Some(fields) = item.as_object_mut() {
-            fields.remove("type");
-        }
-        super::page_space::layout_in_file_space(&mut item)?;
-        if !event.is_null() {
-            super::page_space::layout_in_file_space(&mut event)?;
-            if event["type"] == "pages.reordered" {
-                event["type"] = json!("pages.moved");
-            }
-        }
-        let kernel = json!({ "result": {
-            "result": item,
-            "mutationSequence": answer["mutationSequence"].take(),
-            "event": event,
-        } });
-        Ok(HostResponse { json: kernel.to_string(), payloads: response.payloads })
-    }
-
-    /// The neighbour at the kernel's index: for a move, among the pages left
-    /// once the block is out; for an insert, among the pages there are. 0
-    /// is the start; an index past the end is refused, as this branch's
-    /// wire refused it.
-    fn position_at(op: &Value, order: &[Value], at: usize) -> Result<Value, EngineError> {
-        let moving = op["type"] == "pages.reorder";
-        let left: Vec<&Value> = if moving {
-            let block: Vec<&Value> =
-                op["pages"].as_array().map(|p| p.iter().collect()).unwrap_or_default();
-            let number = |page: &Value| page.get("objectNumber").cloned();
-            order.iter().filter(|page| !block.iter().any(|b| number(b) == number(page))).collect()
-        } else {
-            order.iter().collect()
-        };
-        if at > left.len() {
-            let message = if moving {
-                format!(
-                    "pages.move destination {at} is past the end: {} pages remain after the \
-                     block is detached",
-                    left.len()
-                )
-            } else {
-                format!(
-                    "{} destination {at} is outside 0..={}",
-                    op["type"].as_str().unwrap_or("pages.insert"),
-                    left.len()
-                )
-            };
-            return Err(EngineError::with_message(EngineErrorCode::InvalidArg, message));
-        }
-        Ok(match at {
-            0 => json!("start"),
-            at => json!({ "after": left[at - 1] }),
-        })
-    }
-
-    /// The document's pages, as refs, in display order.
-    fn page_order(host: &mut Host, request: &Value) -> Result<Vec<Value>, EngineError> {
-        let doc = request
-            .get("docId")
-            .and_then(Value::as_str)
-            .ok_or_else(|| malformed("the change names no document"))?;
-        let key = match request.get("layerName").and_then(Value::as_str) {
-            Some(layer) => SessionKey::layer(doc, layer),
-            None => SessionKey::document(doc),
-        };
-        let records = host.sessions_mut().session_mut(&key)?.all_records()?;
-        Ok(records
-            .iter()
-            .map(|record| {
-                json!({ "kind": "objectNumber", "objectNumber": record.page_object_number.get() })
-            })
-            .collect())
-    }
-
-    fn malformed(message: impl Into<String>) -> EngineError {
-        EngineError::with_message(EngineErrorCode::WireFormat, message)
-    }
-}
-
-/// The kernel's annotation listings (Task 8.12).
-///
-/// The kernel reads the annotation record this branch's wire had before the
-/// catch-up: `{pageState, annotations}` per page, refs by object number,
-/// `/NM` or revisioned index, an `index` per annotation, the `/F` bits
-/// under `flags`, PDF-space places, `{r, g, b}` colours, widgets among the
-/// rest, rotation from our `/EMBD_Metadata`. Upstream's `annotations.list`
-/// answers none of that, and parts of it (the index, the weak state, the
-/// recorded rotation and `/RD`) can't be rebuilt from its answer. So the
-/// kernel's two listings are read here from the host's session with the
-/// engine's previous reader (`read::page`, which the annotation writes still
-/// answer with), never crossing the wire. Dead once Task 13 ports the
-/// kernel onto `annotations.list`.
-mod kernel_annotations {
-    use epdf_engine::cancel::CancelToken;
-    use epdf_engine::error::{EngineError, EngineErrorCode};
-    use epdf_engine::features::actions::vocabulary::ActionReadBudgetTracker;
-    use epdf_engine::features::annotation::read::page::read_page_annotations;
-    use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::identity::{PageObjectNumber, PageRef};
-    use epdf_engine::session::registry::SessionKey;
-    use serde_json::{Value, json};
-
-    /// `{pages: [{pageState, annotations}]}` for the request's `pages`, or
-    /// for every page in document order, as the removed
-    /// `annotations.listRawAll` answered.
-    pub(super) fn listing(host: &mut Host, request: &Value) -> HostResponse {
-        let json = match read(host, request) {
-            Ok(pages) => json!({ "result": { "pages": pages } }),
-            Err(error) => json!({ "error": error.to_wire() }),
-        };
-        HostResponse { json: json.to_string(), payloads: Vec::new() }
-    }
-
-    fn read(host: &mut Host, request: &Value) -> Result<Vec<Value>, EngineError> {
-        let doc = request.get("docId").and_then(Value::as_str).ok_or_else(|| {
-            EngineError::with_message(EngineErrorCode::WireFormat, "the listing names no document")
-        })?;
-        let key = match request.get("layerName").and_then(Value::as_str) {
-            Some(layer) => SessionKey::layer(doc, layer),
-            None => SessionKey::document(doc),
-        };
-        let session = host.sessions_mut().session_mut(&key)?;
-        let pages: Vec<PageObjectNumber> = match request.get("pages") {
-            Some(Value::Array(pages)) => pages
-                .iter()
-                .map(|page| PageRef::from_value(page, "pages").map(PageRef::object_number))
-                .collect::<Result<_, _>>()?,
-            _ => {
-                let document = session.document()?.document();
-                (0..document.page_count())
-                    .filter_map(|index| {
-                        PageObjectNumber::new(document.page_object_number_by_index(index)).ok()
-                    })
-                    .collect()
-            }
-        };
-        // One budget across the listing, as the removed whole-document
-        // listing kept one.
-        let mut budget = ActionReadBudgetTracker::default();
-        let mut snapshots = Vec::with_capacity(pages.len());
-        for page in pages {
-            let state = session.page_state(page)?;
-            let owned = session.document()?;
-            let index = owned.page_index(page)?;
-            let snapshot = read_page_annotations(
-                owned.document(),
-                index,
-                page,
-                &state.revision,
-                &mut budget,
-                &CancelToken::never(),
-            )?;
-            snapshots.push(
-                serde_json::to_value(&snapshot).map_err(|e| {
-                    EngineError::with_message(EngineErrorCode::Unknown, e.to_string())
-                })?,
-            );
-        }
-        Ok(snapshots)
-    }
-}
-
-/// The kernel's annotation create, on the host's (Task 8.14).
-///
-/// The kernel sends the draft it always has: the old spelling, in the file's
-/// coordinates (`rect` edges, `unrotatedRect` beside a counterclockwise
-/// `rotation`, `p1`..`p4` quads, `{r, g, b}` colours, a `flags` object,
-/// `inReplyTo`), its bytes as keyed resources. The host now takes upstream's
-/// v3 draft in page space with its bytes by role, and answers the new record
-/// and an `annotations.created` event. [`call`] respells the draft and the
-/// resources, sends the create, and answers the kernel the annotation the
-/// previous reader reads (the shape `sync` takes) under `created`, with an
-/// `annotation.created` event carrying it. Fields the v3 kind doesn't
-/// declare (a measurement's scale and caption, `/RD`) are left out, as the
-/// previous create ignored them. Dead once Task 13 ports the kernel.
-mod kernel_create {
-    use epdf_engine::error::{EngineError, EngineErrorCode};
-    use epdf_engine::features::annotation::subtype::AnnotationSubtype;
-    use epdf_engine::features::annotation::write::prepare::declared_fields;
-    use epdf_engine::geom::{PdfPoint, PdfRect};
-    use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::identity::PageRef;
-    use epdf_engine::page_space::destinations::page_destination_of;
-    use epdf_engine::page_space::{page_point_of, page_rect_of};
-    use serde_json::{Map, Value, json};
-
-    pub(super) fn malformed(message: impl Into<String>) -> EngineError {
-        EngineError::with_message(EngineErrorCode::WireFormat, message)
-    }
-
-    pub(super) fn refused(error: EngineError) -> HostResponse {
-        HostResponse { json: json!({ "error": error.to_wire() }).to_string(), payloads: Vec::new() }
-    }
-
-    /// The kernel's create, answered in the kernel's shape.
-    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
-        let (wire, payloads) = match respell(host, request, payloads) {
-            Ok(respelled) => respelled,
-            Err(error) => return refused(error),
-        };
-        let response = super::wire_call(host, &wire, payloads);
-        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
-            return response;
-        };
-        if envelope.get("error").is_some() {
-            return response;
-        }
-        match answer_for_kernel(host, request, &mut envelope) {
-            Ok(()) => HostResponse { json: envelope.to_string(), payloads: response.payloads },
-            Err(error) => refused(error),
-        }
-    }
-
-    /// The v3 request, in page space, with its bytes by role.
-    fn respell(
-        host: &Host,
-        request: &Value,
-        payloads: Vec<Vec<u8>>,
-    ) -> Result<(Value, Vec<Vec<u8>>), EngineError> {
-        let page: PageRef =
-            serde_json::from_value(request.get("page").cloned().unwrap_or_default())
-                .map_err(|e| malformed(format!("the create names no page: {e}")))?;
-        let mut box_of = super::page_space::visible_boxes(host, request);
-        let visible = box_of(page.object_number())?;
-        let draft = match request.get("draft") {
-            Some(Value::Object(draft)) => draft.clone(),
-            _ => return Err(malformed("the create carries no draft")),
-        };
-        let keyed = request.get("resources").cloned().unwrap_or(Value::Null);
-        let payload_of = |resource: Option<&Value>| -> Option<Value> {
-            let key = resource?.as_str()?;
-            keyed.get(key)?.get("payload").cloned()
-        };
-        let mut roles = Map::new();
-        if let Some(index) = payload_of(draft.get("source").and_then(|s| s.get("resource"))) {
-            roles.insert("appearance".into(), json!({ "payload": index }));
-        }
-        if let Some(index) = payload_of(draft.get("file").and_then(|f| f.get("resource"))) {
-            roles.insert("file".into(), json!({ "payload": index }));
-        }
-        let draft = v3_draft(draft, visible, &mut box_of, false)?;
-        let mut wire = Map::new();
-        for key in ["kind", "jobId", "docId", "layerName", "opId", "page", "objectNumberFloor"] {
-            if let Some(value) = request.get(key).filter(|v| !v.is_null()) {
-                wire.insert(key.into(), value.clone());
-            }
-        }
-        wire.insert("draft".into(), Value::Object(draft));
-        if !roles.is_empty() {
-            wire.insert("resources".into(), Value::Object(roles));
-        }
-        Ok((Value::Object(wire), payloads))
-    }
-
-    fn rect(value: &Value) -> Option<PdfRect> {
-        serde_json::from_value(value.clone()).ok()
-    }
-
-    fn page_point(value: &Value, visible: PdfRect) -> Value {
-        match serde_json::from_value::<PdfPoint>(value.clone()) {
-            Ok(point) => json!(page_point_of(point, visible)),
-            Err(_) => value.clone(),
-        }
-    }
-
-    fn page_points(value: &Value, visible: PdfRect) -> Value {
-        match value {
-            Value::Array(points) => {
-                Value::Array(points.iter().map(|p| page_point(p, visible)).collect())
-            }
-            other => other.clone(),
-        }
-    }
-
-    fn page_box(value: &Value, visible: PdfRect) -> Value {
-        match rect(value) {
-            Some(rect) => json!(page_rect_of(epdf_engine::geom::normalize_pdf_rect(rect), visible)),
-            None => value.clone(),
-        }
-    }
-
-    fn hex(value: &Value) -> Value {
-        let channel = |key: &str| value.get(key).and_then(Value::as_f64);
-        match (channel("r"), channel("g"), channel("b")) {
-            (Some(r), Some(g), Some(b)) => {
-                Value::String(format!("#{:02x}{:02x}{:02x}", r as u8, g as u8, b as u8))
-            }
-            _ => value.clone(),
-        }
-    }
-
-    /// A kernel draft (old spelling, the file's coordinates) as upstream's
-    /// v3 draft in page space, keeping only the fields its kind declares.
-    /// The kernel's patch is the same statement (`toPatch`): with `update`,
-    /// it is respelled as a v3 patch, where a drawn kind's `rect` is a
-    /// command, a turn of 0 and a cloud of 0 clear, and the shape the
-    /// statement states wins over its `rect`.
-    pub(super) fn v3_draft(
-        mut draft: Map<String, Value>,
-        visible: PdfRect,
-        box_of: &mut dyn FnMut(
-            epdf_engine::identity::PageObjectNumber,
-        ) -> Result<PdfRect, EngineError>,
-        update: bool,
-    ) -> Result<Map<String, Value>, EngineError> {
-        let subtype_name = draft.get("subtype").and_then(Value::as_str).unwrap_or("").to_owned();
-        let subtype: AnnotationSubtype = serde_json::from_value(json!(subtype_name))
-            .map_err(|_| malformed(format!("no annotation kind '{subtype_name}'")))?;
-        use AnnotationSubtype as S;
-        let mut out = Map::new();
-        // The `/F` flags, each its own field.
-        if let Some(Value::Object(flags)) = draft.remove("flags") {
-            for (name, value) in flags {
-                if value.is_boolean() {
-                    out.insert(name, value);
-                }
-            }
-        }
-        // `inReplyTo` and `replyType` are `reply`.
-        if let Some(to) = draft.remove("inReplyTo").filter(|to| !to.is_null()) {
-            let reply_type = draft.remove("replyType").unwrap_or(json!("reply"));
-            out.insert("reply".into(), json!({ "to": to, "type": reply_type }));
-        }
-        draft.remove("replyType");
-        // A dimension's caption is its fields: a line's flag, position and
-        // offset, a shape's flag and centre on the page.
-        if let Some(caption) = draft.remove("caption").filter(Value::is_object) {
-            out.insert(
-                "captionEnabled".into(),
-                caption.get("enabled").cloned().unwrap_or(json!(false)),
-            );
-            if subtype == S::Line {
-                out.insert(
-                    "captionPosition".into(),
-                    caption.get("position").cloned().unwrap_or(json!("inline")),
-                );
-                out.insert(
-                    "captionOffset".into(),
-                    caption.get("offset").cloned().unwrap_or(Value::Null),
-                );
-            } else {
-                let center = caption.get("center").filter(|c| !c.is_null());
-                out.insert(
-                    "captionCenter".into(),
-                    center.map_or(Value::Null, |center| page_point(center, visible)),
-                );
-            }
-        }
-        // A box kind's box: the turned-from box when it is turned, its rect
-        // when upright. The kernel's turn is counterclockwise.
-        let rotation_sent = draft.contains_key("rotation");
-        let rotation = draft.remove("rotation").and_then(|r| r.as_f64()).filter(|r| *r != 0.0);
-        let clockwise = rotation.map(|r| (360.0 - r.rem_euclid(360.0)).rem_euclid(360.0));
-        let is_box_kind =
-            matches!(subtype, S::Square | S::Circle | S::FreeText | S::Stamp | S::Caret);
-        let unrotated = draft.remove("unrotatedRect");
-        let given_rect = draft.remove("rect");
-        let turned_from = unrotated.filter(|u| !u.is_null() && rotation.is_some());
-        // Upright, the box is the rect less the statement's `/RD`, as the
-        // kernel's `ingest` reads it (`inset_pdf_rect_by_rd`): a callout's
-        // rect holds its line, a cloudy border's its bumps.
-        let differences = draft.remove("rectDifferences");
-        let upright_box = given_rect.as_ref().and_then(rect).map(|r| {
-            let inset = |key: &str| {
-                differences.as_ref().and_then(|d| d.get(key)).and_then(Value::as_f64).unwrap_or(0.0)
-            };
-            json!(PdfRect {
-                left: r.left + inset("left"),
-                bottom: r.bottom + inset("bottom"),
-                right: r.right - inset("right"),
-                top: r.top - inset("top"),
-            })
-        });
-        if is_box_kind && let Some(content) = turned_from.or(upright_box) {
-            out.insert("box".into(), page_box(&content, visible));
-        } else if (update
-            || matches!(subtype, S::Text | S::Link | S::Redact | S::FileAttachment | S::Popup))
-            && let Some(rect) = given_rect
-        {
-            out.insert("rect".into(), page_box(&rect, visible));
-        }
-        if let Some(degrees) = clockwise.filter(|d| *d != 0.0)
-            && matches!(
-                subtype,
-                S::Square
-                    | S::Circle
-                    | S::FreeText
-                    | S::Stamp
-                    | S::Caret
-                    | S::Polygon
-                    | S::Polyline
-                    | S::Line
-                    | S::Ink
-            )
-        {
-            out.insert("rotation".into(), json!(degrees));
-        } else if update && rotation_sent {
-            out.insert("rotation".into(), Value::Null);
-        }
-        for (name, value) in draft {
-            let converted = match name.as_str() {
-                "color" | "fontColor" => hex(&value),
-                "interiorColor" => {
-                    if value.is_null() {
-                        Value::Null
-                    } else {
-                        hex(&value)
-                    }
-                }
-                "quadPoints" => match &value {
-                    Value::Array(quads) => Value::Array(
-                        quads
-                            .iter()
-                            .map(|q| {
-                                json!({
-                                    "upperLeft": page_point(&q["p1"], visible),
-                                    "upperRight": page_point(&q["p2"], visible),
-                                    "lowerLeft": page_point(&q["p3"], visible),
-                                    "lowerRight": page_point(&q["p4"], visible),
-                                })
-                            })
-                            .collect(),
-                    ),
-                    other => other.clone(),
-                },
-                "vertices" | "calloutLine" => page_points(&value, visible),
-                "inkList" => match &value {
-                    Value::Array(strokes) => {
-                        Value::Array(strokes.iter().map(|s| page_points(s, visible)).collect())
-                    }
-                    other => other.clone(),
-                },
-                "linePoints" => json!({
-                    "start": page_point(&value["start"], visible),
-                    "end": page_point(&value["end"], visible),
-                }),
-                // `/IT` as the kernel spells it, the PDF name, for a
-                // dimension.
-                "intent" => match value.as_str() {
-                    Some("LineDimension") => json!("line-dimension"),
-                    Some("LineArrow") => json!("line-arrow"),
-                    Some("PolygonDimension") => json!("polygon-dimension"),
-                    Some("PolygonCloud") => json!("polygon-cloud"),
-                    Some("PolyLineDimension") => json!("polyline-dimension"),
-                    _ => value,
-                },
-                "measure" => super::page_space::kernel_measure_in_page_space(value, visible),
-                "cloudyIntensity" => match value.as_f64() {
-                    Some(intensity) if intensity > 0.0 => value,
-                    _ if update => Value::Null,
-                    _ => continue,
-                },
-                "file" => {
-                    let mut file = Map::new();
-                    for key in ["name", "mimeType", "description"] {
-                        if let Some(v) = value.get(key) {
-                            file.insert(key.into(), v.clone());
-                        }
-                    }
-                    Value::Object(file)
-                }
-                "target" => match value.get("destination") {
-                    Some(destination) if value["kind"] == "goto" => {
-                        let destination: epdf_engine::features::actions::destination::PdfDestination =
-                            serde_json::from_value(destination.clone()).map_err(|e| {
-                                malformed(format!("a link destination the host can't read: {e}"))
-                            })?;
-                        json!({ "kind": "goto",
-                            "destination": page_destination_of(destination, &mut *box_of)? })
-                    }
-                    _ => value,
-                },
-                _ => value,
-            };
-            out.insert(name, converted);
-        }
-        // Only the fields the kind declares travel: the v3 create refuses
-        // any other, where the previous create ignored them.
-        let declared: Vec<&str> = declared_fields(subtype).map(|(name, _)| name).collect();
-        out.retain(|name, _| declared.contains(&name.as_str()));
-        // A drawn kind's `rect` beside the shape it states is the rect
-        // around it, not a command.
-        if update
-            && epdf_engine::features::annotation::write::shape_for_rect::is_drawn_rect_kind(
-                &subtype_name,
-            )
-            && epdf_engine::features::annotation::write::shape_for_rect::shape_fields_of(
-                &subtype_name,
-            )
-            .iter()
-            .any(|field| *field != "rotation" && out.contains_key(*field))
-        {
-            out.remove("rect");
-        }
-        out.insert("subtype".into(), json!(subtype_name));
-        Ok(out)
-    }
-
-    /// The created annotation as the previous reader reads it, under
-    /// `created`, and the event the kernel's sync takes.
-    fn answer_for_kernel(
-        host: &mut Host,
-        request: &Value,
-        envelope: &mut Value,
-    ) -> Result<(), EngineError> {
-        let object_number = envelope
-            .pointer("/result/result/annotation/ref/objectNumber")
-            .cloned()
-            .ok_or_else(|| malformed("a create answered no annotation"))?;
-        let page = request.get("page").cloned().unwrap_or_default();
-        let listing = super::kernel_annotations::listing(
-            host,
-            &json!({ "kind": "annotations.list", "docId": request.get("docId"),
-                "layerName": request.get("layerName"), "pages": [page] }),
-        );
-        let listed: Value = serde_json::from_str(&listing.json)
-            .map_err(|e| malformed(format!("the listing is not JSON: {e}")))?;
-        let created = listed
-            .pointer("/result/pages/0/annotations")
-            .and_then(Value::as_array)
-            .and_then(|all| all.iter().find(|a| a["ref"]["objectNumber"] == object_number))
-            .cloned()
-            .ok_or_else(|| {
-                EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "the created annotation does not read back",
-                )
-            })?;
-        let answer = &mut envelope["result"];
-        let meta = answer["result"]["meta"].take();
-        answer["result"] = json!({ "created": created, "meta": meta });
-        if let Some(Value::Object(event)) = answer.get_mut("event") {
-            event.remove("annotation");
-            event.insert("type".into(), json!("annotation.created"));
-            event.insert("created".into(), created);
-        }
-        Ok(())
-    }
-}
-
-/// The kernel's annotation update, on the host's (Task 8.15).
-///
-/// The kernel sends its patch as the statement it sends a create
-/// (`toPatch`): the old spelling, in the file's coordinates, its bytes as
-/// keyed resources. The host now takes upstream's v3 patch in page space,
-/// with its bytes by role, and answers the new record, its appearance
-/// verdict and an `annotations.updated` event. [`call`] respells the patch
-/// ([`super::kernel_create::v3_draft`] with `update`) and the resources,
-/// sends the update, and answers the kernel the annotation the previous
-/// reader reads (the shape `sync` takes) under `updated`, with an
-/// `annotation.updated` event carrying it. Dead once Task 13 ports the
-/// kernel.
-mod kernel_update {
-    use epdf_engine::error::{EngineError, EngineErrorCode};
-    use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::identity::AnnotationRef;
-    use epdf_engine::session::registry::SessionKey;
-    use serde_json::{Map, Value, json};
-
-    use super::kernel_create::{malformed, refused, v3_draft};
-
-    /// The kernel's update, answered in the kernel's shape.
-    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
-        let (wire, index) = match respell(host, request) {
-            Ok(respelled) => respelled,
-            Err(error) => return refused(error),
-        };
-        // TEMPORARY (Task 13 moves the kernel onto upstream's refs): an
-        // update promotes its page's inline annotations first
-        // (`writeUpdate`), so the previous reader names an annotation born
-        // inline by its object number afterwards. The kernel keys it by the
-        // ref the reader gave it before, so the answer keeps that one.
-        let before = kernel_ref_at(host, request, index);
-        let response = super::wire_call(host, &wire, payloads);
-        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
-            return response;
-        };
-        if envelope.get("error").is_some() {
-            return response;
-        }
-        match answer_for_kernel(host, request, index, before, &mut envelope) {
-            Ok(()) => HostResponse { json: envelope.to_string(), payloads: response.payloads },
-            Err(error) => refused(error),
-        }
-    }
-
-    fn session_key(request: &Value) -> Result<SessionKey, EngineError> {
-        let doc = request
-            .get("docId")
-            .and_then(Value::as_str)
-            .ok_or_else(|| malformed("the update names no document"))?;
-        Ok(match request.get("layerName").and_then(Value::as_str) {
-            Some(layer) => SessionKey::layer(doc, layer),
-            None => SessionKey::document(doc),
-        })
-    }
-
-    /// The v3 request, in page space, with its bytes by role, and where the
-    /// annotation sits in its page's `/Annots` (an update doesn't move it).
-    fn respell(host: &Host, request: &Value) -> Result<(Value, u32), EngineError> {
-        let reference: AnnotationRef =
-            serde_json::from_value(request.get("ref").cloned().unwrap_or_default())
-                .map_err(|e| malformed(format!("the update names no annotation: {e}")))?;
-        let index = {
-            let session = host.sessions().session(&session_key(request)?)?;
-            let owned = session.document()?;
-            let page_index = owned.page_index(reference.page())?;
-            epdf_engine::features::annotation::write::resolve::resolve_annotation_index_raw(
-                owned.document(),
-                page_index,
-                &reference,
-            )?
-        };
-        let mut box_of = super::page_space::visible_boxes(host, request);
-        let visible = box_of(reference.page())?;
-        let patch = match request.get("patch") {
-            Some(Value::Object(patch)) => patch.clone(),
-            _ => return Err(malformed("the update carries no patch")),
-        };
-        let keyed = request.get("resources").cloned().unwrap_or(Value::Null);
-        let payload_of = |resource: Option<&Value>| -> Option<Value> {
-            let key = resource?.as_str()?;
-            keyed.get(key)?.get("payload").cloned()
-        };
-        let mut roles = Map::new();
-        if let Some(index) = payload_of(patch.get("source").and_then(|s| s.get("resource"))) {
-            roles.insert("appearance".into(), json!({ "payload": index }));
-        }
-        if let Some(index) = payload_of(patch.get("file").and_then(|f| f.get("resource"))) {
-            roles.insert("file".into(), json!({ "payload": index }));
-        }
-        let patch = v3_draft(patch, visible, &mut box_of, true)?;
-        let mut wire = Map::new();
-        for key in
-            ["kind", "jobId", "docId", "layerName", "opId", "ref", "authority", "objectNumberFloor"]
-        {
-            if let Some(value) = request.get(key).filter(|v| !v.is_null()) {
-                wire.insert(key.into(), value.clone());
-            }
-        }
-        wire.insert("patch".into(), Value::Object(patch));
-        if !roles.is_empty() {
-            wire.insert("resources".into(), Value::Object(roles));
-        }
-        Ok((Value::Object(wire), index))
-    }
-
-    /// The `ref` the previous reader gives the annotation at `index` of the
-    /// request's page, before the update.
-    fn kernel_ref_at(host: &mut Host, request: &Value, index: u32) -> Option<Value> {
-        let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
-        let listing = super::kernel_annotations::listing(
-            host,
-            &json!({ "kind": "annotations.list", "docId": request.get("docId"),
-                "layerName": request.get("layerName"), "pages": [page] }),
-        );
-        let listed: Value = serde_json::from_str(&listing.json).ok()?;
-        listed
-            .pointer("/result/pages/0/annotations")?
-            .as_array()?
-            .iter()
-            .find(|a| a["index"] == json!(index))
-            .map(|a| a["ref"].clone())
-    }
-
-    /// The updated annotation as the previous reader reads it, under
-    /// `updated`, named by `before` when the reader named it so before the
-    /// update, and the event the kernel's sync takes.
-    fn answer_for_kernel(
-        host: &mut Host,
-        request: &Value,
-        index: u32,
-        before: Option<Value>,
-        envelope: &mut Value,
-    ) -> Result<(), EngineError> {
-        let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
-        let listing = super::kernel_annotations::listing(
-            host,
-            &json!({ "kind": "annotations.list", "docId": request.get("docId"),
-                "layerName": request.get("layerName"), "pages": [page] }),
-        );
-        let listed: Value = serde_json::from_str(&listing.json)
-            .map_err(|e| malformed(format!("the listing is not JSON: {e}")))?;
-        let updated = listed
-            .pointer("/result/pages/0/annotations")
-            .and_then(Value::as_array)
-            .and_then(|all| all.iter().find(|a| a["index"] == json!(index)))
-            .cloned()
-            .ok_or_else(|| {
-                EngineError::with_message(
-                    EngineErrorCode::Unknown,
-                    "the updated annotation does not read back",
-                )
-            })?;
-        let mut updated = updated;
-        if let Some(before) = before {
-            updated["ref"] = before;
-        }
-        let answer = &mut envelope["result"];
-        let appearance = answer["result"]["appearance"].take();
-        let meta = answer["result"]["meta"].take();
-        answer["result"] = json!({ "updated": updated, "appearance": appearance, "meta": meta });
-        if let Some(Value::Object(event)) = answer.get_mut("event") {
-            event.remove("annotation");
-            event.insert("type".into(), json!("annotation.updated"));
-            event.insert("updated".into(), updated);
-        }
-        Ok(())
-    }
-}
-
-/// The kernel's annotation delete, on the host's (Task 8.16).
-///
-/// The host now answers upstream's delete: `{meta}`, the thread and popups
-/// gone with the annotation and named in `meta.changed`, and an
-/// `annotations.deleted` event listing them. The kernel's sync takes the
-/// previous answer: the durable id of what it asked to delete under
-/// `deleted` (its object number, else its non-empty `/NM`, else `null`), in
-/// the result and in an `annotation.deleted` event. [`call`] reads that id
-/// before the delete and answers it so. Dead once Task 13 ports the kernel.
-mod kernel_delete {
-    use epdf_engine::error::EngineError;
-    use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::identity::AnnotationRef;
-    use serde_json::{Value, json};
-
-    use super::kernel_create::{malformed, refused};
-
-    /// The kernel's delete, answered in the kernel's shape.
-    pub(super) fn call(host: &mut Host, request: &Value, payloads: Vec<Vec<u8>>) -> HostResponse {
-        let deleted = match durable_id(host, request) {
-            Ok(id) => id,
-            Err(error) => return refused(error),
-        };
-        let response = super::wire_call(host, request, payloads);
-        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
-            return response;
-        };
-        if envelope.get("error").is_some() {
-            return response;
-        }
-        let answer = &mut envelope["result"];
-        let meta = answer["result"]["meta"].take();
-        answer["result"] = json!({ "deleted": deleted, "meta": meta });
-        if let Some(Value::Object(event)) = answer.get_mut("event") {
-            event.insert("type".into(), json!("annotation.deleted"));
-            event.insert("deleted".into(), deleted);
-        }
-        HostResponse { json: envelope.to_string(), payloads: response.payloads }
-    }
-
-    /// The durable id of the annotation `request` names, as the previous
-    /// delete answered it. A ref that names nothing answers `null`, and the
-    /// host's own refusal follows.
-    fn durable_id(host: &mut Host, request: &Value) -> Result<Value, EngineError> {
-        let reference: AnnotationRef =
-            serde_json::from_value(request.get("ref").cloned().unwrap_or_default())
-                .map_err(|e| malformed(format!("the delete names no annotation: {e}")))?;
-        let base_index = match reference {
-            AnnotationRef::ObjectNumber { annot, .. } => {
-                return Ok(json!({ "kind": "objectNumber", "value": annot }));
-            }
-            AnnotationRef::BaseIndex { base_index, .. } => base_index,
-            AnnotationRef::Nm { .. } | AnnotationRef::Index { .. } => return Ok(Value::Null),
-        };
-        // Still inline: its name, if it has one, from the kernel's listing.
-        let page = request.get("ref").and_then(|r| r.get("page")).cloned().unwrap_or_default();
-        let mut list = json!({ "kind": "annotations.list", "docId": request.get("docId"),
-            "pages": [page] });
-        if let Some(layer) = request.get("layerName") {
-            list["layerName"] = layer.clone();
-        }
-        let listing = super::kernel_annotations::listing(host, &list);
-        let listed: Value = serde_json::from_str(&listing.json)
-            .map_err(|e| malformed(format!("the listing is not JSON: {e}")))?;
-        let name = listed
-            .pointer("/result/pages/0/annotations")
-            .and_then(Value::as_array)
-            .and_then(|all| all.iter().find(|a| a["index"] == json!(base_index)))
-            .and_then(|a| a["nm"].as_str())
-            .filter(|nm| !nm.is_empty())
-            .map(str::to_owned);
-        Ok(name.map_or(Value::Null, |nm| json!({ "kind": "nm", "value": nm })))
-    }
-}
-
-/// The kernel's places in the file's coordinates, and the host's in page
-/// space (Task 8.4's boundary, `epdf_engine::page_space`).
-///
-/// The kernel still reads and sends PDF space: a page list's boxes, a
-/// destination, a render target, a page's text geometry. The host now
-/// answers and takes page space, as upstream's worker does. [`call_host`]
-/// converts a render target on the way out and a page list's, the catalog
-/// actions' or the text geometry's places on the way back, reading each
-/// page's visible box from the host's session (a page list carries its own),
-/// so the kernel keeps its space until Task 13 ports it. Dead then.
-mod page_space {
-    use epdf_engine::error::EngineError;
-    use epdf_engine::features::actions::destination::PdfDestination;
-    use epdf_engine::features::actions::document::DocumentActionsSnapshot;
-    use epdf_engine::features::annotation::read::base::AnnotationActions;
-    use epdf_engine::features::forms::snapshot::FieldActions;
-    use epdf_engine::features::geometry::{PageGeometryRun, PageGeometrySnapshot};
-    use epdf_engine::features::pages::{PageLayout, PageListSnapshot};
-    use epdf_engine::features::search::reader::SearchSlice;
-    use epdf_engine::geom::{PageBoxes, PageQuad, PageRect, PdfRect, normalize_pdf_rect};
-    use epdf_engine::host::{Host, HostResponse};
-    use epdf_engine::identity::{PageObjectNumber, PageRef};
-    use epdf_engine::page_space::destinations::{PageDestination, pdf_destination_of};
-    use epdf_engine::page_space::{
-        PageCoordinates, PdfCoordinates, page_rect_of, pdf_quad_of, pdf_rect_of,
-    };
-    use epdf_engine::session::registry::SessionKey;
-    use serde_json::Value;
-    use std::collections::HashMap;
-
-    /// The visible box of any page of the request's document, read one page
-    /// at a time through the session's index, as the host's own boundary
-    /// reads it (`page_space::boundary::session_boxes`). It takes `&Host`,
-    /// so it can issue no call: a kernel tile costs one page's box reads,
-    /// not a page list, and reads the document as it is now, so there is
-    /// nothing to go stale after a write.
-    pub(super) fn visible_boxes<'h>(
-        host: &'h Host,
-        request: &Value,
-    ) -> impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + 'h {
-        let key = request.get("docId").and_then(Value::as_str).map(|doc| {
-            match request.get("layerName").and_then(Value::as_str) {
-                Some(layer) => SessionKey::layer(doc, layer),
-                None => SessionKey::document(doc),
-            }
-        });
-        epdf_engine::page_space::boundary::session_boxes(host.sessions(), key, "translate")
-    }
-
-    fn lookup(
-        boxes: &HashMap<u32, PdfRect>,
-    ) -> impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError> + '_ {
-        move |page| {
-            boxes.get(&page.get()).copied().ok_or_else(|| {
-                EngineError::with_message(
-                    epdf_engine::error::EngineErrorCode::NotFound,
-                    format!("no page with object number {}", page.get()),
-                )
-            })
-        }
-    }
-
-    /// A `pages.render` or `pages.renderEncoded` target the kernel sent in
-    /// the file's coordinates (`{left, bottom, right, top}`), in page space
-    /// on its page. Answers whether it changed anything; a target it cannot
-    /// place goes as it came, for the host to refuse.
-    pub(super) fn render_target_to_page_space(host: &Host, request: &mut Value) -> bool {
-        let kind = request.get("kind").and_then(Value::as_str).unwrap_or_default();
-        if kind != "pages.render" && kind != "pages.renderEncoded" {
-            return false;
-        }
-        let Some(rect) =
-            request.pointer("/options/target/rect").filter(|r| r.get("left").is_some())
-        else {
-            return false;
-        };
-        let Ok(rect) = serde_json::from_value::<PdfRect>(rect.clone()) else { return false };
-        let Some(page) = request
-            .pointer("/page/objectNumber")
-            .and_then(Value::as_u64)
-            .and_then(|n| u32::try_from(n).ok())
-            .and_then(|n| PageObjectNumber::new(n).ok())
-        else {
-            return false;
-        };
-        let Ok(visible) = visible_boxes(host, request)(page) else { return false };
-        let Ok(rect) = serde_json::to_value(page_rect_of(normalize_pdf_rect(rect), visible)) else {
-            return false;
-        };
-        request["options"]["target"]["rect"] = rect;
-        true
-    }
-
-    /// A kernel scale (`subtype: "RL"`, its origin in the file's
-    /// coordinates) as the host takes it: `rectilinear`, its origin a place
-    /// on the page whose visible box is `visible`.
-    pub(super) fn kernel_measure_in_page_space(measure: Value, visible: PdfRect) -> Value {
-        let mut measure = respell_subtype(measure, &[("RL", "rectilinear"), ("GEO", "geospatial")]);
-        if measure.is_object() {
-            measure = epdf_engine::page_space::measure::page_measure_of(measure, visible);
-        }
-        measure
-    }
-
-    fn respell_subtype(mut measure: Value, names: &[(&str, &str)]) -> Value {
-        if let Some(subtype) = measure.get_mut("subtype")
-            && let Some((_, to)) = names.iter().find(|(from, _)| subtype.as_str() == Some(from))
-        {
-            *subtype = Value::String((*to).to_owned());
-        }
-        measure
-    }
-
-    /// A `measure.setScale` the kernel sent, in the host's spelling and on
-    /// the request's page (`kernel_measure_in_page_space`). Answers whether
-    /// it changed anything.
-    pub(super) fn scale_to_page_space(host: &Host, request: &mut Value) -> bool {
-        if request.get("kind").and_then(Value::as_str) != Some("measure.setScale")
-            || !request.get("measure").is_some_and(Value::is_object)
-        {
-            return false;
-        }
-        let Some(page) = request
-            .pointer("/page/objectNumber")
-            .and_then(Value::as_u64)
-            .and_then(|n| u32::try_from(n).ok())
-            .and_then(|n| PageObjectNumber::new(n).ok())
-        else {
-            return false;
-        };
-        let Ok(visible) = visible_boxes(host, request)(page) else { return false };
-        let measure = request["measure"].take();
-        request["measure"] = kernel_measure_in_page_space(measure, visible);
-        true
-    }
-
-    /// `measure.viewports`' answer as the kernel reads it: each `bbox` and
-    /// scale origin in the file's coordinates, a scale's subtype `RL` or
-    /// `GEO`.
-    fn kernel_viewports_of(viewports: Value, visible: PdfRect) -> Result<Value, String> {
-        let Value::Array(viewports) = viewports else {
-            return Err("the viewports are not a list".into());
-        };
-        let mut out = Vec::with_capacity(viewports.len());
-        for mut viewport in viewports {
-            let bbox: PageRect =
-                serde_json::from_value(viewport["bbox"].take()).map_err(|e| e.to_string())?;
-            viewport["bbox"] =
-                serde_json::to_value(pdf_rect_of(bbox, visible)).map_err(|e| e.to_string())?;
-            let measure = viewport["measure"].take();
-            viewport["measure"] = if measure.is_object() {
-                respell_subtype(
-                    epdf_engine::page_space::measure::pdf_measure_of(measure, visible),
-                    &[("rectilinear", "RL"), ("geospatial", "GEO")],
-                )
-            } else {
-                measure
-            };
-            out.push(viewport);
-        }
-        Ok(Value::Array(out))
-    }
-
-    /// The host's page-space answer as the kernel reads it: `pages.list`'s
-    /// boxes and page actions, `actions.read`'s destinations,
-    /// `pages.geometry`'s runs, `search.query`'s match segments and
-    /// `forms.list`'s field actions and widget rows, in the file's
-    /// coordinates. Every other answer goes as it came.
-    pub(super) fn answer_to_file_space(
-        host: &Host,
-        kind: &str,
-        request: &Value,
-        response: HostResponse,
-    ) -> HostResponse {
-        if matches!(kind, "pages.setName" | "pages.removeName") {
-            return names_in_file_space(response);
-        }
-        if !matches!(
-            kind,
-            "pages.list"
-                | "actions.read"
-                | "pages.geometry"
-                | "search.query"
-                | "forms.list"
-                | "measure.viewports"
-        ) {
-            return response;
-        }
-        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
-            return response;
-        };
-        let Some(result) = envelope.get_mut("result").filter(|r| r.is_object()) else {
-            return response;
-        };
-        let converted = if kind == "measure.viewports" {
-            request
-                .get("page")
-                .cloned()
-                .and_then(|page| serde_json::from_value::<PageRef>(page).ok())
-                .ok_or_else(|| "the request names no page".to_owned())
-                .and_then(|page| {
-                    visible_boxes(host, request)(page.object_number()).map_err(|e| e.message)
-                })
-                .and_then(|visible| {
-                    let viewports = result["viewports"].take();
-                    let mut answer = result.take();
-                    answer["viewports"] = kernel_viewports_of(viewports, visible)?;
-                    Ok(answer)
-                })
-        } else if kind == "forms.list" {
-            let mut boxes = visible_boxes(host, request);
-            form_in_file_space(result.take(), &mut boxes)
-        } else if kind == "pages.geometry" {
-            serde_json::from_value::<PageGeometrySnapshot<PageCoordinates>>(result.take())
-                .map_err(|e| e.to_string())
-                .and_then(|snapshot| {
-                    let page = request
-                        .get("page")
-                        .cloned()
-                        .and_then(|page| serde_json::from_value::<PageRef>(page).ok())
-                        .ok_or("the request names no page")?;
-                    let visible = visible_boxes(host, request)(page.object_number())
-                        .map_err(|e| e.message)?;
-                    Ok(kernel_geometry_of(snapshot, visible))
-                })
-        } else if kind == "search.query" {
-            let mut boxes = visible_boxes(host, request);
-            serde_json::from_value::<SearchSlice<PageCoordinates>>(result.take())
-                .map_err(|e| e.to_string())
-                .and_then(|slice| kernel_search_slice_of(slice, &mut boxes).map_err(|e| e.message))
-        } else if kind == "pages.list" {
-            serde_json::from_value::<PageListSnapshot<PageCoordinates>>(result.take())
-                .map_err(|e| e.to_string())
-                .and_then(|list| page_list_in_file_space(list).map_err(|e| e.message))
-                .and_then(|list| serde_json::to_value(list).map_err(|e| e.to_string()))
-        } else {
-            // `{ snapshot }`, answered to the kernel as the snapshot itself.
-            let mut boxes = visible_boxes(host, request);
-            serde_json::from_value::<DocumentActionsSnapshot<PageDestination>>(
-                result["snapshot"].take(),
-            )
-            .map_err(|e| e.to_string())
-            .and_then(|snapshot| {
-                snapshot
-                    .try_map_destinations(&mut |d| pdf_destination_of(d, &mut boxes))
-                    .map_err(|e| e.message)
-            })
-            .and_then(|snapshot| serde_json::to_value(snapshot).map_err(|e| e.to_string()))
-        };
-        let envelope = match converted {
-            Ok(value) => {
-                *result = value;
-                envelope
-            }
-            // An answer the host should never give: refused, as the kernel's
-            // decode reports any host error.
-            Err(error) => serde_json::json!({ "error": {
-                "name": "EngineError",
-                "code": "WireFormat",
-                "message": format!("the {kind} answer is not in page space: {error}"),
-            } }),
-        };
-        HostResponse { json: envelope.to_string(), payloads: response.payloads }
-    }
-
-    /// The answer with each form field record's raw `/Ff` word, read from
-    /// the session's form model by the field's object number, as
-    /// `flags: {raw}`. Upstream's record has no raw word (c3b90c3a4) and the
-    /// kernel's does; [`super::to_kernel_form_records`] keeps this one
-    /// rather than rebuilding it. A field with no object number, or one the
-    /// model no longer has, is left for that rebuild.
-    pub(super) fn with_raw_field_flags(
-        host: &Host,
-        request: &Value,
-        response: HostResponse,
-    ) -> HostResponse {
-        fn records(value: &mut Value, raw_of: &mut dyn FnMut(u32) -> Option<u32>) {
-            match value {
-                Value::Object(map) => {
-                    if map.get("family").is_some_and(Value::is_string)
-                        && map.contains_key("valueEntry")
-                        && let Some(raw) = map
-                            .get("ref")
-                            .filter(|r| {
-                                r.get("kind").and_then(Value::as_str) == Some("objectNumber")
-                            })
-                            .and_then(|r| r.get("objectNumber"))
-                            .and_then(Value::as_u64)
-                            .and_then(|n| u32::try_from(n).ok())
-                            .and_then(&mut *raw_of)
-                    {
-                        map.insert("flags".into(), serde_json::json!({ "raw": raw }));
-                    }
-                    map.values_mut().for_each(|v| records(v, raw_of));
-                }
-                Value::Array(items) => items.iter_mut().for_each(|v| records(v, raw_of)),
-                _ => {}
-            }
-        }
-        if !response.json.contains("\"valueEntry\"") {
-            return response;
-        }
-        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
-            return response;
-        };
-        let Some(key) = request.get("docId").and_then(Value::as_str).map(|doc| {
-            match request.get("layerName").and_then(Value::as_str) {
-                Some(layer) => SessionKey::layer(doc, layer),
-                None => SessionKey::document(doc),
-            }
-        }) else {
-            return response;
-        };
-        let Ok(owned) = host.sessions().session(&key).and_then(|s| s.document()) else {
-            return response;
-        };
-        let Some(model) = owned.document().form_model() else { return response };
-        let mut raw_of = |n: u32| {
-            model.field_index_by_object_number(n).and_then(|i| model.field(i)).map(|f| f.flags())
-        };
-        records(&mut envelope, &mut raw_of);
-        HostResponse { json: envelope.to_string(), payloads: response.payloads }
-    }
-
-    /// Form records answered in page space (`{fields, widgets}`), in the
-    /// file's coordinates, as [`form_in_file_space`] converts `forms.list`'s.
-    pub(super) fn form_records_in_file_space(
-        host: &Host,
-        request: &Value,
-        records: Value,
-    ) -> Result<Value, String> {
-        let mut boxes = visible_boxes(host, request);
-        form_in_file_space(records, &mut boxes)
-    }
-
-    /// `forms.list`'s answer in the file's coordinates: each field's action
-    /// destinations on the pages they go to, and each widget row's `rect`,
-    /// `box` and action destinations, the inverse of the host's
-    /// `page_form_snapshot_of`.
-    fn form_in_file_space(
-        mut snapshot: Value,
-        boxes: &mut impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError>,
-    ) -> Result<Value, String> {
-        fn actions_in_file_space<A, F>(
-            actions: &mut Value,
-            boxes: &mut impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError>,
-            map: impl FnOnce(
-                A,
-                &mut dyn FnMut(PageDestination) -> Result<PdfDestination, EngineError>,
-            ) -> Result<F, EngineError>,
-        ) -> Result<(), String>
-        where
-            A: serde::de::DeserializeOwned,
-            F: serde::Serialize,
-        {
-            if actions.is_null() {
-                return Ok(());
-            }
-            let read: A = serde_json::from_value(actions.take()).map_err(|e| e.to_string())?;
-            let converted =
-                map(read, &mut |d| pdf_destination_of(d, &mut *boxes)).map_err(|e| e.message)?;
-            *actions = serde_json::to_value(converted).map_err(|e| e.to_string())?;
-            Ok(())
-        }
-
-        for field in snapshot.get_mut("fields").and_then(Value::as_array_mut).into_iter().flatten()
-        {
-            if let Some(actions) = field.get_mut("actions") {
-                actions_in_file_space(
-                    actions,
-                    boxes,
-                    |a: FieldActions<PageDestination>, mut convert| {
-                        a.try_map_destinations(&mut convert)
-                    },
-                )?;
-            }
-        }
-        for row in snapshot.get_mut("widgets").and_then(Value::as_array_mut).into_iter().flatten() {
-            let page = serde_json::from_value::<PageRef>(row["page"].clone())
-                .map_err(|e| format!("a widget row's page: {e}"))?;
-            let visible = boxes(page.object_number()).map_err(|e| e.message)?;
-            for key in ["rect", "box"] {
-                let place = serde_json::from_value::<PageRect>(row[key].take())
-                    .map_err(|e| format!("a widget row's {key}: {e}"))?;
-                row[key] =
-                    serde_json::to_value(pdf_rect_of(place, visible)).map_err(|e| e.to_string())?;
-            }
-            if let Some(actions) = row.get_mut("actions") {
-                actions_in_file_space(
-                    actions,
-                    boxes,
-                    |a: AnnotationActions<PageDestination>, mut convert| {
-                        a.try_map_destinations(&mut convert)
-                    },
-                )?;
-            }
-        }
-        Ok(snapshot)
-    }
-
-    /// A page's text geometry as the kernel's selection reads it: the file's
-    /// coordinates, and the spelling the wire had before upstream's a10ed2659
-    /// and 6153c181e (`charStart`, `looseBox`/`tightBox` or
-    /// `looseQuad`/`tightQuad` with corners `p1` to `p4`, flag bits, and a
-    /// rotated run's baseline angle in radians counter-clockwise). A glyph or
-    /// run with no box keeps the zeroed one.
-    fn kernel_geometry_of(
-        snapshot: PageGeometrySnapshot<PageCoordinates>,
-        visible: PdfRect,
-    ) -> Value {
-        const ZERO: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: 0.0 };
-        let rect = |b: PageRect, empty: bool| if empty { ZERO } else { pdf_rect_of(b, visible) };
-        let quad = |q: PageQuad, empty: bool| {
-            if empty {
-                let zero = serde_json::json!({ "x": 0.0, "y": 0.0 });
-                return serde_json::json!({ "p1": zero, "p2": zero, "p3": zero, "p4": zero });
-            }
-            let q = pdf_quad_of(q, visible);
-            serde_json::json!({ "p1": q.p1, "p2": q.p2, "p3": q.p3, "p4": q.p4 })
-        };
-        let flags = |space: bool, empty: bool| u32::from(space) | (u32::from(empty) << 1);
-        let runs = snapshot
-            .runs
-            .into_iter()
-            .map(|run| {
-                let run_rect = rect(run.rect(), !run.has_box());
-                let font_size = run.font_size();
-                let mut out = match run {
-                    PageGeometryRun::Upright { start, glyphs, .. } => serde_json::json!({
-                        "rect": run_rect,
-                        "charStart": start,
-                        "glyphs": glyphs.into_iter().map(|g| {
-                            let mut glyph = serde_json::json!({
-                                "looseBox": rect(g.loose, g.empty),
-                                "flags": flags(g.space, g.empty),
-                            });
-                            if let Some(tight) = g.tight {
-                                glyph["tightBox"] = serde_json::json!(rect(tight, false));
-                            }
-                            glyph
-                        }).collect::<Vec<_>>(),
-                    }),
-                    PageGeometryRun::Rotated { start, glyphs, rotation, ascent_flip, .. } => {
-                        let mut radians = -rotation.to_radians();
-                        if radians <= -std::f64::consts::PI {
-                            radians += 2.0 * std::f64::consts::PI;
-                        }
-                        serde_json::json!({
-                            "rect": run_rect,
-                            "charStart": start,
-                            "glyphs": glyphs.into_iter().map(|g| {
-                                let mut glyph = serde_json::json!({
-                                    "looseQuad": quad(g.loose, g.empty),
-                                    "flags": flags(g.space, g.empty),
-                                });
-                                if let Some(tight) = g.tight {
-                                    glyph["tightQuad"] = quad(tight, false);
-                                }
-                                glyph
-                            }).collect::<Vec<_>>(),
-                            "rotation": radians,
-                            "ascentFlip": ascent_flip,
-                        })
-                    }
-                };
-                if let Some(size) = font_size {
-                    out["fontSize"] = serde_json::json!(size);
-                }
-                out
-            })
-            .collect::<Vec<_>>();
-        serde_json::json!({ "runs": runs })
-    }
-
-    /// A search slice as the kernel's search plugin reads it: segments in the
-    /// file's coordinates with corners `p1` to `p4`, and the spelling before
-    /// upstream's a10ed2659 (`charStart`/`charCount`, a snippet as `text`
-    /// with the match at `matchStart` for `matchLength` UTF-16 units,
-    /// `scannedPages`/`totalPages`). Each match is measured on its own page.
-    fn kernel_search_slice_of(
-        slice: SearchSlice<PageCoordinates>,
-        box_of: &mut impl FnMut(PageObjectNumber) -> Result<PdfRect, EngineError>,
-    ) -> Result<Value, EngineError> {
-        let utf16 = |text: &str| text.encode_utf16().count();
-        let matches = slice
-            .matches
-            .into_iter()
-            .map(|found| {
-                let visible = box_of(found.page)?;
-                let segments = found
-                    .segments
-                    .iter()
-                    .map(|segment| {
-                        let q = pdf_quad_of(segment.quad, visible);
-                        serde_json::json!({
-                            "quad": { "p1": q.p1, "p2": q.p2, "p3": q.p3, "p4": q.p4 },
-                            "rect": pdf_rect_of(segment.rect, visible),
-                            "advance": segment.advance,
-                        })
-                    })
-                    .collect::<Vec<_>>();
-                let mut hit = serde_json::json!({
-                    "page": PageRef::from(found.page),
-                    "charStart": found.start,
-                    "charCount": found.count,
-                    "segments": segments,
-                });
-                if let Some(snippet) = found.snippet {
-                    hit["snippet"] = serde_json::json!({
-                        "text": format!("{}{}{}", snippet.before, snippet.matched, snippet.after),
-                        "matchStart": utf16(&snippet.before),
-                        "matchLength": utf16(&snippet.matched),
-                    });
-                }
-                Ok(hit)
-            })
-            .collect::<Result<Vec<_>, EngineError>>()?;
-        Ok(serde_json::json!({
-            "matches": matches,
-            "nextCursor": slice.next_cursor,
-            "scannedPages": slice.pages_searched,
-            "totalPages": slice.page_count,
-        }))
-    }
-
-    /// A page name write's answer with its result's and its event's layout
-    /// in the file's coordinates.
-    fn names_in_file_space(response: HostResponse) -> HostResponse {
-        let Ok(mut envelope) = serde_json::from_str::<Value>(&response.json) else {
-            return response;
-        };
-        let converted =
-            ["/result/result", "/result/event"].iter().try_for_each(|at| {
-                match envelope.pointer_mut(at).filter(|answer| answer.get("layout").is_some()) {
-                    Some(answer) => layout_in_file_space(answer),
-                    None => Ok(()),
-                }
-            });
-        let envelope = match converted {
-            Ok(()) => envelope,
-            Err(error) => serde_json::json!({ "error": error.to_wire() }),
-        };
-        HostResponse { json: envelope.to_string(), payloads: response.payloads }
-    }
-
-    /// `answer.layout`, a page list in page space, in the file's
-    /// coordinates, as the kernel reads a layout.
-    pub(super) fn layout_in_file_space(answer: &mut Value) -> Result<(), EngineError> {
-        let Some(layout) = answer.get_mut("layout") else {
-            return Ok(());
-        };
-        let list: PageListSnapshot<PageCoordinates> = serde_json::from_value(layout.take())
-            .map_err(|e| {
-                EngineError::with_message(
-                    epdf_engine::error::EngineErrorCode::WireFormat,
-                    format!("a layout is not in page space: {e}"),
-                )
-            })?;
-        *layout = serde_json::to_value(page_list_in_file_space(list)?).map_err(|e| {
-            EngineError::with_message(
-                epdf_engine::error::EngineErrorCode::WireFormat,
-                format!("a layout did not serialize: {e}"),
-            )
-        })?;
-        Ok(())
-    }
-
-    fn page_list_in_file_space(
-        list: PageListSnapshot<PageCoordinates>,
-    ) -> Result<PageListSnapshot<PdfCoordinates>, EngineError> {
-        let boxes: HashMap<u32, PdfRect> =
-            list.pages.iter().map(|p| (p.page_object_number.get(), p.pdf_crop_box)).collect();
-        let pages = list
-            .pages
-            .into_iter()
-            .map(|page| {
-                let visible = page.pdf_crop_box;
-                let rect = |b| pdf_rect_of(b, visible);
-                let actions = page
-                    .actions
-                    .map(|a| {
-                        a.try_map_destinations(&mut |d| pdf_destination_of(d, &mut lookup(&boxes)))
-                    })
-                    .transpose()?;
-                Ok(PageLayout::<PdfCoordinates> {
-                    index: page.index,
-                    page_object_number: page.page_object_number,
-                    label: page.label,
-                    size: page.size,
-                    rotation: page.rotation,
-                    user_unit: page.user_unit,
-                    tab_order: page.tab_order,
-                    boxes: PageBoxes {
-                        media: rect(page.boxes.media),
-                        crop: rect(page.boxes.crop),
-                        bleed: rect(page.boxes.bleed),
-                        trim: rect(page.boxes.trim),
-                        art: rect(page.boxes.art),
-                    },
-                    pdf_crop_box: page.pdf_crop_box,
-                    actions,
-                })
-            })
-            .collect::<Result<Vec<_>, EngineError>>()?;
-        Ok(PageListSnapshot { page_count: list.page_count, pages, named_pages: list.named_pages })
-    }
-}
-
-/// The kernel's `nm` and `index` annotation refs, which the wire no longer
-/// takes (bc0057f3a), as the `baseIndex` refs upstream names the same
-/// annotations by. Answers whether it changed anything.
-///
-/// The host's annotation listing still answers an inline annotation (one
-/// with no object number) by `nm`, or by `index` when it has no `/NM`, and
-/// the kernel sends those back. Upstream names it by its position in the
-/// page's `/Annots` instead, which the host resolves on a page it has not
-/// restructured (`resolve::base_index_position`). An `index` ref is that
-/// position already; an `nm` ref's position is looked up in the page's
-/// listing. Its revision token is dropped: upstream has none.
-///
-/// Dead once Task 8.12 makes the listing answer `baseIndex` refs and Task 13
-/// moves the kernel onto them.
-fn base_index_refs(host: &mut Host, request: &mut Value) -> bool {
-    let doc = request.get("docId").cloned().unwrap_or(Value::Null);
-    let layer = request.get("layerName").cloned();
-    let mut listings: Vec<(Value, Value)> = Vec::new();
-    let mut changed = false;
-    let mut respell = |target: &mut Value| -> bool {
-        let Value::Object(map) = target else { return false };
-        let position = match map.get("kind").and_then(Value::as_str) {
-            Some("index") if map.contains_key("page") => map.get("index").cloned(),
-            Some("nm") if map.contains_key("page") => {
-                let page = map["page"].clone();
-                let listed = match listings.iter().find(|(p, _)| *p == page) {
-                    Some((_, listed)) => listed.clone(),
-                    None => {
-                        let mut list = serde_json::json!({ "kind": "annotations.list",
-                            "docId": doc, "pages": [page] });
-                        if let Some(layer) = &layer {
-                            list["layerName"] = layer.clone();
-                        }
-                        let response = kernel_annotations::listing(host, &list);
-                        let listed = serde_json::from_str::<Value>(&response.json)
-                            .ok()
-                            .and_then(|mut e| e.pointer_mut("/result/pages/0").map(Value::take))
-                            .unwrap_or(Value::Null);
-                        listings.push((page, listed.clone()));
-                        listed
-                    }
-                };
-                let wanted = Value::Object(map.clone());
-                listed["annotations"]
-                    .as_array()
-                    .and_then(|all| all.iter().find(|a| a["ref"] == wanted))
-                    .and_then(|a| a.get("index").cloned())
-            }
-            _ => None,
-        };
-        let Some(position) = position.filter(Value::is_u64) else { return false };
-        let page = map["page"].clone();
-        *target = serde_json::json!({ "kind": "baseIndex", "page": page, "baseIndex": position });
-        true
-    };
-    fn walk(value: &mut Value, respell: &mut dyn FnMut(&mut Value) -> bool) -> bool {
-        if respell(value) {
-            return true;
-        }
-        let mut changed = false;
-        match value {
-            Value::Object(map) => map.values_mut().for_each(|v| changed |= walk(v, respell)),
-            Value::Array(items) => items.iter_mut().for_each(|v| changed |= walk(v, respell)),
-            _ => {}
-        }
-        changed
-    }
-    changed |= walk(request, &mut respell);
-    changed
-}
-
-/// The kernel's ref spelling as the host reads it: in every object tagged
-/// `objectNumber`, a `PageRef`'s `pageObjectNumber`, an annotation ref's
-/// `annotObjectNumber` and a form field ref's `fieldObjectNumber` become
-/// `objectNumber` (595bdc6c7).
-fn to_wire_refs(value: &mut Value) {
-    match value {
-        Value::Object(map) => {
-            if map.get("kind").and_then(Value::as_str) == Some("objectNumber")
-                && !map.contains_key("objectNumber")
-                && let Some(number) = map
-                    .remove("pageObjectNumber")
-                    .or_else(|| map.remove("annotObjectNumber"))
-                    .or_else(|| map.remove("fieldObjectNumber"))
-            {
-                map.insert("objectNumber".into(), number);
-            }
-            map.values_mut().for_each(to_wire_refs);
-        }
-        Value::Array(items) => items.iter_mut().for_each(to_wire_refs),
-        _ => {}
-    }
-}
-
-/// The host's ref spelling as the kernel reads it, the inverse of
-/// [`to_wire_refs`]: an `objectNumber` beside a `page` is an annotation
-/// ref's (`annotObjectNumber`), and one without is a `PageRef`'s
-/// (`pageObjectNumber`). Form field refs, which also have no `page`, are
-/// told apart by where they sit and respelled first
-/// ([`to_kernel_form_records`]).
-fn to_kernel_refs(value: &mut Value) {
-    match value {
-        Value::Object(map) => {
-            if map.get("kind").and_then(Value::as_str) == Some("objectNumber")
-                && let Some(number) = map.remove("objectNumber")
-            {
-                let key =
-                    if map.contains_key("page") { "annotObjectNumber" } else { "pageObjectNumber" };
-                map.insert(key.into(), number);
-            }
-            map.values_mut().for_each(to_kernel_refs);
-        }
-        Value::Array(items) => items.iter_mut().for_each(to_kernel_refs),
-        _ => {}
-    }
-}
-
-/// The host's form records as the kernel reads them, before
-/// [`to_kernel_refs`] respells the rest. Upstream's records (595bdc6c7,
-/// c3b90c3a4, bf7d4558e) differ from the kernel's in four ways, put back here until
-/// Task 13 ports the kernel:
-///
-/// - A form field ref is `{kind, fieldObjectNumber}`: a field record's
-///   `ref`, the ref under a `field` key (a signature's, a widget row's), and
-///   each slot of `calculationOrder` and of a reset's `refs`.
-/// - A field record (an object with a `family` and a `valueEntry`) carries
-///   `fieldObjectNumber` beside its ref, and its `/Ff` bits as `flags:
-///   {readOnly, required, noExport, raw}`. Upstream answers no raw word:
-///   [`call_host`] reads it from the session's form model into
-///   `flags.raw` ([`page_space::with_raw_field_flags`]). An answer that
-///   did not come through it gets one rebuilt from the bits the record
-///   reports, where a bit no record reports (`DoNotSpellCheck`, `Sort`)
-///   reads clear.
-/// - A list box's record has no `defaultValue`: upstream's (bf7d4558e) is
-///   the option values a reset selects, where the kernel reads a text or
-///   combo box's string, so it is left out.
-/// - A field's widget (`FormWidget`, an object with `objectNumber` and
-///   `page` and no `kind`) names its number `annotObjectNumber`.
-fn to_kernel_form_records(value: &mut Value) {
-    fn field_ref(value: &mut Value) {
-        if let Value::Object(map) = value
-            && map.get("kind").and_then(Value::as_str) == Some("objectNumber")
-            && !map.contains_key("page")
-            && let Some(number) = map.remove("objectNumber")
-        {
-            map.insert("fieldObjectNumber".into(), number);
-        }
-    }
-    fn raw_flags(map: &Map<String, Value>) -> u64 {
-        let set = |key: &str| map.get(key).and_then(Value::as_bool) == Some(true);
-        let bit = |on: bool, at: u32| if on { 1u64 << at } else { 0 };
-        let family = map.get("family").and_then(Value::as_str).unwrap_or_default();
-        let mut raw = bit(set("readOnly"), 0) | bit(set("required"), 1) | bit(set("noExport"), 2);
-        raw |= match family {
-            "text" => bit(set("multiline"), 12) | bit(set("password"), 13) | bit(set("comb"), 24),
-            "radio" => {
-                bit(set("noToggleToOff"), 14) | bit(true, 15) | bit(set("radiosInUnison"), 25)
-            }
-            "pushbutton" => bit(true, 16),
-            "combobox" => bit(true, 17) | bit(set("edit"), 18),
-            "listbox" => bit(set("multiSelect"), 21),
-            _ => 0,
-        };
-        raw
-    }
-    match value {
-        Value::Object(map) => {
-            let is_field =
-                map.get("family").is_some_and(Value::is_string) && map.contains_key("valueEntry");
-            if is_field {
-                let number = map
-                    .get("ref")
-                    .filter(|r| r.get("kind").and_then(Value::as_str) == Some("objectNumber"))
-                    .and_then(|r| r.get("objectNumber"))
-                    .cloned()
-                    .unwrap_or(Value::from(0));
-                map.insert("fieldObjectNumber".into(), number);
-                let flags = serde_json::json!({
-                    "readOnly": map.get("readOnly").cloned().unwrap_or(Value::Bool(false)),
-                    "required": map.get("required").cloned().unwrap_or(Value::Bool(false)),
-                    "noExport": map.get("noExport").cloned().unwrap_or(Value::Bool(false)),
-                    "raw": map
-                        .get("flags")
-                        .and_then(|flags| flags.get("raw"))
-                        .filter(|raw| raw.is_u64())
-                        .cloned()
-                        .unwrap_or_else(|| Value::from(raw_flags(map))),
-                });
-                map.insert("flags".into(), flags);
-                if map.get("family").and_then(Value::as_str) == Some("listbox") {
-                    map.remove("defaultValue");
-                }
-                if let Some(reference) = map.get_mut("ref") {
-                    field_ref(reference);
-                }
-            }
-            if !map.contains_key("kind")
-                && map.contains_key("page")
-                && let Some(number) = map.remove("objectNumber")
-            {
-                map.insert("annotObjectNumber".into(), number);
-            }
-            if let Some(field) = map.get_mut("field") {
-                field_ref(field);
-            }
-            // A signature's `signer.signedAt` (an `IsoDateTime`) is the
-            // kernel's `claimedTime`, the PDF date `/M` holds.
-            if let Some(Value::Object(signer)) = map.get_mut("signer")
-                && let Some(signed_at) = signer.remove("signedAt")
-            {
-                let claimed = signed_at
-                    .as_str()
-                    .and_then(|iso| epdf_engine::clock::format_pdf_date(iso).ok())
-                    .map_or(Value::Null, Value::from);
-                signer.insert("claimedTime".into(), claimed);
-            }
-            for key in ["calculationOrder", "refs"] {
-                if let Some(Value::Array(refs)) = map.get_mut(key) {
-                    refs.iter_mut().for_each(field_ref);
-                }
-            }
-            map.values_mut().for_each(to_kernel_form_records);
-        }
-        Value::Array(items) => items.iter_mut().for_each(to_kernel_form_records),
-        _ => {}
+/// `objectNumbers.reserve`: `count` more numbers for this session.
+pub fn reserve_request(doc: &str, job: u64, count: u32) -> WireCall {
+    WireCall {
+        request: json!({
+            "kind": "objectNumbers.reserve", "effect": "session", "jobId": job, "docId": doc,
+            "count": count,
+        }),
+        payloads: Vec::new(),
+        decode: Decode::Field("range"),
     }
 }
 
@@ -2959,9 +520,7 @@ pub fn translate_encoded_render(
     args: &[Value],
     job: u64,
 ) -> Result<WireCall, Error> {
-    let page = pon.ok_or_else(|| {
-        coded("invalid-input", "[epdf-viewer-host] page.render.image needs a page".into())
-    })?;
+    let page = pon.ok_or_else(|| invalid("page.render.image needs a page".into()))?;
     let options = args.first().cloned().unwrap_or(Value::Null);
     let format = options.get("format").and_then(Value::as_str).unwrap_or("png");
     if format != "png" {
@@ -2970,161 +529,116 @@ pub fn translate_encoded_render(
             format!("[epdf-viewer-host] the asset engine encodes png only, not {format}"),
         ));
     }
-    let mut request = serde_json::json!({
+    let mut request = json!({
         "kind": "pages.renderEncoded",
+        "effect": "read",
         "jobId": job,
         "docId": doc,
         "page": PageRef::new(page).to_json(),
         "options": render_options(options),
         "encode": { "format": "png" },
     });
-    to_wire_refs(&mut request);
+    whole_numbers(&mut request);
     Ok(WireCall { request, payloads: Vec::new(), decode: Decode::Encoded })
 }
 
-/// `download`'s `{mode}` as the host's `SaveMode`, TypeScript's `PdfSaveMode`
-/// (`incremental` or `rewrite`) on both sides. No options, or no mode, stays
-/// the rewrite the plugins' own downloads (the stamp libraries) have always
-/// written.
+/// An absent member: missing, `null` or the kernel's `undefined`.
+fn is_absent(value: &Value) -> bool {
+    value.is_null() || epdf_kernel::is_undefined(value)
+}
+
+/// `options[key]`, unless absent.
+fn member(options: &Value, key: &str) -> Option<Value> {
+    options.get(key).filter(|v| !is_absent(v)).cloned()
+}
+
+/// `opIdOf(options)`: the caller's `opId`, else a fresh one. The host checks
+/// it as `opIdOf` does.
+fn op_id_of(options: &Value) -> Result<String, Error> {
+    match options.get("opId").filter(|v| !is_absent(v)) {
+        None => Ok(epdf_kernel::identity::generate_uuid()),
+        Some(Value::String(op_id)) => Ok(op_id.clone()),
+        Some(other) => Err(Error::engine(
+            "InvalidArg",
+            format!("opId must be 1 to 255 visible ASCII characters: {other}"),
+        )
+        .with("details", json!({ "field": "opId" }))),
+    }
+}
+
+/// `download`'s `{mode}`: `incremental` (`DEFAULT_PDF_SAVE_MODE`) unless
+/// the caller asks for `rewrite`.
 fn save_mode(path: &str, options: &Value) -> Result<Value, Error> {
-    match options.get("mode").filter(|m| !m.is_null() && !epdf_kernel::is_undefined(m)) {
-        None => Ok("rewrite".into()),
+    match member(options, "mode") {
+        None => Ok("incremental".into()),
         Some(mode) => match mode.as_str() {
             Some(mode @ ("incremental" | "rewrite")) => Ok(mode.into()),
-            _ => Err(coded(
-                "invalid-input",
-                format!("[epdf-viewer-host] {path}'s mode is not incremental or rewrite: {mode}"),
-            )),
+            _ => Err(invalid(format!("{path}'s mode is not incremental or rewrite: {mode}"))),
         },
     }
 }
 
-/// A JavaScript number as the whole, non-negative integer the host parses.
-/// Plugins send `90.0` where the host's serde wants `90`; anything else (a
-/// fraction, a negative, `{"$number": "NaN"}`) is refused with a message
-/// that names the field.
-pub fn whole(path: &str, field: &str, value: &Value) -> Result<Value, Error> {
-    value
-        .as_f64()
-        .filter(|n| n.is_finite() && *n >= 0.0 && n.fract() == 0.0 && *n <= f64::from(u32::MAX))
-        .map(|n| Value::from(n as u64))
-        .ok_or_else(|| {
-            coded(
-                "invalid-input",
-                format!("[epdf-viewer-host] {path}'s {field} is not a whole number: {value}"),
-            )
-        })
-}
-
-/// `whole`, with an absent, `null` or `undefined` value left out.
-pub fn optional_whole(path: &str, field: &str, value: Option<&Value>) -> Result<Value, Error> {
-    match value {
-        None | Some(Value::Null) => Ok(Value::Null),
-        Some(v) if epdf_kernel::is_undefined(v) => Ok(Value::Null),
-        Some(v) => whole(path, field, v),
+/// `resolvePageExtract(options, may)` (`dto/PageExtract.ts:59`): the
+/// flatten a copy paints, checked against what the handle may do, or none
+/// for a plain copy.
+fn resolve_page_extract(
+    options: &Value,
+    may: &dyn Fn(&str) -> bool,
+) -> Result<Option<Value>, Error> {
+    let include = |key: &str| member(options, key).and_then(|v| v.as_bool());
+    let Some(flatten) = member(options, "flatten") else {
+        for field in ["includeAnnotations", "includeFormFields"] {
+            if member(options, field).is_some() {
+                return Err(Error::engine("InvalidArg", format!("{field} takes flatten"))
+                    .with("details", json!({ "field": field })));
+            }
+        }
+        if !may("doc.download") {
+            return Err(Error::permission_denied("doc.download", None));
+        }
+        return Ok(None);
+    };
+    let usage = member(&flatten, "usage").unwrap_or_else(|| "display".into());
+    if !matches!(usage.as_str(), Some("display" | "print")) {
+        return Err(Error::engine("InvalidArg", "usage must be \"display\" or \"print\"")
+            .with("details", json!({ "field": "flatten.usage" })));
     }
-}
-
-/// `value` without `key`.
-fn without(mut value: Value, key: &str) -> Value {
-    if let Value::Object(map) = &mut value {
-        map.remove(key);
+    if !may("doc.download") && !may("doc.download.flattened") {
+        return Err(Error::permission_denied("doc.download", Some("flatten")).with(
+            "details",
+            json!({ "required": "doc.download", "context": "flatten",
+                    "anyOf": ["doc.download", "doc.download.flattened"] }),
+        ));
     }
-    value
+    // `resolvePageLayers` (`dto/PageRender.ts:42`).
+    let (annotations, form_fields) = (may("doc.annotate.read"), may("doc.forms.read"));
+    let (include_annotations, include_form_fields) =
+        (include("includeAnnotations"), include("includeFormFields"));
+    if include_annotations == Some(true) && !annotations {
+        return Err(Error::permission_denied("doc.annotate.read", Some("includeAnnotations")));
+    }
+    if include_form_fields == Some(true) && !form_fields {
+        return Err(Error::permission_denied("doc.forms.read", Some("includeFormFields")));
+    }
+    Ok(Some(json!({
+        "usage": usage,
+        "includeAnnotations": include_annotations.unwrap_or(annotations),
+        "includeFormFields": include_form_fields
+            .unwrap_or(include_annotations != Some(false) && form_fields),
+    })))
 }
 
 /// The `Bytes` JSON under `key`, as bytes.
-fn bytes_at(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
-    value.get(key).and_then(epdf_kernel::bytes::Bytes::from_json).map(|b| b.0).ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path} needs {key} bytes"))
-    })
+fn bytes_member(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
+    value
+        .get(key)
+        .and_then(epdf_kernel::bytes::Bytes::from_json)
+        .map(|b| b.0)
+        .ok_or_else(|| invalid(format!("{path} needs {key} bytes")))
 }
 
-/// The number at a JSON `pointer` inside `value`, made whole; absent or
-/// null is left as it is.
-fn whole_at(path: &str, value: &mut Value, pointer: &str) -> Result<(), Error> {
-    if let Some(slot) = value.pointer_mut(pointer)
-        && !slot.is_null()
-    {
-        let field = pointer.rsplit('/').next().unwrap_or(pointer);
-        *slot = whole(path, field, slot)?;
-    }
-    Ok(())
-}
-
-/// One `PageRef`, re-spelled so its object number is the whole integer the
-/// host's serde parses (the kernel's numbers are JavaScript numbers).
-fn page_ref(path: &str, value: &Value) -> Result<Value, Error> {
-    PageRef::from_json(value).map(PageRef::to_json).ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path}: not a PageRef: {value}"))
-    })
-}
-
-/// `PageRef[]`, each re-spelled as `page_ref` does.
-fn page_refs(path: &str, refs: &Value) -> Result<Value, Error> {
-    let refs = refs.as_array().ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path} takes a list of pages: {refs}"))
-    })?;
-    refs.iter().map(|r| page_ref(path, r)).collect::<Result<Vec<_>, _>>().map(Value::Array)
-}
-
-/// A PDF given as `Bytes` JSON: `{"$bytes": base64}` from the caller, or
-/// `{"$hostBytes": id}` from an extract, which this takes out of the table.
-fn pdf_bytes(path: &str, value: &Value) -> Result<Vec<u8>, Error> {
-    epdf_kernel::bytes::Bytes::from_json(value).map(|b| b.0).ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path} takes a PDF's bytes: {value}"))
-    })
-}
-
-/// A `SearchRequest` as the plugin sends it (`{query, mode, startPage,
-/// cursor, skip, budget}`, the spelling before upstream's a10ed2659), as the
-/// host's `search.query` reads it: the flattened `SearchScanRequest`, with
-/// the query's text and flags at the top level, `snippets` for `full` or no
-/// mode and not for `rects` (any other mode is `invalid-input`), `from` for `startPage` as a `PageRef` with a whole object number,
-/// and `limit` for `budget`.
-fn search_request(request: Value) -> Result<Value, Error> {
-    let invalid = |what: &str| {
-        coded("invalid-input", format!("[epdf-viewer-host] search.query {what}: {request}"))
-    };
-    let Value::Object(mut old) = request.clone() else {
-        return Err(invalid("takes a SearchRequest"));
-    };
-    let Some(Value::Object(mut flat)) = old.remove("query") else {
-        return Err(invalid("needs a query"));
-    };
-    // An unknown mode is refused, not read as the full one: `rects` is the
-    // tier that withholds text, and a misspelling must not leak snippets.
-    let snippets = match old.remove("mode") {
-        None | Some(Value::Null) => true,
-        Some(Value::String(mode)) if mode == "full" => true,
-        Some(Value::String(mode)) if mode == "rects" => false,
-        Some(_) => return Err(invalid("takes a mode of full or rects")),
-    };
-    flat.insert("snippets".into(), Value::Bool(snippets));
-    if let Some(start) = old.remove("startPage").filter(|s| !s.is_null()) {
-        flat.insert("from".into(), page_ref("search.query's startPage", &start)?);
-    }
-    for key in ["cursor", "skip"] {
-        if let Some(value) = old.remove(key).filter(|v| !v.is_null()) {
-            flat.insert(key.into(), value);
-        }
-    }
-    if let Some(Value::Object(budget)) = old.remove("budget") {
-        let mut limit = Map::new();
-        for (from, to) in [("maxMatches", "matches"), ("maxPages", "pages")] {
-            if let Some(value) = budget.get(from).filter(|v| !v.is_null()) {
-                limit.insert(to.into(), value.clone());
-            }
-        }
-        flat.insert("limit".into(), Value::Object(limit));
-    }
-    Ok(Value::Object(flat))
-}
-
-/// `PageImageOptions` as `pages.render` reads them. The viewport, target and
-/// `includeAnnotations` go as they are (the host spells them the same); the
-/// encode options do not, because `pages.render` answers raw pixels and has
-/// no encoder to hand them to.
+/// `PageImageOptions` as `pages.render` reads them: the encode options stay
+/// behind, since `pages.render` answers raw pixels.
 fn render_options(mut options: Value) -> Value {
     if let Value::Object(map) = &mut options {
         map.remove("format");
@@ -3133,461 +647,208 @@ fn render_options(mut options: Value) -> Value {
     options
 }
 
+/// Every `{"$bytes"}` or `{"$hostBytes"}` value inside `value` as a payload
+/// of the request, named `{"payload": n}`: `wirePack`'s transfer list.
+fn to_payloads(value: &mut Value, payloads: &mut Vec<Vec<u8>>) -> Result<(), Error> {
+    match value {
+        Value::Object(map) if map.contains_key("$bytes") || map.contains_key("$hostBytes") => {
+            let bytes = epdf_kernel::bytes::Bytes::from_json(value)
+                .ok_or_else(|| invalid(format!("bytes that do not decode: {value}")))?;
+            *value = json!({ "payload": payloads.len() });
+            payloads.push(bytes.0);
+        }
+        Value::Object(map) => {
+            for member in map.values_mut() {
+                to_payloads(member, payloads)?;
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                to_payloads(item, payloads)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Every whole JavaScript number (`17.0`) as the integer the host's serde
+/// reads; the kernel's `{"$number"}` and `{"$undefined"}` markers out.
+fn whole_numbers(value: &mut Value) {
+    match value {
+        Value::Number(n) if n.is_f64() => {
+            if let Some(f) =
+                n.as_f64().filter(|f| f.fract() == 0.0 && f.abs() < 9.007_199_254_740_992e15)
+            {
+                *value = if f < 0.0 { Value::from(f as i64) } else { Value::from(f as u64) };
+            }
+        }
+        Value::Object(map) => {
+            map.retain(|_, member| !epdf_kernel::is_undefined(member));
+            map.values_mut().for_each(whole_numbers);
+        }
+        Value::Array(items) => items.iter_mut().for_each(whole_numbers),
+        _ => {}
+    }
+}
+
+/// Every `{"payload": n}` inside an answer as `{"$bytes"}` of that payload.
+fn from_payloads(value: &mut Value, payloads: &[Vec<u8>]) {
+    match value {
+        Value::Object(map) if map.len() == 1 && map.get("payload").is_some_and(Value::is_u64) => {
+            let index = map["payload"].as_u64().unwrap_or(u64::MAX) as usize;
+            if let Some(bytes) = payloads.get(index) {
+                *value = epdf_kernel::bytes::Bytes(bytes.clone()).to_json();
+            }
+        }
+        Value::Object(map) => map.values_mut().for_each(|m| from_payloads(m, payloads)),
+        Value::Array(items) => items.iter_mut().for_each(|i| from_payloads(i, payloads)),
+        _ => {}
+    }
+}
+
 fn malformed(what: String) -> Error {
     Error::new(format!("[epdf-viewer-host] the host answered {what}"))
 }
 
-/// An annotation ref with its JavaScript numbers (`annotObjectNumber`,
-/// `index`, a revision's `generation`, its pages' `pageObjectNumber`, each
-/// sent as `17.0`) as the whole integers the host's serde parses.
-fn wire_ref(path: &str, mut target: Value) -> Result<Value, Error> {
-    whole_refs(path, &mut target)?;
-    Ok(target)
-}
-
-/// A draft or patch with every ref inside it (a reply's `inReplyTo`, a
-/// link's `goto` destination) whole, as `wire_ref` makes the call's own ref.
-/// Other members keep their numbers.
-fn wire_refs_in(path: &str, mut value: Value) -> Result<Value, Error> {
-    whole_refs(path, &mut value)?;
-    Ok(value)
-}
-
-/// The JavaScript numbers of every annotation ref (an object whose `kind`
-/// is `objectNumber`, `nm` or `index`, beside a `page`), of its revision
-/// token, and of every `PageRef`, as whole integers.
-fn whole_refs(path: &str, value: &mut Value) -> Result<(), Error> {
-    fn whole_keys(path: &str, map: &mut Map<String, Value>, keys: &[&str]) -> Result<(), Error> {
-        for key in keys {
-            if let Some(n) = map.get(*key).filter(|n| n.is_f64()) {
-                let n = whole(path, key, n)?;
-                map.insert((*key).into(), n);
-            }
-        }
-        Ok(())
-    }
-    match value {
-        Value::Object(map) => {
-            let kind = map.get("kind").and_then(Value::as_str).map(str::to_owned);
-            let kind = kind.as_deref();
-            if kind == Some("objectNumber") && map.contains_key("pageObjectNumber") {
-                whole_keys(path, map, &["pageObjectNumber"])?;
-            }
-            let is_ref =
-                matches!(kind, Some("objectNumber" | "nm" | "index")) && map.contains_key("page");
-            if is_ref {
-                whole_keys(path, map, &["annotObjectNumber", "index"])?;
-                if let Some(Value::Object(revision)) = map.get_mut("revision") {
-                    whole_keys(path, revision, &["generation"])?;
-                }
-            }
-            for member in map.values_mut() {
-                whole_refs(path, member)?;
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                whole_refs(path, item)?;
-            }
-        }
-        _ => {}
-    }
-    Ok(())
-}
-
-/// A form field ref the host's way: an object-number ref's
-/// `fieldObjectNumber`, sent as a JavaScript number, whole.
-fn wire_field_ref(path: &str, mut target: Value) -> Result<Value, Error> {
-    whole_field_refs(path, &mut target)?;
-    Ok(target)
-}
-
-/// Every form field ref inside `value` (`{kind: "objectNumber",
-/// fieldObjectNumber}`) with a whole `fieldObjectNumber`.
-fn whole_field_refs(path: &str, value: &mut Value) -> Result<(), Error> {
-    match value {
-        Value::Object(map) => {
-            if let Some(n) = map.get("fieldObjectNumber").filter(|n| n.is_f64()) {
-                let n = whole(path, "fieldObjectNumber", n)?;
-                map.insert("fieldObjectNumber".into(), n);
-            }
-            for member in map.values_mut() {
-                whole_field_refs(path, member)?;
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                whole_field_refs(path, item)?;
-            }
-        }
-        _ => {}
-    }
-    Ok(())
-}
-
-/// A field draft's widget placements, each `page: PageRef` with the whole
-/// object number `WidgetPlacement` parses.
-fn whole_placements(path: &str, draft: &mut Value) -> Result<(), Error> {
-    let whole_page = |placement: &mut Value| -> Result<(), Error> {
-        if let Some(page) = placement.get_mut("page") {
-            *page = page_ref(path, page)?;
-        }
-        Ok(())
+/// A raster (`PageRaster`: width, height, stride and pixel format) with its
+/// pixels in `payloads[index]`, as the render plugin reads a picture: the
+/// raster's fields, a raw-pixel `source` carrying the byte count, and the
+/// pixels in the `HostTable` behind `$host`.
+fn raster_picture(raster: Value, payloads: &mut [Vec<u8>]) -> Result<Map<String, Value>, Error> {
+    let Value::Object(raster) = raster else {
+        return Err(malformed("a raster that is not an object".into()));
     };
-    if let Some(widget) = draft.get_mut("widget") {
-        whole_page(widget)?;
-    }
-    if let Some(Value::Array(widgets)) = draft.get_mut("widgets") {
-        for widget in widgets {
-            whole_page(widget)?;
-        }
-    }
-    Ok(())
-}
-
-/// `normalizeAnnotationDraft` (`packages/engine/core/src/annotation/
-/// normalize.ts`): a stamp's `source` and an attachment's `file`, each a
-/// `BinarySource` the kernel spells `{data: {"$bytes": …}, mimeType?,
-/// name?}` or bare `{"$bytes": …}`, become `{resource: "rN"}` with the
-/// bytes moved into a payload. Every other draft goes as it is. The
-/// resources answer `Null` when nothing moved, so the request leaves them
-/// out.
-fn normalize_binary(
-    mut draft: Value,
-    payloads: &mut Vec<Vec<u8>>,
-) -> Result<(Value, Value), Error> {
-    let mut resources = Map::new();
-    match draft.get("subtype").and_then(Value::as_str) {
-        Some("stamp") => {
-            if let Some(source) = draft.get("source").cloned() {
-                let (key, _, _) = take_binary(&source, &mut resources, payloads)?;
-                draft["source"] = serde_json::json!({ "resource": key });
-            }
-        }
-        Some("file-attachment") => {
-            if let Some(file) = draft.get("file").cloned() {
-                let (key, mime, name) = take_binary(&file, &mut resources, payloads)?;
-                let name = name.ok_or_else(|| {
-                    coded(
-                        "invalid-input",
-                        "[epdf-viewer-host] an attachment file needs a name".into(),
-                    )
-                })?;
-                let mut wire = serde_json::json!({ "resource": key, "name": name });
-                if let Some(mime) = mime {
-                    wire["mimeType"] = mime.into();
-                }
-                if let Some(description) = file.get("description") {
-                    wire["description"] = description.clone();
-                }
-                draft["file"] = wire;
-            }
-        }
-        _ => {}
-    }
-    let resources = if resources.is_empty() { Value::Null } else { Value::Object(resources) };
-    Ok((draft, resources))
-}
-
-/// Move one `BinarySource`'s bytes into a payload and declare it as the
-/// next resource. Answers the resource key, the MIME type and the name.
-fn take_binary(
-    source: &Value,
-    resources: &mut Map<String, Value>,
-    payloads: &mut Vec<Vec<u8>>,
-) -> Result<(String, Option<String>, Option<String>), Error> {
-    let data = source.get("data").unwrap_or(source);
-    let bytes = epdf_kernel::bytes::Bytes::from_json(data).ok_or_else(|| {
-        coded(
-            "invalid-input",
-            format!("[epdf-viewer-host] a binary source without bytes: {source}"),
-        )
-    })?;
-    let key = format!("r{}", resources.len());
-    let mime = source.get("mimeType").and_then(Value::as_str).map(str::to_string);
-    let name = source.get("name").and_then(Value::as_str).map(str::to_string);
-    let mut resource = Map::new();
-    resource.insert("payload".into(), payloads.len().into());
-    if let Some(mime) = &mime {
-        resource.insert("mimeType".into(), mime.clone().into());
-    }
-    resources.insert(key.clone(), Value::Object(resource));
-    payloads.push(bytes.0);
-    Ok((key, mime, name))
-}
-
-/// The kernel's apply scope (`{kind: "pages", pages}` or `{kind:
-/// "annotations", refs}`) as the host's `RedactionScope` reads it, upstream's
-/// `RedactionApplyScope`: `{pages: [PageRef]}` with whole object numbers, or
-/// `{annotations: [AnnotationRef]}` with whole refs.
-fn redaction_scope_out(path: &str, scope: Value) -> Result<Value, Error> {
-    match scope.get("kind").and_then(Value::as_str) {
-        Some("pages") => {
-            let pages = scope.get("pages").cloned().unwrap_or(Value::Null);
-            Ok(serde_json::json!({ "pages": page_refs(path, &pages)? }))
-        }
-        Some("annotations") => match scope.get("refs") {
-            Some(refs @ Value::Array(_)) => {
-                Ok(serde_json::json!({ "annotations": wire_refs_in(path, refs.clone())? }))
-            }
-            _ => Err(coded(
-                "invalid-input",
-                format!("[epdf-viewer-host] {path} takes a list of annotation refs: {scope}"),
-            )),
-        },
-        _ => Err(coded(
-            "invalid-input",
-            format!("[epdf-viewer-host] {path} takes a pages or annotations scope: {scope}"),
-        )),
-    }
-}
-
-/// The host's `scope` member of `object` (an apply result, or the
-/// `redaction.applied` event that spreads one) back in the kernel's
-/// spelling: `{pages}` as `{kind: "pages", pages}`, `{annotations}` as
-/// `{kind: "annotations", refs}`.
-fn to_kernel_redaction_scope(object: &mut Value) {
-    let Some(Value::Object(scope)) = object.get_mut("scope") else { return };
-    if let Some(pages) = scope.remove("pages") {
-        *scope = Map::from_iter([("kind".into(), "pages".into()), ("pages".into(), pages)]);
-    } else if let Some(refs) = scope.remove("annotations") {
-        *scope = Map::from_iter([("kind".into(), "annotations".into()), ("refs".into(), refs)]);
-    }
-}
-
-/// That `object[key]` is a `PageRef`, as the kernel's page registry, the
-/// search plugin and the page-edit plugin read it.
-fn require_page_ref(object: &Value, key: &str, what: &str) -> Result<(), Error> {
-    match object.get(key) {
-        Some(page) if PageRef::from_json(page).is_some() => Ok(()),
-        _ => Err(malformed(format!("{what} without a PageRef \"{key}\": {object}"))),
-    }
-}
-
-/// That `object.layout.pages` is there, each page named by its `ref`.
-fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
-    let Some(Value::Array(pages)) = object.get("layout").and_then(|l| l.get("pages")) else {
-        return Err(malformed(format!("{what} without a layout")));
+    let index =
+        raster.get("data").and_then(|d| d.get("payload")).and_then(Value::as_u64).unwrap_or(0)
+            as usize;
+    let bytes = payloads
+        .get_mut(index)
+        .map(std::mem::take)
+        .ok_or_else(|| malformed("a raster without its pixels".into()))?;
+    let mut picture: Map<String, Value> =
+        raster.into_iter().filter(|(key, _)| key != "data").collect();
+    let dimension = |key: &str| {
+        picture
+            .get(key)
+            .and_then(Value::as_u64)
+            .ok_or_else(|| malformed(format!("a raster without a whole \"{key}\": {picture:?}")))
     };
-    pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a layout page"))
+    let (width, height, stride) = (dimension("width")?, dimension("height")?, dimension("stride")?);
+    let fits = width.checked_mul(4).is_some_and(|row| stride >= row)
+        && stride.checked_mul(height).is_some_and(|needed| bytes.len() as u64 >= needed);
+    if !fits {
+        return Err(malformed(format!(
+            "a {width}x{height} raster with stride {stride} in {} bytes",
+            bytes.len()
+        )));
+    }
+    picture.insert("source".into(), json!({ "kind": "pixels", "$byteLength": bytes.len() }));
+    picture.insert("$host".into(), HostTable::put(bytes).into());
+    Ok(picture)
 }
 
-/// The host's events as upstream names them, put back under the names the
-/// kernel's listeners know: `pages.scaleSet` is `page.viewportsChanged`, and
-/// the signing notices `signature.prepared`, `signature.completed` and
-/// `signature.aborted`. Both places an answer carries an event (a notice
-/// beside the result, a mutation's inside it). Dead once Task 13 ports the
-/// kernel's listeners.
-fn to_kernel_event_names(envelope: &mut Value) {
-    fn respell(event: Option<&mut Value>) {
-        let Some(Value::Object(event)) = event else { return };
-        let kernel = match event.get("type").and_then(Value::as_str) {
-            Some("pages.scaleSet") => "page.viewportsChanged",
-            Some("signatures.prepared") => "signature.prepared",
-            Some("signatures.completed") => "signature.completed",
-            Some("signatures.cancelled") => "signature.aborted",
-            _ => return,
-        };
-        event.insert("type".into(), Value::String(kernel.into()));
+/// The first payload, or `malformed`.
+fn first_payload(payloads: &mut Vec<Vec<u8>>, what: &str) -> Result<Vec<u8>, Error> {
+    if payloads.is_empty() {
+        return Err(malformed(format!("{what} without its payload")));
     }
-    respell(envelope.get_mut("event"));
-    respell(envelope.get_mut("result").and_then(|result| result.get_mut("event")));
+    Ok(payloads.swap_remove(0))
 }
 
 /// Read a host response into what the call's caller expects.
 pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error> {
     let mut envelope: Value = serde_json::from_str(&response.json)
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
-    // A prepare's notice names its field too.
-    if matches!(
-        decode,
-        Decode::FormResult
-            | Decode::FormMutation
-            | Decode::FormResultField(_)
-            | Decode::ResultWithBytes(_)
-    ) {
-        to_kernel_form_records(&mut envelope);
-    }
-    to_kernel_refs(&mut envelope);
-    to_kernel_event_names(&mut envelope);
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
         let message = error.get("message").and_then(Value::as_str).unwrap_or_default();
-        return Err(Error::engine(code, format!("{code}: {message}")));
-    }
-    // A notice the host publishes beside a result that is not a
-    // mutation's (`signatures.prepared`, `signatures.cancelled`). A mutation's
-    // event rides inside its result and is taken below.
-    let notice = envelope.get_mut("event").map(Value::take);
-    if let Decode::Unit = decode {
-        return Ok(Decoded { value: epdf_kernel::undefined(), event: notice });
-    }
-    let mut result = match envelope.get_mut("result").map(Value::take) {
-        Some(Value::Object(result)) => result,
-        Some(Value::Null) if matches!(decode, Decode::OptionalResult) => {
-            return Ok(Decoded { value: Value::Null, event: None });
+        let mut refused = Error::engine(code, format!("{code}: {message}"));
+        if let Some(details) = error.get("details") {
+            refused = refused.with("details", details.clone());
         }
-        Some(other) => return Err(malformed(format!("a result that is not an object: {other}"))),
+        return Err(refused);
+    }
+    let mut payloads = response.payloads;
+    // A notice the host publishes beside a result that is not a write's
+    // (`signatures.prepared`, `signatures.cancelled`).
+    let notice: Vec<Value> = envelope.get_mut("event").map(Value::take).into_iter().collect();
+    if let Decode::Unit = decode {
+        return Ok(Decoded { value: epdf_kernel::undefined(), events: notice });
+    }
+    let result = match envelope.get_mut("result").map(Value::take) {
+        Some(Value::Null) if matches!(decode, Decode::OptionalResult) => {
+            return Ok(Decoded { value: Value::Null, events: notice });
+        }
+        Some(result) => result,
         None => return Err(malformed("neither a result nor an error".into())),
+    };
+    let Value::Object(mut result) = result else {
+        return Err(malformed(format!("a result that is not an object: {result}")));
     };
     let take = |result: &mut Map<String, Value>, name: &str| {
         result.remove(name).ok_or_else(|| malformed(format!("a result without \"{name}\"")))
     };
-    let value = match decode {
+    let mut value = match decode {
         Decode::Unit => unreachable!("answered above"),
-        Decode::Result | Decode::OptionalResult | Decode::FormResult => Value::Object(result),
-        Decode::FirstPage => match take(&mut result, "pages")? {
-            Value::Array(mut pages) if !pages.is_empty() => pages.swap_remove(0),
-            other => return Err(malformed(format!("a listing with no page: {other}"))),
-        },
-        Decode::Field(name) | Decode::FormResultField(name) => take(&mut result, name)?,
-        Decode::SigningCancel => {
+        Decode::Result | Decode::OptionalResult => Value::Object(result),
+        Decode::Field(name) => take(&mut result, name)?,
+        Decode::Only(name) => json!({ *name: take(&mut result, name)? }),
+        Decode::Inner => take(&mut result, "result")?,
+        Decode::Mutation => {
             let mut value = take(&mut result, "result")?;
-            if value["status"] == "cancelled" {
-                value["status"] = "aborted".into();
+            let mut events: Vec<Value> = result.remove("event").into_iter().collect();
+            if let Some(Value::Array(all)) = result.remove("events") {
+                events.extend(all);
             }
-            value
+            from_payloads(&mut value, &payloads);
+            return Ok(Decoded { value, events });
         }
-        Decode::PageList => {
-            let Some(Value::Array(pages)) = result.get("pages") else {
-                return Err(malformed("a page list without \"pages\"".into()));
-            };
-            pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a page"))?;
-            Value::Object(result)
-        }
-        Decode::SearchSlice => {
-            let Some(Value::Array(matches)) = result.get("matches") else {
-                return Err(malformed("a search slice without \"matches\"".into()));
-            };
-            matches.iter().try_for_each(|hit| require_page_ref(hit, "page", "a search match"))?;
-            Value::Object(result)
-        }
-        Decode::AttachmentContent => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("a file without its payload".into()))?;
-            result
-                .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
-            Value::Object(result)
-        }
-        Decode::ExportBytes => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("an export without its bytes".into()))?;
-            result.insert("bytes".into(), epdf_kernel::bytes::Bytes(bytes).to_json());
-            Value::Object(result)
-        }
-        Decode::Mutation | Decode::FormMutation => {
-            let value = take(&mut result, "result")?;
-            return Ok(Decoded { value, event: result.remove("event") });
-        }
-        Decode::RedactionMutation => {
-            let mut value = take(&mut result, "result")?;
-            to_kernel_redaction_scope(&mut value);
-            let mut event = result.remove("event");
-            if let Some(event) = event.as_mut() {
-                to_kernel_redaction_scope(event);
-            }
-            return Ok(Decoded { value, event });
-        }
-        Decode::PageMutation => {
-            let value = take(&mut result, "result")?;
-            require_layout_refs(&value, "a page mutation's result")?;
-            let event = result.remove("event");
-            if let Some(event) = event.as_ref() {
-                require_layout_refs(event, "a page event")?;
-            }
-            return Ok(Decoded { value, event });
-        }
-        Decode::InlineBytes => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("bytes without their payload".into()))?;
-            epdf_kernel::bytes::Bytes(bytes).to_json()
-        }
-        Decode::ResultWithBytes(key) => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed(format!("a result without its {key} payload")))?;
-            let mut value = take(&mut result, "result")?;
-            value[*key] = epdf_kernel::bytes::Bytes(bytes).to_json();
-            value
+        Decode::Bytes => {
+            epdf_kernel::bytes::Bytes(first_payload(&mut payloads, "bytes")?).to_json()
         }
         Decode::HostBytes => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("bytes without their payload".into()))?;
-            serde_json::json!({ "$hostBytes": HostTable::put(bytes) })
+            json!({ "$hostBytes": HostTable::put(first_payload(&mut payloads, "bytes")?) })
+        }
+        Decode::Raster => {
+            // `{page, area, raster}` (`handlePagesRender`): the raster's
+            // fields beside `page` and `area`.
+            let raster = take(&mut result, "raster")?;
+            let picture = raster_picture(raster, &mut payloads)?;
+            result.extend(picture);
+            Value::Object(result)
+        }
+        Decode::Appearances => {
+            // `{page, result: {page, appearances}}`, each appearance's
+            // raster its own payload.
+            let mut inner = take(&mut result, "result")?;
+            if let Some(Value::Array(appearances)) = inner.get_mut("appearances") {
+                for appearance in appearances {
+                    let Some(entry) = appearance.as_object_mut() else { continue };
+                    if let Some(raster) = entry.remove("raster") {
+                        let picture = raster_picture(raster, &mut payloads)?;
+                        entry.insert("image".into(), Value::Object(picture));
+                    }
+                }
+            }
+            inner
         }
         Decode::Encoded => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("an encoded render without its bytes".into()))?;
-            // `{image: {contentType, width, height, bytes}}`
-            // (`EncodedImageWire`), the bytes payload 0.
+            let bytes = first_payload(&mut payloads, "an encoded render")?;
             let Value::Object(mut image) = take(&mut result, "image")? else {
                 return Err(malformed("an encoded render whose image is not an object".into()));
             };
             let content_type = take(&mut image, "contentType")?;
-            serde_json::json!({
-                "contentType": content_type,
+            json!({
                 "width": image.remove("width").unwrap_or(Value::Null),
                 "height": image.remove("height").unwrap_or(Value::Null),
+                "format": "png",
+                "contentType": content_type,
                 "source": { "kind": "bytes", "bytes": epdf_kernel::bytes::Bytes(bytes).to_json() },
             })
         }
-        Decode::Raster => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("a raster without its pixels".into()))?;
-            // `{page, area, raster: {width, height, stride, color,
-            // premultipliedAlpha, data}}` (`PageRaster`), the pixels payload
-            // 0. The kernel reads the raster's fields beside `page` and
-            // `area`, as this host answered them before they were nested.
-            let Value::Object(raster) = take(&mut result, "raster")? else {
-                return Err(malformed("a render whose raster is not an object".into()));
-            };
-            for (key, value) in raster {
-                if key != "data" {
-                    result.insert(key, value);
-                }
-            }
-            let dimension = |key: &str| {
-                result.get(key).and_then(Value::as_u64).ok_or_else(|| {
-                    malformed(format!("a raster without a whole \"{key}\": {result:?}"))
-                })
-            };
-            let (width, height, stride) =
-                (dimension("width")?, dimension("height")?, dimension("stride")?);
-            let fits = width.checked_mul(4).is_some_and(|row| stride >= row)
-                && stride.checked_mul(height).is_some_and(|needed| bytes.len() as u64 >= needed);
-            if !fits {
-                return Err(malformed(format!(
-                    "a {width}x{height} raster with stride {stride} in {} bytes",
-                    bytes.len()
-                )));
-            }
-            result.insert(
-                "source".into(),
-                serde_json::json!({ "kind": "pixels", "$byteLength": bytes.len() }),
-            );
-            result.insert("$host".into(), HostTable::put(bytes).into());
-            Value::Object(result)
-        }
+        Decode::TextLayout => json!({ "$textLayout": Value::Object(result) }),
     };
-    Ok(Decoded { value, event: notice })
+    from_payloads(&mut value, &payloads);
+    Ok(Decoded { value, events: notice })
 }

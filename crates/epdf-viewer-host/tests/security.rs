@@ -38,7 +38,7 @@ fn a_narrow_scope_denies_edits() {
     });
     let doc = block_on(host.open_document(fixture(test_support::REPORT), options())).unwrap();
     let metadata = block_on(host.metadata(doc.id)).unwrap();
-    assert!(!block_on(metadata.can_edit()).unwrap());
+    assert!(!block_on(metadata.can_update()).unwrap());
     let patch = MetadataPatch { title: Some("x".into()), ..Default::default() };
     let refused = block_on(metadata.update(patch, epdf_ffi::CancelToken::new()));
     assert!(refused.is_err(), "{refused:?}");
@@ -48,7 +48,7 @@ fn a_narrow_scope_denies_edits() {
 fn the_default_scope_allows_everything() {
     let host = started(ViewerConfig { metadata: true, ..Default::default() });
     let doc = block_on(host.open_document(fixture(test_support::REPORT), options())).unwrap();
-    assert!(block_on(block_on(host.metadata(doc.id)).unwrap().can_edit()).unwrap());
+    assert!(block_on(block_on(host.metadata(doc.id)).unwrap().can_update()).unwrap());
 }
 
 #[test]

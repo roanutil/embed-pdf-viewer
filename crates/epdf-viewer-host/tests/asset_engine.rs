@@ -26,7 +26,7 @@ fn the_asset_engine_opens_bytes_and_renders_png() {
             let doc = doc.as_ref().ok().cloned().unwrap();
             doc.clone().call("pages.list", None, vec![]).on_settle(move |list| {
                 let list = list.as_ref().unwrap().clone();
-                let pon = list["pages"][0]["ref"]["pageObjectNumber"].as_u64().unwrap() as u32;
+                let pon = list["pages"][0]["ref"]["objectNumber"].as_u64().unwrap() as u32;
                 let options =
                     json!({ "viewport": { "kind": "width", "width": 64 }, "format": "png" });
                 doc.call("page.render.image", Some(pon), vec![options]).on_settle(move |image| {
@@ -41,7 +41,7 @@ fn the_asset_engine_opens_bytes_and_renders_png() {
     let (list, image) = block_on(answer).unwrap();
     let named = list["namedPages"].as_array().unwrap();
     assert!(!named.is_empty(), "the shipped library has a registry");
-    assert!(named[0]["target"]["page"]["pageObjectNumber"].is_u64(), "{}", named[0]);
+    assert!(named[0]["target"]["page"]["objectNumber"].is_u64(), "{}", named[0]);
     let image = image.unwrap();
     assert_eq!(image["contentType"], json!("image/png"));
     assert_eq!(image["width"], json!(64));
@@ -62,7 +62,7 @@ fn the_document_engine_still_answers_raw_pixels() {
             let doc = doc.as_ref().ok().cloned().unwrap();
             doc.clone().call("pages.list", None, vec![]).on_settle(move |list| {
                 let pon =
-                    list.as_ref().unwrap()["pages"][0]["ref"]["pageObjectNumber"].as_u64().unwrap();
+                    list.as_ref().unwrap()["pages"][0]["ref"]["objectNumber"].as_u64().unwrap();
                 let options = json!({ "viewport": { "kind": "width", "width": 64 } });
                 doc.call("page.render.image", Some(pon as u32), vec![options]).on_settle(
                     move |image| {

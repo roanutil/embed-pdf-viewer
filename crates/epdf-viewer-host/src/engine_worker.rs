@@ -3,8 +3,8 @@
 //! A PDFium call cannot be interrupted, so a kernel abort only drops the
 //! reply.
 
-use std::sync::mpsc::{self, Sender};
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc::{self, Sender};
 use std::sync::{Arc, Mutex, Weak};
 use std::thread::JoinHandle;
 
@@ -15,7 +15,11 @@ use epdf_engine::host::{Host, HostResponse};
 type Reply = Box<dyn FnOnce(HostResponse) + Send>;
 
 enum Request {
-    Call { json: String, payloads: Vec<Vec<u8>>, reply: Reply },
+    Call {
+        json: String,
+        payloads: Vec<Vec<u8>>,
+        reply: Reply,
+    },
     /// Answered once every request queued before it has been answered.
     Drained(Box<dyn FnOnce() + Send>),
 }
@@ -59,9 +63,7 @@ impl EngineWorker {
                         }
                         Request::Call { json, payloads, reply } => {
                             let response = owner
-                                .run(move |host: &mut Host| {
-                                    crate::translate::call_host(host, &json, payloads)
-                                })
+                                .run(move |host: &mut Host| host.call(&json, payloads))
                                 .unwrap_or_else(|error| HostResponse {
                                     json: serde_json::json!({ "error": error }).to_string(),
                                     payloads: Vec::new(),
