@@ -79,8 +79,8 @@ comparing by reference re-renders more often; no value differs.
 
 Five Rust-only console lines and errors have no TypeScript counterpart. A token the cache no longer
 holds, which the confirmed value's pin and the view's recency should make impossible, is logged as
-`[form] the fields mirror named a form it no longer keeps:` and shows the confirmed form
-(`services/index_cache.rs`). A widget row or field the
+`[form] the fields mirror named a form it no longer keeps:` and shows the confirmed form, in a read
+and in a store dump alike (`services/index_cache.rs`). A widget row or field the
 painter can no longer decode is logged as `[form] the painter could not read a widget:` and not
 drawn (`services/looks.rs`); the TypeScript has no decode step. A `surface` that throws inside
 `fill_soon`'s failure path is logged as `[form] surfacing a fill failure threw:`

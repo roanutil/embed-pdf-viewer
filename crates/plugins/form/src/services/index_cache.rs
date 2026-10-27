@@ -49,20 +49,25 @@ impl IndexCache {
         let Some(id) = token_of(value) else { return self.empty.clone() };
         let mut entries = self.entries.borrow_mut();
         let Some(index) = entries.shift_remove(&id) else {
-            // Only a value older than every kept one can miss, and the mirror
-            // holds none that old: its confirmed value is pinned and its view
-            // is replayed from it. Should one miss, say so, and show the
-            // confirmed form rather than none.
-            let fallback = self.pinned.get().and_then(|p| entries.get(&p).cloned());
             drop(entries);
-            crate::console::error(
-                "[form] the fields mirror named a form it no longer keeps:",
-                json!({ "token": id, "fallback": if fallback.is_some() { "confirmed" } else { "empty" } }),
-            );
-            return fallback.unwrap_or_else(|| self.empty.clone());
+            return self.missed(id);
         };
         entries.insert(id, index.clone());
         index
+    }
+
+    /// A token older than every kept index. The mirror holds none that old:
+    /// its confirmed value is pinned and its view is replayed from it. The
+    /// TypeScript's mirror holds the `FieldIndex` itself and can't miss, so
+    /// the nearest reading is the confirmed form: say so, and show it
+    /// rather than none (the empty form only when nothing is confirmed).
+    fn missed(&self, id: u64) -> Rc<FieldIndex> {
+        let fallback = self.pinned.get().and_then(|p| self.entries.borrow().get(&p).cloned());
+        crate::console::error(
+            "[form] the fields mirror named a form it no longer keeps:",
+            json!({ "token": id, "fallback": if fallback.is_some() { "confirmed" } else { "empty" } }),
+        );
+        fallback.unwrap_or_else(|| self.empty.clone())
     }
 
     /// The mirror value naming an index: the token it already has, or a new
@@ -98,20 +103,15 @@ impl IndexCache {
 
     /// The mirror cell as the TypeScript's store shows it: the whole
     /// `FieldIndex` a value names (`FieldIndex::to_json`), read without
-    /// touching the recency order.
+    /// touching the recency order. A miss reads as [`IndexCache::index`]'s
+    /// does.
     pub fn to_json(&self, value: &Value) -> Value {
         let index = match token_of(value) {
             None => self.empty.clone(),
-            Some(id) => match self.entries.borrow().get(&id) {
-                Some(index) => index.clone(),
-                None => {
-                    crate::console::error(
-                        "[form] the fields mirror named a form it no longer keeps:",
-                        json!({ "token": id, "fallback": "empty" }),
-                    );
-                    self.empty.clone()
-                }
-            },
+            Some(id) => {
+                let kept = self.entries.borrow().get(&id).cloned();
+                kept.unwrap_or_else(|| self.missed(id))
+            }
         };
         index.to_json()
     }
@@ -141,14 +141,17 @@ mod tests {
         let value = cache.value(&confirmed);
         cache.pin(&value);
         let missed = cache.index(&json!({ TOKEN: 999 }));
+        // The store dump reads a miss the same way.
+        let shown = cache.to_json(&json!({ TOKEN: 999 }));
         crate::console::set_sink(previous);
         assert!(Rc::ptr_eq(&missed, &confirmed));
+        assert_eq!(shown, confirmed.to_json());
+        assert_ne!(shown, FieldIndex::default().to_json());
         let logged = logged.borrow();
-        assert_eq!(logged.len(), 1);
-        assert_eq!(
-            logged[0][0],
-            json!("[form] the fields mirror named a form it no longer keeps:")
-        );
-        assert_eq!(logged[0][1], json!({ "token": 999, "fallback": "confirmed" }));
+        assert_eq!(logged.len(), 2);
+        for line in logged.iter() {
+            assert_eq!(line[0], json!("[form] the fields mirror named a form it no longer keeps:"));
+            assert_eq!(line[1], json!({ "token": 999, "fallback": "confirmed" }));
+        }
     }
 }
