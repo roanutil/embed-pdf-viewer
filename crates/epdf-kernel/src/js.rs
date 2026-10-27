@@ -40,16 +40,22 @@ pub fn number(value: f64) -> Value {
     }
 }
 
-/// A number as `JSON.stringify` writes it, in canonical JSON: a whole
-/// number in the safe-integer range without a fraction (`1`, not `1.0`),
-/// `-0` as `0`, and the non-finite spelled as [`number`] spells them.
+/// A number as `JSON.stringify` writes it, in canonical JSON: a whole number
+/// without a fraction (`1`, not `1.0`; `2 ** 53` as `9007199254740992`), `-0`
+/// as `0`, and the non-finite spelled as [`number`] spells them. Whole
+/// numbers up to `u64::MAX` are written as integers; above that `serde_json`
+/// writes the float in exponent form (`1e20`, where JavaScript writes the
+/// digits out below `1e21`), the same number when read back.
 pub fn json_number(value: f64) -> Value {
-    const SAFE: f64 = 9_007_199_254_740_991.0;
-    if value.fract() == 0.0 && value.abs() <= SAFE {
-        Value::from(value as i64)
-    } else {
-        number(value)
+    if value.fract() == 0.0 {
+        if value.abs() < 9_223_372_036_854_775_808.0 {
+            return Value::from(value as i64);
+        }
+        if value > 0.0 && value < 18_446_744_073_709_551_616.0 {
+            return Value::from(value as u64);
+        }
     }
+    number(value)
 }
 
 /// `Number.prototype.toString()` (ECMAScript `Number::toString`, radix 10):
@@ -563,7 +569,9 @@ mod tests {
         assert_eq!(json_number(-0.0).to_string(), "0");
         assert_eq!(json_number(1.5).to_string(), "1.5");
         assert_eq!(json_number(9_007_199_254_740_991.0).to_string(), "9007199254740991");
-        assert_eq!(json_number(9_007_199_254_740_992.0).to_string(), "9007199254740992.0");
+        assert_eq!(json_number(9_007_199_254_740_992.0).to_string(), "9007199254740992");
+        assert_eq!(json_number(-9_007_199_254_740_994.0).to_string(), "-9007199254740994");
+        assert_eq!(json_number(1e19).to_string(), "10000000000000000000");
         assert_eq!(json_number(f64::NAN), json!({ "$number": "NaN" }));
         assert_eq!(json_number(f64::NEG_INFINITY), json!({ "$number": "-Infinity" }));
     }
