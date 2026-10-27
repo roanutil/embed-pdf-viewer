@@ -240,3 +240,52 @@ fn the_fill_projection_is_reference_stable() {
     assert_eq!(after[1]["value"], json!("typed"), "{}", after[1]);
     assert!(Rc::ptr_eq(&after, &form.list_widgets(&page)));
 }
+
+/// M38: a host that refetches the store's text (`epdf-web`'s `state_json`
+/// and `slice_text`, `crates/epdf-web/src/exports.rs`) serialises the
+/// fields mirror's `FieldIndex` once per confirmed form, however often it
+/// asks and whatever else moves, and puts the snapshot together for none of
+/// it: the text is written from the shared parts.
+#[test]
+fn a_host_refetching_the_store_serialises_each_confirmed_form_once() {
+    use epdf_plugin_form::model::index_serialisations;
+    within_ceiling(|| {
+        const FIELDS: usize = 500;
+        let (kernel, fake) = kernel_with(FIELDS);
+        let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+        let key = "form::a/mirror/fields";
+        let first = kernel.state_text();
+        let (copies, serialised) = (snapshot_copies(), index_serialisations());
+        let mut confirmed = 0;
+        let mut pending = Vec::new();
+        for i in 0..10 {
+            let n = i * 25 + 1;
+            // A fill the engine has not answered moves the view, not the cell.
+            pending.push(form.set_value(object_ref(n), json!({ "value": "typed" }), None));
+            rt::run_until_stalled();
+            let _ = kernel.state_text();
+            fake.emit("a", &value_set(n + 1, "elsewhere")).expect("the event");
+            rt::run_until_stalled();
+            confirmed += 1;
+            for _ in 0..3 {
+                let _ = kernel.state_text();
+                let _ = kernel.slice_text(key);
+            }
+        }
+        assert_eq!(snapshot_copies(), copies, "a dump put the snapshot together");
+        // A refresh shows the same form as loading, then the form it read.
+        let refreshed = form.refresh(None);
+        let _ = kernel.state_text();
+        rt::run_until_stalled();
+        assert!(matches!(refreshed.peek(), Some(Ok(()))));
+        let _ = kernel.state_text();
+        confirmed += 1;
+        assert_eq!(index_serialisations(), serialised + confirmed, "one per confirmed form");
+        // The read's `onResynced` puts it together once, as it always has.
+        assert_eq!(snapshot_copies(), copies + 1, "a dump put the snapshot together");
+        let text = kernel.state_text();
+        assert_ne!(text, first);
+        assert_eq!(&*text, kernel.state_json().to_string().as_str(), "the text is the JSON's");
+        drop(pending);
+    });
+}

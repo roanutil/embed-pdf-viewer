@@ -72,6 +72,22 @@ fn count_copy() {
     SNAPSHOT_COPIES.with(|c| c.set(c.get() + 1));
 }
 
+thread_local! {
+    static INDEX_SERIALISATIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// How many times this thread serialised a whole [`FieldIndex`] for a
+/// store dump. The guard (`tests/sharing.rs`) holds it at one per
+/// confirmed form however often a host refetches the store's text.
+#[doc(hidden)]
+pub fn index_serialisations() -> usize {
+    INDEX_SERIALISATIONS.with(std::cell::Cell::get)
+}
+
+fn count_serialisation() {
+    INDEX_SERIALISATIONS.with(|c| c.set(c.get() + 1));
+}
+
 /// The engine's `FormSnapshot`, its `fields` and `widgets` held apart, one
 /// `Rc` each and one `Rc` per item. A change replaces one member and shares
 /// the others, the way `{ ...snapshot, fields }` shares them in the
@@ -206,6 +222,55 @@ impl Snapshot {
     }
 }
 
+/// A [`FieldIndex`] as it prints, members in the TypeScript object's order.
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PrintedIndex<'a> {
+    snapshot: Option<PrintedSnapshot<'a>>,
+    by_key: Value,
+    by_name: Value,
+    by_widget: Value,
+    row_by_widget: Value,
+    picture_versions: Value,
+}
+
+/// A [`Snapshot`] as [`Snapshot::whole`] holds it, written from its shared
+/// parts without putting it together.
+struct PrintedSnapshot<'a>(&'a Snapshot);
+
+impl serde::Serialize for PrintedSnapshot<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::{SerializeMap, SerializeSeq};
+        struct Items<'a>(&'a [Rc<Value>]);
+        impl serde::Serialize for Items<'_> {
+            fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+                let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
+                for item in self.0 {
+                    seq.serialize_element(&**item)?;
+                }
+                seq.end()
+            }
+        }
+        let snapshot = self.0;
+        let Some(rest) = snapshot.rest.as_object() else {
+            return snapshot.rest.serialize(serializer);
+        };
+        let mut map = serializer.serialize_map(Some(rest.len()))?;
+        for (key, value) in rest {
+            let list = match key.as_str() {
+                "fields" => snapshot.fields.as_deref(),
+                "widgets" => snapshot.widgets.as_deref(),
+                _ => None,
+            };
+            match list {
+                Some(list) => map.serialize_entry(key, &Items(list))?,
+                None => map.serialize_entry(key, value)?,
+            }
+        }
+        map.end()
+    }
+}
+
 /// `FieldIndex`.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct FieldIndex {
@@ -264,16 +329,30 @@ impl FieldIndex {
         self.snapshot.as_deref().map(Snapshot::whole)
     }
 
-    /// The index as the TypeScript object prints.
+    /// The index as the TypeScript object prints. Written from the
+    /// snapshot's shared parts: a dump neither puts the snapshot together
+    /// nor keeps it (M38).
     pub fn to_json(&self) -> Value {
-        json!({
-            "snapshot": self.whole_snapshot().as_deref().cloned().unwrap_or(Value::Null),
-            "byKey": positions_json(&self.by_key),
-            "byName": positions_json(&self.by_name),
-            "byWidget": positions_json(&self.by_widget),
-            "rowByWidget": positions_json(&self.row_by_widget),
-            "pictureVersions": positions_json(&self.picture_versions),
-        })
+        count_serialisation();
+        serde_json::to_value(self.printed()).expect("JSON values serialise")
+    }
+
+    /// [`to_json`](Self::to_json) as text, byte for byte its
+    /// `to_string()`, written without building the value.
+    pub fn to_text(&self) -> String {
+        count_serialisation();
+        serde_json::to_string(&self.printed()).expect("JSON values serialise")
+    }
+
+    fn printed(&self) -> PrintedIndex<'_> {
+        PrintedIndex {
+            snapshot: self.snapshot.as_deref().map(PrintedSnapshot),
+            by_key: positions_json(&self.by_key),
+            by_name: positions_json(&self.by_name),
+            by_widget: positions_json(&self.by_widget),
+            row_by_widget: positions_json(&self.row_by_widget),
+            picture_versions: positions_json(&self.picture_versions),
+        }
     }
 
     /// An index as a caller wrote it, its records as given (consistent or not).

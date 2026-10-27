@@ -732,11 +732,12 @@ impl ControllerContext {
             changes: session.changes(),
             events,
             cell: Rc::new(move |name, initial| {
-                let lease = store.lease(
+                let lease = store.lease_with_text(
                     &format!("{prefix}/{name}"),
                     Rc::new(|_, _| None),
                     Rc::new(initial),
                     Rc::new(crate::mirror::cell_json),
+                    Some(Rc::new(crate::mirror::cell_text)),
                     Some(instance.clone()),
                 );
                 let revoke = lease.clone();

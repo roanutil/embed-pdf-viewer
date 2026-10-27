@@ -32,6 +32,9 @@ pub struct IndexCache {
     entries: RefCell<IndexMap<u64, Rc<FieldIndex>>>,
     pinned: Cell<Option<u64>>,
     empty: Rc<FieldIndex>,
+    /// The last index [`IndexCache::to_text`] wrote, held so its address
+    /// can't be reused, with its text.
+    text: RefCell<Option<(Rc<FieldIndex>, Rc<str>)>>,
 }
 
 fn token_of(value: &Value) -> Option<u64> {
@@ -106,14 +109,34 @@ impl IndexCache {
     /// touching the recency order. A miss reads as [`IndexCache::index`]'s
     /// does.
     pub fn to_json(&self, value: &Value) -> Value {
-        let index = match token_of(value) {
+        self.shown(value).to_json()
+    }
+
+    /// [`to_json`](Self::to_json) as text, for a host that reads the store
+    /// as text (`epdf-web`'s `state_json` and `slice_text`). The text of
+    /// the last index shown is kept, so the store cell's rewrites that keep
+    /// the form (a status change) and every refetch reuse it: one
+    /// serialisation per confirmed form (M38).
+    pub fn to_text(&self, value: &Value) -> Rc<str> {
+        let index = self.shown(value);
+        if let Some((shown, text)) = &*self.text.borrow()
+            && Rc::ptr_eq(shown, &index)
+        {
+            return text.clone();
+        }
+        let text: Rc<str> = index.to_text().into();
+        *self.text.borrow_mut() = Some((index, text.clone()));
+        text
+    }
+
+    fn shown(&self, value: &Value) -> Rc<FieldIndex> {
+        match token_of(value) {
             None => self.empty.clone(),
             Some(id) => {
                 let kept = self.entries.borrow().get(&id).cloned();
                 kept.unwrap_or_else(|| self.missed(id))
             }
-        };
-        index.to_json()
+        }
     }
 
     /// Keep the index a value names for as long as it is the confirmed one.
@@ -153,5 +176,27 @@ mod tests {
             assert_eq!(line[0], json!("[form] the fields mirror named a form it no longer keeps:"));
             assert_eq!(line[1], json!({ "token": 999, "fallback": "confirmed" }));
         }
+    }
+
+    /// The text of an index is written once and kept while the cell shows
+    /// it, whichever token names it, and is the JSON's text byte for byte.
+    #[test]
+    fn the_text_of_a_shown_index_is_written_once() {
+        let cache = IndexCache::default();
+        let index = Rc::new(FieldIndex {
+            by_key: [("obj:2".into(), 1.0), ("obj:1".into(), 0.0)].into(),
+            ..Default::default()
+        });
+        let token = cache.value(&index);
+        let before = crate::model::index_serialisations();
+        let text = cache.to_text(&token);
+        assert_eq!(&*text, cache.to_json(&token).to_string().as_str());
+        let after = crate::model::index_serialisations();
+        assert_eq!(after, before + 2, "one text, one value");
+        assert!(Rc::ptr_eq(&text, &cache.to_text(&token)));
+        assert!(Rc::ptr_eq(&text, &cache.to_text(&cache.value(&index))), "another token");
+        assert_eq!(crate::model::index_serialisations(), after);
+        let other = Rc::new(FieldIndex::default());
+        assert_ne!(cache.to_text(&cache.value(&other)), text);
     }
 }

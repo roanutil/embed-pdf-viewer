@@ -93,6 +93,12 @@ pub struct MirrorSpec {
     /// stand-in for a typed one (form's shared `FieldIndex`). Called only
     /// when the store cell is serialised, never on a write.
     pub to_json: Option<Rc<dyn Fn(&Value) -> Value>>,
+    /// The same value's JSON as text, byte for byte `to_json`'s, for a host
+    /// that reads the store as text (`Store::state_text`, `slice_text`).
+    /// Lets the stand-in write it without building the JSON value, and
+    /// keep it while the value it shows stays the same. Called only when
+    /// the cell's text is asked for.
+    pub to_text: Option<Rc<dyn Fn(&Value) -> Rc<str>>>,
 }
 /// A mirror's store cell: `{ value, status }`, kept by pointer and
 /// serialised only when the store is dumped (see [`cell_json`]).
@@ -100,6 +106,17 @@ pub struct MirrorCell {
     value: Rc<Value>,
     status: ResourceStatus,
     to_json: Option<Rc<dyn Fn(&Value) -> Value>>,
+    to_text: Option<Rc<dyn Fn(&Value) -> Rc<str>>>,
+}
+/// The text of a cell leased through [`MirrorEnvironment::cell`]: a
+/// [`MirrorCell`] whose spec names a `to_text`, written around it; `None`
+/// (the store falls back to [`cell_json`]) for any other.
+pub fn cell_text(state: &dyn std::any::Any) -> Option<String> {
+    let cell = state.downcast_ref::<MirrorCell>()?;
+    let to_text = cell.to_text.as_ref()?;
+    let value = to_text(&cell.value);
+    let status = Value::from(cell.status.as_str()).to_string();
+    Some(format!("{{\"value\":{value},\"status\":{status}}}"))
 }
 /// The JSON of a cell leased through [`MirrorEnvironment::cell`]: a
 /// [`MirrorCell`], a page mirror's [`PageMirrorCell`], or a plain value (a
@@ -138,6 +155,7 @@ impl MirrorSpec {
             load_pages: None,
             changed: None,
             to_json: None,
+            to_text: None,
         }
     }
 }
@@ -165,7 +183,14 @@ impl MirrorEnvironment {
             changes,
             events,
             cell: Rc::new(move |name, initial| {
-                store.lease(name, Rc::new(|_, _| None), Rc::new(initial), Rc::new(cell_json), None)
+                store.lease_with_text(
+                    name,
+                    Rc::new(|_, _| None),
+                    Rc::new(initial),
+                    Rc::new(cell_json),
+                    Some(Rc::new(cell_text)),
+                    None,
+                )
             }),
             notify: Rc::new(|| {}),
             report: Rc::new(|_| {}),
@@ -252,8 +277,8 @@ impl Mirror {
         }
         *self.0.value.borrow_mut() = value.clone();
         self.0.status.set(status);
-        let to_json = self.0.spec.to_json.clone();
-        self.0.cell.write(Rc::new(MirrorCell { value, status, to_json }))
+        let (to_json, to_text) = (self.0.spec.to_json.clone(), self.0.spec.to_text.clone());
+        self.0.cell.write(Rc::new(MirrorCell { value, status, to_json, to_text }))
     }
     fn announce(&self, change: MirrorChange) {
         if let Some(f) = &self.0.spec.changed {

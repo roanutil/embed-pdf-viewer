@@ -64,6 +64,8 @@ pub fn create_fields_mirror(
     spec.readable = Some(Rc::new(move || readable_cx.allows("doc.forms.read")));
     let shown_indexes = indexes.clone();
     spec.to_json = Some(Rc::new(move |value: &Value| shown_indexes.to_json(value)));
+    let written_indexes = indexes.clone();
+    spec.to_text = Some(Rc::new(move |value: &Value| written_indexes.to_text(value)));
     let predict_indexes = indexes.clone();
     spec.predict = Some(Rc::new(move |value: Rc<Value>, op: &Value| {
         let index = predict_indexes.index(&value);
