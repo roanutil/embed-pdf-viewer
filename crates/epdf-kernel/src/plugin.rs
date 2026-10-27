@@ -655,10 +655,10 @@ impl ControllerContext {
     }
 
     pub fn notify(&self) {
-        if self.0.ctx.lease.live() {
-            if let Some(s) = self.0.services.upgrade() {
-                s.store().notify();
-            }
+        if self.0.ctx.lease.live()
+            && let Some(s) = self.0.services.upgrade()
+        {
+            s.store().notify();
         }
     }
 

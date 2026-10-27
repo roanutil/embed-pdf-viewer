@@ -1556,10 +1556,9 @@ impl Inner {
             drop(old);
             if session.burst.borrow().is_none()
                 && tx.is_some_and(|t| t["index"] == 0 && t["count"].as_u64().is_some_and(|n| n > 1))
+                && let Some(id) = id
             {
-                if let Some(id) = id {
-                    *session.burst.borrow_mut() = Some((id.into(), this.store.hold()));
-                }
+                *session.burst.borrow_mut() = Some((id.into(), this.store.hold()));
             }
             let changes_document = !matches!(
                 event["type"].as_str(),
@@ -1676,13 +1675,13 @@ impl Inner {
         drop(hold);
         let weak = Rc::downgrade(&session);
         let off = handle.subscribe(Rc::new(move |event| {
-            if let Some(session) = weak.upgrade() {
-                if let Some(id) = crate::mirror::last_event_of(event) {
-                    let close = session.burst.borrow().as_ref().is_some_and(|(open, _)| open == id);
-                    if close {
-                        let held = session.burst.borrow_mut().take();
-                        drop(held);
-                    }
+            if let Some(session) = weak.upgrade()
+                && let Some(id) = crate::mirror::last_event_of(event)
+            {
+                let close = session.burst.borrow().as_ref().is_some_and(|(open, _)| open == id);
+                if close {
+                    let held = session.burst.borrow_mut().take();
+                    drop(held);
                 }
             }
         }));

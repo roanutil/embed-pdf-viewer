@@ -101,27 +101,41 @@ impl<'de, T: Deserialize<'de>> Deserialize<'de> for Patch<T> {
     }
 }
 
-/// Decodes a field that is optional but NOT nullable: absent is the only way
-/// to leave it alone, and an explicit `null` is an error.
+/// Reads and writes a field that is optional but NOT nullable: absent is the
+/// only way to leave it alone, and an explicit `null` is an error.
 ///
-/// `ts-rs` prints "failed to parse serde attribute: deserialize_with =" for
-/// every field that names this, and then ignores it. That is the right
-/// outcome: `deserialize_with` changes how Rust reads the field, not what the
-/// TypeScript type is, and the type is what `ts-rs` emits. The warning is
-/// noise, not a signal.
+/// This is a `#[serde(with = ...)]` module rather than a bare
+/// `deserialize_with`, because `ts-rs` prints "failed to parse serde
+/// attribute: deserialize_with =" for the latter and drops the whole
+/// attribute. It understands `with`, and the field's `#[ts(as = ...)]` names
+/// the TypeScript type, so the generated binding does not depend on either.
+/// `serialize` is the plain `Option<T>` one; the field's
+/// `skip_serializing_if` keeps `None` from reaching it.
 ///
 /// `Option<T>` alone would accept `null` and quietly read it as absent, which
 /// is the same flattening [`Patch`] exists to prevent, one field over. The zod
 /// schema spells these `.optional()` without `.nullable()`
 /// (`wire/schemas.ts:120-121`), so it refuses `null`, and the parity test
 /// requires that nothing zod refuses is silently accepted here.
-fn optional_not_nullable<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
-where
-    D: Deserializer<'de>,
-    T: Deserialize<'de>,
-{
-    // Only called when the key is present; an absent one takes `default`.
-    T::deserialize(deserializer).map(Some)
+mod optional_not_nullable {
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<Option<T>, D::Error>
+    where
+        D: Deserializer<'de>,
+        T: Deserialize<'de>,
+    {
+        // Only called when the key is present; an absent one takes `default`.
+        T::deserialize(deserializer).map(Some)
+    }
+
+    pub fn serialize<S, T>(value: &Option<T>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+        T: Serialize,
+    {
+        value.serialize(serializer)
+    }
 }
 
 /// A moment as an ISO 8601 string: `2017-07-12T21:44:38-07:00`.
@@ -234,12 +248,8 @@ pub struct MetadataPatch {
     #[ts(type = "string | null", optional)]
     pub modified_at: Patch<IsoDateTime>,
     /// Two-state: `/Trapped` has no clear form.
-    #[serde(
-        default,
-        deserialize_with = "optional_not_nullable",
-        skip_serializing_if = "Option::is_none"
-    )]
-    #[ts(optional)]
+    #[serde(default, with = "optional_not_nullable", skip_serializing_if = "Option::is_none")]
+    #[ts(optional, as = "Option<DocumentMetadataTrapped>")]
     pub trapped: Option<DocumentMetadataTrapped>,
 }
 

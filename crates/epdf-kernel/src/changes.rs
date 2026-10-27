@@ -470,19 +470,19 @@ impl HeldChange {
     }
     pub fn send(&self) -> Option<PendingChange> {
         let e = self.change();
-        if let Some(e) = &e {
-            if e.held() {
-                self.0.queue.changes.send_before(e.seq() + 1);
-            }
+        if let Some(e) = &e
+            && e.held()
+        {
+            self.0.queue.changes.send_before(e.seq() + 1);
         }
         e
     }
     pub fn cancel(&self) {
         self.0.cancelled.set(true);
-        if let Some(e) = self.change() {
-            if e.held() {
-                self.0.queue.changes.cancel(&e);
-            }
+        if let Some(e) = self.change()
+            && e.held()
+        {
+            self.0.queue.changes.cancel(&e);
         }
     }
 }
@@ -495,15 +495,15 @@ fn named_by(change: &Value) -> HashSet<u64> {
                     if let Some(n) = op["objectNumber"].as_u64() {
                         out.insert(n);
                     }
-                    if op["type"] == "forms.addWidget" {
-                        if let Some(n) = op["splitObjectNumber"].as_u64() {
-                            out.insert(n);
-                        }
+                    if op["type"] == "forms.addWidget"
+                        && let Some(n) = op["splitObjectNumber"].as_u64()
+                    {
+                        out.insert(n);
                     }
-                    if op["type"] == "forms.create" {
-                        if let Some(ns) = op["widgetObjectNumbers"].as_array() {
-                            out.extend(ns.iter().filter_map(Value::as_u64));
-                        }
+                    if op["type"] == "forms.create"
+                        && let Some(ns) = op["widgetObjectNumbers"].as_array()
+                    {
+                        out.extend(ns.iter().filter_map(Value::as_u64));
                     }
                 }
                 "pages.insertBlank" => {
@@ -526,10 +526,10 @@ fn references(value: &Value) -> HashSet<u64> {
                 }
             }
             Value::Object(o) => {
-                if v["kind"] == "objectNumber" {
-                    if let Some(n) = v["objectNumber"].as_u64() {
-                        out.insert(n);
-                    }
+                if v["kind"] == "objectNumber"
+                    && let Some(n) = v["objectNumber"].as_u64()
+                {
+                    out.insert(n);
                 }
                 for v in o.values() {
                     visit(v, out);

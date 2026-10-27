@@ -161,10 +161,10 @@ impl PageMirror {
         next
     }
     fn announce(&self, e: PageMirrorChange) {
-        if let Some(changed) = &self.0.spec.changed {
-            if let Err(error) = changed(e) {
-                (self.0.env.report)(&error);
-            }
+        if let Some(changed) = &self.0.spec.changed
+            && let Err(error) = changed(e)
+        {
+            (self.0.env.report)(&error);
         }
     }
     pub fn get(&self, page: &Value) -> Option<Rc<Value>> {
@@ -188,10 +188,12 @@ impl PageMirror {
         let k = key(page);
         let version = self.0.env.changes.version();
         let kept_version = self.0.version.get();
-        if let Some((old, v, kv, view)) = self.0.views.borrow().get(&k) {
-            if Rc::ptr_eq(old, &value) && *v == version && *kv == kept_version {
-                return Some(view.clone());
-            }
+        if let Some((old, v, kv, view)) = self.0.views.borrow().get(&k)
+            && Rc::ptr_eq(old, &value)
+            && *v == version
+            && *kv == kept_version
+        {
+            return Some(view.clone());
         }
         let kept = self
             .0
@@ -211,17 +213,17 @@ impl PageMirror {
         if self.0.spec.predict.is_none() {
             return;
         }
-        if let Some(id) = change_id_of(event) {
-            if let Some(change) = self.0.env.changes.find(id) {
-                let epoch = self.0.epochs.borrow().get(k).copied().unwrap_or(0);
-                self.0
-                    .kept
-                    .borrow_mut()
-                    .entry(k.into())
-                    .or_default()
-                    .insert(id.into(), (change, epoch));
-                self.0.version.set(self.0.version.get() + 1);
-            }
+        if let Some(id) = change_id_of(event)
+            && let Some(change) = self.0.env.changes.find(id)
+        {
+            let epoch = self.0.epochs.borrow().get(k).copied().unwrap_or(0);
+            self.0
+                .kept
+                .borrow_mut()
+                .entry(k.into())
+                .or_default()
+                .insert(id.into(), (change, epoch));
+            self.0.version.set(self.0.version.get() + 1);
         }
     }
     fn load(&self, page: Value) -> Promise<()> {
@@ -342,15 +344,14 @@ impl PageMirror {
             return;
         }
         self.fold_event(event);
-        if self.0.spec.predict.is_some() {
-            if let Some(id) = last_event_of(event) {
-                if self.0.env.changes.find(id).is_some() {
-                    let mut folded = self.0.folded.borrow_mut();
-                    folded.retain(|id| self.0.env.changes.find(id).is_some());
-                    if folded.insert(id.into()) {
-                        self.0.version.set(self.0.version.get() + 1);
-                    }
-                }
+        if self.0.spec.predict.is_some()
+            && let Some(id) = last_event_of(event)
+            && self.0.env.changes.find(id).is_some()
+        {
+            let mut folded = self.0.folded.borrow_mut();
+            folded.retain(|id| self.0.env.changes.find(id).is_some());
+            if folded.insert(id.into()) {
+                self.0.version.set(self.0.version.get() + 1);
             }
         }
     }

@@ -123,6 +123,9 @@ impl DocumentHandle for Doc {
     }
 }
 
+/// The document an open is parked on, and what settles it.
+type HeldOpen = (Rc<Doc>, Resolver<Rc<dyn DocumentHandle>>);
+
 /// An input's `download: true` grants that document `doc.download` beside
 /// the shared permissions. A `handleId` names the handle differently from
 /// the input's `id`, and holds the open in `held` until the test answers it.
@@ -130,7 +133,7 @@ struct TestEngine {
     log: Log,
     permissions: Rc<RefCell<Vec<&'static str>>>,
     docs: RefCell<Vec<Rc<Doc>>>,
-    held: RefCell<Option<(Rc<Doc>, Resolver<Rc<dyn DocumentHandle>>)>>,
+    held: RefCell<Option<HeldOpen>>,
 }
 impl Engine for TestEngine {
     fn open(&self, input: Value, _: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {

@@ -281,10 +281,10 @@ impl Mirror {
         self.0.cell.write(Rc::new(MirrorCell { value, status, to_json, to_text }))
     }
     fn announce(&self, change: MirrorChange) {
-        if let Some(f) = &self.0.spec.changed {
-            if let Err(e) = f(change) {
-                (self.0.env.report)(&e);
-            }
+        if let Some(f) = &self.0.spec.changed
+            && let Err(e) = f(change)
+        {
+            (self.0.env.report)(&e);
         }
     }
     pub fn view(&self) -> Rc<Value> {
@@ -292,10 +292,12 @@ impl Mirror {
         let Some(predict) = &self.0.spec.predict else { return value };
         let version = self.0.env.changes.version();
         let kept_version = self.0.version.get();
-        if let Some((old, v, k, view)) = &*self.0.memo.borrow() {
-            if Rc::ptr_eq(old, &value) && *v == version && *k == kept_version {
-                return view.clone();
-            }
+        if let Some((old, v, k, view)) = &*self.0.memo.borrow()
+            && Rc::ptr_eq(old, &value)
+            && *v == version
+            && *k == kept_version
+        {
+            return view.clone();
         }
         let shown = showing(
             &self.0.env.changes,
@@ -307,9 +309,7 @@ impl Mirror {
         view
     }
     fn keep(&self, event: &Value, after: u64) -> Option<String> {
-        if self.0.spec.predict.is_none() {
-            return None;
-        }
+        self.0.spec.predict.as_ref()?;
         let id = change_id_of(event)?;
         let c = self.0.env.changes.find(id)?;
         self.0.kept.borrow_mut().insert(id.into(), (c, after));
@@ -357,15 +357,14 @@ impl Mirror {
                 }
             }
             Ok(Fold::Value(next)) => {
-                if self.0.spec.predict.is_some() {
-                    if let Some(id) = last_event_of(event) {
-                        if self.0.env.changes.find(id).is_some() {
-                            let mut folded = self.0.folded.borrow_mut();
-                            folded.retain(|id| self.0.env.changes.find(id).is_some());
-                            if folded.insert(id.into()) {
-                                self.0.version.set(self.0.version.get() + 1);
-                            }
-                        }
+                if self.0.spec.predict.is_some()
+                    && let Some(id) = last_event_of(event)
+                    && self.0.env.changes.find(id).is_some()
+                {
+                    let mut folded = self.0.folded.borrow_mut();
+                    folded.retain(|id| self.0.env.changes.find(id).is_some());
+                    if folded.insert(id.into()) {
+                        self.0.version.set(self.0.version.get() + 1);
                     }
                 }
                 if !Rc::ptr_eq(&previous, &next) && self.write(next.clone(), self.get_status()) {
