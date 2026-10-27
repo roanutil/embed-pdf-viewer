@@ -262,6 +262,12 @@ fn content_of(file: &Value, bytes: Value) -> Result<AttachmentContent, Error> {
         Some(Value::String(name)) => name,
         None => return Err(type_error("replace")),
         Some(v) if epdf_kernel::is_undefined(v) => return Err(type_error("replace")),
+        Some(Value::Null) => {
+            return Err(Error::named(
+                "TypeError",
+                "Cannot read properties of null (reading 'replace')",
+            ));
+        }
         Some(_) => {
             return Err(Error::named("TypeError", "file.name.replace is not a function"));
         }
@@ -511,7 +517,9 @@ impl AttachmentCapability {
         let record_ref = member(&record, "ref");
         annotation.selection_set(std::slice::from_ref(&record_ref));
         let Some(stage) = self.0.cx.try_get(&STAGE).ok().flatten() else { return };
-        // A record always names its page; a ref of another kind names none.
+        // A record always names its page. A page ref that does not decode
+        // (another kind) reveals nothing, where the TypeScript hands it to
+        // the stage as it is; registered in the README.
         let Some(page) = record_ref.get("page").and_then(PageRef::from_json) else { return };
         let rect = record.get("rect").and_then(|r| serde_json::from_value::<Rect>(r.clone()).ok());
         stage.reveal(
@@ -607,4 +615,20 @@ pub fn create_attachment_controller(
         Rc::new(Core { cx, files, changed, resynced, memos: RefCell::new(Memos::default()) });
     *slot.borrow_mut() = Rc::downgrade(&core);
     Ok((AttachmentCapability(core), None))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_name_that_is_not_a_string_throws_as_replace_does() {
+        let message = |file: Value| content_of(&file, Value::Null).unwrap_err().message;
+        assert_eq!(message(json!({})), "Cannot read properties of undefined (reading 'replace')");
+        assert_eq!(
+            message(json!({ "name": null })),
+            "Cannot read properties of null (reading 'replace')"
+        );
+        assert_eq!(message(json!({ "name": 5 })), "file.name.replace is not a function");
+    }
 }

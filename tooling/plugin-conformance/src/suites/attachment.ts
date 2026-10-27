@@ -698,7 +698,7 @@ const cases: ScenarioCase[] = [
       at('reveal', [docFile(NOTES)]),
       at('reveal', [{ ...pageFile(SCAN), home: { kind: 'page', ref: objRef(99) } }]),
       an('selection.list'),
-      at('download', [pageFile(LOCKED)]),
+      at('download', [pageFile(LOCKED)], 8),
       at('remove', [pageFile(SCAN)], 6),
       at('list'),
     ],

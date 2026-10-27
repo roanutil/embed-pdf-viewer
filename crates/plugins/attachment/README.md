@@ -2,9 +2,11 @@
 
 `packages/plugin/attachment` in Rust, at the current TypeScript. The vector
 `vectors/plugins/attachment.json` (20 cases) is new with this crate: Task 13.32 wrote its generator,
-`tooling/plugin-conformance/src/suites/attachment.ts`, against the shipping package. It replays with
-no member-order allowance or outcome exception (`cargo test -p epdf-plugin-attachment`), except one
-case that waits on a kernel repair (see "Open").
+`tooling/plugin-conformance/src/suites/attachment.ts`, against the shipping package. All 20 cases
+replay with no member-order allowance or outcome exception (`cargo test -p epdf-plugin-attachment`).
+Two turn counts matched only after repairs outside this crate: `87bb20dc5` settles the kernel's
+`when_settled` on the turn TypeScript's `await Promise.allSettled(...)` takes, and `89e45135d` gives
+the annotation plugin's `download_resource` its `async` function's turn.
 
 The modules follow the TypeScript files. `model.rs` is `model.ts` (the session state, the two
 `AttachedFile` builders and `freeName`), `names.rs` is `names.ts`, `sync.rs` is `sync/files.ts`
@@ -48,21 +50,8 @@ None is reached by a vector.
 - An `AttachedFile` without `home`, outside the contract type, is read as an attachment with no
   key, where the TypeScript throws reading `home.kind`.
 - `reveal` hands the stage a `Rect` decoded from the record's `rect`; one that does not decode
-  reveals the whole page.
-
-## Open
-
-Two turn counts wait on code outside this crate.
-
-`download` of a file this session is still adding waits on `ctx.changes.whenSettled()`. The kernel's
-`when_settled` (`crates/epdf-kernel/src/changes.rs:264`) settles one turn after the last result,
-where the TypeScript's `await Promise.allSettled(...)` (`packages/core/main/src/changes.ts:548-550`)
-settles two turns after. The `download-an-attachment` case fails on it (step 12).
-
-`download` of a page's file awaits the annotation plugin's `download_resource`
-(`crates/plugins/annotation/src/write/crud.rs:324`), which returns the engine call itself. The
-TypeScript's `downloadResource` is an `async` function returning it
-(`packages/plugin/annotation/src/write/crud.ts:197-208`), one turn later.
-`a_page_files_download_settles_on_the_typescripts_turn` fails on it (5, not 6).
+  reveals the whole page. A record whose `ref.page` does not decode as a `PageRef` is selected and
+  not revealed, where the TypeScript hands `record.ref.page` to the stage as it is. A record always
+  names its page.
 
 The crate has no `uniffi` feature; a host binding is 13.33's.

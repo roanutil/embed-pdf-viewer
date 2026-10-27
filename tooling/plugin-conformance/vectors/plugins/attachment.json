@@ -32362,7 +32362,8 @@
                 }
               }
             }
-          ]
+          ],
+          "meter": 8
         },
         {
           "op": "call",
@@ -39028,7 +39029,62 @@
               ]
             }
           ],
-          "callbacks": [],
+          "callbacks": [
+            {
+              "fn": "@@turn",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                2
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                4
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                5
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                3
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                6
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                7
+              ]
+            }
+          ],
           "reports": [],
           "status": "started",
           "engineState": {

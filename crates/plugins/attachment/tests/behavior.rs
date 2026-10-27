@@ -518,9 +518,8 @@ fn reads_and_writes_settle_on_the_typescripts_turns() {
 /// annotation plugin's own `downloadResource` on 5. `downloadResource` is an
 /// `async` function that returns the engine call
 /// (`packages/plugin/annotation/src/write/crud.ts:197-208`), so its promise
-/// adopts the call's; the Rust `download_resource`
-/// (`crates/plugins/annotation/src/write/crud.rs`) returns the call itself
-/// and reacts on 4, which puts this download on 5.
+/// adopts the call's, one turn after it. The Rust `download_resource` takes
+/// that turn since `89e45135d`; this test pins it from the attachment side.
 #[test]
 fn a_page_files_download_settles_on_the_typescripts_turn() {
     let resource =
