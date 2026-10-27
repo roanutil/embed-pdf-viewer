@@ -422,27 +422,22 @@ impl std::ops::Deref for EffectContext {
 }
 
 impl EffectContext {
-    /// `ctx.watch(select, handler, isEqual)`: `handler(next, previous)` after
-    /// any state change that moves `select()` by `is_equal`. The TypeScript
-    /// default is `Object.is`; a port picks the comparison that fires on the
-    /// same changes (value equality for primitives, `Rc::ptr_eq` for a
-    /// state object the reducer replaces).
+    /// The effects-era `watch`, which the TypeScript no longer has (its one
+    /// member is `ctx.watch` on the controller context, which
+    /// [`ControllerContext::watch`] is). It runs the same [`watch_store`]; it
+    /// keeps its `(select, is_equal, handler)` order and infallible `select`
+    /// because the conformance probe calls it (`plugin-conformance`
+    /// `probe.rs`, `watchActive`).
     pub fn watch<R: Clone + 'static>(
         &self,
         select: impl Fn() -> R + 'static,
         is_equal: impl Fn(&R, &R) -> bool + 'static,
         handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
     ) -> Unsubscribe {
-        let previous = std::cell::RefCell::new(select());
-        let unsubscribe = self.ctx.subscribe(Rc::new(move || {
-            let next = select();
-            let prior = previous.borrow().clone();
-            if !is_equal(&prior, &next) {
-                *previous.borrow_mut() = next.clone();
-                handler(&next, &prior)?;
-            }
-            Ok(())
-        }));
+        let Ok(unsubscribe) = watch_store(&self.ctx, move || Ok(select()), handler, is_equal)
+        else {
+            unreachable!("an infallible select")
+        };
         if let Some(scope) = self.ctx.own_scope() {
             let release = unsubscribe.clone();
             scope.defer_fn(move || release.call());
@@ -802,15 +797,7 @@ impl ControllerContext {
         handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
         is_equal: impl Fn(&R, &R) -> bool + 'static,
     ) -> Result<Unsubscribe, Error> {
-        let previous = RefCell::new(select()?);
-        let unsubscribe = self.subscribe(Rc::new(move || {
-            let next = select()?;
-            if is_equal(&previous.borrow(), &next) {
-                return Ok(());
-            }
-            let prior = previous.replace(next.clone());
-            handler(&next, &prior)
-        }));
+        let unsubscribe = watch_store(self, select, handler, is_equal)?;
         self.listen(unsubscribe.clone());
         Ok(unsubscribe)
     }
@@ -1117,6 +1104,28 @@ impl<S: 'static, A: Action> Ctx<S, A> {
     }
 }
 
+/// The body of `ctx.watch` (`context.ts:305-315`), shared by every kernel
+/// `watch`: `select` runs once now; after a store change that moves it by
+/// `is_equal(previous, next)`, `previous` becomes `next` and then
+/// `handler(next, previous)` runs. The caller defers the returned
+/// unsubscribe to its scope.
+fn watch_store<R: Clone + 'static>(
+    ctx: &PluginContext,
+    select: impl Fn() -> Result<R, Error> + 'static,
+    handler: impl Fn(&R, &R) -> Result<(), Error> + 'static,
+    is_equal: impl Fn(&R, &R) -> bool + 'static,
+) -> Result<Unsubscribe, Error> {
+    let previous = RefCell::new(select()?);
+    Ok(ctx.subscribe(Rc::new(move || {
+        let next = select()?;
+        if is_equal(&previous.borrow(), &next) {
+            return Ok(());
+        }
+        let prior = previous.replace(next.clone());
+        handler(&next, &prior)
+    })))
+}
+
 /// An effect context typed over the plugin's state and action.
 pub struct EffectCtx<S, A> {
     pub fx: EffectContext,
@@ -1137,6 +1146,7 @@ impl<S, A> std::ops::Deref for EffectCtx<S, A> {
 }
 
 impl<S: 'static, A: Action> EffectCtx<S, A> {
+    /// [`EffectContext::watch`], typed.
     pub fn watch<R: Clone + 'static>(
         &self,
         select: impl Fn() -> R + 'static,
