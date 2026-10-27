@@ -146,7 +146,7 @@ engine's policy and name-constraint half.
 ## Mutation testing
 
 These counts predate the Task 13.9 catch-up (document timestamps, `CompletionProfile`, the
-harness's `pkcs7` fallback for an unknown gate profile) and are stale: Task 14 did not re-run them (not re-run since 172f5369d).
+harness's `pkcs7` fallback for an unknown gate profile) and are stale: not re-run since 172f5369d.
 
 `scripts/mutants.sh -p epdf-signature-core --test-package epdf-signature-core --file <file>`, file by
 file over every module but `harness.rs`, catches 1,781 of 1,824 viable mutants (1,777 caught, 4

@@ -160,13 +160,16 @@ Left for you, none of it a code failure:
   on disk, so the Swift link step and the UI tests (compile-only) are unverified. Building one is a
   runtime-fork payload step outside this worktree.
 - `packages/core-wasm` `test:wasm` fails 10 tests that failed before Task 14 (46 passed and 10 failed
-  at `4a0b9c126`, 55 and 10 after 14.1).
+  at `4a0b9c126`, 55 and 10 after 14.1). The same package's `pnpm --filter @embedpdf/core-wasm
+  typecheck` reports 8 errors, also present at `4a0b9c126`. `crates/epdf-web/tests/exports.rs`
+  fails 11 wasm tests because the web host has no annotation or form plugin factories.
 - Generator-owned carries, which change vectors or shipping TypeScript: the print-path coverage above;
   the replace-text fixture seed collision (`[103,104,105]` against redact object 104); the
   interaction generator writing `pageObjectNumber` refs, which leaves 3 `samplePointOn` outcomes
   null; and a `kind_facts.rs` regeneration check in `vectors:check`.
 - Upstream TypeScript edges that no TypeScript change was authorized for: the paged-empty camera-write
-  `TypeError`; the form-only palette placement refusal left unhandled (`handlers.ts:117`, `:126`);
+  `TypeError`; the form-only palette placement refusal left unhandled (`handlers.ts:117`, `:126`); the form
+  pipeline's script print skipping the `print` policy row (`packages/plugin/actions/src/scripting/surface.ts:120`);
   `onWriteFailed` reentrant selected retention; `signatures.cancelled` with a different signing id
   clearing a parked signing; the acrojs post-dispose admitted rebuild; the `tsx` `__name` gap in the
   default VM.

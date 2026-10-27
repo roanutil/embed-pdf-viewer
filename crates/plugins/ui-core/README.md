@@ -53,7 +53,7 @@ has and the other lacks would fold differently.
 ## Coverage
 
 Stale as of Task 13.10: the counts below are for the package before the layout replaced the chrome
-schema, and Task 14 did not re-measure them (not re-run since 172f5369d).
+schema, and not re-run since 172f5369d.
 
 The generators reach all 1,207 lines of the package and 336 of its 337 branches. The miss is
 `shortcuts.ts:65`, the `empty key` throw in `parseShortcut`. An empty last token becomes `+`, and
@@ -61,7 +61,7 @@ lowercasing a non-empty string never empties it, so no input reaches it. The Rus
 
 ## Mutation testing
 
-Stale as of Task 13.10, for the same reason; Task 14 did not re-run it (not re-run since 172f5369d).
+Stale as of Task 13.10, for the same reason; not re-run since 172f5369d.
 
 `cargo mutants -p epdf-ui-core --test-package epdf-ui-core` catches 279 of 284 viable mutants and
 times out on 3, each of which makes the solver loop forever. Two survive, and both are equivalent:

@@ -110,7 +110,7 @@ dump the whole state with those plugins installed.
 ## Coverage
 
 Stale since Task 13.24: the counts and lines below are the pre-13.24 port's, over code that no
-longer exists. Task 14 did not regenerate them (not re-run since 172f5369d).
+longer exists. Not re-run since 172f5369d.
 
 Across the whole corpus the generators reach 2,286 of the package's 2,305 statements and 633 of
 its 651 branches (`vectors/coverage.json`). The 19 statements left:
@@ -139,7 +139,7 @@ type.
 ## Mutation testing
 
 Stale since Task 13.24: the counts and lines below are the pre-13.24 port's, over code that no
-longer exists. Task 14 did not regenerate them (not re-run since 172f5369d).
+longer exists. Not re-run since 172f5369d.
 
 `scripts/mutants.sh -p epdf-plugin-stamp --test-package epdf-plugin-stamp --file <file>`, file by
 file over every module but `harness.rs`, catches 239 of 251 viable mutants (228 caught, 11

@@ -101,7 +101,7 @@ objects through.
 
 ## Mutation testing
 
-These counts predate Task 13.11's re-port and are stale until Task 14 did not run the table again (not re-run since 172f5369d).
+These counts predate Task 13.11's re-port and are stale, and not re-run since 172f5369d.
 `scripts/mutants.sh -p epdf-plugin-interaction --test-package epdf-plugin-interaction --file
 <file>`, file by file over every module but `harness.rs`, catches 87 of 90 viable mutants (87 caught,
 0 timeouts; 26 unviable).

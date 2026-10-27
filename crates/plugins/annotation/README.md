@@ -148,7 +148,7 @@ geometry re-ports).
 ## Coverage
 
 Stale since Task 13.17: the counts and lines below are the pre-13.17 port's, over files that no
-longer exist. Task 14 did not regenerate them (not re-run since 172f5369d).
+longer exist. Not re-run since 172f5369d.
 
 The generators reach 9,238 of the package's 9,254 statements and 2,159 of its 2,258 branches
 (measured with `src/coverage.ts`). The 16 statements left cannot be reached from the public
@@ -167,7 +167,7 @@ The 99 unreached branches are mostly the `??` and optional-chaining arms of the 
 
 ## Mutation testing
 
-Stale since Task 13.17: the files and lines below name the pre-13.17 code. Task 14 did not re-run it (not re-run since 172f5369d).
+Stale since Task 13.17: the files and lines below name the pre-13.17 code. Not re-run since 172f5369d.
 
 `scripts/mutants.sh -p epdf-plugin-annotation --test-package epdf-plugin-annotation --file <file>`,
 file by file over every module but `harness/`, catches 1,412 of 1,449 viable mutants (1,411 caught,

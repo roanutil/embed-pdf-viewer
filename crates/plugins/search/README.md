@@ -109,4 +109,4 @@ settle in at close.
 ## Coverage and mutation testing
 
 The statement, branch and mutant counts that stood here were measured on the pre-catch-up port and
-are stale. Task 14 did not re-measure them (not re-run since 172f5369d).
+are stale. Not re-run since 172f5369d.

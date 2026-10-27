@@ -265,7 +265,10 @@ upstream catch-up landed. The package compiles for the iOS simulator against a s
 (139 compile errors down to 0), but it does not link: the runtime pin `926c126b2` has no
 `ios-arm64` or `ios-sim-arm64` build on disk, so the simulator run and the UI tests, which compile
 only, are not done. The 327 `EmbedPDFTests` ran on macOS in a scratch harness, all passing. Building
-the XCFramework is a runtime-fork payload step and is yours to run. The archive sizes above predate
+the XCFramework is a runtime-fork payload step and is yours to run. Also left for you, and not
+caused by Task 14: 10 `core-wasm` `test:wasm` failures, 8 `core-wasm` typecheck errors
+(`pnpm --filter @embedpdf/core-wasm typecheck`, present at `4a0b9c126`), and 11 wasm failures in
+`crates/epdf-web/tests/exports.rs` (no annotation or form plugin factories). The archive sizes above predate
 the catch-up and were not re-measured.
 
 ## Where the Rust core actually runs

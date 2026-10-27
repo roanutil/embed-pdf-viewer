@@ -68,7 +68,9 @@ mostly Stage B's 65-op `Host`, and that growth hasn't been timed on its own.
   page is from late September with its counts refreshed at `172f5369d`; the plugins page now
   carries a "Catch-up to upstream" section (Task 13 and Task 14.1 to 14.7, `63f1219c7` to
   `172f5369d`) with what is left for you: the XCFramework and iOS run, the 10 `core-wasm` `test:wasm`
-  failures that predate Task 14, and the generator-owned carries.
+  failures and 8 `core-wasm` typecheck errors that predate Task 14, the 11 `epdf-web`
+  `tests/exports.rs` wasm failures (no annotation or form plugin factories), and the
+  generator-owned carries.
 - Review findings on the plugins branch (0 critical, 4 high, 34 medium, 89 low):
   [`docs/research/rust-plugins-branch-review.md`](docs/research/rust-plugins-branch-review.md).
 - Native packaging, built locally and published nowhere:

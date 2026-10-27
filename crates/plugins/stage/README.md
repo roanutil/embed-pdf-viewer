@@ -25,7 +25,7 @@ R5, a non-invertible page transform, page arguments, the working set and its eng
 a close releases.
 
 The statement and branch coverage figures that stood here were measured against the pre-catch-up
-package and are stale; Task 14 did not re-measure them (not re-run since 172f5369d).
+package and are stale; not re-run since 172f5369d.
 
 ## The public API
 
@@ -151,7 +151,7 @@ the `undefined` and places at NaN. A goto node whose destination does not decode
 ## Coverage
 
 The unreached-line list that stood here named pre-catch-up files (`services/scheduler.ts`,
-`sync/watchers.ts`, the reducer) and is stale; Task 14 did not re-measure it (not re-run since 172f5369d).
+`sync/watchers.ts`, the reducer) and is stale; not re-run since 172f5369d.
 
 Two TypeScript behaviours are pinned that look unintended. `applyViewState` writes the view's
 cursor without clamping it, so a view saved on a longer document leaves the cursor past the last
@@ -162,8 +162,7 @@ unbounded stage fires none.
 
 ## Mutation testing
 
-Stale: these counts and line numbers are from the pre-catch-up port. Task 14 did not rerun
-`scripts/mutants.sh` over the re-ported modules (not re-run since 172f5369d).
+Stale: these counts and line numbers are from the pre-catch-up port. Not re-run since 172f5369d.
 
 `scripts/mutants.sh -p epdf-plugin-stage --test-package epdf-plugin-stage --file <file>`, file by
 file over every module but `harness.rs`, catches 874 of 899 viable mutants (870 caught, 4
