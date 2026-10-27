@@ -111,11 +111,11 @@ impl Core {
             && members.len() == 1
             && members[0].id == range.id
         {
-            let doc = rich_doc_of(&members[0].annotation, self.fonts());
+            let doc = rich_doc_of(&members[0].annotation, self.fonts().as_deref());
             if let Ok((range_values, range_mixed)) = range_props(
                 &doc,
                 RichTextRange { start: range.start, end: range.end },
-                self.fonts(),
+                self.fonts().as_deref(),
             ) {
                 for spec in &properties {
                     let key = spec.get("key").and_then(Value::as_str).unwrap_or("");

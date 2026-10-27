@@ -250,11 +250,16 @@ impl Core {
         Ok(self.page_of(page)?.get("ref").cloned().unwrap_or(Value::Null))
     }
 
-    /// The fonts the engine knows: the local engine's list, none on the
-    /// cloud engine. The plugin context has no local engine's font list, so
-    /// it is none here.
-    pub(crate) fn fonts(&self) -> Option<&[crate::rich_text::FontHandle]> {
-        None
+    /// `fonts: () => (isLocalEngine(ctx.engine) ? ctx.engine.fonts.list() :
+    /// [])` (`services/index.ts`): the local engine's registered fonts, none
+    /// on any other engine. Read anew on every call, as the TypeScript's
+    /// lookup is. A list entry that is not a `FontHandle` is skipped.
+    pub(crate) fn fonts(&self) -> Option<Vec<crate::rich_text::FontHandle>> {
+        let fonts = match self.cx.engine() {
+            Some(engine) if engine.is_local() => engine.list_fonts(),
+            _ => Vec::new(),
+        };
+        Some(fonts.iter().filter_map(crate::rich_text::FontHandle::read).collect())
     }
 
     /// The view's inputs now.

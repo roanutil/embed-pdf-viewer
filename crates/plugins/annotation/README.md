@@ -79,14 +79,14 @@ time the session takes numbers it subscribes to `DocumentHandle::on_lost_object_
 (`a_lost_object_number_leaves_the_session`). The conformance fake never loses one, as the
 TypeScript fake never does.
 
-Two Rust-only differences, both on paths no vector reaches, are registered in
+`fonts()` reads the kernel's `Engine::list_fonts` when `Engine::is_local` is true and is empty
+otherwise, as `services/index.ts:71` reads `ctx.engine.fonts.list()` behind `isLocalEngine`
+(`the_local_engines_registered_fonts_reach_the_font_lookup`). The native host registers no fonts and
+epdf-web's bridge has no font member yet, so both answer the kernel's empty default today.
+
+One Rust-only difference, on a path no vector reaches, is registered in
 `docs/research/rust-plugins-branch-review.md`, Status:
 
-- `fonts()` is always none. The TypeScript reads the local engine's registered fonts
-  (`services/index.ts:71`); the Rust plugin context has no engine font list, so registered faces
-  are not mapped on a local engine. The cloud path is the same in both (an empty list). The
-  native host registers no fonts, so its list is empty too; a host font list needs an engine
-  member the kernel's `Engine` lacks (Task 13.33 report). No vector registers a font.
 - An attachment or icon placement that `iconPlacement` refuses (an attachment with no name) is
   logged as `[annotation] icon placement failed:` and the click counts as handled
   (`write/icons.rs`). The TypeScript throws inside the picker's `.then`, an unhandled rejection

@@ -73,9 +73,9 @@ impl Core {
                 continue;
             }
             let range = range.as_ref().expect("a range");
-            let (delta, rest) = run_delta_for_fields(&own, self.fonts());
+            let (delta, rest) = run_delta_for_fields(&own, self.fonts().as_deref());
             if !delta.is_empty() {
-                let doc = rich_doc_of(&record.annotation, self.fonts());
+                let doc = rich_doc_of(&record.annotation, self.fonts().as_deref());
                 let typed_delta: RichTextStyleDelta =
                     serde_json::from_value(Value::Object(delta.clone())).unwrap_or_default();
                 let next = apply_style_to_range(

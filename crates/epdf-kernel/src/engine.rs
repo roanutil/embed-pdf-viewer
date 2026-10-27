@@ -59,6 +59,16 @@ pub trait Engine {
     fn is_local(&self) -> bool {
         false
     }
+    /// `engine.fonts.list()` (`FontService.ts`): a local engine's registered
+    /// fonts, each a `FontHandle` (`key`, `familyName`, `weight`, `italic`,
+    /// `embeddingPermission`, `editingAuthorized`, `instanced`), in
+    /// registration order. A cloud engine has no `fonts`; readers ask only an
+    /// engine whose `is_local` is true, as `isLocalEngine` guards it. The
+    /// default is none, which is what the native host registers and what
+    /// epdf-web's `JsEngine` answers until the bridge has a font member.
+    fn list_fonts(&self) -> Vec<Value> {
+        Vec::new()
+    }
 }
 
 pub trait DocumentSecurity {

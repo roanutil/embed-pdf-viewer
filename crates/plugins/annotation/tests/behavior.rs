@@ -605,3 +605,50 @@ fn a_cursorless_handle_reads_undefined_and_nothing_reads_null() {
     assert!(epdf_kernel::is_undefined(&at(100.0, 100.0, Some(f64::NAN))));
     assert_eq!(at(400.0, 400.0, None), Value::Null);
 }
+
+// ── the engine font list (Ruling13.33 (c)) ──────────────────────────────────
+
+/// The fake engine with one registered font, branded local or not.
+struct Fonted(AsEngine, bool);
+
+impl Engine for Fonted {
+    fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
+        self.0.open(input, options)
+    }
+    fn destroy(&self) -> EngineCall<()> {
+        self.0.destroy()
+    }
+    fn is_local(&self) -> bool {
+        self.1
+    }
+    fn list_fonts(&self) -> Vec<Value> {
+        vec![json!({
+            "key": "brand-sans", "familyName": "Brand Sans", "weight": 400, "italic": false,
+            "embeddingPermission": "installable", "editingAuthorized": true, "instanced": false
+        })]
+    }
+}
+
+/// `fonts: () => (isLocalEngine(ctx.engine) ? ctx.engine.fonts.list() : [])`
+/// (`services/index.ts:71`): a local engine's registered family resolves to
+/// its mounted `@font-face`; the same list on an unbranded engine is never
+/// read, so the family falls back as an unknown one.
+#[test]
+fn the_local_engines_registered_fonts_reach_the_font_lookup() {
+    for (local, expected) in [
+        (true, "\"epdf-brand-sans\"".to_string()),
+        (false, "\"Brand Sans\", sans-serif".to_string()),
+    ] {
+        let (kernel, _) = kernel_over(
+            Vec::new(),
+            Vec::new(),
+            move |fake| Rc::new(Fonted(AsEngine(fake), local)),
+            None,
+        );
+        assert_eq!(
+            annotation(&kernel).get_css_font_family("Brand Sans"),
+            expected,
+            "local {local}"
+        );
+    }
+}

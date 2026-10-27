@@ -115,8 +115,8 @@ impl Core {
     pub(crate) fn text_ops(&self, id: &str, model: &Model) -> Vec<Value> {
         let Some(record) = model.by_id.get(id) else { return Vec::new() };
         let Some(reference) = record.annotation.get("ref").cloned() else { return Vec::new() };
-        let paragraphs = rich_doc_of(&record.annotation, self.fonts()).paragraphs;
-        let patch = text_commit_patch(&record.annotation, &paragraphs, self.fonts());
+        let paragraphs = rich_doc_of(&record.annotation, self.fonts().as_deref()).paragraphs;
+        let patch = text_commit_patch(&record.annotation, &paragraphs, self.fonts().as_deref());
         let mut full = serde_json::Map::new();
         full.insert("subtype".into(), json!("free-text"));
         if let Some(rich) = patch.get("richText") {
@@ -197,6 +197,6 @@ impl Core {
 
     /// `getCssFontFamily(family)`.
     pub fn get_css_font_family(&self, family: &str) -> String {
-        css_font_family_for_face(family, self.fonts())
+        css_font_family_for_face(family, self.fonts().as_deref())
     }
 }
