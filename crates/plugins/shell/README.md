@@ -1,53 +1,74 @@
 # epdf-plugin-shell
 
-`packages/plugin/shell` in Rust, at the v3 contract. All 32 cases in
-`vectors/plugins/shell/reducer.json` and all 6 in `vectors/plugins/shell/plugin.json` replay
-identically (`cargo test -p epdf-plugin-shell`).
+`packages/plugin/shell` in Rust, re-ported in Task 13.28 to the current TypeScript
+(`packages/plugin/shell/src/{controller,model}.ts`). All 40 cases in
+`vectors/plugins/shell/reducer.json` and all 7 in `vectors/plugins/shell/plugin.json` replay with no
+member-order allowance or outcome exception (`cargo test -p epdf-plugin-shell`), and
+`tests/behavior.rs` pins what the vectors can't print.
 
-The plugin is document-scoped, not workspace-scoped: each document keeps its own surfaces and
-menus, the capability does not resolve before a document opens (`no-shell-without-a-document`), and
-closing a document drops its slice (`per-document-state`). The reducer is called directly with its
-reference identity made visible (`same`), so every `return state` arm is pinned to a `None`.
+The plugin is document-scoped: each document keeps its own surfaces and menus, the capability does
+not resolve before a document opens (`no-shell-without-a-document`), and closing a document drops
+its slice, so reopening it starts empty (`per-document-state`).
 
-The modules follow the TypeScript files: `contract.rs`, `model.rs` and `controller.rs`.
-`create_shell_controller` returns the api and no `connect`. Every write goes through one diffing
-`dispatch`, which fires `onSurfaceOpened` and `onSurfaceClosed` per surface whose open flag changed
-and then `onMenuClosed` and `onMenuOpened` per menu (`events`). `ShellState` is `ShellSnapshot`,
-since `getSnapshot` hands the state out as it is. `getSurface` and `listOpenSurfaces` build their
-views on every call; the TypeScript memoizes them per record, which only reference identity could
-observe. A failing listener goes to stderr, where the TypeScript writes to `console.error`.
+The modules follow the TypeScript files. `model.rs` holds the named transitions (`open_surface`,
+`close_surface`, `toggle_surface`, `set_surface_props`, `close_all_surfaces`, the four menu verbs,
+`snapshot_of` and `apply_snapshot`), each a pure function from `&Rc<ShellState>` to `Rc<ShellState>`
+that hands back the same `Rc` where the TypeScript returns `state`. `reducer.json` calls them by
+name. The controller applies them through `Controller::update_state` and derives every event in one
+`on_state_change` listener: an opened or closed event per surface whose open flag changed, then the
+menu closes, then the menu opens. The events are kernel event sources, so a failing listener goes
+to the kernel report.
 
-## Coverage
+A surface record carries `focusRequest`, which a focused open raises without firing another opened
+event and every close sets back to 0. Snapshots leave it out, and `apply_snapshot` restores every
+record at 0.
 
-The shell suites reach every statement and branch of the TypeScript package: 341 of 341 statements
-and 103 of 103 branches.
+## Identity
+
+`getSurface`, `listOpenSurfaces` and `getSnapshot` are TypeScript `memoByKey`/`memo` reads. Rust
+returns `Rc`s that stay the same while their input record, `surfaces` map or state is the same
+`Rc`, and each memo holds the input `Rc` it compares with `Rc::ptr_eq`. `listOpenMenus` hands out
+the state's own `Rc<Vec<String>>`, and `snapshot_of` shares that same `Rc` as the snapshot's
+`open_menus`, as `snapshotOf` shares the array. The `surfaceOf` cache has no bound, as in the
+TypeScript.
 
 ## Pinned TypeScript behaviour
 
-`listOpenSurfaces()` lists surfaces in JavaScript property order, which puts integer-like ids first.
-`src/record.rs` is that order; it is the same `JsRecord` `epdf-plugin-i18n` carries, copied because
-the two plugins don't depend on each other.
+Surfaces enumerate in JavaScript property order, integer-like ids first. `src/record.rs` is that
+order; it is the same `JsRecord` `epdf-plugin-i18n` carries.
 
-`getSurface('toString')` returns `{id: 'toString'}`: the record lookup finds the inherited
-function, and the view spreads it into an object with only the id. `SurfaceState::open` is an
-`Option<bool>` for that one case. `isOpen` and `close` on the same names read as absent on both
-sides (`surfaces`).
+A record prints its members in the order the TypeScript built them. `openSurface` writes `open,
+exclusive, props, focusRequest`, and a spread keeps the order it copies and appends what it adds,
+so `updateSurfaceProps` on a record restored without props puts `props` after `focusRequest`
+(`set-props-on-a-closed-surface`). `model::Members` tracks that order.
 
-Two inputs are not ported. A surface id of `__proto__` sets the prototype of the TypeScript's
+`getSurface('toString')` returns `{id: 'toString'}`: the record lookup finds the inherited function,
+and the view spreads nothing from it. `SurfaceState::record` is `None` for that case. `isOpen` and
+`close` on the same names read as absent on both sides, and `toggleSurface('valueOf')` opens an own
+surface (`toggle-proto-member-opens`).
+
+Four inputs are not ported. A surface id of `__proto__` sets the prototype of the TypeScript's
 record instead of adding a surface, so the surface is readable through `isOpen` but never listed,
-and the next action's spread drops it; Rust stores it as an ordinary id. And
+and the next transition's spread drops it; Rust stores it as an ordinary id. And
 `updateSurfaceProps('toString', props)` finds the inherited function and stores `{props}` with no
-open flag under that id; Rust ignores it, as it ignores any unknown id.
+open flag under that id; Rust ignores it, as it ignores any unknown id. A record object with a
+member no surface record has (`{open: true, extra: 1}` in a snapshot) loses that member in Rust,
+where the TypeScript spread keeps it. And a state record without `open` or `focusRequest`, or a
+snapshot record without `open`, is refused when decoded (`missing field`), where the TypeScript
+takes it and reads the member as `undefined` (an absent `focusRequest` would make the next focused
+open `NaN`). Every record the shell itself writes has both members, so only a hand-built state or
+snapshot reaches this. No vector reaches any of the four.
 
-`scripts/mutants.sh -p epdf-plugin-shell --test-package epdf-plugin-shell --file <file>`, file by file
-over every module but `harness.rs`, catches 77 of 79 viable mutants (77 caught, 0 timeouts; 18
-unviable). No new cases were needed. Both survivors are equivalent:
+## Coverage
 
-- `src/model.rs`: `initial_shell_state()` replaced with `Default::default()`. `ShellState` is
-  `ShellSnapshot`, whose derived default is an empty `JsRecord` and an empty `Vec`, the same value.
-- `src/record.rs`: the record visitor's `expecting` replaced with `Ok(Default::default())`. It only
-  words a serde error for a non-object, and the public API takes typed values, so that text only
-  ever reaches a `[shell harness]` error that no TypeScript outcome is compared with.
+Before Task 13.28 this README said the shell suites reached all 341 statements and 103 branches of
+the TypeScript package. That figure measured the suites before Task 12 regenerated them against the
+current TypeScript, so it is stale; it was not remeasured for this port.
+
+## Mutation testing
+
+The mutation results recorded before Task 13.28 (77 of 79 viable mutants caught) measured the old
+reducer port and no longer describe this code; the task did not rerun `scripts/mutants.sh`.
 
 ## Native exposure
 
@@ -58,4 +79,6 @@ with it, so a native reader wants it for the same reasons the web viewer does.
 
 `props` is opaque by contract, so it crosses UniFFI as `props_json`, a JSON object in a string.
 Anything that isn't an object is refused with `invalid-input`. The Swift layer adds `Codable`
-helpers over the string and no schema of its own.
+helpers over the string and no schema of its own. `src/ffi.rs` and `tests/ffi.rs` were migrated by
+hand in Task 13.28 (`focus`, `focus_request`, `ShellSnapshotSurface`, a closed event without props)
+and are compiled and tested since Task 13.33.

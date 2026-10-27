@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "original": 29,
+    "current": 37,
+    "mapped": 29,
+    "wholeRetirements": 0,
+    "partialRetirements": 18,
+    "additions": 8,
+    "changedInputs": 29
+  },
+  "runtime": {
+    "original": {
+      "cases": 29,
+      "scenario": 19,
+      "steps": 175,
+      "unmatched": 6,
+      "stepThrows": 23,
+      "settlements": 59,
+      "rejections": 15,
+      "reports": 1,
+      "callbacks": 24,
+      "runnerExceptions": 1,
+      "pure": 9,
+      "pureThrows": 9
+    },
+    "current": {
+      "cases": 37,
+      "scenario": 29,
+      "steps": 278,
+      "unmatched": 0,
+      "stepThrows": 0,
+      "settlements": 107,
+      "rejections": 10,
+      "reports": 1,
+      "callbacks": 35,
+      "pure": 8,
+      "pureThrows": 0
+    }
+  },
+  "preserved": 460
+}

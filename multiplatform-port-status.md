@@ -4,10 +4,10 @@ What is ported, what pins it, and what is left. `multiplatform-port-order.md`
 is the plan; this is where the plan actually got to. Regenerate nothing from
 this file: every claim below points at a test you can run.
 
-Run everything with `cargo test --workspace`, which is 72 suites at the time
-of writing, plus `cargo clippy --workspace --all-targets -- -D warnings`. The
+Run everything with `cargo test --workspace`, which was 310 test binaries (doc-tests
+included) with 2,875 tests passing and 1 ignored at `172f5369d`, plus `cargo clippy --workspace --all-targets -- -D warnings`. The
 TypeScript half is `pnpm --filter @embedpdf/tooling-engine-conformance run
-<name>:check` for each of the thirty-two check scripts, all wired into
+<name>:check` for each of the thirty-three check scripts, all wired into
 `.github/workflows/engine-rust.yml`.
 
 Every group from G0 through G15 now has a Rust implementation, every one of
@@ -15,6 +15,13 @@ the sixty-five wire kinds reaches it, and all three bindings call it. What is
 left is listed under "Not started" below: the event DELIVERY that the port
 order keeps in TypeScript, five viewer flows nobody has written, and a handful
 of behaviours this corpus cannot distinguish, each documented where it lives.
+
+Task 14.3 (`1d1ba44cc` to `577185b0b`) changed the engine in six places, each pinned by a test:
+a text run that claims past its glyphs no longer panics the layout, `reorder_part` places a key
+named twice twice, as the TypeScript does, the open-failure message follows the TypeScript's, an
+empty password counts as none, a creation draft refuses a point count that is not a whole `u32`
+instead of clamping it, and the native host's password prompt and create/import checks match the
+TypeScript's. All 33 check scripts are current at `172f5369d`.
 
 ## Done, and pinned to the TypeScript by vectors
 
@@ -252,6 +259,17 @@ Re-measured on 2026-10-15 after the Swift review fixes: 218,818,352 bytes
 bytes for the simulator; until `9c0e38d66` the script merged
 `libembedpdf.a` into it a second time, though rustc already bundles PDFium
 into the Rust archive, and it was 238,628,784.
+
+Task 14.7 (`00cfc02bf` to `172f5369d`) migrated the Swift package to the plugin ffi shapes the
+upstream catch-up landed. The package compiles for the iOS simulator against a stand-in XCFramework
+(139 compile errors down to 0), but it does not link: the runtime pin `926c126b2` has no
+`ios-arm64` or `ios-sim-arm64` build on disk, so the simulator run and the UI tests, which compile
+only, are not done. The 327 `EmbedPDFTests` ran on macOS in a scratch harness, all passing. Building
+the XCFramework is a runtime-fork payload step and is yours to run. Also left for you, and not
+caused by Task 14: 10 `core-wasm` `test:wasm` failures, 8 `core-wasm` typecheck errors
+(`pnpm --filter @embedpdf/core-wasm typecheck`, present at `4a0b9c126`), and 11 wasm failures in
+`crates/epdf-web/tests/exports.rs` (no annotation or form plugin factories). The archive sizes above predate
+the catch-up and were not re-measured.
 
 ## Where the Rust core actually runs
 

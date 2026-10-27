@@ -11,8 +11,16 @@
 import * as cl from '../../../../packages/core/annotation/src/cloudy';
 import * as en from '../../../../packages/core/annotation/src/endings';
 import * as g from '../../../../packages/core/annotation/src/geometry';
-import type { Border, Geom, Rect, Vec } from '../../../../packages/core/annotation/src/types';
+import * as rt from '../../../../packages/core/annotation/src/rect';
+import {
+  caretRectFromAnchor,
+  caretFromAnchor,
+} from '../../../../packages/core/annotation/src/shapes/caret';
+import { MITER_LIMIT } from '../../../../packages/core/annotation/src/shapes/points';
+import { calloutEnd } from '../../../../packages/core/annotation/src/shapes/text-box';
+import type { Rect } from '../../../../packages/core/annotation/src/types';
 
+import { historicalTarget, currentSuites } from './annotation-core-fixtures';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   DASHED,
@@ -34,7 +42,10 @@ import {
   tq,
   tqRot,
   v,
+  type Border,
   type Fn,
+  type Geom,
+  type Vec,
 } from './annotation-core-fixtures';
 
 const HANDLES = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'] as const;
@@ -44,20 +55,20 @@ const ODD_ROTS = [30, 45, -90, -45, 360, 405, 179.5, 1e-9];
 // ── basics: constants, small math, rotation helpers, placement helpers ───────
 
 const basicsFns: Record<string, Fn> = {
-  RECT_HANDLES: () => g.RECT_HANDLES,
+  RECT_HANDLES: () => rt.RECT_HANDLES,
   ROTATE_KNOB_OFFSET: () => g.ROTATE_KNOB_OFFSET,
-  DEFAULT_CHROME_GEOM: () => g.DEFAULT_CHROME_GEOM,
-  MITER_LIMIT: () => g.MITER_LIMIT,
-  rotatedHandleCursor: g.rotatedHandleCursor,
-  rectFromPoints: g.rectFromPoints,
-  rectsIntersect: g.rectsIntersect,
-  unionRect: g.unionRect,
-  normalizeDeg: g.normalizeDeg,
-  rotatePoint: g.rotatePoint,
-  apSizeChanged: g.apSizeChanged,
-  rotatedAabb: g.rotatedAabb,
+  DEFAULT_CHROME_GEOM: () => g.DEFAULT_CHROME_GEOMETRY,
+  MITER_LIMIT: () => MITER_LIMIT,
+  rotatedHandleCursor: rt.rotatedHandleCursor,
+  rectFromPoints: rt.rectFromPoints,
+  rectsIntersect: rt.rectsIntersect,
+  unionRect: rt.unionRect,
+  normalizeDeg: rt.normalizeDeg,
+  rotatePoint: rt.rotatePoint,
+  apSizeChanged: historicalTarget('apSizeChanged', 'a5b58d107'),
+  rotatedAabb: rt.rotatedAabb,
   uprightRotation: g.uprightRotation,
-  transposedAboutCenter: g.transposedAboutCenter,
+  transposedAboutCenter: rt.transposedAboutCenter,
   uprightAnchoredRect: g.uprightAnchoredRect,
   fitStampBox: g.fitStampBox,
   rectHandlesFor: g.rectHandlesFor,
@@ -67,9 +78,9 @@ const basicsFns: Record<string, Fn> = {
   rotateKnob: g.rotateKnob,
   chordThrough: g.chordThrough,
   placeRotateKnob: g.placeRotateKnob,
-  shapeRectFor: g.shapeRectFor,
+  shapeRectFor: historicalTarget('shapeRectFor', '513541817'),
   pointInQuad: g.pointInQuad,
-  quadIntersectsRect: g.quadIntersectsRect,
+  quadIntersectsRect: historicalTarget('quadIntersectsRect', 'ad2be50f6'),
 };
 
 type Corners = [Vec, Vec, Vec, Vec];
@@ -82,7 +93,7 @@ const corners = (r: Rect): Corners => [
 const turned = (r: Rect, deg: number): Corners => {
   const cx = r.x + r.width / 2;
   const cy = r.y + r.height / 2;
-  return corners(r).map((p) => g.rotatePoint(p, v(cx, cy), deg)) as Corners;
+  return corners(r).map((p) => rt.rotatePoint(p, v(cx, cy), deg)) as Corners;
 };
 
 const PAGE = rc(0, 0, 600, 800);
@@ -120,11 +131,27 @@ const basics: FunctionCase[] = [
   c('unionRect', 'nan', [v(3, 4), v(NaN, 1)]),
   c('unionRect', 'infinite', [v(-Infinity, 0), v(1, Infinity)]),
 
-  ...[0, 90, -90, 360, 450, -450, 359.999, -0.5, 1e-12, 720.25, NaN, Infinity, 1e20, -1e20, 123456789.123].map((d) =>
-    c('normalizeDeg', `${d}`, d),
-  ),
+  ...[
+    0,
+    90,
+    -90,
+    360,
+    450,
+    -450,
+    359.999,
+    -0.5,
+    1e-12,
+    720.25,
+    NaN,
+    Infinity,
+    1e20,
+    -1e20,
+    123456789.123,
+  ].map((d) => c('normalizeDeg', `${d}`, d)),
 
-  ...[0, 30, 90, 180, 270, -45, 400].map((d) => c('rotatePoint', `about-origin-${d}`, v(10, 0), v(0, 0), d)),
+  ...[0, 30, 90, 180, 270, -45, 400].map((d) =>
+    c('rotatePoint', `about-origin-${d}`, v(10, 0), v(0, 0), d),
+  ),
   c('rotatePoint', 'about-pivot', v(15, 20), v(10, 10), 90),
   c('rotatePoint', 'at-pivot', v(10, 10), v(10, 10), 77),
 
@@ -136,7 +163,12 @@ const basics: FunctionCase[] = [
   c('apSizeChanged', 'caret', gCaret(rc(0, 0, 4, 4)), gCaret(rc(0, 0, 5, 4))),
   c('apSizeChanged', 'line-moved', gLine(v(0, 0), v(10, 10)), gLine(v(5, 5), v(15, 15))),
   c('apSizeChanged', 'line-stretched', gLine(v(0, 0), v(10, 10)), gLine(v(0, 0), v(20, 10))),
-  c('apSizeChanged', 'poly', gPoly([v(0, 0), v(10, 0), v(5, 5)], true), gPoly([v(0, 0), v(10, 0), v(5, 9)], true)),
+  c(
+    'apSizeChanged',
+    'poly',
+    gPoly([v(0, 0), v(10, 0), v(5, 5)], true),
+    gPoly([v(0, 0), v(10, 0), v(5, 9)], true),
+  ),
   c('apSizeChanged', 'ink', gInk([[v(0, 0), v(4, 4)]]), gInk([[v(1, 1), v(5, 5)]])),
   c('apSizeChanged', 'quads', gQuads([tq(0, 0, 10, 5)]), gQuads([tq(0, 0, 12, 5)])),
   c('apSizeChanged', 'rect-to-line', gRect(rc(0, 0, 10, 10)), gLine(v(0, 0), v(10, 10))),
@@ -156,20 +188,111 @@ const basics: FunctionCase[] = [
   ...[...ROTS, 45, -90, 450].map((r) => c('uprightAnchoredRect', `r${r}`, v(100, 200), 180, 40, r)),
 
   c('fitStampBox', 'fits', v(300, 400), { width: 100, height: 50 }, { width: 600, height: 800 }, 0),
-  c('fitStampBox', 'too-wide', v(300, 400), { width: 1200, height: 100 }, { width: 600, height: 800 }, 0),
-  c('fitStampBox', 'too-tall', v(300, 400), { width: 100, height: 1600 }, { width: 600, height: 800 }, 0),
-  c('fitStampBox', 'quarter-transposes', v(300, 400), { width: 1000, height: 100 }, { width: 600, height: 800 }, 90),
-  c('fitStampBox', 'quarter-270', v(300, 400), { width: 700, height: 100 }, { width: 600, height: 800 }, 270),
-  c('fitStampBox', 'negative-quarter', v(300, 400), { width: 700, height: 100 }, { width: 600, height: 800 }, -90),
-  c('fitStampBox', 'half-turn', v(300, 400), { width: 700, height: 100 }, { width: 600, height: 800 }, 180),
-  c('fitStampBox', 'tilted-not-quarter', v(300, 400), { width: 700, height: 100 }, { width: 600, height: 800 }, 45),
-  c('fitStampBox', 'clamp-left-top', v(10, 10), { width: 100, height: 50 }, { width: 600, height: 800 }, 0),
-  c('fitStampBox', 'clamp-right-bottom', v(595, 799), { width: 100, height: 50 }, { width: 600, height: 800 }, 0),
-  c('fitStampBox', 'zero-size', v(300, 400), { width: 0, height: 0 }, { width: 600, height: 800 }, 0),
-  c('fitStampBox', 'zero-width', v(300, 400), { width: 0, height: 900 }, { width: 600, height: 800 }, 0),
+  c(
+    'fitStampBox',
+    'too-wide',
+    v(300, 400),
+    { width: 1200, height: 100 },
+    { width: 600, height: 800 },
+    0,
+  ),
+  c(
+    'fitStampBox',
+    'too-tall',
+    v(300, 400),
+    { width: 100, height: 1600 },
+    { width: 600, height: 800 },
+    0,
+  ),
+  c(
+    'fitStampBox',
+    'quarter-transposes',
+    v(300, 400),
+    { width: 1000, height: 100 },
+    { width: 600, height: 800 },
+    90,
+  ),
+  c(
+    'fitStampBox',
+    'quarter-270',
+    v(300, 400),
+    { width: 700, height: 100 },
+    { width: 600, height: 800 },
+    270,
+  ),
+  c(
+    'fitStampBox',
+    'negative-quarter',
+    v(300, 400),
+    { width: 700, height: 100 },
+    { width: 600, height: 800 },
+    -90,
+  ),
+  c(
+    'fitStampBox',
+    'half-turn',
+    v(300, 400),
+    { width: 700, height: 100 },
+    { width: 600, height: 800 },
+    180,
+  ),
+  c(
+    'fitStampBox',
+    'tilted-not-quarter',
+    v(300, 400),
+    { width: 700, height: 100 },
+    { width: 600, height: 800 },
+    45,
+  ),
+  c(
+    'fitStampBox',
+    'clamp-left-top',
+    v(10, 10),
+    { width: 100, height: 50 },
+    { width: 600, height: 800 },
+    0,
+  ),
+  c(
+    'fitStampBox',
+    'clamp-right-bottom',
+    v(595, 799),
+    { width: 100, height: 50 },
+    { width: 600, height: 800 },
+    0,
+  ),
+  c(
+    'fitStampBox',
+    'zero-size',
+    v(300, 400),
+    { width: 0, height: 0 },
+    { width: 600, height: 800 },
+    0,
+  ),
+  c(
+    'fitStampBox',
+    'zero-width',
+    v(300, 400),
+    { width: 0, height: 900 },
+    { width: 600, height: 800 },
+    0,
+  ),
   // An empty stamp on an empty page: the zero guards keep 0 / 0 out of the scale.
-  c('fitStampBox', 'zero-size-zero-page', v(0, 0), { width: 0, height: 0 }, { width: 0, height: 0 }, 0),
-  c('fitStampBox', 'never-scales-up', v(300, 400), { width: 10, height: 10 }, { width: 600, height: 800 }, 0),
+  c(
+    'fitStampBox',
+    'zero-size-zero-page',
+    v(0, 0),
+    { width: 0, height: 0 },
+    { width: 0, height: 0 },
+    0,
+  ),
+  c(
+    'fitStampBox',
+    'never-scales-up',
+    v(300, 400),
+    { width: 10, height: 10 },
+    { width: 600, height: 800 },
+    0,
+  ),
 
   c('rectHandlesFor', 'box', rc(10, 20, 100, 50)),
   c('rectHandlesFor', 'zero', rc(0, 0, 0, 0)),
@@ -199,7 +322,9 @@ const basics: FunctionCase[] = [
   c('rotateKnob', 'flat-box', corners(rc(100, 100, 80, 0)), 24),
   c('rotateKnob', 'zero-offset', corners(rc(100, 100, 80, 60)), 0),
 
-  ...[0, 90, 45, 30, 135, -60, 180].map((d) => c('chordThrough', `inside-${d}`, PAGE, v(300, 400), d)),
+  ...[0, 90, 45, 30, 135, -60, 180].map((d) =>
+    c('chordThrough', `inside-${d}`, PAGE, v(300, 400), d),
+  ),
   c('chordThrough', 'outside-parallel-x', PAGE, v(300, -10), 0),
   c('chordThrough', 'outside-parallel-y', PAGE, v(-10, 400), 90),
   c('chordThrough', 'outside-parallel-x-below', PAGE, v(300, 900), 0),
@@ -230,8 +355,22 @@ const basics: FunctionCase[] = [
   c('placeRotateKnob', 'clamp-right', turned(rc(5, 100, 590, 60), 90), 24, PAGE),
 
   ...[SOLID, DASHED, cloudy(1), cloudy(0), cloudy(2.5)].flatMap((b, i) => [
-    c('shapeRectFor', `rect-border${i}`, rc(10, 10, 100, 50), false, { color: '#000', interiorColor: null, strokeWidth: 2, opacity: 1, blendMode: 'normal', border: b }),
-    c('shapeRectFor', `ellipse-border${i}`, rc(10, 10, 100, 50), true, { color: '#000', interiorColor: null, strokeWidth: 3, opacity: 1, blendMode: 'normal', border: b }),
+    c('shapeRectFor', `rect-border${i}`, rc(10, 10, 100, 50), false, {
+      color: '#000',
+      interiorColor: null,
+      strokeWidth: 2,
+      opacity: 1,
+      blendMode: 'normal',
+      border: b,
+    }),
+    c('shapeRectFor', `ellipse-border${i}`, rc(10, 10, 100, 50), true, {
+      color: '#000',
+      interiorColor: null,
+      strokeWidth: 3,
+      opacity: 1,
+      blendMode: 'normal',
+      border: b,
+    }),
   ]),
 
   c('pointInQuad', 'inside', v(5, 5), corners(rc(0, 0, 10, 10))),
@@ -248,25 +387,65 @@ const basics: FunctionCase[] = [
   c('quadIntersectsRect', 'touching', corners(rc(0, 0, 10, 10)), rc(10, 0, 10, 10)),
   c('quadIntersectsRect', 'apart', corners(rc(0, 0, 10, 10)), rc(11, 0, 10, 10)),
   c('quadIntersectsRect', 'apart-before', corners(rc(20, 0, 10, 10)), rc(0, 0, 10, 10)),
-  c('quadIntersectsRect', 'tilted-miss-in-aabb', turned(rc(100, 100, 100, 10), 45), rc(100, 100, 20, 20)),
+  c(
+    'quadIntersectsRect',
+    'tilted-miss-in-aabb',
+    turned(rc(100, 100, 100, 10), 45),
+    rc(100, 100, 20, 20),
+  ),
   c('quadIntersectsRect', 'tilted-hit', turned(rc(100, 100, 100, 10), 45), rc(140, 90, 20, 20)),
   c('quadIntersectsRect', 'degenerate-quad', corners(rc(5, 5, 0, 0)), rc(0, 0, 10, 10)),
   c('quadIntersectsRect', 'degenerate-quad-outside', corners(rc(50, 50, 0, 0)), rc(0, 0, 10, 10)),
   c('quadIntersectsRect', 'flat-quad', corners(rc(0, 5, 20, 0)), rc(5, 0, 5, 10)),
-  c('quadIntersectsRect', 'quad-axis-gap', [v(0, 0), v(10, 10), v(0, 20), v(-10, 10)], rc(8, 0, 4, 4)),
-  c('quadIntersectsRect', 'tilted-long-side-gap', turned(rc(100, 100, 100, 10), 45), rc(160, 115, 4, 4)),
+  c(
+    'quadIntersectsRect',
+    'quad-axis-gap',
+    [v(0, 0), v(10, 10), v(0, 20), v(-10, 10)],
+    rc(8, 0, 4, 4),
+  ),
+  c(
+    'quadIntersectsRect',
+    'tilted-long-side-gap',
+    turned(rc(100, 100, 100, 10), 45),
+    rc(160, 115, 4, 4),
+  ),
   c('quadIntersectsRect', 'tilted-end-gap', turned(rc(100, 100, 100, 10), 45), rc(188, 150, 6, 6)),
-  c('quadIntersectsRect', 'tilted-near-long-side', turned(rc(100, 100, 100, 10), 45), rc(152, 104, 4, 4)),
+  c(
+    'quadIntersectsRect',
+    'tilted-near-long-side',
+    turned(rc(100, 100, 100, 10), 45),
+    rc(152, 104, 4, 4),
+  ),
   c('quadIntersectsRect', 'tilted-near-end', turned(rc(100, 100, 100, 10), 45), rc(180, 140, 6, 6)),
   // Off the origin, where only the true edge normal separates: past the
   // short end, then beside the long side.
   c('quadIntersectsRect', 'tilted30-end-gap', turned(rc(100, 100, 100, 10), 30), rc(102, 74, 4, 4)),
-  c('quadIntersectsRect', 'tilted30-long-side-gap', turned(rc(100, 100, 100, 10), 30), rc(102, 86, 4, 4)),
+  c(
+    'quadIntersectsRect',
+    'tilted30-long-side-gap',
+    turned(rc(100, 100, 100, 10), 30),
+    rc(102, 86, 4, 4),
+  ),
   // A triangle whose first edge is degenerate: only that edge's normal
   // separates the rect, so the result turns on whether the edge counts.
-  c('quadIntersectsRect', 'tiny-edge-skipped', [v(0, 0), v(1e-13, 1e-13), v(100, 100), v(0, 100)], rc(60, 10, 10, 10)),
-  c('quadIntersectsRect', 'tiny-edge-x-at-threshold', [v(0, 0), v(5e-13, 1e-12), v(50, 100), v(0, 100)], rc(30, 5, 10, 10)),
-  c('quadIntersectsRect', 'tiny-edge-y-at-threshold', [v(0, 0), v(1e-12, 5e-13), v(100, 50), v(0, 50)], rc(60, 5, 10, 10)),
+  c(
+    'quadIntersectsRect',
+    'tiny-edge-skipped',
+    [v(0, 0), v(1e-13, 1e-13), v(100, 100), v(0, 100)],
+    rc(60, 10, 10, 10),
+  ),
+  c(
+    'quadIntersectsRect',
+    'tiny-edge-x-at-threshold',
+    [v(0, 0), v(5e-13, 1e-12), v(50, 100), v(0, 100)],
+    rc(30, 5, 10, 10),
+  ),
+  c(
+    'quadIntersectsRect',
+    'tiny-edge-y-at-threshold',
+    [v(0, 0), v(1e-12, 5e-13), v(100, 50), v(0, 50)],
+    rc(60, 5, 10, 10),
+  ),
 ];
 
 // ── per-geom functions, crossed with GEOMS ───────────────────────────────────
@@ -276,9 +455,9 @@ const shapeFns: Record<string, Fn> = {
   geomVisualBounds: g.geomVisualBounds,
   selectionBounds: g.selectionBounds,
   selectionQuad: g.selectionQuad,
-  selectionCenter: g.selectionCenter,
+  selectionCenter: historicalTarget('selectionCenter', '6153c181e'),
   obbFromGeom: g.obbFromGeom,
-  centroidOf: g.centroidOf,
+  turnPivotOf: g.turnPivotOf,
   geomRotation: g.geomRotation,
   isRotatableGeom: g.isRotatableGeom,
   geomHandles: g.geomHandles,
@@ -288,7 +467,7 @@ const shapeFns: Record<string, Fn> = {
   geomResetRotation: g.geomResetRotation,
   geomScaleAbout: g.geomScaleAbout,
   geomDragHandle: g.geomDragHandle,
-  calloutLinePoints: g.calloutLinePoints,
+  calloutLinePoints: historicalTarget('calloutLinePoints', '14bf747f2'),
 };
 
 const BORDERS: [string, Border | undefined][] = [
@@ -300,11 +479,16 @@ const BORDERS: [string, Border | undefined][] = [
   ['cloudy2.5', cloudy(2.5)],
 ];
 
+// Derived arguments use the current shape family, including its turn pivot.
+const pivotOf = g.turnPivotOf;
+const handleIds = (shape: Geom) => g.geomHandles(shape).map(({ id }) => id);
+const boundsOf = g.geomBounds;
+
 const shapes: FunctionCase[] = [];
 for (const [name, gm] of GEOMS) {
   shapes.push(
     c('geomBounds', name, gm),
-    c('centroidOf', name, gm),
+    c('turnPivotOf', name, gm),
     c('geomRotation', name, gm),
     c('isRotatableGeom', name, gm),
     c('geomHandles', name, gm),
@@ -313,7 +497,7 @@ for (const [name, gm] of GEOMS) {
     c('selectionCenter', `${name}-sw2`, gm, 2),
     c('geomRotateAbout', `${name}-zero`, gm, v(0, 0), 0),
     c('geomRotateAbout', `${name}-30-origin`, gm, v(0, 0), 30),
-    c('geomRotateAbout', `${name}-90-self`, gm, g.centroidOf(gm), 90),
+    c('geomRotateAbout', `${name}-90-self`, gm, pivotOf(gm), 90),
     c('geomRotateAbout', `${name}-neg45`, gm, v(100, 100), -45),
     c('geomScaleAbout', `${name}-iso`, gm, v(0, 0), 2, 2),
     c('geomScaleAbout', `${name}-aniso`, gm, v(50, 50), 0.5, 3),
@@ -324,28 +508,57 @@ for (const [name, gm] of GEOMS) {
     for (const [bn, b] of BORDERS) {
       if (sw !== 4 && bn !== 'none' && bn !== 'cloudy1') continue;
       // A border only changes the answer for boxes and polygons.
-      if (bn !== 'none' && gm.t !== 'rect' && gm.t !== 'poly') continue;
+      if (bn !== 'none' && gm.kind !== 'box' && gm.kind !== 'poly') continue;
       // A cloudy ellipse at zero stroke places its last curl by comparing an
       // accumulated perimeter with no tolerance: the last bit of sin/cos
       // decides, and V8's fdlibm and the platform libm may differ there.
-      if (sw === 0 && bn.startsWith('cloudy') && gm.t === 'rect' && gm.ellipse) continue;
+      if (sw === 0 && bn.startsWith('cloudy') && gm.kind === 'box' && gm.ellipse) continue;
       shapes.push(
-        c('geomVisualBounds', `${name}-sw${sw}-${bn}`, gm, sw, b),
-        c('selectionBounds', `${name}-sw${sw}-${bn}`, gm, sw, b),
-        c('selectionQuad', `${name}-sw${sw}-${bn}`, gm, sw, b),
-        c('obbFromGeom', `${name}-sw${sw}-${bn}`, gm, sw, b),
-        c('geomScene', `${name}-sw${sw}-${bn}`, gm, sw, b),
+        c('geomVisualBounds', `${name}-sw${sw}-${bn}`, gm, {
+          strokeWidth: sw,
+          cloudyIntensity: b?.cloudyIntensity,
+        }),
+        c('selectionBounds', `${name}-sw${sw}-${bn}`, gm, {
+          strokeWidth: sw,
+          cloudyIntensity: b?.cloudyIntensity,
+        }),
+        c('selectionQuad', `${name}-sw${sw}-${bn}`, gm, {
+          strokeWidth: sw,
+          cloudyIntensity: b?.cloudyIntensity,
+        }),
+        c('obbFromGeom', `${name}-sw${sw}-${bn}`, gm, {
+          strokeWidth: sw,
+          cloudyIntensity: b?.cloudyIntensity,
+        }),
+        c('geomScene', `${name}-sw${sw}-${bn}`, gm, {
+          strokeWidth: sw,
+          cloudyIntensity: b?.cloudyIntensity,
+        }),
       );
     }
   }
-  if (gm.t === 'text') shapes.push(c('calloutLinePoints', name, gm));
+  if (gm.kind === 'text-box') shapes.push(c('calloutLinePoints', name, gm));
 }
-shapes.push(c('geomScene', 'rect-default-width', geom('rect')));
+shapes.push(c('geomScene', 'rect-default-width', geom('rect'), { strokeWidth: 2 }));
 // The leader's box end is pushed out by half the stroke only for a positive
 // stroke: a negative one would pull it in, and at zero stroke an infinite tip
 // would turn the pushed point into NaN.
-shapes.push(c('geomScene', 'callout-negative-stroke', gText(rc(200, 200, 120, 40), { tip: v(100, 100), ending: 'none' }), -2));
-shapes.push(c('geomScene', 'callout-infinite-tip-sw0', gText(rc(200, 200, 120, 40), { tip: v(Infinity, 100), ending: 'none' }), 0));
+shapes.push(
+  c(
+    'geomScene',
+    'callout-negative-stroke',
+    gText(rc(200, 200, 120, 40), { tip: v(100, 100), ending: 'none' }),
+    -2,
+  ),
+);
+shapes.push(
+  c(
+    'geomScene',
+    'callout-infinite-tip-sw0',
+    gText(rc(200, 200, 120, 40), { tip: v(Infinity, 100), ending: 'none' }),
+    0,
+  ),
+);
 shapes.push(c('geomScene', 'cloudy-small-box', gRect(rc(0, 0, 10, 10)), 2, cloudy(2)));
 shapes.push(c('geomScene', 'cloudy-just-fits', gRect(rc(0, 0, 11, 30)), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-too-narrow', gRect(rc(0, 0, 8, 30)), 1, cloudy(1)));
@@ -356,33 +569,100 @@ shapes.push(c('geomScene', 'cloudy-height-at-extent', gRect(rc(0, 0, 30, 10)), 1
 shapes.push(c('geomScene', 'cloudy-too-short', gRect(rc(0, 0, 30, 8)), 1, cloudy(1)));
 shapes.push(c('geomScene', 'cloudy-ellipse-small', gRect(rc(0, 0, 10, 10), true), 2, cloudy(2)));
 shapes.push(c('geomScene', 'cloudy-poly-two', gPoly([v(0, 0), v(40, 40)], true), 1, cloudy(1)));
-shapes.push(c('geomScene', 'cloudy-open-poly', gPoly([v(0, 0), v(40, 40), v(80, 0)], false), 1, cloudy(1)));
-shapes.push(c('geomScene', 'callout-leader-zero', gText(rc(100, 100, 120, 40), { tip: v(220, 120), ending: 'open-arrow' }), 2));
-shapes.push(c('geomVisualBounds', 'callout-rot-sw3', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'closed-arrow' }, 90), 3));
-shapes.push(c('geomVisualBounds', 'callout-rot-nan', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'closed-arrow' }, NaN), 3));
+shapes.push(
+  c('geomScene', 'cloudy-open-poly', gPoly([v(0, 0), v(40, 40), v(80, 0)], false), 1, cloudy(1)),
+);
+shapes.push(
+  c(
+    'geomScene',
+    'callout-leader-zero',
+    gText(rc(100, 100, 120, 40), { tip: v(220, 120), ending: 'open-arrow' }),
+    2,
+  ),
+);
+shapes.push(
+  c(
+    'geomVisualBounds',
+    'callout-rot-sw3',
+    gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'closed-arrow' }, 90),
+    3,
+  ),
+);
+shapes.push(
+  c(
+    'geomVisualBounds',
+    'callout-rot-nan',
+    gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'closed-arrow' }, NaN),
+    3,
+  ),
+);
 // A join sharp enough that its miter tip reaches past the side offsets, but
 // within the miter limit only at the real limit (10 h, not 10 + h or 10 / h).
-shapes.push(c('geomVisualBounds', 'miter-within-limit-sw8', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 8));
-shapes.push(c('geomVisualBounds', 'miter-within-limit-sw1', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 1));
+shapes.push(
+  c('geomVisualBounds', 'miter-within-limit-sw8', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 8),
+);
+shapes.push(
+  c('geomVisualBounds', 'miter-within-limit-sw1', gPoly([v(0, 0), v(100, 10), v(0, 40)], false), 1),
+);
 // A join whose miter comes to exactly MITER_LIMIT * h (found by search): at
 // the limit is still within it.
-shapes.push(c('geomVisualBounds', 'miter-exactly-at-limit', gPoly([v(0, 0), v(100, 0), v(0, 20.305866063400426)], false), 2));
+shapes.push(
+  c(
+    'geomVisualBounds',
+    'miter-exactly-at-limit',
+    gPoly([v(0, 0), v(100, 0), v(0, 20.305866063400426)], false),
+    2,
+  ),
+);
 // A near reversal whose half-angle cosine rounds to 0: the guard skips its
 // infinite miter, which a negative stroke width would otherwise keep.
-shapes.push(c('geomVisualBounds', 'reversal-negative-stroke', gPoly([v(0, 0), v(100, 0), v(0, 1.5e-7)], false), -2));
+shapes.push(
+  c(
+    'geomVisualBounds',
+    'reversal-negative-stroke',
+    gPoly([v(0, 0), v(100, 0), v(0, 1.5e-7)], false),
+    -2,
+  ),
+);
 shapes.push(c('obbFromGeom', 'line-rot-nan', gLine(v(0, 0), v(50, 20), undefined, NaN), 2));
 // An infinite `rot` is truthy, so a box resets to 0; spinning it back by
 // `-rot` instead would leave NaN.
-shapes.push(c('geomResetRotation', 'rect-rot-infinite', gRect(rc(100, 100, 80, 60), false, Infinity)));
+shapes.push(
+  c('geomResetRotation', 'rect-rot-infinite', gRect(rc(100, 100, 80, 60), false, Infinity)),
+);
 
 // Drag every handle a geom offers, plus the bogus ones, to one target.
 const dragTo = v(210, 185);
 for (const [name, gm] of GEOMS) {
-  const ids = [...g.geomHandles(gm).map((h) => h.id), 'bogus', 'v', 'v99', 'v-1', 'v1.5', 'x1', 'v 1', 'v0x1', 'v1e0', 'callout-tip', 'callout-knee', 'v0', 'v1'];
-  for (const id of [...new Set(ids)]) shapes.push(c('geomDragHandle', `${name}-${id}`, gm, id, dragTo));
+  const ids = [
+    ...handleIds(gm),
+    'bogus',
+    'v',
+    'v99',
+    'v-1',
+    'v1.5',
+    'x1',
+    'v 1',
+    'v0x1',
+    'v1e0',
+    'callout-tip',
+    'callout-knee',
+    'v0',
+    'v1',
+  ];
+  for (const id of [...new Set(ids)])
+    shapes.push(c('geomDragHandle', `${name}-${id}`, gm, id, dragTo));
 }
 shapes.push(c('geomDragHandle', 'rect-nw-collapse', geom('rect'), 'nw', v(178, 158)));
-shapes.push(c('geomDragHandle', 'rect-rot-nan-se', gRect(rc(100, 100, 80, 60), false, NaN), 'se', v(220, 200)));
+shapes.push(
+  c(
+    'geomDragHandle',
+    'rect-rot-nan-se',
+    gRect(rc(100, 100, 80, 60), false, NaN),
+    'se',
+    v(220, 200),
+  ),
+);
 shapes.push(c('geomDragHandle', 'rect-rot30-se-shrink', geom('rect-rot30'), 'se', v(120, 110)));
 shapes.push(c('geomDragHandle', 'poly-v-empty-string', geom('poly-closed'), 'v', v(0, 0)));
 shapes.push(c('geomDragHandle', 'poly-astral', geom('poly-closed'), '\u{1F600}1', v(0, 0)));
@@ -401,27 +681,49 @@ shapes.push(c('geomDragHandle', 'poly-exp', geom('poly-closed'), 'v2e-0', v(0, 0
 
 // ── hit testing ──────────────────────────────────────────────────────────────
 
-/** Probe points around a geom: its bounds' centre, corners, edge midpoints,
+/** Probe points around a geometry: its bounds' centre, corners, edge midpoints,
  *  and points just inside/outside each edge at the margin boundary. */
 function probes(gm: Geom, margin: number): Vec[] {
-  const b = g.geomBounds(gm);
+  const b = boundsOf(gm);
   const x0 = b.x;
   const y0 = b.y;
   const x1 = b.x + b.width;
   const y1 = b.y + b.height;
   const mx = (x0 + x1) / 2;
   const my = (y0 + y1) / 2;
-  const out: Vec[] = [v(mx, my), v(x0, y0), v(x1, y0), v(x1, y1), v(x0, y1), v(mx, y0), v(mx, y1), v(x0, my), v(x1, my)];
+  const out: Vec[] = [
+    v(mx, my),
+    v(x0, y0),
+    v(x1, y0),
+    v(x1, y1),
+    v(x0, y1),
+    v(mx, y0),
+    v(mx, y1),
+    v(x0, my),
+    v(x1, my),
+  ];
   for (const d of [margin - 0.01, margin + 0.01, margin + 1, 3, 1.5]) {
-    out.push(v(x0 - d, my), v(x1 + d, my), v(mx, y0 - d), v(mx, y1 + d), v(x0 + d, my), v(mx, y0 + d));
+    out.push(
+      v(x0 - d, my),
+      v(x1 + d, my),
+      v(mx, y0 - d),
+      v(mx, y1 + d),
+      v(x0 + d, my),
+      v(mx, y0 + d),
+    );
   }
   out.push(v(x0 + b.width / 4, y0 + b.height / 4), v(x1 - 2, y1 - 2), v(-1000, -1000));
   return out;
 }
 
 const hitFns: Record<string, Fn> = {
-  geomHitProbe: (gm: Geom, margin: number, filled: boolean, sw: number, points: Vec[]) =>
-    points.map((p) => g.geomHit(gm, p, margin, filled, sw)),
+  geomHitProbe: (
+    gm: Geom,
+    margin: number,
+    filled: boolean,
+    stroke: { strokeWidth: number; cloudyIntensity?: number | null },
+    points: Vec[],
+  ) => points.map((p) => g.geomHit(gm, p, margin, filled, stroke)),
 };
 
 const hits: FunctionCase[] = [];
@@ -432,52 +734,171 @@ for (const [name, gm] of GEOMS) {
     [0, false, 0],
     [2, true, 8],
   ] as const) {
-    hits.push(c('geomHitProbe', `${name}-m${margin}-${filled ? 'filled' : 'open'}-sw${sw}`, gm, margin, filled, sw, probes(gm, margin)));
+    hits.push(
+      c(
+        'geomHitProbe',
+        `${name}-m${margin}-${filled ? 'filled' : 'open'}-sw${sw}`,
+        gm,
+        margin,
+        filled,
+        sw,
+        probes(gm, margin),
+      ),
+    );
   }
 }
 // Line endings as hit targets (an arrowhead is as clickable as the stroke).
 for (const e of ENDINGS) {
   const gm = gLine(v(100, 100), v(300, 100), ends(e, e));
-  const points = [v(100, 100), v(90, 100), v(85, 96), v(92, 104), v(80, 100), v(310, 100), v(315, 104), v(300, 118), v(88, 112), v(112, 88)];
+  const points = [
+    v(100, 100),
+    v(90, 100),
+    v(85, 96),
+    v(92, 104),
+    v(80, 100),
+    v(310, 100),
+    v(315, 104),
+    v(300, 118),
+    v(88, 112),
+    v(112, 88),
+  ];
   hits.push(c('geomHitProbe', `line-ending-${e}-sw3`, gm, 1, false, 3, points));
   hits.push(c('geomHitProbe', `line-ending-${e}-sw0`, gm, 1, false, 0, points));
   const cg = gText(rc(200, 200, 120, 40), { tip: v(100, 100), ending: e });
-  hits.push(c('geomHitProbe', `callout-ending-${e}-sw3`, cg, 1, false, 3, [...points, v(150, 150), v(200, 220)]));
+  hits.push(
+    c('geomHitProbe', `callout-ending-${e}-sw3`, cg, 1, false, 3, [
+      ...points,
+      v(150, 150),
+      v(200, 220),
+    ]),
+  );
 }
-hits.push(c('geomHitProbe', 'poly-open-ending',gPoly([v(0, 0), v(100, 0), v(100, 100)], false, ends('closed-arrow', 'diamond')), 1, false, 3, [v(-10, 0), v(-20, 3), v(100, 110), v(103, 118), v(96, 116)]));
-hits.push(c('geomHitProbe', 'poly-closing-edge', gPoly([v(10, 10), v(90, 20), v(40, 80)], true), 1, false, 1, [v(25, 45), v(24, 46), v(20, 50)]));
-hits.push(c('geomHitProbe', 'poly-closed-two-points', gPoly([v(0, 0), v(100, 0)], true), 1, true, 1, [v(50, 0), v(50, 5)]));
-hits.push(c('geomHitProbe', 'ellipse-thick-stroke', gRect(rc(0, 0, 10, 10), true), 0, false, 30, [v(5, 5), v(0, 5), v(20, 5)]));
-hits.push(c('geomHitProbe', 'rect-rot-local-frame', gRect(rc(100, 100, 80, 60), false, 45), 1, true, 2, [v(140, 130), v(100, 100), v(181, 130), v(140, 80)]));
-hits.push(c('geomHitProbe', 'caret-rot', gCaret(rc(100, 100, 10, 10), 45), 1, false, 1, [v(105, 105), v(100, 100), v(92, 105)]));
-hits.push(c('geomHitProbe', 'callout-rot30-box-local', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, 30), 1, false, 2, [v(160, 120), v(215, 150), v(105, 90), v(215, 95), v(105, 150), v(60, 70)]));
-hits.push(c('geomHitProbe', 'callout-rot-nan', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, NaN), 1, false, 2, [v(160, 120), v(60, 70)]));
-hits.push(c('geomHitProbe', 'callout-rot-box-local', gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, 90), 1, false, 2, [v(160, 120), v(145, 60), v(175, 180), v(110, 105), v(60, 70)]));
-hits.push(c('geomHitProbe', 'quads-rotated-inside', gQuads([tqRot(40, 40, 80, 10, 30)]), 0, true, 0, [v(60, 55), v(40, 40), v(100, 45), v(90, 80)]));
+hits.push(
+  c(
+    'geomHitProbe',
+    'poly-open-ending',
+    gPoly([v(0, 0), v(100, 0), v(100, 100)], false, ends('closed-arrow', 'diamond')),
+    1,
+    false,
+    3,
+    [v(-10, 0), v(-20, 3), v(100, 110), v(103, 118), v(96, 116)],
+  ),
+);
+hits.push(
+  c(
+    'geomHitProbe',
+    'poly-closing-edge',
+    gPoly([v(10, 10), v(90, 20), v(40, 80)], true),
+    1,
+    false,
+    1,
+    [v(25, 45), v(24, 46), v(20, 50)],
+  ),
+);
+hits.push(
+  c('geomHitProbe', 'poly-closed-two-points', gPoly([v(0, 0), v(100, 0)], true), 1, true, 1, [
+    v(50, 0),
+    v(50, 5),
+  ]),
+);
+hits.push(
+  c('geomHitProbe', 'ellipse-thick-stroke', gRect(rc(0, 0, 10, 10), true), 0, false, 30, [
+    v(5, 5),
+    v(0, 5),
+    v(20, 5),
+  ]),
+);
+hits.push(
+  c('geomHitProbe', 'rect-rot-local-frame', gRect(rc(100, 100, 80, 60), false, 45), 1, true, 2, [
+    v(140, 130),
+    v(100, 100),
+    v(181, 130),
+    v(140, 80),
+  ]),
+);
+hits.push(
+  c('geomHitProbe', 'caret-rot', gCaret(rc(100, 100, 10, 10), 45), 1, false, 1, [
+    v(105, 105),
+    v(100, 100),
+    v(92, 105),
+  ]),
+);
+hits.push(
+  c(
+    'geomHitProbe',
+    'callout-rot30-box-local',
+    gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, 30),
+    1,
+    false,
+    2,
+    [v(160, 120), v(215, 150), v(105, 90), v(215, 95), v(105, 150), v(60, 70)],
+  ),
+);
+hits.push(
+  c(
+    'geomHitProbe',
+    'callout-rot-nan',
+    gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, NaN),
+    1,
+    false,
+    2,
+    [v(160, 120), v(60, 70)],
+  ),
+);
+hits.push(
+  c(
+    'geomHitProbe',
+    'callout-rot-box-local',
+    gText(rc(100, 100, 120, 40), { tip: v(20, 20), ending: 'none' }, 90),
+    1,
+    false,
+    2,
+    [v(160, 120), v(145, 60), v(175, 180), v(110, 105), v(60, 70)],
+  ),
+);
+hits.push(
+  c('geomHitProbe', 'quads-rotated-inside', gQuads([tqRot(40, 40, 80, 10, 30)]), 0, true, 0, [
+    v(60, 55),
+    v(40, 40),
+    v(100, 45),
+    v(90, 80),
+  ]),
+);
 
 // ── text anchors: carets, callout connection, PDF bridge ─────────────────────
 
 const textFns: Record<string, Fn> = {
-  calloutConnection: g.calloutConnection,
-  caretRectFromTextEnd: g.caretRectFromTextEnd,
-  caretRectFromAnchor: g.caretRectFromAnchor,
-  caretGeomFromAnchor: g.caretGeomFromAnchor,
-  pdfToContentPoint: g.pdfToContentPoint,
-  contentToPdfPoint: g.contentToPdfPoint,
-  pdfToContentRect: g.pdfToContentRect,
-  contentToPdfRect: g.contentToPdfRect,
-  geomPdfBounds: g.geomPdfBounds,
+  calloutEnd: calloutEnd,
+  caretRectFromTextEnd: historicalTarget('caretRectFromTextEnd', 'c5ead0f24'),
+  caretRectFromAnchor,
+  caretFromAnchor: caretFromAnchor,
+  pdfToContentPoint: historicalTarget('pdfToContentPoint', '1a243431a'),
+  contentToPdfPoint: historicalTarget('contentToPdfPoint', '1a243431a'),
+  pdfToContentRect: historicalTarget('pdfToContentRect', '1a243431a'),
+  contentToPdfRect: historicalTarget('contentToPdfRect', '1a243431a'),
+  geomPdfBounds: historicalTarget('geomPdfBounds', '1a243431a'),
 };
 const BOX = rc(100, 100, 120, 40);
 const CROP = { left: 0, bottom: 0, right: 612, top: 792 };
 const OFFSET_CROP = { left: 36, bottom: -18, right: 576, top: 720 };
 const text: FunctionCase[] = [
-  ...[v(300, 120), v(20, 120), v(160, 300), v(160, 10), v(160, 120), v(220, 160), v(100, 100), v(0, 0), v(400, 400), v(160, 121)].flatMap((ref, i) => [
-    c('calloutConnection', `ref${i}`, BOX, ref),
-    c('calloutConnection', `ref${i}-rot90`, BOX, ref, 90),
-    c('calloutConnection', `ref${i}-rot30`, BOX, ref, 30),
+  ...[
+    v(300, 120),
+    v(20, 120),
+    v(160, 300),
+    v(160, 10),
+    v(160, 120),
+    v(220, 160),
+    v(100, 100),
+    v(0, 0),
+    v(400, 400),
+    v(160, 121),
+  ].flatMap((ref, i) => [
+    c('calloutEnd', `ref${i}`, BOX, ref),
+    c('calloutEnd', `ref${i}-rot90`, BOX, ref, 90),
+    c('calloutEnd', `ref${i}-rot30`, BOX, ref, 30),
   ]),
-  c('calloutConnection', 'rot-zero-explicit', BOX, v(300, 120), 0),
+  c('calloutEnd', 'rot-zero-explicit', BOX, v(300, 120), 0),
   c('caretRectFromTextEnd', 'line', rc(10, 20, 100, 12)),
   c('caretRectFromTextEnd', 'zero', rc(0, 0, 0, 0)),
   ...[
@@ -494,16 +915,29 @@ const text: FunctionCase[] = [
     // the upright band, which is not upright.
     ...(() => {
       const by = 1000 * Math.tan((-0.05 * Math.PI) / 180);
-      const q = { upperStart: v(0, -12), upperEnd: v(1000, by - 12), lowerStart: v(0, 0), lowerEnd: v(1000, by) };
+      const q = {
+        upperLeft: v(0, -12),
+        upperRight: v(1000, by - 12),
+        lowerLeft: v(0, 0),
+        lowerRight: v(1000, by),
+      };
       return [['rot-at-the-upper-edge', q, 1]];
     })(),
-    ['zero-baseline', { upperStart: v(10, 0), upperEnd: v(10, 0), lowerStart: v(10, 12), lowerEnd: v(10, 12) }, 1],
-    ['zero-baseline-and-ink', { upperStart: v(10, 12), upperEnd: v(10, 12), lowerStart: v(10, 12), lowerEnd: v(10, 12) }, 1],
+    [
+      'zero-baseline',
+      { upperLeft: v(10, 0), upperRight: v(10, 0), lowerLeft: v(10, 12), lowerRight: v(10, 12) },
+      1,
+    ],
+    [
+      'zero-baseline-and-ink',
+      { upperLeft: v(10, 12), upperRight: v(10, 12), lowerLeft: v(10, 12), lowerRight: v(10, 12) },
+      1,
+    ],
     ['advance-zero', tq(10, 10, 50, 12), 0],
     ['advance-zero-rot30', tqRot(100, 100, 50, 12, 30), 0],
   ].flatMap(([label, q, adv]) => [
     c('caretRectFromAnchor', label as string, { glyphQuad: q, advance: adv }),
-    c('caretGeomFromAnchor', label as string, { glyphQuad: q, advance: adv }),
+    c('caretFromAnchor', label as string, { glyphQuad: q, advance: adv }),
   ]),
   ...[v(0, 0), v(100, 700), v(36.5, -18)].flatMap((p, i) => [
     c('pdfToContentPoint', `p${i}`, p, CROP),
@@ -512,11 +946,18 @@ const text: FunctionCase[] = [
     c('contentToPdfPoint', `p${i}-offset`, p, OFFSET_CROP),
   ]),
   c('pdfToContentRect', 'box', { left: 100, bottom: 600, right: 200, top: 700 }, CROP),
-  c('pdfToContentRect', 'box-offset', { left: 100, bottom: 600, right: 200, top: 700 }, OFFSET_CROP),
+  c(
+    'pdfToContentRect',
+    'box-offset',
+    { left: 100, bottom: 600, right: 200, top: 700 },
+    OFFSET_CROP,
+  ),
   c('pdfToContentRect', 'inverted', { left: 200, bottom: 700, right: 100, top: 600 }, CROP),
   c('contentToPdfRect', 'box', rc(100, 92, 100, 100), CROP),
   c('contentToPdfRect', 'box-offset', rc(100, 92, 100, 100), OFFSET_CROP),
-  ...GEOMS.filter((_, i) => i % 3 === 0).map(([name, gm]) => c('geomPdfBounds', name, gm, 2, OFFSET_CROP)),
+  ...GEOMS.filter((_, i) => i % 3 === 0).map(([name, gm]) =>
+    c('geomPdfBounds', name, gm, 2, OFFSET_CROP),
+  ),
   c('geomPdfBounds', 'cloudy-poly', geom('poly-closed'), 2, CROP, cloudy(1)),
 ];
 
@@ -543,7 +984,7 @@ for (const e of [...ENDINGS, undefined]) {
 // ── cloudy borders ───────────────────────────────────────────────────────────
 
 const cloudyFns: Record<string, Fn> = {
-  cloudyBorderExtent: cl.cloudyBorderExtent,
+  cloudyBorderExtent: historicalTarget('cloudyBorderExtent', 'c71ab9281'),
   cloudyPath: cl.cloudyPath,
   cloudyPolyPath: cl.cloudyPolyPath,
 };
@@ -638,7 +1079,21 @@ const POLYS: [string, Vec[]][] = [
   ['two', [v(0, 0), v(50, 50)]],
   ['one', [v(5, 5)]],
   ['empty', []],
-  ['star', [v(50, 0), v(61, 35), v(98, 35), v(68, 57), v(79, 91), v(50, 70), v(21, 91), v(32, 57), v(2, 35), v(39, 35)]],
+  [
+    'star',
+    [
+      v(50, 0),
+      v(61, 35),
+      v(98, 35),
+      v(68, 57),
+      v(79, 91),
+      v(50, 70),
+      v(21, 91),
+      v(32, 57),
+      v(2, 35),
+      v(39, 35),
+    ],
+  ],
   ['duplicate-last-x', [v(0, 0), v(100, 0), v(0, 1)]],
   ['two-same', [v(5, 5), v(5, 5)]],
   ['collinear', [v(0, 0), v(50, 0), v(100, 0)]],
@@ -652,32 +1107,36 @@ for (const [name, pts] of POLYS) {
   cloudyCases.push(c('cloudyPolyPath', `${name}-thick`, pts, 1, 12));
 }
 
-export const suites: Suite[] = [
+export const suites: Suite[] = currentSuites([
   {
     kind: 'function',
     file: 'core/annotation-geometry-basics.json',
-    describes: 'packages/core/annotation geometry.ts: constants, rect math, rotation helpers, upright placement, stamp fit, group scaling, rotate knob, guide chords, SAT.',
+    describes:
+      'packages/core/annotation geometry.ts: constants, rect math, rotation helpers, upright placement, stamp fit, group scaling, rotate knob, guide chords, SAT.',
     functions: basicsFns,
     cases: basics,
   },
   {
     kind: 'function',
     file: 'core/annotation-geometry-shapes.json',
-    describes: 'packages/core/annotation geometry.ts: every per-geom function crossed with one of every Geom shape (bounds, visual bounds, selection, OBB, handles, scene, translate, rotate, scale, handle drags).',
+    describes:
+      'packages/core/annotation geometry.ts: every per-geom function crossed with one of every Geom shape (bounds, visual bounds, selection, OBB, handles, scene, translate, rotate, scale, handle drags).',
     functions: shapeFns,
     cases: shapes,
   },
   {
     kind: 'function',
     file: 'core/annotation-geometry-hit.json',
-    describes: 'packages/core/annotation geometry.ts: geomHit over probe grids (wrapper geomHitProbe returns one answer per point).',
+    describes:
+      'packages/core/annotation geometry.ts: geomHit over probe grids (wrapper geomHitProbe returns one answer per point).',
     functions: hitFns,
     cases: hits,
   },
   {
     kind: 'function',
     file: 'core/annotation-geometry-text.json',
-    describes: 'packages/core/annotation geometry.ts: callout connection, caret boxes from text anchors, and the PDF/content bridge.',
+    describes:
+      'packages/core/annotation geometry.ts: callout connection, caret boxes from text anchors, and the PDF/content bridge.',
     functions: textFns,
     cases: text,
   },
@@ -691,8 +1150,9 @@ export const suites: Suite[] = [
   {
     kind: 'function',
     file: 'core/annotation-cloudy.json',
-    describes: 'packages/core/annotation cloudy.ts: cloudy border extent and the rect, ellipse and polygon scallop paths.',
+    describes:
+      'packages/core/annotation cloudy.ts: cloudy border extent and the rect, ellipse and polygon scallop paths.',
     functions: cloudyFns,
     cases: cloudyCases,
   },
-];
+]);

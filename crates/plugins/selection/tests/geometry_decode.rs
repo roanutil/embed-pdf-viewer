@@ -1,89 +1,80 @@
-//! `PageGeometryRun` reads in one pass what the earlier decode read through a
-//! `serde_json::Value`: the same runs from the same JSON, and an error for the
-//! same malformed JSON.
+//! `PageGeometryRun` reads in one pass: `'rotation' in run` decides the
+//! kind, wherever `rotation` sits, and a glyph whose cells are the other
+//! kind's shape, a rotated run with a null rotation or no `ascentFlip`, and
+//! a negative `start` are refused.
 
 use epdf_plugin_selection::text_layout::{
-    PageGeometryRun, PageGeometrySnapshot, RotatedGeometryRun, UprightGeometryRun,
+    PageCoordinates, PageGeometryRun, PageGeometrySnapshot, PdfCoordinates,
 };
 use serde_json::{Value, json};
 
-/// The decode this replaced: buffer the run, narrow on `'rotation' in run`.
-fn through_value(run: &Value) -> Result<PageGeometryRun, serde_json::Error> {
-    if run.get("rotation").is_some() {
-        serde_json::from_value::<RotatedGeometryRun>(run.clone()).map(PageGeometryRun::Rotated)
-    } else {
-        serde_json::from_value::<UprightGeometryRun>(run.clone()).map(PageGeometryRun::Upright)
-    }
-}
-
-fn rect(l: f64) -> Value {
-    json!({ "left": l, "bottom": 1.5, "right": l + 4.0, "top": 9.25 })
+fn rect(x: f64) -> Value {
+    json!({ "x": x, "y": 1.5, "width": 4, "height": 7.75 })
 }
 
 fn quad(x: f64) -> Value {
     json!({
-        "p1": { "x": x, "y": 1.0 }, "p2": { "x": x + 1.0, "y": 1.0 },
-        "p3": { "x": x, "y": 0.0 }, "p4": { "x": x + 1.0, "y": 0.0 },
+        "upperLeft": { "x": x, "y": 0.0 }, "upperRight": { "x": x + 1.0, "y": 0.0 },
+        "lowerLeft": { "x": x, "y": 1.0 }, "lowerRight": { "x": x + 1.0, "y": 1.0 },
     })
 }
 
-fn runs() -> Vec<Value> {
-    vec![
-        json!({ "rect": rect(0.0), "charStart": 0, "glyphs": [
-            { "looseBox": rect(0.0), "flags": 0, "tightBox": rect(0.5) },
-            { "looseBox": rect(4.0), "flags": 1 },
-            { "looseBox": rect(8.0), "flags": 2, "tightBox": null },
-        ] }),
-        json!({ "rect": rect(1.0), "charStart": 3, "fontSize": 12.0, "glyphs": [] }),
-        json!({ "rect": rect(1.0), "charStart": 3, "fontSize": null, "glyphs": [] }),
-        // `rotation` before the glyphs, and after them.
-        json!({ "rect": rect(2.0), "charStart": 7, "rotation": 0.5, "ascentFlip": true, "glyphs": [
-            { "looseQuad": quad(0.0), "flags": 0, "tightQuad": quad(0.25) },
-            { "looseQuad": quad(1.0), "flags": 1 },
-        ] }),
-        json!({ "rect": rect(2.0), "charStart": 9, "glyphs": [
-            { "looseQuad": quad(2.0), "flags": 0 },
-        ], "ascentFlip": false, "rotation": -1.25, "fontSize": 7.5 }),
-        // Members the run's kind doesn't read are ignored, as before.
-        json!({ "rect": rect(3.0), "charStart": 0, "extra": [1, 2], "glyphs": [
-            { "looseBox": rect(0.0), "flags": 0, "looseQuad": quad(0.0), "other": true },
-        ] }),
-    ]
+fn decode(run: &Value) -> Result<PageGeometryRun<PageCoordinates>, serde_json::Error> {
+    serde_json::from_str(&run.to_string())
 }
 
 #[test]
-fn reads_the_same_runs_as_the_value_decode() {
-    for run in runs() {
-        let text = run.to_string();
-        let direct: PageGeometryRun = serde_json::from_str(&text).unwrap();
-        assert_eq!(direct, through_value(&run).unwrap(), "{text}");
-    }
-    let snapshot = json!({ "runs": runs() });
+fn reads_each_kind_wherever_rotation_sits() {
+    let upright = json!({ "rect": rect(0.0), "start": 0, "glyphs": [
+        { "loose": rect(0.0), "tight": rect(0.5) },
+        { "space": true, "loose": rect(4.0) },
+        { "empty": true, "loose": rect(8.0) },
+    ] });
+    let PageGeometryRun::Upright { glyphs, font_size, .. } = decode(&upright).unwrap() else {
+        panic!("upright")
+    };
+    assert_eq!(font_size, None);
+    assert!(glyphs[1].space && !glyphs[1].empty && glyphs[2].empty && glyphs[0].tight.is_some());
+
+    let before = json!({ "rect": rect(2.0), "start": 7, "rotation": 90, "ascentFlip": true,
+        "glyphs": [{ "loose": quad(0.0), "tight": quad(0.25) }] });
+    let after = json!({ "rect": rect(2.0), "start": 7, "glyphs": [{ "loose": quad(0.0),
+        "tight": quad(0.25) }], "ascentFlip": true, "rotation": 90 });
+    assert_eq!(decode(&before).unwrap(), decode(&after).unwrap());
+    assert!(
+        matches!(decode(&before).unwrap(), PageGeometryRun::Rotated { rotation, .. } if rotation == 90.0)
+    );
+
+    // A snapshot read from a parsed value (a native host's answer) agrees.
+    let snapshot = json!({ "runs": [upright, before] });
     let direct: PageGeometrySnapshot = serde_json::from_str(&snapshot.to_string()).unwrap();
-    let expected: Vec<PageGeometryRun> = runs().iter().map(|r| through_value(r).unwrap()).collect();
-    assert_eq!(direct.runs, expected);
-    // A snapshot read from a parsed value (a native host's answer) agrees too.
-    let from_value: PageGeometrySnapshot = serde_json::from_value(snapshot).unwrap();
-    assert_eq!(from_value.runs, expected);
+    let parsed: PageGeometrySnapshot = serde_json::from_value(snapshot).unwrap();
+    assert_eq!(direct, parsed);
 }
 
 #[test]
-fn refuses_what_the_value_decode_refused() {
+fn the_file_coordinates_read_edges() {
+    let run = json!({ "rect": { "left": 0, "bottom": 1, "right": 4, "top": 9 }, "start": 0,
+        "glyphs": [{ "loose": { "left": 0, "bottom": 1, "right": 4, "top": 9 } }] });
+    assert!(serde_json::from_value::<PageGeometryRun<PdfCoordinates>>(run).is_ok());
+}
+
+#[test]
+fn refuses_what_does_not_fit() {
     let bad = [
         // `'rotation' in run` with a null rotation.
-        json!({ "rect": rect(0.0), "charStart": 0, "rotation": null, "ascentFlip": true, "glyphs": [] }),
-        // A rotated run with no ascentFlip, or upright glyphs.
-        json!({ "rect": rect(0.0), "charStart": 0, "rotation": 1.0, "glyphs": [] }),
-        json!({ "rect": rect(0.0), "charStart": 0, "rotation": 1.0, "ascentFlip": false, "glyphs": [
-            { "looseBox": rect(0.0), "flags": 0 },
-        ] }),
-        // An upright glyph with no looseBox, a run with no rect.
-        json!({ "rect": rect(0.0), "charStart": 0, "glyphs": [{ "flags": 0 }] }),
-        json!({ "charStart": 0, "glyphs": [] }),
-        json!({ "rect": rect(0.0), "charStart": -1, "glyphs": [] }),
+        json!({ "rect": rect(0.0), "start": 0, "rotation": null, "ascentFlip": true, "glyphs": [] }),
+        // A rotated run with no ascentFlip, or upright cells.
+        json!({ "rect": rect(0.0), "start": 0, "rotation": 1.0, "glyphs": [] }),
+        json!({ "rect": rect(0.0), "start": 0, "rotation": 1.0, "ascentFlip": false,
+            "glyphs": [{ "loose": rect(0.0) }] }),
+        // An upright run with rotated cells, a glyph with no loose cell, no rect.
+        json!({ "rect": rect(0.0), "start": 0, "glyphs": [{ "loose": quad(0.0) }] }),
+        json!({ "rect": rect(0.0), "start": 0, "glyphs": [{ "space": true }] }),
+        json!({ "start": 0, "glyphs": [] }),
+        json!({ "rect": rect(0.0), "start": -1, "glyphs": [] }),
     ];
     for run in bad {
-        assert!(through_value(&run).is_err(), "the old decode accepted {run}");
-        assert!(serde_json::from_str::<PageGeometryRun>(&run.to_string()).is_err(), "{run}");
+        assert!(decode(&run).is_err(), "{run}");
     }
 }

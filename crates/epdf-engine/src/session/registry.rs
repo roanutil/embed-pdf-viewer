@@ -24,7 +24,7 @@ use pdfium::BaseDocument;
 
 use super::authority::SessionAuthority;
 use super::base_registry::BaseDocumentRegistry;
-use super::document::DocumentSession;
+use super::document::{DocumentSession, LayerOpenSource, ParkedBase, ParkedLayer};
 use pdfium::Library;
 
 use crate::cancel::CancelToken;
@@ -73,6 +73,9 @@ pub struct SessionRegistry {
     /// nature and the caller cannot tell which won.
     jobs: BTreeMap<JobId, CancelToken>,
     destroyed: bool,
+    /// The parsed pages every session here keeps its pages in: one per host
+    /// (`WorkerHost.residency`).
+    residency: super::pages::SharedResidency,
 }
 
 impl SessionRegistry {
@@ -82,6 +85,18 @@ impl SessionRegistry {
 
     pub fn bases(&self) -> &BaseDocumentRegistry {
         &self.bases
+    }
+
+    /// The parsed pages every session here keeps its pages in.
+    pub fn residency(&self) -> &super::pages::SharedResidency {
+        &self.residency
+    }
+
+    /// A session whose pages the host's residency keeps.
+    fn new_session(&self) -> DocumentSession {
+        let mut session = DocumentSession::new();
+        session.set_residency(Rc::clone(&self.residency));
+        session
     }
 
     pub fn is_destroyed(&self) -> bool {
@@ -111,6 +126,12 @@ impl SessionRegistry {
     /// `open.fatMem`. A key already in use is refused rather than replaced:
     /// silently dropping the first session would close a document another
     /// caller is still reading through.
+    ///
+    /// A document whose password is missing or wrong parks
+    /// (`WorkerHost.handleOpen`, `isPasswordOpenError`): the session occupies
+    /// its key, holds the bytes, and answers `DocPasswordRequired` until an
+    /// unlock loads it. The open's error still comes back, so the caller
+    /// knows a prompt is needed.
     pub fn open_memory(
         &mut self,
         key: SessionKey,
@@ -120,24 +141,17 @@ impl SessionRegistry {
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
-        let mut session = DocumentSession::new();
+        let mut session = self.new_session();
         let parked_authority = authority.clone();
         match session.open_with(bytes.clone(), password, authority) {
             Ok(()) => {
                 self.sessions.insert(key, session);
                 Ok(())
             }
-            // A document that needs a password parks rather than failing
-            // outright: the session occupies its key, holds the bytes, and
-            // answers DocPasswordRequired until somebody unlocks it. Without
-            // that the caller has to transfer the whole document again after
-            // the prompt, which for a large file is the expensive half of
-            // opening it.
-            //
-            // The error still propagates. The caller has to know a prompt is
-            // needed, and returning Ok here would tell it the document is
-            // readable.
-            Err(error) if error.code == EngineErrorCode::DocPasswordRequired => {
+            // Without parking, the caller would transfer the whole document
+            // again after the prompt, which for a large file is the
+            // expensive half of opening it.
+            Err(error) if is_password_open_error(&error) => {
                 session.park_locked_under(bytes, parked_authority)?;
                 self.sessions.insert(key, session);
                 Err(error)
@@ -146,12 +160,12 @@ impl SessionRegistry {
         }
     }
 
-    /// Unlock a parked session with a password.
+    /// Unlock a parked session with a password, under `authority`.
     ///
-    /// `document.checkPasswordPermissions` acts on the result of this, and
-    /// only a session parked by [`SessionRegistry::open_memory`] can be
-    /// unlocked: an already-open one has nothing to unlock and a missing one
-    /// has no bytes.
+    /// `document.checkPasswordPermissions` acts on the result of this: an
+    /// already-open session has nothing to unlock and a missing one has
+    /// nothing parked. A wrong password is `DocPasswordIncorrect` and leaves
+    /// the session parked for another try.
     pub fn unlock(
         &mut self,
         key: &SessionKey,
@@ -160,7 +174,27 @@ impl SessionRegistry {
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         let session = self.sessions.get_mut(key).ok_or_else(|| not_open(key))?;
-        session.unlock_with(password, authority)
+        let Some(layer) = session.parked_layer().cloned() else {
+            return session.unlock_with(password, authority);
+        };
+        let base = match &layer.base {
+            ParkedBase::Memory(bytes) => {
+                self.bases.acquire_memory(&layer.base_key, bytes, Some(password))?
+            }
+            ParkedBase::File(path) => {
+                self.bases.acquire_file(&layer.base_key, path, Some(password))?
+            }
+        };
+        match session.open_layer_from(base, &layer.source, authority) {
+            Ok(()) => {
+                session.set_password(Some(password));
+                Ok(())
+            }
+            Err(error) => {
+                self.bases.release(&layer.base_key);
+                Err(error)
+            }
+        }
     }
 
     /// Whether `key` names a session parked for a password.
@@ -170,9 +204,8 @@ impl SessionRegistry {
 
     /// Unlock a parked session under the authority its open asked for.
     pub fn unlock_parked(&mut self, key: &SessionKey, password: &str) -> Result<(), EngineError> {
-        self.refuse_if_destroyed()?;
-        let session = self.sessions.get_mut(key).ok_or_else(|| not_open(key))?;
-        session.unlock_parked(password)
+        let authority = self.sessions.get(key).ok_or_else(|| not_open(key))?.parked_authority();
+        self.unlock(key, password, authority)
     }
 
     /// Open a fresh layer over a base, registering the base under `base_key`.
@@ -186,10 +219,56 @@ impl SessionRegistry {
         password: Option<&str>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
+        self.open_layer_memory_from(
+            key,
+            base_key,
+            bytes,
+            &LayerOpenSource::Fresh,
+            password,
+            authority,
+        )
+    }
+
+    /// [`SessionRegistry::open_layer_memory`], the layer opened from `source`.
+    pub fn open_layer_memory_from(
+        &mut self,
+        key: SessionKey,
+        base_key: &str,
+        bytes: &[u8],
+        source: &LayerOpenSource,
+        password: Option<&str>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
-        let base = self.bases.acquire_memory(base_key, bytes, password)?;
-        self.attach_layer(key, base_key, base, authority)
+        match self.bases.acquire_memory(base_key, bytes, password) {
+            Ok(base) => self.attach_layer(key, base_key, base, source, password, authority),
+            Err(error) => {
+                let parked = ParkedLayer {
+                    base_key: base_key.to_owned(),
+                    base: ParkedBase::Memory(bytes.to_vec()),
+                    source: source.clone(),
+                };
+                self.park_layer(key, parked, authority, error)
+            }
+        }
+    }
+
+    /// A layer open that failed: parked when it failed on its password
+    /// (`WorkerHost.handleOpen`), and the error answered either way.
+    fn park_layer(
+        &mut self,
+        key: SessionKey,
+        parked: ParkedLayer,
+        authority: SessionAuthority,
+        error: EngineError,
+    ) -> Result<(), EngineError> {
+        if is_password_open_error(&error) {
+            let mut session = self.new_session();
+            session.park_layer(parked, authority)?;
+            self.sessions.insert(key, session);
+        }
+        Err(error)
     }
 
     fn refuse_if_taken(&self, key: &SessionKey) -> Result<(), EngineError> {
@@ -207,20 +286,23 @@ impl SessionRegistry {
         key: SessionKey,
         base_key: &str,
         base: Rc<BaseDocument>,
+        source: &LayerOpenSource,
+        password: Option<&str>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
-        let mut session = DocumentSession::new();
-        match session.open_layer(base, authority) {
+        let mut session = self.new_session();
+        match session.open_layer_from(base, source, authority) {
             Ok(()) => {
+                session.set_password(password);
                 self.sessions.insert(key, session);
                 Ok(())
             }
             Err(error) => {
                 // Give the acquisition back, or the base stays registered for
                 // a session that does not exist and the next caller for that
-                // key inherits a parse nobody asked to keep alive. Untested:
-                // a fresh layer over a valid base does not fail, so there is
-                // no way to reach this without faking the failure.
+                // key inherits a parse nobody asked to keep alive. A fresh
+                // layer over a valid base does not fail; an artifact saved
+                // against another base does.
                 self.bases.release(base_key);
                 Err(error)
             }
@@ -242,10 +324,32 @@ impl SessionRegistry {
         password: Option<&str>,
         authority: SessionAuthority,
     ) -> Result<(), EngineError> {
+        self.open_layer_file_from(key, base_key, path, &LayerOpenSource::Fresh, password, authority)
+    }
+
+    /// [`SessionRegistry::open_layer_file`], the layer opened from `source`.
+    pub fn open_layer_file_from(
+        &mut self,
+        key: SessionKey,
+        base_key: &str,
+        path: &std::path::Path,
+        source: &LayerOpenSource,
+        password: Option<&str>,
+        authority: SessionAuthority,
+    ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
-        let base = self.bases.acquire_file(base_key, path, password)?;
-        self.attach_layer(key, base_key, base, authority)
+        match self.bases.acquire_file(base_key, path, password) {
+            Ok(base) => self.attach_layer(key, base_key, base, source, password, authority),
+            Err(error) => {
+                let parked = ParkedLayer {
+                    base_key: base_key.to_owned(),
+                    base: ParkedBase::File(path.to_owned()),
+                    source: source.clone(),
+                };
+                self.park_layer(key, parked, authority, error)
+            }
+        }
     }
 
     /// Open a fresh layer over a base already registered.
@@ -257,17 +361,18 @@ impl SessionRegistry {
     ) -> Result<(), EngineError> {
         self.refuse_if_destroyed()?;
         self.refuse_if_taken(&key)?;
-        let mut session = DocumentSession::new();
+        let mut session = self.new_session();
         session.open_layer(base, authority)?;
         self.sessions.insert(key, session);
         Ok(())
     }
 
-    /// The session for `key`.
+    /// The session for `key` (`requireSession`).
     ///
     /// A locked session reports `DocPasswordRequired` rather than being served
     /// as if it were open, so an operation that reaches one gets a truthful
-    /// error naming what it needs.
+    /// error naming what it needs. One a transaction left in an unknown
+    /// state is `DocNotOpen` (`assertUsable`).
     pub fn session(&self, key: &SessionKey) -> Result<&DocumentSession, EngineError> {
         let session = self.sessions.get(key).ok_or_else(|| not_open(key))?;
         if session.is_locked() {
@@ -276,6 +381,7 @@ impl SessionRegistry {
                 format!("{} is locked and requires a password", describe(key)),
             ));
         }
+        session.assert_usable()?;
         Ok(session)
     }
 
@@ -283,6 +389,19 @@ impl SessionRegistry {
         // Checked before the mutable borrow so the error can name the key.
         self.session(key)?;
         Ok(self.sessions.get_mut(key).expect("checked above"))
+    }
+
+    /// The session for `key`, locked or open, to set what its open asked
+    /// for (`objectNumbers`, `signedDocumentPolicy`), which a locked session
+    /// keeps for its unlock as upstream's does.
+    pub fn configure(&mut self, key: &SessionKey) -> Option<&mut DocumentSession> {
+        self.sessions.get_mut(key)
+    }
+
+    /// The session under `key` whatever state it is in, for the host to
+    /// finish the transaction it opened on it.
+    pub fn entry_mut(&mut self, key: &SessionKey) -> Option<&mut DocumentSession> {
+        self.sessions.get_mut(key)
     }
 
     pub fn contains(&self, key: &SessionKey) -> bool {
@@ -414,8 +533,18 @@ impl SessionRegistry {
         for (_, mut session) in std::mem::take(&mut self.sessions) {
             session.close();
         }
+        self.residency.borrow_mut().close_idle();
         self.bases.release_all();
     }
+}
+
+/// `isPasswordOpenError`: an open that failed on its password, missing or
+/// wrong, which parks rather than failing.
+pub fn is_password_open_error(error: &EngineError) -> bool {
+    matches!(
+        error.code,
+        EngineErrorCode::DocPasswordRequired | EngineErrorCode::DocPasswordIncorrect
+    )
 }
 
 fn describe(key: &SessionKey) -> String {

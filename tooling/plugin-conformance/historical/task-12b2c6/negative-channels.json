@@ -1,0 +1,230 @@
+[
+  {
+    "name": "viewer-only-page-cache",
+    "step": 8,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 99 is not in this document",
+        "code": "not-found",
+        "capability": "link",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "viewer-only-malformed-lists",
+    "step": 2,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused page 1",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused page 1",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "viewer-only-malformed-lists",
+    "step": 7,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused page 2",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused page 2",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "viewer-only-malformed-lists",
+    "step": 12,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused page 3",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused page 3",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "viewer-only-malformed-lists",
+    "step": 17,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused page 4",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused page 4",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "viewer-only-malformed-lists",
+    "step": 22,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused page 5",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused page 5",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "viewer-only-malformed-lists",
+    "step": 27,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused page 6",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused page 6",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "viewer-only-loads-in-flight",
+    "step": 6,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  },
+  {
+    "name": "annotation-backed-source",
+    "step": 5,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "page 3 is not in this document",
+        "code": "not-found",
+        "capability": "link",
+        "permission": null
+      }
+    }
+  },
+  {
+    "name": "a-throwing-listener-throws-out-of-activate",
+    "step": 3,
+    "channel": "reports",
+    "value": {
+      "$error": {
+        "name": "Error",
+        "message": "listener broke"
+      }
+    }
+  },
+  {
+    "name": "activate-dispatches-through-actions",
+    "step": 6,
+    "channel": "nested action result",
+    "value": {
+      "status": "inert",
+      "nodes": [
+        {
+          "path": [],
+          "type": "uri",
+          "status": "no-executor"
+        }
+      ],
+      "diagnostics": [
+        {
+          "code": "no-adapter",
+          "message": "uri: no UI adapter installed"
+        }
+      ]
+    }
+  },
+  {
+    "name": "list-all-links-and-loaded-events",
+    "step": 4,
+    "channel": "rejected",
+    "value": {
+      "$error": {
+        "name": "PluginError",
+        "message": "refused",
+        "code": "operation-failed",
+        "capability": "link",
+        "permission": null,
+        "cause": {
+          "$error": {
+            "name": "EngineError",
+            "message": "refused",
+            "code": "Refused"
+          }
+        }
+      }
+    }
+  }
+]

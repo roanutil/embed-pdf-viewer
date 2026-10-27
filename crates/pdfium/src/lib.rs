@@ -18,6 +18,7 @@ mod annot;
 mod annot_write;
 mod base;
 mod bitmap;
+mod capture;
 mod document;
 mod error;
 mod extract;
@@ -31,6 +32,7 @@ pub mod measure;
 mod metadata;
 mod metadata_write;
 pub mod named_pages;
+mod outline;
 mod page;
 mod page_list;
 mod page_write;
@@ -46,15 +48,16 @@ pub use action::{
     ActionModel, ActionNodeId, AnnotationActionEvent, DestinationLocation, DestinationView,
     DocumentActionEvent, PageActionEvent, RawDestination,
 };
-pub use action_write::{Action, Destination, view};
+pub use action_write::{Action, ActionTarget, Destination, view};
 pub use annot::{
     Annotation, AppearanceMode, Attachment, AttachmentExtractError, BorderStyle, DefaultAppearance,
-    RectangleDifferences,
+    LineCaption, RectangleDifferences, ShapeCaption,
 };
 pub use base::{BaseDocument, LayerDocument, LayerOpenError};
 pub use bitmap::Bitmap;
 pub use document::{Document, FileBackedDocument, PasswordPermissions};
 pub use error::PdfiumError;
+pub use extract::ExtractCopy;
 pub use file_access::FileAccess;
 pub use fonts::{
     FontDescription, FontId, FontIdentity, FontLicence, add_fallback_font, authorize_font_editing,
@@ -63,13 +66,14 @@ pub use fonts::{
 };
 pub use form::{FieldActionEvent, FormDataFormat, FormField, FormModel};
 pub use form_write::{
-    FieldDisplay,
-    ChangedWidgets, CreatableFieldFamily, DetachedWidgets, FormImportCounts, FormRepairReport,
+    ChangedWidgets, CreatableFieldFamily, DetachedWidgets, FieldDisplay, FieldValueWrite,
+    FormRepairReport,
 };
 pub use geom::{MatrixF, PointF, QuadF, RectF};
 pub use library::Library;
 pub use metadata::Trapped;
-pub use page::{Page, PageView, SharedPage};
+pub use outline::{OUTLINE_TOP, OutlineItem};
+pub use page::{AppearanceTurn, Page, PageView, ParsedSize, RenderFlags, SharedPage, SlicedRender};
 pub use page_list::PageBoxType;
 pub use page_write::{AnnotationFlattenStatus, FlattenOutcome, FlattenUsage};
 pub use piece_info::{PieceInfoHolder, object_type};
@@ -83,5 +87,5 @@ pub use signature_write::{
     SavedCandidate, SealedCandidate, SignaturePrepareOptions, seal_signature_candidate,
     write_signature_contents,
 };
-pub use stamp::{ImageObject, StampFit};
+pub use stamp::{ImageObject, StampFit, sha256};
 pub use text::{CharGeometry, CharGeometryFlags, TextObjectKey, TextPage};

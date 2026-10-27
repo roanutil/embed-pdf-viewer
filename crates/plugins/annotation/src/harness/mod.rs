@@ -1,90 +1,341 @@
 //! The conformance adapter: how `crates/plugin-conformance` builds these
 //! plugins from a vector and calls their capabilities by name, plus the
-//! function tables.
+//! function tables of the pure suites.
 //!
-//! It mirrors the generator's shims in
-//! `tooling/plugin-conformance/src/suites/annotation-fixtures.ts`:
-//! `crypto.randomUUID` is a counter reset per `annotation` build,
-//! `console.error` lines log as the callback `console.error`, a
-//! `renderAppearances` signal `{"$abortSignal": name}` is the signal of a
-//! controller the `annotation-signals` plugin aborts, and the
-//! `annotation-lens` plugin exposes the `comments` and `links` verbs flat.
+//! It mirrors `tooling/plugin-conformance/src/suites/annotation-live-*.ts`:
+//! `annotation-live` builds the plugin and logs its `console.error` lines
+//! (the ones starting `[annotation]`) as the callback `console.error`;
+//! `annotation-live-actions`, `annotation-live-render` and
+//! `annotation-live-selection` build the sibling plugins the suites pair it
+//! with. A function a result carries (a picture's `blob()` and
+//! `objectUrl()`, an anchor's `boundsIn`) prints as a ref, as the
+//! TypeScript's canonical form registers one.
 
 pub mod functions;
 
 use std::any::Any;
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
 use std::rc::Rc;
-use std::sync::LazyLock;
 
-use epdf_annotation_core::{
-    AnnotationRef, PageRef, PdfLinkTarget, Phase, Point, Rect, TextEndAnchor, TextQuad, ViewEnv,
-};
+use epdf_annotation_core::object::Json;
+use epdf_annotation_core::types::{Authority, Effect, Model, Painter, Point, ViewEnv};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
-use epdf_kernel::{
-    AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined, undefined,
-};
-use plugin_conformance::harness::RefFn;
-use plugin_conformance::js::{from_value, to_value};
+use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe};
 use plugin_conformance::{Answer, Callback, Harness, HarnessPlugin, Outcome};
-use serde::Serialize;
-use serde_json::{Map, Value, json};
+use serde_json::{Value, json};
 
 pub use functions::{pure_functions, repository_functions};
 
-use crate::rich_text::TextFormat;
-use crate::write::measurement::PageMeasurementViewport;
-use crate::{
-    ANNOTATION, AnnotationCapability, AnnotationConfig, AnnotationHost, Behavior, HitView, HoverAt,
-    QuarterTurn, StampPlacement, StampPreview, StampToolInput, annotation_plugin,
-};
-
-/// The generator's `crypto.randomUUID` stand-in: the `n`th id of a run.
-pub fn uuid_at(n: u64) -> String {
-    format!("00000000-0000-4000-8000-{n:012x}")
-}
-
-thread_local! {
-    static CONTROLLERS: RefCell<HashMap<String, AbortSignal>> = RefCell::new(HashMap::new());
-}
-
-fn controller_named(name: &str) -> AbortSignal {
-    CONTROLLERS.with(|c| c.borrow_mut().entry(name.to_string()).or_default().clone())
-}
-
-/// The `annotation-signals` test plugin's capability.
-#[derive(Clone)]
-pub struct Signals;
-
-pub static SIGNALS: LazyLock<Token<Signals>> =
-    LazyLock::new(|| Token::new("annotation-test/signals"));
-
-/// The `annotation-lens` test plugin: the `comments` and `links` verbs.
-#[derive(Clone)]
-pub struct Lens {
-    ctx: epdf_kernel::Ctx<Value, Value>,
-}
-
-pub static LENS: LazyLock<Token<Lens>> = LazyLock::new(|| Token::new("annotation-test/lens"));
+use crate::host_contract::{AnnotationLender, Behavior, StampPreviewProvider};
+use crate::js::Object;
+use crate::read::annotations::AnnotationFilter;
+use crate::read::chrome::HitView;
+use crate::services::lending::LentRecords;
+use crate::write::crud::CreateOptions;
+use crate::write::selection::SelectionPatch;
+use crate::write::stamps::{StampInput, StampPreview};
+use crate::{ANNOTATION, AnnotationCapability, annotation_plugin};
 
 /// The adapter.
 pub struct Annotation;
 
-/// The composed api's member order (`composeApi` over the controller's
-/// slices). `links` and `comments` are objects of functions, which
-/// [`describe_member`](HarnessPlugin::describe_member) prints.
+/// A noun of the capability (`selection`, `draft`, `text`, `tools`,
+/// `stamps`, `links`, `comments`), resolved for a dotted call.
+pub struct Noun {
+    pub capability: AnnotationCapability,
+    pub name: &'static str,
+}
+
+const NOUNS: [&str; 7] = ["links", "selection", "draft", "text", "tools", "stamps", "comments"];
+
+fn arg(args: &[Value], i: usize) -> Option<&Value> {
+    args.get(i).filter(|v| !epdf_kernel::is_undefined(v))
+}
+
+fn value(args: &[Value], i: usize) -> Value {
+    arg(args, i).cloned().unwrap_or(Value::Null)
+}
+
+fn num(args: &[Value], i: usize) -> Option<f64> {
+    arg(args, i).and_then(epdf_annotation_core::json::number)
+}
+
+fn text(args: &[Value], i: usize) -> String {
+    arg(args, i).and_then(Value::as_str).unwrap_or("undefined").to_string()
+}
+
+fn point(args: &[Value], i: usize) -> Point {
+    arg(args, i)
+        .map(epdf_annotation_core::json::point_loose)
+        .unwrap_or(Point { x: f64::NAN, y: f64::NAN })
+}
+
+fn object(args: &[Value], i: usize) -> Object {
+    arg(args, i).and_then(Value::as_object).cloned().unwrap_or_default()
+}
+
+fn refs(args: &[Value], i: usize) -> Vec<Value> {
+    arg(args, i).and_then(Value::as_array).cloned().unwrap_or_default()
+}
+
+fn opt_value(value: Option<Value>) -> Value {
+    value.unwrap_or(Value::Null)
+}
+
+fn undefined_outcome() -> Outcome {
+    Outcome::undefined()
+}
+
+fn unit<T>(result: Result<T, Error>) -> Outcome {
+    match result {
+        Ok(_) => Outcome::undefined(),
+        Err(e) => Outcome::Threw(e),
+    }
+}
+
+fn promise(p: Promise<Value>) -> Outcome {
+    Outcome::Promise(p)
+}
+
+fn promise_unit(p: Promise<()>) -> Outcome {
+    Outcome::promise_unit(p)
+}
+
+/// An unsubscribe, handed back as a ref.
+fn remover(h: &Harness, off: Unsubscribe) -> Value {
+    h.register_fn(Rc::new(move |_| {
+        off.call();
+        Outcome::undefined()
+    }))
+}
+
+/// Subscribe a scripted listener to an event; the outcome is the unsubscribe.
+fn subscribe(
+    h: &Harness,
+    hook: &epdf_kernel::event_hook::EventHookSource<Value>,
+    spec: &Value,
+) -> Outcome {
+    let callback = h.callback(spec);
+    let off = hook.on(move |event| match callback.call(vec![event.clone()]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
+    });
+    Outcome::Returned(remover(h, off))
+}
+
+/// A view env (`{ zoom, rotation }`), or none.
+fn view_env(args: &[Value], i: usize) -> Option<ViewEnv> {
+    let v = arg(args, i)?;
+    if !v.is_object() {
+        return None;
+    }
+    ViewEnv::read(v).ok().or_else(|| {
+        Some(ViewEnv::new(
+            v.get("zoom").and_then(Value::as_f64).unwrap_or(1.0),
+            v.get("rotation").and_then(Value::as_f64).unwrap_or(0.0),
+        ))
+    })
+}
+
+fn hit_view(v: &Value) -> HitView {
+    let n = |k: &str| {
+        v.get(k)
+            .filter(|x| !epdf_kernel::is_undefined(x))
+            .and_then(epdf_annotation_core::json::number)
+    };
+    HitView { scale: n("scale"), rotation: n("rotation"), zoom: n("zoom") }
+}
+
+/// A callback's answer as a promise of a JSON value.
+fn answer_promise(answer: Answer) -> Promise<Value> {
+    match answer {
+        Answer::Returns(v) => Promise::resolved(v),
+        Answer::Throws(e) => Promise::rejected(e),
+        Answer::Promise(p) => p,
+    }
+}
+
+/// A callback answering synchronously.
+fn answer_value(answer: Answer) -> Value {
+    match answer {
+        Answer::Returns(v) => v,
+        _ => Value::Null,
+    }
+}
+
+/// A function, printed as a ref that answers `undefined`.
+fn function_ref(h: &Harness) -> Value {
+    h.register_fn(Rc::new(|_| Outcome::undefined()))
+}
+
+/// An `ImageSource`: its `blob()` and `objectUrl()` as refs.
+fn image_source(h: &Harness, image: &Value) -> Value {
+    match image {
+        Value::Object(members) if members.contains_key("$imageBytes") => {
+            json!({ "blob": function_ref(h), "objectUrl": function_ref(h) })
+        }
+        Value::Object(members) => {
+            let mut out = members.clone();
+            out.insert("blob".into(), function_ref(h));
+            out.insert("objectUrl".into(), function_ref(h));
+            Value::Object(out)
+        }
+        other => other.clone(),
+    }
+}
+
+/// Pictures with their images as `ImageSource`s.
+fn pictures(h: &Harness, list: Vec<Value>) -> Value {
+    Value::Array(
+        list.into_iter()
+            .map(|mut picture| {
+                if let Some(image) = picture.get("image").cloned() {
+                    picture["image"] = image_source(h, &image);
+                }
+                picture
+            })
+            .collect(),
+    )
+}
+
+/// A scripted lender (`AnnotationLender` whose members are `$fn` specs).
+struct ScriptedLender {
+    owner: String,
+    records: Callback,
+    ops_of: Callback,
+    undo_of: Callback,
+    reorder_ops: Callback,
+    authority: Callback,
+    picture_epoch: Callback,
+    picture_version: Callback,
+    pending: Callback,
+    painter: Callback,
+    render_appearances: Callback,
+}
+
+fn list_of(value: Value) -> Vec<Value> {
+    value.as_array().cloned().unwrap_or_default()
+}
+
+impl AnnotationLender for ScriptedLender {
+    fn owner(&self) -> String {
+        self.owner.clone()
+    }
+    fn records(&self) -> Option<LentRecords> {
+        let records = answer_value(self.records.call(Vec::new()));
+        if records.is_null() {
+            return None;
+        }
+        // Every answer is fresh JSON: new rows, as the TypeScript fixture's are.
+        let rows =
+            |v: &Value| Rc::new(list_of(v.clone()).into_iter().map(Rc::new).collect::<Vec<_>>());
+        Some(LentRecords { confirmed: rows(&records["confirmed"]), shown: rows(&records["shown"]) })
+    }
+    fn ops_of(&self, effects: &[Effect], model: &Model, before: &Model) -> Vec<Value> {
+        let effects: Vec<Value> = effects.iter().map(Json::json).collect();
+        let _ = (model, before);
+        list_of(answer_value(self.ops_of.call(vec![json!(effects)])))
+    }
+    fn undo_of(&self, ops: &[Value]) -> Vec<Value> {
+        list_of(answer_value(self.undo_of.call(vec![json!(ops)])))
+    }
+    fn reorder_ops(&self, page: &Value, refs: &[Value], position: &Value) -> Vec<Value> {
+        list_of(answer_value(self.reorder_ops.call(vec![
+            page.clone(),
+            json!(refs),
+            position.clone(),
+        ])))
+    }
+    fn authority(&self, record: &Object) -> Authority {
+        let answer = answer_value(self.authority.call(vec![Value::Object(record.clone())]));
+        Authority {
+            update: answer.get("update").and_then(Value::as_bool).unwrap_or(false),
+            delete: answer.get("delete").and_then(Value::as_bool).unwrap_or(false),
+            order: Default::default(),
+        }
+    }
+    fn picture_epoch(&self, page: &Value) -> String {
+        answer_value(self.picture_epoch.call(vec![page.clone()]))
+            .as_str()
+            .unwrap_or_default()
+            .to_string()
+    }
+    fn picture_version(&self, reference: &Value) -> f64 {
+        answer_value(self.picture_version.call(vec![reference.clone()])).as_f64().unwrap_or(0.0)
+    }
+    fn pending(&self, reference: &Value) -> bool {
+        answer_value(self.pending.call(vec![reference.clone()])).as_bool().unwrap_or(false)
+    }
+    fn painter(&self, record: &Rc<Object>) -> Painter {
+        let _ = answer_value(self.painter.call(vec![Value::Object((**record).clone())]));
+        Painter(None)
+    }
+    fn render_appearances(
+        &self,
+        page: &Value,
+        scale: f64,
+        _signal: Option<AbortSignal>,
+    ) -> Promise<Vec<Value>> {
+        let answer = answer_promise(self.render_appearances.call(vec![page.clone(), json!(scale)]));
+        answer.map(|v| Ok(list_of(v)))
+    }
+}
+
+/// A scripted behavior.
+struct ScriptedBehavior {
+    id: String,
+    matches: Callback,
+    engaged: Callback,
+}
+
+impl Behavior for ScriptedBehavior {
+    fn id(&self) -> String {
+        self.id.clone()
+    }
+    fn matches(&self, annotation: &Object) -> bool {
+        epdf_annotation_core::json::truthy(Some(&answer_value(
+            self.matches.call(vec![Value::Object(annotation.clone())]),
+        )))
+    }
+    fn engaged(&self, annotation: &Object) -> bool {
+        epdf_annotation_core::json::truthy(Some(&answer_value(
+            self.engaged.call(vec![Value::Object(annotation.clone())]),
+        )))
+    }
+}
+
+fn member_callback(h: &Harness, spec: &Value, key: &str) -> Callback {
+    h.callback(spec.get(key).unwrap_or(&json!({ "$fn": key })))
+}
+
+fn stamp_input(h: &Harness, value: &Value) -> StampInput {
+    let mut input = StampInput::read(value);
+    if let Some(preview) = value.get("preview").filter(|p| p.get("$fn").is_some()) {
+        let callback = h.callback(preview);
+        let provider: StampPreviewProvider = Rc::new(move |width| {
+            let answer = answer_promise(callback.call(vec![json!(width)]));
+            answer.map(|v| Ok(if v.is_null() { None } else { Some(v) }))
+        });
+        input.preview = Some(StampPreview::Provider(provider));
+    }
+    input
+}
+
+/// The composed api's own members, in `composeApi`'s order (the slices,
+/// then the nouns and the services).
 const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "get",
     "list",
-    "listRaw",
-    "getRaw",
-    "listSelected",
-    "getSelection",
+    "isPending",
+    "getHovered",
+    "isEditable",
     "listChromeNodes",
-    "getSelectionAnchor",
-    "hitTestAt",
+    "getSelectionAnchorIn",
+    "getAnnotationAnchor",
     "getHitKind",
     "claimsTouchAt",
     "getCursorAt",
@@ -92,1031 +343,147 @@ const MEMBERS: &[&str] = &[
     "listTextItems",
     "listLinkItems",
     "getAppearanceEpoch",
-    "getBakeScale",
     "renderAppearances",
-    "pdfToPageRect",
-    "getSelectionProps",
-    "getSelectionFlags",
-    "listTools",
-    "getTool",
-    "registerTool",
-    "getToolDefaults",
-    "setToolDefaults",
-    "listPropSpecs",
     "listResolvedTools",
     "getResolvedTool",
     "getToolSubtype",
     "registerBehavior",
     "getBehaviorFor",
     "pruneEngagedSelection",
-    "getStatus",
-    "refresh",
-    "onResynced",
-    "getHydration",
-    "ensureHydrated",
-    "reloadPage",
-    "deliverRemoteEvent",
-    "setContents",
-    "setRichText",
-    "beginTextEdit",
     "beginTextEditAt",
-    "endTextEdit",
-    "getEditingRef",
     "getEditingId",
     "draftContents",
     "draftRichText",
     "setTextSelection",
     "getCssFontFamily",
-    "create",
-    "createMany",
-    "createRaw",
-    "update",
-    "updateMany",
-    "updateRaw",
-    "setRotation",
-    "rotateBy",
-    "delete",
-    "deleteMany",
     "links",
-    "armStamp",
-    "disarmStamp",
-    "placeStamp",
-    "hasArmedStamp",
+    "create",
+    "update",
+    "delete",
+    "reorder",
+    "export",
+    "import",
+    "downloadResource",
     "placeArmedStamp",
     "requestStampAt",
-    "getArmedStampPreview",
-    "getStampArmEpoch",
+    "getArmedStamp",
+    "renderArmedStampPreview",
     "hoverGhostAt",
     "clearGhost",
-    "setPlacementPreview",
+    "previewPlacement",
     "clearPlacementPreview",
-    "getToolGhost",
+    "getImageGhost",
     "placeAt",
-    "createAttachment",
-    "readAttachment",
     "setFilePickerProvider",
-    "select",
-    "selectAll",
-    "selectInRect",
-    "clearSelection",
-    "updateSelection",
-    "updateSelectionFlags",
-    "deleteSelection",
-    "rotateSelectionBy",
-    "resetSelectionRotation",
-    "toggleTextFormat",
-    "group",
-    "ungroup",
-    "canGroup",
-    "canUngroup",
     "setPageViewports",
     "remeasurePage",
     "editPointer",
     "marqueePointer",
     "createPointer",
     "hoverAt",
-    "getCreationDraft",
-    "hasCreationDraft",
-    "finishCreationDraft",
     "finishInkDraft",
-    "cancelCreationDraft",
     "cancel",
-    "comments",
     "distanceCreationPage",
     "onDraftCaptured",
     "createMarkup",
     "createCaret",
     "createReplaceText",
+    "applyToolToSelection",
     "previewMarkup",
     "clearMarkupPreview",
     "createFromSelection",
     "commitScriptEffects",
-    "getSnapSettings",
-    "updateSnapSettings",
-    "getChromeSettings",
-    "updateChromeSettings",
+    "comments",
+    "getAt",
+    "selection",
+    "draft",
+    "text",
+    "tools",
+    "stamps",
+    "lend",
+    "getStatus",
+    "refresh",
+    "whenSynced",
+    "onResynced",
     "canRead",
     "canCreate",
-    "canEdit",
+    "canUpdate",
     "canDelete",
     "onCreated",
     "onUpdated",
     "onDeleted",
+    "onReordered",
     "onSelectionChanged",
     "onDraftChanged",
     "onEditingChanged",
+    "onHoverChanged",
+    "onWriteFailed",
 ];
-
-const LENS_MEMBERS: &[&str] = &[
-    "listThreads",
-    "getThread",
-    "getHydration",
-    "refresh",
-    "reply",
-    "setText",
-    "setStatus",
-    "setMarked",
-    "delete",
-    "deleteThread",
-    "getPermissions",
-    "linksGet",
-    "linksSet",
-    "linksClear",
-    "onThreadChanged",
-];
-
-/// `CommentsApi`, in the contract's order.
-const COMMENTS_MEMBERS: &[&str] = &[
-    "listThreads",
-    "getThread",
-    "reply",
-    "setText",
-    "setStatus",
-    "setMarked",
-    "delete",
-    "deleteThread",
-    "getPermissions",
-    "onThreadChanged",
-];
-
-/// The api's `links` object.
-const LINKS_MEMBERS: &[&str] = &["get", "set", "clear"];
-
-// ── argument decoding ─────────────────────────────────────────────────────────
-
-fn present(args: &[Value], i: usize) -> Option<&Value> {
-    args.get(i).filter(|v| !is_undefined(v))
-}
-
-fn opt_num(args: &[Value], i: usize) -> Option<f64> {
-    present(args, i).filter(|v| !v.is_null()).and_then(|v| from_value::<f64>(v).ok())
-}
-
-fn num(args: &[Value], i: usize) -> f64 {
-    opt_num(args, i).unwrap_or(f64::NAN)
-}
-
-fn text(args: &[Value], i: usize) -> String {
-    present(args, i).and_then(Value::as_str).unwrap_or_default().to_string()
-}
-
-fn opt_text(args: &[Value], i: usize) -> Option<String> {
-    present(args, i).and_then(Value::as_str).map(str::to_string)
-}
-
-fn truthy_arg(args: &[Value], i: usize) -> bool {
-    crate::value::truthy(present(args, i))
-}
-
-fn opt_bool(args: &[Value], i: usize) -> Option<bool> {
-    present(args, i).filter(|v| !v.is_null()).map(|v| crate::value::truthy(Some(v)))
-}
-
-fn decode<T: serde::de::DeserializeOwned>(args: &[Value], i: usize) -> Result<T, Error> {
-    from_value(present(args, i).unwrap_or(&Value::Null))
-}
-
-fn opt_decode<T: serde::de::DeserializeOwned>(
-    args: &[Value],
-    i: usize,
-) -> Result<Option<T>, Error> {
-    match present(args, i) {
-        Some(v) if !v.is_null() => Ok(Some(from_value(v)?)),
-        _ => Ok(None),
-    }
-}
-
-fn page(args: &[Value], i: usize) -> Result<PageRef, Error> {
-    decode(args, i)
-}
-
-fn view_arg(args: &[Value], i: usize) -> Result<Option<ViewEnv>, Error> {
-    opt_decode(args, i)
-}
-
-fn phase(args: &[Value], i: usize) -> Result<Phase, Error> {
-    decode(args, i)
-}
-
-/// The JSON a trace records for a serializable value.
-fn out<T: Serialize>(value: &T) -> Outcome {
-    Outcome::Returned(to_value(value))
-}
-
-fn out_opt<T: Serialize>(value: Option<T>) -> Outcome {
-    Outcome::Returned(value.map_or(Value::Null, |v| to_value(&v)))
-}
-
-/// A typed promise as the JSON promise a trace records, settling in the
-/// same moment.
-fn untyped<T: Clone + 'static>(
-    promise: Promise<T>,
-    json: impl Fn(&T) -> Value + 'static,
-) -> Outcome {
-    let (out, resolver) = Promise::pending();
-    promise
-        .on_settle(move |result| resolver.settle(result.as_ref().map(&json).map_err(Clone::clone)));
-    Outcome::Promise(out)
-}
-
-fn unit(promise: Promise<()>) -> Outcome {
-    untyped(promise, |_| undefined())
-}
-
-fn undef() -> Outcome {
-    Outcome::undefined()
-}
-
-fn from_result(result: Result<Outcome, Error>) -> Outcome {
-    result.unwrap_or_else(Outcome::Threw)
-}
-
-fn not_a_function(method: &str) -> Outcome {
-    Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
-}
-
-fn unregister_ref(h: &Harness, un: epdf_plugin_interaction::Unregister) -> Outcome {
-    Outcome::Returned(h.register_fn(Rc::new(move |_| {
-        un.call();
-        Outcome::undefined()
-    })))
-}
-
-fn unsubscribe_ref(h: &Harness, un: Unsubscribe) -> Outcome {
-    Outcome::Returned(h.register_fn(Rc::new(move |_| {
-        un.call();
-        Outcome::undefined()
-    })))
-}
-
-/// An event hook: subscribe a scripted callback, return its unsubscribe.
-fn hook<E: Serialize + 'static>(
-    h: &Harness,
-    spec: Option<&Value>,
-    subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> Unsubscribe,
-) -> Outcome {
-    let callback = h.callback(spec.unwrap_or(&Value::Null));
-    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![to_value(event)]) {
-        Answer::Throws(error) => Err(error),
-        _ => Ok(()),
-    }));
-    unsubscribe_ref(h, off)
-}
-
-// ── scripted callbacks ────────────────────────────────────────────────────────
-
-fn answer_promise(answer: Answer) -> Promise<Value> {
-    match answer {
-        Answer::Returns(value) => Promise::resolved(value),
-        Answer::Throws(error) => Promise::rejected(error),
-        Answer::Promise(promise) => promise,
-    }
-}
-
-/// A `Behavior` object of scripted `$fn` members.
-struct ScriptedBehavior {
-    id: String,
-    spec: Value,
-    matches: Option<Callback>,
-    engaged: Option<Callback>,
-    /// A callback for every `$fn` member, made at registration, by member:
-    /// [`behavior_json`] restarts these rather than making new ones from
-    /// `spec`, whose functions a live host may have forgotten by then.
-    members: HashMap<String, Callback>,
-}
-
-impl Behavior for ScriptedBehavior {
-    fn id(&self) -> &str {
-        &self.id
-    }
-    fn matches(&self, subtype: &str, r: Option<&AnnotationRef>) -> bool {
-        let arg = json!({ "subtype": subtype, "ref": r.map_or(Value::Null, to_value) });
-        self.matches
-            .as_ref()
-            .is_some_and(|c| epdf_plugin_interaction::harness::answer_truthy(c.call(vec![arg])))
-    }
-    fn engaged(&self) -> bool {
-        self.engaged
-            .as_ref()
-            .is_some_and(|c| epdf_plugin_interaction::harness::answer_truthy(c.call(Vec::new())))
-    }
-}
-
-fn scripted_behavior(spec: &Value, h: &Harness) -> ScriptedBehavior {
-    let member =
-        |name: &str| spec.get(name).filter(|v| v.get("$fn").is_some()).map(|v| h.callback(v));
-    let members = spec
-        .as_object()
-        .into_iter()
-        .flatten()
-        .filter(|(_, v)| v.get("$fn").is_some())
-        .map(|(key, v)| (key.clone(), h.callback(v)))
-        .collect();
-    ScriptedBehavior {
-        id: spec.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
-        spec: spec.clone(),
-        matches: member("matches"),
-        engaged: member("engaged"),
-        members,
-    }
-}
-
-/// The behavior object as the TypeScript prints it: its function members as
-/// fresh refs, in the spec's member order.
-fn behavior_json(
-    b: &Rc<dyn Behavior>,
-    registry: &Rc<RefCell<Vec<(Rc<dyn Behavior>, Rc<ScriptedBehavior>)>>>,
-    h: &Harness,
-) -> Value {
-    let Some((_, scripted)) = registry.borrow().iter().find(|(x, _)| Rc::ptr_eq(x, b)).cloned()
-    else {
-        return sibling_behavior_json(b, h);
-    };
-    let mut out = Map::new();
-    for (key, value) in scripted.spec.as_object().into_iter().flatten() {
-        if let Some(callback) = scripted.members.get(key) {
-            let callback = callback.restarted();
-            out.insert(
-                key.clone(),
-                h.register_fn(Rc::new(move |args| match callback.call(args) {
-                    Answer::Returns(v) => Outcome::Returned(v),
-                    Answer::Throws(e) => Outcome::Threw(e),
-                    Answer::Promise(p) => Outcome::Promise(p),
-                })),
-            );
-        } else {
-            out.insert(key.clone(), value.clone());
-        }
-    }
-    Value::Object(out)
-}
-
-/// A behavior a sibling plugin registered (link, form): the object literal
-/// `{id, matches, engaged}` those plugins write, its two functions as fresh
-/// refs that call the behavior.
-fn sibling_behavior_json(b: &Rc<dyn Behavior>, h: &Harness) -> Value {
-    let (on_matches, on_engaged) = (b.clone(), b.clone());
-    let matches = h.register_fn(Rc::new(move |args: Vec<Value>| {
-        let a = args.first().cloned().unwrap_or(Value::Null);
-        let subtype = a.get("subtype").and_then(Value::as_str).unwrap_or_default();
-        let r: Option<AnnotationRef> = a.get("ref").and_then(|v| from_value(v).ok());
-        Outcome::Returned(json!(on_matches.matches(subtype, r.as_ref())))
-    }));
-    let engaged = h.register_fn(Rc::new(move |_| Outcome::Returned(json!(on_engaged.engaged()))));
-    json!({ "id": b.id(), "matches": matches, "engaged": engaged })
-}
-
-thread_local! {
-    static BEHAVIORS: Rc<RefCell<Vec<(Rc<dyn Behavior>, Rc<ScriptedBehavior>)>>> = Rc::default();
-}
-
-// ── the capability ────────────────────────────────────────────────────────────
-
-fn hover_arg(v: Option<&Value>) -> Result<Option<HoverAt>, Error> {
-    let Some(v) = v.filter(|v| !v.is_null()) else { return Ok(None) };
-    let n = |k: &str| v.get(k).filter(|x| !x.is_null() && !is_undefined(x)).and_then(Value::as_f64);
-    Ok(Some(HoverAt {
-        page: from_value(v.get("page").unwrap_or(&Value::Null))?,
-        point: from_value(v.get("point").unwrap_or(&Value::Null))?,
-        scale: n("scale"),
-        rotation: n("rotation"),
-        zoom: n("zoom"),
-    }))
-}
-
-fn preview_json(p: &Option<crate::ArmedStampPreview>) -> Value {
-    p.as_ref().map_or(Value::Null, |p| {
-        let mut o = Map::new();
-        o.insert("bytes".into(), epdf_kernel::bytes::Bytes(p.bytes.clone()).to_json());
-        if let Some(m) = &p.mime_type {
-            o.insert("mimeType".into(), json!(m));
-        }
-        Value::Object(o)
-    })
-}
-
-/// A `StampToolInput` from its JSON; a `$fn` preview is a scripted
-/// provider answering `{bytes, mimeType?}` or `null`.
-fn stamp_input(v: Option<&Value>, h: &Harness) -> Result<StampToolInput, Error> {
-    let v = v.cloned().unwrap_or(Value::Null);
-    let member = |k: &str| v.get(k).filter(|x| !is_undefined(x)).cloned();
-    let preview = match member("preview") {
-        Some(p) if p.get("$fn").is_some() => {
-            let callback = h.callback(&p);
-            let provider: crate::StampPreviewProvider = Rc::new(move |px| {
-                answer_promise(callback.call(vec![json!(px)])).map(|v| {
-                    if v.is_null() {
-                        return Ok(None);
-                    }
-                    let bytes = v
-                        .get("bytes")
-                        .and_then(epdf_kernel::bytes::Bytes::from_json)
-                        .map(|b| b.0)
-                        .unwrap_or_default();
-                    let mime_type = v.get("mimeType").and_then(Value::as_str).map(str::to_string);
-                    Ok(Some(crate::ArmedStampPreview { bytes, mime_type }))
-                })
-            });
-            Some(StampPreview::Provider(provider))
-        }
-        Some(p) => Some(StampPreview::Source(p)),
-        None => None,
-    };
-    Ok(StampToolInput {
-        source: member("source").unwrap_or_else(undefined),
-        target_width: member("targetWidth").and_then(|x| x.as_f64()),
-        name: member("name").and_then(|x| x.as_str().map(str::to_string)),
-        subject: member("subject").and_then(|x| x.as_str().map(str::to_string)),
-        preview,
-        intrinsic_size: match member("intrinsicSize") {
-            Some(s) if !s.is_null() => Some(from_value(&s)?),
-            _ => None,
-        },
-    })
-}
-
-fn refs_arg(v: Option<&Value>) -> Result<Vec<AnnotationRef>, Error> {
-    match v {
-        Some(Value::Array(list)) => list.iter().map(from_value).collect(),
-        Some(v) => Ok(vec![from_value(v)?]),
-        None => Ok(Vec::new()),
-    }
-}
-
-fn add_option(v: Option<&Value>) -> Option<bool> {
-    v.and_then(|o| o.get("add")).filter(|v| !is_undefined(v)).map(|v| crate::value::truthy(Some(v)))
-}
-
-fn call_capability(
-    cap: &AnnotationCapability,
-    method: &str,
-    args: &[Value],
-    h: &Harness,
-) -> Result<Outcome, Error> {
-    let point = |i: usize| -> Result<Point, Error> { decode(args, i) };
-    let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
-    Ok(match method {
-        "get" => out_opt(cap.get(&r(0)?)),
-        "list" => out(&cap.list(opt_decode(args, 0)?.as_ref())),
-        "listRaw" => out(&cap.list_raw(opt_decode(args, 0)?.as_ref())),
-        "getRaw" => Outcome::Returned(cap.get_raw(&r(0)?).unwrap_or(Value::Null)),
-        "listSelected" => out(&cap.list_selected()),
-        "getSelection" => out(&cap.get_selection()),
-        "listChromeNodes" => out(&cap.list_chrome_nodes(
-            page(args, 0)?,
-            opt_num(args, 1),
-            opt_num(args, 2),
-            opt_num(args, 3),
-        )),
-        "getSelectionAnchor" => {
-            let v = present(args, 0).cloned().unwrap_or(Value::Null);
-            let n = |k: &str| {
-                v.get(k).filter(|x| !x.is_null() && !is_undefined(x)).and_then(Value::as_f64)
-            };
-            out_opt(cap.get_selection_anchor(HitView {
-                scale: n("scale"),
-                rotation: n("rotation"),
-                zoom: n("zoom"),
-            }))
-        }
-        "hitTestAt" => out_opt(cap.hit_test_at(page(args, 0)?, point(1)?)),
-        "getHitKind" => out(&cap.get_hit_kind(
-            page(args, 0)?,
-            point(1)?,
-            opt_num(args, 2),
-            opt_num(args, 3),
-            opt_num(args, 4),
-            opt_bool(args, 5),
-        )),
-        "claimsTouchAt" => out(&cap.claims_touch_at(
-            page(args, 0)?,
-            point(1)?,
-            opt_num(args, 2),
-            opt_num(args, 3),
-            opt_num(args, 4),
-        )),
-        "getCursorAt" => out_opt(cap.get_cursor_at(
-            page(args, 0)?,
-            point(1)?,
-            opt_num(args, 2),
-            opt_num(args, 3),
-            opt_num(args, 4),
-        )),
-        "listPageItems" => out(&cap.list_page_items(page(args, 0)?, view_arg(args, 1)?)),
-        "listTextItems" => out(&cap.list_text_items(page(args, 0)?, view_arg(args, 1)?)),
-        "listLinkItems" => out(&cap.list_link_items(page(args, 0)?)),
-        "getAppearanceEpoch" => out(&cap.get_appearance_epoch(page(args, 0)?)),
-        "getBakeScale" => out(&cap.get_bake_scale(num(args, 0))?),
-        "renderAppearances" => {
-            let signal = present(args, 2)
-                .and_then(|s| s.get("$abortSignal"))
-                .and_then(Value::as_str)
-                .map(controller_named);
-            Outcome::Promise(cap.render_appearances(page(args, 0)?, num(args, 1), signal)?)
-        }
-        "pdfToPageRect" => {
-            let rect = crate::value::pdf_rect_of(present(args, 1));
-            out_opt(cap.pdf_to_page_rect(page(args, 0)?, rect))
-        }
-        "getSelectionProps" => out(&cap.get_selection_props()?),
-        "getSelectionFlags" => {
-            Outcome::Returned(cap.get_selection_flags().map_or(Value::Null, Value::Object))
-        }
-        "listTools" => out(&cap.list_tools()),
-        "getTool" => out_opt(cap.get_tool(&text(args, 0))),
-        "registerTool" => unregister_ref(h, cap.register_tool(decode(args, 0)?)?),
-        "getToolDefaults" => out(&cap.get_tool_defaults(&text(args, 0))),
-        "setToolDefaults" => {
-            cap.set_tool_defaults(&text(args, 0), decode(args, 1)?);
-            undef()
-        }
-        "listPropSpecs" => out(&cap.list_prop_specs(&text(args, 0))),
-        "listResolvedTools" => Outcome::Returned(Value::Array(
-            cap.list_resolved_tools().iter().map(|t| t.to_json()).collect(),
-        )),
-        "getResolvedTool" => Outcome::Returned(
-            cap.get_resolved_tool(&text(args, 0)).map_or(Value::Null, |t| t.to_json()),
-        ),
-        "getToolSubtype" => out(&cap.get_tool_subtype(&text(args, 0))),
-        "registerBehavior" => {
-            let spec = present(args, 0).cloned().unwrap_or(Value::Null);
-            let scripted = Rc::new(scripted_behavior(&spec, h));
-            let behavior: Rc<dyn Behavior> = scripted.clone();
-            BEHAVIORS.with(|reg| reg.borrow_mut().push((behavior.clone(), scripted)));
-            unregister_ref(h, cap.register_behavior(behavior))
-        }
-        "getBehaviorFor" => {
-            let a = present(args, 0).cloned().unwrap_or(Value::Null);
-            let subtype = a.get("subtype").and_then(Value::as_str).unwrap_or_default().to_string();
-            let r: Option<AnnotationRef> = a.get("ref").and_then(|v| from_value(v).ok());
-            match cap.get_behavior_for(&subtype, r.as_ref()) {
-                Some(b) => Outcome::Returned(BEHAVIORS.with(|reg| behavior_json(&b, reg, h))),
-                None => Outcome::Returned(Value::Null),
-            }
-        }
-        "pruneEngagedSelection" => {
-            cap.prune_engaged_selection();
-            undef()
-        }
-        "getStatus" => out(&cap.get_status()),
-        "refresh" => unit(cap.refresh()),
-        "onResynced" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_resynced(f))
-        }
-        "getHydration" => out(&cap.get_hydration()),
-        "ensureHydrated" => {
-            cap.ensure_hydrated();
-            undef()
-        }
-        "reloadPage" => unit(cap.reload_page(page(args, 0)?)),
-        "deliverRemoteEvent" => {
-            cap.deliver_remote_event(present(args, 0).cloned().unwrap_or(Value::Null))?;
-            undef()
-        }
-        "setContents" => unit(cap.set_contents(r(0)?, text(args, 1))),
-        "setRichText" => unit(cap.set_rich_text(r(0)?, decode(args, 1)?)),
-        "beginTextEdit" => {
-            cap.begin_text_edit(&r(0)?);
-            undef()
-        }
-        "beginTextEditAt" => out(&cap.begin_text_edit_at(
-            page(args, 0)?,
-            point(1)?,
-            opt_num(args, 2),
-            opt_num(args, 3),
-            opt_num(args, 4),
-        )),
-        "endTextEdit" => unit(cap.end_text_edit()),
-        "getEditingRef" => out_opt(cap.get_editing_ref()),
-        "getEditingId" => out(&cap.get_editing_id()),
-        "draftContents" => {
-            cap.draft_contents(r(0)?, text(args, 1));
-            undef()
-        }
-        "draftRichText" => {
-            cap.draft_rich_text(r(0)?, decode(args, 1)?);
-            undef()
-        }
-        "setTextSelection" => {
-            let range = present(args, 1).filter(|v| !v.is_null()).map(|v| {
-                (
-                    v.get("start").and_then(Value::as_f64).unwrap_or(f64::NAN),
-                    v.get("end").and_then(Value::as_f64).unwrap_or(f64::NAN),
-                )
-            });
-            cap.set_text_selection(&r(0)?, range);
-            undef()
-        }
-        "getCssFontFamily" => out(&cap.get_css_font_family(&text(args, 0))),
-        "create" => untyped(cap.create(decode(args, 0)?), to_value),
-        "createMany" => {
-            let inputs: Vec<Value> = decode(args, 0)?;
-            untyped(cap.create_many(inputs), |b| b.to_json())
-        }
-        "createRaw" => untyped(
-            cap.create_raw(page(args, 0)?, present(args, 1).cloned().unwrap_or(Value::Null)),
-            to_value,
-        ),
-        "update" => unit(cap.update(r(0)?, decode(args, 1)?)),
-        "updateMany" => {
-            untyped(cap.update_many(refs_arg(present(args, 0))?, decode(args, 1)?), |b| b.to_json())
-        }
-        "updateRaw" => {
-            unit(cap.update_raw(r(0)?, present(args, 1).cloned().unwrap_or(Value::Null)))
-        }
-        "setRotation" => unit(cap.set_rotation(r(0)?, num(args, 1))),
-        "rotateBy" => unit(cap.rotate_by(r(0)?, num(args, 1))),
-        "delete" => unit(cap.delete(r(0)?)),
-        "deleteMany" => untyped(cap.delete_many(refs_arg(present(args, 0))?), |b| b.to_json()),
-        "armStamp" => unit(cap.arm_stamp(stamp_input(present(args, 0), h)?)),
-        "disarmStamp" => {
-            cap.disarm_stamp();
-            undef()
-        }
-        "placeStamp" => {
-            let placement: StampPlacement = decode(args, 1)?;
-            untyped(cap.place_stamp(stamp_input(present(args, 0), h)?, placement), to_value)
-        }
-        "hasArmedStamp" => out(&cap.has_armed_stamp()),
-        "placeArmedStamp" => {
-            out(&cap.place_armed_stamp(page(args, 0)?, point(1)?, opt_num(args, 2)))
-        }
-        "requestStampAt" => out(&cap.request_stamp_at(page(args, 0)?, point(1)?, opt_num(args, 2))),
-        "getArmedStampPreview" => {
-            untyped(cap.get_armed_stamp_preview(opt_num(args, 0)), preview_json)
-        }
-        "getStampArmEpoch" => out(&cap.get_stamp_arm_epoch()),
-        "hoverGhostAt" => {
-            cap.hover_ghost_at(&text(args, 0), page(args, 1)?, point(2)?, opt_num(args, 3));
-            undef()
-        }
-        "clearGhost" => {
-            cap.clear_ghost();
-            undef()
-        }
-        "setPlacementPreview" => {
-            let bx: Rect = decode(args, 2)?;
-            cap.set_placement_preview(&text(args, 0), page(args, 1)?, bx);
-            undef()
-        }
-        "clearPlacementPreview" => {
-            cap.clear_placement_preview();
-            undef()
-        }
-        "getToolGhost" => out_opt(cap.get_tool_ghost(page(args, 0)?)),
-        "placeAt" => out(&cap.place_at(page(args, 0)?, point(1)?, opt_num(args, 2))),
-        "createAttachment" => untyped(
-            cap.create_attachment(
-                page(args, 0)?,
-                point(1)?,
-                present(args, 2).cloned().unwrap_or(Value::Null),
-            ),
-            to_value,
-        ),
-        "readAttachment" => untyped(cap.read_attachment(r(0)?), Clone::clone),
-        "setFilePickerProvider" => {
-            let provider = present(args, 0).filter(|v| v.get("$fn").is_some()).map(|spec| {
-                let callback = h.callback(spec);
-                let provider: crate::FilePickerProvider =
-                    Rc::new(move |req| answer_promise(callback.call(vec![to_value(&req)])));
-                provider
-            });
-            unsubscribe_ref(h, cap.set_file_picker_provider(provider))
-        }
-        "select" => {
-            cap.select(&refs_arg(present(args, 0))?, add_option(present(args, 1)));
-            undef()
-        }
-        "selectAll" => {
-            cap.select_all(opt_decode(args, 0)?);
-            undef()
-        }
-        "selectInRect" => {
-            cap.select_in_rect(page(args, 0)?, decode(args, 1)?, add_option(present(args, 2)));
-            undef()
-        }
-        "clearSelection" => {
-            cap.clear_selection();
-            undef()
-        }
-        "updateSelection" => untyped(cap.update_selection(decode(args, 0)?), |b| b.to_json()),
-        "updateSelectionFlags" => {
-            untyped(cap.update_selection_flags(decode(args, 0)?), |b| b.to_json())
-        }
-        "deleteSelection" => untyped(cap.delete_selection(), |b| b.to_json()),
-        "rotateSelectionBy" => unit(cap.rotate_selection_by(QuarterTurn::from_delta(num(args, 0)))),
-        "resetSelectionRotation" => unit(cap.reset_selection_rotation()),
-        "toggleTextFormat" => {
-            let format: TextFormat = decode(args, 0)?;
-            unit(cap.toggle_text_format(format))
-        }
-        "group" => unit(cap.group()),
-        "ungroup" => unit(cap.ungroup()),
-        "canGroup" => out(&cap.can_group()),
-        "canUngroup" => out(&cap.can_ungroup()),
-        "setPageViewports" => {
-            let viewports: Option<Vec<PageMeasurementViewport>> = opt_decode(args, 1)?;
-            cap.set_page_viewports(page(args, 0)?, viewports, opt_decode(args, 2)?);
-            undef()
-        }
-        "remeasurePage" => untyped(
-            cap.remeasure_page(page(args, 0)?, present(args, 1).cloned().unwrap_or(Value::Null)),
-            |r| r.to_json(),
-        ),
-        "editPointer" => {
-            cap.edit_pointer(
-                phase(args, 0)?,
-                page(args, 1)?,
-                point(2)?,
-                truthy_arg(args, 3),
-                opt_num(args, 4),
-                opt_num(args, 5),
-                opt_num(args, 6),
-                opt_bool(args, 7),
-            );
-            undef()
-        }
-        "marqueePointer" => {
-            cap.marquee_pointer(
-                phase(args, 0)?,
-                page(args, 1)?,
-                point(2)?,
-                truthy_arg(args, 3),
-                opt_num(args, 4),
-                opt_num(args, 5),
-                opt_num(args, 6),
-            );
-            undef()
-        }
-        "createPointer" => {
-            cap.create_pointer(
-                &text(args, 0),
-                phase(args, 1)?,
-                page(args, 2)?,
-                point(3)?,
-                truthy_arg(args, 4),
-                opt_num(args, 5),
-            );
-            undef()
-        }
-        "hoverAt" => {
-            cap.hover_at(hover_arg(present(args, 0))?);
-            undef()
-        }
-        "getCreationDraft" => out_opt(cap.get_creation_draft()),
-        "hasCreationDraft" => out(&cap.has_creation_draft()),
-        "finishCreationDraft" => untyped(cap.finish_creation_draft(), to_value),
-        "finishInkDraft" => {
-            cap.finish_ink_draft();
-            undef()
-        }
-        "cancelCreationDraft" => {
-            cap.cancel_creation_draft();
-            undef()
-        }
-        "cancel" => {
-            cap.cancel();
-            undef()
-        }
-        "distanceCreationPage" => out_opt(cap.distance_creation_page()),
-        "onDraftCaptured" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_draft_captured(f))
-        }
-        "createMarkup" => {
-            let quads: Vec<TextQuad> = decode(args, 2)?;
-            cap.create_markup(&text(args, 0), page(args, 1)?, quads, opt_text(args, 3).as_deref());
-            undef()
-        }
-        "createCaret" => {
-            let anchor: TextEndAnchor = decode(args, 1)?;
-            cap.create_caret(page(args, 0)?, anchor);
-            undef()
-        }
-        "createReplaceText" => {
-            let quads: Vec<TextQuad> = decode(args, 1)?;
-            let anchor: TextEndAnchor = decode(args, 2)?;
-            cap.create_replace_text(page(args, 0)?, quads, anchor, opt_text(args, 3).as_deref());
-            undef()
-        }
-        "previewMarkup" => {
-            cap.preview_markup(&text(args, 0), decode(args, 1)?, opt_text(args, 2).as_deref());
-            undef()
-        }
-        "clearMarkupPreview" => {
-            cap.clear_markup_preview();
-            undef()
-        }
-        "createFromSelection" => {
-            let options = present(args, 1).cloned().unwrap_or(Value::Null);
-            let preset = options.get("preset").and_then(Value::as_str).map(str::to_string);
-            let clear = options
-                .get("clear")
-                .filter(|v| !is_undefined(v))
-                .map(|v| crate::value::truthy(Some(v)));
-            untyped(cap.create_from_selection(&text(args, 0), preset, clear), to_value)
-        }
-        "commitScriptEffects" => untyped(cap.commit_script_effects(decode(args, 0)?), to_value),
-        "getSnapSettings" => out(&cap.get_snap_settings()),
-        "updateSnapSettings" => {
-            cap.update_snap_settings(decode(args, 0)?);
-            undef()
-        }
-        "getChromeSettings" => out(&cap.get_chrome_settings()),
-        "updateChromeSettings" => {
-            cap.update_chrome_settings(decode(args, 0)?);
-            undef()
-        }
-        "canRead" => out(&cap.can_read()),
-        "canCreate" => out(&cap.can_create()),
-        "canEdit" => out(&cap.can_edit(&r(0)?)),
-        "canDelete" => out(&cap.can_delete(&r(0)?)),
-        "onCreated" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_created(f))
-        }
-        "onUpdated" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_updated(f))
-        }
-        "onDeleted" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_deleted(f))
-        }
-        "onSelectionChanged" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_selection_changed(f))
-        }
-        "onDraftChanged" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_draft_changed(f))
-        }
-        "onEditingChanged" => {
-            let cap = cap.clone();
-            hook(h, present(args, 0), move |f| cap.on_editing_changed(f))
-        }
-        other => not_a_function(other),
-    })
-}
-
-fn call_lens(lens: &Lens, method: &str, args: &[Value], h: &Harness) -> Result<Outcome, Error> {
-    let cap = lens.ctx.get(&ANNOTATION)?;
-    match method {
-        "getHydration" => Ok(out(&cap.get_hydration())),
-        "refresh" => Ok(unit(cap.refresh())),
-        "linksGet" => call_links(&cap, "get", args),
-        "linksSet" => call_links(&cap, "set", args),
-        "linksClear" => call_links(&cap, "clear", args),
-        verb => call_comments(&cap, verb, args, h),
-    }
-}
-
-/// One `comments` verb. The capability's `comments` object and the test
-/// lens's flat verbs both call it.
-fn call_comments(
-    cap: &AnnotationCapability,
-    method: &str,
-    args: &[Value],
-    h: &Harness,
-) -> Result<Outcome, Error> {
-    let comments = cap.comments();
-    let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
-    Ok(match method {
-        "listThreads" => Outcome::Returned(Value::Array(
-            comments.list_threads().iter().map(|t| t.to_json()).collect(),
-        )),
-        "getThread" => {
-            Outcome::Returned(comments.get_thread(&r(0)?).map_or(Value::Null, |t| t.to_json()))
-        }
-        "reply" => untyped(comments.reply(r(0)?, text(args, 1)), to_value),
-        "setText" => unit(comments.set_text(r(0)?, text(args, 1))),
-        "setStatus" => unit(comments.set_status(r(0)?, text(args, 1))),
-        "setMarked" => unit(comments.set_marked(r(0)?, truthy_arg(args, 1))),
-        "delete" => unit(comments.delete(r(0)?)),
-        "deleteThread" => untyped(comments.delete_thread(r(0)?), |t| t.to_json()),
-        "getPermissions" => out(&comments.get_permissions(&r(0)?)),
-        "onThreadChanged" => {
-            let comments = comments.clone();
-            hook(h, present(args, 0), move |f| comments.on_thread_changed(f))
-        }
-        other => not_a_function(other),
-    })
-}
-
-/// One `links` verb.
-fn call_links(cap: &AnnotationCapability, method: &str, args: &[Value]) -> Result<Outcome, Error> {
-    let links = cap.links();
-    let r = |i: usize| -> Result<AnnotationRef, Error> { decode(args, i) };
-    Ok(match method {
-        "get" => out_opt(links.get(&r(0)?)),
-        "set" => {
-            let target: PdfLinkTarget = decode(args, 1)?;
-            unit(links.set(&r(0)?, target))
-        }
-        "clear" => unit(links.clear(&r(0)?)),
-        other => not_a_function(other),
-    })
-}
-
-/// A nested object of functions: each verb a ref into `call`.
-fn verbs_json(
-    h: &Harness,
-    cap: &AnnotationCapability,
-    verbs: &[&'static str],
-    call: fn(&AnnotationCapability, &str, &[Value], &Harness) -> Result<Outcome, Error>,
-) -> Value {
-    let mut out = serde_json::Map::new();
-    for &verb in verbs {
-        let cap = cap.clone();
-        let harness = h.clone();
-        let f: RefFn =
-            Rc::new(move |args: Vec<Value>| from_result(call(&cap, verb, &args, &harness)));
-        out.insert(verb.to_string(), h.register_fn(f));
-    }
-    Value::Object(out)
-}
-
-/// A live host's globals: `host: {randomUuid, consoleError}` in the config,
-/// each a `$fn` the host answers (`crypto.randomUUID` and `console.error` in
-/// a browser), so ids differ across sessions and swallowed failures reach
-/// the console. Only a live harness reads it; a vector's config never has
-/// one.
-fn live_host(host: &mut AnnotationHost, config: &Value, h: &Harness) {
-    if !h.is_live() {
-        return;
-    }
-    let Some(live) = config.get("host") else { return };
-    let spec = |name: &str| live.get(name).filter(|f| f.get("$fn").is_some());
-    if let Some(random_uuid) = spec("randomUuid").map(|f| h.callback(f)) {
-        let fallback = host.random_uuid.take();
-        host.random_uuid = Some(Rc::new(move || match random_uuid.call(Vec::new()) {
-            Answer::Returns(Value::String(uuid)) => uuid,
-            _ => fallback.as_ref().map(|f| f()).unwrap_or_default(),
-        }));
-    }
-    if let Some(console_error) = spec("consoleError").map(|f| h.callback(f)) {
-        host.console_error = Some(Rc::new(move |message: &str, error: Option<&Error>| {
-            let mut args = vec![json!(message)];
-            if let Some(error) = error {
-                args.push(error.to_canonical());
-            }
-            let _ = console_error.call(args);
-        }));
-    }
-}
 
 impl HarnessPlugin for Annotation {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["annotation", "annotation-lens", "annotation-signals"]
+        vec![
+            "annotation-live",
+            "annotation-live-actions",
+            "annotation-live-render",
+            "annotation-live-selection",
+        ]
     }
 
     fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         match factory {
-            "annotation-signals" => {
-                return Ok(define::<Value, Value>("annotation-test/signals")
-                    .capability(&SIGNALS, |_| Ok(Signals))
-                    .build());
+            "annotation-live" => {
+                let log = h.clone();
+                crate::console::set_sink(Some(Rc::new(move |level, args| {
+                    let first = args.first().and_then(Value::as_str).unwrap_or("");
+                    if level == "error" && first.starts_with("[annotation]") {
+                        log.log("console.error", args);
+                    } else if level == "warn" {
+                        log.log("console.warn", args);
+                    }
+                })));
+                Ok(annotation_plugin(
+                    Some(config.clone()).filter(|c| !epdf_kernel::is_undefined(c)),
+                ))
             }
-            "annotation-lens" => {
-                return Ok(define::<Value, Value>("annotation-test/lens")
-                    .document_scoped()
-                    .requires(ANNOTATION.any())
-                    .capability(&LENS, |ctx| Ok(Lens { ctx }))
-                    .build());
+            "annotation-live-actions" => {
+                Ok(epdf_plugin_actions::actions_plugin(epdf_plugin_actions::ActionsConfig {
+                    open_sequence: Some(epdf_plugin_actions::OpenSequence::Off),
+                    javascript: Some(epdf_plugin_actions::JavaScriptConfig {
+                        enabled: Some(false),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }))
             }
-            _ => {}
+            "annotation-live-render" => Ok(epdf_plugin_render::render_plugin(Default::default())),
+            "annotation-live-selection" => {
+                Ok(epdf_plugin_selection::selection_plugin(Default::default()))
+            }
+            other => Err(Error::new(format!("[annotation] no factory {other}"))),
         }
-        CONTROLLERS.with(|c| c.borrow_mut().clear());
-        BEHAVIORS.with(|b| b.borrow_mut().clear());
-        let raw = config;
-        let mut config: AnnotationConfig = if is_undefined(config) || config.is_null() {
-            AnnotationConfig::default()
-        } else {
-            from_value(config)?
-        };
-        let seq = Rc::new(Cell::new(0u64));
-        let log = h.clone();
-        config.host = AnnotationHost {
-            console_error: Some(Rc::new(move |message: &str, error: Option<&Error>| {
-                let mut args = vec![json!(message)];
-                if let Some(error) = error {
-                    args.push(error.to_canonical());
-                }
-                log.log("console.error", args);
-            })),
-            random_uuid: Some(Rc::new(move || {
-                seq.set(seq.get() + 1);
-                uuid_at(seq.get())
-            })),
-            fonts: None,
-        };
-        live_host(&mut config.host, raw, h);
-        Ok(annotation_plugin(config))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
-        vec![ANNOTATION.any().clone(), LENS.any().clone(), SIGNALS.any().clone()]
+        vec![ANNOTATION.any().clone()]
+    }
+
+    fn resolve_member(
+        &self,
+        capability: &Rc<dyn Any>,
+        member: &str,
+        _h: &Harness,
+    ) -> Option<Result<Rc<dyn Any>, Error>> {
+        let cap = capability.downcast_ref::<AnnotationCapability>()?;
+        let name = NOUNS.iter().find(|n| **n == member)?;
+        Some(Ok(Rc::new(Noun { capability: cap.clone(), name })))
+    }
+
+    fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
+        if capability.downcast_ref::<AnnotationCapability>().is_some() {
+            return Some(MEMBERS.to_vec());
+        }
+        None
     }
 
     fn call(
@@ -1126,48 +493,510 @@ impl HarnessPlugin for Annotation {
         args: Vec<Value>,
         h: &Harness,
     ) -> Option<Outcome> {
-        if let Some(cap) = capability.downcast_ref::<AnnotationCapability>() {
-            return Some(from_result(call_capability(cap, method, &args, h)));
+        if let Some(noun) = capability.downcast_ref::<Noun>() {
+            return Some(call_noun(&noun.capability, noun.name, method, &args, h));
         }
-        if let Some(lens) = capability.downcast_ref::<Lens>() {
-            return Some(from_result(call_lens(lens, method, &args, h)));
-        }
-        capability.downcast_ref::<Signals>()?;
-        Some(match method {
-            "abort" => {
-                let name = present(&args, 0).and_then(Value::as_str).unwrap_or_default();
-                controller_named(name)
-                    .abort(Error::named("AbortError", "This operation was aborted"));
-                Outcome::undefined()
-            }
-            other => not_a_function(other),
-        })
+        let a = capability.downcast_ref::<AnnotationCapability>()?;
+        Some(call_capability(a, method, &args, h))
     }
+}
 
-    fn describe_member(
-        &self,
-        capability: &Rc<dyn Any>,
-        member: &'static str,
-        h: &Harness,
-    ) -> Option<Value> {
-        let cap = capability.downcast_ref::<AnnotationCapability>()?;
-        match member {
-            "comments" => Some(verbs_json(h, cap, COMMENTS_MEMBERS, call_comments)),
-            "links" => Some(verbs_json(h, cap, LINKS_MEMBERS, |cap, verb, args, _| {
-                call_links(cap, verb, args)
-            })),
-            _ => None,
+fn call_noun(
+    a: &AnnotationCapability,
+    noun: &str,
+    method: &str,
+    args: &[Value],
+    h: &Harness,
+) -> Outcome {
+    match (noun, method) {
+        ("selection", "set") => {
+            a.selection_set(&refs(args, 0));
+            undefined_outcome()
+        }
+        ("selection", "add") => {
+            a.selection_add(&refs(args, 0));
+            undefined_outcome()
+        }
+        ("selection", "selectAll") => {
+            a.selection_select_all(arg(args, 0));
+            undefined_outcome()
+        }
+        ("selection", "selectInRect") => {
+            let rect = arg(args, 1).map(epdf_annotation_core::json::rect_loose).unwrap_or_default();
+            unit(a.selection_select_in_rect(&value(args, 0), rect))
+        }
+        ("selection", "clear") => {
+            a.selection_clear();
+            undefined_outcome()
+        }
+        ("selection", "list") => Outcome::Returned(json!(*a.list_selected())),
+        ("selection", "update") => {
+            let patch = match arg(args, 0) {
+                Some(spec) if spec.get("$fn").is_some() => {
+                    let callback = h.callback(spec);
+                    SelectionPatch::PerMember(Rc::new(move |annotation: &Value| {
+                        answer_value(callback.call(vec![annotation.clone()]))
+                            .as_object()
+                            .cloned()
+                            .unwrap_or_default()
+                    }))
+                }
+                _ => SelectionPatch::Fields(object(args, 0)),
+            };
+            promise(a.selection_update(patch, None))
+        }
+        ("selection", "updateLink") => promise(a.selection_update_link(value(args, 0), None)),
+        ("selection", "getProperties") => Outcome::Returned(a.selection_properties()),
+        ("selection", "delete") => promise(a.selection_delete(None)),
+        ("selection", "rotateBy") => {
+            promise_unit(a.selection_rotate_by(num(args, 0).unwrap_or(f64::NAN), None))
+        }
+        ("selection", "resetRotation") => promise_unit(a.selection_reset_rotation(None)),
+        ("selection", "group") => promise_unit(a.selection_group(None)),
+        ("selection", "ungroup") => promise_unit(a.selection_ungroup(None)),
+        ("selection", "canGroup") => Outcome::Returned(json!(a.selection_can_group())),
+        ("selection", "canUngroup") => Outcome::Returned(json!(a.selection_can_ungroup())),
+        ("selection", "getAnchor") => Outcome::Returned(a.selection_get_anchor()),
+        ("selection", "getRotationAnchor") => Outcome::Returned(a.rotation_anchor()),
+        ("draft", "get") => Outcome::Returned(a.draft_get()),
+        ("draft", "finish") => promise(a.draft_finish(None)),
+        ("draft", "cancel") => {
+            a.cancel();
+            undefined_outcome()
+        }
+        ("text", "begin") => {
+            a.text_begin(&value(args, 0));
+            undefined_outcome()
+        }
+        ("text", "end") => promise_unit(a.text_end(None)),
+        ("text", "getEditing") => Outcome::Returned(opt_value(a.get_editing())),
+        ("text", "toggleFormat") => promise_unit(a.toggle_format(&text(args, 0), None)),
+        ("tools", "list") => Outcome::Returned(json!(a.tools_list())),
+        ("tools", "get") => Outcome::Returned(a.tools_get(&text(args, 0))),
+        ("tools", "register") => match a.tools_register(value(args, 0)) {
+            Ok(off) => Outcome::Returned(remover(h, off)),
+            Err(e) => Outcome::Threw(e),
+        },
+        ("tools", "getDefaults") => Outcome::Returned(a.tools_get_defaults(&text(args, 0))),
+        ("tools", "updateDefaults") => {
+            unit(a.tools_update_defaults(&text(args, 0), &object(args, 1)))
+        }
+        ("tools", "getProperties") => Outcome::Returned(a.tools_get_properties(&text(args, 0))),
+        ("tools", "onDefaultsChanged") => {
+            subscribe(h, &a.events.tool_defaults_changed, &value(args, 0))
+        }
+        ("stamps", "arm") => promise_unit(a.stamps_arm(stamp_input(h, &value(args, 0)), None)),
+        ("stamps", "disarm") => {
+            a.stamps_disarm();
+            undefined_outcome()
+        }
+        ("stamps", "isArmed") => Outcome::Returned(json!(a.stamps_is_armed())),
+        ("stamps", "place") => {
+            promise(a.stamps_place(stamp_input(h, &value(args, 0)), &value(args, 1), None))
+        }
+        ("links", "get") => Outcome::Returned(a.links_get(&value(args, 0))),
+        ("links", "set") => promise_unit(a.links_set(&value(args, 0), value(args, 1), None)),
+        ("links", "clear") => promise_unit(a.links_clear(&value(args, 0), None)),
+        ("comments", "listThreads") => Outcome::Returned(a.comments_list_threads()),
+        ("comments", "getThread") => Outcome::Returned(a.comments_get_thread(&value(args, 0))),
+        ("comments", "onThreadChanged") => subscribe(h, &a.events.thread_changed, &value(args, 0)),
+        ("comments", "reply") => promise(a.comments_reply(&value(args, 0), &text(args, 1), None)),
+        ("comments", "setText") => {
+            promise_unit(a.comments_set_text(&value(args, 0), &text(args, 1), None))
+        }
+        ("comments", "setStatus") => {
+            promise_unit(a.comments_set_status(&value(args, 0), &text(args, 1), None))
+        }
+        ("comments", "setMarked") => {
+            let marked = arg(args, 1).is_some_and(|v| epdf_annotation_core::json::truthy(Some(v)));
+            promise_unit(a.comments_set_marked(&value(args, 0), marked, None))
+        }
+        ("comments", "delete") => promise_unit(a.comments_delete(&value(args, 0), None)),
+        ("comments", "deleteThread") => promise(a.comments_delete_thread(&value(args, 0), None)),
+        ("comments", "canReply") | ("comments", "canSetStatus") | ("comments", "canSetMarked") => {
+            Outcome::Returned(json!(a.can_create()))
+        }
+        ("comments", "canSetText") => {
+            Outcome::Returned(json!(a.comments_can_set_text(&value(args, 0))))
+        }
+        ("comments", "canDelete") => Outcome::Returned(json!(a.can_delete(&value(args, 0)))),
+        ("comments", "canDeleteThread") => {
+            Outcome::Returned(json!(a.comments_can_delete_thread(&value(args, 0))))
+        }
+        (noun, other) => {
+            Outcome::Threw(Error::new(format!("[scenario] \"{noun}.{other}\" is not a function")))
         }
     }
+}
 
-    fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
-        if capability.downcast_ref::<AnnotationCapability>().is_some() {
-            return Some(MEMBERS.to_vec());
+fn call_capability(a: &AnnotationCapability, method: &str, args: &[Value], h: &Harness) -> Outcome {
+    match method {
+        // ── settings ──
+        "getSettings" => Outcome::Returned((*a.settings.get()).clone()),
+        "updateSettings" => {
+            a.settings.store.update_settings(&value(args, 0));
+            undefined_outcome()
         }
-        if capability.downcast_ref::<Lens>().is_some() {
-            return Some(LENS_MEMBERS.to_vec());
+        "resetSettings" => {
+            a.settings.store.reset_settings();
+            undefined_outcome()
         }
-        capability.downcast_ref::<Signals>()?;
-        Some(vec!["abort"])
+        // ── reads ──
+        "get" => Outcome::Returned(opt_value(a.get(&value(args, 0)))),
+        "list" => {
+            let filter = arg(args, 0).map(AnnotationFilter::read);
+            Outcome::Returned(json!(*a.list(filter.as_ref())))
+        }
+        "isPending" => Outcome::Returned(json!(a.is_pending(&value(args, 0)))),
+        "getHovered" => Outcome::Returned(opt_value(a.get_hovered())),
+        "isEditable" => Outcome::Returned(json!(a.is_editable(&value(args, 0)))),
+        "getAt" => Outcome::Returned(opt_value(a.annotation_at(&value(args, 0), point(args, 1)))),
+        "getStatus" => Outcome::Returned(json!(a.records.get_status().as_str())),
+        "refresh" => promise_unit(a.cancellable(None, a.records.refresh())),
+        "whenSynced" => promise_unit(a.records.settled()),
+        "canRead" => Outcome::Returned(json!(a.can_read())),
+        "canCreate" => Outcome::Returned(json!(a.can_create())),
+        "canUpdate" => Outcome::Returned(json!(a.can_update(&value(args, 0)))),
+        "canDelete" => Outcome::Returned(json!(a.can_delete(&value(args, 0)))),
+        // ── chrome ──
+        "listChromeNodes" => Outcome::Returned(a.list_chrome_nodes(
+            &value(args, 0),
+            num(args, 1),
+            num(args, 2),
+            num(args, 3),
+        )),
+        "getSelectionAnchorIn" => {
+            let view = hit_view(&value(args, 0));
+            Outcome::Returned(a.selection_anchor_of(view.scale, view.rotation, view.zoom))
+        }
+        "getAnnotationAnchor" => {
+            let anchor = a.get_annotation_anchor(&value(args, 0), view_env(args, 1));
+            Outcome::Returned(match anchor {
+                Value::Object(mut members) if members.contains_key("boundsIn") => {
+                    members.insert("boundsIn".into(), function_ref(h));
+                    Value::Object(members)
+                }
+                other => other,
+            })
+        }
+        "getHitKind" => {
+            let view = HitView { scale: num(args, 2), rotation: num(args, 3), zoom: num(args, 4) };
+            let touch = arg(args, 5).map(|v| epdf_annotation_core::json::truthy(Some(v)));
+            Outcome::Returned(json!(a.get_hit_kind(&value(args, 0), point(args, 1), view, touch)))
+        }
+        "claimsTouchAt" => {
+            let view = HitView { scale: num(args, 2), rotation: num(args, 3), zoom: num(args, 4) };
+            Outcome::Returned(json!(a.claims_touch_at(&value(args, 0), point(args, 1), view)))
+        }
+        "getCursorAt" => {
+            let view = HitView { scale: num(args, 2), rotation: num(args, 3), zoom: num(args, 4) };
+            Outcome::Returned(a.get_cursor_at(&value(args, 0), point(args, 1), view))
+        }
+        // ── render ──
+        "listPageItems" => {
+            Outcome::Returned(lent_scenes(h, a.list_page_items(&value(args, 0), view_env(args, 1))))
+        }
+        "listTextItems" => Outcome::Returned(a.list_text_items(&value(args, 0), view_env(args, 1))),
+        "listLinkItems" => Outcome::Returned(a.list_link_items(&value(args, 0))),
+        "getAppearanceEpoch" => Outcome::Returned(json!(a.get_appearance_epoch(&value(args, 0)))),
+        "renderAppearances" => {
+            let h = h.clone();
+            let p = a.render_appearances(&value(args, 0), num(args, 1).unwrap_or(f64::NAN), None);
+            promise(p.map(move |list| Ok(pictures(&h, list))))
+        }
+        // ── tools and behaviors ──
+        "listResolvedTools" => Outcome::Returned(json!(
+            a.list_resolved_tools().iter().map(|t| t.to_json()).collect::<Vec<_>>()
+        )),
+        "getResolvedTool" => Outcome::Returned(
+            a.get_resolved_tool(&text(args, 0)).map_or(Value::Null, |t| t.to_json()),
+        ),
+        "getToolSubtype" => Outcome::Returned(json!(a.get_tool_subtype(&text(args, 0)))),
+        "registerBehavior" => {
+            let spec = value(args, 0);
+            let behavior = Rc::new(ScriptedBehavior {
+                id: spec.get("id").and_then(Value::as_str).unwrap_or_default().to_string(),
+                matches: member_callback(h, &spec, "matches"),
+                engaged: member_callback(h, &spec, "engaged"),
+            });
+            Outcome::Returned(remover(h, a.register_behavior(behavior)))
+        }
+        "getBehaviorFor" => {
+            // The behavior object as its registrant built it: `id`, then
+            // `matches` and `engaged` as callable refs, registered in that
+            // order (link.json's `link-nav-behavior` calls both).
+            let behavior = a.get_behavior_for(&object(args, 0));
+            Outcome::Returned(behavior.map_or(Value::Null, |b| {
+                let id = b.id();
+                let held = b.clone();
+                let matches = h.register_fn(Rc::new(move |args: Vec<Value>| {
+                    Outcome::Returned(json!(held.matches(&object(&args, 0))))
+                }));
+                let engaged = h.register_fn(Rc::new(move |args: Vec<Value>| {
+                    Outcome::Returned(json!(b.engaged(&object(&args, 0))))
+                }));
+                json!({ "id": id, "matches": matches, "engaged": engaged })
+            }))
+        }
+        "pruneEngagedSelection" => {
+            a.prune_engaged_selection();
+            undefined_outcome()
+        }
+        "lend" => {
+            let spec = value(args, 0);
+            let lender = Rc::new(ScriptedLender {
+                owner: spec.get("owner").and_then(Value::as_str).unwrap_or_default().to_string(),
+                records: member_callback(h, &spec, "records"),
+                ops_of: member_callback(h, &spec, "opsOf"),
+                undo_of: member_callback(h, &spec, "undoOf"),
+                reorder_ops: member_callback(h, &spec, "reorderOps"),
+                authority: member_callback(h, &spec, "authority"),
+                picture_epoch: member_callback(h, &spec, "pictureEpoch"),
+                picture_version: member_callback(h, &spec, "pictureVersion"),
+                pending: member_callback(h, &spec, "pending"),
+                painter: member_callback(h, &spec, "painter"),
+                render_appearances: member_callback(h, &spec, "renderAppearances"),
+            });
+            let cx = a.cx.clone();
+            let off = a.lending.lend(lender, Rc::new(move || cx.notify()));
+            Outcome::Returned(remover(h, off))
+        }
+        // ── text editing ──
+        "beginTextEditAt" => {
+            let view = HitView { scale: num(args, 2), rotation: num(args, 3), zoom: num(args, 4) };
+            Outcome::Returned(json!(a.begin_text_edit_at(&value(args, 0), point(args, 1), view)))
+        }
+        "getEditingId" => Outcome::Returned(a.get_editing_id().map_or(Value::Null, Value::String)),
+        "draftContents" => unit(a.draft_contents(&value(args, 0), &text(args, 1))),
+        "draftRichText" => unit(a.draft_rich_text(
+            &value(args, 0),
+            value(args, 1).get("paragraphs").cloned().unwrap_or(json!([])),
+        )),
+        "setTextSelection" => {
+            let range = arg(args, 1).filter(|r| !r.is_null()).map(|r| {
+                (
+                    r.get("start").and_then(Value::as_f64).unwrap_or(f64::NAN),
+                    r.get("end").and_then(Value::as_f64).unwrap_or(f64::NAN),
+                )
+            });
+            a.set_text_selection(&value(args, 0), range);
+            undefined_outcome()
+        }
+        "getCssFontFamily" => Outcome::Returned(json!(a.get_css_font_family(&text(args, 0)))),
+        // ── crud ──
+        "create" => {
+            let options = value(args, 3);
+            let create = CreateOptions {
+                signal: None,
+                tool: options.get("tool").and_then(Value::as_str).map(str::to_string),
+                select: options
+                    .get("select")
+                    .is_some_and(|v| epdf_annotation_core::json::truthy(Some(v))),
+            };
+            let resources = arg(args, 2).filter(|r| !r.is_null()).cloned();
+            promise(a.create(&value(args, 0), &object(args, 1), resources, create))
+        }
+        "update" => {
+            let resources = arg(args, 2).filter(|r| !r.is_null()).cloned();
+            promise(a.update(&value(args, 0), &object(args, 1), resources, None))
+        }
+        "delete" => promise_unit(a.delete(&value(args, 0), None)),
+        "reorder" => promise_unit(a.reorder(&refs(args, 0), &value(args, 1), None)),
+        "export" => promise(a.export(&value(args, 0), None)),
+        "import" => {
+            promise(a.import(value(args, 0), arg(args, 1).cloned().unwrap_or(json!({})), None))
+        }
+        "downloadResource" => promise(a.download_resource(&value(args, 0), &text(args, 1), None)),
+        // ── stamps and placement ──
+        "placeArmedStamp" => Outcome::Returned(json!(a.place_armed_stamp(
+            crate::js::page_object_number(&value(args, 0)),
+            point(args, 1),
+            num(args, 2)
+        ))),
+        "requestStampAt" => Outcome::Returned(json!(a.request_stamp_at(
+            crate::js::page_object_number(&value(args, 0)),
+            point(args, 1),
+            num(args, 2)
+        ))),
+        "getArmedStamp" => Outcome::Returned(a.get_armed_stamp()),
+        "renderArmedStampPreview" => promise(
+            a.render_armed_stamp_preview(num(args, 0)).map(|v| Ok(v.unwrap_or(Value::Null))),
+        ),
+        "hoverGhostAt" => {
+            a.hover_ghost_at(
+                &text(args, 0),
+                &value(args, 1),
+                point(args, 2),
+                num(args, 3),
+                num(args, 4),
+            );
+            undefined_outcome()
+        }
+        "clearGhost" => {
+            a.clear_ghost();
+            undefined_outcome()
+        }
+        "previewPlacement" => {
+            a.preview_placement(&text(args, 0), &value(args, 1), point(args, 2), point(args, 3));
+            undefined_outcome()
+        }
+        "clearPlacementPreview" => {
+            a.clear_placement_preview();
+            undefined_outcome()
+        }
+        "getImageGhost" => Outcome::Returned(a.get_image_ghost(&value(args, 0))),
+        "placeAt" => Outcome::Returned(json!(a.place_at(
+            crate::js::page_object_number(&value(args, 0)),
+            point(args, 1),
+            num(args, 2),
+            num(args, 3)
+        ))),
+        "setFilePickerProvider" => {
+            let provider = arg(args, 0).filter(|p| !p.is_null()).map(|spec| {
+                let callback = h.callback(spec);
+                let provider: crate::host_contract::FilePickerProvider =
+                    Rc::new(move |request: Value| {
+                        answer_promise(callback.call(vec![request]))
+                            .map(|v| Ok(if v.is_null() { None } else { Some(v) }))
+                    });
+                provider
+            });
+            Outcome::Returned(remover(h, a.set_file_picker_provider(provider)))
+        }
+        // ── measurement ──
+        "setPageViewports" => {
+            let viewports = arg(args, 1).and_then(Value::as_array).cloned();
+            a.set_page_viewports(&value(args, 0), viewports, value(args, 2));
+            undefined_outcome()
+        }
+        "remeasurePage" => promise(a.remeasure_page(&value(args, 0), value(args, 1))),
+        "onDraftCaptured" => subscribe(h, &a.events.draft_captured, &value(args, 0)),
+        "distanceCreationPage" => Outcome::Returned(opt_value(a.distance_creation_page())),
+        // ── pointer ──
+        "editPointer" => {
+            let touch = arg(args, 7).map(|v| epdf_annotation_core::json::truthy(Some(v)));
+            let shift = arg(args, 3).is_some_and(|v| epdf_annotation_core::json::truthy(Some(v)));
+            unit(a.edit_pointer(
+                &text(args, 0),
+                &value(args, 1),
+                point(args, 2),
+                shift,
+                num(args, 4),
+                num(args, 5),
+                num(args, 6),
+                touch,
+            ))
+        }
+        "marqueePointer" => {
+            let shift = arg(args, 3).is_some_and(|v| epdf_annotation_core::json::truthy(Some(v)));
+            unit(a.marquee_pointer(
+                &text(args, 0),
+                &value(args, 1),
+                point(args, 2),
+                shift,
+                num(args, 5),
+                num(args, 6),
+            ))
+        }
+        "createPointer" => {
+            let finish = arg(args, 4).is_some_and(|v| epdf_annotation_core::json::truthy(Some(v)));
+            unit(a.create_pointer(
+                &text(args, 0),
+                &text(args, 1),
+                &value(args, 2),
+                point(args, 3),
+                finish,
+                num(args, 5),
+            ))
+        }
+        "hoverAt" => {
+            let at = arg(args, 0).filter(|v| !v.is_null()).map(|v| {
+                (
+                    v.get("page").cloned().unwrap_or(Value::Null),
+                    v.get("point").map(epdf_annotation_core::json::point_loose).unwrap_or_default(),
+                    hit_view(v),
+                )
+            });
+            unit(a.hover_at(at.as_ref().map(|(p, point, view)| (p, *point, *view))))
+        }
+        "finishInkDraft" => {
+            a.finish_ink_draft();
+            undefined_outcome()
+        }
+        "cancel" => {
+            a.cancel();
+            undefined_outcome()
+        }
+        // ── markup ──
+        "createMarkup" => {
+            let preset = arg(args, 3).and_then(Value::as_str).map(str::to_string);
+            unit(a.create_markup(
+                &text(args, 0),
+                &value(args, 1),
+                &value(args, 2),
+                preset.as_deref(),
+            ))
+        }
+        "createCaret" => unit(a.create_caret(&value(args, 0), &value(args, 1))),
+        "createReplaceText" => {
+            let preset = arg(args, 3).and_then(Value::as_str).map(str::to_string);
+            unit(a.create_replace_text(
+                &value(args, 0),
+                &value(args, 1),
+                &value(args, 2),
+                preset.as_deref(),
+            ))
+        }
+        "applyToolToSelection" => match a.apply_tool_to_selection(&text(args, 0)) {
+            Ok(b) => Outcome::Returned(json!(b)),
+            Err(e) => Outcome::Threw(e),
+        },
+        "previewMarkup" => {
+            let preset = arg(args, 2).and_then(Value::as_str).map(str::to_string);
+            unit(a.preview_markup(&text(args, 0), &value(args, 1), preset.as_deref()))
+        }
+        "clearMarkupPreview" => {
+            a.clear_markup_preview();
+            undefined_outcome()
+        }
+        "createFromSelection" => {
+            let clear =
+                arg(args, 1).and_then(|o| o.get("clear")).and_then(Value::as_bool) != Some(false);
+            promise(a.create_from_selection(&text(args, 0), clear, None))
+        }
+        "commitScriptEffects" => {
+            let entries: Vec<epdf_plugin_actions::AnnotCommitEntry> =
+                serde_json::from_value(value(args, 0)).unwrap_or_default();
+            Outcome::promise(a.commit_script_effects(entries))
+        }
+        // ── events ──
+        "onResynced" => subscribe(h, &a.events.resynced, &value(args, 0)),
+        "onCreated" => subscribe(h, &a.events.created, &value(args, 0)),
+        "onUpdated" => subscribe(h, &a.events.updated, &value(args, 0)),
+        "onDeleted" => subscribe(h, &a.events.deleted, &value(args, 0)),
+        "onReordered" => subscribe(h, &a.events.reordered, &value(args, 0)),
+        "onSelectionChanged" => subscribe(h, &a.events.selection_changed, &value(args, 0)),
+        "onDraftChanged" => subscribe(h, &a.events.draft_changed, &value(args, 0)),
+        "onEditingChanged" => subscribe(h, &a.events.editing_changed, &value(args, 0)),
+        "onHoverChanged" => subscribe(h, &a.events.hover_changed, &value(args, 0)),
+        "onWriteFailed" => subscribe(h, &a.events.write_failed, &value(args, 0)),
+        other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
+    }
+}
+
+/// A page item's `lentScene` prints as a ref, a function the item carries.
+fn lent_scenes(h: &Harness, items: Value) -> Value {
+    match items {
+        Value::Array(list) => Value::Array(
+            list.into_iter()
+                .map(|mut item| {
+                    if item.get("lentScene").is_some_and(|s| s.get("$function").is_some()) {
+                        item["lentScene"] = function_ref(h);
+                    }
+                    item
+                })
+                .collect(),
+        ),
+        other => other,
     }
 }

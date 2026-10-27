@@ -18,6 +18,8 @@ pub enum PdfiumError {
     TextRead,
     TextRect,
     Bitmap,
+    /// A sliced page render ended in `FPDF_RENDER_FAILED`.
+    Render,
     /// PDFium refused a font: unloadable, or it carries no glyphs.
     FontRegistration,
     Search,
@@ -60,6 +62,7 @@ impl std::fmt::Display for PdfiumError {
             Self::TextRead => write!(f, "EPDFText_GetTextFull failed"),
             Self::TextRect => write!(f, "FPDFText_GetRect failed"),
             Self::Bitmap => write!(f, "FPDFBitmap_CreateEx failed"),
+            Self::Render => write!(f, "the page render failed"),
             Self::Search => write!(f, "FPDFText_FindStart failed"),
             Self::Save => write!(f, "the document could not be serialized"),
             Self::DestinationBuild => write!(f, "the destination array could not be built"),

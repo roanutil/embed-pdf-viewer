@@ -5,10 +5,15 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
+use serde_json::Value;
+
 use crate::error::Error;
 
 struct Inner {
     reason: Option<Error>,
+    /// The JavaScript value `abort` was given, when it was not an error
+    /// (a lane's `'superseded'`); `reason_value` answers it as given.
+    value: Option<Value>,
     listeners: Vec<(u64, Rc<dyn Fn(&Error)>)>,
     next: u64,
     /// While `abort` dispatches: the listeners removed since it started,
@@ -23,6 +28,7 @@ impl AbortSignal {
     pub fn new() -> Self {
         AbortSignal(Rc::new(RefCell::new(Inner {
             reason: None,
+            value: None,
             listeners: Vec::new(),
             next: 0,
             removed: None,
@@ -40,6 +46,13 @@ impl AbortSignal {
 
     pub fn reason(&self) -> Option<Error> {
         self.0.borrow().reason.clone()
+    }
+
+    /// `signal.reason` as JavaScript sees it: the value `abort` was given,
+    /// or the reason error's canonical form.
+    pub fn reason_value(&self) -> Option<Value> {
+        let inner = self.0.borrow();
+        inner.value.clone().or_else(|| inner.reason.as_ref().map(Error::to_canonical))
     }
 
     /// `addEventListener('abort', listener, {once: true})`; the id removes it.
@@ -69,12 +82,23 @@ impl AbortSignal {
     /// dispatches: the listeners registered when the abort starts, less
     /// any an earlier one removed.
     pub fn abort(&self, reason: Error) {
+        self.abort_with(reason, None);
+    }
+
+    /// `controller.abort(value)` for a value that is not an error: listeners
+    /// get `reason`, and [`reason_value`](Self::reason_value) answers `value`.
+    pub fn abort_value(&self, reason: Error, value: Value) {
+        self.abort_with(reason, Some(value));
+    }
+
+    fn abort_with(&self, reason: Error, value: Option<Value>) {
         let listeners = {
             let mut inner = self.0.borrow_mut();
             if inner.reason.is_some() {
                 return;
             }
             inner.reason = Some(reason.clone());
+            inner.value = value;
             inner.removed = Some(HashSet::new());
             std::mem::take(&mut inner.listeners)
         };

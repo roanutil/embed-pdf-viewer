@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/signature: parseDetachedCms over built, altered and third-party CMS; profileFor; certificateCommonName.",
   "cases": [

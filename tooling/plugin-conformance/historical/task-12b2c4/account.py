@@ -1,0 +1,61 @@
+from pathlib import Path
+import json,hashlib,subprocess
+h=Path(__file__).resolve().parent;p=h.parent.parent;root=p.parent.parent
+read=lambda f:json.loads((h/f).read_text())
+write=lambda f,v:(h/f).write_text(json.dumps(v,indent=2,ensure_ascii=False)+'\n')
+sha=lambda v:hashlib.sha256((v if isinstance(v,bytes) else json.dumps(v,separators=(',',':'),ensure_ascii=False).encode())).hexdigest()
+base='2f9e038a248a8667e8ce679b238904230a5d4a89'
+old=read('original-runtime.json');now=read('current-inputs-runtime.json')
+renames={'an-unknown-ref-kind-never-matches-itself':'an-unknown-ref-kind-has-no-key-and-matches-itself'}
+def changed(a,b,path='$'):
+ if a==b:return []
+ if isinstance(a,dict) and isinstance(b,dict):return [p for k in dict.fromkeys([*a,*b]) for p in changed(a.get(k),b.get(k),path+'.'+k)]
+ if isinstance(a,list) and isinstance(b,list):return [p for i in range(max(len(a),len(b))) for p in changed(a[i] if i<len(a) else None,b[i] if i<len(b) else None,path+'.'+str(i))]
+ return [path]
+def summary(rows):
+ traces=[s for e in rows for s in e.get('result',{}).get('trace',[])];settled=[v for s in traces for v in s['settled']];callbacks=[c for s in traces for c in s['callbacks']]
+ return dict(cases=len(rows),authoredSteps=sum(len(e['input']['steps']) for e in rows),observedSteps=len(traces),runnerExceptions=sum('runnerException'in e for e in rows),stepThrows=sum('threw'in s.get('outcome',{}) for s in traces),unmatched=sum(len(e.get('result',{}).get('unmatched',[])) for e in rows),settlements=len(settled),rejections=sum('rejected'in s for s in settled),callbacks=len(callbacks),console=sum(c['fn'].startswith('console.') for c in callbacks),reports=sum(len(s['reports']) for s in traces))
+mapping=[]
+for index,e in enumerate(old):
+ found=[x for x in now if x['file']==e['file'] and x['name']==renames.get(e['name'],e['name'])];assert len(found)==1
+ n=found[0];mapping.append(dict(originalOccurrence=index,file=e['file'],originalName=e['name'],currentName=n['name'],currentIndex=n['index'],originalInputSha256=sha(e['input']),currentInputSha256=sha(n['input']),changedInputPaths=changed(e['input'],n['input']),originalOutcomeSha256=sha(e.get('result',e.get('runnerException'))),currentOutcomeSha256=sha(n['result']),target='shipping actionsPlugin scripting public/host APIs and createHoverPump',disposition='current typed action/form/annotation/environment inputs and shipping source behavior; component dispositions below'))
+components=[
+ dict(names=['script-effects-commit','script-commit-failures'],component='form and annotation effects/sink results',disposition='Current FormEffect setValue uses FormFieldRef.objectNumber and value:{value}; current single form applied/failed/error replaces removed per-entry applied/failed/rejected. Current baseIndex replaces removed NM ref while retaining -1/non-object commit mapping. Sinks remain scripted owner ports; no native apply or mutation facts fabricated.',source='engine/core/src/forms/effects.ts,value.ts; actions/scripting/executor.ts49–95; host-contract.ts'),
+ dict(names=['a-script-node-is-one-transaction','script-event-provenance','environment-defaults','detached-script-realm'],component='world/identity/metadata',disposition='Typed complete current fields/widgets/annotation/page layouts and camelCase Identity claims replace malformed raw objects. Page-space rect converts through layout.pdfCropBox. Links/widget are actual subtypes; current stamp appearance has no old interiorColor member, so opaque stamp defaults are asserted rather than adding unsupported appearance data.',source='actions/scripting/world.ts,environment.ts; core/acrojs/src/identity.ts; engine Annotation.ts/Identity'),
+ dict(names=['script-transaction-port','detached-script-realm','detached-script-realm-without-metadata'],component='obsolete numeric capability snapshot references and factory lifetime',disposition='Current create returns api. Named driver methods invoke actual transaction ports. Explicit dispose and target close refuse new transactions; cleanup owns target realm and reset owns hover pump. Source owner claims and target document/seed remain distinct. Target close plus refusal adds two steps; script observer sibling isolation adds two steps.',source='core/main context lifetime; actions/scripting/realm.ts; core/acrojs/src/host.ts'),
+ dict(names=['script-boot-without-a-catalog'],component='absent optional actions service',disposition='Required current actions.get responds with empty name-tree lists on both documents. No missing-service fiction or obsolete actions.read is retained.',source='actions/services/catalog.ts; engine DocumentHandle'),
+ dict(names=['no-sandbox-host'],component='default VM execution component',disposition='Root-authorized deferral, not removed API: current enabled:true with null override exposes actual settings/default realm and isScriptingEnabled. Close/new-transaction refusal is active with no scripted factory. Original definition and enabled pre-change pending execution trace retained. D/12c/13 must validate default VM execution or propose supported loader; no all-production-scripts claim.',source='actions/scripting/environment.ts41–46; realm.ts21/48; default-vm-pending-reproduction.json'),
+ dict(names=['target-identity'],component='NM and revision-bearing index identity',disposition='Current baseIndex identity replaces removed NM/index+revision shapes. All11 original hover input occurrences remain distinct in input list; revision-only r1→r2 inputs now have same stable baseIndex and correctly coalesce. Full original rows preserved.',source='engine/core/src/identity/AnnotationRef.ts,annotationKey.ts; actions/hover-pump.ts'),
+ dict(names=['an-unknown-ref-kind-never-matches-itself'],component='unknown raw annotation ref equality',disposition='Original→current renamed occurrence explicitly mapped. annotationKey has no unknown-kind arm, so both raw keys are undefined and compare equal. First malformed target submits one enter; repeating itself stays silent. Removed fake pending d1 settlement is unnecessary; no broad TypeError allowance or invented known identity.',source='engine/core/src/identity/annotationKey.ts; actions/hover-pump.ts sameTarget'),
+ dict(names=['event-flags-skip-tree-less-halves'],component='unsettled final scripted enter',disposition='Final target explicitly marks both enter/exit false, preserving empty transition witness without starting an unanswered repeated d2 callback. No pending returned work remains.',source='actions/hover-pump.ts Promise.allSettled'),
+]
+write('accounting.json',dict(base=base,before=summary(old),after=summary(now),wholeRetirements=0,additions=0,renames=renames,mappings=mapping,componentDispositions=components,task11=dict(paths=['plugins/actions-script.json','plugins/actions-hover.json'],inputDiff=0,lost=0,added=0,disposition='Fresh Task12 current migration, no inherited drift')))
+# Keep every diagnostic channel separately, including settled data vs external events.
+neg=[]
+for e in now:
+ channels=[]
+ for i,s in enumerate(e['result']['trace']):
+  row=dict(stepIndex=i,rejected=[v for v in s['settled'] if 'rejected'in v],returnedDiagnostics=[v for v in s['settled'] if isinstance(v.get('resolved'),dict) and (v['resolved'].get('diagnostics') or v['resolved'].get('status')in ['inert','partial','refused'])],actionDiagnosticCallbacks=[c for c in s['callbacks'] if c['fn']=='onDiagnosticReported'],scriptDiagnosticCallbacks=[c for c in s['callbacks'] if 'onScriptDiagnosticReported'in c['fn'] or c['fn']in ['bad.diag','good.diag']],scriptFailureCallbacks=[c for c in s['callbacks'] if c['fn']in ['onScriptFailed','bad.error','good.error']],hostReports=s['reports'],console=[c for c in s['callbacks'] if c['fn'].startswith('console.')],stepThrow=s.get('outcome') if 'threw'in s.get('outcome',{}) else None)
+  if any(v for k,v in row.items() if k!='stepIndex'):channels.append(row)
+ if channels:neg.append(dict(name=e['name'],file=e['file'],sourceOwner='actions/scripting/{executor,surface,realm}.ts; core/acrojs/src/host.ts; core/main event-hook report port',channels=channels))
+write('negative-channels.json',neg)
+# Frozen per-slice mappings, all160 original occurrences and seven current manifests.
+prior=[('C2','../task-12b2c2'),('C3','../task-12b2c3')]
+aggregate=[];manifests=[]
+for label,directory in prior+[('C4','.')]:
+ a=read(directory+'/accounting.json');r=read(directory+'/current-inputs-runtime.json')
+ for m in a['mappings']:aggregate.append(dict(slice=label,authority=directory+'/accounting.json',authoritySha256=sha((h/(directory+'/accounting.json')).read_bytes()),**m))
+ for f in dict.fromkeys(x['file'] for x in r):manifests.append(dict(slice=label,file=f,cases=[dict(name=x['name'],inputSha256=sha(x['input']),outcomeSha256=sha(x.get('result',x.get('outcome')))) for x in r if x['file']==f],authority=directory+'/current-inputs-runtime.json',authoritySha256=sha((h/(directory+'/current-inputs-runtime.json')).read_bytes())))
+assert len(aggregate)==160 and len(manifests)==7
+write('actions-aggregate160.json',dict(base=base,mappings=aggregate,currentManifests=manifests,originals=160,wholeRetirements=0,additions=0,renames=renames))
+paths=['packages/plugin/actions/src/'+x for x in ['actions.plugin.ts','contract.ts','host-contract.ts','hover-pump.ts','scripting/world.ts','scripting/executor.ts','scripting/environment.ts','scripting/surface.ts','scripting/realm.ts']]+['packages/engine/core/src/'+x for x in ['identity/AnnotationRef.ts','identity/annotationKey.ts','forms/effects.ts','forms/value.ts','auth/scope/types.ts']]+['tooling/plugin-conformance/src/suites/'+x for x in ['actions.ts','actions-current-fixtures.ts','acrojs.ts']]
+write('source-evidence.json',dict(base=base,sourceHashes={f:sha((root/f).read_bytes()) for f in paths},archiveHashes={f:sha((h/f).read_bytes()) for f in ['original-actions.ts.txt','original-inputs.json','original-runtime.json','current-inputs-runtime.json','accounting.json','negative-channels.json','default-vm-pending-reproduction.json','actions-aggregate160.json']},upstream=dict(getRefs='83f6598d22d86e454e7f9110b078d8e0124cbba1',settingsCreate='cdf4586c7115f64d7ec80f362149c6b5bc6cc719',diffAuthorities=['../task-12b2c2/upstream-actions-get.out','../task-12b2c2/upstream-actions-settings.out','../task-12b2c2/upstream-form-sink.out']),immutableAuthorities={f:sha((h/f).read_bytes()) for f in ['../task-12b2c2/deferred-runtime.json','../task-12b2c2/current-inputs-runtime.json','../task-12b2c3/current-inputs-runtime.json','../task-12b2c2/link-runtime.json']},rulings=dict(guardProgression='Only script/hover active-vector paths and deferred exclusions, exact observer-to-interface and builders-to-dispatcher guards; historical snapshots immutable',defaultVm='Root approved enabled/default realm/settings/close/refusal active occurrence; execution deferred requiring D/12c/13 loader validation',nativeApply='Original C4 owns scripted effect/entry sink ports only; native apply stays reviewed B2/B3 owner boundary',unknownRef='Root approved truthful renamed current occurrence with exact original mapping')))
+# Static preservation checked against BASE; no archived artifacts are rewritten.
+source=(p/'src/suites/actions.ts').read_text();original=(h/'original-actions.ts.txt').read_text()
+spans=[('// ── the observer-error host input','interface HoverPumpConfig'),('// ── builders','// ── the dispatcher'),('// ── the dispatcher','// ── scripting')]
+checks={start:source[source.index(start):source.index(end)]==original[original.index(start):original.index(end)] for start,end in spans}
+for f in ['tooling/plugin-conformance/src/suites/actions-current-fixtures.ts','tooling/plugin-conformance/src/suites/acrojs.ts']:
+ checks[f]=subprocess.check_output(['git','show',base+':'+f],cwd=root)==(root/f).read_bytes()
+assert all(checks.values()),checks
+write('preservation.json',dict(base=base,exactSourceChecks=checks,priorCurrent118='C2 exact full guard in actions-lifecycle-current + C3 exact full guard in actions-script-current',legacyLink29='C2 link-runtime exact input/outcome guard retained',historicalSnapshots='C1/C2/C3 unchanged; git diff scope verified'))
+print(json.dumps(dict(before=summary(old),after=summary(now),mappings=len(mapping),aggregate=len(aggregate),manifests=len(manifests),preservation=checks)))

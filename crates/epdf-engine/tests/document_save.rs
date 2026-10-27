@@ -14,7 +14,7 @@
 use epdf_engine::access::DocumentAccess;
 use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::EngineErrorCode;
-use epdf_engine::features::annotation::read::page::read_document_annotations;
+use epdf_engine::features::annotation::read::list::list_annotations;
 use epdf_engine::features::metadata::read_metadata;
 use epdf_engine::features::pages::list_pages;
 use epdf_engine::features::save::{
@@ -22,7 +22,6 @@ use epdf_engine::features::save::{
 };
 use epdf_engine::features::text::reader::read_page_text;
 use epdf_engine::identity::PageObjectNumber;
-use epdf_engine::revision::RevisionToken;
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
 use serde::Deserialize;
@@ -99,20 +98,12 @@ fn describe(bytes: Vec<u8>, password: Option<String>) -> Reopened {
     let listing = list_pages(document, &CancelToken::never()).expect("list");
     let metadata = read_metadata(document, &CancelToken::never()).expect("metadata");
 
-    // The annotation listing needs a revision token per page, and this one
-    // never leaves the function, so a fixed generation is enough: nothing
-    // here dereferences an index later.
-    let annotations = read_document_annotations(
-        document,
-        |page: PageObjectNumber| RevisionToken::new("describe", page, 0),
-        &CancelToken::never(),
-    )
-    .expect("annotations");
-    let counts: std::collections::BTreeMap<u32, u32> = annotations
-        .pages
-        .iter()
-        .map(|p| (p.page_state.page_object_number.get(), p.annotations.len() as u32))
-        .collect();
+    // `annotations.list`, which leaves widgets to the form (1233d1349).
+    let annotations = list_annotations(owned, None, &CancelToken::never()).expect("annotations");
+    let mut counts: std::collections::BTreeMap<u32, u32> = std::collections::BTreeMap::new();
+    for annotation in &annotations.annotations {
+        *counts.entry(annotation.base.page.get()).or_default() += 1;
+    }
 
     let pages = listing
         .pages
@@ -151,7 +142,9 @@ fn cancelled() -> CancelToken {
 fn mode_of(name: &str) -> SaveMode {
     match name {
         "incremental" => SaveMode::Incremental,
-        "rewrite" => SaveMode::Rewrite,
+        // The generator keeps its `full` key for what `PdfSaveMode` spells
+        // `rewrite` (`generate-save-vectors.ts`).
+        "rewrite" | "full" => SaveMode::Rewrite,
         other => panic!("the vector names a save mode {other} this runner does not map"),
     }
 }
@@ -288,19 +281,30 @@ fn an_encrypted_document_saves_to_one_that_needs_the_same_password() {
 }
 
 #[test]
-fn a_base_session_refuses_to_produce_a_layer_artifact() {
-    // The one precondition this engine checks that the wrapper cannot:
-    // PDFium has no way to tell a layer handle from a base one, and an
-    // artifact written from a base is not a thing anyone wants.
+fn a_session_opened_from_bytes_writes_a_layer_artifact_over_those_bytes() {
+    // `open.fatMem` opens its bytes as a fresh layer (`openBytesAsLayer`),
+    // so `document.saveLayerBuffer` writes an artifact, as upstream's does,
+    // and that artifact opens over the same bytes as a base.
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+    use epdf_engine::session::document::LayerOpenSource;
+
     let file = load();
     let case = file.cases.iter().find(|c| c.name == "rotated").expect("rotated");
     let session = session(fixture(case), None);
+    let artifact =
+        save_layer_to_buffer(&session, LayerArtifactKind::Artifact, &CancelToken::never())
+            .expect("a fat-memory session is a layer");
 
-    for output in [LayerArtifactKind::Artifact, LayerArtifactKind::Delta] {
-        let refused = save_layer_to_buffer(&session, output, &CancelToken::never())
-            .expect_err("a base session is not a layer");
-        assert!(refused.is(EngineErrorCode::InvalidArg));
-    }
+    let registry = BaseDocumentRegistry::new();
+    let mut reopened = DocumentSession::new();
+    reopened
+        .open_layer_from(
+            registry.acquire_memory("rotated", &fixture(case), None).expect("base"),
+            &LayerOpenSource::Artifact(artifact),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("the artifact opens over the bytes");
+    assert_eq!(reopened.page_count().unwrap(), session.page_count().unwrap());
 }
 
 #[test]
@@ -333,10 +337,8 @@ fn a_layer_session_writes_an_artifact_that_opens_again() {
     // because nothing produced a delta. `EPDFLayer_SaveDelta` is this group,
     // so both now have something to open.
     //
-    // The layer carries no edits, because writes are G11 onward, and that
-    // turns out to separate the two forms: an artifact of an empty layer
-    // writes and reopens, while a bare delta of one is refused because there
-    // is no overlay to serialize. Both halves are asserted below.
+    // The layer carries no edits: an artifact of it writes and reopens, and
+    // a bare delta of it is empty. Both halves are asserted below.
     use epdf_engine::session::base_registry::BaseDocumentRegistry;
     use pdfium::FileAccess;
 
@@ -361,19 +363,26 @@ fn a_layer_session_writes_an_artifact_that_opens_again() {
     assert_eq!(reopened_artifact.document().page_count(), 4);
     drop(reopened_artifact);
 
-    // THE BARE DELTA CANNOT BE WRITTEN YET, and not because of this port.
-    // `EPDFLayer_SaveDeltaToOwnedBuffer` refuses a layer with no promoted
-    // objects: there is no overlay to serialize. Writes are G11 onward, so
-    // nothing in this repository can produce one, and the delta half of the
-    // round trip becomes testable the day a mutator lands.
+    // A bare delta of a layer with no edits is empty, as upstream's
+    // `DocumentSaver.saveLayerDelta` answers it: the layer equals its base,
+    // and an empty delta opens as a fresh layer.
     assert_eq!(
         pdfium::BaseDocument::promoted_object_count(layer.document().expect("open").document()),
         0,
-        "the layer has no edits, which is why there is no delta",
+        "the layer has no edits",
     );
-    let refused = save_layer_to_buffer(&layer, LayerArtifactKind::Delta, &CancelToken::never())
-        .expect_err("an empty layer has no delta to write");
-    assert!(refused.is(EngineErrorCode::DocOpenFailed));
+    let delta = save_layer_to_buffer(&layer, LayerArtifactKind::Delta, &CancelToken::never())
+        .expect("an empty layer's delta");
+    assert!(delta.is_empty(), "an unchanged layer wrote a delta of {} bytes", delta.len());
+    let mut again = DocumentSession::new();
+    again
+        .open_layer_from(
+            base.clone(),
+            &epdf_engine::session::document::LayerOpenSource::RawDelta(delta),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("an empty delta opens");
+    assert_eq!(again.page_count().expect("pages"), 4);
 
     // And the artifact refuses a base it was not written against, which is
     // the whole difference between the two forms: a bare delta carries no

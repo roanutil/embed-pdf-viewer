@@ -1,175 +1,173 @@
-//! `comments/threads.ts`: the comments lens's index. A derived threads
-//! index over the substrate, display-ordered against the live layout.
+//! `comments/threads.ts`: the comments lens's index, a derived, memoized
+//! threads index over the records. Every path (this session's changes,
+//! engine confirmations, remote events, reloads) lands in the model, so the
+//! sidebar updates with no extra wiring. The memo keys on the model's
+//! records (`byId`/`order` identity), the page layout and the user.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_annotation_core::{AnnotationRef, ById, Id, Model};
+use epdf_annotation_core::types::{ById, Id};
 use epdf_kernel::Error;
 use serde_json::Value;
 
-use crate::comments::build::{CommentThread, build_comment_threads};
-use crate::controller::AnnotationCapability;
-use crate::repository::{annotation_key, annotation_key_of};
-use crate::value::{f64_of, get, str_of};
+use crate::comments::build::build_comment_threads;
+use crate::controller::Core;
+use crate::engine::compare_iso_date_time;
+use crate::js::key_or_none;
 
-/// A thread index: the threads and each member's thread.
-pub(crate) struct ThreadsIndex {
-    pub threads: Vec<CommentThread>,
-    by_member: HashMap<Id, usize>,
+/// The threads, in display order, and the thread of each member.
+pub struct ThreadsIndex {
+    pub threads: Rc<Vec<Value>>,
+    pub by_member: HashMap<Id, usize>,
 }
 
-impl ThreadsIndex {
-    pub fn by_member(&self, key: &str) -> Option<&CommentThread> {
-        self.by_member.get(key).map(|i| &self.threads[*i])
-    }
-}
+type ThreadsMemo = Option<(Rc<ById>, Rc<Vec<Id>>, String, Option<String>, Rc<ThreadsIndex>)>;
 
-/// The last index and what it was built from. As in the TypeScript, the
-/// memo keys on the model's annotation tables by identity (hover and drafts
-/// share them, so they don't invalidate), the page layout and the user.
 #[derive(Default)]
-pub(crate) struct ThreadsMemo(RefCell<Option<MemoEntry>>);
-
-struct MemoEntry {
-    by_id: Rc<ById>,
-    order: Rc<Vec<Id>>,
-    /// Each page's object number as bits, so a NaN still compares equal.
-    layout: Vec<u64>,
-    user: Option<String>,
-    index: Rc<ThreadsIndex>,
+pub struct ThreadsState {
+    memo: RefCell<ThreadsMemo>,
 }
 
-fn page_pon(v: &Value) -> Option<f64> {
-    get(v, "pageObjectNumber").and_then(Value::as_f64)
-}
-
-impl AnnotationCapability {
-    /// `currentUserId()`.
+impl Core {
+    /// `currentUserId()`: the identity's `userId`.
     pub(crate) fn current_user_id(&self) -> Option<String> {
-        let identity = self.doc()?.security().identity();
-        str_of(&identity, "user_id").map(str::to_string)
+        let identity = self.security()?.identity();
+        identity.get("userId").and_then(Value::as_str).map(str::to_string)
     }
 
-    /// `index()`: committed truth only, display-ordered (page position,
-    /// then top of page, then creation). Memoized like the TypeScript's.
-    pub(crate) fn threads_index(&self) -> Rc<ThreadsIndex> {
-        let m = self.model();
-        let pages = self.page_layout();
-        let user = self.current_user_id();
-        let memo = &self.0.threads_memo.0;
-        if let Some(entry) = &*memo.borrow()
-            && Rc::ptr_eq(&entry.by_id, &m.by_id)
-            && Rc::ptr_eq(&entry.order, &m.order)
-            && entry.user == user
-            && entry.layout.len() == pages.len()
-            && entry.layout.iter().zip(&pages).all(|(a, b)| *a == b.to_bits())
-        {
-            return entry.index.clone();
-        }
-        let index = Rc::new(compute_threads_index(&m, &pages, user.as_deref()));
-        *memo.borrow_mut() = Some(MemoEntry {
-            by_id: m.by_id.clone(),
-            order: m.order.clone(),
-            layout: pages.iter().map(|p| p.to_bits()).collect(),
-            user,
-            index: index.clone(),
+    fn layout_signature(&self) -> String {
+        let pages = self.pages();
+        pages
+            .as_array()
+            .map(|list| {
+                list.iter()
+                    .map(|p| crate::js::stringify(p.get("ref").and_then(|r| r.get("objectNumber"))))
+                    .collect::<Vec<_>>()
+                    .join(",")
+            })
+            .unwrap_or_default()
+    }
+
+    fn compute_threads(&self) -> ThreadsIndex {
+        let model = self.model();
+        let dtos: Vec<Value> = model
+            .order
+            .iter()
+            .filter_map(|id| model.by_id.get(id))
+            .filter(|r| r.annotation.get("ref").is_some_and(|x| !x.is_null()))
+            .map(|r| Value::Object((*r.annotation).clone()))
+            .collect();
+        let mut threads = build_comment_threads(&dtos, self.current_user_id().as_deref());
+        let pages = self.pages();
+        let display: HashMap<String, usize> = pages
+            .as_array()
+            .into_iter()
+            .flatten()
+            .enumerate()
+            .map(|(i, p)| {
+                (crate::js::stringify(p.get("ref").and_then(|r| r.get("objectNumber"))), i)
+            })
+            .collect();
+        let max = 9_007_199_254_740_991_f64;
+        let index_of = |t: &Value| {
+            display
+                .get(&crate::js::stringify(t.get("page").and_then(|p| p.get("objectNumber"))))
+                .map_or(max, |i| *i as f64)
+        };
+        let y_of =
+            |t: &Value| t.pointer("/root/rect/y").and_then(Value::as_f64).unwrap_or(f64::NAN);
+        epdf_annotation_core::js::sort_by(&mut threads, |left, right| {
+            let pa = index_of(left);
+            let pb = index_of(right);
+            if pa != pb {
+                return pa - pb;
+            }
+            let (ya, yb) = (y_of(left), y_of(right));
+            if ya != yb {
+                return ya - yb;
+            }
+            let lc = left.pointer("/root/createdAt").and_then(Value::as_str);
+            let rc = right.pointer("/root/createdAt").and_then(Value::as_str);
+            match (lc, rc) {
+                (Some(l), Some(r)) => compare_iso_date_time(l, r),
+                (None, None) => 0.0,
+                (None, Some(_)) => -1.0,
+                (Some(_), None) => 1.0,
+            }
         });
+        let mut by_member = HashMap::new();
+        for (i, thread) in threads.iter().enumerate() {
+            by_member.insert(key_or_none(thread.pointer("/root/ref").unwrap_or(&Value::Null)), i);
+            for list in ["replies", "groupedParts"] {
+                for dto in thread.get(list).and_then(Value::as_array).into_iter().flatten() {
+                    by_member.insert(key_or_none(dto.get("ref").unwrap_or(&Value::Null)), i);
+                }
+            }
+            for reference in
+                thread.pointer("/review/statusRefs").and_then(Value::as_array).into_iter().flatten()
+            {
+                by_member.insert(key_or_none(reference), i);
+            }
+        }
+        ThreadsIndex { threads: Rc::new(threads), by_member }
+    }
+
+    /// `index()`: the threads, memoized. The same `Rc` until the records,
+    /// the page layout or the user change (M19: one build per change, not
+    /// per read).
+    pub fn threads_index(&self) -> Rc<ThreadsIndex> {
+        let model = self.model();
+        let layout = self.layout_signature();
+        let user = self.current_user_id();
+        if let Some((by_id, order, l, u, index)) = &*self.threads.memo.borrow()
+            && Rc::ptr_eq(by_id, &model.by_id)
+            && Rc::ptr_eq(order, &model.order)
+            && *l == layout
+            && *u == user
+        {
+            return index.clone();
+        }
+        let index = Rc::new(self.compute_threads());
+        *self.threads.memo.borrow_mut() =
+            Some((model.by_id.clone(), model.order.clone(), layout, user, index.clone()));
         index
     }
 
-    /// Each page's object number in display order (`NaN` where a page has
-    /// none).
-    fn page_layout(&self) -> Vec<f64> {
-        self.cx()
-            .document()
-            .and_then(|d| d.pages.as_array().cloned())
-            .unwrap_or_default()
-            .iter()
-            .map(|p| get(p, "ref").and_then(page_pon).unwrap_or(f64::NAN))
-            .collect()
+    /// The thread a member is in.
+    pub(crate) fn thread_of_member(&self, reference: &Value) -> Option<Value> {
+        let index = self.threads_index();
+        index.by_member.get(&key_or_none(reference)).map(|i| index.threads[*i].clone())
     }
 
-    /// `threadOf(ref)`: the thread containing a member.
-    pub(crate) fn thread_of(&self, r: &AnnotationRef) -> Result<CommentThread, Error> {
-        self.threads_index()
-            .by_member(&annotation_key(r))
-            .cloned()
+    /// `threadOf(ref)`: throws for a ref in no thread.
+    pub(crate) fn thread_of(&self, reference: &Value) -> Result<Value, Error> {
+        self.thread_of_member(reference)
             .ok_or_else(|| Error::new("[annotation] no comment thread contains this ref"))
     }
 
-    /// `rootRefOf(ref)`: the thread's root, else the ref itself.
-    pub(crate) fn root_ref_of(&self, r: &AnnotationRef) -> AnnotationRef {
-        self.threads_index()
-            .by_member(&annotation_key(r))
-            .and_then(|t| get(&t.root, "ref"))
-            .and_then(|v| serde_json::from_value(v.clone()).ok())
-            .unwrap_or_else(|| r.clone())
+    /// `rootRefOf(ref)`.
+    pub(crate) fn root_ref_of(&self, reference: &Value) -> Value {
+        self.thread_of_member(reference)
+            .and_then(|t| t.pointer("/root/ref").cloned())
+            .unwrap_or_else(|| reference.clone())
     }
-}
 
-fn compute_threads_index(m: &Model, pages: &[f64], user: Option<&str>) -> ThreadsIndex {
-    let dtos: Vec<Value> =
-        m.order.iter().filter_map(|id| m.by_id.get(id)).filter_map(|a| a.data.clone()).collect();
-    let mut threads = build_comment_threads(&dtos, user);
-    // First position of each page; NaN never matches, as `==` would not.
-    let mut position: HashMap<u64, usize> = HashMap::new();
-    for (i, p) in pages.iter().enumerate() {
-        if !p.is_nan() {
-            // 0.0 and -0.0 compare equal, so key them alike.
-            position.entry((p + 0.0).to_bits()).or_insert(i);
+    /// `memberRefsOf(thread)`: replies, grouped parts, status refs, the root last.
+    pub(crate) fn member_refs_of(thread: &Value) -> Vec<Value> {
+        let mut out = Vec::new();
+        for list in ["replies", "groupedParts"] {
+            for dto in thread.get(list).and_then(Value::as_array).into_iter().flatten() {
+                out.push(dto.get("ref").cloned().unwrap_or(Value::Null));
+            }
         }
+        for reference in
+            thread.pointer("/review/statusRefs").and_then(Value::as_array).into_iter().flatten()
+        {
+            out.push(reference.clone());
+        }
+        out.push(thread.pointer("/root/ref").cloned().unwrap_or(Value::Null));
+        out
     }
-    let index = |t: &CommentThread| -> f64 {
-        page_pon(&t.page)
-            .and_then(|pon| position.get(&(pon + 0.0).to_bits()))
-            .map_or(9_007_199_254_740_991.0, |i| *i as f64)
-    };
-    let top = |t: &CommentThread| get(&t.root, "rect").map_or(f64::NAN, |r| f64_of(r, "top"));
-    let created = |t: &CommentThread| str_of(&t.root, "created").unwrap_or_default().to_string();
-    // V8's sort, so a NaN `top` (which makes the comparator answer NaN, read
-    // as 0) leaves the threads where the TypeScript leaves them.
-    epdf_annotation_core::js::sort_by(&mut threads, |a, b| {
-        let (pa, pb) = (index(a), index(b));
-        if pa != pb {
-            return pa - pb;
-        }
-        let (ta, tb) = (top(a), top(b));
-        if ta != tb {
-            return tb - ta;
-        }
-        let (ca, cb) = (created(a), created(b));
-        ca.encode_utf16().cmp(cb.encode_utf16()) as i8 as f64
-    });
-    let mut by_member: HashMap<Id, usize> = HashMap::new();
-    let mut set = |key: Option<String>, i: usize| {
-        if let Some(key) = key {
-            by_member.insert(key, i);
-        }
-    };
-    for (i, t) in threads.iter().enumerate() {
-        set(get(&t.root, "ref").and_then(annotation_key_of), i);
-        for r in &t.replies {
-            set(get(r, "ref").and_then(annotation_key_of), i);
-        }
-        for g in &t.grouped_parts {
-            set(get(g, "ref").and_then(annotation_key_of), i);
-        }
-        for s in &t.review.status_refs {
-            set(annotation_key_of(s), i);
-        }
-    }
-    ThreadsIndex { threads, by_member }
-}
-
-/// `memberRefsOf(t)`: replies, grouped parts, status refs, then the root
-/// last (children first keeps foreign readers coherent).
-pub(crate) fn member_refs_of(t: &CommentThread) -> Vec<Value> {
-    let mut out: Vec<Value> = Vec::new();
-    out.extend(t.replies.iter().map(|r| get(r, "ref").cloned().unwrap_or(Value::Null)));
-    out.extend(t.grouped_parts.iter().map(|g| get(g, "ref").cloned().unwrap_or(Value::Null)));
-    out.extend(t.review.status_refs.iter().cloned());
-    out.push(get(&t.root, "ref").cloned().unwrap_or(Value::Null));
-    out
 }

@@ -18,8 +18,7 @@ public typealias RedactionEvent = EmbedPDFBindings.RedactionEvent
 
 /// A document's redactions: mark regions, review them, apply them. Get one
 /// with `PDFViewer.redaction(for:)`; the viewer needs `ViewerConfig(
-/// interaction: true, annotation: AnnotationConfig(), redaction:
-/// RedactionConfig())`. It keeps the viewer alive. After its document
+/// interaction: true, annotation: "", redaction: RedactionConfig())`. It keeps the viewer alive. After its document
 /// closes, every call throws `instance-closed`.
 public struct RedactionCapability: Sendable {
   let handle: RedactionHandle
@@ -42,19 +41,19 @@ public struct RedactionCapability: Sendable {
     try await bridged { try await handle.estimateCollateral(refs: refs) }
   }
 
-  public func markSelection() async throws(PDFError) -> [AnnotationRef] {
+  public func markSelection() async throws(PDFError) -> [RedactionMark] {
     try await bridgedCancellable { token in try await handle.markSelection(cancel: token) }
   }
 
-  public func markArea(_ bounds: Rect, on page: PageRef) async throws(PDFError) -> AnnotationRef {
+  public func markArea(_ bounds: Rect, on page: PageRef) async throws(PDFError) -> RedactionMark {
     try await bridgedCancellable { token in try await handle.markArea(page: page, bounds: bounds, cancel: token) }
   }
 
-  public func markPage(_ page: PageRef) async throws(PDFError) -> AnnotationRef {
+  public func markPage(_ page: PageRef) async throws(PDFError) -> RedactionMark {
     try await bridgedCancellable { token in try await handle.markPage(page: page, cancel: token) }
   }
 
-  public func markMatches(_ query: SearchQuery, on pages: [PageRef]? = nil) async throws(PDFError) -> [AnnotationRef] {
+  public func markMatches(_ query: SearchQuery, on pages: [PageRef]? = nil) async throws(PDFError) -> [RedactionMark] {
     try await bridgedCancellable { token in try await handle.markMatches(query: query, pages: pages, cancel: token) }
   }
 
@@ -66,7 +65,10 @@ public struct RedactionCapability: Sendable {
     try await bridgedCancellable { token in try await handle.clearPending(cancel: token) }
   }
 
-  public func updateLabel(_ ref: AnnotationRef, _ patch: RedactionLabelPatch) async throws(PDFError) {
+  @discardableResult
+  public func updateLabel(_ ref: AnnotationRef, _ patch: RedactionLabelPatch) async throws(PDFError)
+    -> RedactionMark
+  {
     try await bridgedCancellable { token in
       try await handle.updateLabel(annotationRef: ref, patch: patch, cancel: token)
     }

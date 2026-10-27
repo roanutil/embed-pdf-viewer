@@ -1,92 +1,97 @@
 # epdf-plugin-commands
 
-`packages/plugin/commands` in Rust, at the v3 contract. All 52 cases in
-`vectors/plugins/commands/functions.json` (the reducer, `resolvedCommandsEqual`, `registerCommand`,
-what `commandsPlugin(config)` builds) and all 24 scenarios in `vectors/plugins/commands/plugin.json`
-replay identically (`cargo test -p epdf-plugin-commands`). The scenarios run the plugin alone and
-next to `epdf-plugin-i18n` and `epdf-plugin-shell`, so the test registry carries all three adapters.
+`packages/plugin/commands` in Rust, re-ported in Task 13.29 to the current TypeScript
+(`packages/plugin/commands/src/{controller,registry,services/availability,write/turning-off}.ts`).
+`cargo test -p epdf-plugin-commands` replays `vectors/plugins/commands/functions.json` (54 cases) and
+`vectors/plugins/commands/plugin.json` (25 scenarios), with no member-order allowance or outcome
+exception, all 79 of them. `tests/behavior.rs` pins what the vectors can't print.
 
-The modules follow the TypeScript files: `contract.rs`, `model.rs`, `registry.rs` and
-`controller.rs`. The plugin is workspace-scoped, declares i18n and the shell as optional, and its
-controller exists from `Kernel::new`. Each controller registers `config.commands` into its own
-registry, so a duplicate id or an unparsable shortcut fails the kernel's construction, not
-`commands_plugin` (`a-bad-config-refuses-the-kernel`, `a-bad-config-shortcut-refuses-the-kernel`).
-The api follows the v3 names: `registerCommand` and `registerCommands` return removers and take
-`replace`, `getCommand`, `listCommands`, `listShortcuts`, `canExecute`, `onExecuted`,
-`onExecutionFailed`, and the host lens `matchStroke` and `getMenuTarget`.
+The plugin is workspace-scoped, has no state slice, and declares i18n and the shell as optional.
+It sets `resolves_any_capability()`, so a command's `get` reaches tokens the plugin never declared
+(`command-ctx`), and `in_scope`, so a capability the kernel resolves for a document is that
+document's view: a call that leaves out the document reads that one (`command-ctx` step 12,
+`the_kernel_hands_out_the_scoped_view`). `CommandsCapability::in_scope(document_id)` is the view.
+The modules follow the TypeScript files: `contract.rs`, `registry.rs`, `controller.rs`,
+`availability.rs` (`services/availability.ts`) and `turning_off.rs` (`write/turning-off.ts`).
 
-`execute` returns a `Promise<ExecuteResult>`. A missing, hidden or disabled command resolves
-`rejected` with that reason. Otherwise `run` is called with a fresh `CommandCtx` (which carries
-`args` when the caller gave some) and awaited; a throw or a rejection is mapped through
-`toPluginError`, announced on `onExecutionFailed` as `PluginErrorInfo`, and rejected with
-(`execute-events`, `execute-guards-and-run`). A failing listener goes to stderr, where the
-TypeScript writes to `console.error`.
+## Settings
 
-`resolveCommand` and `listCommands` build fresh values on every call. The TypeScript hands back
-the previous object while it is equal by value, which only reference identity could observe.
+The commands, `disabledCategories`, `disabledCommands` and `notAllowed` are settings in the
+kernel's settings store, so `update_settings`, `reset_settings` and `on_settings_changed` work as
+for any plugin. A definition or a family holds functions, so `settings.rs` stores each as a handle,
+`{"$command": n}` or `{"$commandFamily": n}`, into a table the registration owns. The table hands
+out one handle per definition that is equal by `sameValue` (data members equal, functions the same
+`Rc`), so a change that gives an equal list changes nothing and keeps the definitions already
+there, as the TypeScript merge keeps the array it had. Each list keeps its `Rc` while a change
+leaves it equal (`a_settings_change_that_changes_nothing_fires_nothing`). A list that does change
+is not quite the TypeScript's: see the first divergence below.
 
-## Command functions in the vectors
+A configured list with an unparsable shortcut is not refused at construction. Every read that needs
+the configured commands throws the parse error instead (`a-bad-config-shortcut-refuses-the-kernel`),
+and a configured duplicate id resolves to the last definition in the first one's place
+(`a-bad-config-refuses-the-kernel`). Commands registered while the app runs shadow the configured
+ones, and still refuse a taken id with `conflict` unless `replace`.
 
-A definition carries functions (`run`, `enabled`, `active`, `visible`, `iconAccent`), and a vector
-writes each as a `$fn` spec. The runner decodes the ones in a `register` step's arguments. The
-factory decodes the ones in `config.commands`, and those take one more member, `uses`: things to do
-with the `CommandCtx` before answering (`get` or `tryGet` a token and optionally call a method on
-it, read a member of `core()`, keep a returned remover with `remember` and call it later with
-`forget`). Their results are logged as the callback `<name>:uses`. A use that gets a promise back
-(a run that starts another `execute`) records `{returnedPromise: true}`, because a promise has no
-canonical form in callback arguments. `harness.rs` is the Rust half of the same decoder, and it
-registers a remembered remover directly so it never takes a ref number.
+## Reads, identity and failures
 
-What the vectors pin about those functions:
+Every read the TypeScript memoizes (`resolveCommand`, `listCommands`, `listCommandIds`,
+`listShortcuts`, the configured and defined commands) returns an `Rc` that stays the same until an
+input changes. Each cache holds the inputs it compares: an `Rc` by `Rc::ptr_eq`, a string or a
+boolean by value. Every derivation still runs on every resolve, as `memoByKey` runs its inputs.
 
-- `resolve` calls `active`, then `iconAccent`, then `enabled`, then `visible`, each with a fresh
-  context, even for a command in a disabled category (`categories`).
-- A throw falls back: `enabled` and `visible` to true, `active` to false, the accent to none
-  (`throwing-derivations-fall-back`, `icon-accent`).
-- A command with `run` never gets the surface routing.
-- `listCommands` and `searchCommands` walk the ids registered when the call began. A derivation
-  that removes a command ahead of the walk makes it skip that one, and one it registers is not
-  visited (`re-entrant-registry`, `unregister-behind-a-search`).
-- An explicit empty document id is kept as the context's `documentId`, but because it is falsy the
-  TypeScript resolves through `ctx.get` against the active document. `CommandCtx::get_any` does
-  the same.
+A read that throws in the TypeScript returns `Result` here. Two things throw: the configured
+shortcut above, and reading the active document on a destroyed kernel, which every call that
+resolves for "the active document" does (`after-destroy`). A walk over the commands reads the ids it
+started with, so a derivation that removes one ahead of it skips that one and one it registers is
+not visited (`re-entrant-registry`, `a_walk_reads_the_ids_it_started_with`).
 
-## JavaScript semantics
+`execute` settles on the TypeScript's turns, measured with `tsx` (`execute_settles_on_the_typescripts_turns`).
+A run that completes later keeps it pending; a signal rejects `operation-cancelled` without a
+failure event.
 
-The registry is a `Map`: iteration is by insertion, `replace` keeps an id's place, and an id
-removed and registered again moves to the end. A remover deletes its id only while its own entry
-is still the one registered. `menu` and `modal` are truthiness checks in the TypeScript, so an
-empty id is no target, while an empty `panel` string is still a panel. `search` trims with the
-ECMAScript whitespace set (`epdf_ui_core::js::trim`) and lowercases the query and the label but not
-the id.
+A derivation or `run` that reads `c.get(&DOCUMENTS)` for a command's document gets the kernel's
+`documentsInScope` view, as the TypeScript does, so its calls without an id default to that
+document. `CommandCtx::document_id` is the command's document either way.
 
-After `destroy`, a capability reference someone kept still reads and changes the registry,
-matches strokes, resolves and executes, against the last state the slice had; labels fall back to
-their keys because i18n no longer resolves. Category intents are dropped, and the first one is
-reported `instance-closed` (`after-destroy`).
+## Kept Rust-only divergences
 
-## Coverage and what is not ported
+These are reached by no vector and stay divergent:
 
-The commands suites reach every statement and branch of the package: 575 of 575 statements and 164
-of 164 branches.
+- When the `commands` list changes as a whole, the TypeScript takes the new array with its own
+  objects, including any definition equal to one it had. Rust reads back the first definition the
+  table was given with that value, so `get_command` and `get_settings` can hand out the older `Rc`.
+  Every data member and function is the same, so nothing a command shows or runs differs; only the
+  definition's identity does. Matching it would mean repointing a handle on every change, which
+  would also rewrite what `reset_settings` restores.
 
-Answers outside the TypeScript types are not ported. A derivation typed `boolean` that returns
-something else would reach the resolved command through `&&` unchanged when falsy (`enabled: 0`),
-and Rust's derivations return `bool`; the harness reads an answer by JavaScript truthiness. An
-accent object with members beyond `primary` and `secondary` loses them here. A derivation that
-returns a promise is truthy in the TypeScript; Rust's derivations are synchronous. The harness
-prints a `getCommand` definition's data members only; no vector reads one that has functions,
-which the TypeScript would print as refs.
+- U4 in part: a remover holds its registration weakly, but a definition closure that holds the
+  strong capability still forms a cycle. `CommandsCapability::downgrade` gives closures a weak
+  handle, which keeps the document scope.
+- U7: removers are `Rc<dyn Fn()>`, called any number of times, where `on_*` return `Unsubscribe`.
+- A family's `command` returns a whole `CommandDef`; its `id` and `shortcut` are ignored, as the
+  TypeScript type omits them. The TypeScript spread would keep a returned `shortcut`.
+- A family's commands are cached for the controller's life, where the TypeScript `WeakMap` lets
+  them go with the family. The settings table keeps a definition set until no stored
+  settings name it (Task 14.5, `868a998b6`), as i18n's loader table does.
+- A settings value that doesn't decode (one no `update_settings` wrote) is reported to the kernel
+  and read as empty, as i18n does.
+- A derivation answer outside the TypeScript types (a non-boolean, a promise) and accent members
+  beyond `primary` and `secondary` are not ported; the harness reads answers by JavaScript
+  truthiness.
 
-`resolvedCommandsEqual`'s `a === b` shortcut has no Rust counterpart. Every member it compares is
-a string, a boolean or a list of strings, so an object always equals itself by value, and
-`resolvedCommandsEqualSelf` pins that.
+U1 (the `MenuTarget` type is ui-core's), U2 (`preserve_order`) and U8 stay as they were. U5, a
+`register_commands` failure that leaves earlier registrations without a remover, is shared with the
+TypeScript.
 
-## Mutation testing
+## Native exposure
 
-`scripts/mutants.sh -p epdf-plugin-commands --test-package epdf-plugin-commands --file <file>`,
-file by file over every module but `harness.rs`, catches 107 of 108 viable mutants (107 caught, 0
-timeouts; 25 unviable). No new cases were needed. The one survivor is in `src/contract.rs`:
-`<impl fmt::Debug for CommandDef>::fmt` replaced with `Ok(Default::default())`. The impl exists
-because `run` holds a closure that cannot derive `Debug`. The TypeScript has no counterpart, and
-nothing in the crate formats a definition, so no vector can see its output.
+`src/ffi.rs` and `tests/ffi.rs` are migrated by hand (fallible reads, `focus` on a panel,
+`match_stroke` with its refusal), and compiled and tested since Task 13.33. The settings calls,
+`get_refusal`, per-command turning off, families, `requires` and `allowed`, an `execute` signal and
+the scoped view are not exposed yet.
+
+## Coverage and mutation testing
+
+The coverage figure and the mutation results this README recorded before Task 13.29 measured the
+old reducer port. Neither was rerun for this port. Task 14's changed lines (`4a0b9c126..172f5369d`) were
+run in-diff on 2026-10-27: 17 of 17 viable mutants caught (1 unviable).

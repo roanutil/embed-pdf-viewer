@@ -1,0 +1,8 @@
+{
+  "witnesses": [
+    "Immutable settings add/remove/reset locales, fallback-only invalidation, actual replaced loader called once; translator/list reference stability",
+    "Cancellation exact AbortError cause, late pack registration without switch/event, pre-aborted refusal before loader"
+  ],
+  "source": "test/i18n-current.test.ts",
+  "vectorAdditions": false
+}

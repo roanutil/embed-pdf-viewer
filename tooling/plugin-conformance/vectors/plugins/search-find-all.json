@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/plugin/search: the session-free findAll service and its abort signal.",
   "cases": [
@@ -31,7 +31,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -42,24 +42,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -70,24 +95,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -98,18 +148,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -117,10 +192,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -128,35 +201,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -165,35 +238,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 9,
-                      "charCount": 4,
+                      "start": 9,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -201,18 +274,16 @@
                     }
                   ],
                   "nextCursor": "c1",
-                  "scannedPages": 1,
-                  "totalPages": 3
+                  "pagesSearched": 1,
+                  "pageCount": 3
                 }
               },
               {
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full",
+                    "text": "the",
+                    "snippets": true,
                     "cursor": "c1"
                   }
                 ],
@@ -221,35 +292,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 22
+                        "objectNumber": 22
                       },
-                      "charStart": 2,
-                      "charCount": 4,
+                      "start": 2,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
-                              "x": 10,
-                              "y": 40
+                            "upperLeft": {
+                              "x": 0,
+                              "y": 380
                             },
-                            "p2": {
-                              "x": 50,
-                              "y": 40
+                            "upperRight": {
+                              "x": 40,
+                              "y": 380
                             },
-                            "p3": {
-                              "x": 10,
-                              "y": 20
+                            "lowerLeft": {
+                              "x": 0,
+                              "y": 400
                             },
-                            "p4": {
-                              "x": 50,
-                              "y": 20
+                            "lowerRight": {
+                              "x": 40,
+                              "y": 400
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -258,35 +329,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 33
+                        "objectNumber": 33
                       },
-                      "charStart": 5,
-                      "charCount": 4,
+                      "start": 5,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 260
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 260
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 280
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 280
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 260,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -294,8 +365,8 @@
                     }
                   ],
                   "nextCursor": null,
-                  "scannedPages": 3,
-                  "totalPages": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 }
               }
             ]
@@ -331,7 +402,7 @@
             "token": "stage",
             "doc": "a"
           },
-          "method": "goToPageIndex",
+          "method": "goToPage",
           "args": [
             2
           ]
@@ -369,7 +440,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -386,20 +458,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -422,6 +509,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -429,7 +521,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -443,10 +535,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -455,40 +547,15 @@
         },
         {
           "settled": [],
-          "actions": [
-            {
-              "slice": "stage::a",
-              "action": {
-                "type": "MOTION_CAUSE",
-                "cause": "programmatic"
-              }
-            },
-            {
-              "slice": "stage::a",
-              "action": {
-                "type": "CURSOR",
-                "cursor": 2
-              }
-            },
-            {
-              "slice": "stage::a",
-              "action": {
-                "type": "CAMERA",
-                "camera": {
-                  "zoom": 0.05,
-                  "x": -230,
-                  "y": 952
-                }
-              }
-            }
-          ],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -504,10 +571,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -522,27 +589,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "pageIndex": 0,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 760
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 760
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 780
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 780
                         }
@@ -566,27 +633,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "pageIndex": 0,
-                  "charStart": 9,
-                  "charCount": 4,
+                  "start": 9,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 760
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 760
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 780
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 780
                         }
@@ -610,27 +677,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 22
+                    "objectNumber": 22
                   },
                   "pageIndex": 1,
-                  "charStart": 2,
-                  "charCount": 4,
+                  "start": 2,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 0,
                           "y": 380
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 40,
                           "y": 380
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 0,
                           "y": 400
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 40,
                           "y": 400
                         }
@@ -654,27 +721,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 33
+                    "objectNumber": 33
                   },
                   "pageIndex": 2,
-                  "charStart": 5,
-                  "charCount": 4,
+                  "start": 5,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 260
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 260
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 280
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 280
                         }
@@ -698,17 +765,16 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             },
@@ -717,10 +783,8 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full",
+                  "text": "the",
+                  "snippets": true,
                   "cursor": "c1"
                 }
               ]
@@ -731,7 +795,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -745,10 +809,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -757,14 +821,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -778,10 +843,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -812,7 +877,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -823,24 +888,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -851,24 +941,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -879,18 +994,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -898,10 +1038,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "rects"
+                    "text": "the",
+                    "snippets": false
                   }
                 ],
                 "value": {
@@ -909,35 +1047,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -945,23 +1083,26 @@
                     }
                   ],
                   "nextCursor": null,
-                  "scannedPages": 3,
-                  "totalPages": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 }
               },
               {
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "other",
-                      "matchCase": true
-                    },
-                    "mode": "full"
+                    "text": "other",
+                    "matchCase": true,
+                    "snippets": true
                   }
                 ],
                 "error": {
                   "name": "PermissionDenied",
+                  "code": "Forbidden",
+                  "details": {
+                    "required": "doc.text.copy",
+                    "context": "local"
+                  },
                   "message": "permission denied (local): doc.text.copy",
                   "required": "doc.text.copy",
                   "context": "local"
@@ -1006,7 +1147,7 @@
               "text": "the"
             },
             {
-              "mode": "rects"
+              "snippets": false
             }
           ]
         },
@@ -1023,7 +1164,7 @@
               "matchCase": true
             },
             {
-              "mode": "full"
+              "snippets": true
             }
           ]
         }
@@ -1038,7 +1179,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1055,20 +1197,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1091,6 +1248,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1098,7 +1260,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1112,10 +1274,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -1130,27 +1292,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "pageIndex": 0,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 760
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 760
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 780
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 780
                         }
@@ -1174,17 +1336,16 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "rects"
+                  "text": "the",
+                  "snippets": false
                 }
               ]
             }
@@ -1194,7 +1355,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1208,10 +1369,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -1228,6 +1389,7 @@
                   "message": "permission denied (local): doc.text.copy",
                   "code": "permission-denied",
                   "capability": "search",
+                  "permission": "doc.text.copy",
                   "details": {
                     "required": "doc.text.copy",
                     "context": "local"
@@ -1236,6 +1398,11 @@
                     "$error": {
                       "name": "PermissionDenied",
                       "message": "permission denied (local): doc.text.copy",
+                      "code": "Forbidden",
+                      "details": {
+                        "required": "doc.text.copy",
+                        "context": "local"
+                      },
                       "required": "doc.text.copy",
                       "context": "local"
                     }
@@ -1244,18 +1411,17 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "other",
-                    "matchCase": true
-                  },
-                  "mode": "full"
+                  "text": "other",
+                  "matchCase": true,
+                  "snippets": true
                 }
               ]
             }
@@ -1265,7 +1431,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1279,10 +1445,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -1313,7 +1479,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -1324,24 +1490,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -1352,24 +1543,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -1380,18 +1596,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -1399,10 +1640,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "error": {
@@ -1415,10 +1654,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "rects"
+                    "text": "the",
+                    "snippets": false
                   }
                 ],
                 "value": {
@@ -1426,35 +1663,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 22
+                        "objectNumber": 22
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
-                              "x": 10,
-                              "y": 40
+                            "upperLeft": {
+                              "x": 0,
+                              "y": 380
                             },
-                            "p2": {
-                              "x": 50,
-                              "y": 40
+                            "upperRight": {
+                              "x": 40,
+                              "y": 380
                             },
-                            "p3": {
-                              "x": 10,
-                              "y": 20
+                            "lowerLeft": {
+                              "x": 0,
+                              "y": 400
                             },
-                            "p4": {
-                              "x": 50,
-                              "y": 20
+                            "lowerRight": {
+                              "x": 40,
+                              "y": 400
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -1462,8 +1699,8 @@
                     }
                   ],
                   "nextCursor": null,
-                  "scannedPages": 3,
-                  "totalPages": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 }
               }
             ]
@@ -1518,7 +1755,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1535,20 +1773,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1571,6 +1824,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -1578,7 +1836,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1592,10 +1850,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -1610,27 +1868,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 22
+                    "objectNumber": 22
                   },
                   "pageIndex": 1,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 0,
                           "y": 380
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 40,
                           "y": 380
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 0,
                           "y": 400
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 40,
                           "y": 400
                         }
@@ -1654,17 +1912,16 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             },
@@ -1673,10 +1930,8 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "rects"
+                  "text": "the",
+                  "snippets": false
                 }
               ]
             }
@@ -1686,7 +1941,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -1700,10 +1955,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -1734,7 +1989,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -1745,24 +2000,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -1773,24 +2053,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -1801,18 +2106,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -1820,10 +2150,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -1831,35 +2159,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -1867,8 +2195,8 @@
                     }
                   ],
                   "nextCursor": "c1",
-                  "scannedPages": 1,
-                  "totalPages": 3
+                  "pagesSearched": 1,
+                  "pageCount": 3
                 },
                 "times": 1
               },
@@ -1876,10 +2204,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full",
+                    "text": "the",
+                    "snippets": true,
                     "cursor": "c1"
                   }
                 ],
@@ -1894,10 +2220,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -1905,35 +2229,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 4,
-                      "charCount": 4,
+                      "start": 4,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -1941,8 +2265,8 @@
                     }
                   ],
                   "nextCursor": "c2",
-                  "scannedPages": 1,
-                  "totalPages": 3
+                  "pagesSearched": 1,
+                  "pageCount": 3
                 },
                 "times": 1
               },
@@ -1950,10 +2274,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full",
+                    "text": "the",
+                    "snippets": true,
                     "cursor": "c2"
                   }
                 ],
@@ -1962,35 +2284,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 22
+                        "objectNumber": 22
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
-                              "x": 10,
-                              "y": 40
+                            "upperLeft": {
+                              "x": 0,
+                              "y": 380
                             },
-                            "p2": {
-                              "x": 50,
-                              "y": 40
+                            "upperRight": {
+                              "x": 40,
+                              "y": 380
                             },
-                            "p3": {
-                              "x": 10,
-                              "y": 20
+                            "lowerLeft": {
+                              "x": 0,
+                              "y": 400
                             },
-                            "p4": {
-                              "x": 50,
-                              "y": 20
+                            "lowerRight": {
+                              "x": 40,
+                              "y": 400
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 0,
+                            "y": 380,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -1998,8 +2320,8 @@
                     }
                   ],
                   "nextCursor": null,
-                  "scannedPages": 3,
-                  "totalPages": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 },
                 "times": 1
               }
@@ -2054,7 +2376,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2071,20 +2394,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2107,6 +2445,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2114,7 +2457,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2128,10 +2471,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -2146,27 +2489,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "pageIndex": 0,
-                  "charStart": 4,
-                  "charCount": 4,
+                  "start": 4,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 760
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 760
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 780
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 780
                         }
@@ -2190,27 +2533,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 22
+                    "objectNumber": 22
                   },
                   "pageIndex": 1,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 0,
                           "y": 380
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 40,
                           "y": 380
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 0,
                           "y": 400
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 40,
                           "y": 400
                         }
@@ -2234,17 +2577,16 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             },
@@ -2253,10 +2595,8 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full",
+                  "text": "the",
+                  "snippets": true,
                   "cursor": "c1"
                 }
               ]
@@ -2266,10 +2606,8 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             },
@@ -2278,10 +2616,8 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full",
+                  "text": "the",
+                  "snippets": true,
                   "cursor": "c2"
                 }
               ]
@@ -2292,7 +2628,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2306,10 +2642,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -2340,7 +2676,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -2351,24 +2687,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -2379,24 +2740,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -2407,24 +2793,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               },
               {
                 "index": 3,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 44
+                  "objectNumber": 44
                 },
                 "label": null,
                 "size": {
@@ -2435,18 +2846,43 @@
                 "userUnit": 0,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 100,
-                    "top": 100
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 100
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 100,
-                    "top": 100
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 100
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 100
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 100
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 100,
+                    "height": 100
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 100,
+                  "top": 100
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -2454,10 +2890,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "error": {
@@ -2470,11 +2904,9 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "other",
-                      "matchCase": true
-                    },
-                    "mode": "full"
+                    "text": "other",
+                    "matchCase": true,
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -2482,35 +2914,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 44
+                        "objectNumber": 44
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -2518,8 +2950,8 @@
                     }
                   ],
                   "nextCursor": null,
-                  "scannedPages": 1,
-                  "totalPages": 1
+                  "pagesSearched": 1,
+                  "pageCount": 1
                 }
               }
             ]
@@ -2587,7 +3019,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2604,20 +3037,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 4,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 4,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2640,6 +3088,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -2647,7 +3100,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2661,10 +3114,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -2681,6 +3134,7 @@
                   "message": "boom",
                   "code": "operation-failed",
                   "capability": "search",
+                  "permission": null,
                   "cause": {
                     "$error": {
                       "name": "EngineError",
@@ -2692,17 +3146,16 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             }
@@ -2712,7 +3165,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2726,10 +3179,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -2744,34 +3197,34 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 44
+                    "objectNumber": 44
                   },
                   "pageIndex": 3,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
-                          "y": 60
+                          "y": 760
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
-                          "y": 60
+                          "y": 760
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
-                          "y": 80
+                          "y": 780
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
-                          "y": 80
+                          "y": 780
                         }
                       },
                       "rect": {
                         "x": 10,
-                        "y": 60,
+                        "y": 760,
                         "width": 40,
                         "height": 20
                       },
@@ -2780,7 +3233,7 @@
                   ],
                   "bounds": {
                     "x": 10,
-                    "y": 60,
+                    "y": 760,
                     "width": 40,
                     "height": 20
                   }
@@ -2788,18 +3241,17 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "other",
-                    "matchCase": true
-                  },
-                  "mode": "full"
+                  "text": "other",
+                  "matchCase": true,
+                  "snippets": true
                 }
               ]
             }
@@ -2809,7 +3261,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -2823,10 +3275,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -2857,7 +3309,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -2868,24 +3320,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -2896,24 +3373,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -2924,18 +3426,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -2943,10 +3470,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "defer": "session",
@@ -2956,10 +3481,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "defer": "find",
@@ -2969,18 +3492,16 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "other",
-                      "matchCase": true
-                    },
-                    "mode": "full"
+                    "text": "other",
+                    "matchCase": true,
+                    "snippets": true
                   }
                 ],
                 "value": {
                   "matches": [],
                   "nextCursor": null,
-                  "scannedPages": 3,
-                  "totalPages": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 }
               }
             ]
@@ -3058,35 +3579,35 @@
               {
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
-                "charStart": 0,
-                "charCount": 4,
+                "start": 0,
+                "count": 4,
                 "segments": [
                   {
                     "quad": {
-                      "p1": {
+                      "upperLeft": {
                         "x": 10,
-                        "y": 40
+                        "y": 260
                       },
-                      "p2": {
+                      "upperRight": {
                         "x": 50,
-                        "y": 40
+                        "y": 260
                       },
-                      "p3": {
+                      "lowerLeft": {
                         "x": 10,
-                        "y": 20
+                        "y": 280
                       },
-                      "p4": {
+                      "lowerRight": {
                         "x": 50,
-                        "y": 20
+                        "y": 280
                       }
                     },
                     "rect": {
-                      "left": 10,
-                      "bottom": 20,
-                      "right": 50,
-                      "top": 40
+                      "x": 10,
+                      "y": 260,
+                      "width": 40,
+                      "height": 20
                     },
                     "advance": 1
                   }
@@ -3094,8 +3615,8 @@
               }
             ],
             "nextCursor": null,
-            "scannedPages": 3,
-            "totalPages": 3
+            "pagesSearched": 3,
+            "pageCount": 3
           }
         },
         {
@@ -3106,35 +3627,35 @@
               {
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
-                "charStart": 0,
-                "charCount": 4,
+                "start": 0,
+                "count": 4,
                 "segments": [
                   {
                     "quad": {
-                      "p1": {
+                      "upperLeft": {
                         "x": 10,
-                        "y": 40
+                        "y": 760
                       },
-                      "p2": {
+                      "upperRight": {
                         "x": 50,
-                        "y": 40
+                        "y": 760
                       },
-                      "p3": {
+                      "lowerLeft": {
                         "x": 10,
-                        "y": 20
+                        "y": 780
                       },
-                      "p4": {
+                      "lowerRight": {
                         "x": 50,
-                        "y": 20
+                        "y": 780
                       }
                     },
                     "rect": {
-                      "left": 10,
-                      "bottom": 20,
-                      "right": 50,
-                      "top": 40
+                      "x": 10,
+                      "y": 760,
+                      "width": 40,
+                      "height": 20
                     },
                     "advance": 1
                   }
@@ -3142,8 +3663,8 @@
               }
             ],
             "nextCursor": null,
-            "scannedPages": 3,
-            "totalPages": 3
+            "pagesSearched": 3,
+            "pageCount": 3
           }
         },
         {
@@ -3171,7 +3692,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3188,20 +3710,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -3224,6 +3761,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -3231,7 +3773,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3245,10 +3787,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -3257,28 +3799,48 @@
         },
         {
           "settled": [],
-          "actions": [
+          "stateChanges": [
             {
               "slice": "search::a",
-              "action": {
-                "type": "START",
+              "previous": {
+                "query": null,
+                "status": "idle",
+                "operationId": null,
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 0,
+                  "pageCount": 0
+                },
+                "error": null
+              },
+              "next": {
                 "query": {
                   "text": "the"
                 },
-                "operationId": "session#1"
+                "status": "searching",
+                "operationId": "session#1",
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 0,
+                  "pageCount": 0
+                },
+                "error": null
               }
             }
           ],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             }
@@ -3288,7 +3850,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3304,10 +3866,10 @@
                 "operationId": "session#1",
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -3316,17 +3878,16 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             }
@@ -3336,7 +3897,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3352,10 +3913,10 @@
                 "operationId": "session#1",
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -3379,37 +3940,116 @@
               }
             }
           ],
-          "actions": [
+          "stateChanges": [
             {
               "slice": "search::a",
-              "action": {
-                "type": "START",
+              "previous": {
+                "query": {
+                  "text": "the"
+                },
+                "status": "searching",
+                "operationId": "session#1",
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 0,
+                  "pageCount": 0
+                },
+                "error": null
+              },
+              "next": {
                 "query": {
                   "text": "other",
                   "matchCase": true
                 },
-                "operationId": "session#2"
-              }
-            },
-            {
-              "slice": "search::a",
-              "action": {
-                "type": "APPEND",
+                "status": "searching",
+                "operationId": "session#2",
                 "hits": [],
-                "scanned": 3,
-                "total": 3
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 0,
+                  "pageCount": 0
+                },
+                "error": null
               }
             },
             {
               "slice": "search::a",
-              "action": {
-                "type": "COMPLETE"
+              "previous": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "searching",
+                "operationId": "session#2",
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 0,
+                  "pageCount": 0
+                },
+                "error": null
+              },
+              "next": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "searching",
+                "operationId": "session#2",
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 3,
+                  "pageCount": 3
+                },
+                "error": null
+              }
+            },
+            {
+              "slice": "search::a",
+              "previous": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "searching",
+                "operationId": "session#2",
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 3,
+                  "pageCount": 3
+                },
+                "error": null
+              },
+              "next": {
+                "query": {
+                  "text": "other",
+                  "matchCase": true
+                },
+                "status": "complete",
+                "operationId": "session#2",
+                "hits": [],
+                "hitsByPage": {},
+                "activeHitIndex": -1,
+                "progress": {
+                  "pagesSearched": 3,
+                  "pageCount": 3
+                },
+                "error": null
               }
             }
           ],
+          "documentEvents": [],
           "engine": [
             {
-              "abort": 2,
+              "abort": 3,
               "reason": "superseded"
             },
             {
@@ -3417,11 +4057,9 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "other",
-                    "matchCase": true
-                  },
-                  "mode": "full"
+                  "text": "other",
+                  "matchCase": true,
+                  "snippets": true
                 }
               ]
             }
@@ -3431,7 +4069,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3448,10 +4086,10 @@
                 "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 3,
-                  "total": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 },
                 "error": null
               }
@@ -3466,27 +4104,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 33
+                    "objectNumber": 33
                   },
                   "pageIndex": 2,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 260
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 260
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 280
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 280
                         }
@@ -3510,14 +4148,15 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "state": {
@@ -3531,10 +4170,10 @@
                 "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 3,
-                  "total": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 },
                 "error": null
               }
@@ -3543,14 +4182,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "state": {
@@ -3564,10 +4204,10 @@
                 "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 3,
-                  "total": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 },
                 "error": null
               }
@@ -3581,18 +4221,17 @@
               "resolved": []
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "other",
-                    "matchCase": true
-                  },
-                  "mode": "full"
+                  "text": "other",
+                  "matchCase": true,
+                  "snippets": true
                 }
               ]
             }
@@ -3602,7 +4241,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -3619,10 +4258,10 @@
                 "operationId": "session#2",
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 3,
-                  "total": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 },
                 "error": null
               }
@@ -3656,7 +4295,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -3667,24 +4306,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -3695,24 +4359,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -3723,18 +4412,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -3742,10 +4456,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "defer": "f1",
@@ -3755,11 +4467,9 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "other",
-                      "matchCase": true
-                    },
-                    "mode": "full"
+                    "text": "other",
+                    "matchCase": true,
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -3767,35 +4477,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -3803,19 +4513,17 @@
                     }
                   ],
                   "nextCursor": "c1",
-                  "scannedPages": 1,
-                  "totalPages": 3
+                  "pagesSearched": 1,
+                  "pageCount": 3
                 }
               },
               {
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "other",
-                      "matchCase": true
-                    },
-                    "mode": "full",
+                    "text": "other",
+                    "matchCase": true,
+                    "snippets": true,
                     "cursor": "c1"
                   }
                 ],
@@ -3919,35 +4627,35 @@
               {
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
-                "charStart": 0,
-                "charCount": 4,
+                "start": 0,
+                "count": 4,
                 "segments": [
                   {
                     "quad": {
-                      "p1": {
-                        "x": 10,
-                        "y": 40
+                      "upperLeft": {
+                        "x": 0,
+                        "y": 380
                       },
-                      "p2": {
-                        "x": 50,
-                        "y": 40
+                      "upperRight": {
+                        "x": 40,
+                        "y": 380
                       },
-                      "p3": {
-                        "x": 10,
-                        "y": 20
+                      "lowerLeft": {
+                        "x": 0,
+                        "y": 400
                       },
-                      "p4": {
-                        "x": 50,
-                        "y": 20
+                      "lowerRight": {
+                        "x": 40,
+                        "y": 400
                       }
                     },
                     "rect": {
-                      "left": 10,
-                      "bottom": 20,
-                      "right": 50,
-                      "top": 40
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
                     },
                     "advance": 1
                   }
@@ -3955,8 +4663,8 @@
               }
             ],
             "nextCursor": null,
-            "scannedPages": 3,
-            "totalPages": 3
+            "pagesSearched": 3,
+            "pageCount": 3
           }
         },
         {
@@ -3967,35 +4675,35 @@
               {
                 "page": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
-                "charStart": 0,
-                "charCount": 4,
+                "start": 0,
+                "count": 4,
                 "segments": [
                   {
                     "quad": {
-                      "p1": {
-                        "x": 10,
-                        "y": 40
+                      "upperLeft": {
+                        "x": 0,
+                        "y": 380
                       },
-                      "p2": {
-                        "x": 50,
-                        "y": 40
+                      "upperRight": {
+                        "x": 40,
+                        "y": 380
                       },
-                      "p3": {
-                        "x": 10,
-                        "y": 20
+                      "lowerLeft": {
+                        "x": 0,
+                        "y": 400
                       },
-                      "p4": {
-                        "x": 50,
-                        "y": 20
+                      "lowerRight": {
+                        "x": 40,
+                        "y": 400
                       }
                     },
                     "rect": {
-                      "left": 10,
-                      "bottom": 20,
-                      "right": 50,
-                      "top": 40
+                      "x": 0,
+                      "y": 380,
+                      "width": 40,
+                      "height": 20
                     },
                     "advance": 1
                   }
@@ -4003,8 +4711,8 @@
               }
             ],
             "nextCursor": null,
-            "scannedPages": 3,
-            "totalPages": 3
+            "pagesSearched": 3,
+            "pageCount": 3
           }
         }
       ],
@@ -4018,7 +4726,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4035,20 +4744,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4071,6 +4795,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4078,7 +4807,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4092,10 +4821,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4104,17 +4833,16 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             }
@@ -4124,7 +4852,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4138,10 +4866,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4157,15 +4885,17 @@
                   "name": "PluginError",
                   "message": "findAll aborted",
                   "code": "operation-cancelled",
-                  "capability": "search"
+                  "capability": "search",
+                  "permission": null
                 }
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
-              "abort": 2,
+              "abort": 3,
               "reason": {
                 "$error": {
                   "name": "AbortError",
@@ -4179,7 +4909,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4195,10 +4925,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4207,18 +4937,17 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "other",
-                    "matchCase": true
-                  },
-                  "mode": "full"
+                  "text": "other",
+                  "matchCase": true,
+                  "snippets": true
                 }
               ]
             },
@@ -4227,11 +4956,9 @@
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "other",
-                    "matchCase": true
-                  },
-                  "mode": "full",
+                  "text": "other",
+                  "matchCase": true,
+                  "snippets": true,
                   "cursor": "c1"
                 }
               ]
@@ -4242,7 +4969,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4256,10 +4983,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4275,15 +5002,17 @@
                   "name": "PluginError",
                   "message": "findAll aborted",
                   "code": "operation-cancelled",
-                  "capability": "search"
+                  "capability": "search",
+                  "permission": null
                 }
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
-              "abort": 5,
+              "abort": 6,
               "reason": {
                 "$error": {
                   "name": "Error",
@@ -4297,7 +5026,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4313,10 +5042,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4325,14 +5054,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "state": {
@@ -4343,10 +5073,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4355,14 +5085,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "state": {
@@ -4373,10 +5104,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4410,7 +5141,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -4421,24 +5152,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -4449,24 +5205,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -4477,18 +5258,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -4496,10 +5302,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -4507,35 +5311,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -4543,8 +5347,8 @@
                     }
                   ],
                   "nextCursor": "c1",
-                  "scannedPages": 1,
-                  "totalPages": 3
+                  "pagesSearched": 1,
+                  "pageCount": 3
                 }
               }
             ]
@@ -4613,7 +5417,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4630,20 +5435,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4666,6 +5486,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -4673,7 +5498,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4687,10 +5512,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4699,14 +5524,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4722,10 +5548,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4741,19 +5567,21 @@
                   "name": "PluginError",
                   "message": "findAll aborted",
                   "code": "operation-cancelled",
-                  "capability": "search"
+                  "capability": "search",
+                  "permission": null
                 }
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -4767,10 +5595,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -4804,7 +5632,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -4815,24 +5643,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -4843,24 +5696,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -4871,18 +5749,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -4890,10 +5793,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "value": {
@@ -4901,35 +5802,35 @@
                     {
                       "page": {
                         "kind": "objectNumber",
-                        "pageObjectNumber": 11
+                        "objectNumber": 11
                       },
-                      "charStart": 0,
-                      "charCount": 4,
+                      "start": 0,
+                      "count": 4,
                       "segments": [
                         {
                           "quad": {
-                            "p1": {
+                            "upperLeft": {
                               "x": 10,
-                              "y": 40
+                              "y": 760
                             },
-                            "p2": {
+                            "upperRight": {
                               "x": 50,
-                              "y": 40
+                              "y": 760
                             },
-                            "p3": {
+                            "lowerLeft": {
                               "x": 10,
-                              "y": 20
+                              "y": 780
                             },
-                            "p4": {
+                            "lowerRight": {
                               "x": 50,
-                              "y": 20
+                              "y": 780
                             }
                           },
                           "rect": {
-                            "left": 10,
-                            "bottom": 20,
-                            "right": 50,
-                            "top": 40
+                            "x": 10,
+                            "y": 760,
+                            "width": 40,
+                            "height": 20
                           },
                           "advance": 1
                         }
@@ -4937,8 +5838,8 @@
                     }
                   ],
                   "nextCursor": null,
-                  "scannedPages": 3,
-                  "totalPages": 3
+                  "pagesSearched": 3,
+                  "pageCount": 3
                 }
               }
             ]
@@ -5007,7 +5908,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5024,20 +5926,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5060,6 +5977,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -5067,7 +5989,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5081,10 +6003,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -5099,27 +6021,27 @@
                 {
                   "page": {
                     "kind": "objectNumber",
-                    "pageObjectNumber": 11
+                    "objectNumber": 11
                   },
                   "pageIndex": 0,
-                  "charStart": 0,
-                  "charCount": 4,
+                  "start": 0,
+                  "count": 4,
                   "segments": [
                     {
                       "quad": {
-                        "upperStart": {
+                        "upperLeft": {
                           "x": 10,
                           "y": 760
                         },
-                        "upperEnd": {
+                        "upperRight": {
                           "x": 50,
                           "y": 760
                         },
-                        "lowerStart": {
+                        "lowerLeft": {
                           "x": 10,
                           "y": 780
                         },
-                        "lowerEnd": {
+                        "lowerRight": {
                           "x": 50,
                           "y": 780
                         }
@@ -5143,17 +6065,16 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             }
@@ -5163,7 +6084,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5177,10 +6098,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -5189,14 +6110,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5212,10 +6134,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -5249,7 +6171,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 11
+                  "objectNumber": 11
                 },
                 "label": null,
                 "size": {
@@ -5260,24 +6182,49 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
+                "tabOrder": null
               },
               {
                 "index": 1,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 22
+                  "objectNumber": 22
                 },
                 "label": null,
                 "size": {
@@ -5288,24 +6235,49 @@
                 "userUnit": 2,
                 "boxes": {
                   "media": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   },
                   "crop": {
-                    "left": 10,
-                    "bottom": 20,
-                    "right": 310,
-                    "top": 420
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 400
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 10,
+                  "bottom": 20,
+                  "right": 310,
+                  "top": 420
+                },
+                "tabOrder": null
               },
               {
                 "index": 2,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 33
+                  "objectNumber": 33
                 },
                 "label": null,
                 "size": {
@@ -5316,18 +6288,43 @@
                 "userUnit": 1,
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 300,
-                    "top": 300
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 300,
+                    "height": 300
                   }
-                }
+                },
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 300,
+                  "top": 300
+                },
+                "tabOrder": null
               }
             ],
             "responses": [
@@ -5335,10 +6332,8 @@
                 "path": "search.query",
                 "args": [
                   {
-                    "query": {
-                      "text": "the"
-                    },
-                    "mode": "full"
+                    "text": "the",
+                    "snippets": true
                   }
                 ],
                 "error": {
@@ -5413,7 +6408,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5430,20 +6426,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 3,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5466,6 +6477,11 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [],
@@ -5473,7 +6489,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5487,10 +6503,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -5507,6 +6523,7 @@
                   "message": "boom",
                   "code": "operation-failed",
                   "capability": "search",
+                  "permission": null,
                   "cause": {
                     "$error": {
                       "name": "EngineError",
@@ -5518,17 +6535,16 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
               "path": "search.query",
               "args": [
                 {
-                  "query": {
-                    "text": "the"
-                  },
-                  "mode": "full"
+                  "text": "the",
+                  "snippets": true
                 }
               ]
             }
@@ -5538,7 +6554,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5552,10 +6568,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }
@@ -5564,14 +6580,15 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 2
+              "subscribers": 3
             }
           },
           "outcome": {
@@ -5587,10 +6604,10 @@
                 "operationId": null,
                 "hits": [],
                 "hitsByPage": {},
-                "activeIndex": -1,
+                "activeHitIndex": -1,
                 "progress": {
-                  "scanned": 0,
-                  "total": 0
+                  "pagesSearched": 0,
+                  "pageCount": 0
                 },
                 "error": null
               }

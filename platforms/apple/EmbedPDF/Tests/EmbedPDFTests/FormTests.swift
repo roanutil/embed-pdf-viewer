@@ -18,7 +18,7 @@ extension BaseSuite {
     func writableText(_ form: FormCapability) async throws -> FormField {
       try #require(
         try await form.fields().first { field in
-          if case .text = field.detail { return !field.flags.readOnly }
+          if case .text = field.detail { return !field.readOnly }
           return false
         })
     }
@@ -35,40 +35,50 @@ extension BaseSuite {
       let (_, _, form) = try await opened()
       let field = try await writableText(form)
       let events = form.events
-      let result = try await form.setText("From Swift", for: field.fieldRef)
+      let result = try await form.setValue(.value(value: "From Swift"), for: field.fieldRef)
       expectNoDifference(result.status, .applied)
       for await event in events {
-        guard case let .valueChanged(ref, _) = event else { continue }
-        expectNoDifference(ref, field.fieldRef)
+        guard case let .valueChanged(changed, _) = event else { continue }
+        expectNoDifference(changed.fieldRef, field.fieldRef)
         break
       }
     }
 
-    @Test func aCheckboxIsCheckedByItsOnState() async throws {
+    @Test func aCheckboxIsCheckedByItsExportValue() async throws {
       let (_, _, form) = try await opened()
       let box = try #require(
-        try await form.fields().first { if case .checkbox = $0.detail { return !$0.flags.readOnly } else { return false } })
-      let onState = try #require(box.widgets.first?.toggle?.onState)
+        try await form.fields().first { if case .checkbox = $0.detail { return !$0.readOnly } else { return false } })
+      let exportValue = try #require(box.widgets.first?.toggle?.exportValue)
       // form_fields.pdf's box starts checked; clear it so checking is a change.
-      let cleared = try await form.setChecked(nil, for: box.fieldRef)
+      let cleared = try await form.setValue(.value(value: nil), for: box.fieldRef)
       expectNoDifference(cleared.status, .applied)
-      let result = try await form.setChecked(onState, for: box.fieldRef)
+      let result = try await form.setValue(.value(value: exportValue), for: box.fieldRef)
       expectNoDifference(result.status, .applied)
       let read = try #require(try await form.field(box.fieldRef))
       guard case let .checkbox(checked, _) = read.detail else { Issue.record("not a checkbox"); return }
       #expect(checked)
     }
 
-    @Test func anXfdfExportRoundTrips() async throws {
+    @Test func exportedValuesRoundTrip() async throws {
       let (viewer, _, form) = try await opened()
       let field = try await writableText(form)
-      _ = try await form.setText("Round trip", for: field.fieldRef)
-      let export = try await form.exportData(.xfdf)
-      expectNoDifference(export.format, .xfdf)
+      _ = try await form.setValue(.value(value: "Round trip"), for: field.fieldRef)
+      let exported = try await form.exportValues()
+      // The text field's value, by its full name. The whole export also
+      // names `inline.direct`, a field with no object number, whose write
+      // is refused `not-found` and fails the batch, as the TypeScript
+      // engine refuses it (the `direct-field-refused` vector; the Rust
+      // viewer-host test `a_form_bundle_export_fills_a_fresh_copy` does the same).
+      let all = try #require(try JSONSerialization.jsonObject(with: Data(exported.utf8)) as? [String: Any])
+      expectNoDifference(all[field.name] as? String, "Round trip")
+      let values = String(
+        decoding: try JSONSerialization.data(withJSONObject: [field.name: all[field.name]!]), as: UTF8.self)
       let second = try await viewer.open(Fixture.data("form_fields"))
       let fresh = try await viewer.form(for: second)
       try await fresh.refresh()
-      try await fresh.importData(export.bytes, format: .xfdf)
+      let imported = try await fresh.importValues(values)
+      #expect(imported.applied.contains(field.fieldRef))
+      expectNoDifference(imported.failed, [])
       let read = try #require(try await fresh.field(field.fieldRef))
       guard case let .text(value, _, _, _, _, _) = read.detail else { Issue.record("not text"); return }
       expectNoDifference(value, "Round trip")
@@ -108,108 +118,126 @@ extension BaseSuite {
 
     @Test func exportCancelsWhenTheTaskIsCancelled() async throws {
       let (_, _, form) = try await opened()
-      let task = Task { try await form.exportData(.fdf) }
+      let task = Task { try await form.export() }
       task.cancel()
       do {
         _ = try await task.value
       } catch {
         expectNoDifference((error as? PDFError)?.code, "operation-cancelled")
       }
-      _ = try await form.exportData(.fdf)
+      _ = try await form.export()
     }
 
     // One per member that takes a `CancelToken`, beyond `refresh` and
-    // `exportData` above. Each is called in an already-cancelled task.
+    // `export` above. Each is called in an already-cancelled task. Members
+    // the re-ported plugin dropped are checked through what replaced them:
+    // `setText`, `setChecked` and `setChoice` through `setValue`'s
+    // `.value`, `.checked` and `.selectedValues`; `resetAll` through
+    // `reset(nil)`; `createField`, `updateField` and `deleteField` through
+    // `create`, `update` and `delete`; `detachWidget` and `attachWidget`
+    // through `removeWidget` and `addWidget`; `importData` through the
+    // bundle `import`.
 
     /// A writable text field, the first widget on the document, and its page.
     func cancellable() async throws -> (FormCapability, FormField, AnnotationRef, PageRef) {
       let (_, _, form) = try await opened()
       let field = try await writableText(form)
       let widget = try #require(field.widgets.first)
-      return (form, field, try #require(widget.annotationRef), widget.page)
+      return (form, field, try #require(widget.annotationRef), try #require(widget.page))
     }
 
     @Test func setValueCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.setValue(.text(value: "x"), for: field.fieldRef) }
+      await expectCancelledBeforeItStarts { try await form.setValue(.value(value: "x"), for: field.fieldRef) }
       let value = try await form.value(of: field.fieldRef)
-      #expect(value != .text(value: "x"))
+      #expect(value != .value(value: "x"))
     }
 
-    @Test func setTextCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func setValueOfTextCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.setText("x", for: field.fieldRef) }
+      await expectCancelledBeforeItStarts { try await form.setValue(.value(value: nil), for: field.fieldRef) }
     }
 
-    @Test func setCheckedCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func setValueCheckedCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.setChecked(nil, for: field.fieldRef) }
+      await expectCancelledBeforeItStarts { try await form.setValue(.checked(checked: false), for: field.fieldRef) }
     }
 
-    @Test func setChoiceCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func setValueSelectedValuesCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.setChoice(["a"], for: field.fieldRef) }
+      await expectCancelledBeforeItStarts {
+        try await form.setValue(.selectedValues(values: ["a"]), for: field.fieldRef)
+      }
     }
 
     @Test func setValuesCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
       await expectCancelledBeforeItStarts {
-        try await form.setValues([FormValueEntry(fieldRef: field.fieldRef, value: .text(value: "x"))])
+        try await form.setValues([FormValueEntry(fieldRef: field.fieldRef, value: .value(value: "x"))])
       }
     }
 
     @Test func importValuesCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.importValues([field.name: .text(value: "x")]) }
+      let values = String(decoding: try JSONEncoder().encode([field.name: "x"]), as: UTF8.self)
+      await expectCancelledBeforeItStarts { try await form.importValues(values) }
     }
 
     @Test func resetCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.reset(field.fieldRef) }
+      await expectCancelledBeforeItStarts { try await form.reset([field.fieldRef]) }
     }
 
-    @Test func resetAllCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func resetOfEveryFieldCancelsWhenTheTaskIsCancelled() async throws {
       let (form, _, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.resetAll() }
+      await expectCancelledBeforeItStarts { try await form.reset() }
     }
 
-    @Test func createFieldCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func createCancelsWhenTheTaskIsCancelled() async throws {
       let (form, _, _, page) = try await cancellable()
       let before = try await form.fields().count
       await expectCancelledBeforeItStarts {
-        try await form.createField(
-          FormCreateFieldInput(family: .text, page: page, bounds: Rect(x: 10, y: 10, width: 80, height: 20)))
+        try await form.create(
+          FormCreateFieldInput(
+            family: .text, name: "fromSwift", page: page, bounds: Rect(x: 10, y: 10, width: 80, height: 20)))
       }
       let after = try await form.fields().count
       expectNoDifference(after, before)
     }
 
-    @Test func updateFieldCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func updateCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.updateField(field.fieldRef, FormFieldPatch(readOnly: true)) }
+      await expectCancelledBeforeItStarts { try await form.update(field.fieldRef, FormFieldPatch(readOnly: true)) }
     }
 
-    @Test func deleteFieldCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func deleteCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, _, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.deleteField(field.fieldRef) }
+      await expectCancelledBeforeItStarts { try await form.delete(field.fieldRef) }
       let kept = try await form.field(field.fieldRef)
       #expect(kept != nil)
     }
 
-    @Test func detachWidgetCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func removeWidgetCancelsWhenTheTaskIsCancelled() async throws {
       let (form, field, widget, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.detachWidget(widget, from: field.fieldRef) }
+      await expectCancelledBeforeItStarts { try await form.removeWidget(widget, from: field.fieldRef) }
+      let kept = try #require(try await form.field(field.fieldRef))
+      expectNoDifference(kept.widgets.count, field.widgets.count)
     }
 
-    @Test func attachWidgetCancelsWhenTheTaskIsCancelled() async throws {
-      let (form, field, widget, _) = try await cancellable()
-      await expectCancelledBeforeItStarts { try await form.attachWidget(widget, to: field.fieldRef) }
+    @Test func addWidgetCancelsWhenTheTaskIsCancelled() async throws {
+      let (form, field, _, page) = try await cancellable()
+      await expectCancelledBeforeItStarts {
+        try await form.addWidget(
+          to: field.fieldRef, FormWidgetPlacement(page: page, bounds: Rect(x: 10, y: 10, width: 80, height: 20)))
+      }
+      let kept = try #require(try await form.field(field.fieldRef))
+      expectNoDifference(kept.widgets.count, field.widgets.count)
     }
 
-    @Test func importDataCancelsWhenTheTaskIsCancelled() async throws {
+    @Test func importCancelsWhenTheTaskIsCancelled() async throws {
       let (form, _, _, _) = try await cancellable()
-      let export = try await form.exportData(.xfdf)
-      await expectCancelledBeforeItStarts { try await form.importData(export.bytes, format: .xfdf) }
+      let bundle = try await form.export()
+      await expectCancelledBeforeItStarts { try await form.import(bundle) }
     }
 
     @Test func repairCancelsWhenTheTaskIsCancelled() async throws {
@@ -255,7 +283,7 @@ extension BaseSuite {
       let viewer = try PDFViewer(
         ViewerConfig(
           interaction: true,
-          annotation: AnnotationConfig(),
+          annotation: "",
           form: FormConfig(),
           actions: .forCurrentTimeZone(
             openSequence: .off,

@@ -11,7 +11,7 @@ use epdf_engine::cancel::CancelToken;
 use epdf_engine::error::{EngineError, EngineErrorCode};
 use epdf_engine::features::render::raster::{PageRaster, RenderOptions, render_page};
 use epdf_engine::features::server::{
-    EncodedImage, ImageEncoder, RenderEncode, encode_raster, render_page_file,
+    EncodedImage, ImageEncoder, RenderEncode, RenderEncodeFormat, encode_raster, render_page_file,
 };
 use epdf_engine::session::authority::SessionAuthority;
 use epdf_engine::session::document::DocumentSession;
@@ -34,7 +34,7 @@ fn a_page_rendered_from_a_file_is_the_page_a_session_would_render() {
     // have got. If the two ever differed, the cheap path would be a second
     // renderer with its own bugs.
     let library = library();
-    let options = RenderOptions::default();
+    let options: RenderOptions = RenderOptions::default();
 
     for index in 0..4u32 {
         let from_file = render_page_file(
@@ -42,7 +42,8 @@ fn a_page_rendered_from_a_file_is_the_page_a_session_would_render() {
             &path(FIXTURE),
             None,
             index,
-            &options,
+            // The same options in page space, as the wire sends them.
+            &RenderOptions::default(),
             &CancelToken::never(),
         )
         .unwrap_or_else(|e| panic!("page {index}: {e}"));
@@ -150,7 +151,7 @@ fn an_engine_with_no_encoder_refuses_rather_than_inventing_one() {
     // the encoder is injected: a PNG library in the engine would ship to
     // every host to satisfy the one that needs it.
     let raster = PageRaster { width: 1, height: 1, stride: 4, rgba: vec![0, 0, 0, 255] };
-    let error = encode_raster(None, &raster, &RenderEncode::Png, &CancelToken::never())
+    let error = encode_raster(None, &raster, &RenderEncode::PNG, &CancelToken::never())
         .expect_err("no encoder");
     assert!(error.is(EngineErrorCode::NotImplemented), "{error}");
     assert!(error.to_string().contains("server surface"), "{error}");
@@ -160,7 +161,14 @@ fn an_engine_with_no_encoder_refuses_rather_than_inventing_one() {
 fn the_encoders_answer_is_passed_through_rather_than_the_request() {
     let encoder = RecordingEncoder { calls: std::cell::RefCell::new(Vec::new()) };
     let raster = PageRaster { width: 7, height: 5, stride: 28, rgba: vec![0; 140] };
-    let asked = RenderEncode::Webp { quality: Some(80) };
+    let asked: RenderEncode =
+        serde_json::from_value(serde_json::json!({ "format": "webp", "quality": 0.8 }))
+            .expect("upstream's RenderEncode");
+    assert_eq!(asked, RenderEncode { format: RenderEncodeFormat::Webp, quality: Some(0.8) });
+    // `PageNetworkRenderFormat` is png or webp: a JPEG is not on the wire.
+    assert!(
+        serde_json::from_value::<RenderEncode>(serde_json::json!({ "format": "jpeg" })).is_err()
+    );
 
     let encoded = encode_raster(Some(&encoder), &raster, &asked, &CancelToken::never())
         .expect("the encoder answers");
@@ -181,7 +189,7 @@ fn a_cancellation_during_an_encode_refuses_the_result() {
     cancel.cancel();
 
     let error =
-        encode_raster(Some(&encoder), &raster, &RenderEncode::Png, &cancel).expect_err("cancelled");
+        encode_raster(Some(&encoder), &raster, &RenderEncode::PNG, &cancel).expect_err("cancelled");
     assert!(error.is(EngineErrorCode::Aborted), "{error}");
     assert_eq!(encoder.calls.borrow().len(), 1, "the encoder was not given the chance to run");
 }

@@ -74,11 +74,13 @@ impl SignatureSignCompletion {
         self.settle.settle(move || Ok(signature));
     }
 
+    /// Fail with a plain error, as a TypeScript signer port that rejects
+    /// with one does: the signing gives the candidate up and `sign` rejects
+    /// `operation-failed` with this error as the cause (`write/sign.ts`'s
+    /// verb over `core-signature`'s `sign`). `SignatureRefused` is the
+    /// completion gate's refusal, not the key's.
     pub fn fail(&self, detail: String) {
-        self.settle.settle(move || {
-            Err(Error::named("SigningError", detail)
-                .with("code", epdf_kernel::error::code::OPERATION_FAILED))
-        });
+        self.settle.settle(move || Err(Error::new(detail)));
     }
 
     /// Fail with the thrown error's name and code: a cancelled prompt is

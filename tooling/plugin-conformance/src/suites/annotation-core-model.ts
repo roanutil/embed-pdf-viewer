@@ -4,16 +4,21 @@
  * `anchor.ts`, `snap.ts`, `hit.ts`, `scene.ts`, `placement.ts`, `ink.ts`).
  * Replayed by `crates/plugins/annotation-core/tests/conformance.rs`.
  *
- * Functions that take a `Model` take a model start here: fields layered over
- * `initialModel` (`modelOf`), so a case carries only what it changes. An
+ * Model starts are expanded into current full models by the case builder
+ * before recording; runtime functions receive those models unchanged. An
  * `inert` set crosses as `{"$set": [...]}`.
  */
+import type { PageRef } from '@embedpdf/engine-core/runtime';
+import { readOfDefaults } from '../../../../packages/core/annotation/src/record/defaults';
+import { unmadeItem } from '../../../../packages/core/annotation/src/view';
+import * as records from '../../../../packages/core/annotation/src/record';
 import * as an from '../../../../packages/core/annotation/src/anchor';
 import * as fl from '../../../../packages/core/annotation/src/flags';
 import * as gr from '../../../../packages/core/annotation/src/group';
 import * as ht from '../../../../packages/core/annotation/src/hit';
 import * as ik from '../../../../packages/core/annotation/src/ink';
 import * as kd from '../../../../packages/core/annotation/src/kinds';
+import { blendFor } from '../../../../packages/core/annotation/src/kinds/styles';
 import * as lk from '../../../../packages/core/annotation/src/links';
 import * as pl from '../../../../packages/core/annotation/src/placement';
 import * as pn from '../../../../packages/core/annotation/src/plane';
@@ -22,17 +27,14 @@ import * as sc from '../../../../packages/core/annotation/src/scene';
 import * as sn from '../../../../packages/core/annotation/src/snap';
 import { defaultsFor, initialModel } from '../../../../packages/core/annotation/src/update';
 import type {
-  Annot,
-  AnnotationPropsPatch,
-  ChromeGeom,
-  Geom,
+  ChromeGeometry as ChromeGeom,
   Id,
   Model,
   Rect,
   RenderItem,
-  Vec,
 } from '../../../../packages/core/annotation/src/types';
 
+import { historicalTarget, currentSuites } from './annotation-core-fixtures';
 import type { FunctionCase, Suite } from '../vectors';
 import {
   DASHED,
@@ -42,6 +44,7 @@ import {
   SOLID,
   annot,
   c,
+  nameOf,
   cloudy,
   ends,
   flags,
@@ -61,22 +64,31 @@ import {
   tq,
   tqRot,
   v,
+  type Annot,
+  type AnnotationOverrides,
   type Fn,
+  type Geom,
+  type Vec,
   pageRef,
 } from './annotation-core-fixtures';
 
+/** Engine fields supplied to the current record write API. */
+type AnnotationPropsPatch = Record<string, unknown>;
+
 /** Every subtype the kind table names, plus unknown and prototype keys. */
 export const SUBTYPES = [
-  ...Object.keys(kd.KINDS),
-  'popup',
-  'widget',
-  'free-text-callout',
-  'unknown',
-  '',
-  'constructor',
-  'toString',
-  '__proto__',
-  'hasOwnProperty',
+  ...new Set([
+    ...Object.keys(kd.KINDS),
+    'popup',
+    'widget',
+    'free-text-callout',
+    'unknown',
+    '',
+    'constructor',
+    'toString',
+    '__proto__',
+    'hasOwnProperty',
+  ]),
 ];
 
 const FLAG_NAMES = fl.FLAG_KEYS;
@@ -85,32 +97,32 @@ const FLAG_NAMES = fl.FLAG_KEYS;
 
 const kindFns: Record<string, Fn> = {
   KINDS: () => kd.KINDS,
-  capsFor: kd.capsFor,
-  propsFor: kd.propsFor,
-  isMarkup: kd.isMarkup,
-  kindTakesLink: pr.kindTakesLink,
-  sharedProps: pr.sharedProps,
+  kindNamed: kd.kindNamed,
+  propertiesOfKind: (name: string) => pr.propertiesOf(kd.kindNamed(name)),
+  isMarkup: historicalTarget('isMarkup', 'cf716b3b6'),
+  kindTakesLink: (name: string) => pr.kindTakesLink(kd.kindNamed(name)),
+  sharedPropertiesOfKinds: (names: string[]) => pr.sharedProperties(names.map(kd.kindNamed)),
 };
 const kinds: FunctionCase[] = [
   c('KINDS', 'table'),
   ...SUBTYPES.flatMap((s) => [
-    c('capsFor', s || 'empty', s),
-    c('propsFor', s || 'empty', s),
+    c('kindNamed', s || 'empty', s),
+    c('propertiesOfKind', s || 'empty', s),
     c('isMarkup', s || 'empty', s),
     c('kindTakesLink', s || 'empty', s),
   ]),
-  c('sharedProps', 'none', []),
-  c('sharedProps', 'one', ['square']),
-  c('sharedProps', 'duplicates', ['square', 'square', 'circle']),
-  c('sharedProps', 'shape-line', ['square', 'line']),
-  c('sharedProps', 'line-shape', ['line', 'square']),
-  c('sharedProps', 'mixed-markup', ['highlight', 'ink', 'free-text']),
-  c('sharedProps', 'with-unknown', ['square', 'unknown']),
-  c('sharedProps', 'unknown-first', ['unknown', 'square']),
-  c('sharedProps', 'widgets', ['widget-text', 'widget-toggle', 'widget-box']),
-  c('sharedProps', 'note-attachment', ['text', 'file-attachment']),
-  c('sharedProps', 'redact-free-text', ['redact', 'free-text']),
-  c('sharedProps', 'everything', Object.keys(kd.KINDS)),
+  c('sharedPropertiesOfKinds', 'none', []),
+  c('sharedPropertiesOfKinds', 'one', ['square']),
+  c('sharedPropertiesOfKinds', 'duplicates', ['square', 'square', 'circle']),
+  c('sharedPropertiesOfKinds', 'shape-line', ['square', 'line']),
+  c('sharedPropertiesOfKinds', 'line-shape', ['line', 'square']),
+  c('sharedPropertiesOfKinds', 'mixed-markup', ['highlight', 'ink', 'free-text']),
+  c('sharedPropertiesOfKinds', 'with-unknown', ['square', 'unknown']),
+  c('sharedPropertiesOfKinds', 'unknown-first', ['unknown', 'square']),
+  c('sharedPropertiesOfKinds', 'widgets', ['widget-text', 'widget-toggle', 'widget-box']),
+  c('sharedPropertiesOfKinds', 'note-attachment', ['text', 'file-attachment']),
+  c('sharedPropertiesOfKinds', 'redact-free-text', ['redact', 'free-text']),
+  c('sharedPropertiesOfKinds', 'everything', Object.keys(kd.KINDS)),
 ];
 
 const flagFns: Record<string, Fn> = {
@@ -129,7 +141,12 @@ const flagFns: Record<string, Fn> = {
   isAttachedLink: pn.isAttachedLink,
   isSubstrateOnly: pn.isSubstrateOnly,
 };
-const AUTHORITIES = [undefined, { update: true, delete: true }, { update: false, delete: true }, { update: true, delete: false }];
+const AUTHORITIES = [
+  undefined,
+  { update: true, delete: true },
+  { update: false, delete: true },
+  { update: true, delete: false },
+];
 const flagCases: FunctionCase[] = [
   c('NO_ANNOTATION_FLAGS', 'value'),
   c('DRAWN_FLAGS', 'value'),
@@ -149,28 +166,46 @@ const FLAG_SETS: [string, ReturnType<typeof flags>][] = [
   ['locked+lockedContents', flags({ locked: true, lockedContents: true })],
 ];
 for (const [name, f] of FLAG_SETS) {
-  flagCases.push(c('viewable', `${name}-idle`, f), c('viewable', `${name}-engaged`, f, true), c('interactive', name, f));
+  flagCases.push(
+    c('viewable', `${name}-idle`, sq('flags', undefined, { flags: f }).annotation),
+    c('viewable', `${name}-engaged`, sq('flags', undefined, { flags: f }).annotation, true),
+    c('interactive', name, f),
+  );
   for (const subtype of ['square', 'widget-text', 'unknown']) {
     AUTHORITIES.forEach((authority, i) => {
-      const bearer = authority ? { subtype, flags: f, authority } : { subtype, flags: f };
-      for (const fn of ['annotInteractive', 'annotTransformable', 'annotDeletable', 'annotContentsEditable']) {
+      const bearer = annot('flags', subtype, gRect(rc(0, 0, 10, 10)), {
+        flags: f,
+        ...(authority ? { authority } : {}),
+      });
+      for (const fn of [
+        'annotInteractive',
+        'annotTransformable',
+        'annotDeletable',
+        'annotContentsEditable',
+      ]) {
         if (i > 0 && fn === 'annotInteractive') continue;
         flagCases.push(c(fn, `${name}-${subtype}-auth${i}`, bearer));
       }
     });
   }
 }
-const PLANE_CASES: [string, Partial<Annot>][] = [
+const PLANE_CASES: [string, AnnotationOverrides][] = [
   ['plain', { subtype: 'square' }],
   ['reply', { subtype: 'text', irt: 'p' }],
   ['grouped-sub', { subtype: 'strikeout', irt: 'p', group: 'p' }],
   ['group-only', { subtype: 'strikeout', group: 'p' }],
   ['state-text', { subtype: 'text', data: { subtype: 'text', state: 'accepted' } as never }],
   ['state-model', { subtype: 'text', data: { subtype: 'text', stateModel: 'review' } as never }],
-  ['state-empty', { subtype: 'text', data: { subtype: 'text', state: '', stateModel: '' } as never }],
+  [
+    'state-empty',
+    { subtype: 'text', data: { subtype: 'text', state: '', stateModel: '' } as never },
+  ],
   ['state-null', { subtype: 'text', data: { subtype: 'text', state: null } as never }],
   ['state-non-string', { subtype: 'text', data: { subtype: 'text', state: 3 } as never }],
-  ['state-on-square-dto', { subtype: 'text', data: { subtype: 'square', state: 'accepted' } as never }],
+  [
+    'state-on-square-dto',
+    { subtype: 'text', data: { subtype: 'square', state: 'accepted' } as never },
+  ],
   ['state-on-square', { subtype: 'square', data: { subtype: 'text', state: 'accepted' } as never }],
   ['text-no-data', { subtype: 'text' }],
   ['attached-link', { subtype: 'link', group: 'p' }],
@@ -178,27 +213,75 @@ const PLANE_CASES: [string, Partial<Annot>][] = [
   ['link-reply', { subtype: 'link', irt: 'p' }],
 ];
 for (const [name, a] of PLANE_CASES) {
-  flagCases.push(c('isConversationOnly', name, a), c('isAttachedLink', name, a), c('isSubstrateOnly', name, a));
+  flagCases.push(
+    c(
+      'isConversationOnly',
+      name,
+      annot(
+        name,
+        a.subtype ?? 'square',
+        a.subtype === 'strikeout'
+          ? gQuads([tq(0, 0, 10, 10)])
+          : a.subtype === 'caret'
+            ? gCaret(rc(0, 0, 10, 10))
+            : gRect(rc(0, 0, 10, 10)),
+        a,
+      ),
+    ),
+    c(
+      'isAttachedLink',
+      name,
+      annot(
+        name,
+        a.subtype ?? 'square',
+        a.subtype === 'strikeout'
+          ? gQuads([tq(0, 0, 10, 10)])
+          : a.subtype === 'caret'
+            ? gCaret(rc(0, 0, 10, 10))
+            : gRect(rc(0, 0, 10, 10)),
+        a,
+      ),
+    ),
+    c(
+      'isSubstrateOnly',
+      name,
+      annot(
+        name,
+        a.subtype ?? 'square',
+        a.subtype === 'strikeout'
+          ? gQuads([tq(0, 0, 10, 10)])
+          : a.subtype === 'caret'
+            ? gCaret(rc(0, 0, 10, 10))
+            : gRect(rc(0, 0, 10, 10)),
+        a,
+      ),
+    ),
+  );
 }
 
 // ── groups and links ─────────────────────────────────────────────────────────
 
 const groupFns: Record<string, Fn> = {
-  groupCaps: (s: Partial<Model>, ids: Id[]) => gr.groupCaps(modelOf(s), ids),
-  groupKeyOf: (s: Partial<Model>, id: Id) => gr.groupKeyOf(modelOf(s), id),
-  groupMembers: (s: Partial<Model>, id: Id) => gr.groupMembers(modelOf(s), id),
-  expandGroups: (s: Partial<Model>, ids: Id[]) => gr.expandGroups(modelOf(s), ids),
-  linkChildrenOf: (s: Partial<Model>, id: Id) => lk.linkChildrenOf(modelOf(s), id),
-  linkOf: (s: Partial<Model>, id: Id) => lk.linkOf(modelOf(s), id),
+  groupCaps: (s: Model, ids: Id[]) => gr.groupCaps(s, ids),
+  groupKeyOf: (s: Model, id: Id) => gr.groupKeyOf(s, id),
+  groupMembers: (s: Model, id: Id) => gr.groupMembers(s, id),
+  expandGroups: (s: Model, ids: Id[]) => gr.expandGroups(s, ids),
+  linkChildrenOf: (s: Model, id: Id) => lk.linkChildrenOf(s, id),
+  linkOf: (s: Model, id: Id) => lk.linkOf(s, id),
   /** Per id: `[groupKeyOf, groupMembers, linkChildren ids, linkOf]`. */
-  groupProbe: (s: Partial<Model>, ids: Id[]) => {
-    const m = modelOf(s);
-    return ids.map((id) => [gr.groupKeyOf(m, id), gr.groupMembers(m, id), lk.linkChildrenOf(m, id).map((a) => a.id), lk.linkOf(m, id)]);
+  groupProbe: (s: Model, ids: Id[]) => {
+    const m = s;
+    return ids.map((id) => [
+      gr.groupKeyOf(m, id),
+      gr.groupMembers(m, id),
+      lk.linkChildrenOf(m, id).map((a) => a.id),
+      lk.linkOf(m, id),
+    ]);
   },
 };
 const URI = { kind: 'uri', uri: 'https://example.com' };
 const GOTO = { kind: 'goto', destination: { kind: 'xyz', page: pageRef(3), left: 10, top: null } };
-const linkChild = (id: string, parent: string, target: unknown, over: Partial<Annot> = {}) =>
+const linkChild = (id: string, parent: string, target: unknown, over: AnnotationOverrides = {}) =>
   annot(id, 'link', gRect(rc(0, 0, 10, 10)), {
     group: parent,
     irt: parent,
@@ -222,7 +305,20 @@ const GROUPED = start([
   annot('lz', 'link', gRect(rc(0, 0, 5, 5)), { group: 'hl' }),
 ]);
 const groupCases: FunctionCase[] = [
-  c('groupProbe', 'page', GROUPED, ['p', 's1', 's2', 'l1', 'solo', 'orphan', 'missing', 'ink1', 'hl', 'lx', 'ly', 'lz']),
+  c('groupProbe', 'page', GROUPED, [
+    'p',
+    's1',
+    's2',
+    'l1',
+    'solo',
+    'orphan',
+    'missing',
+    'ink1',
+    'hl',
+    'lx',
+    'ly',
+    'lz',
+  ]),
   c('groupKeyOf', 'p', GROUPED, 'p'),
   c('groupMembers', 's1', GROUPED, 's1'),
   c('linkChildrenOf', 'p', GROUPED, 'p'),
@@ -243,19 +339,46 @@ const groupCases: FunctionCase[] = [
 
 export const propFns: Record<string, Fn> = {
   initialTextStyle: () => pr.initialTextStyle,
-  styleFromProps: pr.styleFromProps,
-  textStyleFromProps: pr.textStyleFromProps,
-  readProp: pr.readProp,
+  styleOf: records.styleOf,
+  textOf: records.textOf,
+  styleFromProps: historicalTarget('styleFromProps', '17191ea39'),
+  textStyleFromProps: historicalTarget('textStyleFromProps', '17191ea39'),
+  readProp: historicalTarget('readProp', '17191ea39'),
   /** Every key through `readProp`, as `[key, value]` pairs. */
-  readProps: (a: Annot, keys: string[]) => keys.map((k) => [k, pr.readProp(a, k as never)]),
-  applyProps: pr.applyProps,
-  defaultsFor: (s: Partial<Model>, subtype: string) => defaultsFor(modelOf(s), subtype),
+  recordViews: (record: Annot) => ({
+    style: records.styleOf(record.annotation),
+    text: records.textOf(record.annotation),
+    shape: records.shapeOf(record.annotation),
+  }),
+  withValues: records.withValues,
+  defaultsFor: (s: Model, subtype: string) => defaultsFor(s, subtype),
 };
-const PROP_KEYS = ['color', 'interiorColor', 'strokeWidth', 'opacity', 'blendMode', 'border', 'lineEndings', 'fontFamily', 'fontSize', 'fontColor', 'textAlign', 'icon', 'link'] as const;
-const TEXT = { fontFamily: 'courier', fontSize: 11, fontColor: '#123456', textAlign: 'center' as const };
+const PROP_KEYS = [
+  'color',
+  'interiorColor',
+  'strokeWidth',
+  'opacity',
+  'blendMode',
+  'border',
+  'lineEndings',
+  'fontFamily',
+  'fontSize',
+  'fontColor',
+  'textAlign',
+  'icon',
+  'link',
+] as const;
+const TEXT = {
+  fontFamily: 'courier',
+  fontSize: 11,
+  fontColor: '#123456',
+  textAlign: 'center' as const,
+};
 const PROP_ANNOTS: Annot[] = [
   sq('square'),
-  annot('circle', 'circle', geom('ellipse'), { style: style({ interiorColor: '#00ff00', border: cloudy(2) }) }),
+  annot('circle', 'circle', geom('ellipse'), {
+    style: style({ interiorColor: '#00ff00', ...cloudy(2) }),
+  }),
   annot('line', 'line', geom('line-arrows')),
   annot('line-noends', 'line', geom('line')),
   annot('polyline', 'polyline', geom('poly-open')),
@@ -278,7 +401,10 @@ const PROP_ANNOTS: Annot[] = [
   annot('unknown', 'unknown', gRect(rc(0, 0, 10, 10))),
   sq('locked', rc(0, 0, 10, 10), { flags: flags({ locked: true }) }),
   sq('read-only', rc(0, 0, 10, 10), { flags: flags({ readOnly: true }) }),
-  annot('widget-read-only', 'widget-text', gRect(rc(0, 0, 100, 20)), { flags: flags({ readOnly: true }), text: TEXT }),
+  annot('widget-read-only', 'widget-text', gRect(rc(0, 0, 100, 20)), {
+    flags: flags({ readOnly: true }),
+    text: TEXT,
+  }),
   sq('no-authority', rc(0, 0, 10, 10), { authority: { update: false, delete: true } }),
 ];
 const PATCHES: [string, AnnotationPropsPatch][] = [
@@ -290,32 +416,76 @@ const PATCHES: [string, AnnotationPropsPatch][] = [
   ['zero-stroke', { strokeWidth: 0 }],
   ['opacity', { opacity: 0.25 }],
   ['blend', { blendMode: 'screen' }],
-  ['border-dashed', { border: DASHED }],
-  ['border-cloudy', { border: cloudy(1.5) }],
+  ['border-dashed', { ...DASHED }],
+  ['border-cloudy', { ...cloudy(1.5) }],
   ['end-only', { lineEndings: { end: 'slash' } }],
   ['both-ends', { lineEndings: { start: 'diamond', end: 'butt' } }],
   ['empty-ends', { lineEndings: {} }],
   ['font', { fontFamily: 'times-roman', fontSize: 30 }],
   ['font-color-align', { fontColor: '#ff0000', textAlign: 'right' }],
   ['icon', { icon: 'help' }],
-  ['link', { link: GOTO as never }],
-  ['link-null', { link: null }],
-  ['everything', { color: '#111111', interiorColor: '#222222', strokeWidth: 3, opacity: 0.5, blendMode: 'darken', border: SOLID, lineEndings: { start: 'circle' }, fontFamily: 'symbol', fontSize: 9, fontColor: '#333333', textAlign: 'left', icon: 'note', link: URI as never }],
+  ['target', { target: GOTO }],
+  ['target-null', { target: null }],
+  [
+    'everything',
+    {
+      color: '#111111',
+      interiorColor: '#222222',
+      strokeWidth: 3,
+      opacity: 0.5,
+      blendMode: 'darken',
+      ...SOLID,
+      lineEndings: { start: 'circle' },
+      fontFamily: 'symbol',
+      fontSize: 9,
+      fontColor: '#333333',
+      textAlign: 'left',
+      icon: 'note',
+      target: URI,
+    },
+  ],
 ];
 const propCases: FunctionCase[] = [
   c('initialTextStyle', 'value'),
-  c('styleFromProps', 'defaults', defaultsFor(initialModel, 'square')),
-  c('textStyleFromProps', 'defaults', defaultsFor(initialModel, 'free-text')),
-  ...PROP_ANNOTS.map((a) => c('readProps', a.id, a, PROP_KEYS)),
+  c('styleOf', 'defaults', sq('style-default').annotation),
+  c('textOf', 'defaults', annot('text-default', 'free-text', gText(rc(0, 0, 100, 30))).annotation),
+  ...PROP_ANNOTS.map((a) => c('recordViews', nameOf(a), a)),
   c('readProp', 'square-color', PROP_ANNOTS[0], 'color'),
-  ...PROP_ANNOTS.flatMap((a) => PATCHES.map(([pn, p]) => c('applyProps', `${a.id}-${pn}`, a, p))),
+  ...PROP_ANNOTS.flatMap((a) =>
+    PATCHES.map(([pn, p]) => c('withValues', `${nameOf(a)}-${pn}`, a, p)),
+  ),
   c('defaultsFor', 'initial', {}, 'square'),
-  c('defaultsFor', 'override', { defaults: { square: { color: '#abcdef', lineEndings: { end: 'circle' }, fontSize: 20 } } }, 'square'),
+  c(
+    'defaultsFor',
+    'override',
+    { defaults: { square: { color: '#abcdef', lineEndings: { end: 'circle' }, fontSize: 20 } } },
+    'square',
+  ),
   c('defaultsFor', 'other-subtype', { defaults: { square: { color: '#abcdef' } } }, 'circle'),
-  c('defaultsFor', 'null-fill-and-link', { defaults: { link: { interiorColor: null, link: null } } }, 'link'),
-  c('defaultsFor', 'custom-style', { style: style({ color: '#000000', strokeWidth: 9 }) }, 'ink'),
-  c('defaultsFor', 'filled-style-kept', { style: style({ interiorColor: '#123456' }), defaults: { square: { color: '#000000' } } }, 'square'),
-  c('defaultsFor', 'filled-style-cleared', { style: style({ interiorColor: '#123456' }), defaults: { square: { interiorColor: null } } }, 'square'),
+  c(
+    'defaultsFor',
+    'null-fill-and-link',
+    { defaults: { link: { interiorColor: null, target: null } } },
+    'link',
+  ),
+  c(
+    'defaultsFor',
+    'custom-defaults',
+    { defaults: { ink: { color: '#000000', strokeWidth: 9 } } },
+    'ink',
+  ),
+  c(
+    'defaultsFor',
+    'filled-style-kept',
+    { defaults: { square: { interiorColor: '#123456', color: '#000000' } } },
+    'square',
+  ),
+  c(
+    'defaultsFor',
+    'filled-style-cleared',
+    { defaults: { square: { interiorColor: null } } },
+    'square',
+  ),
   c('defaultsFor', 'prototype-key', {}, 'constructor'),
   c('defaultsFor', 'extra-key', { defaults: { square: { bogus: 1 } as never } }, 'square'),
 ];
@@ -348,12 +518,33 @@ const VIEWS = [
 ] as const;
 const anchorCases: FunctionCase[] = [];
 for (const subtype of ['square', 'text', 'file-attachment', 'unknown']) {
-  for (const [fname, f] of [['none', flags()], ['noZoom', flags({ noZoom: true })], ['noRotate', flags({ noRotate: true })], ['both', flags({ noZoom: true, noRotate: true })]] as const) {
-    anchorCases.push(c('anchorModeOf', `${subtype}-${fname}`, { subtype, flags: f }));
+  for (const [fname, f] of [
+    ['none', flags()],
+    ['noZoom', flags({ noZoom: true })],
+    ['noRotate', flags({ noRotate: true })],
+    ['both', flags({ noZoom: true, noRotate: true })],
+  ] as const) {
+    anchorCases.push(
+      c(
+        'anchorModeOf',
+        `${subtype}-${fname}`,
+        annot('anchor', subtype, gRect(rc(0, 0, 10, 10)), { flags: f }),
+      ),
+    );
   }
 }
 for (const [name, gm] of GEOMS) anchorCases.push(c('anchorOf', name, gm));
-const ANCHOR_GEOMS = ['rect', 'rect-rot30', 'line-arrows', 'poly-closed', 'ink-two', 'text', 'callout-knee', 'quads', 'caret'];
+const ANCHOR_GEOMS = [
+  'rect',
+  'rect-rot30',
+  'line-arrows',
+  'poly-closed',
+  'ink-two',
+  'text',
+  'callout-knee',
+  'quads',
+  'caret',
+];
 for (const gname of ANCHOR_GEOMS) {
   for (const [mname, mode] of MODES) {
     for (const [vname, view] of VIEWS) {
@@ -367,21 +558,29 @@ for (const gname of ANCHOR_GEOMS) {
 for (const [mname, mode] of MODES) {
   for (const [vname, view] of VIEWS) {
     anchorCases.push(c('anchoredStrokeWidth', `${mname}-${vname}`, 2, mode, view));
-    anchorCases.push(c('anchoredBox', `${mname}-${vname}`, rc(100, 100, 40, 20), v(90, 95), mode, view));
+    anchorCases.push(
+      c('anchoredBox', `${mname}-${vname}`, rc(100, 100, 40, 20), v(90, 95), mode, view),
+    );
   }
 }
 
 // ── snapping ─────────────────────────────────────────────────────────────────
 
 const snapFns: Record<string, Fn> = {
-  computeMoveSnap: (s: Partial<Model>, ids: Id[], pon: number, raw: Vec, threshold: number, pageBox?: Rect) =>
-    sn.computeMoveSnap(modelOf(s), ids, pageRef(pon), raw, threshold, pageBox),
+  computeMoveSnap: (
+    s: Model,
+    ids: Id[],
+    page: PageRef,
+    raw: Vec,
+    threshold: number,
+    pageBox?: Rect,
+  ) => sn.computeMoveSnap(s, ids, page, raw, threshold, pageBox),
 };
 const SNAP = start([
   sq('a', rc(100, 100, 80, 60)),
   sq('b', rc(300, 100, 50, 50)),
   sq('c', rc(100, 300, 40, 40)),
-  sq('rot', rc(400, 400, 60, 30), { geom: gRect(rc(400, 400, 60, 30), false, 45) }),
+  sq('rot', rc(400, 400, 60, 30), { geometry: gRect(rc(400, 400, 60, 30), false, 45) }),
   sq('other-page', rc(100, 100, 80, 60), { page: pageRef(2) }),
   sq('hidden', rc(0, 0, 10, 10), { flags: flags({ hidden: true }) }),
   annot('note', 'text', gRect(rc(500, 500, 20, 20))),
@@ -411,35 +610,71 @@ const snapCases: FunctionCase[] = [
 // ── hit testing ──────────────────────────────────────────────────────────────
 
 export const hitFns: Record<string, Fn> = {
-  paintOrder: (s: Partial<Model>, pon: number) => ht.paintOrder(modelOf(s), pageRef(pon)),
-  isSelectable: (s: Partial<Model>, id: Id) => ht.isSelectable(modelOf(s), id),
-  canMove: (s: Partial<Model>, id: Id) => ht.canMove(modelOf(s), id),
+  paintOrder: (s: Model, page: PageRef) => ht.paintOrder(s, page),
+  isSelectable: (s: Model, id: Id) => ht.isSelectable(s, id),
+  canMove: (s: Model, id: Id) => ht.canMove(s, id),
   /** Per id: `[isSelectable, canMove]`. */
-  selectability: (s: Partial<Model>, ids: Id[]) => {
-    const m = modelOf(s);
+  selectability: (s: Model, ids: Id[]) => {
+    const m = s;
     return ids.map((id) => [ht.isSelectable(m, id), ht.canMove(m, id)]);
   },
-  groupUnionBounds: (s: Partial<Model>, pon: number, view?: an.ViewEnv) => ht.groupUnionBounds(modelOf(s), pageRef(pon), view),
-  hitTest: (s: Partial<Model>, pon: number, p: Vec, gm: ChromeGeom, margin: number, pageBox?: Rect, inert?: Set<Id>, view?: an.ViewEnv) =>
-    ht.hitTest(modelOf(s), pageRef(pon), p, gm, margin, pageBox, inert, view),
-  cursorAt: (s: Partial<Model>, pon: number, p: Vec, gm: ChromeGeom, margin: number, pageBox?: Rect, inert?: Set<Id>, view?: an.ViewEnv) =>
-    ht.cursorAt(modelOf(s), pageRef(pon), p, gm, margin, pageBox, inert, view),
+  groupUnionBounds: (s: Model, page: PageRef, view?: an.ViewEnv) =>
+    ht.groupUnionBounds(s, page, view),
+  hitTest: (
+    s: Model,
+    page: PageRef,
+    p: Vec,
+    gm: ChromeGeom,
+    margin: number,
+    pageBox?: Rect,
+    inert?: Set<Id>,
+    view?: an.ViewEnv,
+  ) => ht.hitTest(s, page, p, gm, margin, pageBox, inert, view),
+  cursorAt: (
+    s: Model,
+    page: PageRef,
+    p: Vec,
+    gm: ChromeGeom,
+    margin: number,
+    pageBox?: Rect,
+    inert?: Set<Id>,
+    view?: an.ViewEnv,
+  ) => ht.cursorAt(s, page, p, gm, margin, pageBox, inert, view),
   /** One page, many calls: each call sets the selection and passes every
    *  hitTest argument; the answer is `[hitTest, cursorAt]`. */
   hitCalls: (
-    s: Partial<Model>,
-    calls: { selected: Id[]; pon: number; p: Vec; gm: ChromeGeom; margin: number; pageBox?: Rect; inert?: Set<Id>; view?: an.ViewEnv }[],
+    _base: Model,
+    calls: {
+      model: Model;
+      page: PageRef;
+      p: Vec;
+      gm: ChromeGeom;
+      margin: number;
+      pageBox?: Rect;
+      inert?: Set<Id>;
+      view?: an.ViewEnv;
+    }[],
   ) =>
-    calls.map(({ selected, pon, p, gm, margin, pageBox, inert, view }) => {
-      const m = { ...modelOf(s), selected };
-      return [ht.hitTest(m, pageRef(pon), p, gm, margin, pageBox, inert, view), ht.cursorAt(m, pageRef(pon), p, gm, margin, pageBox, inert, view)];
-    }),
+    calls.map(({ model, page, p, gm, margin, pageBox, inert, view }) => [
+      ht.hitTest(model, page, p, gm, margin, pageBox, inert, view),
+      ht.cursorAt(model, page, p, gm, margin, pageBox, inert, view),
+    ]),
   /** One page, many selections and points: per selection, `[hitTest,
    *  cursorAt]` per point. */
-  hitProbe: (s: Partial<Model>, pon: number, selections: Id[][], points: Vec[], gm: ChromeGeom, margin: number) =>
+  hitProbe: (
+    s: Model,
+    page: PageRef,
+    selections: Id[][],
+    points: Vec[],
+    gm: ChromeGeom,
+    margin: number,
+  ) =>
     selections.map((selected) => {
-      const m = { ...modelOf(s), selected };
-      return points.map((p) => [ht.hitTest(m, pageRef(pon), p, gm, margin), ht.cursorAt(m, pageRef(pon), p, gm, margin)]);
+      const m = { ...s, selected };
+      return points.map((p) => [
+        ht.hitTest(m, page, p, gm, margin),
+        ht.cursorAt(m, page, p, gm, margin),
+      ]);
     }),
 };
 const CG: ChromeGeom = { handleTol: 6, knobTol: 6, knobOffset: 24 };
@@ -465,14 +700,17 @@ const HIT_ANNOTS: Annot[] = [
   sq('readonly', rc(20, 600, 30, 30), { flags: flags({ readOnly: true }) }),
   annot('widget', 'widget-text', gRect(rc(20, 550, 80, 20)), { flags: flags({ readOnly: true }) }),
   annot('reply', 'text', gRect(rc(100, 100, 20, 20)), { irt: 'sq' }),
-  annot('review-state', 'text', gRect(rc(120, 120, 20, 20)), { data: { subtype: 'text', state: 'accepted' } as never }),
+  annot('review-state', 'text', gRect(rc(120, 120, 20, 20)), {
+    data: { subtype: 'text', state: 'accepted' } as never,
+  }),
   annot('reply2', 'text', gRect(rc(200, 200, 20, 20)), { irt: 'sq' }),
   annot('child-link', 'link', gRect(rc(100, 100, 80, 60)), { group: 'sq', irt: 'sq' }),
   sq('other-page', rc(100, 100, 80, 60), { page: pageRef(2) }),
   annot('unknown', 'mystery', gRect(rc(560, 20, 20, 20))),
   sq('nozoom', rc(560, 700, 30, 30), { flags: flags({ noZoom: true, noRotate: true }) }),
 ];
-const HIT = (selected: Id[] = [], over: Partial<Model> = {}) => start(HIT_ANNOTS, { selected, ...over });
+const HIT = (selected: Id[] = [], over: Partial<Model> = {}) =>
+  start(HIT_ANNOTS, { selected, ...over });
 /** Points worth probing: each annotation's centre and top-left, handle and
  *  knob spots, and empty space. */
 const HIT_POINTS: [string, Vec][] = [
@@ -548,12 +786,43 @@ const hitCases: FunctionCase[] = [
   c('groupUnionBounds', 'rotated-stamp', HIT(['stamp', 'sq']), PON),
   c('groupUnionBounds', 'nozoom-view', HIT(['nozoom', 'sq']), PON, { zoom: 2, rotation: 90 }),
 ];
-hitCases.push(c('hitProbe', 'page', HIT(), PON, HIT_SELECTIONS.map(([, sel]) => sel), HIT_POINTS.map(([, p]) => p), CG, 6));
+hitCases.push(
+  c(
+    'hitProbe',
+    'page',
+    HIT(),
+    PON,
+    HIT_SELECTIONS.map(([, sel]) => sel),
+    HIT_POINTS.map(([, p]) => p),
+    CG,
+    6,
+  ),
+);
 // Knob and handles of a selection, with and without a page box and a view.
 const sqKnob = v(140, 76);
-type HitCall = { label: string; selected: Id[]; pon: number; p: Vec; gm: ChromeGeom; margin: number; pageBox?: Rect; inert?: Set<Id>; view?: an.ViewEnv };
+type HitCall = {
+  label: string;
+  selected: Id[];
+  pon: number;
+  p: Vec;
+  gm: ChromeGeom;
+  margin: number;
+  pageBox?: Rect;
+  inert?: Set<Id>;
+  view?: an.ViewEnv;
+};
 const hitCalls: HitCall[] = [];
-const hc = (label: string, selected: Id[], pon: number, p: Vec, gm: ChromeGeom, margin: number, pageBox?: Rect, inert?: Set<Id>, view?: an.ViewEnv): FunctionCase[] => {
+const hc = (
+  label: string,
+  selected: Id[],
+  pon: number,
+  p: Vec,
+  gm: ChromeGeom,
+  margin: number,
+  pageBox?: Rect,
+  inert?: Set<Id>,
+  view?: an.ViewEnv,
+): FunctionCase[] => {
   hitCalls.push({ label, selected, pon, p, gm, margin, pageBox, inert, view });
   return [];
 };
@@ -582,10 +851,22 @@ hitCases.push(
   ...hc('inert-empty', [], PON, v(101, 130), CG, 6, undefined, new Set()),
   ...hc('selected-on-page2', ['other-page'], 2, v(140, 76), CG, 6),
   ...hc('selected-other-page', ['other-page'], PON, sqKnob, CG, 6),
-  ...hc('nozoom-view-knob', ['nozoom'], PON, v(567.5, 676), CG, 6, undefined, undefined, { zoom: 2, rotation: 0 }),
-  ...hc('nozoom-view-body', ['nozoom'], PON, v(565, 705), CG, 6, undefined, undefined, { zoom: 2, rotation: 90 }),
-  ...hc('nozoom-view-unselected', [], PON, v(561, 701), CG, 6, undefined, undefined, { zoom: 2, rotation: 0 }),
-  ...hc('nozoom-view-handle', ['nozoom'], PON, v(575, 715), CG, 6, undefined, undefined, { zoom: 2, rotation: 0 }),
+  ...hc('nozoom-view-knob', ['nozoom'], PON, v(567.5, 676), CG, 6, undefined, undefined, {
+    zoom: 2,
+    rotation: 0,
+  }),
+  ...hc('nozoom-view-body', ['nozoom'], PON, v(565, 705), CG, 6, undefined, undefined, {
+    zoom: 2,
+    rotation: 90,
+  }),
+  ...hc('nozoom-view-unselected', [], PON, v(561, 701), CG, 6, undefined, undefined, {
+    zoom: 2,
+    rotation: 0,
+  }),
+  ...hc('nozoom-view-handle', ['nozoom'], PON, v(575, 715), CG, 6, undefined, undefined, {
+    zoom: 2,
+    rotation: 0,
+  }),
   ...hc('rotated-stamp-knob', ['stamp'], PON, g2knob(), CG, 6),
   ...hc('union-of-substrate-only', ['reply', 'reply2'], PON, v(200, 180), CG, 6),
   ...hc('locked-knob', ['locked'], PON, v(130, 626), CG, 6),
@@ -617,64 +898,161 @@ hitCases.push(c('hitCalls', 'page', HIT(), hitCalls));
 
 export const sceneFns: Record<string, Fn> = {
   scene: sc.scene,
-  blendFor: sc.blendFor,
+  blendFor,
   layoutRedactLabel: sc.layoutRedactLabel,
 };
-const item = (subtype: string, gm: Geom, over: Partial<RenderItem> = {}): RenderItem => ({
-  id: 'i',
-  ref: null,
-  subtype,
-  geom: gm,
-  box: rc(0, 0, 0, 0),
-  style: style(),
+const item = (subtype: string, geometry: Geom, over: Partial<RenderItem> = {}): RenderItem => ({
+  ...unmadeItem(
+    'i',
+    readOfDefaults(subtype, { ...style(), ...over.style, ...over.text }),
+    geometry,
+    'draft',
+  ),
   source: 'vector',
-  selected: false,
   ...over,
 });
 const sceneCases: FunctionCase[] = [
-  ...['normal', 'multiply', 'screen', 'luminosity'].map((b) => c('blendFor', b, style({ blendMode: b as never }))),
+  ...['normal', 'multiply', 'screen', 'luminosity'].map((b) =>
+    c('blendFor', b, style({ blendMode: b as never })),
+  ),
 ];
 const SCENE_STYLES: [string, ReturnType<typeof style>][] = [
   ['default', style()],
-  ['filled-dashed', style({ interiorColor: '#00ff00', border: DASHED, blendMode: 'multiply', opacity: 0.4 })],
-  ['cloudy', style({ border: cloudy(1), interiorColor: '#0000ff' })],
+  [
+    'filled-dashed',
+    style({ interiorColor: '#00ff00', ...DASHED, blendMode: 'multiply', opacity: 0.4 }),
+  ],
+  ['cloudy', style({ ...cloudy(1), interiorColor: '#0000ff' })],
   ['zero-stroke', style({ strokeWidth: 0, interiorColor: '' })],
 ];
 for (const [gname, gm] of GEOMS) {
   for (const [sname, st] of SCENE_STYLES) {
     const subtype =
-      gm.t === 'rect' ? 'square' : gm.t === 'line' ? 'line' : gm.t === 'poly' ? 'polygon' : gm.t === 'quads' ? 'highlight' : gm.t === 'caret' ? 'caret' : gm.t === 'ink' ? 'ink' : 'free-text';
+      gm.kind === 'box'
+        ? 'square'
+        : gm.kind === 'line'
+          ? 'line'
+          : gm.kind === 'poly'
+            ? 'polygon'
+            : gm.kind === 'quads'
+              ? 'highlight'
+              : gm.kind === 'caret'
+                ? 'caret'
+                : gm.kind === 'ink'
+                  ? 'ink'
+                  : 'free-text';
     sceneCases.push(c('scene', `${gname}-${sname}`, item(subtype, gm, { style: st })));
   }
 }
-const MARKUP_QUADS = [tq(10, 10, 200, 14), tqRot(50, 100, 120, 10, 30), tq(0, 0, 0, 10), tq(0, 0, 10, 0), tq(0, 0, 3, 50), tq(0, 0, 400, 2)];
+const MARKUP_QUADS = [
+  tq(10, 10, 200, 14),
+  tqRot(50, 100, 120, 10, 30),
+  tq(0, 0, 0, 10),
+  tq(0, 0, 10, 0),
+  tq(0, 0, 3, 50),
+  tq(0, 0, 400, 2),
+];
 for (const subtype of ['highlight', 'underline', 'strikeout', 'squiggly', 'mystery-markup']) {
-  sceneCases.push(c('scene', `markup-${subtype}`, item(subtype, gQuads(MARKUP_QUADS), { style: style({ blendMode: 'multiply', color: '#ffcc00', opacity: 0.5 }) })));
-  sceneCases.push(c('scene', `markup-${subtype}-normal`, item(subtype, gQuads([tq(5, 5, 33.3, 7.7)]))));
+  sceneCases.push(
+    c(
+      'scene',
+      `markup-${subtype}`,
+      item(subtype, gQuads(MARKUP_QUADS), {
+        style: style({ blendMode: 'multiply', color: '#ffcc00', opacity: 0.5 }),
+      }),
+    ),
+  );
+  sceneCases.push(
+    c('scene', `markup-${subtype}-normal`, item(subtype, gQuads([tq(5, 5, 33.3, 7.7)]))),
+  );
 }
-sceneCases.push(c('scene', 'squiggly-long', item('squiggly', gQuads([tq(0.5, 0.25, 1000.123, 30)]))));
+sceneCases.push(
+  c('scene', 'squiggly-long', item('squiggly', gQuads([tq(0.5, 0.25, 1000.123, 30)]))),
+);
 sceneCases.push(c('scene', 'squiggly-short', item('squiggly', gQuads([tq(0, 0, 2, 10)]))));
 // Bounded output: a NaN or backwards run draws one hump and no more.
 sceneCases.push(c('scene', 'squiggly-nan-width', item('squiggly', gQuads([tq(0, 0, NaN, 10)]))));
 sceneCases.push(c('scene', 'squiggly-backwards', item('squiggly', gQuads([tq(100, 0, -80, 10)]))));
-sceneCases.push(c('scene', 'squiggly-rotated-tall', item('squiggly', gQuads([tqRot(50, 50, 120, 20, 25)]))));
-for (const e of ENDINGS) sceneCases.push(c('scene', `line-${e}`, item('line', gLine(v(0, 0), v(100, 50), ends(e, e)), { style: style({ interiorColor: '#ff0000' }) })));
+sceneCases.push(
+  c('scene', 'squiggly-rotated-tall', item('squiggly', gQuads([tqRot(50, 50, 120, 20, 25)]))),
+);
+for (const e of ENDINGS)
+  sceneCases.push(
+    c(
+      'scene',
+      `line-${e}`,
+      item('line', gLine(v(0, 0), v(100, 50), ends(e, e)), {
+        style: style({ interiorColor: '#ff0000' }),
+      }),
+    ),
+  );
 sceneCases.push(c('scene', 'link', item('link', geom('rect'))));
-sceneCases.push(c('scene', 'caret-rot', item('caret', geom('caret-rot45'), { style: style({ opacity: 0.3 }) })));
-sceneCases.push(c('scene', 'ink-cloudy', item('ink', geom('ink'), { style: style({ border: cloudy(1), blendMode: 'multiply' }) })));
-const REDACT_TEXT = { fontFamily: 'helvetica', fontSize: 10, fontColor: '#ff0000', textAlign: 'left' as const };
+sceneCases.push(
+  c('scene', 'caret-rot', item('caret', geom('caret-rot45'), { style: style({ opacity: 0.3 }) })),
+);
+sceneCases.push(
+  c(
+    'scene',
+    'ink-cloudy-multiply',
+    item('ink', geom('ink'), { style: style({ ...cloudy(1), blendMode: 'multiply' }) }),
+  ),
+);
+const REDACT_TEXT = {
+  fontFamily: 'helvetica',
+  fontSize: 10,
+  fontColor: '#ff0000',
+  textAlign: 'left' as const,
+};
 for (const [gname, gm] of [
   ['area', gRect(rc(10, 10, 200, 60))],
-  ['text', gQuads([tq(10, 100, 150, 14), tqRot(10, 130, 150, 14, 20), tq(10, 160, 0, 14), tq(10, 190, 60, 0)])],
+  [
+    'text',
+    gQuads([
+      tq(10, 100, 150, 14),
+      tqRot(10, 130, 150, 14, 20),
+      tq(10, 160, 0, 14),
+      tq(10, 190, 60, 0),
+    ]),
+  ],
   ['line', gLine(v(0, 0), v(10, 10))],
 ] as const) {
   sceneCases.push(
-    c('scene', `redact-${gname}-rest`, item('redact', gm, { style: style({ interiorColor: '#000000' }) })),
-    c('scene', `redact-${gname}-rest-zero-stroke`, item('redact', gm, { style: style({ strokeWidth: 0 }) })),
-    c('scene', `redact-${gname}-hover`, item('redact', gm, { hovered: true, style: style({ interiorColor: '#000000' }), label: { text: 'REDACTED', repeat: false }, text: REDACT_TEXT })),
-    c('scene', `redact-${gname}-hover-repeat`, item('redact', gm, { hovered: true, style: style({ interiorColor: '#000000' }), label: { text: 'X', repeat: true }, text: REDACT_TEXT })),
+    c(
+      'scene',
+      `redact-${gname}-rest`,
+      item('redact', gm, { style: style({ interiorColor: '#000000' }) }),
+    ),
+    c(
+      'scene',
+      `redact-${gname}-rest-zero-stroke`,
+      item('redact', gm, { style: style({ strokeWidth: 0 }) }),
+    ),
+    c(
+      'scene',
+      `redact-${gname}-hover`,
+      item('redact', gm, {
+        hovered: true,
+        style: style({ interiorColor: '#000000' }),
+        label: { text: 'REDACTED', repeat: false },
+        text: REDACT_TEXT,
+      }),
+    ),
+    c(
+      'scene',
+      `redact-${gname}-hover-repeat`,
+      item('redact', gm, {
+        hovered: true,
+        style: style({ interiorColor: '#000000' }),
+        label: { text: 'X', repeat: true },
+        text: REDACT_TEXT,
+      }),
+    ),
     c('scene', `redact-${gname}-hover-bare`, item('redact', gm, { hovered: true })),
-    c('scene', `redact-${gname}-hover-no-fill`, item('redact', gm, { hovered: true, label: { text: 'Y', repeat: false } })),
+    c(
+      'scene',
+      `redact-${gname}-hover-no-fill`,
+      item('redact', gm, { hovered: true, label: { text: 'Y', repeat: false } }),
+    ),
   );
 }
 const REGION = rc(10, 20, 200, 50);
@@ -683,8 +1061,16 @@ for (const [label, lb, text] of [
   ['left', { text: 'Secret', repeat: false }, REDACT_TEXT],
   ['center', { text: 'Secret', repeat: false }, { ...REDACT_TEXT, textAlign: 'center' }],
   ['right', { text: 'Secret', repeat: false }, { ...REDACT_TEXT, textAlign: 'right' }],
-  ['center-overflow', { text: 'A very long redaction label here', repeat: false }, { ...REDACT_TEXT, textAlign: 'center' }],
-  ['right-overflow', { text: 'A very long redaction label here', repeat: false }, { ...REDACT_TEXT, textAlign: 'right' }],
+  [
+    'center-overflow',
+    { text: 'A very long redaction label here', repeat: false },
+    { ...REDACT_TEXT, textAlign: 'center' },
+  ],
+  [
+    'right-overflow',
+    { text: 'A very long redaction label here', repeat: false },
+    { ...REDACT_TEXT, textAlign: 'right' },
+  ],
   ['auto-size', { text: 'Auto', repeat: false }, { ...REDACT_TEXT, fontSize: 0 }],
   ['no-text-style', { text: 'Auto', repeat: false }, undefined],
   ['too-tall', { text: 'Big', repeat: false }, { ...REDACT_TEXT, fontSize: 60 }],
@@ -697,16 +1083,40 @@ for (const [label, lb, text] of [
 ] as const) {
   sceneCases.push(c('layoutRedactLabel', label, REGION, lb, text));
 }
-sceneCases.push(c('layoutRedactLabel', 'repeat-capped-400', rc(0, 0, 2000, 2000), { text: 'x', repeat: true }, { ...REDACT_TEXT, fontSize: 4 }));
-sceneCases.push(c('layoutRedactLabel', 'repeat-tiny-region', rc(0, 0, 1, 1), { text: 'x', repeat: true }, REDACT_TEXT));
-sceneCases.push(c('layoutRedactLabel', 'font-equals-height', rc(0, 0, 200, 50), { text: 'Fit', repeat: false }, { ...REDACT_TEXT, fontSize: 50 }));
+sceneCases.push(
+  c(
+    'layoutRedactLabel',
+    'repeat-capped-400',
+    rc(0, 0, 2000, 2000),
+    { text: 'x', repeat: true },
+    { ...REDACT_TEXT, fontSize: 4 },
+  ),
+);
+sceneCases.push(
+  c(
+    'layoutRedactLabel',
+    'repeat-tiny-region',
+    rc(0, 0, 1, 1),
+    { text: 'x', repeat: true },
+    REDACT_TEXT,
+  ),
+);
+sceneCases.push(
+  c(
+    'layoutRedactLabel',
+    'font-equals-height',
+    rc(0, 0, 200, 50),
+    { text: 'Fit', repeat: false },
+    { ...REDACT_TEXT, fontSize: 50 },
+  ),
+);
 
 // ── placement and ink ────────────────────────────────────────────────────────
 
 const placeFns: Record<string, Fn> = {
   clampRectToBox: pl.clampRectToBox,
   resolveClickPlacement: pl.resolveClickPlacement,
-  clickCreateGeom: pl.clickCreateGeom,
+  placedShape: pl.placedShape,
   straightenInkStroke: ik.straightenInkStroke,
 };
 const placeCases: FunctionCase[] = [
@@ -739,19 +1149,30 @@ for (const [pname, policy] of POLICIES) {
     ['rotation-no-upright', { displayRotation: 90 }],
   ] as const) {
     placeCases.push(c('resolveClickPlacement', `${pname}-${oname}-mid`, v(300, 400), policy, opts));
-    placeCases.push(c('resolveClickPlacement', `${pname}-${oname}-corner`, v(590, 5), policy, opts));
+    placeCases.push(
+      c('resolveClickPlacement', `${pname}-${oname}-corner`, v(590, 5), policy, opts),
+    );
   }
 }
 const DEF = defaultsFor(initialModel, 'square');
-const DEF_CLOUDY = { ...DEF, border: cloudy(2), lineEndings: ends('open-arrow', 'none') };
+const DEF_CLOUDY = { ...DEF, ...cloudy(2), lineEndings: ends('open-arrow', 'none') };
 for (const subtype of ['free-text', 'square', 'circle', 'line', 'stamp', 'ink', 'link']) {
   for (const [plname, placement] of [
     ['box', { kind: 'box', rect: rc(10, 20, 100, 40), rot: 0 }],
     ['box-rot', { kind: 'box', rect: rc(10, 20, 100, 40), rot: 90 }],
     ['segment', { kind: 'segment', a: v(0, 0), b: v(100, 0) }],
   ] as const) {
-    placeCases.push(c('clickCreateGeom', `${subtype}-${plname}`, subtype, placement, DEF));
-    placeCases.push(c('clickCreateGeom', `${subtype}-${plname}-cloudy`, subtype, placement, DEF_CLOUDY));
+    placeCases.push(
+      c('placedShape', `${subtype}-${plname}`, readOfDefaults(subtype, DEF), placement),
+    );
+    placeCases.push(
+      c(
+        'placedShape',
+        `${subtype}-${plname}-cloudy`,
+        readOfDefaults(subtype, DEF_CLOUDY),
+        placement,
+      ),
+    );
   }
 }
 const OPTS = { deviationThreshold: 0.1, axisSnapDegrees: 10 };
@@ -771,7 +1192,11 @@ for (const [label, pts, opts] of [
   ['vertical-inside', [v(0, 0), v(8.8, 50), v(17.6, 100)], OPTS],
   ['vertical-outside', [v(0, 0), v(8.8, 50), v(17.7, 100)], OPTS],
   ['reversed', [v(100, 5), v(50, 3), v(0, 0)], OPTS],
-  ['loose-threshold', [v(0, 0), v(50, 30), v(100, 0)], { deviationThreshold: 0.5, axisSnapDegrees: 45 }],
+  [
+    'loose-threshold',
+    [v(0, 0), v(50, 30), v(100, 0)],
+    { deviationThreshold: 0.5, axisSnapDegrees: 45 },
+  ],
   ['closed-loop', [v(0, 0), v(50, 50), v(0, 1)], OPTS],
   ['offset-horizontal', [v(40, 30), v(90, 32), v(140, 31)], OPTS],
   ['offset-vertical', [v(40, 30), v(42, 80), v(41, 130)], OPTS],
@@ -780,14 +1205,75 @@ for (const [label, pts, opts] of [
   placeCases.push(c('straightenInkStroke', label, pts, opts));
 }
 
-export const suites: Suite[] = [
-  { kind: 'function', file: 'core/annotation-kinds.json', describes: 'packages/core/annotation kinds.ts and props.ts sharedProps/kindTakesLink: the kind table, caps and prop specs per subtype.', functions: kindFns, cases: kinds },
-  { kind: 'function', file: 'core/annotation-flags.json', describes: 'packages/core/annotation flags.ts and plane.ts: /F predicates, authority, conversation and substrate planes.', functions: flagFns, cases: flagCases },
-  { kind: 'function', file: 'core/annotation-groups.json', describes: 'packages/core/annotation group.ts and links.ts: group keys, members, caps and attached link children.', functions: groupFns, cases: groupCases },
-  { kind: 'function', file: 'core/annotation-props.json', describes: 'packages/core/annotation props.ts: readProp and applyProps for every kind and patch key, plus defaultsFor.', functions: propFns, cases: propCases },
-  { kind: 'function', file: 'core/annotation-anchor.json', describes: 'packages/core/annotation anchor.ts: noZoom/noRotate projection and its inverse.', functions: anchorFns, cases: anchorCases },
-  { kind: 'function', file: 'core/annotation-snap.json', describes: 'packages/core/annotation snap.ts: move snapping guides.', functions: snapFns, cases: snapCases },
-  { kind: 'function', file: 'core/annotation-hit.json', describes: 'packages/core/annotation hit.ts: paint order, selectability, hitTest and cursorAt over a mixed page.', functions: hitFns, cases: hitCases },
-  { kind: 'function', file: 'core/annotation-scene.json', describes: 'packages/core/annotation scene.ts: painted scene nodes per kind, markup, redaction and label layout.', functions: sceneFns, cases: sceneCases },
-  { kind: 'function', file: 'core/annotation-placement.json', describes: 'packages/core/annotation placement.ts and ink.ts: click placement, click geometry and ink straightening.', functions: placeFns, cases: placeCases },
-];
+export const suites: Suite[] = currentSuites([
+  {
+    kind: 'function',
+    file: 'core/annotation-kinds.json',
+    describes:
+      'packages/core/annotation kinds.ts and props.ts sharedProps/kindTakesLink: the kind table, caps and prop specs per subtype.',
+    functions: kindFns,
+    cases: kinds,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-flags.json',
+    describes:
+      'packages/core/annotation flags.ts and plane.ts: /F predicates, authority, conversation and substrate planes.',
+    functions: flagFns,
+    cases: flagCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-groups.json',
+    describes:
+      'packages/core/annotation group.ts and links.ts: group keys, members, caps and attached link children.',
+    functions: groupFns,
+    cases: groupCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-props.json',
+    describes:
+      'packages/core/annotation props.ts: readProp and applyProps for every kind and patch key, plus defaultsFor.',
+    functions: propFns,
+    cases: propCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-anchor.json',
+    describes: 'packages/core/annotation anchor.ts: noZoom/noRotate projection and its inverse.',
+    functions: anchorFns,
+    cases: anchorCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-snap.json',
+    describes: 'packages/core/annotation snap.ts: move snapping guides.',
+    functions: snapFns,
+    cases: snapCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-hit.json',
+    describes:
+      'packages/core/annotation hit.ts: paint order, selectability, hitTest and cursorAt over a mixed page.',
+    functions: hitFns,
+    cases: hitCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-scene.json',
+    describes:
+      'packages/core/annotation scene.ts: painted scene nodes per kind, markup, redaction and label layout.',
+    functions: sceneFns,
+    cases: sceneCases,
+  },
+  {
+    kind: 'function',
+    file: 'core/annotation-placement.json',
+    describes:
+      'packages/core/annotation placement.ts and ink.ts: click placement, click geometry and ink straightening.',
+    functions: placeFns,
+    cases: placeCases,
+  },
+]);

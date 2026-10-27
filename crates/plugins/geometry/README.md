@@ -1,18 +1,24 @@
 # epdf-geometry
 
-`packages/core/geometry` in Rust: every exported function, type and constant of
-`src/index.ts` and `src/page-space.ts`. All 652 cases in the four vector files replay identically
-(`cargo test -p epdf-geometry`):
+`packages/core/geometry` in Rust: every exported function, type and constant of `src/index.ts` and
+`src/page-space.ts`. It also carries the pure part of `engine-core`'s geometry the viewer side calls:
+the six page-space conversions in `packages/engine/core/src/geometry/pageSpace.ts`, and
+`pdfQuadBounds` and `normalizePdfQuad` from `convert.ts`. All 648 cases in the four vector files
+replay identically (`cargo test -p epdf-geometry`):
 
 | File | Cases | Covers |
 |---|---|---|
 | `vectors/core/geometry-basics.json` | 140 | `boundsOfRects`, `intersectRects`, `rectFromCorners`, `rectContains`, `rectsOverlap`, rotations, `snapToDevice`, `displaySize`, `deviceHeightForWidth`, `NO_FRAME` |
 | `vectors/core/geometry-affine.json` | 110 | `Mat2D` compose, invert, apply*, the builders, `angleOf`, `matrixToCss` |
-| `vectors/core/geometry-page.json` | 122 | `rotateScaleMatrix`, `pdfToContentMatrix`, `pageGeometry`, `pageTransform`, `pageSpace`, `edgesOverlap`, `edgesOfQuad` |
-| `vectors/core/geometry-text-quad.json` | 280 | the `TextQuad` helpers and `normalizeQuad` |
+| `vectors/core/geometry-page.json` | 118 | `rotateScaleMatrix`, `pageTransform`, the `engine-core` page-space conversions, `rectsOverlap` on flipped edges, `pdfQuadBounds` |
+| `vectors/core/geometry-text-quad.json` | 280 | the named-corner quad helpers and `normalizePdfQuad` |
 
-The generators reach every statement and every branch of the TypeScript: 828/828 and 100/100 in
-`index.ts`, 99/99 and 11/11 in `page-space.ts`.
+The generator (`tooling/plugin-conformance/src/suites/geometry.ts`) keeps some historical case
+labels as function names: `textQuadEdge` calls `quadEdge`, `applyTextQuad` calls `applyQuad`, and
+the old `pageGeometry` cases call `pageTransform`. `src/harness.rs` answers exactly the names the
+vectors call, and `tests/conformance.rs` checks that no retired name is left in the table.
+`tests/behavior.rs` covers what the vectors only sample: singular transforms refuse, and rotation,
+crop and `userUnit` round trips give back the coordinates they started from.
 
 ## Where the port differs in shape
 
@@ -23,37 +29,43 @@ answers, so the type keeps the number. `PageRotation::DEG_0` through `DEG_270` a
 the type means.
 
 `pageTransform` returns an object of closures in TypeScript. Here `PageTransform` holds the four
-matrices it builds and exposes the closures as methods (`to_pixels`, `content_to_view_rect`, ...);
-it serializes to the data members only. The vector entry is a wrapper in
-`tooling/plugin-conformance/src/suites/geometry.ts` that calls each method on probe points and
-rects, and `src/harness.rs` mirrors it.
+matrices it builds and exposes the closures as methods (`to_pixels`, `page_to_view_rect`, ...); it
+serializes to the data members only. The vector entry is a wrapper that calls each method on probe
+points and rects. Its result keys still say `contentToView` and `viewToContent`, the names the
+methods had before 81bdc82ec renamed content space to page space. `samePagePlacement` takes two
+`&PageTransform` where the TypeScript takes any object with the five members it compares.
 
-`pageSpace(crop)` returns an object of closures too. `PageSpace` holds the crop, its size and the
-two matrices, and exposes `pdf_to_page` through `page_quad_to_pdf` as methods; the vector entry is
-a probe wrapper, as for `pageTransform`. `PdfEdges` is an alias of `CropBox`, the same four edges.
-The TypeScript builds the inverse with `invert`, which cannot throw here: the matrix is
-`[1, 0, 0, -1, e, f]`, determinant -1.
+The `engine-core` helpers live here because `epdf-engine`, which ports them for the native engine,
+links PDFium and cannot build for wasm32, where the plugins that read `/QuadPoints` and redaction
+regions run. They use this crate's `js` numerics. `epdf-engine`'s copies use `f64::min`, `f64::max`
+and the platform `hypot`, which treat NaN and the last bit differently. `PdfPoint` and `PdfQuad` are
+aliases of `Point` and `Quad`, as `PagePoint`, `PageRect`, `PageBox` and `PageQuad` are: the
+TypeScript types are structurally the same. `PdfRect` declares its members left, right, bottom, top,
+the order every TypeScript producer writes them (`normalizePdfRect`, `pdfRectOf`, `pdfQuadBounds`);
+the interface itself declares left, bottom, right, top.
 
-`pdfToContentMatrix({left, top})` is `pdf_to_content_matrix(left, top)`, the two numbers it reads.
-`invert`, `page_geometry` and `page_transform` return `Result<_, NonInvertible>` where the
-TypeScript throws `Mat2D.invert: non-invertible matrix (det = 0)`; the message is the same.
+`invert` and `page_transform` return `Result<_, NonInvertible>` where the TypeScript throws
+`Mat2D.invert: non-invertible matrix (det = 0)`; the message is the same.
 
-The phantom space brands (`PointIn<S>`, `RectIn<S>`, `QuadIn<S>`, `TextQuadIn<S>`,
-`Mat2D<From, To>`) are not ported. They are type-only and carry no runtime field; the Rust types are
-the plain `Point`, `Rect`, `Quad`, `TextQuad` and `Mat2D = [f64; 6]`. That costs the compile-time
-check that a `pdf` rect never meets a `content -> view` matrix. `Space` is ported as an enum.
+The phantom space brands (`PointIn<S>`, `RectIn<S>`, `QuadIn<S>`, `Mat2D<From, To>`) are not
+ported. They are type-only and carry no runtime field; the Rust types are the plain `Point`, `Rect`,
+`Quad` and `Mat2D = [f64; 6]`. That costs the compile-time check that a `view` rect never meets a
+`page -> view` matrix. `Space` is ported as an enum.
 
 ## JavaScript numerics
 
 `src/js.rs` holds the built-ins whose Rust counterparts answer differently, for this crate and
 every port downstream of it: `round` (`Math.round` rounds `-2.5` to `-2`), `max`/`min` (NaN wins),
 `sign` (`Math.sign(0)` is `0`), `hypot` (V8's normalized Kahan sum from `math.tq`, because
-`normalizeQuad` compares lengths against `1e-6`), and `number_to_string` (`Number#toString`, so
+`normalizePdfQuad` compares lengths against `1e-6`), and `number_to_string` (`Number#toString`, so
 `matrixToCss` prints `1e+21` and `1e-7` as the TypeScript does). `Math.atan2`, `cos` and `sin` use
 Rust's `f64` methods; the vectors' 1e-12 relative tolerance absorbs a last-bit difference from V8's
 fdlibm, and no case prints a transcendental result through `matrixToCss`.
 
 ## Mutation testing
+
+These counts predate the port to named quad corners and the `engine-core` helpers, and have not
+been rerun since.
 
 `scripts/mutants.sh -p epdf-geometry --test-package epdf-geometry --file <file>`, file by file over
 every module but `harness.rs`, catches 507 of 514 viable mutants (507 caught, 0 timeouts; 3

@@ -1,8 +1,626 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/core/acrojs createScriptHost: the per-document realm mutex, lazy boot, fault ladder and disposal, over a scripted sandbox.",
   "cases": [
+    {
+      "name": "kernel-destroy-owns-host",
+      "covers": "Kernel destroy invokes the probe cleanup and releases the constructed sandbox once.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "owned()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "destroy"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks.",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": [
+                {
+                  "event": {
+                    "rc": true,
+                    "value": null,
+                    "change": "",
+                    "selStart": 0,
+                    "selEnd": 0
+                  },
+                  "formEffects": [],
+                  "annotEffects": [],
+                  "uiEffects": [],
+                  "diagnostics": []
+                }
+              ]
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "bootSources",
+              "args": []
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "owned()",
+                {
+                  "document": {
+                    "id": "doc-1",
+                    "fileName": "x.pdf",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 1000,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 1983485049
+                  },
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 2,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "destroyed",
+          "engineState": {},
+          "outcome": {
+            "promise": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "dispose-pending-factory",
+      "covers": "Disposal releases the pending factory resource. An admitted run builds a second realm and still finishes; repeated disposal releases that realm too.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            },
+            "sandbox": {
+              "builds": [
+                {
+                  "defer": "vm"
+                },
+                {}
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "admitted()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "dispose"
+        },
+        {
+          "op": "settle",
+          "label": "vm"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "dispose"
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks.",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": [
+                {
+                  "event": {
+                    "rc": true,
+                    "value": null,
+                    "change": "",
+                    "selStart": 0,
+                    "selEnd": 0
+                  },
+                  "formEffects": [],
+                  "annotEffects": [],
+                  "uiEffects": [],
+                  "diagnostics": []
+                }
+              ]
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "bootSources",
+              "args": []
+            },
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                1
+              ]
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                1,
+                "admitted()",
+                {
+                  "document": {
+                    "id": "doc-1",
+                    "fileName": "x.pdf",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 1000,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 1983485049
+                  },
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {}
+        },
+        {
+          "settled": [],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.dispose",
+              "args": [
+                1
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "returned": {
+              "$undefined": true
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "sandbox-output-is-returned",
+      "covers": "The host returns sandbox effects, rejection rc, event edits and diagnostics without translating them.",
+      "plugins": [
+        {
+          "factory": "script-host",
+          "config": {
+            "bootSources": {
+              "returns": []
+            },
+            "sandbox": {
+              "builds": [
+                {
+                  "run": [
+                    {
+                      "output": {
+                        "event": {
+                          "rc": false,
+                          "value": "edited",
+                          "change": "x",
+                          "selStart": 1,
+                          "selEnd": 2
+                        },
+                        "formEffects": [
+                          {
+                            "kind": "setValue",
+                            "ref": {
+                              "kind": "fqn",
+                              "name": "t"
+                            },
+                            "value": {
+                              "value": "edited"
+                            }
+                          }
+                        ],
+                        "uiEffects": [
+                          {
+                            "kind": "print"
+                          }
+                        ],
+                        "diagnostics": [
+                          {
+                            "code": "script-error",
+                            "message": "script refusal"
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "steps": [
+        {
+          "op": "call",
+          "target": "kernel",
+          "method": "start"
+        },
+        {
+          "op": "call",
+          "target": {
+            "token": "script-host"
+          },
+          "method": "transaction",
+          "args": [
+            [
+              {
+                "op": "run",
+                "program": "output()",
+                "world": {
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                }
+              }
+            ]
+          ]
+        }
+      ],
+      "snapshot": "none",
+      "reason": "The script host runs under a probe plugin with no slice. These cases compare each transaction's outcome and settlement and the sandbox calls the probe logs as callbacks.",
+      "trace": [
+        {
+          "settled": [
+            {
+              "promise": 0,
+              "resolved": {
+                "$undefined": true
+              }
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 0
+          }
+        },
+        {
+          "settled": [
+            {
+              "promise": 1,
+              "resolved": [
+                {
+                  "event": {
+                    "rc": false,
+                    "value": "edited",
+                    "change": "x",
+                    "selStart": 1,
+                    "selEnd": 2
+                  },
+                  "formEffects": [
+                    {
+                      "kind": "setValue",
+                      "ref": {
+                        "kind": "fqn",
+                        "name": "t"
+                      },
+                      "value": {
+                        "value": "edited"
+                      }
+                    }
+                  ],
+                  "annotEffects": [],
+                  "uiEffects": [
+                    {
+                      "kind": "print"
+                    }
+                  ],
+                  "diagnostics": [
+                    {
+                      "code": "script-error",
+                      "message": "script refusal"
+                    }
+                  ]
+                }
+              ]
+            }
+          ],
+          "stateChanges": [],
+          "documentEvents": [],
+          "engine": [],
+          "callbacks": [
+            {
+              "fn": "sandbox.factory",
+              "args": [
+                0
+              ]
+            },
+            {
+              "fn": "bootSources",
+              "args": []
+            },
+            {
+              "fn": "sandbox.run",
+              "args": [
+                0,
+                "output()",
+                {
+                  "document": {
+                    "id": "doc-1",
+                    "fileName": "x.pdf",
+                    "pageCount": 1,
+                    "pageNumber": 0
+                  },
+                  "identity": {
+                    "name": "",
+                    "loginName": "",
+                    "corporation": "",
+                    "email": ""
+                  },
+                  "environment": {
+                    "nowMs": 1000,
+                    "utcOffsetMinutes": 0,
+                    "randomSeed": 1983485049
+                  },
+                  "fields": [],
+                  "event": {
+                    "kind": "widget-activate"
+                  }
+                },
+                {
+                  "maxExecutionMs": 50,
+                  "maxMemoryBytes": 16777216,
+                  "maxStackBytes": 524288,
+                  "maxEffects": 256,
+                  "maxOutputBytes": 1048576
+                }
+              ]
+            }
+          ],
+          "reports": [],
+          "status": "started",
+          "engineState": {},
+          "outcome": {
+            "promise": 1
+          }
+        }
+      ]
+    },
     {
       "name": "boots-once-and-hands-the-output-to-one-caller",
       "covers": "The first boot() builds the realm, reads the name tree and boots it; a later boot() in any transaction returns null.",
@@ -100,7 +718,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -149,7 +768,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -255,7 +875,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -345,7 +966,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -376,7 +998,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -495,7 +1118,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -625,7 +1249,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -637,7 +1262,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -649,7 +1275,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -661,7 +1288,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -673,7 +1301,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -750,7 +1379,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -952,7 +1582,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -985,7 +1616,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1160,7 +1792,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1209,7 +1842,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1301,7 +1935,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1492,7 +2127,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1536,7 +2172,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1654,7 +2291,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -1820,7 +2458,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1864,7 +2503,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2098,7 +2738,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2155,7 +2796,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2411,7 +3053,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2455,7 +3098,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2684,7 +3328,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2706,7 +3351,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2785,7 +3431,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -2927,7 +3574,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2949,7 +3597,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3031,7 +3680,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3156,7 +3806,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3178,7 +3829,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3220,7 +3872,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3351,7 +4004,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3373,7 +4027,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3402,7 +4057,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3488,7 +4144,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3500,7 +4157,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3551,7 +4209,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3727,7 +4386,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3758,7 +4418,8 @@
               ]
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3818,7 +4479,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3839,7 +4501,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3863,7 +4526,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3930,7 +4594,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3942,7 +4607,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3966,7 +4632,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4044,7 +4711,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4066,7 +4734,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -4085,7 +4754,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],

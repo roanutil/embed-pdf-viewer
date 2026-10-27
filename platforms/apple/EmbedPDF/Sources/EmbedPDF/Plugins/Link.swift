@@ -2,8 +2,9 @@ public import EmbedPDFBindings
 
 public typealias PdfLinkTarget = EmbedPDFBindings.PdfLinkTarget
 public typealias PdfDestination = EmbedPDFBindings.PdfDestination
+public typealias PageLinkTarget = EmbedPDFBindings.PageLinkTarget
+public typealias PageDestination = EmbedPDFBindings.PageDestination
 public typealias AnnotationRef = EmbedPDFBindings.AnnotationRef
-public typealias AnnotationRevisionToken = EmbedPDFBindings.AnnotationRevisionToken
 public typealias LinkItem = EmbedPDFBindings.LinkItem
 public typealias LinkHoverFlags = EmbedPDFBindings.LinkHoverFlags
 public typealias LinkInput = EmbedPDFBindings.LinkInput
@@ -21,6 +22,11 @@ public typealias LinkLoadedEvent = EmbedPDFBindings.LinkLoadedEvent
 ///
 /// The plugin never opens a URL. A `.uri` activation, returned or on
 /// `events`, is the app's to open.
+///
+/// Targets cross as the engine's JSON: `LinkItem.targetJson` is the page-space
+/// `PageLinkTarget` record (`{"kind": "uri", "uri": …}`), and a
+/// `.destination` resolution or activation carries the `PageDestination`
+/// record.
 public struct LinkCapability: Sendable {
   let handle: LinkHandle
   let viewer: PDFViewer
@@ -51,16 +57,17 @@ public struct LinkCapability: Sendable {
     try await bridged { try await handle.isLoaded(page: page) }
   }
 
-  public func resolve(_ target: PdfLinkTarget) async throws(PDFError) -> LinkResolution {
-    try await bridged { try await handle.resolve(target: target) }
+  /// What activating a target would do, with no side effect.
+  public func resolve(targetJSON: String) async throws(PDFError) -> LinkResolution {
+    try await bridged { try await handle.resolve(targetJson: targetJSON) }
   }
 
   public func activate(_ link: LinkItem) async throws(PDFError) -> LinkActivation {
     try await bridged { try await handle.activate(input: .link(page: link.page, id: link.id)) }
   }
 
-  public func activate(_ target: PdfLinkTarget) async throws(PDFError) -> LinkActivation {
-    try await bridged { try await handle.activate(input: .target(target: target)) }
+  public func activate(targetJSON: String) async throws(PDFError) -> LinkActivation {
+    try await bridged { try await handle.activate(input: .target(targetJson: targetJSON)) }
   }
 
   /// `nil` when no link is under the point.
@@ -74,8 +81,8 @@ public struct LinkCapability: Sendable {
 
   /// A label for a target that isn't a link on a page (an annotation's
   /// link, an outline entry): the URL, `Go to destination`, ...
-  public func label(for target: PdfLinkTarget) async throws(PDFError) -> String {
-    try await bridged { try await handle.label(input: .target(target: target)) }
+  public func label(forTargetJSON targetJSON: String) async throws(PDFError) -> String {
+    try await bridged { try await handle.label(input: .target(targetJson: targetJSON)) }
   }
 
   public func isNavigationEngaged() async throws(PDFError) -> Bool {

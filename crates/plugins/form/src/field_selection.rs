@@ -2,19 +2,22 @@
 //! (ISO 32000 Tables 241/242) and SubmitForm (Tables 239/240), and the pure
 //! submission dataset builder.
 
+use std::borrow::Borrow;
+
 use epdf_plugin_actions::{
     ActionDiagnostic, ActionDiagnosticCode, FormSubmissionEntry, PdfActionTargetRef, SubmitIntent,
 };
 use serde_json::Value;
 
-use crate::value::{get, num, str_of, string_of, truthy};
+use crate::value::{get, str_of, strict_eq, string_of, truthy};
 
 /// What `resolveFieldSelection` resolves: the selection, and which fields
 /// the target list addressed (directly or through a subtree).
 pub struct FieldSelection {
     names: Vec<String>,
-    /// `None` is a target without an object number (`undefined`).
-    object_numbers: Vec<Option<f64>>,
+    /// Each target's `objectNumber`, `None` for one without
+    /// (`undefined`, which a `Set` holds like any value).
+    object_numbers: Vec<Option<Value>>,
     /// `targets === null`: nothing is ever listed.
     everything: bool,
     pub selected: Vec<Value>,
@@ -26,14 +29,16 @@ impl FieldSelection {
         if self.everything {
             return false;
         }
-        let r = get(field, "ref");
-        let by_number = r.is_some_and(|r| {
-            let number = num(r, "fieldObjectNumber");
-            str_of(r, "kind") == Some("objectNumber") && self.object_numbers.contains(&number)
+        let reference = get(field, "ref");
+        let by_number = reference.is_some_and(|r| {
+            str_of(r, "kind") == Some("objectNumber") && {
+                let number = get(r, "objectNumber");
+                self.object_numbers.iter().any(|n| same_value_zero(n.as_ref(), number))
+            }
         });
         by_number || {
-            let name = get(field, "name");
-            self.names.iter().any(|target| match name.and_then(Value::as_str) {
+            let name = get(field, "name").and_then(Value::as_str);
+            self.names.iter().any(|target| match name {
                 Some(name) => name == target || name.starts_with(&format!("{target}.")),
                 None => false,
             })
@@ -41,11 +46,18 @@ impl FieldSelection {
     }
 }
 
-/// `resolveFieldSelection(all, targets, exclude)`. `targets == None` (the key
-/// absent) selects everything and ignores `exclude`; `[]` with include
+/// `Set#has`'s SameValueZero over JSON values (an absent value is
+/// `undefined`): `===`, except that `NaN` is the same as `NaN`.
+fn same_value_zero(a: Option<&Value>, b: Option<&Value>) -> bool {
+    let nan = |v: Option<&Value>| v.and_then(epdf_acrojs::js::number).is_some_and(f64::is_nan);
+    (nan(a) && nan(b)) || strict_eq(a, b)
+}
+
+/// `resolveFieldSelection(all, targets, exclude)`. `targets == None` (the
+/// key absent) selects everything and ignores `exclude`; `[]` with include
 /// selects nothing, `[]` with exclude everything.
-pub fn resolve_field_selection(
-    all: &[Value],
+pub fn resolve_field_selection<F: Borrow<Value>>(
+    all: &[F],
     targets: Option<&[PdfActionTargetRef]>,
     exclude: bool,
 ) -> FieldSelection {
@@ -54,7 +66,7 @@ pub fn resolve_field_selection(
             names: Vec::new(),
             object_numbers: Vec::new(),
             everything: true,
-            selected: all.to_vec(),
+            selected: all.iter().map(|f| f.borrow().clone()).collect(),
         };
     };
     let names = targets
@@ -65,11 +77,16 @@ pub fn resolve_field_selection(
     let object_numbers = targets
         .iter()
         .filter(|t| str_of(t, "kind") == Some("objectNumber"))
-        .map(|t| num(t, "objectNumber"))
+        .map(|t| get(t, "objectNumber").cloned())
         .collect();
     let mut selection =
         FieldSelection { names, object_numbers, everything: false, selected: Vec::new() };
-    selection.selected = all.iter().filter(|f| selection.listed(f) != exclude).cloned().collect();
+    selection.selected = all
+        .iter()
+        .map(Borrow::borrow)
+        .filter(|f| selection.listed(f) != exclude)
+        .cloned()
+        .collect();
     selection
 }
 
@@ -77,8 +94,8 @@ pub fn resolve_field_selection(
 /// from a live field list (NoExport veto, buttons and signatures never
 /// contribute, an unsupported `/V` is always diagnosed, a valueless field is
 /// name-only under IncludeNoValueFields).
-pub fn build_submit_entries(
-    fields: &[Value],
+pub fn build_submit_entries<F: Borrow<Value>>(
+    fields: &[F],
     intent: &SubmitIntent,
     diagnose: &dyn Fn(ActionDiagnostic),
 ) -> Vec<FormSubmissionEntry> {
@@ -101,7 +118,7 @@ pub fn build_submit_entries(
             }
             continue;
         }
-        if truthy(get(field, "flags").and_then(|f| get(f, "noExport"))) {
+        if truthy(get(field, "noExport")) {
             if explicit {
                 unsupported(format!(
                     "submit: '{name}' carries the NoExport flag — the veto is unconditional (ISO 12.7.6.2), skipped"
@@ -126,4 +143,23 @@ pub fn build_submit_entries(
         }
     }
     entries
+}
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn same_value_zero_is_strict_equality_with_nan_equal_to_itself() {
+        let nan = epdf_kernel::js::number(f64::NAN);
+        assert!(same_value_zero(Some(&nan), Some(&nan)));
+        assert!(!same_value_zero(Some(&nan), Some(&json!(1))));
+        assert!(same_value_zero(Some(&json!(0)), Some(&json!(-0.0))));
+        assert!(same_value_zero(Some(&json!(7)), Some(&json!(7.0))));
+        assert!(!same_value_zero(Some(&json!(7)), Some(&json!("7"))));
+        assert!(same_value_zero(None, Some(&epdf_kernel::undefined())));
+        assert!(!same_value_zero(None, Some(&Value::Null)));
+    }
 }

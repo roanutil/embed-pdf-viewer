@@ -1,93 +1,86 @@
 # epdf-plugin-stage
 
 `packages/plugin/stage` in Rust: the viewport lens. Camera, zoom, scroll, spreads, per-document
-layout, motion over a host frame seam, responsive settings, PDF destinations, the six change hooks,
-and the pan handler for the interaction hub. It follows the v3 contract: `create()` builds the
-controller, `connect` registers the navigation executors, pages are addressed by `PageRef`, and the
-verbs carry the v3 names. All 190 cases in six vector files replay identically (`cargo test -p
-epdf-plugin-stage`):
+layout, motion on the kernel's host clock, responsive settings, page-space destinations, the six
+events, and the pan handler for the interaction hub. It follows the current TypeScript contract
+(upstream `b456ee4fd` plus the Task 12 migration): `create()` builds the controller, `connect` wires
+the refit, the working set, the page-state feed and the navigation executors, and state changes go
+through pure transitions (`model.rs`). All 198 cases in six vector files replay with no member-order
+allowance and no outcome exception (`cargo test -p epdf-plugin-stage`):
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/stage-destination.json` | function | 29 | `destinationToReveal` for every `/XYZ` and `/Fit*` kind, null and absent members, offset crops, rotation, `userUnit` (0 throws, absent is NaN) |
-| `vectors/plugins/stage-pure.json` | function | 87 | `settingsEqual`, the registry constants, the motion laws, `boxOf`, `matchesQuery`, `mergeSettings`, `eqSetting`, `resolveResponsive`, `initialStageState`, `stageReducer` |
-| `vectors/plugins/stage-capability.json` | scenario | 48 | placement and initial-view providers (withdrawn ones included), every read, the setters by effect class, zoom intents, `zoomTo` with a bare level, `zoomBy`, fit-all, view rotation, wrapped grids, paged flow, spreads, RTL, navigation by index and by `PageRef`, bare and positioned reveal, `revealRect`, `resetSettings`, the scroller, gestures, the double-tap ladder, responsive rules, two lenses, the page-less document |
-| `vectors/plugins/stage-motion.json` | scenario | 15 | the rest detector, the navigation and zoom-anchored tweens, caught tweens, fling glide and bounce, the elastic release spring, all driven by `advance` |
-| `vectors/plugins/stage-feeds.json` | scenario | 8 | the page-registry refit, the `goto` and `named` executors through the real actions plugin, the page-state feed (a cursor past the last page included), and the pan handler through the real interaction hub |
-| `vectors/plugins/stage-events.json` | scenario | 3 | the six change hooks behind the diffing dispatch, `onMotionEnded` for tweens, flings and `stopMotion`, and the camera hook's object identity on an unbounded landing |
+| `vectors/plugins/stage-destination.json` | function | 29 | `revealOfDestination` for every page-space `xyz` and `fit*` kind, null and absent members |
+| `vectors/plugins/stage-pure.json` | function | 87 | `settingsEqual`, the registry constants, the motion laws, `boxOf`, `matchesQuery`, `mergeSettings`, `eqSetting`, `resolveResponsive`, `initialStageState`, the named transitions with `{state, same}` |
+| `vectors/plugins/stage-capability.json` | scenario | 54 | placement and initial-view providers, every read, the setters by effect class, zoom intents, fit-all, view rotation, wrapped grids, paged flow, spreads, RTL, navigation by index and by `PageRef`, bare and positioned reveal, the scroller, gestures, the double-tap ladder, responsive rules, two lenses, the page-less document |
+| `vectors/plugins/stage-motion.json` | scenario | 15 | the rest detector, the navigation and zoom-anchored tweens, caught tweens, fling glide and bounce, the elastic release spring, on the scenario clock's 16 ms frames |
+| `vectors/plugins/stage-feeds.json` | scenario | 10 | the page-registry refit, the `goto` and `named` executors through the real actions plugin, the page-state feed, and the pan handler through the real interaction hub |
+| `vectors/plugins/stage-events.json` | scenario | 3 | the six events, `onMotionEnded` for tweens, flings and `stopMotion`, and the camera event's object identity on an unbounded landing |
 
-`tests/api.rs` covers what the vectors can't: lens identity (`same`), frames that fire after their
-document closed, and the `RuleWhen` and `PdfDestination` helpers.
+`tests/api.rs` covers what the vectors can't: lens identity, motion on frames and its cancellation
+when the document closes, `stop_motion`, the current destination and a destination asked for before
+placement, the order of a viewport report's events, the paged-empty camera refusal, M27 (the empty
+scene for a NaN column count, and `Err` rather than a panic for non-finite camera input on a grid),
+R5, a non-invertible page transform, page arguments, the working set and its engine calls, and what
+a close releases.
 
-The generators (`tooling/plugin-conformance/src/suites/stage-pure.ts` and `stage-plugin.ts`) reach
-3,536 of the package's 3,542 statements and 774 of its 804 branches, counted over the stage vector
-files alone. What they can't reach is listed under Coverage.
+The statement and branch coverage figures that stood here were measured against the pre-catch-up
+package and are stale; not re-run since 172f5369d.
 
 ## The public API
 
 `stage_plugin(StagePluginOptions)` builds the plugin. `STAGE` is the main lens's token and
 `StageCapability` its capability, with the TypeScript's members in snake case (`get_camera`,
-`list_visible_pages`, `get_page_frame`, `go_to_page`, `go_to_page_index`, `reveal`, `reveal_index`,
-`zoom_to`, `update_settings`, `on_page_changed`, ...). The TypeScript types the same object twice,
-as `StageCapability` and the wider `StageHostCapability`; Rust has one type, and the host-only
-members (`set_viewport_size`, `begin_gesture`, `fling`, `zoom_around`, `get_scroll_metrics`,
-`provide_initial_view`, `refit`, `get_lens_id`, ...) sit on it with the rest. A second lens is
-`StagePluginOptions { id, token, .. }`, as `stagePlugin({id, token})` is. `list_visible_pages()`
-returns an `Rc<Vec<VisiblePage>>` that stays the same `Rc` until the camera, scene, viewport, ratio
-or rest state changes, so a layer that compared it with `Object.is` can use `Rc::ptr_eq`.
+`list_visible_pages`, `get_page_frame`, `go_to_page`, `go_to_destination`, `reveal`,
+`get_current_destination`, `zoom_to`, `update_settings`, `on_page_changed`, ...). The TypeScript
+types the same object twice, as `StageCapability` and the wider `StageHostCapability`; Rust has one
+type, and the host-only members (`set_viewport_size`, `begin_gesture`, `fling`, `zoom_around`,
+`get_scroll_metrics`, `provide_initial_view`, `refit`, `get_lens_id`, ...) sit on it with the rest.
+A second lens is `StagePluginOptions { id, token, .. }`, as `stagePlugin({id, token})` is.
+`list_visible_pages()` returns an `Rc<Vec<VisiblePage>>` that stays the same `Rc` until a memo input
+moves, so a layer that compared it with `Object.is` can use `Rc::ptr_eq`.
 
-`PageInfo` is the kernel's registry row as JSON (`serde_json::Value`), because the kernel keeps the
-page registry that way. `get_current_page`, `list_current_item_pages` and the page hook hand those
-rows back. `zoom_to` takes a `ZoomTarget`, the TypeScript's `number | ZoomSpec`. The hooks return
-the kernel's `Unsubscribe`, and so does `provide_initial_view`.
-
-The `/destination` entry is `destination_to_reveal(&PdfDestination, &PageLayout, Option<Rect>)`,
-returning a `DestinationReveal { page_index, options }` for `reveal_index`. It returns
-`Err(NonInvertible)` where the TypeScript throws, for a layout whose `userUnit` is 0. The contract
-types link and search need are exported from the crate root: `RevealOptions`, `RevealAnchor`,
-`RevealZoom`, `ScrollBehaviorKind`, `StageState`, `StageAction`, `StageSettings`,
-`PartialSettings`, `StageViewState`, `Viewpoint`, `VisiblePage`. `create_scroll_handler(stage,
-hub, options)` returns the `InteractionHandler` the surface binding registers, scoped to
+A page argument is `impl Into<PageTarget>`: a `PageRef`, or a `usize` display index, the
+TypeScript's `PageRef | number`. `PageTarget::Index` takes any `f64`, and only a whole one names a
+page. `get_current_page` and the page event answer a `PageRef`; `list_current_item_pages` answers
+the kernel's registry rows as JSON (`PageInfo`). `PageDestination` is the core page-space
+destination, declared here because the kernel crate has none and `epdf-engine`'s would pull pdfium
+into `epdf-web`. `reveal_of_destination(&PageDestination, Size)` is `destination.ts`.
+`stage_state(Option<&StageCapability>)` is `stageState`. `create_scroll_handler(stage, hub,
+options)` returns the `InteractionHandler` the surface binding registers, scoped to
 `stage.get_lens_id()`.
 
-Where the TypeScript throws, the verb returns `Err`. The only throw the capability can reach is a
-`TypeError` (`Cannot read properties of undefined (reading 'x')`) from every verb that clamps
-against the paged slice of a document with no pages: `set_camera`, `pan_by`, `zoom_around`,
-`zoom_in`, `zoom_out`, `zoom_by`, `fling`, `end_gesture` after an elastic gesture, and
-`update_settings` plus every setter built on it when the change re-clamps. The cost is a `Result`
-on those methods for one degenerate document. The page-less case in `stage-capability.json` pins
-seven of those throws.
+Where the TypeScript throws, the verb returns `Err`. The paged slice of a document with no pages has
+no item, and every verb that clamps against it (`set_camera`, `pan_by`, `zoom_around`, `zoom_in`,
+`zoom_out`, `zoom_by`, `fling`, `end_gesture` after an elastic gesture, and `update_settings` when
+the change re-clamps) answers the TypeScript's `TypeError` (`Cannot read properties of undefined
+(reading 'x')`) after the same earlier writes. The TypeScript reaches it by dereferencing
+`undefined` (`services/scene.ts` `itemRect`); Rust checks for the missing item in `stay_bounds`, so
+the error is the same and nothing panics. `a-document-with-no-pages` pins seven of those throws.
 
 ## Host inputs
 
-`services/scheduler.ts` reads two globals: `globalThis.requestAnimationFrame` and
-`globalThis.cancelAnimationFrame`. They are the `Scheduler` trait here (`raf(callback) -> handle`,
-`caf(handle)`), passed as `StageConfig::scheduler`. Rust has no ambient frame clock, so without one
-the lens is frameless, which is what the TypeScript is under Node: navigation jumps, `fling` only
-snaps into bounds, and the rest detector never runs. A handle is never 0; the capability reads 0 as
-"nothing scheduled".
-
-The viewport size and device pixel ratio were already inputs in the TypeScript (`setViewportSize`,
-`setDevicePixelRatio`) and stay that way.
+Time comes from the kernel's host clock (`ctx.clock`, `Kernel::new_with_clock`). A clock with frames
+gives tweens, flings and the rest detector; without frames, as under Node, navigation jumps, `fling`
+only snaps into bounds, and pages always snap. The instance clock cancels every frame and timer when
+the document closes, so no motion outlives its document. The viewport size and device pixel ratio
+are inputs (`set_viewport_size`, `set_device_pixel_ratio`).
 
 ## Harness shims
 
-`src/harness.rs` mirrors four shims in `stage-plugin.ts`. A config with `frames: true` gets
-`FrameScheduler`: 16 ms timers on the runtime clock, stamped with `rt::now()`, handles from 1, the
-same as the generator's scheduler over `@sinonjs/fake-timers`. `lens: name` registers the plugin
-under that id with a token of that name. A responsive rule's `when` may be a `$fn` spec, a scripted
-predicate that logs the box it is asked about. The `stage-scroll` factory is the surface binding's
-half of interaction: a document plugin that registers the scroll handler with the hub, as the React
-and Angular stages do. In `stage-pure.ts`, `resolveResponsive` rules may carry `when: {"$returns":
-v}` for the predicate `() => v`, and `stageReducer` reports `{state, same}` so the vectors pin the
-reference identity the store notifies on (`None` in Rust).
+`src/harness.rs` mirrors the shims in `stage-plugin.ts` and `stage-pure.ts`. A case's `clock:
+{frames: true}` builds the kernel over the scenario clock's 16 ms frames; the stage itself has no
+frame option. `lens: name` registers the plugin under that id with a token of that name. A responsive
+rule's `when` may be a `$fn` spec, a scripted predicate that logs the box it is asked about. The
+`stage-scroll` factory registers the scroll handler with the hub at connect, as the React and
+Angular stages do. In `stage-pure.ts`, `resolveResponsive` rules may carry `when: {"$returns": v}`
+for the predicate `() => v`, and the named transitions report `{state, same}`, `same` being the
+`Rc` identity the store notifies on.
 
-A `VisiblePage` prints its transform's six methods as `$ref`s, registered in member order, so the
-ref numbering matches the TypeScript's. The cases were authored against the v2 names, and
-`stageStep` in `stage-plugin.ts` emits them against the v3 surface (`goToPage` with an index becomes
-`goToPageIndex`, a per-setting read becomes `getSettings`, `pages` reads the kernel's
-`documents.listPages`), so the vectors only ever call v3 members. A registry row is printed with its
-`undefined` members dropped, as JavaScript reads it.
+A `VisiblePage` prints its transform's six methods (`toPixels` to `viewToPageRect`) as `$ref`s,
+registered in member order, then `cssMatrix`. A restored view decodes as a `StageViewPatch`, because
+the vectors' views leave out the settings added since they were written, and `mergeSettings` skips
+an absent key.
 
 ## Where the port differs in shape
 
@@ -99,13 +92,19 @@ StageCapability` block in a file of the same name over one shared `Inner`, so th
 late binding. `settings/settings.ts` is `settings/area.rs`, because `settings::settings` would trip
 clippy's `module_inception`.
 
-`services/events.ts` wraps `ctx.dispatch` so every write compares the state before and after and
-fires the hooks. `StageCapability::dispatch` does the same. The camera hook fires on
-`before.camera !== after.camera`, an object comparison, and the port keeps that: a CAMERA write
-always carries a new camera except `setCam(cam())` on an unbounded stage, where `clampCamera`
-returns its input. `set_cam_current` marks that write, and no camera event fires for it. The
-`an-unbounded-landing-keeps-the-camera` case pins it. The viewport hook fires on every VP write for
-the same reason.
+`services/events.ts` derives five events in one state-change listener, and so does
+`services/events.rs`. The TypeScript compares two state members by object identity
+(`previous.camera !== next.camera`, `previous.viewport !== next.viewport`) and prints each camera in
+the member order of the literal that built it (`{x, y, zoom}` or stage-core's `{zoom, x, y}`). The
+state therefore carries a hidden camera identity and member order (`CameraObject`), and counts
+viewport writes. `writeCamera(camera())` on an unbounded stage stores the same object, so no camera
+event fires; `an-unbounded-landing-keeps-the-camera` pins it.
+
+`patchSettings` lands a key when it is not `Object.is` the current value. A primitive setting
+compares by value; an object setting (a page frame, an alignment, a zoom spec, a `{px}` gap) counts
+as new, because every patch the stage writes carries a new object. The TypeScript can pass back the
+very object the state holds (a `getViewpoint()` zoom handed to `goToPage`), and then writes nothing;
+Rust writes an equal value and records a state change with no settings event. No vector reaches it.
 
 The settings registry is the `SettingKey` enum in `SETTING_KEYS` order, and `for_each_setting!`
 expands one arm per field wherever the TypeScript loops over the keys (merge, diff, effect lookup,
@@ -113,25 +112,29 @@ equality). A setting added to `StageSettings` without a row fails to compile, wh
 TypeScript's `Record<keyof StageSettings, ...>` guarantee. `eqSetting`'s one level of own-key
 equality is `PartialEq` on the typed values, `NaN` unequal to itself included.
 
-The two watchers in `sync/watchers.ts` are written against `subscribe` rather than
-`EffectCtx::watch`, because the page-state feed's selector resolves the capability and throws while
-the document closes. The TypeScript reports that throw and leaves the watch's previous value alone,
-and so does the port: `navigation-executors` in `stage-feeds.json` records the report on its close
-step.
+`connect.ts`'s `ctx.watch` calls are the kernel's `ControllerContext::watch`.
+The working-set watch (`working-set.ts`) runs as in the TypeScript, because reading the visible pages
+on every store change builds the scene when it does there. It tells the engine through
+`DocumentHandle::set_working_set(view, pages)`, the pages as JSON, once per change of the set's key.
+The kernel's default is a no-op, and so is the conformance fake's, as the TypeScript fake's is
+(`fake-engine.ts:625`); the native and web handles forward it to the engine (Task 13.33).
+`the_working_set_is_told_at_connect_and_on_each_change` pins the calls with a recording handle.
+
+A page transform whose view scale squares to zero (a huge device ratio over a tiny unbounded zoom)
+is not invertible. The TypeScript throws `Mat2D.invert: non-invertible matrix` from the page reads;
+no Rust page read returns a `Result`, so the page is left out of `list_visible_pages` and
+`get_page_frame` answers `None` (`a_non_invertible_page_transform_leaves_the_page_out`).
 
 Engine JSON reaches the stage carrying the kernel's `{"$undefined": true}` marker (a page without
 `userUnit`, say). `without_undefined` drops those members before the page registry and destinations
 deserialize, as a JavaScript read sees them.
 
-A frame scheduled before its document closed still fires. Under v3 the lease answers the last state
-after close, so the frame reads it, as the TypeScript's does, and its dispatches are dropped with
-one `instance-closed` report. The pre-v3 port returned early instead.
+A pending navigation (`whenPlaced`) and the providers and rule predicates hold the capability; the
+instance's cleanup lets go of them at close, which a garbage collector does for the TypeScript.
 
 ## Not ported
 
-Page indexes are integers. `goToPageIndex` and `revealIndex` take any number in the TypeScript, and
-a fractional index lands as a fractional cursor. Here they take `isize` and the cursor is `usize`,
-so a restored view with a negative cursor does not decode.
+The cursor is a `usize`, so a restored view with a negative or fractional cursor does not decode.
 
 `undefined` and `null` settings are absent. `stagePlugin({padding: undefined})` spreads the
 `undefined` over the default and the state loses its padding; the typed config keeps the default.
@@ -142,32 +145,13 @@ and `eqSetting` on nested objects is not ported.
 
 `RevealOptions.anchor: null` reads as absent (a bare reveal); the TypeScript counts a present null
 as positioned. `GoToOptions.arrivalAlign: {y: undefined}` reads as absent; the TypeScript spreads
-the `undefined` and places at NaN. A goto node whose destination has an unknown `kind` fails the
-executor here, where the TypeScript's switch falls through to a bare smooth reveal.
+the `undefined` and places at NaN. A goto node whose destination does not decode as a
+`PageDestination` gets a bare reveal of its page, as the TypeScript's switch falls through to one.
 
 ## Coverage
 
-Six statements and 30 branches are unreached. Each is unreachable from the public surface or
-doesn't port:
-
-- `services/scheduler.ts:18` (and branch `17:43`), the `globalThis.requestAnimationFrame` default.
-  Node has none; Rust takes the `Scheduler` explicitly.
-- The `ctx.document()` absent arms: `services/scene.ts:34`, `:36`, `:105`, `:180`,
-  `read/pages.ts:157`, `:193`, `navigation/arrive.ts:99`, `:180`, `:181`, `view/lifecycle.ts:60`,
-  `sync/watchers.ts:31`. The plugin is document-scoped, and the kernel keeps serving the staged meta
-  while the document closes.
-- `services/scene.ts:167`, the `JSON.stringify` arm of the scene key: every object-valued scene
-  setting has its own key function.
-- A laid-out box without a registry row, or a row without its box: `read/pages.ts:30`, `:36-38`,
-  `:49`, `:162`, `services/scene.ts:218`, `:233`. The scene is built from the same registry and
-  grouping, so each target is in its item and each box has its row.
-- An empty scene after a non-empty page count: `read/pages.ts:160`, `navigation/reveal.ts:94`,
-  `:128`, `:162`, `:171`, `navigation/zoom.ts:65`.
-- `sync/watchers.ts:64`, a null snapshot in the feed handler: `placed` is a one-way latch.
-- `stage.plugin.ts:87` and `:102`, the executors' node-type guards, and `:104`, a missing stage in
-  the named executor. The dispatcher calls an executor only for its own type, and the stage lives as
-  long as its document.
-- `model.ts:124-125`, the reducer's `default` arm. `StageAction` is an enum here.
+The unreached-line list that stood here named pre-catch-up files (`services/scheduler.ts`,
+`sync/watchers.ts`, the reducer) and is stale; not re-run since 172f5369d.
 
 Two TypeScript behaviours are pinned that look unintended. `applyViewState` writes the view's
 cursor without clamping it, so a view saved on a longer document leaves the cursor past the last
@@ -177,6 +161,8 @@ means a bounded re-clamp that moves nothing still fires a camera event, while th
 unbounded stage fires none.
 
 ## Mutation testing
+
+Stale: these counts and line numbers are from the pre-catch-up port. The in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 5 of 5 viable mutants (4 caught, 1 timeout).
 
 `scripts/mutants.sh -p epdf-plugin-stage --test-package epdf-plugin-stage --file <file>`, file by
 file over every module but `harness.rs`, catches 874 of 899 viable mutants (870 caught, 4

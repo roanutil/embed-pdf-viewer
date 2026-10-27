@@ -15,8 +15,6 @@
  * why the vectors carry deliberately non-BMP text.
  */
 
-import { toPageRef, type PageRef } from '../../../packages/engine/core/src/identity/PageRef';
-
 export interface RegexCase {
   /** Stable slug, and what a failure names. */
   readonly name: string;
@@ -766,14 +764,42 @@ export interface SliceCase {
       readonly matchCase?: boolean;
       readonly wholeWord?: boolean;
       readonly matchDiacritics?: boolean;
+      readonly ignoreWhitespace?: boolean;
     };
     readonly mode?: 'rects' | 'full';
-    readonly cursor?: string;
-    readonly startPage?: PageRef;
+    /**
+     * A malformed cursor is the literal string a caller sends. A well-formed
+     * one is the state it carries, minted by the generator with upstream's
+     * own `searchQueryKey` and `encodeSearchCursor`, so the key's format is
+     * never written here by hand.
+     */
+    readonly cursor?: string | SliceCursor;
+    readonly startPage?: number;
   };
   /** The sequence the session is on, for the cursor's staleness check. */
   readonly seq?: number;
+  /**
+   * The case is about a cursor minted for a different query. Every other
+   * case with a minted cursor must get past the key check.
+   */
+  readonly keyMismatch?: true;
 }
+
+/** The state a resume cursor carries, before it is encoded. */
+export interface SliceCursor {
+  /** Format version. Absent means the current one. */
+  readonly v?: number;
+  readonly seq: number;
+  /** The query and mode the cursor was minted for; its key is derived from them. */
+  readonly mintedFor: {
+    readonly query: SliceCase['request']['query'];
+    readonly mode?: 'rects' | 'full';
+  };
+  readonly start: number;
+  readonly scanned: number;
+}
+
+const THE = { query: { text: 'the' } } as const;
 
 export const SLICE_CASES: readonly SliceCase[] = [
   {
@@ -835,8 +861,14 @@ export const SLICE_CASES: readonly SliceCase[] = [
   },
   {
     name: 'key-separates-ignore-whitespace',
-    covers: 'ignoreWhitespace has its own slot, after wholeWord, as searchQueryKey spells it.',
-    request: { query: { text: 'the', ignoreWhitespace: true } },
+    covers:
+      'ignoreWhitespace has its own slot in the key, after wholeWord, as searchQueryKey spells it. A cursor minted for the same text without the flag is refused at the key check.',
+    keyMismatch: true,
+    request: {
+      query: { text: 'the', ignoreWhitespace: true },
+      cursor: { seq: 7, mintedFor: THE, start: 0, scanned: 5 },
+    },
+    seq: 7,
   },
   {
     name: 'key-separates-regex-from-literal',
@@ -848,16 +880,17 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'The accepting case, so the refusals below are not vacuous.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: { seq: 7, mintedFor: THE, start: 0, scanned: 5 },
     },
     seq: 7,
   },
   {
     name: 'cursor-from-another-query-is-refused',
     covers: 'The key pins the query. Resuming under a different one would scan the wrong needle.',
+    keyMismatch: true,
     request: {
       query: { text: 'other' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: { seq: 7, mintedFor: THE, start: 0, scanned: 5 },
     },
     seq: 7,
   },
@@ -867,7 +900,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
       'The sequence pins the content. Resuming over mutated pages could serve text a redaction just removed.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":6,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: { seq: 6, mintedFor: THE, start: 0, scanned: 5 },
     },
     seq: 7,
   },
@@ -877,8 +910,8 @@ export const SLICE_CASES: readonly SliceCase[] = [
       'The cursor owns the position. Letting it quietly win would hand back matches from a part of the document the caller did not ask about.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
-      startPage: toPageRef(4),
+      cursor: { seq: 7, mintedFor: THE, start: 0, scanned: 5 },
+      startPage: 4,
     },
     seq: 7,
   },
@@ -887,8 +920,8 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'A startPage that agrees with the cursor is redundant rather than wrong.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":1,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":4,"scanned":5}',
-      startPage: toPageRef(4),
+      cursor: { seq: 7, mintedFor: THE, start: 4, scanned: 5 },
+      startPage: 4,
     },
     seq: 7,
   },
@@ -903,7 +936,7 @@ export const SLICE_CASES: readonly SliceCase[] = [
     covers: 'A future format is refused rather than reinterpreted through this one.',
     request: {
       query: { text: 'the' },
-      cursor: '{"v":2,"seq":7,"key":"[\\"l\\",\\"the\\",0,0,0,0,\\"full\\"]","start":0,"scanned":5}',
+      cursor: { v: 2, seq: 7, mintedFor: THE, start: 0, scanned: 5 },
     },
     seq: 7,
   },

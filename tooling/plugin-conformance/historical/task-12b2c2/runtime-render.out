@@ -1,0 +1,9 @@
+rendered 1 suites
+render OK plugins/actions.json 36
+(node:24491) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+rendered 1 suites
+render OK plugins/actions-dispatcher.json 30
+rendered 1 suites
+render OK plugins/actions-submit.json 10
+{"originals":76,"current":76,"pure":36,"scenarios":40,"changedOriginalInputs":62,"retainedOriginalInputs":14,"additions":0,"constructionRefusals":0,"executedSteps":320,"stepThrows":0,"unmatched":0,"reports":4,"pureThrows":[],"settlements":194,"rejected":2,"callbacks":135,"console":0}

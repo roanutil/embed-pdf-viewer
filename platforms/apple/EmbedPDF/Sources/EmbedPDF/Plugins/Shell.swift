@@ -4,7 +4,8 @@ import Foundation
 public typealias ShellSurface = EmbedPDFBindings.ShellSurface
 public typealias ShellOpenOptions = EmbedPDFBindings.ShellOpenOptions
 public typealias ShellSnapshot = EmbedPDFBindings.ShellSnapshot
-public typealias ShellSurfaceEvent = EmbedPDFBindings.ShellSurfaceEvent
+public typealias ShellSurfaceOpenedEvent = EmbedPDFBindings.ShellSurfaceOpenedEvent
+public typealias ShellSurfaceClosedEvent = EmbedPDFBindings.ShellSurfaceClosedEvent
 public typealias ShellMenuEvent = EmbedPDFBindings.ShellMenuEvent
 public typealias ShellEvent = EmbedPDFBindings.ShellEvent
 
@@ -124,7 +125,7 @@ extension ShellSurface {
   }
 }
 
-extension ShellSurfaceEvent {
+extension ShellSurfaceOpenedEvent {
   public func props<Props: Decodable>(as type: Props.Type) throws -> Props? {
     try propsJson.map { try JSONDecoder().decode(type, from: Data($0.utf8)) }
   }

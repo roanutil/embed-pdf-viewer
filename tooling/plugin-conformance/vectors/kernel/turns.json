@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "scenario",
   "describes": "packages/core/main: the microtask turn on which each document transition and the kernel teardown settle, measured with the runner's turn meter.",
   "cases": [
@@ -15,20 +15,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -43,7 +33,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -52,18 +42,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -103,7 +118,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -117,20 +133,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -152,6 +183,11 @@
             {
               "doc": "a",
               "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
               "args": []
             }
           ],
@@ -223,21 +259,9 @@
               ]
             },
             {
-              "fn": "alpha.init",
-              "args": [
-                "a"
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 11
-              ]
-            },
-            {
-              "fn": "alpha.effects",
-              "args": [
-                "a"
               ]
             },
             {
@@ -247,12 +271,16 @@
               ]
             },
             {
-              "fn": "alpha.onAction",
+              "fn": "alpha.create",
               "args": [
                 "a",
-                {
-                  "type": "@@core/document-added"
-                }
+                "a#1"
+              ]
+            },
+            {
+              "fn": "alpha.connect",
+              "args": [
+                "a"
               ]
             },
             {
@@ -286,15 +314,15 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                1
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 18
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
               ]
             },
             {
@@ -428,7 +456,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -450,7 +478,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -459,18 +487,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -521,7 +574,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -537,24 +591,41 @@
               "promise": 1,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "bad xref",
-                  "code": "Format"
+                  "code": "operation-failed",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "bad xref",
+                      "code": "Format"
+                    }
+                  }
                 }
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-open-failed"
+              "event": "openFailed",
+              "value": {
+                "documentId": "a",
+                "error": {
+                  "code": "operation-failed",
+                  "message": "bad xref",
+                  "capability": "documents",
+                  "permission": null
+                }
               }
             }
           ],
@@ -642,15 +713,15 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                1
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 11
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
               ]
             },
             {
@@ -867,7 +938,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -883,23 +955,40 @@
               "promise": 1,
               "rejected": {
                 "$error": {
-                  "name": "Error",
-                  "message": "bad url"
+                  "name": "PluginError",
+                  "message": "bad url",
+                  "code": "operation-failed",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "Error",
+                      "message": "bad url"
+                    }
+                  }
                 }
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "pending:1",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-open-failed"
+              "event": "openFailed",
+              "value": {
+                "documentId": "pending:1",
+                "error": {
+                  "code": "operation-failed",
+                  "message": "bad url",
+                  "capability": "documents",
+                  "permission": null
+                }
               }
             }
           ],
@@ -952,15 +1041,15 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                1
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 6
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
               ]
             },
             {
@@ -1183,20 +1272,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -1211,7 +1290,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -1220,25 +1299,52 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
             ],
             "security": {
               "passwordPrompt": {
-                "state": "required"
+                "state": "required",
+                "hint": null,
+                "incorrect": false
               }
             },
             "responses": [
@@ -1263,7 +1369,24 @@
                   }
                 ],
                 "value": {
-                  "security": {}
+                  "security": {
+                    "encryption": {
+                      "state": "none",
+                      "requiresPassword": false
+                    },
+                    "permissions": {
+                      "known": true,
+                      "bits": null,
+                      "allAllowed": true,
+                      "openedAs": "none",
+                      "securityHandlerRevision": null,
+                      "canUpgradeToOwner": false
+                    },
+                    "access": {
+                      "required": false,
+                      "reasons": []
+                    }
+                  }
                 }
               }
             ]
@@ -1325,7 +1448,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -1339,20 +1463,31 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "locked",
+                  "pageCount": 0,
+                  "hasUnsavedChanges": false,
+                  "passwordProvided": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-locked"
+              "event": "locked",
+              "value": {
+                "documentId": "a",
+                "passwordProvided": false
               }
             }
           ],
@@ -1390,14 +1525,24 @@
               "promise": 2,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "incorrect password",
-                  "code": "DocPasswordIncorrect"
+                  "code": "permission-denied",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "incorrect password",
+                      "code": "DocPasswordIncorrect"
+                    }
+                  }
                 }
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [
             {
               "doc": "a",
@@ -1471,15 +1616,15 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                2
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 10
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
               ]
             },
             {
@@ -1677,11 +1822,18 @@
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -1698,6 +1850,11 @@
             {
               "doc": "a",
               "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
               "args": []
             }
           ],
@@ -1769,21 +1926,9 @@
               ]
             },
             {
-              "fn": "alpha.init",
-              "args": [
-                "a"
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 11
-              ]
-            },
-            {
-              "fn": "alpha.effects",
-              "args": [
-                "a"
               ]
             },
             {
@@ -1793,12 +1938,16 @@
               ]
             },
             {
-              "fn": "alpha.onAction",
+              "fn": "alpha.create",
               "args": [
                 "a",
-                {
-                  "type": "@@core/document-added"
-                }
+                "a#1"
+              ]
+            },
+            {
+              "fn": "alpha.connect",
+              "args": [
+                "a"
               ]
             },
             {
@@ -1832,12 +1981,6 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                3
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 18
@@ -1847,6 +1990,12 @@
               "fn": "@@turn",
               "args": [
                 19
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                3
               ]
             },
             {
@@ -1974,7 +2123,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -1995,20 +2144,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -2023,7 +2162,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2032,18 +2171,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2102,7 +2266,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2118,24 +2283,41 @@
               "promise": 1,
               "rejected": {
                 "$error": {
-                  "name": "EngineError",
+                  "name": "PluginError",
                   "message": "bad xref",
-                  "code": "Format"
+                  "code": "operation-failed",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "EngineError",
+                      "message": "bad xref",
+                      "code": "Format"
+                    }
+                  }
                 }
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-open-failed"
+              "event": "openFailed",
+              "value": {
+                "documentId": "a",
+                "error": {
+                  "code": "operation-failed",
+                  "message": "bad xref",
+                  "capability": "documents",
+                  "permission": null
+                }
               }
             }
           ],
@@ -2167,26 +2349,28 @@
           "settled": [
             {
               "promise": 2,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-removed"
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
-              }
-            },
-            {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -2208,6 +2392,11 @@
             {
               "doc": "a",
               "path": "pages.list",
+              "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
               "args": []
             }
           ],
@@ -2291,15 +2480,22 @@
               ]
             },
             {
-              "fn": "@@turn",
+              "fn": "alpha.create",
               "args": [
-                13
+                "a",
+                "a#2"
               ]
             },
             {
-              "fn": "alpha.init",
+              "fn": "alpha.connect",
               "args": [
                 "a"
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                13
               ]
             },
             {
@@ -2309,24 +2505,9 @@
               ]
             },
             {
-              "fn": "alpha.effects",
-              "args": [
-                "a"
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 15
-              ]
-            },
-            {
-              "fn": "alpha.onAction",
-              "args": [
-                "a",
-                {
-                  "type": "@@core/document-added"
-                }
               ]
             },
             {
@@ -2354,6 +2535,12 @@
               ]
             },
             {
+              "fn": "@@settled",
+              "args": [
+                2
+              ]
+            },
+            {
               "fn": "@@turn",
               "args": [
                 20
@@ -2363,12 +2550,6 @@
               "fn": "@@turn",
               "args": [
                 21
-              ]
-            },
-            {
-              "fn": "@@settled",
-              "args": [
-                2
               ]
             },
             {
@@ -2484,7 +2665,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -2505,20 +2686,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -2533,7 +2704,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -2542,18 +2713,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -2608,7 +2804,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2620,7 +2817,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -2634,11 +2832,13 @@
         },
         {
           "settled": [],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "pending:1",
+                "previousDocumentId": null
               }
             }
           ],
@@ -2668,8 +2868,17 @@
               "promise": 1,
               "rejected": {
                 "$error": {
-                  "name": "CancelledError",
-                  "message": "[kernel] cancelled: closed while opening: pending:1"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "CancelledError",
+                      "message": "[kernel] cancelled: closed while opening: pending:1"
+                    }
+                  }
                 }
               }
             },
@@ -2680,11 +2889,19 @@
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-removed"
+              "event": "activeChanged",
+              "value": {
+                "documentId": null,
+                "previousDocumentId": "pending:1"
+              }
+            },
+            {
+              "event": "closed",
+              "value": {
+                "documentId": "pending:1"
               }
             }
           ],
@@ -2751,6 +2968,12 @@
               ]
             },
             {
+              "fn": "@@turn",
+              "args": [
+                9
+              ]
+            },
+            {
               "fn": "closed",
               "args": [
                 {
@@ -2761,25 +2984,19 @@
             {
               "fn": "@@turn",
               "args": [
-                9
-              ]
-            },
-            {
-              "fn": "@@turn",
-              "args": [
                 10
-              ]
-            },
-            {
-              "fn": "@@settled",
-              "args": [
-                2
               ]
             },
             {
               "fn": "@@turn",
               "args": [
                 11
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
               ]
             },
             {
@@ -2971,7 +3188,7 @@
           "config": {
             "id": "ws",
             "token": "ws",
-            "effects": {
+            "connect": {
               "cleanup": true
             }
           }
@@ -3000,11 +3217,19 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
-              "fn": "ws.effects",
+              "fn": "ws.create",
+              "args": [
+                null,
+                "workspace:ws"
+              ]
+            },
+            {
+              "fn": "ws.connect",
               "args": [
                 null
               ]
@@ -3026,7 +3251,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
@@ -3126,12 +3352,6 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                1
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 15
@@ -3147,6 +3367,12 @@
               "fn": "@@turn",
               "args": [
                 17
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
               ]
             },
             {
@@ -3303,20 +3529,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -3331,7 +3547,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -3340,18 +3556,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -3415,7 +3656,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3427,7 +3669,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3441,11 +3684,13 @@
         },
         {
           "settled": [],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             }
           ],
@@ -3488,8 +3733,17 @@
               "promise": 1,
               "rejected": {
                 "$error": {
-                  "name": "CancelledError",
-                  "message": "[kernel] cancelled: closed while opening: a"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "CancelledError",
+                      "message": "[kernel] cancelled: closed while opening: a"
+                    }
+                  }
                 }
               }
             },
@@ -3500,11 +3754,19 @@
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-removed"
+              "event": "activeChanged",
+              "value": {
+                "documentId": null,
+                "previousDocumentId": "a"
+              }
+            },
+            {
+              "event": "closed",
+              "value": {
+                "documentId": "a"
               }
             }
           ],
@@ -3604,6 +3866,12 @@
               ]
             },
             {
+              "fn": "@@turn",
+              "args": [
+                12
+              ]
+            },
+            {
               "fn": "closed",
               "args": [
                 {
@@ -3614,25 +3882,19 @@
             {
               "fn": "@@turn",
               "args": [
-                12
-              ]
-            },
-            {
-              "fn": "@@turn",
-              "args": [
                 13
-              ]
-            },
-            {
-              "fn": "@@settled",
-              "args": [
-                2
               ]
             },
             {
               "fn": "@@turn",
               "args": [
                 14
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
               ]
             },
             {
@@ -3800,10 +4062,10 @@
       ]
     },
     {
-      "name": "close-joins-a-pending-init-on-its-turn",
-      "covers": "close() while a plugin init is pending waits for the init; when it settles, the open rejects and close finishes, each on the turn TypeScript reaches it.",
+      "name": "close-joins-a-pending-policy-on-its-turn",
+      "covers": "Close joins the pending policy read; when it settles the open rejects cancelled and close emits closed on their measured turns.",
       "snapshot": "none",
-      "reason": "Pins turn counts: what matters is where `@@settled` and the listener fall among the `@@turn` callbacks.",
+      "reason": "Pins turn counts: where @@settled and closed fall among @@turn callbacks.",
       "plugins": [
         {
           "factory": "probe",
@@ -3811,22 +4073,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": {
-              "defer": "init"
-            },
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -3841,7 +4091,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -3850,20 +4100,51 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
+              }
+            ],
+            "responses": [
+              {
+                "path": "render.getPolicy",
+                "defer": "policy"
               }
             ]
           }
@@ -3909,7 +4190,10 @@
         },
         {
           "op": "settle",
-          "label": "init",
+          "label": "policy",
+          "value": {
+            "kind": "continuous"
+          },
           "meter": 40
         }
       ],
@@ -3923,7 +4207,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3935,7 +4220,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -3949,11 +4235,13 @@
         },
         {
           "settled": [],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             }
           ],
@@ -3976,21 +4264,19 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
-            }
-          ],
-          "callbacks": [
+            },
             {
-              "fn": "alpha.init",
-              "args": [
-                "a"
-              ]
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
+          "callbacks": [],
           "reports": [],
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 0
             }
           },
           "outcome": {
@@ -3999,11 +4285,13 @@
         },
         {
           "settled": [],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-removed"
+              "event": "activeChanged",
+              "value": {
+                "documentId": null,
+                "previousDocumentId": "a"
               }
             }
           ],
@@ -4013,7 +4301,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 0
             }
           },
           "outcome": {
@@ -4026,8 +4314,17 @@
               "promise": 1,
               "rejected": {
                 "$error": {
-                  "name": "CancelledError",
-                  "message": "[kernel] cancelled: closed while opening: a"
+                  "name": "PluginError",
+                  "message": "operation cancelled",
+                  "code": "operation-cancelled",
+                  "capability": "documents",
+                  "permission": null,
+                  "cause": {
+                    "$error": {
+                      "name": "CancelledError",
+                      "message": "[kernel] cancelled: closed while opening: a"
+                    }
+                  }
                 }
               }
             },
@@ -4038,7 +4335,15 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [
+            {
+              "event": "closed",
+              "value": {
+                "documentId": "a"
+              }
+            }
+          ],
           "engine": [
             {
               "doc": "a",
@@ -4090,15 +4395,15 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                1
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 7
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                1
               ]
             },
             {
@@ -4330,20 +4635,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -4358,7 +4653,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -4367,18 +4662,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -4436,7 +4756,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4448,7 +4769,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4464,20 +4786,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -4500,28 +4837,25 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [
             {
-              "fn": "alpha.init",
-              "args": [
-                "a"
-              ]
-            },
-            {
-              "fn": "alpha.effects",
-              "args": [
-                "a"
-              ]
-            },
-            {
-              "fn": "alpha.onAction",
+              "fn": "alpha.create",
               "args": [
                 "a",
-                {
-                  "type": "@@core/document-added"
-                }
+                "a#1"
+              ]
+            },
+            {
+              "fn": "alpha.connect",
+              "args": [
+                "a"
               ]
             }
           ],
@@ -4529,7 +4863,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -4545,11 +4879,19 @@
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-removed"
+              "event": "activeChanged",
+              "value": {
+                "documentId": null,
+                "previousDocumentId": "a"
+              }
+            },
+            {
+              "event": "closed",
+              "value": {
+                "documentId": "a"
               }
             }
           ],
@@ -4568,15 +4910,15 @@
               ]
             },
             {
-              "fn": "alpha.teardown",
-              "args": [
-                "a"
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 1
+              ]
+            },
+            {
+              "fn": "alpha.teardown",
+              "args": [
+                "a"
               ]
             },
             {
@@ -4634,14 +4976,6 @@
               ]
             },
             {
-              "fn": "closed",
-              "args": [
-                {
-                  "documentId": "a"
-                }
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 11
@@ -4654,15 +4988,17 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                2
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 13
+              ]
+            },
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "documentId": "a"
+                }
               ]
             },
             {
@@ -4675,6 +5011,12 @@
               "fn": "@@turn",
               "args": [
                 15
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
               ]
             },
             {
@@ -4847,20 +5189,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -4871,7 +5203,7 @@
           "config": {
             "id": "ws",
             "token": "ws",
-            "effects": {
+            "connect": {
               "cleanup": true
             }
           }
@@ -4885,7 +5217,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -4894,18 +5226,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -4960,11 +5317,19 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [
             {
-              "fn": "ws.effects",
+              "fn": "ws.create",
+              "args": [
+                null,
+                "workspace:ws"
+              ]
+            },
+            {
+              "fn": "ws.connect",
               "args": [
                 null
               ]
@@ -4979,7 +5344,8 @@
         },
         {
           "settled": [],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -4995,20 +5361,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5031,28 +5412,25 @@
               "doc": "a",
               "path": "pages.list",
               "args": []
+            },
+            {
+              "doc": "a",
+              "path": "render.getPolicy",
+              "args": []
             }
           ],
           "callbacks": [
             {
-              "fn": "alpha.init",
-              "args": [
-                "a"
-              ]
-            },
-            {
-              "fn": "alpha.effects",
-              "args": [
-                "a"
-              ]
-            },
-            {
-              "fn": "alpha.onAction",
+              "fn": "alpha.create",
               "args": [
                 "a",
-                {
-                  "type": "@@core/document-added"
-                }
+                "a#1"
+              ]
+            },
+            {
+              "fn": "alpha.connect",
+              "args": [
+                "a"
               ]
             }
           ],
@@ -5060,7 +5438,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {
@@ -5076,11 +5454,19 @@
               }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-removed"
+              "event": "activeChanged",
+              "value": {
+                "documentId": null,
+                "previousDocumentId": "a"
+              }
+            },
+            {
+              "event": "closed",
+              "value": {
+                "documentId": "a"
               }
             }
           ],
@@ -5111,15 +5497,15 @@
               ]
             },
             {
-              "fn": "alpha.teardown",
-              "args": [
-                "a"
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 3
+              ]
+            },
+            {
+              "fn": "alpha.teardown",
+              "args": [
+                "a"
               ]
             },
             {
@@ -5177,14 +5563,6 @@
               ]
             },
             {
-              "fn": "closed",
-              "args": [
-                {
-                  "documentId": "a"
-                }
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 13
@@ -5197,15 +5575,17 @@
               ]
             },
             {
-              "fn": "ws.teardown",
-              "args": [
-                null
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 15
+              ]
+            },
+            {
+              "fn": "closed",
+              "args": [
+                {
+                  "documentId": "a"
+                }
               ]
             },
             {
@@ -5218,6 +5598,12 @@
               "fn": "@@turn",
               "args": [
                 17
+              ]
+            },
+            {
+              "fn": "ws.teardown",
+              "args": [
+                null
               ]
             },
             {
@@ -5275,12 +5661,6 @@
               ]
             },
             {
-              "fn": "@@settled",
-              "args": [
-                2
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 27
@@ -5314,6 +5694,12 @@
               "fn": "@@turn",
               "args": [
                 32
+              ]
+            },
+            {
+              "fn": "@@settled",
+              "args": [
+                2
               ]
             },
             {
@@ -5374,9 +5760,9 @@
     },
     {
       "name": "bring-up-awaits-the-render-policy-on-its-turn",
-      "covers": "Bring-up reads `await session.handle.render?.policy()` from the raw engine handle: an `AbortablePromise`, which `await` adopts as a thenable, two turns more than a plain promise.",
+      "covers": "Bring-up awaits the raw render.getPolicy AbortablePromise before constructing document plugins.",
       "snapshot": "none",
-      "reason": "Pins turn counts: what matters is where `@@settled` and the init fall among the `@@turn` callbacks.",
+      "reason": "Pins turn counts: what matters is where `@@settled` and create falls among the `@@turn` callbacks.",
       "plugins": [
         {
           "factory": "probe",
@@ -5384,20 +5770,10 @@
             "id": "alpha",
             "scope": "document",
             "token": "alpha",
-            "initialState": {
+            "state": {
               "n": 0
             },
-            "reduce": {
-              "SET": "replace",
-              "MERGE": "merge",
-              "SAME": "same"
-            },
-            "init": true,
-            "effects": {
-              "onAction": [
-                "@@core/document-added",
-                "@@core/active-changed"
-              ],
+            "connect": {
               "cleanup": true,
               "watchState": true
             }
@@ -5412,7 +5788,7 @@
                 "index": 0,
                 "ref": {
                   "kind": "objectNumber",
-                  "pageObjectNumber": 1
+                  "objectNumber": 1
                 },
                 "label": null,
                 "size": {
@@ -5421,18 +5797,43 @@
                 },
                 "rotation": 0,
                 "userUnit": 1,
+                "tabOrder": null,
+                "pdfCropBox": {
+                  "left": 0,
+                  "bottom": 0,
+                  "right": 600,
+                  "top": 800
+                },
                 "boxes": {
                   "media": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   },
                   "crop": {
-                    "left": 0,
-                    "bottom": 0,
-                    "right": 600,
-                    "top": 800
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "bleed": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "trim": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
+                  },
+                  "art": {
+                    "x": 0,
+                    "y": 0,
+                    "width": 600,
+                    "height": 800
                   }
                 }
               }
@@ -5442,7 +5843,7 @@
             ],
             "responses": [
               {
-                "path": "render.policy",
+                "path": "render.getPolicy",
                 "value": {
                   "kind": "continuous"
                 }
@@ -5483,7 +5884,8 @@
               }
             }
           ],
-          "actions": [],
+          "stateChanges": [],
+          "documentEvents": [],
           "engine": [],
           "callbacks": [],
           "reports": [],
@@ -5497,20 +5899,35 @@
           "settled": [
             {
               "promise": 1,
-              "resolved": "a"
+              "resolved": {
+                "document": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
+              }
             }
           ],
-          "actions": [
+          "stateChanges": [],
+          "documentEvents": [
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-opening"
+              "event": "activeChanged",
+              "value": {
+                "documentId": "a",
+                "previousDocumentId": null
               }
             },
             {
-              "slice": "@@core",
-              "action": {
-                "type": "@@core/document-added"
+              "event": "opened",
+              "value": {
+                "documentId": "a",
+                "info": {
+                  "id": "a",
+                  "status": "ready",
+                  "pageCount": 1,
+                  "hasUnsavedChanges": false
+                }
               }
             }
           ],
@@ -5536,7 +5953,7 @@
             },
             {
               "doc": "a",
-              "path": "render.policy",
+              "path": "render.getPolicy",
               "args": []
             }
           ],
@@ -5620,7 +6037,14 @@
               ]
             },
             {
-              "fn": "alpha.init",
+              "fn": "alpha.create",
+              "args": [
+                "a",
+                "a#1"
+              ]
+            },
+            {
+              "fn": "alpha.connect",
               "args": [
                 "a"
               ]
@@ -5632,24 +6056,9 @@
               ]
             },
             {
-              "fn": "alpha.effects",
-              "args": [
-                "a"
-              ]
-            },
-            {
               "fn": "@@turn",
               "args": [
                 14
-              ]
-            },
-            {
-              "fn": "alpha.onAction",
-              "args": [
-                "a",
-                {
-                  "type": "@@core/document-added"
-                }
               ]
             },
             {
@@ -5677,15 +6086,15 @@
               ]
             },
             {
-              "fn": "@@turn",
-              "args": [
-                19
-              ]
-            },
-            {
               "fn": "@@settled",
               "args": [
                 1
+              ]
+            },
+            {
+              "fn": "@@turn",
+              "args": [
+                19
               ]
             },
             {
@@ -5813,7 +6222,7 @@
           "status": "started",
           "engineState": {
             "a": {
-              "subscribers": 1
+              "subscribers": 2
             }
           },
           "outcome": {

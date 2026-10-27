@@ -1,0 +1,887 @@
+commit 4fc1a32af6d6ece9022a08139ac721e5c6fa8411
+Author: Bob Singor <bob@singor.com>
+Date:   Wed Sep 23 01:41:26 2026 +0300
+
+    One architecture for plugins: state cells, mirrors, full names
+    
+    The kernel has one plugin shape and one context. A plugin is
+    `definePlugin({ id, token, scope, requires, optional, state, create })`, and
+    `create(ctx)` returns `{ api, connect }`. The action/reducer path is deleted:
+    `initialState`, `reduce`, `capability`, `init`, `effects`, `dispatch`,
+    `getState`, `onAction`, `EffectContext` and the `CORE_*` actions. The
+    controller context is merged into `PluginContext`.
+    
+    - State: `ctx.state` (`get`, `update(transition, ...args)`, `onChange`),
+      `ctx.notify()` for resources, `ctx.watch()` for state a plugin does not own.
+    - Engine data: `ctx.mirror()` and `ctx.pageMirror()` load after connect and
+      fold confirmed document events from every origin, with cursor replay, page
+      reloads and resync on desync or a new version. `memo`/`memoByKey` give
+      identity-stable reads; `createHostToken` builds a plugin's host lens.
+    - Engine invariant: an own mutation's event is published before its promise
+      settles. The conformance suite checks it; local and cloud engines pass.
+    - Plugins: every plugin runs on the new context. Annotation and form stay in
+      sync through mirrors instead of re-reading after writes; a create is matched
+      to its confirmation by the client-assigned /NM.
+    - Fixes: parked signings the engine no longer knows; disarms made by the
+      annotation plugin; raster invalidation for flattens, signatures and desyncs;
+      link and selection re-reads after redactions and flattens; redaction mark
+      verbs reject instead of throwing; command definitions can resolve any
+      capability in development builds (`resolvesAnyCapability`).
+    - Names: `pageObjectNumber` for `pon`; `Point`, `ContentGeometry`,
+      `ModelAnnotation`, `Message`; `kind` for things that are, `type` for things
+      that happen; no single letters or retired abbreviations. Public renames:
+      `usePages().previous`, `ChromeGeometry`, `Paint.lineCap`, draft `current`.
+      `useMeasurement()` drops `canCalibratePage`; read `canCalibrate()` with a
+      selector. `/internal` entries are removed.
+    - Comments state present behavior, with no plan, phase, history or missing-doc
+      references and no capitals for emphasis.
+    - Conventions live in docs/conventions/ (architecture, state and sync, events,
+      plugins, naming, comments, testing, packages and the moved references); the
+      agent skill routes into them.
+    - Enforcement: every package typechecks its tests; `check:comments` and
+      `check:architecture` run in CI; ESLint naming rules are errors; the plugin
+      boundary check knows `controller`/`connect`; a pull-request template.
+    - API snapshots regenerated; one changeset per package with a user-visible
+      change.
+
+diff --git a/packages/plugin/view-manager/package.json b/packages/plugin/view-manager/package.json
+index aa32ed4d5..09a8330e5 100644
+--- a/packages/plugin/view-manager/package.json
++++ b/packages/plugin/view-manager/package.json
+@@ -10,8 +10,6 @@
+   "exports": {
+     ".": "./src/index.ts",
+     "./contract": "./src/contract.ts",
+-    "./contract/host": "./src/host-contract.ts",
+-    "./internal": "./src/internal.ts",
+     "./package.json": "./package.json"
+   },
+   "publishConfig": {
+@@ -27,14 +25,6 @@
+         "import": "./dist/contract.js",
+         "require": "./dist/contract.cjs"
+       },
+-      "./contract/host": {
+-        "import": "./dist/contract/host.js",
+-        "require": "./dist/contract/host.cjs"
+-      },
+-      "./internal": {
+-        "import": "./dist/internal.js",
+-        "require": "./dist/internal.cjs"
+-      },
+       "./package.json": "./package.json"
+     }
+   },
+diff --git a/packages/plugin/view-manager/src/contract.ts b/packages/plugin/view-manager/src/contract.ts
+index 8495d98ad..ebade1327 100644
+--- a/packages/plugin/view-manager/src/contract.ts
++++ b/packages/plugin/view-manager/src/contract.ts
+@@ -1,10 +1,10 @@
+ /**
+  * @embedpdf/plugin-view-manager/contract — panes, tabs, and which document
+  * each pane shows. A pane owns a set of documents (its tab strip) and one
+- * active document. A document belongs to exactly ONE pane — panes PARTITION
+- * the open documents. The document's STATE (camera/zoom/layout) lives in the
+- * document-scoped stage, so two panes showing different documents get
+- * independent cameras for free.
++ * active document. A document belongs to at most one pane: panes partition
++ * the open documents. A document's view state (camera, zoom, layout) lives in
++ * the document-scoped stage, so two panes showing different documents have
++ * independent cameras.
+  */
+ import type { EventHook } from '@embedpdf/core';
+ 
+diff --git a/packages/plugin/view-manager/src/controller.ts b/packages/plugin/view-manager/src/controller.ts
+index d4896c5ee..0130872ab 100644
+--- a/packages/plugin/view-manager/src/controller.ts
++++ b/packages/plugin/view-manager/src/controller.ts
+@@ -1,175 +1,138 @@
+ /**
+- * The view-manager controller — selectors (pure reads, memoized per pane
+- * record) + intents (the only writers), the pane events diffed on every
+- * write, and the reconciliation against the document registry wired at
+- * `connect`. Pure: no DOM, no engine. It only arranges document ids into panes.
++ * The view-manager controller: reads, verbs that apply the pure transitions
++ * in `model.ts`, the pane events derived from each state change, and the
++ * reconciliation against the document registry wired in `connect`. It only
++ * arranges document ids into panes; it touches no engine and no DOM.
+  */
+-import { createEventHook, DocumentsToken, type PluginContext } from '@embedpdf/core';
++import { DocumentsToken, memo, memoByKey, type PluginContext } from '@embedpdf/core';
+ 
+ import type {
+   DocumentMovedEvent,
+   PaneEvent,
+   PaneFocusChangedEvent,
+-  PaneId,
+   PaneInfo,
+   ViewManagerCapability,
+ } from './contract';
+-import type { ViewManagerHostCapability } from './host-contract';
+-import type { Pane, ViewManagerAction, ViewManagerState } from './model';
++import {
++  addDocument,
++  createPane,
++  moveDocumentBetween,
++  moveDocumentWithin,
++  movePane,
++  nextPaneId,
++  paneOfDocument,
++  reconcile,
++  removeDocument,
++  removePane,
++  setActiveDocument,
++  setFocusedPane,
++  type ViewManagerState,
++} from './model';
+ 
+-export function createViewManagerController(
+-  rawCtx: PluginContext<ViewManagerState, ViewManagerAction>,
+-): { api: ViewManagerHostCapability; connect(): void } {
+-  const report = (error: unknown) =>
+-    globalThis.console?.error('[view-manager] listener failed:', error);
+-  const paneCreated = createEventHook<PaneEvent>(report);
+-  const paneRemoved = createEventHook<PaneEvent>(report);
+-  const focusChanged = createEventHook<PaneFocusChangedEvent>(report);
+-  const documentMoved = createEventHook<DocumentMovedEvent>(report);
+-  rawCtx.cleanup(() => {
+-    for (const hook of [paneCreated, paneRemoved, focusChanged, documentMoved]) hook.dispose();
+-  });
++const sameIds = (left: readonly string[], right: readonly string[]): boolean =>
++  left.length === right.length && left.every((id, index) => id === right[index]);
++
++export function createViewManagerController(ctx: PluginContext<ViewManagerState>) {
++  const paneCreated = ctx.events.source<PaneEvent>();
++  const paneRemoved = ctx.events.source<PaneEvent>();
++  const focusChanged = ctx.events.source<PaneFocusChangedEvent>();
++  const documentMoved = ctx.events.source<DocumentMovedEvent>();
+ 
+-  const paneOfDocument = (state: ViewManagerState, documentId: string): PaneId | null =>
+-    state.order.find((id) => state.panes[id].documentIds.includes(documentId)) ?? null;
+-  const emitDiffs = (before: ViewManagerState, after: ViewManagerState): void => {
+-    if (before === after) return;
+-    for (const id of after.order) if (!before.panes[id]) paneCreated.emit({ paneId: id });
+-    for (const id of before.order) if (!after.panes[id]) paneRemoved.emit({ paneId: id });
+-    if (before.focusedPaneId !== after.focusedPaneId) {
+-      focusChanged.emit({ paneId: after.focusedPaneId });
++  ctx.state.onChange(({ previous, next }) => {
++    for (const id of next.order) if (!previous.panes[id]) paneCreated.emit({ paneId: id });
++    for (const id of previous.order) if (!next.panes[id]) paneRemoved.emit({ paneId: id });
++    if (previous.focusedPaneId !== next.focusedPaneId) {
++      focusChanged.emit({ paneId: next.focusedPaneId });
+     }
+-    if (before.panes !== after.panes) {
+-      const documents = new Set<string>();
+-      for (const pane of Object.values(before.panes))
+-        pane.documentIds.forEach((d) => documents.add(d));
+-      for (const pane of Object.values(after.panes))
+-        pane.documentIds.forEach((d) => documents.add(d));
+-      for (const documentId of documents) {
+-        const from = paneOfDocument(before, documentId);
+-        const to = paneOfDocument(after, documentId);
+-        if (from !== to) documentMoved.emit({ documentId, fromPaneId: from, toPaneId: to });
+-      }
++    if (previous.panes === next.panes) return;
++    const documentIds = new Set<string>();
++    for (const pane of [...Object.values(previous.panes), ...Object.values(next.panes)]) {
++      for (const documentId of pane.documentIds) documentIds.add(documentId);
+     }
+-  };
+-  const ctx: PluginContext<ViewManagerState, ViewManagerAction> = {
+-    ...rawCtx,
+-    dispatch: (action) => {
+-      const before = rawCtx.getState();
+-      rawCtx.dispatch(action);
+-      emitDiffs(before, rawCtx.getState());
+-    },
+-  };
+-  const state = () => ctx.getState();
+-
+-  /** Pane records as the public shape, memoized per record. */
+-  const infos = new WeakMap<Pane, PaneInfo>();
+-  const infoOf = (pane: Pane): PaneInfo => {
+-    let info = infos.get(pane);
+-    if (!info) {
+-      info = {
+-        id: pane.id,
+-        documentIds: pane.documentIds,
+-        activeDocumentId: pane.activeDocumentId,
+-      };
+-      infos.set(pane, info);
++    for (const documentId of documentIds) {
++      const fromPaneId = paneOfDocument(previous, documentId);
++      const toPaneId = paneOfDocument(next, documentId);
++      if (fromPaneId !== toPaneId) documentMoved.emit({ documentId, fromPaneId, toPaneId });
+     }
+-    return info;
+-  };
+-  let listedFor: { panes: ViewManagerState['panes']; order: readonly PaneId[] } | null = null;
+-  let listed: readonly PaneInfo[] = [];
+-  const listPanes = (): readonly PaneInfo[] => {
+-    const { panes, order } = state();
+-    if (listedFor && listedFor.panes === panes && listedFor.order === order) return listed;
+-    listedFor = { panes, order };
+-    listed = order.map((id) => infoOf(panes[id]));
+-    return listed;
+-  };
++  });
+ 
+-  const createPane = (options?: { documentIds?: readonly string[] }): PaneId => {
+-    const id = `pane-${state().seq + 1}`;
+-    ctx.dispatch({ type: 'CREATE_PANE', pane: { id, documentIds: [], activeDocumentId: null } });
+-    for (const documentId of options?.documentIds ?? []) {
+-      ctx.dispatch({ type: 'ADD_DOC', paneId: id, documentId });
+-    }
++  const state = () => ctx.state.get();
++
++  /** A pane's public shape, the same object until its record changes. */
++  const paneInfoOf = memoByKey(
++    (id: string) => [state().panes[id]],
++    (_id, pane): PaneInfo | null =>
++      pane
++        ? { id: pane.id, documentIds: pane.documentIds, activeDocumentId: pane.activeDocumentId }
++        : null,
++  );
++  const listPanes = memo(
++    () => [state().panes, state().order],
++    (_panes, order) => order.map((id) => paneInfoOf(id)!),
++  );
++
++  const createPaneWith = (documentIds: readonly string[] = []): string => {
++    const id = nextPaneId(state());
++    ctx.state.update(createPane);
++    for (const documentId of documentIds) ctx.state.update(addDocument, id, documentId);
+     return id;
+   };
+ 
+-  const api = {
++  const api: ViewManagerCapability = {
+     listPanes,
+-    getPane: (id) => {
+-      const pane = state().panes[id];
+-      return pane ? infoOf(pane) : null;
+-    },
++    getPane: paneInfoOf,
+     getPaneOrder: () => state().order,
+     getFocusedPaneId: () => state().focusedPaneId,
+     getPaneOfDocument: (documentId) => paneOfDocument(state(), documentId),
+-    createPane,
++    createPane: (options) => createPaneWith(options?.documentIds),
+     removePane: (id, options) => {
+       const pane = state().panes[id];
+       if (!pane) return;
+       const remaining = state().order.filter((other) => other !== id);
+       const focused = state().focusedPaneId;
+-      const target =
++      const targetId =
+         options?.moveDocumentsTo ??
+         (focused !== id ? focused : null) ??
+         remaining[remaining.length - 1] ??
+         null;
+-      if (target && target !== id && state().panes[target]) {
++      if (targetId && targetId !== id && state().panes[targetId]) {
+         for (const documentId of pane.documentIds) {
+-          ctx.dispatch({ type: 'MOVE_DOC_BETWEEN', fromPaneId: id, toPaneId: target, documentId });
++          ctx.state.update(moveDocumentBetween, id, targetId, documentId);
+         }
+       }
+-      ctx.dispatch({ type: 'REMOVE_PANE', id });
++      ctx.state.update(removePane, id);
+     },
+-    movePane: (id, toIndex) => {
+-      const current = state().order;
+-      const without = current.filter((x) => x !== id);
+-      if (without.length === current.length) return; // unknown id
+-      const at = Math.max(0, Math.min(toIndex, without.length));
+-      ctx.dispatch({
+-        type: 'REORDER_PANES',
+-        order: [...without.slice(0, at), id, ...without.slice(at)],
+-      });
+-    },
+-    setFocusedPane: (id) => ctx.dispatch({ type: 'SET_FOCUSED', id }),
+-    splitPane: (documentId) => createPane({ documentIds: [documentId] }),
++    movePane: (id, toIndex) => ctx.state.update(movePane, id, toIndex),
++    setFocusedPane: (id) => ctx.state.update(setFocusedPane, id),
++    splitPane: (documentId) => createPaneWith([documentId]),
+     setActiveDocument: (paneId, documentId) =>
+-      ctx.dispatch({ type: 'SET_ACTIVE_DOC', paneId, documentId }),
++      ctx.state.update(setActiveDocument, paneId, documentId),
+     addDocument: (paneId, documentId, index) =>
+-      ctx.dispatch({ type: 'ADD_DOC', paneId, documentId, index }),
+-    removeDocument: (paneId, documentId) =>
+-      ctx.dispatch({ type: 'REMOVE_DOC', paneId, documentId }),
++      ctx.state.update(addDocument, paneId, documentId, index),
++    removeDocument: (paneId, documentId) => ctx.state.update(removeDocument, paneId, documentId),
+     moveDocumentWithin: (paneId, documentId, toIndex) =>
+-      ctx.dispatch({ type: 'MOVE_DOC_WITHIN', paneId, documentId, toIndex }),
++      ctx.state.update(moveDocumentWithin, paneId, documentId, toIndex),
+     moveDocumentBetween: (fromPaneId, toPaneId, documentId, toIndex) =>
+-      ctx.dispatch({ type: 'MOVE_DOC_BETWEEN', fromPaneId, toPaneId, documentId, toIndex }),
++      ctx.state.update(moveDocumentBetween, fromPaneId, toPaneId, documentId, toIndex),
+     onPaneCreated: paneCreated.on,
+     onPaneRemoved: paneRemoved.on,
+     onFocusChanged: focusChanged.on,
+     onDocumentMoved: documentMoved.on,
+-  } satisfies ViewManagerCapability;
++  };
+ 
+   return {
+     api,
+     /**
+-     * Keep panes consistent with the document registry: newly opened documents
+-     * land in the FOCUSED pane (creating a default pane on first open — "one
+-     * open document" shows as "one pane, one tab"); closed documents are
+-     * dropped from whatever pane held them.
++     * Keep panes matching the document registry: newly opened documents land
++     * in the focused pane (the first open creates a default pane), and closed
++     * documents leave whatever pane held them.
+      */
+     connect() {
+       const documents = ctx.get(DocumentsToken);
+-      let last: string | null = null;
+-      const reconcile = () => {
+-        const order = documents.getOrder();
+-        const key = order.join('|');
+-        if (key === last) return;
+-        last = key;
+-        ctx.dispatch({ type: 'RECONCILE', open: order, preferPaneId: state().focusedPaneId });
+-      };
+-      reconcile();
+-      ctx.cleanup(ctx.subscribe(reconcile));
++      const sync = (open: readonly string[]) =>
++        ctx.state.update(reconcile, open, state().focusedPaneId);
++      sync(documents.getOrder());
++      ctx.watch(() => documents.getOrder(), sync, sameIds);
+     },
+   };
+ }
+diff --git a/packages/plugin/view-manager/src/host-contract.ts b/packages/plugin/view-manager/src/host-contract.ts
+deleted file mode 100644
+index 6c420a346..000000000
+--- a/packages/plugin/view-manager/src/host-contract.ts
++++ /dev/null
+@@ -1,8 +0,0 @@
+-/** @embedpdf/plugin-view-manager/contract/host — same runtime token; the host lens equals the public one today. */
+-import type { ViewManagerCapability } from './contract';
+-
+-export * from './contract';
+-export { ViewManagerToken } from './token';
+-export type { Pane, ViewManagerAction, ViewManagerState } from './model';
+-
+-export type ViewManagerHostCapability = ViewManagerCapability;
+diff --git a/packages/plugin/view-manager/src/internal.ts b/packages/plugin/view-manager/src/internal.ts
+deleted file mode 100644
+index 3a20f659c..000000000
+--- a/packages/plugin/view-manager/src/internal.ts
++++ /dev/null
+@@ -1,4 +0,0 @@
+-/** @embedpdf/plugin-view-manager/internal — framework/host helpers; not for application code. */
+-export * from './host-contract';
+-export { createViewManagerController } from './controller';
+-export { initialViewManagerState, viewManagerReducer } from './model';
+diff --git a/packages/plugin/view-manager/src/model.ts b/packages/plugin/view-manager/src/model.ts
+index 5430dec7f..4c4e246e8 100644
+--- a/packages/plugin/view-manager/src/model.ts
++++ b/packages/plugin/view-manager/src/model.ts
+@@ -1,8 +1,15 @@
+-/** The view-manager slice: panes (keyed by id), their order, the focus, and
+- *  the id counter. Pure — every transition is here. */
++/**
++ * The view-manager's state: panes (keyed by id), their display order, the
++ * focused pane, and the counter that makes pane ids unique. Every function
++ * below is a pure transition; the controller applies them with
++ * `ctx.state.update`.
++ *
++ * Panes partition the open documents: a document is in at most one pane, so
++ * adding it to another pane moves it.
++ */
+ import type { PaneId } from './contract';
+ 
+-/** A pane = one tab strip + one active document. */
++/** A pane: one tab strip and the document it currently shows. */
+ export interface Pane {
+   readonly id: PaneId;
+   /** Documents in this pane, in tab order. */
+@@ -12,33 +19,14 @@ export interface Pane {
+ }
+ 
+ export interface ViewManagerState {
+-  readonly panes: Record<string, Pane>;
++  readonly panes: Readonly<Record<string, Pane>>;
+   /** Display order of the panes. */
+   readonly order: readonly PaneId[];
+   readonly focusedPaneId: PaneId | null;
+-  /** Monotonic counter for stable pane ids. */
++  /** Monotonic counter for unique pane ids. */
+   readonly seq: number;
+ }
+ 
+-export type ViewManagerAction =
+-  | { type: 'CREATE_PANE'; pane: Pane }
+-  | { type: 'REMOVE_PANE'; id: PaneId }
+-  | { type: 'REORDER_PANES'; order: readonly PaneId[] }
+-  | { type: 'SET_FOCUSED'; id: PaneId | null }
+-  | { type: 'SET_ACTIVE_DOC'; paneId: PaneId; documentId: string | null }
+-  | { type: 'ADD_DOC'; paneId: PaneId; documentId: string; index?: number }
+-  | { type: 'REMOVE_DOC'; paneId: PaneId; documentId: string }
+-  | { type: 'MOVE_DOC_WITHIN'; paneId: PaneId; documentId: string; toIndex: number }
+-  | {
+-      type: 'MOVE_DOC_BETWEEN';
+-      fromPaneId: PaneId;
+-      toPaneId: PaneId;
+-      documentId: string;
+-      toIndex?: number;
+-    }
+-  /** Reconcile panes against the open-document set (driven from `connect`). */
+-  | { type: 'RECONCILE'; open: readonly string[]; preferPaneId: PaneId | null };
+-
+ export const initialViewManagerState = (): ViewManagerState => ({
+   panes: {},
+   order: [],
+@@ -46,15 +34,22 @@ export const initialViewManagerState = (): ViewManagerState => ({
+   seq: 0,
+ });
+ 
+-// ── small pure helpers ─────────────────────────────────────────────────────
++/** The id the next created pane gets. */
++export const nextPaneId = (state: ViewManagerState): PaneId => `pane-${state.seq + 1}`;
++
++/** The pane holding a document, or null. */
++export const paneOfDocument = (state: ViewManagerState, documentId: string): PaneId | null =>
++  state.order.find((id) => state.panes[id].documentIds.includes(documentId)) ?? null;
++
++// ── helpers ────────────────────────────────────────────────────────────────
+ 
+ const insertAt = (list: readonly string[], item: string, index?: number): string[] => {
+   const at = index == null ? list.length : Math.max(0, Math.min(index, list.length));
+   return [...list.slice(0, at), item, ...list.slice(at)];
+ };
+ 
+-/** Drop a document and, if it was active, choose a sensible neighbour as active. */
+-const dropDocument = (pane: Pane, documentId: string): Pane => {
++/** Drop a document; if it was active, its neighbour becomes active. */
++const withoutDocument = (pane: Pane, documentId: string): Pane => {
+   const oldIndex = pane.documentIds.indexOf(documentId);
+   if (oldIndex < 0) return pane;
+   const documentIds = pane.documentIds.filter((id) => id !== documentId);
+@@ -65,149 +60,153 @@ const dropDocument = (pane: Pane, documentId: string): Pane => {
+   return { ...pane, documentIds, activeDocumentId };
+ };
+ 
+-/** Ensure activeDocumentId is valid for the current documentIds. */
++/** Keep `activeDocumentId` pointing at a document the pane holds. */
+ const withValidActive = (pane: Pane): Pane => {
+   if (pane.activeDocumentId && pane.documentIds.includes(pane.activeDocumentId)) return pane;
+   return { ...pane, activeDocumentId: pane.documentIds[0] ?? null };
+ };
+ 
+-const setPane = (state: ViewManagerState, pane: Pane): ViewManagerState => ({
++const withPane = (state: ViewManagerState, pane: Pane): ViewManagerState => ({
+   ...state,
+   panes: { ...state.panes, [pane.id]: pane },
+ });
+ 
+-// ── reducer ────────────────────────────────────────────────────────────────
+-
+-export function viewManagerReducer(
+-  state: ViewManagerState,
+-  action: ViewManagerAction,
+-): ViewManagerState {
+-  switch (action.type) {
+-    case 'CREATE_PANE':
+-      return {
+-        ...state,
+-        panes: { ...state.panes, [action.pane.id]: action.pane },
+-        order: [...state.order, action.pane.id],
+-        focusedPaneId: action.pane.id,
+-        seq: state.seq + 1,
+-      };
+-
+-    case 'REMOVE_PANE': {
+-      if (!state.panes[action.id]) return state;
+-      const panes = { ...state.panes };
+-      delete panes[action.id];
+-      const order = state.order.filter((id) => id !== action.id);
+-      const focusedPaneId =
+-        state.focusedPaneId === action.id ? (order[order.length - 1] ?? null) : state.focusedPaneId;
+-      return { ...state, panes, order, focusedPaneId };
+-    }
+-
+-    case 'REORDER_PANES':
+-      return { ...state, order: action.order };
++// ── transitions ────────────────────────────────────────────────────────────
++
++/** Append an empty pane with the next id and focus it. */
++export function createPane(state: ViewManagerState): ViewManagerState {
++  const id = nextPaneId(state);
++  return {
++    ...state,
++    panes: { ...state.panes, [id]: { id, documentIds: [], activeDocumentId: null } },
++    order: [...state.order, id],
++    focusedPaneId: id,
++    seq: state.seq + 1,
++  };
++}
+ 
+-    case 'SET_FOCUSED':
+-      return { ...state, focusedPaneId: action.id };
++export function removePane(state: ViewManagerState, id: PaneId): ViewManagerState {
++  if (!state.panes[id]) return state;
++  const { [id]: _removed, ...panes } = state.panes;
++  const order = state.order.filter((other) => other !== id);
++  const focusedPaneId =
++    state.focusedPaneId === id ? (order[order.length - 1] ?? null) : state.focusedPaneId;
++  return { ...state, panes, order, focusedPaneId };
++}
+ 
+-    case 'SET_ACTIVE_DOC': {
+-      const pane = state.panes[action.paneId];
+-      if (!pane) return state;
+-      if (action.documentId !== null && !pane.documentIds.includes(action.documentId)) return state;
+-      return setPane(state, { ...pane, activeDocumentId: action.documentId });
+-    }
++export function movePane(state: ViewManagerState, id: PaneId, toIndex: number): ViewManagerState {
++  const without = state.order.filter((other) => other !== id);
++  if (without.length === state.order.length) return state;
++  const at = Math.max(0, Math.min(toIndex, without.length));
++  return { ...state, order: [...without.slice(0, at), id, ...without.slice(at)] };
++}
+ 
+-    case 'ADD_DOC': {
+-      const pane = state.panes[action.paneId];
+-      if (!pane || pane.documentIds.includes(action.documentId)) return state;
+-      // Panes PARTITION the open documents: a document already shown in another
+-      // pane moves, it is never duplicated (G12).
+-      const holder = Object.values(state.panes).find((v) =>
+-        v.documentIds.includes(action.documentId),
+-      );
+-      const base = holder ? setPane(state, dropDocument(holder, action.documentId)) : state;
+-      const target = base.panes[action.paneId];
+-      const documentIds = insertAt(target.documentIds, action.documentId, action.index);
+-      const activeDocumentId = target.activeDocumentId ?? action.documentId;
+-      return setPane(base, { ...target, documentIds, activeDocumentId });
+-    }
++export function setFocusedPane(state: ViewManagerState, id: PaneId | null): ViewManagerState {
++  return state.focusedPaneId === id ? state : { ...state, focusedPaneId: id };
++}
+ 
+-    case 'REMOVE_DOC': {
+-      const pane = state.panes[action.paneId];
+-      if (!pane) return state;
+-      return setPane(state, dropDocument(pane, action.documentId));
+-    }
++export function setActiveDocument(
++  state: ViewManagerState,
++  paneId: PaneId,
++  documentId: string | null,
++): ViewManagerState {
++  const pane = state.panes[paneId];
++  if (!pane || pane.activeDocumentId === documentId) return state;
++  if (documentId !== null && !pane.documentIds.includes(documentId)) return state;
++  return withPane(state, { ...pane, activeDocumentId: documentId });
++}
+ 
+-    case 'MOVE_DOC_WITHIN': {
+-      const pane = state.panes[action.paneId];
+-      if (!pane || !pane.documentIds.includes(action.documentId)) return state;
+-      const without = pane.documentIds.filter((id) => id !== action.documentId);
+-      const documentIds = insertAt(without, action.documentId, action.toIndex);
+-      return setPane(state, { ...pane, documentIds });
+-    }
++/** Add a document to a pane; a document another pane holds moves here. */
++export function addDocument(
++  state: ViewManagerState,
++  paneId: PaneId,
++  documentId: string,
++  index?: number,
++): ViewManagerState {
++  const pane = state.panes[paneId];
++  if (!pane || pane.documentIds.includes(documentId)) return state;
++  const holderId = paneOfDocument(state, documentId);
++  const base = holderId ? withPane(state, withoutDocument(state.panes[holderId], documentId)) : state;
++  const target = base.panes[paneId];
++  return withPane(base, {
++    ...target,
++    documentIds: insertAt(target.documentIds, documentId, index),
++    activeDocumentId: target.activeDocumentId ?? documentId,
++  });
++}
+ 
+-    case 'MOVE_DOC_BETWEEN': {
+-      const from = state.panes[action.fromPaneId];
+-      const to = state.panes[action.toPaneId];
+-      if (!from || !to || !from.documentIds.includes(action.documentId)) return state;
+-      if (action.fromPaneId === action.toPaneId) {
+-        return viewManagerReducer(state, {
+-          type: 'MOVE_DOC_WITHIN',
+-          paneId: action.toPaneId,
+-          documentId: action.documentId,
+-          toIndex: action.toIndex ?? to.documentIds.length,
+-        });
+-      }
+-      const nextFrom = dropDocument(from, action.documentId);
+-      const documentIds = insertAt(to.documentIds, action.documentId, action.toIndex);
+-      const nextTo: Pane = { ...to, documentIds, activeDocumentId: action.documentId };
+-      return {
+-        ...state,
+-        panes: { ...state.panes, [nextFrom.id]: nextFrom, [nextTo.id]: nextTo },
+-        focusedPaneId: action.toPaneId,
+-      };
+-    }
++export function removeDocument(
++  state: ViewManagerState,
++  paneId: PaneId,
++  documentId: string,
++): ViewManagerState {
++  const pane = state.panes[paneId];
++  if (!pane) return state;
++  const next = withoutDocument(pane, documentId);
++  return next === pane ? state : withPane(state, next);
++}
+ 
+-    case 'RECONCILE':
+-      return reconcile(state, action.open, action.preferPaneId);
++export function moveDocumentWithin(
++  state: ViewManagerState,
++  paneId: PaneId,
++  documentId: string,
++  toIndex: number,
++): ViewManagerState {
++  const pane = state.panes[paneId];
++  if (!pane || !pane.documentIds.includes(documentId)) return state;
++  const without = pane.documentIds.filter((id) => id !== documentId);
++  return withPane(state, { ...pane, documentIds: insertAt(without, documentId, toIndex) });
++}
+ 
+-    default:
+-      return state;
++export function moveDocumentBetween(
++  state: ViewManagerState,
++  fromPaneId: PaneId,
++  toPaneId: PaneId,
++  documentId: string,
++  toIndex?: number,
++): ViewManagerState {
++  const from = state.panes[fromPaneId];
++  const to = state.panes[toPaneId];
++  if (!from || !to || !from.documentIds.includes(documentId)) return state;
++  if (fromPaneId === toPaneId) {
++    return moveDocumentWithin(state, toPaneId, documentId, toIndex ?? to.documentIds.length);
+   }
++  const nextFrom = withoutDocument(from, documentId);
++  const nextTo: Pane = {
++    ...to,
++    documentIds: insertAt(to.documentIds, documentId, toIndex),
++    activeDocumentId: documentId,
++  };
++  return {
++    ...state,
++    panes: { ...state.panes, [nextFrom.id]: nextFrom, [nextTo.id]: nextTo },
++    focusedPaneId: toPaneId,
++  };
+ }
+ 
+ /**
+- * Make the panes consistent with the set of open documents:
+- *  1. drop closed documents from every pane,
+- *  2. assign any unassigned open document to the preferred (focused) pane,
+- *     creating a default pane if none exists yet.
+- * This is what turns "one open document" into "one pane with one tab".
++ * Make the panes match the open documents: drop closed documents from every
++ * pane, then put each unassigned open document into the preferred pane (the
++ * focused one by default), creating a first pane if there is none. This is
++ * what turns "one open document" into "one pane with one tab".
+  */
+-function reconcile(
++export function reconcile(
+   state: ViewManagerState,
+   open: readonly string[],
+-  preferPaneId: string | null,
++  preferPaneId: PaneId | null,
+ ): ViewManagerState {
+   const openSet = new Set(open);
+-
+-  // 1. prune closed documents
+   const panes: Record<string, Pane> = {};
+   for (const id of state.order) {
+-    const pruned = withValidActive({
++    panes[id] = withValidActive({
+       ...state.panes[id],
+-      documentIds: state.panes[id].documentIds.filter((d) => openSet.has(d)),
++      documentIds: state.panes[id].documentIds.filter((documentId) => openSet.has(documentId)),
+     });
+-    panes[id] = pruned;
+   }
+ 
+-  // 2. collect unassigned open documents (preserve open order)
+-  const assigned = new Set<string>();
+-  for (const id of state.order) for (const d of panes[id].documentIds) assigned.add(d);
+-  const unassigned = open.filter((d) => !assigned.has(d));
+-
+-  let { order, focusedPaneId, seq } = {
+-    order: [...state.order],
+-    focusedPaneId: state.focusedPaneId,
+-    seq: state.seq,
+-  };
++  const assigned = new Set(state.order.flatMap((id) => panes[id].documentIds));
++  const unassigned = open.filter((documentId) => !assigned.has(documentId));
++  let { order, focusedPaneId, seq } = state;
+ 
+   if (unassigned.length > 0) {
+     let targetId =
+@@ -215,7 +214,6 @@ function reconcile(
+       (focusedPaneId && panes[focusedPaneId] && focusedPaneId) ||
+       order[0] ||
+       null;
+-
+     if (!targetId) {
+       seq += 1;
+       targetId = `pane-${seq}`;
+@@ -223,7 +221,6 @@ function reconcile(
+       order = [...order, targetId];
+       focusedPaneId = focusedPaneId ?? targetId;
+     }
+-
+     const target = panes[targetId];
+     panes[targetId] = withValidActive({
+       ...target,
+diff --git a/packages/plugin/view-manager/src/token.ts b/packages/plugin/view-manager/src/token.ts
+index db65eeb08..b3e0046ca 100644
+--- a/packages/plugin/view-manager/src/token.ts
++++ b/packages/plugin/view-manager/src/token.ts
+@@ -1,5 +1,4 @@
+-/** The package token — created once here; `contract.ts` re-exports it and
+- *  `host-contract.ts` carries it for siblings. */
++/** The package token, created once here and re-exported by `contract.ts`. */
+ import { createCapabilityToken } from '@embedpdf/core';
+ 
+ import type { ViewManagerCapability } from './contract';
+diff --git a/packages/plugin/view-manager/src/view-manager.plugin.ts b/packages/plugin/view-manager/src/view-manager.plugin.ts
+index 2056d7c53..d08261d11 100644
+--- a/packages/plugin/view-manager/src/view-manager.plugin.ts
++++ b/packages/plugin/view-manager/src/view-manager.plugin.ts
+@@ -1,22 +1,19 @@
+ import { definePlugin, DocumentsToken } from '@embedpdf/core';
+ 
++import { ViewManagerToken, type ViewManagerCapability } from './contract';
+ import { createViewManagerController } from './controller';
+-import { ViewManagerToken } from './host-contract';
+-import type { ViewManagerHostCapability } from './host-contract';
+-import { initialViewManagerState, viewManagerReducer } from './model';
+-import type { ViewManagerAction, ViewManagerState } from './model';
++import { initialViewManagerState, type ViewManagerState } from './model';
+ 
+ /**
+- * The view-manager plugin: workspace-scoped (one instance that sees every
+- * document) because panes are a workspace concern, not a per-document one.
++ * The view-manager plugin: which documents each pane shows. Workspace-scoped,
++ * because panes span documents.
+  */
+ export const viewManagerPlugin = () =>
+-  definePlugin<ViewManagerState, ViewManagerAction, ViewManagerHostCapability>({
++  definePlugin<ViewManagerState, ViewManagerCapability>({
+     id: 'view-manager',
+     scope: 'workspace',
+     token: ViewManagerToken,
+     requires: [DocumentsToken],
+-    initialState: initialViewManagerState,
+-    reduce: viewManagerReducer,
+-    create: (ctx) => createViewManagerController(ctx),
++    state: initialViewManagerState,
++    create: createViewManagerController,
+   });
+diff --git a/packages/plugin/view-manager/test/controller.test.ts b/packages/plugin/view-manager/test/controller.test.ts
+index ed0835194..b0e8d1b03 100644
+--- a/packages/plugin/view-manager/test/controller.test.ts
++++ b/packages/plugin/view-manager/test/controller.test.ts
+@@ -4,14 +4,13 @@ import { createTestContext } from '@embedpdf/core/testing';
+ import { describe, expect, it } from 'vitest';
+ 
+ import { createViewManagerController } from '../src/controller';
+-import { initialViewManagerState, viewManagerReducer } from '../src/model';
++import { initialViewManagerState } from '../src/model';
+ 
+ function harness(open: string[] = []) {
+   const documents = { getOrder: () => open } as unknown as DocumentsCapability;
+   const ctx = createTestContext({
+     id: 'view-manager',
+-    initialState: initialViewManagerState(),
+-    reduce: viewManagerReducer,
++    state: initialViewManagerState(),
+     capabilities: [[DocumentsToken, documents]],
+     doc: null,
+   });
+@@ -23,11 +22,11 @@ describe('view-manager', () => {
+     const open = ['a', 'b'];
+     const { api, connect } = harness(open);
+     const log: string[] = [];
+-    api.onPaneCreated((e) => log.push(`+pane:${e.paneId}`));
+-    api.onFocusChanged((e) => log.push(`focus:${e.paneId}`));
+-    api.onDocumentMoved((e) => log.push(`doc:${e.documentId}:${e.fromPaneId}->${e.toPaneId}`));
++    api.onPaneCreated((event) => log.push(`+pane:${event.paneId}`));
++    api.onFocusChanged((event) => log.push(`focus:${event.paneId}`));
++    api.onDocumentMoved((event) => log.push(`doc:${event.documentId}:${event.fromPaneId}->${event.toPaneId}`));
+     connect();
+-    expect(api.listPanes().map((p) => p.id)).toEqual(['pane-1']);
++    expect(api.listPanes().map((pane) => pane.id)).toEqual(['pane-1']);
+     expect(api.getPane('pane-1')?.documentIds).toEqual(['a', 'b']);
+     expect(api.getPaneOfDocument('b')).toBe('pane-1');
+     expect(api.getFocusedPaneId()).toBe('pane-1');
+@@ -45,8 +44,8 @@ describe('view-manager', () => {
+     const { api, connect } = harness(['a', 'b']);
+     connect();
+     const log: string[] = [];
+-    api.onDocumentMoved((e) => log.push(`${e.documentId}:${e.fromPaneId}->${e.toPaneId}`));
+-    api.onPaneRemoved((e) => log.push(`-pane:${e.paneId}`));
++    api.onDocumentMoved((event) => log.push(`${event.documentId}:${event.fromPaneId}->${event.toPaneId}`));
++    api.onPaneRemoved((event) => log.push(`-pane:${event.paneId}`));
+     const split = api.splitPane('b');
+     expect(split).toBe('pane-2');
+     expect(api.getPane('pane-1')?.documentIds).toEqual(['a']);
+@@ -59,7 +58,7 @@ describe('view-manager', () => {
+     api.movePane('pane-2', 0);
+     expect(api.getPaneOrder()).toEqual(['pane-2', 'pane-1']);
+     api.removePane('pane-2');
+-    expect(api.listPanes().map((p) => p.id)).toEqual(['pane-1']);
++    expect(api.listPanes().map((pane) => pane.id)).toEqual(['pane-1']);
+     expect(api.getPane('pane-1')?.documentIds).toEqual(['b', 'a']);
+     expect(log).toEqual([
+       'b:pane-1->pane-2',
+diff --git a/packages/plugin/view-manager/test/partition.test.ts b/packages/plugin/view-manager/test/partition.test.ts
+index d168a87e7..a6c264feb 100644
+--- a/packages/plugin/view-manager/test/partition.test.ts
++++ b/packages/plugin/view-manager/test/partition.test.ts
+@@ -1,23 +1,15 @@
+ import { describe, expect, it } from 'vitest';
+-import { initialViewManagerState, viewManagerReducer } from '../src/model';
+ 
+-/** G12: a document belongs to exactly one pane; ADD_DOC into a second pane moves it. */
+-describe('view-manager partition invariant', () => {
++import { addDocument, createPane, initialViewManagerState } from '../src/model';
++
++describe('view-manager partition', () => {
+   it('moves a document that another pane already holds instead of duplicating it', () => {
+-    let state = initialViewManagerState();
+-    state = viewManagerReducer(state, {
+-      type: 'CREATE_PANE',
+-      pane: { id: 'a', documentIds: [], activeDocumentId: null },
+-    });
+-    state = viewManagerReducer(state, {
+-      type: 'CREATE_PANE',
+-      pane: { id: 'b', documentIds: [], activeDocumentId: null },
+-    });
+-    state = viewManagerReducer(state, { type: 'ADD_DOC', paneId: 'a', documentId: 'doc' });
+-    state = viewManagerReducer(state, { type: 'ADD_DOC', paneId: 'b', documentId: 'doc' });
+-    expect(state.panes.a.documentIds).toEqual([]);
+-    expect(state.panes.b.documentIds).toEqual(['doc']);
+-    expect(state.panes.a.activeDocumentId).toBeNull();
+-    expect(state.panes.b.activeDocumentId).toBe('doc');
++    let state = createPane(createPane(initialViewManagerState()));
++    state = addDocument(state, 'pane-1', 'doc');
++    state = addDocument(state, 'pane-2', 'doc');
++    expect(state.panes['pane-1'].documentIds).toEqual([]);
++    expect(state.panes['pane-2'].documentIds).toEqual(['doc']);
++    expect(state.panes['pane-1'].activeDocumentId).toBeNull();
++    expect(state.panes['pane-2'].activeDocumentId).toBe('doc');
+   });
+ });

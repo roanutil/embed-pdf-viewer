@@ -20,7 +20,8 @@ import { createContext, runInContext } from 'node:vm';
 import ts from 'typescript';
 
 import { createCapabilityToken, definePlugin, type AnyPlugin } from '@embedpdf/core';
-import type { DocumentHandle } from '@embedpdf/engine-core/runtime';
+import type { DocumentHandle, FormSnapshot, Identity } from '@embedpdf/engine-core/runtime';
+import { text, listbox, checkbox, radio, snapshot, placed } from './form-current-fixtures';
 
 import {
   javaScriptProgramFromActionTree,
@@ -251,7 +252,7 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
   return definePlugin({
     id: 'script-host',
     token: ScriptHostToken,
-    capability: (): ScriptHostDriver => {
+    create: (ctx) => {
       const host = createScriptHost({
         sandboxFactory: scriptedSandboxFactory(config.sandbox ?? {}, env),
         document: () => config.document ?? { id: 'doc-1', fileName: 'x.pdf', pageCount: 1, pageNumber: 0 },
@@ -262,7 +263,8 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
         >,
         ...(config.budget ? { budget: config.budget } : {}),
       });
-      return {
+      ctx.cleanup(() => host.dispose());
+      const api: ScriptHostDriver = {
         transaction: (ops) =>
           host.transaction(async (txn) => {
             const out: unknown[] = [];
@@ -279,6 +281,7 @@ function scriptHostDriver(config: ScriptHostDriverConfig = {}, env: PluginEnv): 
           }),
         dispose: () => host.dispose(),
       };
+      return { api };
     },
   });
 }
@@ -297,21 +300,28 @@ const node = (type: string, extra: Record<string, unknown> = {}, next: unknown[]
   next,
 });
 const actionTree = (root: unknown, incomplete = false) => ({ root, incomplete, warningFlags: 0, warnings: [] });
-const field = (over: Record<string, unknown>) => ({
-  ref: { kind: 'objectNumber', fieldObjectNumber: 5 },
-  name: 'f',
-  family: 'text',
-  valueEntry: { kind: 'none' },
-  defaultValueEntry: { kind: 'none' },
-  flags: { readOnly: false, required: false },
+const claims = (over: Partial<Identity> = {}): Identity => ({
+  userId: 'u-1',
+  displayName: 'Ada',
+  organization: 'g-1',
   ...over,
 });
-const claims = (over: Record<string, unknown> = {}) => ({
-  user_id: 'u-1',
-  display_name: 'Ada',
-  group_id: 'g-1',
-  ...over,
-});
+// A typed option may carry engine extension data; the script view copies only label/value.
+const firstOption = { label: 'A', value: 'a', selected: true, extra: 1 };
+const fieldsSnapshot: FormSnapshot = snapshot([
+  text(5, 'text', 'hi'),
+  listbox(6, 'list', ['a', 'b'], {
+    defaultValueEntry: { kind: 'unsupported' },
+    options: [firstOption, { label: 'B', value: 'b', selected: true }],
+    readOnly: true, required: true,
+  }),
+  checkbox(7, 'box', false, { defaultValueEntry: { kind: 'scalar', value: 'Yes' } }),
+  radio(0, 'radio', [{ ...placed(108), onState: 'One', exportValue: 'One', checked: true }], {
+    valueEntry: { kind: 'scalar', value: 'One' },
+  }),
+  checkbox(9, 'toggle-unsupported', false, { valueEntry: { kind: 'unsupported' } }),
+  text(10, 'unsupported', '', { valueEntry: { kind: 'unsupported' } }),
+]);
 
 const functionCases: FunctionCase[] = [
   // color.ts
@@ -390,23 +400,9 @@ const functionCases: FunctionCase[] = [
     name: 'fields-from-snapshot',
     covers: 'Every value-entry kind, the Off token for toggles, and options only where the DTO has them.',
     fn: 'scriptFieldsFromSnapshot',
-    args: [
-      {
-        formKind: 'acroform',
-        needsAppearances: false,
-        calculationOrder: [],
-        fields: [
-          field({ name: 'text', valueEntry: { kind: 'scalar', value: 'hi' }, defaultValueEntry: { kind: 'none' } }),
-          field({ name: 'list', family: 'listbox', valueEntry: { kind: 'array', values: ['a', 'b'] }, defaultValueEntry: { kind: 'unsupported' }, options: [{ label: 'A', value: 'a', extra: 1 }, { label: 'B', value: 'b' }], flags: { readOnly: true, required: true } }),
-          field({ name: 'box', family: 'checkbox', valueEntry: { kind: 'none' }, defaultValueEntry: { kind: 'scalar', value: 'Yes' } }),
-          field({ name: 'radio', family: 'radio', ref: { kind: 'fqn', name: 'radio' }, valueEntry: { kind: 'scalar', value: 'One' }, defaultValueEntry: { kind: 'none' } }),
-          field({ name: 'toggle-unsupported', family: 'checkbox', valueEntry: { kind: 'unsupported' } }),
-          field({ name: 'bogus', valueEntry: { kind: 'bogus' } }),
-        ],
-      },
-    ],
+    args: [fieldsSnapshot],
   },
-  { name: 'fields-empty', fn: 'scriptFieldsFromSnapshot', args: [{ fields: [] }] },
+  { name: 'fields-empty', fn: 'scriptFieldsFromSnapshot', args: [snapshot([])] },
   // host.ts
   { name: 'seed-basic', fn: 'seedFrom', args: ['doc-1', 0] },
   { name: 'seed-next', fn: 'seedFrom', args: ['doc-1', 1] },
@@ -421,10 +417,10 @@ const functionCases: FunctionCase[] = [
   },
   { name: 'identity-from-claims', fn: 'resolveScriptIdentity', args: [claims(), null, false] },
   { name: 'identity-no-claims', fn: 'resolveScriptIdentity', args: [null, null, false] },
-  { name: 'identity-user-id-fallback', fn: 'resolveScriptIdentity', args: [claims({ display_name: null }), {}, false] },
+  { name: 'identity-user-id-fallback', fn: 'resolveScriptIdentity', args: [claims({ displayName: undefined }), {}, false] },
   { name: 'identity-overrides', fn: 'resolveScriptIdentity', args: [claims(), { name: 'Grace', email: 'g@x.test' }, false] },
   { name: 'identity-override-null-falls-through', covers: '?? treats null like absent.', fn: 'resolveScriptIdentity', args: [claims(), { name: null, loginName: 'root', corporation: 'Acme' }, false] },
-  { name: 'identity-override-function', fn: 'resolveScriptIdentity', args: [claims({ group_id: null }), { corporation: 'Fn Inc' }, true] },
+  { name: 'identity-override-function', fn: 'resolveScriptIdentity', args: [claims({ organization: undefined }), { corporation: 'Fn Inc' }, true] },
   // types.ts
   { name: 'annot-writable-keys', fn: 'annotWritableKeys', args: [] },
   { name: 'default-script-budget', fn: 'defaultScriptBudget', args: [] },
@@ -436,18 +432,44 @@ const functionCases: FunctionCase[] = [
 
 // ── the host scenarios ────────────────────────────────────────────────────────
 
-const world = (event: Record<string, unknown> = { kind: 'widget-activate' }, over: Record<string, unknown> = {}) => ({
+const world = (event: ScriptWorldInput['event'] = { kind: 'widget-activate' }, over: Omit<Partial<ScriptWorldInput>, 'event'> = {}): ScriptWorldInput => ({
   fields: [],
   event,
   ...over,
 });
-const boot = (over: Record<string, unknown> = {}) => ({ op: 'boot', world: world(), ...over });
-const run = (program: string, over: Record<string, unknown> = {}) => ({ op: 'run', program, world: world(), ...over });
-const txn = (...ops: unknown[]): Step => ({ op: 'call', target: { token: 'script-host' }, method: 'transaction', args: [ops] });
-const host = (config: Record<string, unknown> = {}) => [{ factory: 'script-host', config }];
+const boot = (over: Partial<Extract<DriverOp, { op: 'boot' }>> = {}): DriverOp => ({ op: 'boot', world: world(), ...over });
+const run = (program: string, over: Partial<Extract<DriverOp, { op: 'run' }>> = {}): DriverOp => ({ op: 'run', program, world: world(), ...over });
+const txn = (...ops: DriverOp[]): Step => ({ op: 'call', target: { token: 'script-host' }, method: 'transaction', args: [ops] });
+const host = (config: ScriptHostDriverConfig = {}) => [{ factory: 'script-host', config }];
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
 
 const hostCases: ScenarioCase[] = [
+  {
+    name: 'kernel-destroy-owns-host',
+    covers: 'Kernel destroy invokes the probe cleanup and releases the constructed sandbox once.',
+    plugins: host({ bootSources: { returns: [] } }),
+    steps: [start, txn(run('owned()')), { op: 'call', target: 'kernel', method: 'destroy' }],
+    ...UNSNAPSHOTTED,
+  },
+  {
+    name: 'dispose-pending-factory',
+    covers: 'Disposal releases the pending factory resource. An admitted run builds a second realm and still finishes; repeated disposal releases that realm too.',
+    plugins: host({ bootSources: { returns: [] }, sandbox: { builds: [{ defer: 'vm' }, {}] } }),
+    steps: [start, txn(run('admitted()')), { op: 'call', target: { token: 'script-host' }, method: 'dispose' }, { op: 'settle', label: 'vm' }, { op: 'call', target: { token: 'script-host' }, method: 'dispose' }],
+    ...UNSNAPSHOTTED,
+  },
+  {
+    name: 'sandbox-output-is-returned',
+    covers: 'The host returns sandbox effects, rejection rc, event edits and diagnostics without translating them.',
+    plugins: host({ bootSources: { returns: [] }, sandbox: { builds: [{ run: [{ output: {
+      event: { rc: false, value: 'edited', change: 'x', selStart: 1, selEnd: 2 },
+      formEffects: [{ kind: 'setValue', ref: { kind: 'fqn', name: 't' }, value: { value: 'edited' } }],
+      uiEffects: [{ kind: 'print' }],
+      diagnostics: [{ code: 'script-error', message: 'script refusal' }],
+    } }] }] } }),
+    steps: [start, txn(run('output()'))],
+    ...UNSNAPSHOTTED,
+  },
   {
     name: 'boots-once-and-hands-the-output-to-one-caller',
     covers: 'The first boot() builds the realm, reads the name tree and boots it; a later boot() in any transaction returns null.',

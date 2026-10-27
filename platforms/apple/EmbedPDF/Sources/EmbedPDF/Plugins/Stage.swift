@@ -70,7 +70,7 @@ public struct StageCapability: Sendable {
   public func visiblePages() async throws(PDFError) -> [StageVisiblePage] { try await bridged { try await handle.visiblePages() } }
   public func isPageVisible(_ page: PageRef) async throws(PDFError) -> Bool { try await bridged { try await handle.isPageVisible(page: page) } }
   public func currentPageIndex() async throws(PDFError) -> UInt32 { try await bridged { try await handle.currentPageIndex() } }
-  public func currentPage() async throws(PDFError) -> PageInfo? { try await bridged { try await handle.currentPage() } }
+  public func currentPage() async throws(PDFError) -> PageRef? { try await bridged { try await handle.currentPage() } }
   public func currentItemPages() async throws(PDFError) -> [PageInfo] { try await bridged { try await handle.currentItemPages() } }
   public func pageFrame(_ page: PageRef) async throws(PDFError) -> StageVisiblePage? { try await bridged { try await handle.pageFrame(page: page) } }
   public func page(at point: Point) async throws(PDFError) -> StagePageHit? { try await bridged { try await handle.pageAt(point: point) } }
@@ -110,7 +110,6 @@ public struct StageCapability: Sendable {
   public func previousPage(options: StageGoToOptions? = nil) async throws(PDFError) { try await bridged { try await handle.previousPage(options: options) } }
   public func resetView() async throws(PDFError) { try await bridged { try await handle.resetView() } }
   public func reveal(_ page: PageRef, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.reveal(page: page, options: options) } }
-  public func revealRect(_ page: PageRef, _ rect: Rect, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.revealRect(page: page, rect: rect, options: options) } }
   public func revealIndex(_ index: UInt32, options: StageRevealOptions? = nil) async throws(PDFError) { try await bridged { try await handle.revealIndex(index: index, options: options) } }
 
   // MARK: Settings
@@ -121,10 +120,6 @@ public struct StageCapability: Sendable {
   public func setResponsiveRules(_ rules: [StageResponsiveRule]) async throws(PDFError) { try await bridged { try await handle.setResponsiveRules(rules: rules) } }
   public func matchesRule(_ name: String) async throws(PDFError) -> Bool { try await bridged { try await handle.matchesRule(name: name) } }
   public func activeRules() async throws(PDFError) -> [String] { try await bridged { try await handle.activeRules() } }
-  public func setFlow(_ flow: StageFlow) async throws(PDFError) { try await bridged { try await handle.setFlow(flow: flow) } }
-  public func setLayout(_ layout: StageLayout) async throws(PDFError) { try await bridged { try await handle.setLayout(layout: layout) } }
-  public func setSpread(_ spread: StageSpreadMode) async throws(PDFError) { try await bridged { try await handle.setSpread(spread: spread) } }
-  public func setSizing(_ sizing: StageSizingMode) async throws(PDFError) { try await bridged { try await handle.setSizing(sizing: sizing) } }
   public func applyViewState(_ view: StageViewState) async throws(PDFError) { try await bridged { try await handle.applyViewState(view: view) } }
 
   // MARK: Zoom

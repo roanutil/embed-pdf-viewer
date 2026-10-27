@@ -44,7 +44,7 @@ impl std::fmt::Display for PageObjectNumber {
 }
 
 /// How the wire addresses a page: `PageRef` in `core/src/identity/PageRef.ts`,
-/// `{ kind: "objectNumber", pageObjectNumber }`.
+/// `{ kind: "objectNumber", objectNumber }` (595bdc6c7).
 ///
 /// One kind on purpose, as in the TypeScript: a page without an object number
 /// is refused at open and a display index is never an identity. The tag stays
@@ -55,34 +55,98 @@ impl std::fmt::Display for PageObjectNumber {
 /// The engine's own records keep [`PageObjectNumber`] and spell it as a
 /// `PageRef` only on the wire, through [`page_ref`], [`page_refs`] and
 /// [`optional_page_ref`].
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
 #[serde(tag = "kind")]
 pub enum PageRef {
     #[serde(rename = "objectNumber", rename_all = "camelCase")]
-    ObjectNumber { page_object_number: PageObjectNumber },
+    ObjectNumber { object_number: PageObjectNumber },
+}
+
+/// Read by hand so that `objectNumber` must be a positive integer, as
+/// `PageRefSchema` has it. A derived impl would read the transparent
+/// [`PageObjectNumber`] and let `0` through, which names a direct page
+/// dictionary rather than a page.
+impl<'de> Deserialize<'de> for PageRef {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(tag = "kind")]
+        enum Wire {
+            #[serde(rename = "objectNumber", rename_all = "camelCase")]
+            ObjectNumber { object_number: u32 },
+        }
+        let Wire::ObjectNumber { object_number } = Wire::deserialize(d)?;
+        PageObjectNumber::new(object_number)
+            .map(|object_number| Self::ObjectNumber { object_number })
+            .map_err(|_| serde::de::Error::custom("objectNumber must be a positive integer, got 0"))
+    }
+}
+
+/// How callers address an item of the document's outline
+/// (`OutlineItemRef`): the object number of its dictionary, which ISO
+/// 32000-2 §12.3.3 requires to be indirect. A layer never renumbers and
+/// never gives a deleted item's number to anything else, so it names the
+/// item for the life of the document. One kind, as [`PageRef`] has.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize)]
+#[serde(tag = "kind")]
+pub enum OutlineItemRef {
+    #[serde(rename = "objectNumber", rename_all = "camelCase")]
+    ObjectNumber { object_number: u32 },
+}
+
+/// Read by hand so that `objectNumber` must be a positive integer, as
+/// `OutlineItemRefSchema` has it.
+impl<'de> Deserialize<'de> for OutlineItemRef {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(tag = "kind")]
+        enum Wire {
+            #[serde(rename = "objectNumber", rename_all = "camelCase")]
+            ObjectNumber { object_number: u32 },
+        }
+        let Wire::ObjectNumber { object_number } = Wire::deserialize(d)?;
+        if object_number == 0 {
+            return Err(serde::de::Error::custom("objectNumber must be a positive integer, got 0"));
+        }
+        Ok(Self::ObjectNumber { object_number })
+    }
+}
+
+impl OutlineItemRef {
+    /// `toOutlineItemRef`.
+    pub fn new(object_number: u32) -> Self {
+        Self::ObjectNumber { object_number }
+    }
+
+    pub fn object_number(self) -> u32 {
+        match self {
+            Self::ObjectNumber { object_number } => object_number,
+        }
+    }
 }
 
 impl PageRef {
     /// `toPageRef`.
     pub fn new(page: PageObjectNumber) -> Self {
-        Self::ObjectNumber { page_object_number: page }
+        Self::ObjectNumber { object_number: page }
     }
 
     /// The object number the ref resolves to, which is what the session keys
     /// every page record on (`DocumentSession.resolvePageRef`).
     pub fn object_number(self) -> PageObjectNumber {
         match self {
-            Self::ObjectNumber { page_object_number } => page_object_number,
+            Self::ObjectNumber { object_number } => object_number,
         }
     }
 
     /// `PageRef` decoded from a request argument.
     ///
-    /// A present but malformed ref (an unknown `kind`, a missing or
-    /// non-integer `pageObjectNumber`) is `InvalidArg`, as `PageRefSchema`
-    /// answers it on the validated surfaces. An unknown object number is
-    /// not decided here: it resolves to `NotFound` where the page is opened,
-    /// as `resolvePageRef` answers it.
+    /// Kept divergence (`3baec217b`, kept on 2026-10-15): a present but
+    /// malformed ref (an unknown `kind`, a missing `objectNumber`, or one
+    /// that is not a positive integer) is refused as `InvalidArg`, as
+    /// `PageRefSchema` answers it on the validated surfaces. The TypeScript
+    /// worker does not validate it at all. An unknown object number is not
+    /// decided here: it resolves to `NotFound` where the page is opened, as
+    /// `resolvePageRef` answers it.
     pub fn from_value(value: &serde_json::Value, name: &str) -> Result<Self, EngineError> {
         Self::deserialize(value).map_err(|e| {
             EngineError::with_message(
@@ -251,24 +315,39 @@ pub enum AnnotationIdentityQuality {
     Weak,
 }
 
-/// How the engine accepts an annotation address.
+/// How an annotation is addressed: `AnnotationRef` in
+/// `core/src/identity/AnnotationRef.ts`.
 ///
-/// Resolution order matches `AnnotationIdentityResolver`:
-/// object number, then `/NM`, then the index escape hatch. The `Index` form is
-/// for legacy direct-object annotations only and must carry a fresh
-/// [`RevisionToken`], checked against the page's generation counter on every
-/// dereference. A stale token fails with
-/// [`EngineErrorCode::InvalidReference`] rather than silently pointing at a
-/// different annotation.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+/// On the wire a request names an annotation two ways (bc0057f3a, 595bdc6c7):
+/// `{kind: "objectNumber", page, objectNumber}` for one born as a PDF object,
+/// and `{kind: "baseIndex", page, baseIndex}` for one born inline in the
+/// uploaded file, named by its position in that page's `/Annots` there. The
+/// `nm` and `index` kinds are gone from the wire: [`Deserialize`] refuses
+/// them.
+///
+/// [`Nm`](Self::Nm) and [`Index`](Self::Index) stay in the enum for the
+/// engine's own callers until their owners retire them: the annotation
+/// readers still answer them (Task 8.12) and the weak-annotation bookkeeping
+/// still resolves them (Task 8.16). Neither can arrive in a request. An
+/// `Index` must carry a fresh [`RevisionToken`], checked against the page's
+/// generation counter on every dereference; a stale token fails with
+/// `InvalidArg` (upstream retired `InvalidReference` with page revisions).
+#[derive(Debug, Clone, PartialEq, Serialize)]
 #[serde(tag = "kind", rename_all = "camelCase")]
 pub enum AnnotationRef {
     #[serde(rename = "objectNumber")]
     ObjectNumber {
         #[serde(with = "page_ref")]
         page: PageObjectNumber,
-        #[serde(rename = "annotObjectNumber")]
+        #[serde(rename = "objectNumber")]
         annot: u32,
+    },
+    #[serde(rename = "baseIndex")]
+    BaseIndex {
+        #[serde(with = "page_ref")]
+        page: PageObjectNumber,
+        #[serde(rename = "baseIndex")]
+        base_index: u32,
     },
     #[serde(rename = "nm")]
     Nm {
@@ -285,23 +364,84 @@ pub enum AnnotationRef {
     },
 }
 
+/// Only the two kinds the wire has. A request naming an annotation by `nm`
+/// or `index` is refused as an unknown variant rather than resolved.
+impl<'de> Deserialize<'de> for AnnotationRef {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        #[derive(Deserialize)]
+        #[serde(tag = "kind")]
+        enum Wire {
+            #[serde(rename = "objectNumber", rename_all = "camelCase")]
+            ObjectNumber {
+                #[serde(with = "page_ref")]
+                page: PageObjectNumber,
+                object_number: u32,
+            },
+            #[serde(rename = "baseIndex", rename_all = "camelCase")]
+            BaseIndex {
+                #[serde(with = "page_ref")]
+                page: PageObjectNumber,
+                base_index: u32,
+            },
+        }
+        Ok(match Wire::deserialize(d)? {
+            Wire::ObjectNumber { page, object_number } => {
+                Self::ObjectNumber { page, annot: object_number }
+            }
+            Wire::BaseIndex { page, base_index } => Self::BaseIndex { page, base_index },
+        })
+    }
+}
+
 impl AnnotationRef {
     pub fn page(&self) -> PageObjectNumber {
         match self {
-            Self::ObjectNumber { page, .. } | Self::Nm { page, .. } | Self::Index { page, .. } => {
-                *page
-            }
+            Self::ObjectNumber { page, .. }
+            | Self::BaseIndex { page, .. }
+            | Self::Nm { page, .. }
+            | Self::Index { page, .. } => *page,
         }
     }
 
-    /// A reference by index is weak by construction; the other two are
-    /// durable.
+    /// The key two refs to one annotation share (`annotationKey`): an
+    /// object number names one object in the whole document, so its key has
+    /// no page; a birth name is its page's. The two names the wire no longer
+    /// has key apart from both.
+    pub fn key(&self) -> String {
+        match self {
+            Self::ObjectNumber { annot, .. } => format!("obj:{annot}"),
+            Self::BaseIndex { page, base_index } => format!("base:{}:{base_index}", page.get()),
+            Self::Nm { page, nm } => format!("nm:{}:{nm}", page.get()),
+            Self::Index { page, index, .. } => format!("index:{}:{index}", page.get()),
+        }
+    }
+
+    /// A reference by index is weak by construction; the others are
+    /// durable. A `baseIndex` is a name for life (`AnnotationRef.ts`), not a
+    /// position that shifts.
     pub fn quality(&self) -> AnnotationIdentityQuality {
         match self {
             Self::Index { .. } => AnnotationIdentityQuality::Weak,
             _ => AnnotationIdentityQuality::Durable,
         }
     }
+}
+
+/// `OBJECT_NUMBER_CEILING` (`identity/ObjectNumbers.ts`): the highest object
+/// number a document should reach. A write that would pass it is refused
+/// with `LayerFull`.
+pub const OBJECT_NUMBER_CEILING: u32 = 8_388_607;
+
+/// `OBJECT_NUMBER_ISSUE_LIMIT`: the last object number handed out to
+/// sessions, which leaves the numbers above it to the objects the engine
+/// makes for itself until the ceiling.
+pub const OBJECT_NUMBER_ISSUE_LIMIT: u32 = 8_000_000;
+
+/// `ObjectNumberRange`: `count` consecutive object numbers from `first`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ObjectNumberRange {
+    pub first: u32,
+    pub count: u32,
 }
 
 #[cfg(test)]
@@ -373,8 +513,8 @@ mod tests {
             serde_json::to_value(AnnotationRef::ObjectNumber { page, annot: 9 }).unwrap(),
             serde_json::json!({
                 "kind": "objectNumber",
-                "page": { "kind": "objectNumber", "pageObjectNumber": 3 },
-                "annotObjectNumber": 9,
+                "page": { "kind": "objectNumber", "objectNumber": 3 },
+                "objectNumber": 9,
             })
         );
     }
@@ -382,7 +522,7 @@ mod tests {
     #[test]
     fn a_page_ref_is_the_one_tagged_kind() {
         let page = PageObjectNumber::new(12).unwrap();
-        let wire = serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": 12 });
+        let wire = serde_json::json!({ "kind": "objectNumber", "objectNumber": 12 });
         assert_eq!(serde_json::to_value(PageRef::new(page)).unwrap(), wire);
         assert_eq!(PageRef::from_value(&wire, "page").unwrap().object_number(), page);
     }
@@ -393,14 +533,63 @@ mod tests {
         // number out of an unknown kind would address a page the caller never
         // named.
         for bad in [
-            serde_json::json!({ "kind": "index", "pageObjectNumber": 1 }),
+            serde_json::json!({ "kind": "index", "objectNumber": 1 }),
             serde_json::json!({ "kind": "objectNumber" }),
-            serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": "3" }),
-            serde_json::json!({ "pageObjectNumber": 3 }),
+            serde_json::json!({ "kind": "objectNumber", "objectNumber": "3" }),
+            serde_json::json!({ "kind": "objectNumber", "objectNumber": 0 }),
+            serde_json::json!({ "kind": "objectNumber", "objectNumber": -3 }),
+            serde_json::json!({ "kind": "objectNumber", "objectNumber": 1.5 }),
+            serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": 3 }),
+            serde_json::json!({ "objectNumber": 3 }),
             serde_json::json!(3),
         ] {
             let err = PageRef::from_value(&bad, "page").unwrap_err();
             assert!(err.is(EngineErrorCode::InvalidArg), "{bad} answered {err:?}");
         }
+    }
+
+    #[test]
+    fn an_annotation_ref_reads_the_two_wire_kinds() {
+        let page = PageObjectNumber::new(3).unwrap();
+        let by_number = serde_json::json!({ "kind": "objectNumber",
+            "page": { "kind": "objectNumber", "objectNumber": 3 }, "objectNumber": 9 });
+        assert_eq!(
+            serde_json::from_value::<AnnotationRef>(by_number.clone()).unwrap(),
+            AnnotationRef::ObjectNumber { page, annot: 9 }
+        );
+        let by_base = serde_json::json!({ "kind": "baseIndex",
+            "page": { "kind": "objectNumber", "objectNumber": 3 }, "baseIndex": 2 });
+        let base = serde_json::from_value::<AnnotationRef>(by_base.clone()).unwrap();
+        assert_eq!(base, AnnotationRef::BaseIndex { page, base_index: 2 });
+        assert_eq!(base.quality(), AnnotationIdentityQuality::Durable);
+        assert_eq!(serde_json::to_value(&base).unwrap(), by_base);
+    }
+
+    #[test]
+    fn the_nm_and_index_kinds_are_gone_from_the_wire() {
+        // bc0057f3a: an annotation's `/NM` is data, not a name, and a
+        // position is not an identity. A request that still names one is
+        // refused rather than resolved.
+        let page = serde_json::json!({ "kind": "objectNumber", "objectNumber": 3 });
+        for gone in [
+            serde_json::json!({ "kind": "nm", "page": page, "nm": "a" }),
+            serde_json::json!({ "kind": "index", "page": page, "index": 0,
+                "revision": { "docSessionId": "s", "page": page, "generation": 0 } }),
+            serde_json::json!({ "kind": "objectNumber", "page": page, "annotObjectNumber": 9 }),
+        ] {
+            assert!(serde_json::from_value::<AnnotationRef>(gone.clone()).is_err(), "{gone}");
+        }
+    }
+
+    #[test]
+    fn an_object_number_keys_the_same_on_any_page_and_a_birth_name_by_its_page() {
+        let page = |n| PageObjectNumber::new(n).unwrap();
+        let object = |p, annot| AnnotationRef::ObjectNumber { page: page(p), annot };
+        let born = |p, base_index| AnnotationRef::BaseIndex { page: page(p), base_index };
+        assert_eq!(object(3, 5).key(), "obj:5");
+        assert_eq!(object(3, 5).key(), object(4, 5).key());
+        assert_eq!(born(3, 2).key(), "base:3:2");
+        assert_ne!(born(3, 2).key(), born(4, 2).key());
+        assert_ne!(object(3, 2).key(), born(3, 2).key());
     }
 }

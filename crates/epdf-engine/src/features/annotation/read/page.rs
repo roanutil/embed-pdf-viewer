@@ -2,8 +2,12 @@
 //!
 //! G7. Ports
 //! `services/src/features/annotations/internal/read/collectPageAnnotations.ts`
-//! and the raw half of `RawAnnotationReader.ts`. Operations:
-//! `annotations.listRawAll`, `annotations.listRawPage`.
+//! and the raw half of `RawAnnotationReader.ts`, in the record shape this
+//! branch's wire had before the catch-up. No wire kind answers with it now
+//! (upstream's `annotations.list` is [`super::list`]): it serves the
+//! annotation writes' read-back (Tasks 8.14 to 8.16) and the kernel's
+//! listings in `epdf-viewer-host`'s `translate.rs` (`kernel_annotations`,
+//! until Task 13).
 //!
 //! The RAW path, which reads off the document handle and never loads a page.
 //! Loading a page parses its content stream, and a listing of what is on the

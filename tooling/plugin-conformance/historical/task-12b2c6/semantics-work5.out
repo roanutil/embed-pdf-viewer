@@ -1,0 +1,91 @@
+(node:48652) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current links replace the removed cache reducer and use the current annotation host (0.734917ms)
+✔ viewer cache filters visible page-space records, keeps refs and copies activation/hover/reply fields (571.04025ms)
+✔ in-flight requests share the engine read and both settle before a refused page retries (1.395584ms)
+✔ six named read refusals expose error then retry to ready with typed link records (2.128167ms)
+✔ current annotation events refresh loaded pages in order and document close removes subscribers (1.454083ms)
+✔ annotation-backed links follow remote facts and confirmed local apply updates and deletions without page reads (7.340292ms)
+✔ navigation ownership follows real link/pan tools and behavior matching (2.924375ms)
+✔ classic activations and current events hand every non-navigation target to the embedder (1.278542ms)
+✔ stage navigation uses page destinations and configured smooth motion rather than PDF inversion (8.155959ms)
+✔ actions dispatch resolves goto, handles URI success and preserves exact link ref/page provenance (7.414584ms)
+✔ hit tests include edges, choose smallest area with stable ties and miss absent links (1.482667ms)
+✔ labels and pure resolution return current destinations, URI/name and exact reported targets (0.780334ms)
+✔ listAllLinks preserves page order, retries failed pages and emits onLoaded only for successful loads (2.601709ms)
+✔ all nine former reducer occurrences execute their surviving page-mirror ownership with explicit retired state identity (3.438417ms)
+✔ every owned throw, rejection, callback report and nested action diagnostic has an exact independently specified owner (26.734875ms)
+✔ URI openers stack and unsubscribe, event listener failures preserve siblings, lifetime drops pending loads (0.460125ms)
+✔ caller cancellation rejects immediately while the shared page load can complete for other readers (0.367667ms)
+✔ all29 immutable original occurrences map one-to-one to complete current cases and eight explicit additions (9.263833ms)
+✔ all37 current definitions and complete outputs preserve every return, promise, callback, event, engine call and report (31.73875ms)
+✖ prior current actions160 and commands79 keep their complete actual inputs and every output channel (107.078417ms)
+✔ all prior tracked private tooling and immutable source authorities remain exact except four controller-authorized active files (161.412292ms)
+✔ original link29 and all progressed source guard authorities have fixed immutable hashes (0.696458ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 21
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1749.995541
+
+✖ failing tests:
+
+test at test/link-current.test.ts:1:21447
+✖ prior current actions160 and commands79 keep their complete actual inputs and every output channel (107.078417ms)
+  AssertionError [ERR_ASSERTION]: a-script-node-is-one-transaction prior full outcome
+  + actual - expected
+  ... Skipped lines
+
+    {
+      trace: [
+        {
+          callbacks: [],
+          documentEvents: [],
+  ...
+                    randomSeed: 3669834966,
+  +                 utcOffsetMinutes: -360
+  -                 utcOffsetMinutes: 0
+                  },
+                  event: {
+                    kind: 'name-tree-boot'
+                  },
+                  fields: [
+  ...
+                    randomSeed: 3686612585,
+  +                 utcOffsetMinutes: -360
+  -                 utcOffsetMinutes: 0
+                  },
+                  event: {
+                    kind: 'widget-activate',
+                    name: 'Mouse Up',
+                    source: {
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/link-current.test.ts:217:56)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: {
+      trace: [
+        [Object], [Object],
+        [Object], [Object],
+        [Object], [Object],
+        [Object]
+      ],
+      unmatched: []
+    },
+    expected: {
+      trace: [
+        [Object], [Object],
+        [Object], [Object],
+        [Object], [Object],
+        [Object]
+      ],
+      unmatched: []
+    },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

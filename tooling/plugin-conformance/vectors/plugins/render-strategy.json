@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/plugin/render/src/{paint-plan,strategy}.ts: option resolution and policy ∧ strategy.",
   "cases": [
@@ -53,7 +53,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -91,7 +90,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -131,7 +129,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -171,7 +168,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -220,7 +216,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -266,7 +261,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -314,7 +308,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -354,7 +347,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -395,7 +387,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -436,7 +427,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -477,7 +467,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -516,7 +505,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -556,7 +544,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -596,7 +583,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -634,8 +620,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,
@@ -662,7 +647,6 @@
             "prefetchMargin": 0.25,
             "velocityBias": false,
             "settleMs": 0,
-            "fadeMs": 120,
             "fallbackPyramid": [
               1,
               2,
@@ -706,7 +690,6 @@
             "prefetchMargin": 1,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -748,7 +731,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": false,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -786,7 +768,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -824,7 +805,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -862,7 +842,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -902,7 +881,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -942,7 +920,6 @@
             "prefetchMargin": 0.5,
             "velocityBias": true,
             "settleMs": 150,
-            "fadeMs": 0,
             "fallbackPyramid": [
               1,
               2,
@@ -1335,8 +1312,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,
@@ -2353,8 +2329,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,
@@ -3592,8 +3567,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,
@@ -5030,8 +5004,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,
@@ -6482,8 +6455,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,
@@ -7829,8 +7801,7 @@
               "margin": 0.25,
               "velocityBias": false
             },
-            "settleMs": 0,
-            "fadeMs": 120
+            "settleMs": 0
           },
           "format": "webp",
           "quality": 0.8,

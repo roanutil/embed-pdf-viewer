@@ -1,29 +1,33 @@
-//! Kernel engine calls as host wire requests, and back.
+//! Kernel engine calls as host wire requests, and back: the job each method
+//! of upstream's local document handle builds (`packages/engine/main/src/
+//! document/Local*Service.ts`, `wirePack({...})`), for `epdf-engine`'s host,
+//! which answers upstream's worker payloads without their tags.
 //!
-//! The kernel speaks member chains (`crates/epdf-kernel/src/engine.rs`); the
-//! host speaks wire kinds (`crates/epdf-engine/src/host.rs`). On the web the
-//! two hops are `engine-bridge.ts` and `@embedpdf/engine`'s worker protocol;
-//! here they are this one table.
+//! The kernel speaks member chains (`crates/epdf-kernel/src/engine.rs`) with
+//! the engine's current DTOs, so a request is the method's arguments under
+//! the keys its `wirePack` names, and an answer is the payload member its
+//! service returns. What remains here is host wire adaptation, not shape
+//! conversion:
 //!
-//! A page travels as the `page: PageRef` (or `pages: PageRef[]`) that
-//! `worker-protocol.ts` spells and the host reads (`host.rs` `page_field`);
-//! `tooling/engine-conformance/vectors/wire/requests.json` pins the keys. The
-//! host answers pages the same way (`PageLayout.ref`, `SearchMatch.page`, an
-//! annotation's `page`, a widget's `page` and `ref`), so the kernel reads
-//! them as they arrive.
-//!
-//! Answers are read the host's way, which is not the TypeScript worker's in
-//! two respects: the host sends a result bare where the worker tags it
-//! (`{tag, snapshot}`), and wraps a mutation's result with its sequence and
-//! event. Where the host and the `engine-core` DTOs still differ for a mapped
-//! kind (a raster's pixel format, a field edit's bare field) it is filled in
-//! here, and a render request leaves its encode options behind. A shape the
-//! host did not send is an error, never a guess.
+//! - the job envelope each `wirePack` carries: `effect`, `jobId`, an `opId`
+//!   for a write (the caller's `WriteOptions.opId`, else a fresh one, as
+//!   `opIdOf` does) and the handle's `authority` where the kind takes one;
+//! - bytes: a `{"$bytes"}` (or `{"$hostBytes"}`) value inside a request goes
+//!   as a payload the request names `{"payload": n}`, as `wirePack`'s
+//!   transfer list does, and a `{"payload": n}` in an answer comes back as
+//!   `{"$bytes"}`; a whole-file answer (a download, an extract) is parked in
+//!   the `HostTable` as `{"$hostBytes": id}`;
+//! - numbers: the kernel's numbers are JavaScript numbers (`17.0`), and the
+//!   host's serde reads a whole one as an integer, so whole numbers go as
+//!   integers;
+//! - a page raster stays raw pixels in the `HostTable` behind `$host`, as
+//!   the render plugin and its uniffi export read them, where the
+//!   TypeScript encodes an image; the stamp plugin's asset engine encodes.
 
-use epdf_engine::host::HostResponse;
+use epdf_engine::host::{AUTHORITY_KINDS, HostResponse, RequestEffect, WRITE_KINDS};
 use epdf_kernel::Error;
 use epdf_kernel::geometry::PageRef;
-use serde_json::{Map, Value};
+use serde_json::{Map, Value, json};
 
 use crate::host_table::HostTable;
 
@@ -34,199 +38,203 @@ pub struct WireCall {
 }
 
 pub enum Decode {
+    /// No value (`void`).
+    Unit,
     /// The result as the host sent it.
     Result,
+    /// The result, or `null` when the host answered `null`.
+    OptionalResult,
     /// One member of the result, which must be there.
     Field(&'static str),
-    /// A `PageListSnapshot`, which must name every page by its `ref`.
-    PageList,
-    /// A `SearchSlice`, which must name every match's `page`.
-    SearchSlice,
-    /// A mutation: `{result, mutationSequence, event}`. Answers `result`
-    /// and hands back the event to publish.
+    /// An object holding only this member of the result (`{ viewports }`).
+    Only(&'static str),
+    /// A write: `{result, mutationSequence, event?|events?}`. Answers
+    /// `result` and hands back the events to publish first.
     Mutation,
-    /// Width, height and stride, with the pixels moved into the `HostTable`
-    /// behind a `$host` id, plus what the render plugin and its ffi read:
-    /// the pixel format as `PageRaster` spells it and a raw-pixel `source`
-    /// carrying the byte count.
-    Raster,
-    Unit,
-    /// An annotation's embedded file: the result (`name`, `mimeType`,
-    /// `size`), with the payload parked in the `HostTable` as `data`.
-    AttachmentContent,
-    /// A page mutation: `Mutation`, whose result and event must carry a
-    /// layout that names every page by its `ref` (the kernel's page registry
-    /// and the page-edit plugin read it).
-    PageMutation,
-    /// A byte payload (an extracted PDF), parked in the `HostTable` and
-    /// answered as `{"$hostBytes": id}` for `Bytes::from_json` to take.
+    /// `{ result }` beside an optional notice event (`signatures.prepare`,
+    /// `signatures.cancel`).
+    Inner,
+    /// The first payload as `{"$bytes"}`: a resource, a signature's
+    /// `/Contents`, a digest.
+    Bytes,
+    /// The first payload parked in the `HostTable` as `{"$hostBytes": id}`:
+    /// a whole file read once (a download, an extract).
     HostBytes,
-    /// Bytes in the first payload, put back into the result as `bytes`
-    /// (`{"$bytes": base64}`), as the form plugin reads an export.
-    ExportBytes,
-    /// `pages.renderEncoded`: width, height and type in the result, the
-    /// encoded bytes as the payload, answered as the `PageImage` a local
-    /// engine gives the stamp plugin (`source.kind == "bytes"`).
+    /// `pages.render`: the raster's fields beside `page` and `area`, the
+    /// pixels in the `HostTable` behind `$host` with a raw-pixel `source`.
+    Raster,
+    /// `annotations.renderAppearances`: `{page, appearances}`, each
+    /// appearance's raster as [`Decode::Raster`] makes a page's.
+    Appearances,
+    /// `pages.renderEncoded` on the asset engine: the `PageImage` a local
+    /// engine gives (`source.kind == "bytes"`).
     Encoded,
-    /// A read that answers `null` for nothing there (`pieceInfo.read` for
-    /// an application with no entry), else the result as the host sent it.
-    OptionalResult,
-    /// The first payload itself, as `{"$bytes": base64}`: a signature's
-    /// `/Contents`, a digest, a revision's bytes.
-    InlineBytes,
-    /// The result, with the first payload added under this key as
-    /// `{"$bytes": base64}` (`signatures.prepare`'s digest).
-    ResultWithBytes(&'static str),
+    /// `pages.geometry` as `page.text.layout`'s `{"$textLayout": snapshot}`.
+    TextLayout,
 }
 
-/// A decoded answer: the call's value, and the document event a mutation
-/// published, if it published one.
+/// A decoded answer: the call's value, and the document events the write
+/// published, in order.
 #[derive(Debug)]
 pub struct Decoded {
     pub value: Value,
-    pub event: Option<Value>,
+    pub events: Vec<Value>,
+}
+
+/// What a request needs from the handle it is for.
+pub struct Client {
+    /// `guard.changeAuthority()`: the handle's authority, on the wire.
+    pub authority: Value,
+    /// `guard.can(capability)`.
+    pub allows: Box<dyn Fn(&str) -> bool>,
 }
 
 fn coded(code: &str, message: String) -> Error {
     Error::new(message).with("code", code)
 }
 
-/// Every kernel path `route` maps, for `maps`' namespace check. A path added
-/// to `route` goes here too, one per line, in plan order;
-/// `every_routed_path_is_listed` checks the two agree.
+fn invalid(message: String) -> Error {
+    coded("invalid-input", format!("[epdf-viewer-host] {message}"))
+}
+
+/// Every kernel path a request maps, one per line, for `maps`' namespace
+/// check. `every_routed_path_is_listed` checks it against `route`.
 pub const PATHS: &[&str] = &[
     "close",
     "pages.list",
-    "metadata.read",
+    "metadata.get",
     "metadata.update",
-    "page.text.read",
-    "page.geometry.read",
-    "page.render.image",
-    "search.query",
-    "page.annotations.list",
-    "annotations.listRawAll",
-    "page.annotations.create",
-    "page.annotations.update",
-    "page.annotations.delete",
-    "page.annotations.downloadFile",
+    "metadata.custom.get",
+    "metadata.custom.update",
+    "actions.get",
+    "outline.get",
+    "attachments.list",
+    "attachments.download",
+    "annotations.list",
+    "annotations.export",
+    "annotations.import",
+    "apply",
+    "forms.list",
+    "forms.export",
+    "forms.import",
+    "forms.repair",
+    "forms.setSignatureAppearance",
+    "pages.extract",
+    "pages.flatten",
+    "pages.setName",
+    "pages.removeName",
+    "pieceInfo.get",
+    "pieceInfo.update",
     "redaction.apply",
-    "page.measure.viewports",
+    "search.query",
+    "signatures.list",
+    "signatures.getContents",
+    "signatures.getDigest",
+    "signatures.downloadRevision",
+    "signatures.analyze",
+    "signatures.prepare",
+    "signatures.complete",
+    "signatures.cancel",
+    "download",
+    "downloadLayer",
+    "document.version",
+    "page.annotations.list",
+    "page.annotations.create",
+    "page.annotations.downloadResource",
+    "page.annotations.exportAppearance",
+    "page.annotations.renderAppearances",
+    "page.forms.renderAppearances",
+    "page.measure.listViewports",
     "page.measure.setScale",
-    "pages.move",
+    "page.pieceInfo.get",
+    "page.pieceInfo.update",
+    "page.render.image",
+    "page.text.get",
+    "page.text.layout",
+];
+
+/// Paths the native handle answers itself, without one wire request each:
+/// `render.getPolicy` (the local engine's own policy) and the page-structure
+/// verbs, each a one-op `apply` (`pageVerbs`).
+pub const LOCAL_PATHS: &[&str] = &[
+    "render.getPolicy",
+    "pages.reorder",
     "pages.rotate",
     "pages.delete",
     "pages.insert",
     "pages.insertBlank",
-    "pages.extract",
-    "actions.read",
-    "forms.list",
-    "forms.setValue",
-    "forms.reset",
-    "forms.applyEffects",
-    "forms.exportData",
-    "forms.importData",
-    "forms.repair",
-    "forms.createField",
-    "forms.updateField",
-    "forms.deleteField",
-    "forms.attachWidget",
-    "forms.detachWidget",
-    "pieceInfo.read",
-    "page.pieceInfo.read",
-    "pieceInfo.update",
-    "page.pieceInfo.update",
-    "pages.setName",
-    "pages.removeName",
-    "pages.flatten",
-    "download",
-    "signatures.list",
-    "signatures.contents",
-    "signatures.digest",
-    "signatures.revisionBytes",
-    "signatures.analyze",
-    "signatures.prepare",
-    "signatures.complete",
-    "signatures.abort",
-    "document.version",
-    "forms.setSignatureAppearance",
 ];
 
-/// Feature names a plugin checks with `doc.has` that are neither a path nor
-/// a namespace of one (`document.versioned`). One per line, in plan order.
-pub const FLAGS: &[&str] = &["document.versioned"];
-
-/// Whether `translate` maps `path`; or, for a bare namespace such as
-/// `redaction`, any listed path under it; or a listed flag. This is what
-/// `DocumentHandle::has` answers, and the plugins ask all three ways
-/// (`doc.has("forms.applyEffects")`, `doc.has("redaction")`,
-/// `doc.has("document.versioned")`).
+/// Whether the native handle has `path`; or, for a bare namespace such as
+/// `redaction`, any path under it. This is what `DocumentHandle::has`
+/// answers. `downloadLayer` is the local engine's, and every other optional
+/// member the local engine has is listed (`page.measure`, `pages.extract`,
+/// `pages.flatten`, `render`); `forms.submit` (the cloud's) is not.
 pub fn maps(path: &str) -> bool {
-    route(path).is_some()
-        || FLAGS.contains(&path)
-        || PATHS.iter().any(|p| p.strip_prefix(path).is_some_and(|rest| rest.starts_with('.')))
+    let listed = |p: &&str| *p == path || p.strip_prefix(path).is_some_and(|r| r.starts_with('.'));
+    PATHS.iter().any(listed) || LOCAL_PATHS.iter().any(listed)
 }
 
-/// The wire kind and result decoding for a kernel path.
+/// The wire kind and answer of one kernel path.
 fn route(path: &str) -> Option<(&'static str, Decode)> {
     Some(match path {
         "close" => ("close", Decode::Unit),
-        "pages.list" => ("pages.list", Decode::PageList),
-        "metadata.read" => ("metadata.read", Decode::Result),
+        "pages.list" => ("pages.list", Decode::Result),
+        "metadata.get" => ("metadata.read", Decode::Field("metadata")),
         "metadata.update" => ("metadata.update", Decode::Mutation),
-        "page.text.read" => ("pages.text", Decode::Result),
-        "page.geometry.read" => ("pages.geometry", Decode::Result),
-        "page.render.image" => ("pages.render", Decode::Raster),
-        "search.query" => ("search.query", Decode::SearchSlice),
-        "page.annotations.list" => ("annotations.listRawPage", Decode::Result),
-        "annotations.listRawAll" => ("annotations.listRawAll", Decode::Result),
-        "page.annotations.create" => ("annotations.create", Decode::Mutation),
-        "page.annotations.update" => ("annotations.update", Decode::Mutation),
-        "page.annotations.delete" => ("annotations.delete", Decode::Mutation),
-        "page.annotations.downloadFile" => ("annotations.readFile", Decode::AttachmentContent),
-        "redaction.apply" => ("redaction.apply", Decode::Mutation),
-        "page.measure.viewports" => ("measure.viewports", Decode::Field("viewports")),
-        "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
-        "pages.move" => ("pages.move", Decode::PageMutation),
-        "pages.rotate" => ("pages.rotate", Decode::PageMutation),
-        "pages.delete" => ("pages.delete", Decode::PageMutation),
-        "pages.insert" => ("pages.insert", Decode::PageMutation),
-        "pages.insertBlank" => ("pages.insertBlank", Decode::PageMutation),
-        "pages.extract" => ("pages.extract", Decode::HostBytes),
-        "actions.read" => ("actions.read", Decode::Result),
+        "metadata.custom.get" => ("metadata.readCustom", Decode::Field("custom")),
+        "metadata.custom.update" => ("metadata.updateCustom", Decode::Mutation),
+        "actions.get" => ("actions.read", Decode::Field("snapshot")),
+        "outline.get" => ("outline.read", Decode::Field("outline")),
+        "attachments.list" => ("attachments.list", Decode::Result),
+        "attachments.download" => ("attachments.readFile", Decode::Bytes),
+        "annotations.list" | "page.annotations.list" => ("annotations.list", Decode::Result),
+        "annotations.export" => ("annotations.export", Decode::Field("bundle")),
+        "annotations.import" => ("annotations.import", Decode::Mutation),
+        "apply" => ("document.apply", Decode::Mutation),
         "forms.list" => ("forms.list", Decode::Result),
-        "forms.setValue" => ("forms.setValue", Decode::Mutation),
-        "forms.reset" => ("forms.reset", Decode::Mutation),
-        "forms.applyEffects" => ("forms.applyEffects", Decode::Mutation),
-        "forms.exportData" => ("forms.export", Decode::ExportBytes),
-        "forms.importData" => ("forms.import", Decode::Mutation),
+        "forms.export" => ("forms.export", Decode::Field("bundle")),
+        "forms.import" => ("forms.import", Decode::Mutation),
         "forms.repair" => ("forms.repair", Decode::Mutation),
-        "forms.createField" => ("forms.createField", Decode::Mutation),
-        "forms.updateField" => ("forms.updateField", Decode::Mutation),
-        "forms.deleteField" => ("forms.deleteField", Decode::Mutation),
-        "forms.attachWidget" => ("forms.attachWidget", Decode::Mutation),
-        "forms.detachWidget" => ("forms.detachWidget", Decode::Mutation),
-        "pieceInfo.read" | "page.pieceInfo.read" => ("pieceInfo.read", Decode::OptionalResult),
-        // `void`, as the TypeScript resolves it, and no event to hand back.
-        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Unit),
-        "pages.setName" => ("pages.setName", Decode::PageMutation),
-        "pages.removeName" => ("pages.removeName", Decode::PageMutation),
-        // Not `PageMutation`: a flatten answers per-page results, each with
-        // the `page` the stamp plugin reads, and no layout.
-        "pages.flatten" => ("pages.flatten", Decode::Mutation),
-        "download" => ("document.saveBuffer", Decode::HostBytes),
-        "signatures.list" => ("signatures.list", Decode::Result),
-        "signatures.contents" => ("signatures.contents", Decode::InlineBytes),
-        "signatures.digest" => ("signatures.digest", Decode::InlineBytes),
-        "signatures.revisionBytes" => ("signatures.revisionBytes", Decode::InlineBytes),
-        "signatures.analyze" => ("signatures.analyze", Decode::Result),
-        "signatures.prepare" => ("signatures.prepare", Decode::ResultWithBytes("digest")),
-        "signatures.complete" => ("signatures.complete", Decode::Mutation),
-        "signatures.abort" => ("signatures.abort", Decode::Result),
-        "document.version" => ("document.version", Decode::Result),
         "forms.setSignatureAppearance" => ("forms.setSignatureAppearance", Decode::Mutation),
+        "pages.extract" => ("pages.extract", Decode::HostBytes),
+        "pages.flatten" => ("pages.flatten", Decode::Mutation),
+        "pages.setName" => ("pages.setName", Decode::Mutation),
+        "pages.removeName" => ("pages.removeName", Decode::Mutation),
+        "pieceInfo.get" | "page.pieceInfo.get" => ("pieceInfo.read", Decode::OptionalResult),
+        "pieceInfo.update" | "page.pieceInfo.update" => ("pieceInfo.update", Decode::Mutation),
+        "redaction.apply" => ("redaction.apply", Decode::Mutation),
+        "search.query" => ("search.query", Decode::Result),
+        "signatures.list" => ("signatures.list", Decode::Field("snapshot")),
+        "signatures.getContents" => ("signatures.contents", Decode::Bytes),
+        "signatures.getDigest" => ("signatures.digest", Decode::Bytes),
+        "signatures.downloadRevision" => ("signatures.revisionBytes", Decode::Bytes),
+        "signatures.analyze" => ("signatures.analyze", Decode::Field("analysis")),
+        "signatures.prepare" => ("signatures.prepare", Decode::Inner),
+        "signatures.complete" => ("signatures.complete", Decode::Mutation),
+        "signatures.cancel" => ("signatures.cancel", Decode::Inner),
+        "download" => ("document.saveBuffer", Decode::HostBytes),
+        "downloadLayer" => ("document.saveLayerBuffer", Decode::HostBytes),
+        "document.version" => ("document.version", Decode::Field("version")),
+        "page.annotations.create" => ("annotations.create", Decode::Mutation),
+        "page.annotations.exportAppearance" => ("annotations.exportAppearance", Decode::Bytes),
+        "page.annotations.renderAppearances" | "page.forms.renderAppearances" => {
+            ("annotations.renderAppearances", Decode::Appearances)
+        }
+        "page.measure.listViewports" => ("measure.viewports", Decode::Only("viewports")),
+        "page.measure.setScale" => ("measure.setScale", Decode::Mutation),
+        "page.render.image" => ("pages.render", Decode::Raster),
+        "page.text.get" => ("pages.text", Decode::Result),
+        "page.text.layout" => ("pages.geometry", Decode::TextLayout),
+        // `downloadResource(ref, role)` reads the file or the appearance
+        // stream; the role picks the kind (see `translate`).
+        "page.annotations.downloadResource" => ("annotations.readFile", Decode::Bytes),
         _ => return None,
     })
 }
+
+/// `ATTACHMENT_LIMITS.decodedBytes`: the most a file read decodes.
+const ATTACHMENT_DECODED_BYTES: u64 = 256 * 1024 * 1024;
 
 pub fn translate(
     doc: &str,
@@ -234,197 +242,273 @@ pub fn translate(
     pon: Option<u32>,
     args: &[Value],
     job: u64,
+    client: &Client,
 ) -> Result<WireCall, Error> {
-    let (kind, decode) = route(path).ok_or_else(|| {
-        coded("unsupported", format!("[epdf-viewer-host] the native engine has no \"{path}\" yet"))
+    let (mut kind, decode) = route(path).ok_or_else(|| {
+        coded("unsupported", format!("[epdf-viewer-host] the native engine has no \"{path}\""))
     })?;
+    let arg = |i: usize| args.get(i).filter(|v| !is_absent(v)).cloned();
     let page = || {
-        pon.map(|pon| PageRef::new(pon).to_json()).ok_or_else(|| {
-            coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
-        })
+        pon.map(|pon| PageRef::new(pon).to_json())
+            .ok_or_else(|| invalid(format!("{path} needs a page")))
     };
-    let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
+    // `WriteOptions` (`{opId}`), at the argument index each method takes it.
+    let options_at = |i: usize| arg(i).unwrap_or(Value::Null);
+    let mut body = Map::new();
     let mut payloads = Vec::new();
-    let extra: Vec<(&str, Value)> = match kind {
-        "metadata.update" => vec![("patch", arg(0))],
-        "pages.text" | "pages.geometry" => vec![("page", page()?)],
-        "pages.render" => vec![("page", page()?), ("options", render_options(arg(0)))],
-        "search.query" => vec![("request", search_request(arg(0))?)],
-        "annotations.listRawPage" => vec![("page", page()?)],
-        "annotations.create" => {
-            let (draft, resources) = normalize_binary(arg(0), &mut payloads)?;
-            let draft = wire_refs_in(path, draft)?;
-            vec![("page", page()?), ("draft", draft), ("resources", resources)]
+    let put = |body: &mut Map<String, Value>, key: &str, value: Option<Value>| {
+        if let Some(value) = value {
+            body.insert(key.into(), value);
         }
-        "annotations.update" => {
-            let (patch, resources) = normalize_binary(arg(1), &mut payloads)?;
-            let patch = wire_refs_in(path, patch)?;
-            vec![("ref", wire_ref(path, arg(0))?), ("patch", patch), ("resources", resources)]
+    };
+    let options = match path {
+        "metadata.update" | "metadata.custom.update" => {
+            put(&mut body, "patch", arg(0));
+            options_at(1)
         }
-        "annotations.delete" => vec![("ref", wire_ref(path, arg(0))?)],
-        "annotations.readFile" => {
-            vec![("page", page()?), ("ref", wire_ref(path, arg(0))?)]
+        "attachments.download" => {
+            put(&mut body, "ref", arg(0));
+            body.insert("maxDecodedBytes".into(), ATTACHMENT_DECODED_BYTES.into());
+            Value::Null
         }
-        "redaction.apply" => vec![("scope", redaction_scope_out(path, arg(0))?)],
-        "measure.viewports" => vec![("page", page()?)],
-        "measure.setScale" => vec![("page", page()?)],
-        "pages.move" => vec![
-            ("pages", page_refs(path, &arg(0))?),
-            ("destIndex", whole(path, "destIndex", &arg(1))?),
-        ],
-        "pages.rotate" => vec![
-            ("pages", page_refs(path, &arg(0))?),
-            ("rotation", whole(path, "rotation", &arg(1))?),
-        ],
-        "pages.delete" | "pages.extract" => vec![("pages", page_refs(path, &arg(0))?)],
-        "pages.insertBlank" => {
-            let spec = arg(0);
-            vec![
-                ("size", spec.get("size").cloned().unwrap_or(Value::Null)),
-                ("count", optional_whole(path, "count", spec.get("count"))?),
-                ("destIndex", optional_whole(path, "destIndex", args.get(1))?),
-            ]
+        "annotations.list" => {
+            put(&mut body, "pages", arg(0).and_then(|o| o.get("pages").cloned()));
+            Value::Null
         }
-        "pages.insert" => {
-            payloads.push(pdf_bytes(path, &arg(0))?);
-            vec![("destIndex", optional_whole(path, "destIndex", args.get(1))?)]
+        "page.annotations.list" => {
+            body.insert("pages".into(), json!([page()?]));
+            Value::Null
         }
-        "forms.setValue" => {
-            vec![("ref", wire_field_ref(path, arg(0))?), ("value", arg(1))]
+        "annotations.export" | "forms.export" => {
+            body.insert("selection".into(), arg(0).unwrap_or_else(|| json!({})));
+            Value::Null
         }
-        "forms.reset" | "forms.deleteField" => vec![("ref", wire_field_ref(path, arg(0))?)],
-        "forms.applyEffects" => {
-            let mut effects = wire_refs_in(path, arg(0))?;
-            whole_field_refs(path, &mut effects)?;
-            vec![("effects", effects)]
+        "annotations.import" => {
+            let options = options_at(1);
+            put(&mut body, "bundle", arg(0));
+            put(&mut body, "pages", member(&options, "pages"));
+            body.insert(
+                "attribution".into(),
+                member(&options, "attribution").unwrap_or_else(|| "restore".into()),
+            );
+            options
         }
-        "forms.export" => vec![("format", arg(0))],
+        "apply" => {
+            put(&mut body, "change", arg(0));
+            options_at(1)
+        }
         "forms.import" => {
-            let data = epdf_kernel::bytes::Bytes::from_json(&arg(0)).ok_or_else(|| {
-                coded("invalid-input", format!("[epdf-viewer-host] {path} needs bytes"))
-            })?;
-            payloads.push(data.0);
-            vec![("format", arg(1))]
+            let options = options_at(1);
+            put(&mut body, "bundle", arg(0));
+            put(&mut body, "pages", member(&options, "pages"));
+            body.insert(
+                "attribution".into(),
+                member(&options, "attribution").unwrap_or_else(|| "restore".into()),
+            );
+            body.insert("values".into(), member(&options, "values").unwrap_or(Value::Bool(true)));
+            body.insert("mayScript".into(), (client.allows)("doc.forms.script").into());
+            options
         }
         "forms.repair" => {
-            let bake = arg(0).get("bakeAppearances").cloned().unwrap_or(Value::Bool(false));
-            vec![("bakeAppearances", bake)]
+            let options = options_at(0);
+            body.insert(
+                "bakeAppearances".into(),
+                member(&options, "bakeAppearances").unwrap_or(Value::Bool(false)),
+            );
+            options
         }
-        "forms.createField" => {
-            let mut draft = arg(0);
-            whole_placements(path, &mut draft)?;
-            vec![("draft", draft)]
+        "forms.setSignatureAppearance" => {
+            put(&mut body, "ref", arg(0));
+            // The PDF is the request's payload 0 (`[pdf]`).
+            let appearance = arg(1).unwrap_or(Value::Null);
+            payloads.push(bytes_member(&appearance, "pdf", path)?);
+            options_at(2)
         }
-        "forms.updateField" => {
-            vec![("ref", wire_field_ref(path, arg(0))?), ("patch", arg(1))]
+        "pages.extract" => {
+            put(&mut body, "pages", arg(0));
+            if let Some(flatten) = resolve_page_extract(&options_at(1), &*client.allows)? {
+                body.insert("flatten".into(), flatten);
+            }
+            Value::Null
         }
-        "forms.attachWidget" | "forms.detachWidget" => {
-            // The widget's `AnnotationRef`, as `FormMutator` takes it; the
-            // engine refuses one that is not by object number.
-            let widget = arg(1);
-            let on_state = widget.get("onState").cloned().unwrap_or(Value::Null);
-            vec![
-                ("ref", wire_field_ref(path, arg(0))?),
-                ("widget", wire_ref(path, without(widget, "onState"))?),
-                ("onState", on_state),
-            ]
-        }
-        "pieceInfo.read" if path == "page.pieceInfo.read" => {
-            vec![("page", page()?), ("application", arg(0))]
-        }
-        "pieceInfo.read" => vec![("application", arg(0))],
-        "pieceInfo.update" if path == "page.pieceInfo.update" => {
-            vec![("page", page()?), ("application", arg(0)), ("patch", arg(1))]
-        }
-        "pieceInfo.update" => vec![("application", arg(0)), ("patch", arg(1))],
-        "pages.setName" => {
-            let input = arg(0);
-            let page = input.get("page").and_then(PageRef::from_json).ok_or_else(|| {
-                coded("invalid-input", format!("[epdf-viewer-host] {path} needs a page"))
-            })?;
-            vec![
-                ("name", input.get("name").cloned().unwrap_or(Value::Null)),
-                ("page", page.to_json()),
-                ("replace", input.get("replace").cloned().unwrap_or(Value::Null)),
-            ]
-        }
-        "pages.removeName" => vec![("name", arg(0).get("name").cloned().unwrap_or(Value::Null))],
         "pages.flatten" => {
-            vec![("pages", page_refs(path, &arg(0))?), ("usage", arg(1))]
+            let options = options_at(1);
+            put(&mut body, "pages", arg(0));
+            body.insert(
+                "usage".into(),
+                member(&options, "usage").unwrap_or_else(|| "display".into()),
+            );
+            options
         }
-        "document.saveBuffer" => vec![("mode", save_mode(path, &arg(0))?)],
-        "signatures.list" => {
-            vec![("workingCopy", arg(0).get("workingCopy").cloned().unwrap_or(Value::Null))]
+        "pages.setName" => {
+            if let Some(Value::Object(input)) = arg(0) {
+                body.extend(input);
+            }
+            options_at(1)
         }
-        "signatures.contents" => vec![("ref", wire_field_ref(path, arg(0))?)],
-        "signatures.digest" => {
-            vec![("ref", wire_field_ref(path, arg(0))?), ("algorithm", arg(1))]
+        "pages.removeName" => {
+            put(&mut body, "name", arg(0).and_then(|i| i.get("name").cloned()));
+            options_at(1)
         }
-        "signatures.revisionBytes" => {
-            vec![("revisionIndex", whole(path, "revisionIndex", &arg(0))?)]
+        "pieceInfo.get" | "page.pieceInfo.get" => {
+            if path == "page.pieceInfo.get" {
+                body.insert("page".into(), page()?);
+            }
+            put(&mut body, "application", arg(0));
+            Value::Null
+        }
+        "pieceInfo.update" | "page.pieceInfo.update" => {
+            if path == "page.pieceInfo.update" {
+                body.insert("page".into(), page()?);
+            }
+            put(&mut body, "application", arg(0));
+            put(&mut body, "patch", arg(1));
+            options_at(2)
+        }
+        "redaction.apply" => {
+            put(&mut body, "scope", arg(0));
+            options_at(1)
+        }
+        "search.query" => {
+            put(&mut body, "request", arg(0));
+            Value::Null
+        }
+        "signatures.getContents" => {
+            put(&mut body, "ref", arg(0));
+            Value::Null
+        }
+        "signatures.getDigest" => {
+            put(&mut body, "ref", arg(0));
+            put(&mut body, "algorithm", arg(1));
+            Value::Null
+        }
+        "signatures.downloadRevision" => {
+            put(&mut body, "revisionIndex", arg(0));
+            Value::Null
         }
         "signatures.analyze" => {
-            let mut input = arg(0);
-            for pointer in ["/since/signatureIndex", "/since/revisionIndex", "/until/revisionIndex"]
-            {
-                whole_at(path, &mut input, pointer)?;
-            }
-            vec![("input", input)]
+            put(&mut body, "input", arg(0));
+            Value::Null
         }
         "signatures.prepare" => {
-            let mut input = wire_field_ref(path, arg(0))?;
-            for pointer in ["/certify/permission", "/lock/permission", "/contentsSize"] {
-                whole_at(path, &mut input, pointer)?;
-            }
-            // The artwork travels as a payload; no artwork, no appearance.
-            if let Some(appearance) = input.get_mut("appearance") {
-                let pdf = appearance.get("pdf").and_then(epdf_kernel::bytes::Bytes::from_json);
-                match pdf {
-                    Some(pdf) => {
-                        payloads.push(pdf.0);
-                        let page = optional_whole(path, "pageIndex", appearance.get("pageIndex"))?;
-                        *appearance = serde_json::json!({ "pageIndex": if page.is_null() { 0.into() } else { page } });
-                    }
-                    None => {
-                        input.as_object_mut().map(|m| m.remove("appearance"));
-                    }
-                }
-            }
-            vec![("input", input)]
+            put(&mut body, "input", arg(0));
+            options_at(1)
         }
         "signatures.complete" => {
-            let mut input = arg(0);
-            payloads.push(bytes_at(&input, "cms", path)?);
-            whole_at(path, &mut input, "/expectedVersion/editsVersion")?;
-            vec![("input", without(input, "cms"))]
+            // The CMS is the request's payload 0, beside the input.
+            let mut input = arg(0).unwrap_or(Value::Null);
+            payloads.push(bytes_member(&input, "cms", path)?);
+            if let Some(input) = input.as_object_mut() {
+                input.remove("cms");
+            }
+            body.insert("input".into(), input);
+            options_at(1)
         }
-        "signatures.abort" => vec![("signingId", arg(0))],
-        "forms.setSignatureAppearance" => {
-            payloads.push(bytes_at(&arg(1), "pdf", path)?);
-            vec![
-                ("ref", wire_field_ref(path, arg(0))?),
-                ("pageIndex", optional_whole(path, "pageIndex", arg(1).get("pageIndex"))?),
-            ]
+        "signatures.cancel" => {
+            put(&mut body, "signingId", arg(0));
+            options_at(1)
         }
-        _ => vec![],
+        "download" => {
+            body.insert("mode".into(), save_mode(path, &options_at(0))?);
+            Value::Null
+        }
+        "page.annotations.create" => {
+            let options = options_at(1);
+            body.insert("page".into(), page()?);
+            put(&mut body, "draft", arg(0));
+            put(&mut body, "objectNumber", member(&options, "objectNumber"));
+            put(&mut body, "resources", member(&options, "resources"));
+            options
+        }
+        "page.annotations.downloadResource" => {
+            body.insert("page".into(), page()?);
+            put(&mut body, "ref", arg(0));
+            if arg(1).as_ref().and_then(Value::as_str) == Some("file") {
+                body.insert("maxDecodedBytes".into(), ATTACHMENT_DECODED_BYTES.into());
+            } else {
+                kind = "annotations.readAppearance";
+            }
+            Value::Null
+        }
+        "page.annotations.exportAppearance" => {
+            body.insert("page".into(), page()?);
+            put(&mut body, "refs", arg(0));
+            Value::Null
+        }
+        "page.annotations.renderAppearances" | "page.forms.renderAppearances" => {
+            body.insert("page".into(), page()?);
+            let family =
+                if path == "page.forms.renderAppearances" { "widgets" } else { "annotations" };
+            body.insert("family".into(), family.into());
+            put(&mut body, "options", arg(0).map(render_options));
+            Value::Null
+        }
+        "page.measure.listViewports" | "page.text.get" | "page.text.layout" => {
+            body.insert("page".into(), page()?);
+            Value::Null
+        }
+        "page.measure.setScale" => {
+            body.insert("page".into(), page()?);
+            // `PdfMeasure | null`: a cleared scale is an explicit `null`.
+            body.insert("measure".into(), arg(0).unwrap_or(Value::Null));
+            options_at(1)
+        }
+        "page.render.image" => {
+            body.insert("page".into(), page()?);
+            body.insert("options".into(), render_options(arg(0).unwrap_or_else(|| json!({}))));
+            Value::Null
+        }
+        _ => Value::Null,
     };
     let mut request = Map::new();
     request.insert("kind".into(), kind.into());
+    if let Some(effect) = RequestEffect::of(kind) {
+        request.insert("effect".into(), effect.as_str().into());
+    }
     request.insert("jobId".into(), job.into());
+    if WRITE_KINDS.contains(&kind) {
+        request.insert("opId".into(), op_id_of(&options)?.into());
+    }
     request.insert("docId".into(), doc.into());
-    for (key, value) in extra {
-        if !value.is_null() && !epdf_kernel::is_undefined(&value) {
-            request.insert(key.into(), value);
-        }
+    request.extend(body);
+    if AUTHORITY_KINDS.contains(&kind) {
+        request.insert("authority".into(), client.authority.clone());
     }
-    // `PdfMeasure | null`: a cleared scale is an explicit `null`, which the
-    // loop above would drop.
-    if kind == "measure.setScale" {
-        let measure = arg(0);
-        let measure = if epdf_kernel::is_undefined(&measure) { Value::Null } else { measure };
-        request.insert("measure".into(), measure);
+    let mut request = Value::Object(request);
+    to_payloads(&mut request, &mut payloads)?;
+    whole_numbers(&mut request);
+    Ok(WireCall { request, payloads, decode })
+}
+
+/// `close` for a document, with no handle to ask: the cleanup for an open
+/// that will not hand out a document.
+pub fn close_request(doc: &str, job: u64) -> WireCall {
+    WireCall {
+        request: json!({ "kind": "close", "effect": "close", "jobId": job, "docId": doc }),
+        payloads: Vec::new(),
+        decode: Decode::Unit,
     }
-    Ok(WireCall { request: Value::Object(request), payloads, decode })
+}
+
+/// `pages.workingSet`: bookkeeping, never answered.
+pub fn working_set_request(doc: &str, job: u64, view: &str, pages: Value) -> Value {
+    let mut request = json!({
+        "kind": "pages.workingSet", "jobId": job, "docId": doc, "view": view, "pages": pages,
+    });
+    whole_numbers(&mut request);
+    request
+}
+
+/// `objectNumbers.reserve`: `count` more numbers for this session.
+pub fn reserve_request(doc: &str, job: u64, count: u32) -> WireCall {
+    WireCall {
+        request: json!({
+            "kind": "objectNumbers.reserve", "effect": "session", "jobId": job, "docId": doc,
+            "count": count,
+        }),
+        payloads: Vec::new(),
+        decode: Decode::Field("range"),
+    }
 }
 
 /// `page.render.image` on the stamp plugin's asset engine: the same options
@@ -436,9 +520,7 @@ pub fn translate_encoded_render(
     args: &[Value],
     job: u64,
 ) -> Result<WireCall, Error> {
-    let page = pon.ok_or_else(|| {
-        coded("invalid-input", "[epdf-viewer-host] page.render.image needs a page".into())
-    })?;
+    let page = pon.ok_or_else(|| invalid("page.render.image needs a page".into()))?;
     let options = args.first().cloned().unwrap_or(Value::Null);
     let format = options.get("format").and_then(Value::as_str).unwrap_or("png");
     if format != "png" {
@@ -447,125 +529,116 @@ pub fn translate_encoded_render(
             format!("[epdf-viewer-host] the asset engine encodes png only, not {format}"),
         ));
     }
-    let request = serde_json::json!({
+    let mut request = json!({
         "kind": "pages.renderEncoded",
+        "effect": "read",
         "jobId": job,
         "docId": doc,
         "page": PageRef::new(page).to_json(),
         "options": render_options(options),
         "encode": { "format": "png" },
     });
+    whole_numbers(&mut request);
     Ok(WireCall { request, payloads: Vec::new(), decode: Decode::Encoded })
 }
 
-/// `download`'s `{mode}` as the host's `SaveMode`, TypeScript's `PdfSaveMode`
-/// (`incremental` or `rewrite`) on both sides. No options, or no mode, stays
-/// the rewrite the plugins' own downloads (the stamp libraries) have always
-/// written.
+/// An absent member: missing, `null` or the kernel's `undefined`.
+fn is_absent(value: &Value) -> bool {
+    value.is_null() || epdf_kernel::is_undefined(value)
+}
+
+/// `options[key]`, unless absent.
+fn member(options: &Value, key: &str) -> Option<Value> {
+    options.get(key).filter(|v| !is_absent(v)).cloned()
+}
+
+/// `opIdOf(options)`: the caller's `opId`, else a fresh one. The host checks
+/// it as `opIdOf` does.
+fn op_id_of(options: &Value) -> Result<String, Error> {
+    match options.get("opId").filter(|v| !is_absent(v)) {
+        None => Ok(epdf_kernel::identity::generate_uuid()),
+        Some(Value::String(op_id)) => Ok(op_id.clone()),
+        Some(other) => Err(Error::engine(
+            "InvalidArg",
+            format!("opId must be 1 to 255 visible ASCII characters: {other}"),
+        )
+        .with("details", json!({ "field": "opId" }))),
+    }
+}
+
+/// `download`'s `{mode}`: `incremental` (`DEFAULT_PDF_SAVE_MODE`) unless
+/// the caller asks for `rewrite`.
 fn save_mode(path: &str, options: &Value) -> Result<Value, Error> {
-    match options.get("mode").filter(|m| !m.is_null() && !epdf_kernel::is_undefined(m)) {
-        None => Ok("rewrite".into()),
+    match member(options, "mode") {
+        None => Ok("incremental".into()),
         Some(mode) => match mode.as_str() {
             Some(mode @ ("incremental" | "rewrite")) => Ok(mode.into()),
-            _ => Err(coded(
-                "invalid-input",
-                format!("[epdf-viewer-host] {path}'s mode is not incremental or rewrite: {mode}"),
-            )),
+            _ => Err(invalid(format!("{path}'s mode is not incremental or rewrite: {mode}"))),
         },
     }
 }
 
-/// A JavaScript number as the whole, non-negative integer the host parses.
-/// Plugins send `90.0` where the host's serde wants `90`; anything else (a
-/// fraction, a negative, `{"$number": "NaN"}`) is refused with a message
-/// that names the field.
-pub fn whole(path: &str, field: &str, value: &Value) -> Result<Value, Error> {
-    value
-        .as_f64()
-        .filter(|n| n.is_finite() && *n >= 0.0 && n.fract() == 0.0 && *n <= f64::from(u32::MAX))
-        .map(|n| Value::from(n as u64))
-        .ok_or_else(|| {
-            coded(
-                "invalid-input",
-                format!("[epdf-viewer-host] {path}'s {field} is not a whole number: {value}"),
-            )
-        })
-}
-
-/// `whole`, with an absent, `null` or `undefined` value left out.
-pub fn optional_whole(path: &str, field: &str, value: Option<&Value>) -> Result<Value, Error> {
-    match value {
-        None | Some(Value::Null) => Ok(Value::Null),
-        Some(v) if epdf_kernel::is_undefined(v) => Ok(Value::Null),
-        Some(v) => whole(path, field, v),
+/// `resolvePageExtract(options, may)` (`dto/PageExtract.ts:59`): the
+/// flatten a copy paints, checked against what the handle may do, or none
+/// for a plain copy.
+fn resolve_page_extract(
+    options: &Value,
+    may: &dyn Fn(&str) -> bool,
+) -> Result<Option<Value>, Error> {
+    let include = |key: &str| member(options, key).and_then(|v| v.as_bool());
+    let Some(flatten) = member(options, "flatten") else {
+        for field in ["includeAnnotations", "includeFormFields"] {
+            if member(options, field).is_some() {
+                return Err(Error::engine("InvalidArg", format!("{field} takes flatten"))
+                    .with("details", json!({ "field": field })));
+            }
+        }
+        if !may("doc.download") {
+            return Err(Error::permission_denied("doc.download", None));
+        }
+        return Ok(None);
+    };
+    let usage = member(&flatten, "usage").unwrap_or_else(|| "display".into());
+    if !matches!(usage.as_str(), Some("display" | "print")) {
+        return Err(Error::engine("InvalidArg", "usage must be \"display\" or \"print\"")
+            .with("details", json!({ "field": "flatten.usage" })));
     }
-}
-
-/// `value` without `key`.
-fn without(mut value: Value, key: &str) -> Value {
-    if let Value::Object(map) = &mut value {
-        map.remove(key);
+    if !may("doc.download") && !may("doc.download.flattened") {
+        return Err(Error::permission_denied("doc.download", Some("flatten")).with(
+            "details",
+            json!({ "required": "doc.download", "context": "flatten",
+                    "anyOf": ["doc.download", "doc.download.flattened"] }),
+        ));
     }
-    value
+    // `resolvePageLayers` (`dto/PageRender.ts:42`).
+    let (annotations, form_fields) = (may("doc.annotate.read"), may("doc.forms.read"));
+    let (include_annotations, include_form_fields) =
+        (include("includeAnnotations"), include("includeFormFields"));
+    if include_annotations == Some(true) && !annotations {
+        return Err(Error::permission_denied("doc.annotate.read", Some("includeAnnotations")));
+    }
+    if include_form_fields == Some(true) && !form_fields {
+        return Err(Error::permission_denied("doc.forms.read", Some("includeFormFields")));
+    }
+    Ok(Some(json!({
+        "usage": usage,
+        "includeAnnotations": include_annotations.unwrap_or(annotations),
+        "includeFormFields": include_form_fields
+            .unwrap_or(include_annotations != Some(false) && form_fields),
+    })))
 }
 
 /// The `Bytes` JSON under `key`, as bytes.
-fn bytes_at(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
-    value.get(key).and_then(epdf_kernel::bytes::Bytes::from_json).map(|b| b.0).ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path} needs {key} bytes"))
-    })
+fn bytes_member(value: &Value, key: &str, path: &str) -> Result<Vec<u8>, Error> {
+    value
+        .get(key)
+        .and_then(epdf_kernel::bytes::Bytes::from_json)
+        .map(|b| b.0)
+        .ok_or_else(|| invalid(format!("{path} needs {key} bytes")))
 }
 
-/// The number at a JSON `pointer` inside `value`, made whole; absent or
-/// null is left as it is.
-fn whole_at(path: &str, value: &mut Value, pointer: &str) -> Result<(), Error> {
-    if let Some(slot) = value.pointer_mut(pointer)
-        && !slot.is_null()
-    {
-        let field = pointer.rsplit('/').next().unwrap_or(pointer);
-        *slot = whole(path, field, slot)?;
-    }
-    Ok(())
-}
-
-/// One `PageRef`, re-spelled so its object number is the whole integer the
-/// host's serde parses (the kernel's numbers are JavaScript numbers).
-fn page_ref(path: &str, value: &Value) -> Result<Value, Error> {
-    PageRef::from_json(value).map(PageRef::to_json).ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path}: not a PageRef: {value}"))
-    })
-}
-
-/// `PageRef[]`, each re-spelled as `page_ref` does.
-fn page_refs(path: &str, refs: &Value) -> Result<Value, Error> {
-    let refs = refs.as_array().ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path} takes a list of pages: {refs}"))
-    })?;
-    refs.iter().map(|r| page_ref(path, r)).collect::<Result<Vec<_>, _>>().map(Value::Array)
-}
-
-/// A PDF given as `Bytes` JSON: `{"$bytes": base64}` from the caller, or
-/// `{"$hostBytes": id}` from an extract, which this takes out of the table.
-fn pdf_bytes(path: &str, value: &Value) -> Result<Vec<u8>, Error> {
-    epdf_kernel::bytes::Bytes::from_json(value).map(|b| b.0).ok_or_else(|| {
-        coded("invalid-input", format!("[epdf-viewer-host] {path} takes a PDF's bytes: {value}"))
-    })
-}
-
-/// A `SearchRequest` as the plugin sends it, its `startPage` a `PageRef`
-/// with a whole object number. The rest goes as it is.
-fn search_request(mut request: Value) -> Result<Value, Error> {
-    let Some(start) = request.get_mut("startPage").filter(|s| !s.is_null()) else {
-        return Ok(request);
-    };
-    *start = page_ref("search.query's startPage", start)?;
-    Ok(request)
-}
-
-/// `PageImageOptions` as `pages.render` reads them. The viewport, target and
-/// `includeAnnotations` go as they are (the host spells them the same); the
-/// encode options do not, because `pages.render` answers raw pixels and has
-/// no encoder to hand them to.
+/// `PageImageOptions` as `pages.render` reads them: the encode options stay
+/// behind, since `pages.render` answers raw pixels.
 fn render_options(mut options: Value) -> Value {
     if let Value::Object(map) = &mut options {
         map.remove("format");
@@ -574,221 +647,113 @@ fn render_options(mut options: Value) -> Value {
     options
 }
 
+/// Every `{"$bytes"}` or `{"$hostBytes"}` value inside `value` as a payload
+/// of the request, named `{"payload": n}`: `wirePack`'s transfer list.
+fn to_payloads(value: &mut Value, payloads: &mut Vec<Vec<u8>>) -> Result<(), Error> {
+    match value {
+        Value::Object(map) if map.contains_key("$bytes") || map.contains_key("$hostBytes") => {
+            let bytes = epdf_kernel::bytes::Bytes::from_json(value)
+                .ok_or_else(|| invalid(format!("bytes that do not decode: {value}")))?;
+            *value = json!({ "payload": payloads.len() });
+            payloads.push(bytes.0);
+        }
+        Value::Object(map) => {
+            for member in map.values_mut() {
+                to_payloads(member, payloads)?;
+            }
+        }
+        Value::Array(items) => {
+            for item in items {
+                to_payloads(item, payloads)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Every whole JavaScript number (`17.0`) as the integer the host's serde
+/// reads; the kernel's `{"$number"}` and `{"$undefined"}` markers out.
+fn whole_numbers(value: &mut Value) {
+    match value {
+        Value::Number(n) if n.is_f64() => {
+            if let Some(f) =
+                n.as_f64().filter(|f| f.fract() == 0.0 && f.abs() < 9.007_199_254_740_992e15)
+            {
+                *value = if f < 0.0 { Value::from(f as i64) } else { Value::from(f as u64) };
+            }
+        }
+        Value::Object(map) => {
+            map.retain(|_, member| !epdf_kernel::is_undefined(member));
+            map.values_mut().for_each(whole_numbers);
+        }
+        Value::Array(items) => items.iter_mut().for_each(whole_numbers),
+        _ => {}
+    }
+}
+
+/// Every `{"payload": n}` inside an answer as `{"$bytes"}` of that payload.
+fn from_payloads(value: &mut Value, payloads: &[Vec<u8>]) {
+    match value {
+        Value::Object(map) if map.len() == 1 && map.get("payload").is_some_and(Value::is_u64) => {
+            let index = map["payload"].as_u64().unwrap_or(u64::MAX) as usize;
+            if let Some(bytes) = payloads.get(index) {
+                *value = epdf_kernel::bytes::Bytes(bytes.clone()).to_json();
+            }
+        }
+        Value::Object(map) => map.values_mut().for_each(|m| from_payloads(m, payloads)),
+        Value::Array(items) => items.iter_mut().for_each(|i| from_payloads(i, payloads)),
+        _ => {}
+    }
+}
+
 fn malformed(what: String) -> Error {
     Error::new(format!("[epdf-viewer-host] the host answered {what}"))
 }
 
-/// An annotation ref with its JavaScript numbers (`annotObjectNumber`,
-/// `index`, a revision's `generation`, its pages' `pageObjectNumber`, each
-/// sent as `17.0`) as the whole integers the host's serde parses.
-fn wire_ref(path: &str, mut target: Value) -> Result<Value, Error> {
-    whole_refs(path, &mut target)?;
-    Ok(target)
-}
-
-/// A draft or patch with every ref inside it (a reply's `inReplyTo`, a
-/// link's `goto` destination) whole, as `wire_ref` makes the call's own ref.
-/// Other members keep their numbers.
-fn wire_refs_in(path: &str, mut value: Value) -> Result<Value, Error> {
-    whole_refs(path, &mut value)?;
-    Ok(value)
-}
-
-/// The JavaScript numbers of every annotation ref (an object whose `kind`
-/// is `objectNumber`, `nm` or `index`, beside a `page`), of its revision
-/// token, and of every `PageRef`, as whole integers.
-fn whole_refs(path: &str, value: &mut Value) -> Result<(), Error> {
-    fn whole_keys(path: &str, map: &mut Map<String, Value>, keys: &[&str]) -> Result<(), Error> {
-        for key in keys {
-            if let Some(n) = map.get(*key).filter(|n| n.is_f64()) {
-                let n = whole(path, key, n)?;
-                map.insert((*key).into(), n);
-            }
-        }
-        Ok(())
-    }
-    match value {
-        Value::Object(map) => {
-            let kind = map.get("kind").and_then(Value::as_str).map(str::to_owned);
-            let kind = kind.as_deref();
-            if kind == Some("objectNumber") && map.contains_key("pageObjectNumber") {
-                whole_keys(path, map, &["pageObjectNumber"])?;
-            }
-            let is_ref =
-                matches!(kind, Some("objectNumber" | "nm" | "index")) && map.contains_key("page");
-            if is_ref {
-                whole_keys(path, map, &["annotObjectNumber", "index"])?;
-                if let Some(Value::Object(revision)) = map.get_mut("revision") {
-                    whole_keys(path, revision, &["generation"])?;
-                }
-            }
-            for member in map.values_mut() {
-                whole_refs(path, member)?;
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                whole_refs(path, item)?;
-            }
-        }
-        _ => {}
-    }
-    Ok(())
-}
-
-/// A form field ref the host's way: an object-number ref's
-/// `fieldObjectNumber`, sent as a JavaScript number, whole.
-fn wire_field_ref(path: &str, mut target: Value) -> Result<Value, Error> {
-    whole_field_refs(path, &mut target)?;
-    Ok(target)
-}
-
-/// Every form field ref inside `value` (`{kind: "objectNumber",
-/// fieldObjectNumber}`) with a whole `fieldObjectNumber`.
-fn whole_field_refs(path: &str, value: &mut Value) -> Result<(), Error> {
-    match value {
-        Value::Object(map) => {
-            if let Some(n) = map.get("fieldObjectNumber").filter(|n| n.is_f64()) {
-                let n = whole(path, "fieldObjectNumber", n)?;
-                map.insert("fieldObjectNumber".into(), n);
-            }
-            for member in map.values_mut() {
-                whole_field_refs(path, member)?;
-            }
-        }
-        Value::Array(items) => {
-            for item in items {
-                whole_field_refs(path, item)?;
-            }
-        }
-        _ => {}
-    }
-    Ok(())
-}
-
-/// A field draft's widget placements, each `page: PageRef` with the whole
-/// object number `WidgetPlacement` parses.
-fn whole_placements(path: &str, draft: &mut Value) -> Result<(), Error> {
-    let whole_page = |placement: &mut Value| -> Result<(), Error> {
-        if let Some(page) = placement.get_mut("page") {
-            *page = page_ref(path, page)?;
-        }
-        Ok(())
+/// A raster (`PageRaster`: width, height, stride and pixel format) with its
+/// pixels in `payloads[index]`, as the render plugin reads a picture: the
+/// raster's fields, a raw-pixel `source` carrying the byte count, and the
+/// pixels in the `HostTable` behind `$host`.
+fn raster_picture(raster: Value, payloads: &mut [Vec<u8>]) -> Result<Map<String, Value>, Error> {
+    let Value::Object(raster) = raster else {
+        return Err(malformed("a raster that is not an object".into()));
     };
-    if let Some(widget) = draft.get_mut("widget") {
-        whole_page(widget)?;
-    }
-    if let Some(Value::Array(widgets)) = draft.get_mut("widgets") {
-        for widget in widgets {
-            whole_page(widget)?;
-        }
-    }
-    Ok(())
-}
-
-/// `normalizeAnnotationDraft` (`packages/engine/core/src/annotation/
-/// normalize.ts`): a stamp's `source` and an attachment's `file`, each a
-/// `BinarySource` the kernel spells `{data: {"$bytes": …}, mimeType?,
-/// name?}` or bare `{"$bytes": …}`, become `{resource: "rN"}` with the
-/// bytes moved into a payload. Every other draft goes as it is. The
-/// resources answer `Null` when nothing moved, so the request leaves them
-/// out.
-fn normalize_binary(
-    mut draft: Value,
-    payloads: &mut Vec<Vec<u8>>,
-) -> Result<(Value, Value), Error> {
-    let mut resources = Map::new();
-    match draft.get("subtype").and_then(Value::as_str) {
-        Some("stamp") => {
-            if let Some(source) = draft.get("source").cloned() {
-                let (key, _, _) = take_binary(&source, &mut resources, payloads)?;
-                draft["source"] = serde_json::json!({ "resource": key });
-            }
-        }
-        Some("file-attachment") => {
-            if let Some(file) = draft.get("file").cloned() {
-                let (key, mime, name) = take_binary(&file, &mut resources, payloads)?;
-                let name = name.ok_or_else(|| {
-                    coded(
-                        "invalid-input",
-                        "[epdf-viewer-host] an attachment file needs a name".into(),
-                    )
-                })?;
-                let mut wire = serde_json::json!({ "resource": key, "name": name });
-                if let Some(mime) = mime {
-                    wire["mimeType"] = mime.into();
-                }
-                if let Some(description) = file.get("description") {
-                    wire["description"] = description.clone();
-                }
-                draft["file"] = wire;
-            }
-        }
-        _ => {}
-    }
-    let resources = if resources.is_empty() { Value::Null } else { Value::Object(resources) };
-    Ok((draft, resources))
-}
-
-/// Move one `BinarySource`'s bytes into a payload and declare it as the
-/// next resource. Answers the resource key, the MIME type and the name.
-fn take_binary(
-    source: &Value,
-    resources: &mut Map<String, Value>,
-    payloads: &mut Vec<Vec<u8>>,
-) -> Result<(String, Option<String>, Option<String>), Error> {
-    let data = source.get("data").unwrap_or(source);
-    let bytes = epdf_kernel::bytes::Bytes::from_json(data).ok_or_else(|| {
-        coded(
-            "invalid-input",
-            format!("[epdf-viewer-host] a binary source without bytes: {source}"),
-        )
-    })?;
-    let key = format!("r{}", resources.len());
-    let mime = source.get("mimeType").and_then(Value::as_str).map(str::to_string);
-    let name = source.get("name").and_then(Value::as_str).map(str::to_string);
-    let mut resource = Map::new();
-    resource.insert("payload".into(), payloads.len().into());
-    if let Some(mime) = &mime {
-        resource.insert("mimeType".into(), mime.clone().into());
-    }
-    resources.insert(key.clone(), Value::Object(resource));
-    payloads.push(bytes.0);
-    Ok((key, mime, name))
-}
-
-/// The kernel's apply scope as the host's `RedactionScope` reads it:
-/// `{kind: "pages", pages: [PageRef]}` with whole object numbers, or an
-/// annotations scope whose refs go whole.
-fn redaction_scope_out(path: &str, scope: Value) -> Result<Value, Error> {
-    match scope.get("kind").and_then(Value::as_str) {
-        Some("pages") => {
-            let pages = scope.get("pages").cloned().unwrap_or(Value::Null);
-            Ok(serde_json::json!({ "kind": "pages", "pages": page_refs(path, &pages)? }))
-        }
-        Some("annotations") => wire_refs_in(path, scope),
-        _ => Err(coded(
-            "invalid-input",
-            format!("[epdf-viewer-host] {path} takes a pages or annotations scope: {scope}"),
-        )),
-    }
-}
-
-/// That `object[key]` is a `PageRef`, as the kernel's page registry, the
-/// search plugin and the page-edit plugin read it.
-fn require_page_ref(object: &Value, key: &str, what: &str) -> Result<(), Error> {
-    match object.get(key) {
-        Some(page) if PageRef::from_json(page).is_some() => Ok(()),
-        _ => Err(malformed(format!("{what} without a PageRef \"{key}\": {object}"))),
-    }
-}
-
-/// That `object.layout.pages` is there, each page named by its `ref`.
-fn require_layout_refs(object: &Value, what: &str) -> Result<(), Error> {
-    let Some(Value::Array(pages)) = object.get("layout").and_then(|l| l.get("pages")) else {
-        return Err(malformed(format!("{what} without a layout")));
+    let index =
+        raster.get("data").and_then(|d| d.get("payload")).and_then(Value::as_u64).unwrap_or(0)
+            as usize;
+    let bytes = payloads
+        .get_mut(index)
+        .map(std::mem::take)
+        .ok_or_else(|| malformed("a raster without its pixels".into()))?;
+    let mut picture: Map<String, Value> =
+        raster.into_iter().filter(|(key, _)| key != "data").collect();
+    let dimension = |key: &str| {
+        picture
+            .get(key)
+            .and_then(Value::as_u64)
+            .ok_or_else(|| malformed(format!("a raster without a whole \"{key}\": {picture:?}")))
     };
-    pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a layout page"))
+    let (width, height, stride) = (dimension("width")?, dimension("height")?, dimension("stride")?);
+    let fits = width.checked_mul(4).is_some_and(|row| stride >= row)
+        && stride.checked_mul(height).is_some_and(|needed| bytes.len() as u64 >= needed);
+    if !fits {
+        return Err(malformed(format!(
+            "a {width}x{height} raster with stride {stride} in {} bytes",
+            bytes.len()
+        )));
+    }
+    picture.insert("source".into(), json!({ "kind": "pixels", "$byteLength": bytes.len() }));
+    picture.insert("$host".into(), HostTable::put(bytes).into());
+    Ok(picture)
+}
+
+/// The first payload, or `malformed`.
+fn first_payload(payloads: &mut Vec<Vec<u8>>, what: &str) -> Result<Vec<u8>, Error> {
+    if payloads.is_empty() {
+        return Err(malformed(format!("{what} without its payload")));
+    }
+    Ok(payloads.swap_remove(0))
 }
 
 /// Read a host response into what the call's caller expects.
@@ -797,149 +762,96 @@ pub fn decode(decode: &Decode, response: HostResponse) -> Result<Decoded, Error>
         .map_err(|e| malformed(format!("unreadable JSON: {e}")))?;
     if let Some(error) = envelope.get("error") {
         let code = error.get("code").and_then(Value::as_str).unwrap_or("Unknown");
-        let message = error.get("message").and_then(Value::as_str).unwrap_or_default();
-        return Err(Error::engine(code, format!("{code}: {message}")));
-    }
-    // A notice the host publishes beside a result that is not a
-    // mutation's (`signature.prepared`, `signature.aborted`). A mutation's
-    // event rides inside its result and is taken below.
-    let notice = envelope.get_mut("event").map(Value::take);
-    if let Decode::Unit = decode {
-        return Ok(Decoded { value: epdf_kernel::undefined(), event: notice });
-    }
-    let mut result = match envelope.get_mut("result").map(Value::take) {
-        Some(Value::Object(result)) => result,
-        Some(Value::Null) if matches!(decode, Decode::OptionalResult) => {
-            return Ok(Decoded { value: Value::Null, event: None });
+        // The engine's own words, as `EngineError.message` carries them to
+        // `toPluginError` (`new EngineError(code, message ?? code)`): no
+        // code in front.
+        let message = error.get("message").and_then(Value::as_str).unwrap_or(code);
+        let mut refused = Error::engine(code, message);
+        if let Some(details) = error.get("details") {
+            refused = refused.with("details", details.clone());
         }
-        Some(other) => return Err(malformed(format!("a result that is not an object: {other}"))),
+        return Err(refused);
+    }
+    let mut payloads = response.payloads;
+    // A notice the host publishes beside a result that is not a write's
+    // (`signatures.prepared`, `signatures.cancelled`).
+    let notice: Vec<Value> = envelope.get_mut("event").map(Value::take).into_iter().collect();
+    if let Decode::Unit = decode {
+        return Ok(Decoded { value: epdf_kernel::undefined(), events: notice });
+    }
+    let result = match envelope.get_mut("result").map(Value::take) {
+        Some(Value::Null) if matches!(decode, Decode::OptionalResult) => {
+            return Ok(Decoded { value: Value::Null, events: notice });
+        }
+        Some(result) => result,
         None => return Err(malformed("neither a result nor an error".into())),
+    };
+    let Value::Object(mut result) = result else {
+        return Err(malformed(format!("a result that is not an object: {result}")));
     };
     let take = |result: &mut Map<String, Value>, name: &str| {
         result.remove(name).ok_or_else(|| malformed(format!("a result without \"{name}\"")))
     };
-    let value = match decode {
+    let mut value = match decode {
         Decode::Unit => unreachable!("answered above"),
         Decode::Result | Decode::OptionalResult => Value::Object(result),
         Decode::Field(name) => take(&mut result, name)?,
-        Decode::PageList => {
-            let Some(Value::Array(pages)) = result.get("pages") else {
-                return Err(malformed("a page list without \"pages\"".into()));
-            };
-            pages.iter().try_for_each(|page| require_page_ref(page, "ref", "a page"))?;
-            Value::Object(result)
-        }
-        Decode::SearchSlice => {
-            let Some(Value::Array(matches)) = result.get("matches") else {
-                return Err(malformed("a search slice without \"matches\"".into()));
-            };
-            matches.iter().try_for_each(|hit| require_page_ref(hit, "page", "a search match"))?;
-            Value::Object(result)
-        }
-        Decode::AttachmentContent => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("a file without its payload".into()))?;
-            result
-                .insert("data".into(), serde_json::json!({ "$hostBytes": HostTable::put(bytes) }));
-            Value::Object(result)
-        }
-        Decode::ExportBytes => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("an export without its bytes".into()))?;
-            result.insert("bytes".into(), epdf_kernel::bytes::Bytes(bytes).to_json());
-            Value::Object(result)
-        }
+        Decode::Only(name) => json!({ *name: take(&mut result, name)? }),
+        Decode::Inner => take(&mut result, "result")?,
         Decode::Mutation => {
-            let value = take(&mut result, "result")?;
-            return Ok(Decoded { value, event: result.remove("event") });
-        }
-        Decode::PageMutation => {
-            let value = take(&mut result, "result")?;
-            require_layout_refs(&value, "a page mutation's result")?;
-            let event = result.remove("event");
-            if let Some(event) = event.as_ref() {
-                require_layout_refs(event, "a page event")?;
+            let mut value = take(&mut result, "result")?;
+            let mut events: Vec<Value> = result.remove("event").into_iter().collect();
+            if let Some(Value::Array(all)) = result.remove("events") {
+                events.extend(all);
             }
-            return Ok(Decoded { value, event });
+            from_payloads(&mut value, &payloads);
+            return Ok(Decoded { value, events });
         }
-        Decode::InlineBytes => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("bytes without their payload".into()))?;
-            epdf_kernel::bytes::Bytes(bytes).to_json()
-        }
-        Decode::ResultWithBytes(key) => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed(format!("a result without its {key} payload")))?;
-            result.insert((*key).into(), epdf_kernel::bytes::Bytes(bytes).to_json());
-            Value::Object(result)
+        Decode::Bytes => {
+            epdf_kernel::bytes::Bytes(first_payload(&mut payloads, "bytes")?).to_json()
         }
         Decode::HostBytes => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("bytes without their payload".into()))?;
-            serde_json::json!({ "$hostBytes": HostTable::put(bytes) })
+            json!({ "$hostBytes": HostTable::put(first_payload(&mut payloads, "bytes")?) })
+        }
+        Decode::Raster => {
+            // `{page, area, raster}` (`handlePagesRender`): the raster's
+            // fields beside `page` and `area`.
+            let raster = take(&mut result, "raster")?;
+            let picture = raster_picture(raster, &mut payloads)?;
+            result.extend(picture);
+            Value::Object(result)
+        }
+        Decode::Appearances => {
+            // `{page, result: {page, appearances}}`, each appearance's
+            // raster its own payload.
+            let mut inner = take(&mut result, "result")?;
+            if let Some(Value::Array(appearances)) = inner.get_mut("appearances") {
+                for appearance in appearances {
+                    let Some(entry) = appearance.as_object_mut() else { continue };
+                    if let Some(raster) = entry.remove("raster") {
+                        let picture = raster_picture(raster, &mut payloads)?;
+                        entry.insert("image".into(), Value::Object(picture));
+                    }
+                }
+            }
+            inner
         }
         Decode::Encoded => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("an encoded render without its bytes".into()))?;
-            let content_type = take(&mut result, "mimeType")?;
-            serde_json::json!({
+            let bytes = first_payload(&mut payloads, "an encoded render")?;
+            let Value::Object(mut image) = take(&mut result, "image")? else {
+                return Err(malformed("an encoded render whose image is not an object".into()));
+            };
+            let content_type = take(&mut image, "contentType")?;
+            json!({
+                "width": image.remove("width").unwrap_or(Value::Null),
+                "height": image.remove("height").unwrap_or(Value::Null),
+                "format": "png",
                 "contentType": content_type,
-                "width": result.remove("width").unwrap_or(Value::Null),
-                "height": result.remove("height").unwrap_or(Value::Null),
                 "source": { "kind": "bytes", "bytes": epdf_kernel::bytes::Bytes(bytes).to_json() },
             })
         }
-        Decode::Raster => {
-            let bytes = response
-                .payloads
-                .into_iter()
-                .next()
-                .ok_or_else(|| malformed("a raster without its pixels".into()))?;
-            let dimension = |key: &str| {
-                result.get(key).and_then(Value::as_u64).ok_or_else(|| {
-                    malformed(format!("a raster without a whole \"{key}\": {result:?}"))
-                })
-            };
-            let (width, height, stride) =
-                (dimension("width")?, dimension("height")?, dimension("stride")?);
-            let fits = width.checked_mul(4).is_some_and(|row| stride >= row)
-                && stride.checked_mul(height).is_some_and(|needed| bytes.len() as u64 >= needed);
-            if !fits {
-                return Err(malformed(format!(
-                    "a {width}x{height} raster with stride {stride} in {} bytes",
-                    bytes.len()
-                )));
-            }
-            // `PageRaster`'s pixel format: the host renders through
-            // `FPDF_REVERSE_BYTE_ORDER` into RGBA with straight alpha
-            // (`epdf_engine::features::render::raster::PageRaster`).
-            result.insert("color".into(), "rgba8".into());
-            result.insert("premultipliedAlpha".into(), false.into());
-            result.insert(
-                "source".into(),
-                serde_json::json!({ "kind": "pixels", "$byteLength": bytes.len() }),
-            );
-            result.insert("$host".into(), HostTable::put(bytes).into());
-            Value::Object(result)
-        }
+        Decode::TextLayout => json!({ "$textLayout": Value::Object(result) }),
     };
-    Ok(Decoded { value, event: notice })
+    from_payloads(&mut value, &payloads);
+    Ok(Decoded { value, events: notice })
 }

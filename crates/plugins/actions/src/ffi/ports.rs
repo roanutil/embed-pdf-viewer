@@ -328,17 +328,21 @@ impl ActionsHandle {
         self.cap
             .call_promise(
                 move |c| {
-                    Ok(open(c)?.run_document_verb(verb, move || {
-                        let (promise, resolver) = Promise::pending();
-                        operation.run(Arc::new(DocumentVerbCompletion {
-                            settle: ForeignSettle::new(
-                                resolver,
-                                post,
-                                "a DocumentVerbOperation completion",
-                            ),
-                        }));
-                        Ok(promise)
-                    }))
+                    Ok(open(c)?.run_document_verb(
+                        verb,
+                        move || {
+                            let (promise, resolver) = Promise::pending();
+                            operation.run(Arc::new(DocumentVerbCompletion {
+                                settle: ForeignSettle::new(
+                                    resolver,
+                                    post,
+                                    "a DocumentVerbOperation completion",
+                                ),
+                            }));
+                            Ok(promise)
+                        },
+                        None,
+                    ))
                 },
                 |()| (),
             )

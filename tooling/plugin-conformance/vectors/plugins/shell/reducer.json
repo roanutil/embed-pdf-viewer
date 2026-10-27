@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/plugin/shell: shellReducer and initialShellState (`same` is reference identity).",
+  "describes": "packages/plugin/shell: named shell state transitions and snapshot projection.",
   "cases": [
     {
       "name": "initial-state",
@@ -16,42 +16,36 @@
     },
     {
       "name": "open-new",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {},
           "openMenus": []
         },
-        {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "search"
-        }
+        "search"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "search": {
-                "open": true
-              }
-            },
-            "openMenus": []
-          }
+          "surfaces": {
+            "search": {
+              "open": true,
+              "focusRequest": 0
+            }
+          },
+          "openMenus": []
         }
       }
     },
     {
       "name": "open-with-props",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {},
           "openMenus": []
         },
+        "style",
         {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "style",
           "props": {
             "annotation": "a1",
             "nested": {
@@ -65,54 +59,57 @@
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "style": {
-                "open": true,
-                "props": {
-                  "annotation": "a1",
-                  "nested": {
-                    "x": [
-                      1,
-                      2
-                    ]
-                  }
+          "surfaces": {
+            "style": {
+              "open": true,
+              "props": {
+                "annotation": "a1",
+                "nested": {
+                  "x": [
+                    1,
+                    2
+                  ]
                 }
-              }
-            },
-            "openMenus": []
-          }
+              },
+              "focusRequest": 0
+            }
+          },
+          "openMenus": []
         }
       }
     },
     {
       "name": "open-exclusive-closes-same-tag",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -120,79 +117,86 @@
             "edit"
           ]
         },
+        "thumbs",
         {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "thumbs",
           "exclusive": "side"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": false,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              },
-              "thumbs": {
-                "open": true,
-                "exclusive": "side"
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": false,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            },
+            "thumbs": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-exclusive-keeps-itself",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -200,9 +204,8 @@
             "edit"
           ]
         },
+        "left",
         {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "left",
           "exclusive": "side",
           "props": {
             "again": true
@@ -211,70 +214,77 @@
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "again": true
-                }
-              },
-              "right": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "again": true
+              },
+              "focusRequest": 0
+            },
+            "right": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-exclusive-other-tag",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -282,79 +292,86 @@
             "edit"
           ]
         },
+        "dialog",
         {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "dialog",
           "exclusive": "overlay"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              },
-              "dialog": {
-                "open": true,
-                "exclusive": "overlay"
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            },
+            "dialog": {
+              "open": true,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-empty-exclusive-is-not-exclusive",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -362,79 +379,86 @@
             "edit"
           ]
         },
+        "other-free",
         {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "other-free",
           "exclusive": ""
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              },
-              "other-free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            },
+            "other-free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-existing-replaces-in-place",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -442,73 +466,77 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "modal"
-        }
+        "modal"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": true
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-integer-like-id",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -516,79 +544,86 @@
             "edit"
           ]
         },
+        "3",
         {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "3",
           "exclusive": "side"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "3": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": false,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "3": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "7": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "left": {
+              "open": false,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-already-open-is-a-new-state",
-      "fn": "shellReducer",
+      "fn": "openSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -596,74 +631,78 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/OPEN_SURFACE",
-          "id": "7"
-        }
+        "7"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-open",
-      "fn": "shellReducer",
+      "fn": "closeSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -671,74 +710,78 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/CLOSE_SURFACE",
-          "id": "right"
-        }
+        "right"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-closed-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -746,74 +789,78 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/CLOSE_SURFACE",
-          "id": "modal"
-        }
+        "modal"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-unknown-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -821,74 +868,78 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/CLOSE_SURFACE",
-          "id": "nope"
-        }
+        "nope"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-proto-member-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -896,74 +947,78 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/CLOSE_SURFACE",
-          "id": "toString"
-        }
+        "toString"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "toggle-open-closes",
-      "fn": "shellReducer",
+      "fn": "toggleSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -971,75 +1026,81 @@
             "edit"
           ]
         },
+        "left",
         {
-          "type": "SHELL/TOGGLE_SURFACE",
-          "id": "left",
           "exclusive": "side"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": false,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
-            },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "toggle-closed-opens-exclusively",
-      "fn": "shellReducer",
-      "args": [
-        {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
-              "open": true,
-              "exclusive": "side"
+              "open": false,
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        }
+      }
+    },
+    {
+      "name": "toggle-closed-opens-exclusively",
+      "fn": "toggleSurface",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1047,9 +1108,8 @@
             "edit"
           ]
         },
+        "modal",
         {
-          "type": "SHELL/TOGGLE_SURFACE",
-          "id": "modal",
           "exclusive": "side",
           "props": {
             "p": 1
@@ -1058,70 +1118,77 @@
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": false,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "p": 1
-                }
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": false,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "p": 1
+              },
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "toggle-unknown-opens",
-      "fn": "shellReducer",
+      "fn": "toggleSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1129,77 +1196,82 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/TOGGLE_SURFACE",
-          "id": "new"
-        }
+        "new"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              },
-              "new": {
-                "open": true
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            },
+            "new": {
+              "open": true,
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "toggle-proto-member-opens",
-      "fn": "shellReducer",
+      "fn": "toggleSurface",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1207,77 +1279,82 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/TOGGLE_SURFACE",
-          "id": "valueOf"
-        }
+        "valueOf"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              },
-              "valueOf": {
-                "open": true
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            },
+            "valueOf": {
+              "open": true,
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "open-menu",
-      "fn": "shellReducer",
+      "fn": "openMenu",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1285,75 +1362,79 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/OPEN_MENU",
-          "id": "view"
-        }
+        "view"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit",
-              "view"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit",
+            "view"
+          ]
         }
       }
     },
     {
       "name": "open-menu-again-is-ignored",
-      "fn": "shellReducer",
+      "fn": "openMenu",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1361,74 +1442,78 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/OPEN_MENU",
-          "id": "file"
-        }
+        "file"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-menu",
-      "fn": "shellReducer",
+      "fn": "closeMenu",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1436,73 +1521,77 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/CLOSE_MENU",
-          "id": "file"
-        }
+        "file"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-menu-not-open-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeMenu",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1510,241 +1599,180 @@
             "edit"
           ]
         },
-        {
-          "type": "SHELL/CLOSE_MENU",
-          "id": "view"
-        }
+        "view"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-all-menus",
-      "fn": "shellReducer",
+      "fn": "closeAllMenus",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
             "file",
             "edit"
           ]
-        },
-        {
-          "type": "SHELL/CLOSE_ALL_MENUS"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": []
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": []
         }
       }
     },
     {
       "name": "close-all-menus-none-open-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeAllMenus",
       "args": [
         {
           "surfaces": {},
           "openMenus": []
-        },
-        {
-          "type": "SHELL/CLOSE_ALL_MENUS"
         }
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {},
-            "openMenus": []
-          }
+          "surfaces": {},
+          "openMenus": []
         }
       }
     },
     {
-      "name": "unknown-action-is-ignored",
-      "fn": "shellReducer",
-      "args": [
-        {
-          "surfaces": {
-            "7": {
-              "open": true
-            },
-            "left": {
-              "open": true,
-              "exclusive": "side"
-            },
-            "right": {
-              "open": true,
-              "exclusive": "side",
-              "props": {
-                "tab": 2
-              }
-            },
-            "modal": {
-              "open": false,
-              "exclusive": "overlay"
-            },
-            "free": {
-              "open": true,
-              "exclusive": ""
-            }
-          },
-          "openMenus": [
-            "file",
-            "edit"
-          ]
-        },
-        {
-          "type": "SHELL/NOPE"
-        }
-      ],
+      "name": "initial-empty-state",
+      "fn": "initialShellState",
+      "args": [],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
-            },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+          "surfaces": {},
+          "openMenus": []
         }
       }
     },
     {
       "name": "set-props-replaces-them",
-      "fn": "shellReducer",
+      "fn": "setSurfaceProps",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1752,79 +1780,83 @@
             "edit"
           ]
         },
+        "right",
         {
-          "type": "SHELL/SET_SURFACE_PROPS",
-          "id": "right",
-          "props": {
-            "tab": 3,
-            "extra": null
-          }
+          "tab": 3,
+          "extra": null
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 3,
-                  "extra": null
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 3,
+                "extra": null
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "set-props-on-a-closed-surface",
-      "fn": "shellReducer",
+      "fn": "setSurfaceProps",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1832,80 +1864,84 @@
             "edit"
           ]
         },
+        "modal",
         {
-          "type": "SHELL/SET_SURFACE_PROPS",
-          "id": "modal",
-          "props": {
-            "x": 1
-          }
+          "x": 1
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
               },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay",
-                "props": {
-                  "x": 1
-                }
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0,
+              "props": {
+                "x": 1
               }
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "set-props-unknown-is-ignored",
-      "fn": "shellReducer",
+      "fn": "setSurfaceProps",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -1913,209 +1949,207 @@
             "edit"
           ]
         },
+        "nope",
         {
-          "type": "SHELL/SET_SURFACE_PROPS",
-          "id": "nope",
-          "props": {
-            "x": 1
-          }
+          "x": 1
         }
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": true
-              },
-              "left": {
-                "open": true,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": true,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": true,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-all-surfaces",
-      "fn": "shellReducer",
+      "fn": "closeAllSurfaces",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
             "file",
             "edit"
           ]
-        },
-        {
-          "type": "SHELL/CLOSE_ALL_SURFACES"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "7": {
-                "open": false
-              },
-              "left": {
-                "open": false,
-                "exclusive": "side"
-              },
-              "right": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "tab": 2
-                }
-              },
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              },
-              "free": {
-                "open": false,
-                "exclusive": ""
-              }
+          "surfaces": {
+            "7": {
+              "open": false,
+              "focusRequest": 0
             },
-            "openMenus": [
-              "file",
-              "edit"
-            ]
-          }
+            "left": {
+              "open": false,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": false,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
         }
       }
     },
     {
       "name": "close-all-surfaces-none-open-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeAllSurfaces",
       "args": [
         {
           "surfaces": {
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             }
           },
           "openMenus": [
             "file"
           ]
-        },
-        {
-          "type": "SHELL/CLOSE_ALL_SURFACES"
         }
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {
-              "modal": {
-                "open": false,
-                "exclusive": "overlay"
-              }
-            },
-            "openMenus": [
-              "file"
-            ]
-          }
+          "surfaces": {
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file"
+          ]
         }
       }
     },
     {
       "name": "close-all-surfaces-empty-is-ignored",
-      "fn": "shellReducer",
+      "fn": "closeAllSurfaces",
       "args": [
         {
           "surfaces": {},
           "openMenus": []
-        },
-        {
-          "type": "SHELL/CLOSE_ALL_SURFACES"
         }
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "surfaces": {},
-            "openMenus": []
-          }
+          "surfaces": {},
+          "openMenus": []
         }
       }
     },
     {
       "name": "apply-snapshot-replaces-everything",
-      "fn": "shellReducer",
+      "fn": "applySnapshot",
       "args": [
         {
           "surfaces": {
             "7": {
-              "open": true
+              "open": true,
+              "focusRequest": 0
             },
             "left": {
               "open": true,
-              "exclusive": "side"
+              "exclusive": "side",
+              "focusRequest": 0
             },
             "right": {
               "open": true,
               "exclusive": "side",
               "props": {
                 "tab": 2
-              }
+              },
+              "focusRequest": 0
             },
             "modal": {
               "open": false,
-              "exclusive": "overlay"
+              "exclusive": "overlay",
+              "focusRequest": 0
             },
             "free": {
               "open": true,
-              "exclusive": ""
+              "exclusive": "",
+              "focusRequest": 0
             }
           },
           "openMenus": [
@@ -2124,46 +2158,430 @@
           ]
         },
         {
-          "type": "SHELL/APPLY_SNAPSHOT",
-          "snapshot": {
-            "surfaces": {
-              "5": {
-                "open": true
-              },
-              "search": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "q": "x"
-                }
-              }
+          "surfaces": {
+            "5": {
+              "open": true
             },
-            "openMenus": [
-              "help"
-            ]
+            "search": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "q": "x"
+              }
+            }
+          },
+          "openMenus": [
+            "help"
+          ]
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "5": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "search": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "q": "x"
+              },
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "help"
+          ]
+        }
+      }
+    },
+    {
+      "name": "open-focus-first",
+      "fn": "openSurface",
+      "args": [
+        {
+          "surfaces": {},
+          "openMenus": []
+        },
+        "search",
+        {
+          "focus": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "focusRequest": 1
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "open-focus-repeated",
+      "fn": "openSurface",
+      "args": [
+        {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 2
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        },
+        "search",
+        {
+          "focus": true,
+          "exclusive": "side",
+          "props": {
+            "q": "new"
           }
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "surfaces": {
-              "5": {
-                "open": true
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "new"
               },
-              "search": {
-                "open": false,
-                "exclusive": "side",
-                "props": {
-                  "q": "x"
-                }
+              "focusRequest": 3
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "open-without-focus-keeps-request",
+      "fn": "openSurface",
+      "args": [
+        {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 2
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        },
+        "search"
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "focusRequest": 2
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "exclusive-open-clears-sibling-focus",
+      "fn": "openSurface",
+      "args": [
+        {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 2
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        },
+        "other",
+        {
+          "exclusive": "side",
+          "focus": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "search": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
               }
             },
-            "openMenus": [
-              "help"
-            ]
+            "other": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 1
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "toggle-focus-opens",
+      "fn": "toggleSurface",
+      "args": [
+        {
+          "surfaces": {},
+          "openMenus": []
+        },
+        "search",
+        {
+          "focus": true
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "focusRequest": 1
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "toggle-focus-closes",
+      "fn": "toggleSurface",
+      "args": [
+        {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 2
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        },
+        "search",
+        {
+          "focus": true,
+          "props": {
+            "ignored": true
           }
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "search": {
+              "open": false,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "snapshot-omits-focus",
+      "fn": "snapshotOf",
+      "args": [
+        {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              },
+              "focusRequest": 2
+            },
+            "free": {
+              "open": true,
+              "focusRequest": 4,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "search": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "q": "old"
+              }
+            },
+            "free": {
+              "open": true,
+              "props": {
+                "keep": 1
+              }
+            }
+          },
+          "openMenus": []
+        }
+      }
+    },
+    {
+      "name": "toggle-menu-removes-open",
+      "fn": "toggleMenu",
+      "args": [
+        {
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "file",
+            "edit"
+          ]
+        },
+        "file"
+      ],
+      "outcome": {
+        "returned": {
+          "surfaces": {
+            "7": {
+              "open": true,
+              "focusRequest": 0
+            },
+            "left": {
+              "open": true,
+              "exclusive": "side",
+              "focusRequest": 0
+            },
+            "right": {
+              "open": true,
+              "exclusive": "side",
+              "props": {
+                "tab": 2
+              },
+              "focusRequest": 0
+            },
+            "modal": {
+              "open": false,
+              "exclusive": "overlay",
+              "focusRequest": 0
+            },
+            "free": {
+              "open": true,
+              "exclusive": "",
+              "focusRequest": 0
+            }
+          },
+          "openMenus": [
+            "edit"
+          ]
         }
       }
     }

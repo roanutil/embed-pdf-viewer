@@ -137,13 +137,22 @@ pub enum DocumentActionEvent {
 impl Document {
     /// The catalog's `/OpenAction`, in its action form.
     ///
-    /// `None` also covers the destination form, which is a different entry
-    /// this build cannot read: `EPDFDoc_GetOpenActionDest` is absent from the
-    /// pinned artifact's headers.
+    /// `None` also covers the destination form, which
+    /// [`Document::open_action_destination`] reads.
     pub fn open_action_model(&self) -> Option<ActionModel<'_>> {
         // SAFETY: the handle is live for the borrow this returns.
         let handle = unsafe { pdfium_sys::EPDFDoc_GetOpenActionModel(self.handle) };
         (!handle.is_null()).then_some(ActionModel { handle, document: self })
+    }
+
+    /// The catalog's `/OpenAction` in its destination form
+    /// (`EPDFDoc_GetOpenActionDest`), a named value resolved through the
+    /// catalog. `None` when `/OpenAction` is absent, malformed or an action.
+    pub fn open_action_destination(&self) -> Option<RawDestination<'_>> {
+        // SAFETY: the handle is live; the destination points into the live
+        // document and is valid for the borrow this returns.
+        let dest = unsafe { pdfium_sys::EPDFDoc_GetOpenActionDest(self.handle) };
+        (!dest.is_null()).then_some(RawDestination { dest, document: self })
     }
 
     /// One of the catalog's additional actions.
@@ -307,6 +316,14 @@ pub struct DestinationLocation {
     pub zoom: Option<f32>,
 }
 
+impl<'doc> RawDestination<'doc> {
+    /// Wrap a destination handle a reader of another module answered;
+    /// `None` for a null one.
+    pub(crate) fn from_raw(dest: pdfium_sys::FPDF_DEST, document: &'doc Document) -> Option<Self> {
+        (!dest.is_null()).then_some(Self { dest, document })
+    }
+}
+
 impl RawDestination<'_> {
     /// The page this destination names, or zero when it names none.
     pub fn page_object_number(&self) -> u32 {
@@ -323,6 +340,14 @@ impl RawDestination<'_> {
         let code =
             unsafe { pdfium_sys::FPDFDest_GetView(self.dest, &mut count, params.as_mut_ptr()) };
         DestinationView { code: code as i32, params, param_count: (count as usize).min(4) }
+    }
+
+    /// Which view parameters are null, where the viewer keeps its current
+    /// value (`EPDFDest_GetViewNullParams`): bit `i` is set when parameter
+    /// `i` of [`RawDestination::view`] is null, which that reports as 0.
+    pub fn view_null_params(&self) -> u32 {
+        // SAFETY: the destination is live for the borrow of its document.
+        unsafe { pdfium_sys::EPDFDest_GetViewNullParams(self.dest) }
     }
 
     pub fn location(&self) -> DestinationLocation {
@@ -355,7 +380,7 @@ impl RawDestination<'_> {
 ///
 /// The reported length counts the terminator, and a length of one or less is
 /// an absent value rather than an empty one.
-fn read_utf8<F>(mut call: F) -> Result<Option<String>, PdfiumError>
+pub(crate) fn read_utf8<F>(mut call: F) -> Result<Option<String>, PdfiumError>
 where
     F: FnMut(*mut std::ffi::c_void, std::os::raw::c_ulong) -> std::os::raw::c_ulong,
 {
@@ -376,7 +401,7 @@ where
 }
 
 /// Measure then fill, for a UTF-16 accessor. The length is in bytes.
-fn read_utf16<F>(mut call: F) -> Result<Option<String>, PdfiumError>
+pub(crate) fn read_utf16<F>(mut call: F) -> Result<Option<String>, PdfiumError>
 where
     F: FnMut(*mut u16, std::os::raw::c_ulong) -> std::os::raw::c_ulong,
 {

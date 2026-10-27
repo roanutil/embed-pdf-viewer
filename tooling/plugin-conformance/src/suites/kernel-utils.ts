@@ -1,8 +1,6 @@
 /**
- * K0's pure helpers: `docInfoEquals` and `docInfoListEquals` from
- * `packages/core/main/src/types.ts`; `createEventHook`, driven by a script
- * since its behaviour is a sequence; `composeApi`; and the error vocabulary
- * (`toPluginError`, `isPluginError`, `toPluginErrorInfo`, `originOf`).
+ * Current shallow state equality, event-hook scripts, API composition and
+ * the plugin error vocabulary.
  * Replayed by `crates/plugin-conformance/tests/kernel.rs`.
  *
  * `createSerialQueue` is not here: it is asynchronous, and a function case is
@@ -13,19 +11,20 @@ import {
   CancelledError,
   PluginError,
   composeApi,
+  shallowEqual,
   createEventHook,
-  docInfoEquals,
-  docInfoListEquals,
   isPluginError,
-  originOf,
   toPluginError,
   toPluginErrorInfo,
-  type DocInfo,
 } from '@embedpdf/core';
 import { PermissionDenied } from '@embedpdf/engine-core/runtime';
 
 import { makeError, type ErrorSpec } from '../fake-engine';
 import type { FunctionCase, Suite } from '../vectors';
+
+/** The old kernel's document row (`types.ts`), as the cases build it. */
+type DocInfo = { id: string; name?: string; status: string; pageCount: number; passwordProvided?: boolean; error?: unknown;
+};
 
 type HookOp =
   | { op: 'on'; id: string }
@@ -134,7 +133,8 @@ type ErrorInput =
   | { class: 'string'; value: string };
 
 function errorOf(input: ErrorInput): unknown {
-  const special = input as { class?: string; required: string; context?: string; what: string; code: string; message: string; details?: unknown; value: string };
+  const special = input as { class?: string; required: string; context?: string; what: string; code: string; message: string; details?: unknown; value: string;
+  };
   if (special.class === 'PermissionDenied') return new PermissionDenied(special.required, special.context);
   if (special.class === 'CancelledError') return new CancelledError(special.what);
   if (special.class === 'PluginError') {
@@ -147,23 +147,23 @@ function errorOf(input: ErrorInput): unknown {
 const info = (over: Partial<DocInfo> = {}): DocInfo => ({ id: 'a', status: 'ready', pageCount: 3, ...over });
 
 const cases: FunctionCase[] = [
-  { name: 'equal', fn: 'docInfoEquals', args: [info(), info()] },
-  { name: 'id-differs', fn: 'docInfoEquals', args: [info(), info({ id: 'b' })] },
-  { name: 'name-differs', fn: 'docInfoEquals', args: [info({ name: 'A' }), info({ name: 'B' })] },
-  { name: 'name-absent-vs-present', fn: 'docInfoEquals', args: [info(), info({ name: 'A' })] },
-  { name: 'status-differs', fn: 'docInfoEquals', args: [info(), info({ status: 'loading' })] },
-  { name: 'page-count-differs', fn: 'docInfoEquals', args: [info(), info({ pageCount: 4 })] },
-  { name: 'password-provided-differs', fn: 'docInfoEquals', args: [info({ passwordProvided: true }), info({ passwordProvided: false })] },
-  { name: 'password-provided-absent-vs-false', fn: 'docInfoEquals', args: [info(), info({ passwordProvided: false })] },
-  { name: 'lists-equal', fn: 'docInfoListEquals', args: [[info(), info({ id: 'b' })], [info(), info({ id: 'b' })]] },
-  { name: 'lists-empty', fn: 'docInfoListEquals', args: [[], []] },
-  { name: 'lists-length-differs', fn: 'docInfoListEquals', args: [[info()], [info(), info({ id: 'b' })]] },
-  { name: 'lists-order-differs', fn: 'docInfoListEquals', args: [[info(), info({ id: 'b' })], [info({ id: 'b' }), info()]] },
-  { name: 'lists-one-member-differs', fn: 'docInfoListEquals', args: [[info()], [info({ status: 'error' })]] },
-  { name: 'list-is-itself', fn: 'docInfoListEqualsItself', args: [[info()]] },
+  { name: 'equal', fn: 'shallowEqual', args: [info(), info()] },
+  { name: 'id-differs', fn: 'shallowEqual', args: [info(), info({ id: 'b' })] },
+  { name: 'name-differs', fn: 'shallowEqual', args: [info({ name: 'A' }), info({ name: 'B' })] },
+  { name: 'name-absent-vs-present', fn: 'shallowEqual', args: [info(), info({ name: 'A' })] },
+  { name: 'status-differs', fn: 'shallowEqual', args: [info(), info({ status: 'loading' })] },
+  { name: 'page-count-differs', fn: 'shallowEqual', args: [info(), info({ pageCount: 4 })] },
+  { name: 'password-provided-differs', fn: 'shallowEqual', args: [info({ passwordProvided: true }), info({ passwordProvided: false })] },
+  { name: 'password-provided-absent-vs-false', fn: 'shallowEqual', args: [info(), info({ passwordProvided: false })] },
+  { name: 'lists-equal', fn: 'shallowEqual', args: [[info(), info({ id: 'b' })], [info(), info({ id: 'b' })]] },
+  { name: 'lists-empty', fn: 'shallowEqual', args: [[], []] },
+  { name: 'lists-length-differs', fn: 'shallowEqual', args: [[info()], [info(), info({ id: 'b' })]] },
+  { name: 'lists-order-differs', fn: 'shallowEqual', args: [[info(), info({ id: 'b' })], [info({ id: 'b' }), info()]] },
+  { name: 'lists-one-member-differs', fn: 'shallowEqual', args: [[info()], [info({ status: 'error' })]] },
+  { name: 'list-is-itself', fn: 'shallowEqualItself', args: [[info()]] },
   {
     name: 'error-code-differs',
-    fn: 'docInfoEquals',
+    fn: 'shallowEqual',
     args: [
       info({ status: 'error', error: { code: 'not-found', message: 'm', capability: 'documents' } }),
       info({ status: 'error', error: { code: 'operation-failed', message: 'm', capability: 'documents' } }),
@@ -171,15 +171,15 @@ const cases: FunctionCase[] = [
   },
   {
     name: 'error-message-differs',
-    fn: 'docInfoEquals',
+    fn: 'shallowEqual',
     args: [
       info({ status: 'error', error: { code: 'not-found', message: 'm', capability: 'documents' } }),
       info({ status: 'error', error: { code: 'not-found', message: 'n', capability: 'documents' } }),
     ],
   },
   {
-    name: 'error-capability-is-not-compared',
-    fn: 'docInfoEquals',
+    name: 'error-object-identity-differs',
+    fn: 'shallowEqual',
     args: [
       info({ status: 'error', error: { code: 'not-found', message: 'm', capability: 'documents' } }),
       info({ status: 'error', error: { code: 'not-found', message: 'm', capability: 'other' } }),
@@ -187,7 +187,7 @@ const cases: FunctionCase[] = [
   },
   {
     name: 'error-absent-vs-present',
-    fn: 'docInfoEquals',
+    fn: 'shallowEqual',
     args: [info({ status: 'error' }), info({ status: 'error', error: { code: 'not-found', message: 'm', capability: 'documents' } })],
   },
   {
@@ -262,16 +262,6 @@ const cases: FunctionCase[] = [
   { name: 'compose-empty', fn: 'composeApiScript', args: [[]] },
   { name: 'compose-duplicate-refuses', covers: 'A key two slices define throws naming the capability and the key.', fn: 'composeApiScript', args: [[['a', 'b'], ['c', 'b']]] },
   { name: 'compose-duplicate-within-a-later-slice', fn: 'composeApiScript', args: [[['a'], ['a']]] },
-  {
-    name: 'origin-local',
-    fn: 'originOf',
-    args: [{ type: 'metadata.updated', origin: { kind: 'local', sessionId: 's1', sub: 'u1' } }],
-  },
-  {
-    name: 'origin-remote-without-actor',
-    fn: 'originOf',
-    args: [{ type: 'metadata.updated', origin: { kind: 'remote', sessionId: 's2', sub: null } }],
-  },
 ];
 
 /** `toPluginError` over every row of its engine-code table and every class it
@@ -332,17 +322,15 @@ export const suites: Suite[] = [
     kind: 'function',
     file: 'kernel/utils.json',
     describes:
-      'packages/core/main: docInfoEquals, docInfoListEquals, createEventHook, composeApi and the plugin error vocabulary.',
+      'packages/core/main: shallowEqual, createEventHook, composeApi and the plugin error vocabulary.',
     functions: {
-      docInfoEquals,
-      docInfoListEquals,
-      docInfoListEqualsItself: (list: DocInfo[]) => docInfoListEquals(list, list),
+      shallowEqual,
+      shallowEqualItself: (value: unknown) => shallowEqual(value, value),
       eventHookScript,
       composeApiScript,
       toPluginError: (input: ErrorInput) => toPluginError('probe', errorOf(input)),
       isPluginError: (input: ErrorInput, code?: string) => isPluginError(errorOf(input), code as never),
       toPluginErrorInfo: (input: ErrorInput) => toPluginErrorInfo(errorOf(input) as PluginError),
-      originOf,
     },
     cases,
   },

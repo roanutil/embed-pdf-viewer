@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/annotation placement.ts and ink.ts: click placement, click geometry and ink straightening.",
   "cases": [
@@ -414,10 +414,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 280,
-            "y": 350,
-            "width": 40,
-            "height": 100
+            "x": 250,
+            "y": 380,
+            "width": 100,
+            "height": 40
           },
           "rot": 270
         }
@@ -444,10 +444,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 570,
-            "y": -45,
-            "width": 40,
-            "height": 100
+            "x": 540,
+            "y": -15,
+            "width": 100,
+            "height": 40
           },
           "rot": 270
         }
@@ -546,10 +546,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 280,
-            "y": 350,
-            "width": 40,
-            "height": 100
+            "x": 250,
+            "y": 380,
+            "width": 100,
+            "height": 40
           },
           "rot": 90
         }
@@ -576,10 +576,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 570,
-            "y": -45,
-            "width": 40,
-            "height": 100
+            "x": 540,
+            "y": -15,
+            "width": 100,
+            "height": 40
           },
           "rot": 90
         }
@@ -913,10 +913,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 280,
-            "y": 350,
-            "width": 40,
-            "height": 100
+            "x": 250,
+            "y": 380,
+            "width": 100,
+            "height": 40
           },
           "rot": 270
         }
@@ -944,10 +944,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 570,
-            "y": -45,
-            "width": 40,
-            "height": 100
+            "x": 540,
+            "y": -15,
+            "width": 100,
+            "height": 40
           },
           "rot": 270
         }
@@ -1049,10 +1049,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 280,
-            "y": 350,
-            "width": 40,
-            "height": 100
+            "x": 250,
+            "y": 380,
+            "width": 100,
+            "height": 40
           },
           "rot": 90
         }
@@ -1080,10 +1080,10 @@
         "returned": {
           "kind": "box",
           "rect": {
-            "x": 570,
-            "y": -45,
-            "width": 40,
-            "height": 100
+            "x": 540,
+            "y": -15,
+            "width": 100,
+            "height": 40
           },
           "rot": 90
         }
@@ -1674,11 +1674,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 400,
+            "x": 350,
             "y": 400
           }
         }
@@ -1703,11 +1703,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 690,
+            "x": 640,
             "y": 5
           }
         }
@@ -1730,11 +1730,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 400,
+            "x": 350,
             "y": 400
           }
         }
@@ -1757,11 +1757,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 690,
+            "x": 640,
             "y": 5
           }
         }
@@ -1791,11 +1791,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 400,
+            "x": 350,
             "y": 400
           }
         }
@@ -1855,11 +1855,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 400,
+            "x": 350,
             "y": 400
           }
         }
@@ -1885,11 +1885,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 690,
+            "x": 640,
             "y": 5
           }
         }
@@ -1916,11 +1916,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 450
           },
           "b": {
-            "x": 400,
-            "y": 400
+            "x": 300,
+            "y": 350
           }
         }
       }
@@ -1946,11 +1946,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": 55
           },
           "b": {
-            "x": 690,
-            "y": 5
+            "x": 590,
+            "y": -45
           }
         }
       }
@@ -1981,11 +1981,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 350,
             "y": 400
           },
           "b": {
-            "x": 400,
+            "x": 250,
             "y": 400
           }
         }
@@ -2017,12 +2017,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 500,
-            "y": 5
+            "x": 600,
+            "y": 5.000000000000006
           },
           "b": {
-            "x": 600,
-            "y": 5
+            "x": 500,
+            "y": 4.999999999999994
           }
         }
       }
@@ -2048,11 +2048,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 350
           },
           "b": {
-            "x": 400,
-            "y": 400
+            "x": 300,
+            "y": 450
           }
         }
       }
@@ -2078,11 +2078,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": -45
           },
           "b": {
-            "x": 690,
-            "y": 5
+            "x": 590,
+            "y": 55
           }
         }
       }
@@ -2106,11 +2106,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 400,
+            "x": 350,
             "y": 400
           }
         }
@@ -2135,11 +2135,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 690,
+            "x": 640,
             "y": 5
           }
         }
@@ -2165,12 +2165,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -2195,12 +2195,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 660.7106781186548,
-            "y": 75.71067811865474
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -2223,12 +2223,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -2251,12 +2251,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 660.7106781186548,
-            "y": 75.71067811865474
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -2286,12 +2286,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -2321,12 +2321,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 529.2893218813452,
+            "x": 500,
             "y": 5
           },
           "b": {
             "x": 600,
-            "y": 75.71067811865474
+            "y": 5
           }
         }
       }
@@ -2352,12 +2352,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -2383,12 +2383,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 660.7106781186548,
-            "y": 75.71067811865474
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -2415,11 +2415,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 450
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 300,
+            "y": 350
           }
         }
       }
@@ -2446,11 +2446,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": 55
           },
           "b": {
-            "x": 660.7106781186548,
-            "y": 75.71067811865474
+            "x": 590,
+            "y": -45
           }
         }
       }
@@ -2482,12 +2482,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 350,
             "y": 400
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 250,
+            "y": 400
           }
         }
       }
@@ -2519,12 +2519,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 529.2893218813452,
-            "y": 5
+            "x": 600,
+            "y": 5.000000000000006
           },
           "b": {
-            "x": 600,
-            "y": 75.71067811865474
+            "x": 500,
+            "y": 4.999999999999994
           }
         }
       }
@@ -2551,11 +2551,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 350
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 300,
+            "y": 450
           }
         }
       }
@@ -2582,11 +2582,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": -45
           },
           "b": {
-            "x": 660.7106781186548,
-            "y": 75.71067811865474
+            "x": 590,
+            "y": 55
           }
         }
       }
@@ -2611,12 +2611,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 370.71067811865476,
-            "y": 470.71067811865476
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -2641,12 +2641,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 660.7106781186548,
-            "y": 75.71067811865474
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -2671,11 +2671,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 275,
             "y": 400
           },
           "b": {
-            "x": 250,
+            "x": 325,
             "y": 400
           }
         }
@@ -2701,12 +2701,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 565,
             "y": 5
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 615,
+            "y": 5
           }
         }
       }
@@ -2729,11 +2729,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 275,
             "y": 400
           },
           "b": {
-            "x": 250,
+            "x": 325,
             "y": 400
           }
         }
@@ -2757,12 +2757,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 565,
             "y": 5
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 615,
+            "y": 5
           }
         }
       }
@@ -2792,11 +2792,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 275,
             "y": 400
           },
           "b": {
-            "x": 250,
+            "x": 325,
             "y": 400
           }
         }
@@ -2827,12 +2827,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 550,
             "y": 5
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 600,
+            "y": 5
           }
         }
       }
@@ -2858,11 +2858,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 275,
             "y": 400
           },
           "b": {
-            "x": 250,
+            "x": 325,
             "y": 400
           }
         }
@@ -2889,12 +2889,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 565,
             "y": 5
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 615,
+            "y": 5
           }
         }
       }
@@ -2921,11 +2921,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 425
           },
           "b": {
-            "x": 250,
-            "y": 400
+            "x": 300,
+            "y": 375
           }
         }
       }
@@ -2952,11 +2952,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": 30
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 590,
+            "y": -20
           }
         }
       }
@@ -2988,11 +2988,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 325,
             "y": 400
           },
           "b": {
-            "x": 250,
+            "x": 275,
             "y": 400
           }
         }
@@ -3025,12 +3025,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
-            "y": 5
+            "x": 600,
+            "y": 5.000000000000003
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 550,
+            "y": 4.9999999999999964
           }
         }
       }
@@ -3057,11 +3057,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 375
           },
           "b": {
-            "x": 250,
-            "y": 400
+            "x": 300,
+            "y": 425
           }
         }
       }
@@ -3088,11 +3088,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": -20
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 590,
+            "y": 30
           }
         }
       }
@@ -3117,11 +3117,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 275,
             "y": 400
           },
           "b": {
-            "x": 250,
+            "x": 325,
             "y": 400
           }
         }
@@ -3147,12 +3147,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 565,
             "y": 5
           },
           "b": {
-            "x": 540,
-            "y": 5.000000000000006
+            "x": 615,
+            "y": 5
           }
         }
       }
@@ -3177,12 +3177,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 300,
-            "y": 300
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -3207,12 +3207,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 590,
-            "y": -95
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -3235,12 +3235,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 300,
-            "y": 300
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -3263,12 +3263,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 590,
-            "y": -95
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -3298,12 +3298,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 300,
-            "y": 300
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -3333,12 +3333,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
-            "y": 100
+            "x": 500,
+            "y": 5
           },
           "b": {
-            "x": 590,
-            "y": 0
+            "x": 600,
+            "y": 5
           }
         }
       }
@@ -3364,12 +3364,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 300,
-            "y": 300
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -3395,12 +3395,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 590,
-            "y": -95
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -3427,11 +3427,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 450
           },
           "b": {
             "x": 300,
-            "y": 300
+            "y": 350
           }
         }
       }
@@ -3458,11 +3458,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": 55
           },
           "b": {
             "x": 590,
-            "y": -95
+            "y": -45
           }
         }
       }
@@ -3494,12 +3494,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 350,
             "y": 400
           },
           "b": {
-            "x": 300,
-            "y": 300
+            "x": 250,
+            "y": 400
           }
         }
       }
@@ -3531,12 +3531,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
-            "y": 100
+            "x": 600,
+            "y": 5.000000000000006
           },
           "b": {
-            "x": 590,
-            "y": 0
+            "x": 500,
+            "y": 4.999999999999994
           }
         }
       }
@@ -3563,11 +3563,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 350
           },
           "b": {
             "x": 300,
-            "y": 300
+            "y": 450
           }
         }
       }
@@ -3594,11 +3594,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": -45
           },
           "b": {
             "x": 590,
-            "y": -95
+            "y": 55
           }
         }
       }
@@ -3623,12 +3623,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 250,
             "y": 400
           },
           "b": {
-            "x": 300,
-            "y": 300
+            "x": 350,
+            "y": 400
           }
         }
       }
@@ -3653,12 +3653,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 540,
             "y": 5
           },
           "b": {
-            "x": 590,
-            "y": -95
+            "x": 640,
+            "y": 5
           }
         }
       }
@@ -3684,11 +3684,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 285,
             "y": 400
           },
           "b": {
-            "x": 330,
+            "x": 315,
             "y": 400
           }
         }
@@ -3715,11 +3715,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 575,
             "y": 5
           },
           "b": {
-            "x": 620,
+            "x": 605,
             "y": 5
           }
         }
@@ -3744,11 +3744,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 285,
             "y": 400
           },
           "b": {
-            "x": 330,
+            "x": 315,
             "y": 400
           }
         }
@@ -3773,11 +3773,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 575,
             "y": 5
           },
           "b": {
-            "x": 620,
+            "x": 605,
             "y": 5
           }
         }
@@ -3809,11 +3809,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 285,
             "y": 400
           },
           "b": {
-            "x": 330,
+            "x": 315,
             "y": 400
           }
         }
@@ -3877,11 +3877,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 285,
             "y": 400
           },
           "b": {
-            "x": 330,
+            "x": 315,
             "y": 400
           }
         }
@@ -3909,11 +3909,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 575,
             "y": 5
           },
           "b": {
-            "x": 620,
+            "x": 605,
             "y": 5
           }
         }
@@ -3942,11 +3942,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 415
           },
           "b": {
-            "x": 330,
-            "y": 400
+            "x": 300,
+            "y": 385
           }
         }
       }
@@ -3974,11 +3974,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": 20
           },
           "b": {
-            "x": 620,
-            "y": 5
+            "x": 590,
+            "y": -10
           }
         }
       }
@@ -4011,11 +4011,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 315,
             "y": 400
           },
           "b": {
-            "x": 330,
+            "x": 285,
             "y": 400
           }
         }
@@ -4049,12 +4049,12 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 570,
-            "y": 5
+            "x": 600,
+            "y": 5.000000000000002
           },
           "b": {
-            "x": 600,
-            "y": 5
+            "x": 570,
+            "y": 4.999999999999998
           }
         }
       }
@@ -4082,11 +4082,11 @@
           "kind": "segment",
           "a": {
             "x": 300,
-            "y": 400
+            "y": 385
           },
           "b": {
-            "x": 330,
-            "y": 400
+            "x": 300,
+            "y": 415
           }
         }
       }
@@ -4114,11 +4114,11 @@
           "kind": "segment",
           "a": {
             "x": 590,
-            "y": 5
+            "y": -10
           },
           "b": {
-            "x": 620,
-            "y": 5
+            "x": 590,
+            "y": 20
           }
         }
       }
@@ -4144,11 +4144,11 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 300,
+            "x": 285,
             "y": 400
           },
           "b": {
-            "x": 330,
+            "x": 315,
             "y": 400
           }
         }
@@ -4175,21 +4175,45 @@
         "returned": {
           "kind": "segment",
           "a": {
-            "x": 590,
+            "x": 575,
             "y": 5
           },
           "b": {
-            "x": 620,
+            "x": 605,
             "y": 5
           }
         }
       }
     },
     {
-      "name": "clickCreateGeom/free-text-box",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/free-text-box",
+      "fn": "placedShape",
       "args": [
-        "free-text",
+        {
+          "subtype": "free-text",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "contents": "",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "color": "#000000",
+          "fontColor": "#000000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -4199,43 +4223,58 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "text",
-          "rect": {
+          "kind": "text-box",
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
-          }
+          },
+          "rotation": 0,
+          "calloutLine": null,
+          "lineEnding": null
         }
       }
     },
     {
-      "name": "clickCreateGeom/free-text-box-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/free-text-box-cloudy",
+      "fn": "placedShape",
       "args": [
-        "free-text",
+        {
+          "subtype": "free-text",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "contents": "",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "color": "#000000",
+          "fontColor": "#000000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -4245,44 +4284,52 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "text",
-          "rect": {
+          "kind": "text-box",
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
-          }
+          },
+          "rotation": 0,
+          "calloutLine": null,
+          "lineEnding": null
         }
       }
     },
     {
-      "name": "clickCreateGeom/free-text-box-rot",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/free-text-box-rot",
+      "fn": "placedShape",
       "args": [
-        "free-text",
+        {
+          "subtype": "free-text",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "contents": "",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "color": "#000000",
+          "fontColor": "#000000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -4292,44 +4339,58 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "text",
-          "rect": {
+          "kind": "text-box",
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
           },
-          "rot": 90
+          "rotation": 90,
+          "calloutLine": null,
+          "lineEnding": null
         }
       }
     },
     {
-      "name": "clickCreateGeom/free-text-box-rot-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/free-text-box-rot-cloudy",
+      "fn": "placedShape",
       "args": [
-        "free-text",
+        {
+          "subtype": "free-text",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "contents": "",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "color": "#000000",
+          "fontColor": "#000000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -4339,45 +4400,52 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "text",
-          "rect": {
+          "kind": "text-box",
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
           },
-          "rot": 90
+          "rotation": 90,
+          "calloutLine": null,
+          "lineEnding": null
         }
       }
     },
     {
-      "name": "clickCreateGeom/free-text-segment",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/free-text-segment",
+      "fn": "placedShape",
       "args": [
-        "free-text",
+        {
+          "subtype": "free-text",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "contents": "",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "color": "#000000",
+          "fontColor": "#000000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "segment",
           "a": {
@@ -4388,24 +4456,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -4413,10 +4463,40 @@
       }
     },
     {
-      "name": "clickCreateGeom/free-text-segment-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/free-text-segment-cloudy",
+      "fn": "placedShape",
       "args": [
-        "free-text",
+        {
+          "subtype": "free-text",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "contents": "",
+          "intent": "free-text",
+          "fontFamily": "helvetica",
+          "fontSize": 12,
+          "textAlign": "left",
+          "verticalAlign": "top",
+          "color": "#000000",
+          "fontColor": "#000000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "segment",
           "a": {
@@ -4427,25 +4507,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -4453,10 +4514,27 @@
       }
     },
     {
-      "name": "clickCreateGeom/square-box",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/square-box",
+      "fn": "placedShape",
       "args": [
-        "square",
+        {
+          "subtype": "square",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -4466,44 +4544,50 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
+          "kind": "box",
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
           },
+          "rotation": 0,
           "ellipse": false
         }
       }
     },
     {
-      "name": "clickCreateGeom/square-box-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/square-box-cloudy",
+      "fn": "placedShape",
       "args": [
-        "square",
+        {
+          "subtype": "square",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -4513,45 +4597,44 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
-            "x": 0,
-            "y": 10,
-            "width": 120,
-            "height": 60
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
           },
+          "rotation": 0,
           "ellipse": false
         }
       }
     },
     {
-      "name": "clickCreateGeom/square-box-rot",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/square-box-rot",
+      "fn": "placedShape",
       "args": [
-        "square",
+        {
+          "subtype": "square",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -4561,94 +4644,97 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
+          "kind": "box",
+          "box": {
+            "x": 40,
+            "y": -10,
+            "width": 40,
+            "height": 100
           },
-          "ellipse": false,
-          "rot": 90
+          "rotation": 0,
+          "ellipse": false
         }
       }
     },
     {
-      "name": "clickCreateGeom/square-box-rot-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/square-box-rot-cloudy",
+      "fn": "placedShape",
       "args": [
-        "square",
         {
-          "kind": "box",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
-          },
-          "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
+          "subtype": "square",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
           "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
           "lineEndings": {
             "start": "open-arrow",
             "end": "none"
           }
+        },
+        {
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rot": 90
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
-            "x": 0,
-            "y": 10,
-            "width": 120,
-            "height": 60
+          "kind": "box",
+          "box": {
+            "x": 40,
+            "y": -10,
+            "width": 40,
+            "height": 100
           },
-          "ellipse": false,
-          "rot": 90
+          "rotation": 0,
+          "ellipse": false
         }
       }
     },
     {
-      "name": "clickCreateGeom/square-segment",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/square-segment",
+      "fn": "placedShape",
       "args": [
-        "square",
+        {
+          "subtype": "square",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "segment",
           "a": {
@@ -4659,24 +4745,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -4684,10 +4752,33 @@
       }
     },
     {
-      "name": "clickCreateGeom/square-segment-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/square-segment-cloudy",
+      "fn": "placedShape",
       "args": [
-        "square",
+        {
+          "subtype": "square",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "segment",
           "a": {
@@ -4698,25 +4789,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -4724,10 +4796,27 @@
       }
     },
     {
-      "name": "clickCreateGeom/circle-box",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/circle-box",
+      "fn": "placedShape",
       "args": [
-        "circle",
+        {
+          "subtype": "circle",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -4737,44 +4826,50 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
+          "kind": "box",
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
           },
+          "rotation": 0,
           "ellipse": true
         }
       }
     },
     {
-      "name": "clickCreateGeom/circle-box-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/circle-box-cloudy",
+      "fn": "placedShape",
       "args": [
-        "circle",
+        {
+          "subtype": "circle",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -4784,45 +4879,44 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
-            "x": -1.5,
-            "y": 8.5,
-            "width": 123,
-            "height": 63
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
           },
+          "rotation": 0,
           "ellipse": true
         }
       }
     },
     {
-      "name": "clickCreateGeom/circle-box-rot",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/circle-box-rot",
+      "fn": "placedShape",
       "args": [
-        "circle",
+        {
+          "subtype": "circle",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -4832,173 +4926,471 @@
             "height": 40
           },
           "rot": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 40,
+            "y": -10,
+            "width": 40,
+            "height": 100
+          },
+          "rotation": 0,
+          "ellipse": true
+        }
+      }
+    },
+    {
+      "name": "placedShape/circle-box-rot-cloudy",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "circle",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
         },
         {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
           },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
+          "rot": 90
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 40,
+            "y": -10,
+            "width": 40,
+            "height": 100
+          },
+          "rotation": 0,
+          "ellipse": true
+        }
+      }
+    },
+    {
+      "name": "placedShape/circle-segment",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "circle",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
+        {
+          "kind": "segment",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 100,
+            "y": 0
+          }
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placedShape/circle-segment-cloudy",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "circle",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
+        {
+          "kind": "segment",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 100,
+            "y": 0
+          }
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placedShape/line-box",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "line",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
           "lineEndings": {
             "start": "none",
             "end": "none"
+          },
+          "captionPosition": "inline"
+        },
+        {
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rot": 0
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placedShape/line-box-cloudy",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "line",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          },
+          "captionPosition": "inline",
+          "dashArray": null,
+          "cloudyIntensity": 2
+        },
+        {
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rot": 0
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placedShape/line-box-rot",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "line",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "lineEndings": {
+            "start": "none",
+            "end": "none"
+          },
+          "captionPosition": "inline"
+        },
+        {
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rot": 90
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placedShape/line-box-rot-cloudy",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "line",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          },
+          "captionPosition": "inline",
+          "dashArray": null,
+          "cloudyIntensity": 2
+        },
+        {
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rot": 90
+        }
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "placedShape/line-segment",
+      "fn": "placedShape",
+      "args": [
+        {
+          "subtype": "line",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "lineEndings": {
+            "start": "none",
+            "end": "none"
+          },
+          "captionPosition": "inline"
+        },
+        {
+          "kind": "segment",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 100,
+            "y": 0
           }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
+          "kind": "line",
+          "linePoints": {
+            "start": {
+              "x": 0,
+              "y": 0
+            },
+            "end": {
+              "x": 100,
+              "y": 0
+            }
           },
-          "ellipse": true,
-          "rot": 90
+          "lineEndings": {
+            "start": "none",
+            "end": "none"
+          },
+          "rotation": 0
         }
       }
     },
     {
-      "name": "clickCreateGeom/circle-box-rot-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/line-segment-cloudy",
+      "fn": "placedShape",
       "args": [
-        "circle",
         {
-          "kind": "box",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
-          },
-          "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
+          "subtype": "line",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
           "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
           "lineEndings": {
             "start": "open-arrow",
             "end": "none"
+          },
+          "captionPosition": "inline",
+          "dashArray": null,
+          "cloudyIntensity": 2
+        },
+        {
+          "kind": "segment",
+          "a": {
+            "x": 0,
+            "y": 0
+          },
+          "b": {
+            "x": 100,
+            "y": 0
           }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "rect",
-          "rect": {
-            "x": -1.5,
-            "y": 8.5,
-            "width": 123,
-            "height": 63
+          "kind": "line",
+          "linePoints": {
+            "start": {
+              "x": 0,
+              "y": 0
+            },
+            "end": {
+              "x": 100,
+              "y": 0
+            }
           },
-          "ellipse": true,
-          "rot": 90
-        }
-      }
-    },
-    {
-      "name": "clickCreateGeom/circle-segment",
-      "fn": "clickCreateGeom",
-      "args": [
-        "circle",
-        {
-          "kind": "segment",
-          "a": {
-            "x": 0,
-            "y": 0
-          },
-          "b": {
-            "x": 100,
-            "y": 0
-          }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": null
-      }
-    },
-    {
-      "name": "clickCreateGeom/circle-segment-cloudy",
-      "fn": "clickCreateGeom",
-      "args": [
-        "circle",
-        {
-          "kind": "segment",
-          "a": {
-            "x": 0,
-            "y": 0
-          },
-          "b": {
-            "x": 100,
-            "y": 0
-          }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
           "lineEndings": {
             "start": "open-arrow",
             "end": "none"
-          }
+          },
+          "rotation": 0
         }
-      ],
-      "outcome": {
-        "returned": null
       }
     },
     {
-      "name": "clickCreateGeom/line-box",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/stamp-box",
+      "fn": "placedShape",
       "args": [
-        "line",
+        {
+          "subtype": "stamp",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "fit": "contain",
+          "opacity": 1
+        },
         {
           "kind": "box",
           "rect": {
@@ -5008,335 +5400,94 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": null
-      }
-    },
-    {
-      "name": "clickCreateGeom/line-box-cloudy",
-      "fn": "clickCreateGeom",
-      "args": [
-        "line",
-        {
-          "kind": "box",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
-          },
-          "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": null
-      }
-    },
-    {
-      "name": "clickCreateGeom/line-box-rot",
-      "fn": "clickCreateGeom",
-      "args": [
-        "line",
-        {
-          "kind": "box",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
-          },
-          "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": null
-      }
-    },
-    {
-      "name": "clickCreateGeom/line-box-rot-cloudy",
-      "fn": "clickCreateGeom",
-      "args": [
-        "line",
-        {
-          "kind": "box",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
-          },
-          "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": null
-      }
-    },
-    {
-      "name": "clickCreateGeom/line-segment",
-      "fn": "clickCreateGeom",
-      "args": [
-        "line",
-        {
-          "kind": "segment",
-          "a": {
-            "x": 0,
-            "y": 0
-          },
-          "b": {
-            "x": 100,
-            "y": 0
-          }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "t": "line",
-          "a": {
-            "x": 0,
-            "y": 0
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
           },
-          "b": {
-            "x": 100,
-            "y": 0
-          },
-          "ends": {
-            "start": "none",
-            "end": "none"
-          }
+          "rotation": 0,
+          "ellipse": false
         }
       }
     },
     {
-      "name": "clickCreateGeom/line-segment-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/stamp-box-cloudy",
+      "fn": "placedShape",
       "args": [
-        "line",
         {
-          "kind": "segment",
-          "a": {
-            "x": 0,
-            "y": 0
-          },
-          "b": {
-            "x": 100,
-            "y": 0
-          }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
+          "subtype": "stamp",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
           "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
+          "fit": "contain",
+          "opacity": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
           "lineEndings": {
             "start": "open-arrow",
             "end": "none"
           }
+        },
+        {
+          "kind": "box",
+          "rect": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rot": 0
         }
       ],
       "outcome": {
         "returned": {
-          "t": "line",
-          "a": {
-            "x": 0,
-            "y": 0
-          },
-          "b": {
-            "x": 100,
-            "y": 0
-          },
-          "ends": {
-            "start": "open-arrow",
-            "end": "none"
-          }
-        }
-      }
-    },
-    {
-      "name": "clickCreateGeom/stamp-box",
-      "fn": "clickCreateGeom",
-      "args": [
-        "stamp",
-        {
           "kind": "box",
-          "rect": {
+          "box": {
             "x": 10,
             "y": 20,
             "width": 100,
             "height": 40
           },
-          "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
+          "rotation": 0,
+          "ellipse": false
         }
-      ],
-      "outcome": {
-        "returned": null
       }
     },
     {
-      "name": "clickCreateGeom/stamp-box-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/stamp-box-rot",
+      "fn": "placedShape",
       "args": [
-        "stamp",
         {
-          "kind": "box",
-          "rect": {
-            "x": 10,
-            "y": 20,
-            "width": 100,
-            "height": 40
-          },
-          "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
+          "subtype": "stamp",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
           "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
-        }
-      ],
-      "outcome": {
-        "returned": null
-      }
-    },
-    {
-      "name": "clickCreateGeom/stamp-box-rot",
-      "fn": "clickCreateGeom",
-      "args": [
-        "stamp",
+          "fit": "contain",
+          "opacity": 1
+        },
         {
           "kind": "box",
           "rect": {
@@ -5346,35 +5497,49 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
-        "returned": null
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rotation": 90,
+          "ellipse": false
+        }
       }
     },
     {
-      "name": "clickCreateGeom/stamp-box-rot-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/stamp-box-rot-cloudy",
+      "fn": "placedShape",
       "args": [
-        "stamp",
+        {
+          "subtype": "stamp",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "fit": "contain",
+          "opacity": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -5384,36 +5549,42 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
-        "returned": null
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rotation": 90,
+          "ellipse": false
+        }
       }
     },
     {
-      "name": "clickCreateGeom/stamp-segment",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/stamp-segment",
+      "fn": "placedShape",
       "args": [
-        "stamp",
+        {
+          "subtype": "stamp",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "fit": "contain",
+          "opacity": 1
+        },
         {
           "kind": "segment",
           "a": {
@@ -5424,24 +5595,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5449,10 +5602,32 @@
       }
     },
     {
-      "name": "clickCreateGeom/stamp-segment-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/stamp-segment-cloudy",
+      "fn": "placedShape",
       "args": [
-        "stamp",
+        {
+          "subtype": "stamp",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "fit": "contain",
+          "opacity": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "segment",
           "a": {
@@ -5463,25 +5638,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5489,10 +5645,27 @@
       }
     },
     {
-      "name": "clickCreateGeom/ink-box",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/ink-box",
+      "fn": "placedShape",
       "args": [
-        "ink",
+        {
+          "subtype": "ink",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -5502,24 +5675,6 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5527,10 +5682,33 @@
       }
     },
     {
-      "name": "clickCreateGeom/ink-box-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/ink-box-cloudy",
+      "fn": "placedShape",
       "args": [
-        "ink",
+        {
+          "subtype": "ink",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -5540,25 +5718,6 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5566,10 +5725,27 @@
       }
     },
     {
-      "name": "clickCreateGeom/ink-box-rot",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/ink-box-rot",
+      "fn": "placedShape",
       "args": [
-        "ink",
+        {
+          "subtype": "ink",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "box",
           "rect": {
@@ -5579,24 +5755,6 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5604,10 +5762,33 @@
       }
     },
     {
-      "name": "clickCreateGeom/ink-box-rot-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/ink-box-rot-cloudy",
+      "fn": "placedShape",
       "args": [
-        "ink",
+        {
+          "subtype": "ink",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -5617,25 +5798,6 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5643,10 +5805,27 @@
       }
     },
     {
-      "name": "clickCreateGeom/ink-segment",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/ink-segment",
+      "fn": "placedShape",
       "args": [
-        "ink",
+        {
+          "subtype": "ink",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid"
+        },
         {
           "kind": "segment",
           "a": {
@@ -5657,24 +5836,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5682,10 +5843,33 @@
       }
     },
     {
-      "name": "clickCreateGeom/ink-segment-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/ink-segment-cloudy",
+      "fn": "placedShape",
       "args": [
-        "ink",
+        {
+          "subtype": "ink",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "color": "#ff0000",
+          "opacity": 1,
+          "strokeWidth": 1,
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "segment",
           "a": {
@@ -5696,25 +5880,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5722,10 +5887,23 @@
       }
     },
     {
-      "name": "clickCreateGeom/link-box",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/link-box",
+      "fn": "placedShape",
       "args": [
-        "link",
+        {
+          "subtype": "link",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal"
+        },
         {
           "kind": "box",
           "rect": {
@@ -5735,35 +5913,47 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
-        "returned": null
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rotation": 0,
+          "ellipse": false
+        }
       }
     },
     {
-      "name": "clickCreateGeom/link-box-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/link-box-cloudy",
+      "fn": "placedShape",
       "args": [
-        "link",
+        {
+          "subtype": "link",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -5773,36 +5963,40 @@
             "height": 40
           },
           "rot": 0
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
-        "returned": null
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 10,
+            "y": 20,
+            "width": 100,
+            "height": 40
+          },
+          "rotation": 0,
+          "ellipse": false
+        }
       }
     },
     {
-      "name": "clickCreateGeom/link-box-rot",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/link-box-rot",
+      "fn": "placedShape",
       "args": [
-        "link",
+        {
+          "subtype": "link",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal"
+        },
         {
           "kind": "box",
           "rect": {
@@ -5812,35 +6006,47 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
-        "returned": null
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 40,
+            "y": -10,
+            "width": 40,
+            "height": 100
+          },
+          "rotation": 0,
+          "ellipse": false
+        }
       }
     },
     {
-      "name": "clickCreateGeom/link-box-rot-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/link-box-rot-cloudy",
+      "fn": "placedShape",
       "args": [
-        "link",
+        {
+          "subtype": "link",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "box",
           "rect": {
@@ -5850,36 +6056,40 @@
             "height": 40
           },
           "rot": 90
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
-        "returned": null
+        "returned": {
+          "kind": "box",
+          "box": {
+            "x": 40,
+            "y": -10,
+            "width": 40,
+            "height": 100
+          },
+          "rotation": 0,
+          "ellipse": false
+        }
       }
     },
     {
-      "name": "clickCreateGeom/link-segment",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/link-segment",
+      "fn": "placedShape",
       "args": [
-        "link",
+        {
+          "subtype": "link",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal"
+        },
         {
           "kind": "segment",
           "a": {
@@ -5890,24 +6100,6 @@
             "x": 100,
             "y": 0
           }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "solid"
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "none",
-            "end": "none"
-          }
         }
       ],
       "outcome": {
@@ -5915,10 +6107,30 @@
       }
     },
     {
-      "name": "clickCreateGeom/link-segment-cloudy",
-      "fn": "clickCreateGeom",
+      "name": "placedShape/link-segment-cloudy",
+      "fn": "placedShape",
       "args": [
-        "link",
+        {
+          "subtype": "link",
+          "invisible": false,
+          "hidden": false,
+          "print": true,
+          "noZoom": false,
+          "noRotate": false,
+          "noView": false,
+          "readOnly": false,
+          "locked": false,
+          "toggleNoView": false,
+          "lockedContents": false,
+          "blendMode": "normal",
+          "borderStyle": "solid",
+          "dashArray": null,
+          "cloudyIntensity": 2,
+          "lineEndings": {
+            "start": "open-arrow",
+            "end": "none"
+          }
+        },
         {
           "kind": "segment",
           "a": {
@@ -5928,25 +6140,6 @@
           "b": {
             "x": 100,
             "y": 0
-          }
-        },
-        {
-          "color": "#e5484d",
-          "interiorColor": null,
-          "strokeWidth": 2,
-          "opacity": 1,
-          "blendMode": "normal",
-          "border": {
-            "kind": "cloudy",
-            "intensity": 2
-          },
-          "fontFamily": "helvetica",
-          "fontSize": 14,
-          "fontColor": "#000000",
-          "textAlign": "left",
-          "lineEndings": {
-            "start": "open-arrow",
-            "end": "none"
           }
         }
       ],

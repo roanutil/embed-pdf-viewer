@@ -22,11 +22,12 @@
 //! So after open, PDFium is not enforcing anything. This is what is.
 
 use crate::auth::scope::{
-    Capabilities, CollabAction, CollabTarget, DocCapability, IdentityClaims, InvalidScope,
-    ParsedScope, PdfBits, check_capability, check_collab, check_set_group, expanded_capabilities,
-    parse_all,
+    Capabilities, CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight,
+    FieldRights, FieldWriteAction, IdentityClaims, InvalidScope, ParsedScope, PdfBits,
+    check_any_field_action, check_capability, check_collab, check_field_action, check_set_group,
+    expanded_capabilities, field_rights_of, parse_all,
 };
-use crate::error::{EngineError, EngineErrorCode};
+use crate::error::EngineError;
 use crate::features::signature::protection::protected_capabilities;
 use crate::features::signature::types::DocumentProtection;
 
@@ -37,6 +38,9 @@ pub struct SessionAuthority {
     /// the life of a session, and re-parsing it on every read would put a
     /// string parse on the hot path for an answer that cannot change.
     scope: Vec<ParsedScope>,
+    /// The scope as it was given, so the authority can be named on the wire
+    /// again ([`SessionAuthority::to_wire`]).
+    granted: Vec<String>,
     identity: IdentityClaims,
     /// The document's permission word, as the security probe read it.
     ///
@@ -63,7 +67,13 @@ impl SessionAuthority {
         identity: IdentityClaims,
         pdf_bits: PdfBits,
     ) -> Result<Self, InvalidScope> {
-        Ok(Self { scope: parse_all(scope)?, identity, pdf_bits, protection: None })
+        Ok(Self {
+            scope: parse_all(scope)?,
+            granted: scope.to_vec(),
+            identity,
+            pdf_bits,
+            protection: None,
+        })
     }
 
     /// Full authority, for a host with no notion of scopes.
@@ -75,6 +85,7 @@ impl SessionAuthority {
     pub fn unrestricted() -> Self {
         Self {
             scope: vec![ParsedScope::Wildcard],
+            granted: vec!["*".to_owned()],
             identity: IdentityClaims::default(),
             pdf_bits: PdfBits::default(),
             protection: None,
@@ -118,6 +129,30 @@ impl SessionAuthority {
         &self.scope
     }
 
+    /// This authority as a request names it (`ChangeAuthority`): who it is,
+    /// its scope and permission bits as `grants`, and what the document's
+    /// signatures forbid. What a client that opened the session with this
+    /// scope sends with each write (`DocumentGuard.changeAuthority`).
+    pub fn to_wire(&self) -> serde_json::Value {
+        let bits = self.pdf_bits;
+        serde_json::json!({
+            "identity": {
+                "userId": self.identity.user_id,
+                "displayName": self.identity.display_name,
+                "groupId": self.identity.group_id,
+            },
+            "grants": {
+                "scope": self.granted,
+                "pdfBits": {
+                    "bit3": bits.bit3, "bit4": bits.bit4, "bit5": bits.bit5, "bit6": bits.bit6,
+                    "bit9": bits.bit9, "bit10": bits.bit10, "bit11": bits.bit11,
+                    "bit12": bits.bit12,
+                },
+            },
+            "protection": self.protection,
+        })
+    }
+
     pub fn allows(&self, capability: DocCapability) -> bool {
         !self.protected().contains(&capability)
             && check_capability(capability, &self.scope, self.pdf_bits)
@@ -136,7 +171,52 @@ impl SessionAuthority {
 
     /// `ScopeGuard.canSetGroup`: assigning `group_id` to an annotation.
     pub fn allows_set_group(&self, group_id: &str) -> bool {
-        check_set_group(group_id, self.identity.group_id.as_deref(), &self.scope)
+        check_set_group(
+            CollabEntity::Annotations,
+            group_id,
+            self.identity.group_id.as_deref(),
+            &self.scope,
+        )
+    }
+
+    /// `allowsFieldWrite`: filling in or signing the field in `group_id`
+    /// (`None`: in no group). What the signatures forbid comes first
+    /// (`checkFieldAction`'s `protection`).
+    pub fn allows_field_write(&self, action: FieldWriteAction, group_id: Option<&str>) -> bool {
+        !self.protected().contains(&action.broad())
+            && check_field_action(action, group_id, &self.scope, self.pdf_bits)
+    }
+
+    /// `allowsSomeFieldWrite`: what a form verb checks before its fields
+    /// are known; each field is checked in the write.
+    pub fn allows_some_field_write(&self, action: FieldWriteAction) -> bool {
+        !self.protected().contains(&action.broad())
+            && check_any_field_action(action, &self.scope, self.pdf_bits)
+    }
+
+    /// `authorizeFieldGroup`'s check: putting a field in `group_id`.
+    pub fn allows_field_group(&self, group_id: &str) -> bool {
+        check_set_group(
+            CollabEntity::Fields,
+            group_id,
+            self.identity.group_id.as_deref(),
+            &self.scope,
+        )
+    }
+
+    /// `fieldRightsOf`, with the signatures' protection applied as
+    /// upstream applies it: a protected action is no field at all.
+    pub fn field_rights(&self) -> FieldRights {
+        let mut rights =
+            field_rights_of(&self.scope, self.pdf_bits, self.identity.group_id.as_deref());
+        let protected = self.protected();
+        if protected.contains(&FieldWriteAction::Fill.broad()) {
+            rights.fill = FieldGroupRight::none();
+        }
+        if protected.contains(&FieldWriteAction::Sign.broad()) {
+            rights.sign = FieldGroupRight::none();
+        }
+        rights
     }
 
     /// Everything this caller may do, for an `/access`-style report.
@@ -157,10 +237,7 @@ impl SessionAuthority {
         if self.allows(capability) {
             return Ok(());
         }
-        Err(EngineError::with_message(
-            EngineErrorCode::Forbidden,
-            format!("permission denied: {capability}"),
-        ))
+        Err(EngineError::permission_denied(capability.as_str(), None, None))
     }
 
     /// Refuse unless at least one of the capabilities is granted.
@@ -172,9 +249,10 @@ impl SessionAuthority {
             return Ok(());
         }
         let names: Vec<&str> = capabilities.iter().map(|c| c.as_str()).collect();
-        Err(EngineError::with_message(
-            EngineErrorCode::Forbidden,
-            format!("permission denied: one of {}", names.join(", ")),
+        Err(EngineError::permission_denied(
+            names.first().copied().unwrap_or("doc.open"),
+            None,
+            Some(&names),
         ))
     }
 }
@@ -188,6 +266,7 @@ impl Default for SessionAuthority {
     fn default() -> Self {
         Self {
             scope: Vec::new(),
+            granted: Vec::new(),
             identity: IdentityClaims::default(),
             pdf_bits: PdfBits::default(),
             protection: None,
@@ -198,6 +277,7 @@ impl Default for SessionAuthority {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::EngineErrorCode;
 
     fn scope(entries: &[&str]) -> Vec<String> {
         entries.iter().map(|s| s.to_string()).collect()
@@ -236,6 +316,9 @@ mod tests {
         assert!(refused.message.contains("doc.render"), "{}", refused.message);
         // And says nothing about what the caller does hold.
         assert!(!refused.message.contains("doc.open"), "{}", refused.message);
+        // `PermissionDenied`'s details name what was required.
+        assert_eq!(refused.message, "permission denied: doc.render");
+        assert_eq!(refused.details, Some(serde_json::json!({ "required": "doc.render" })));
     }
 
     #[test]
@@ -287,5 +370,10 @@ mod tests {
             .require_any(&[DocCapability::DocPrint, DocCapability::DocDownload])
             .expect_err("neither");
         assert_eq!(refused.code, EngineErrorCode::Forbidden);
+        assert_eq!(
+            refused.details,
+            Some(serde_json::json!({ "required": "doc.print",
+                "anyOf": ["doc.print", "doc.download"] }))
+        );
     }
 }

@@ -10,7 +10,10 @@ crate-type = ["rlib"]
 [dependencies]
 pdfium = { path = "../pdfium" }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+# `preserve_order`: a patch keeps the key order the wire sent (a change
+# record and an undo's `skipped` list it in that order, as upstream's
+# `Object.keys` does).
+serde_json = { version = "1", features = ["preserve_order"] }
 getrandom = "0.3"
 # TypeScript generation for the wire DTOs. Rust is canonical; the emitted .ts
 # is checked in and CI fails on a dirty diff (multiplatform-plan.md, G1).
@@ -36,3 +39,7 @@ test-support = { path = "../test-support" }
 pdfium-sys = { path = "../pdfium-sys" }
 # Signing tests build their CMS with the plugin's own builder.
 epdf-signature-core = { path = "../plugins/signature-core" }
+# `derive.rs` keeps its own `toFixed`: a normal dependency on `epdf-geometry`
+# is a cycle (`epdf-geometry`'s harness needs `plugin-conformance`, which
+# needs this crate). Its tests hold the two copies together.
+epdf-geometry = { path = "../plugins/geometry", default-features = false }

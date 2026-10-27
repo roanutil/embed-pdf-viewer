@@ -107,11 +107,13 @@ impl LatestLane {
     pub fn cancel(&self, reason: Option<&Value>) {
         let active = self.0.active.borrow().clone();
         if let Some(active) = active {
-            let why = match reason {
-                Some(r) if !r.is_null() && !crate::is_undefined(r) => js_string(r),
-                _ => "cancelled".into(),
+            // `abort(reason ?? 'cancelled')`: the signal keeps the value as
+            // given; listeners see its `String()`.
+            let value = match reason {
+                Some(r) if !r.is_null() && !crate::is_undefined(r) => r.clone(),
+                _ => json!("cancelled"),
             };
-            active.abort(Error::new(why));
+            active.abort_value(Error::new(js_string(&value)), value);
         }
         *self.0.active.borrow_mut() = None;
     }
@@ -162,11 +164,15 @@ impl LatestLane {
             let previous = inner.active.borrow_mut().replace(controller.clone());
             let on_lifetime = {
                 let c = controller.clone();
-                inner.lifetime.on_abort(Rc::new(move |_| c.abort(Error::new("instance-closed"))))
+                inner.lifetime.on_abort(Rc::new(move |_| {
+                    c.abort_value(Error::new("instance-closed"), json!("instance-closed"))
+                }))
             };
             let on_caller = signal.as_ref().map(|s| {
                 let c = controller.clone();
-                s.on_abort(Rc::new(move |_| c.abort(Error::new("cancelled"))))
+                s.on_abort(Rc::new(move |_| {
+                    c.abort_value(Error::new("cancelled"), json!("cancelled"))
+                }))
             });
             let run =
                 LatestRun { id: id.clone(), signal: controller.clone(), lane: inner.clone(), mine };
@@ -177,7 +183,7 @@ impl LatestLane {
             // The try block: every refusal it raises goes through the catch below.
             let outcome: Result<T, Error> = async {
                 if let Some(previous) = previous {
-                    previous.abort(Error::new("superseded"));
+                    previous.abort_value(Error::new("superseded"), json!("superseded"));
                 }
                 if !run.current() {
                     return Err(lane.cancelled(&id, "superseded"));

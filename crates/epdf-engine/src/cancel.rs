@@ -25,7 +25,7 @@
 //! who can set it and when.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use crate::error::{EngineError, EngineErrorCode};
 
@@ -34,7 +34,12 @@ use crate::error::{EngineError, EngineErrorCode};
 /// `Arc<AtomicBool>` rather than a channel: every check is on the operation's
 /// hot path, between units of work, and must cost a relaxed load.
 #[derive(Debug, Clone, Default)]
-pub struct CancelToken(Arc<AtomicBool>);
+pub struct CancelToken {
+    flag: Arc<AtomicBool>,
+    /// Checks left before the token cancels itself
+    /// ([`CancelToken::cancelled_at_check`]).
+    countdown: Option<Arc<AtomicU32>>,
+}
 
 impl CancelToken {
     /// A token nobody holds the other end of. For call sites that have no
@@ -43,20 +48,35 @@ impl CancelToken {
         Self::default()
     }
 
+    /// A token that cancels itself at its `check`-th [`CancelToken::check`]
+    /// (from 1): a canceller acting partway through a write, at a point a
+    /// test can name. A host's call is synchronous, so no other canceller
+    /// can reach that point.
+    #[doc(hidden)]
+    pub fn cancelled_at_check(check: u32) -> Self {
+        Self { flag: Arc::default(), countdown: Some(Arc::new(AtomicU32::new(check))) }
+    }
+
     pub fn cancel(&self) {
         // Release pairs with the Acquire in `is_cancelled`, so whatever the
         // canceller wrote before cancelling is visible to the worker that
         // observes the flag.
-        self.0.store(true, Ordering::Release);
+        self.flag.store(true, Ordering::Release);
     }
 
     pub fn is_cancelled(&self) -> bool {
-        self.0.load(Ordering::Acquire)
+        self.flag.load(Ordering::Acquire)
     }
 
     /// The port of `throwIfAborted`. Every call site that had one gets one of
     /// these, in the same place.
     pub fn check(&self) -> Result<(), EngineError> {
+        if let Some(left) = &self.countdown
+            && left.fetch_update(Ordering::Relaxed, Ordering::Relaxed, |n| n.checked_sub(1))
+                == Ok(1)
+        {
+            self.cancel();
+        }
         if self.is_cancelled() {
             return Err(EngineError::with_message(
                 EngineErrorCode::Aborted,
@@ -81,6 +101,15 @@ mod tests {
         assert!(err.is(EngineErrorCode::Aborted));
         // Cancellation is sticky: a second check does not clear it.
         assert!(token.check().is_err());
+    }
+
+    #[test]
+    fn a_counted_token_cancels_at_the_check_it_names() {
+        let token = CancelToken::cancelled_at_check(3);
+        assert!(token.check().is_ok());
+        assert!(token.check().is_ok());
+        assert!(token.check().unwrap_err().is(EngineErrorCode::Aborted));
+        assert!(token.check().is_err(), "and stays cancelled");
     }
 
     #[test]

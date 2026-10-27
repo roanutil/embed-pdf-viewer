@@ -1,0 +1,9 @@
+# Task12b2c3 private evidence
+
+BASE `04c8e8611a933d2e190724cc0f79bce921add132` (reviewed C2). This slice owns actions-triggers15 and actions-lifecycle27 only. No vectors are written: `test/actions-lifecycle-evidence.ts` runs scenarios and uses `emit(..., 'render')`.
+
+`original-runtime.json` copies exactly the matching42 rows from immutable `../task-12b2c2/deferred-runtime.json`; `original-inputs.json` preserves their complete canonical inputs and hashes. `original-actions.ts.txt` archives BASE source before editing, whose owned sections were byte-identical to C2's frozen original source. Original archives are never refreshed. The remaining script32/hover10 and link29 continue to be checked directly against C2's immutable archives. Prior C2current76 are checked against C2's complete reviewed current input/outcome authority. C1's unchanged-source/remaining-input guards still run.
+
+`current-inputs-runtime.json` includes every authored input and every runtime channel for all42. `accounting.json` maps original occurrences, full input/outcome hashes, exact changed paths and dispositions. `negative-channels.json` names all nonempty negative channels and their source owners. `source-evidence.json` records source/provenance and immutable dependency hashes. Read the task report for source authority, retired subcomponents, M14 distinctions and Task13 replay contracts.
+
+The focused semantic test has independently authored literal results, callbacks, operations, event payloads and timing expectations. Runtime evidence is observational and is never loaded as a replacement for those semantic expectations. A separate supplemental public-controller test exercises current script-print behavior for the kernel-printer capability and adapter path; it is not an added vector case and does not migrate C4's original script cases.

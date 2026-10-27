@@ -1,0 +1,21 @@
+(node:81001) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ creation replays generated ids and focus through the direct model transition (0.721541ms)
+✔ unmodified workspace plugin installs and exposes empty selectors before start (661.972875ms)
+✔ all82 pure rows pin complete states and ignored transition identities independently (1.059709ms)
+✔ all13 scenarios have exact refusal/report channels and every promise settles (17.3375ms)
+✔ live pane/tab placement, removals, active fallback and registry order have literal reads (12.879417ms)
+✔ event diff preserves exact callback order and isolates the throwing listener (1.493083ms)
+✔ controller memoization, rename, reconciliation and disposal preserve public semantics (0.545542ms)
+✔ complete live snapshots retain pane records, pane/document order, focus and monotonic sequence (11.556375ms)
+✔ prior shell47 i18n642 and actions160 commands79 link37 metadata17 and page-edit19 retain all inputs and every output channel (1331.078041ms)
+✔ all95 current full definitions and outcome channels replay exactly (15.472625ms)
+✔ all76 immutable original occurrences map one-to-one with exact partial retirements (24.04325ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2458.096833

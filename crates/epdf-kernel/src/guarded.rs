@@ -15,7 +15,7 @@ use std::rc::Rc;
 
 use serde_json::Value;
 
-use crate::engine::{Answer, DocumentHandle, DocumentSecurity, EngineCall};
+use crate::engine::{Answer, CallFacts, DocumentHandle, DocumentSecurity, EngineCall};
 use crate::error::{Error, code, plugin_error, to_plugin_error};
 use crate::rt::{self, Promise};
 use crate::signal::AbortSignal;
@@ -56,7 +56,7 @@ impl Guard {
             let guard = self.clone();
             Rc::new(move |_| {
                 if let Some(abort) = &abort {
-                    abort(guard.lifetime.signal.reason().map(|r| r.to_canonical()));
+                    abort(guard.lifetime.signal.reason_value());
                 }
                 resolver.reject(guard.closed());
             })
@@ -107,6 +107,25 @@ struct GuardedHandle {
 }
 
 impl DocumentHandle for GuardedHandle {
+    fn is_local(&self) -> bool {
+        self.inner.is_local()
+    }
+    fn held_object_numbers(&self) -> usize {
+        self.inner.held_object_numbers()
+    }
+    fn take_object_number(&self) -> Result<Option<u32>, Error> {
+        self.inner.take_object_number().map_err(|e| to_plugin_error(&self.guard.capability, &e))
+    }
+    fn reserve_object_numbers(&self, count: u32) -> EngineCall<()> {
+        self.guard.promise(self.inner.reserve_object_numbers(count))
+    }
+    /// A synchronous member: the TypeScript guard passes it through.
+    fn on_lost_object_numbers(
+        &self,
+        listener: Rc<dyn Fn(&crate::engine::ObjectNumbersLost)>,
+    ) -> Unsubscribe {
+        self.inner.on_lost_object_numbers(listener)
+    }
     fn id(&self) -> String {
         self.inner.id()
     }
@@ -127,6 +146,17 @@ impl DocumentHandle for GuardedHandle {
         self.guard.promise(self.inner.call(path, pon, args))
     }
 
+    /// The facts pass through to the handle, under the same guard as `call`.
+    fn call_with(
+        &self,
+        facts: &CallFacts,
+        path: &str,
+        pon: Option<u32>,
+        args: Vec<Value>,
+    ) -> EngineCall<Value> {
+        self.guard.promise(self.inner.call_with(facts, path, pon, args))
+    }
+
     fn call_answer(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Answer> {
         self.guard.promise(self.inner.call_answer(path, pon, args))
     }
@@ -143,6 +173,11 @@ impl DocumentHandle for GuardedHandle {
     fn last_server_id(&self) -> Option<String> {
         self.inner.last_server_id()
     }
+
+    /// A synchronous member: the TypeScript guard passes it through.
+    fn set_working_set(&self, view: &str, pages: Value) {
+        self.inner.set_working_set(view, pages)
+    }
 }
 
 struct GuardedSecurity {
@@ -151,8 +186,14 @@ struct GuardedSecurity {
 }
 
 impl DocumentSecurity for GuardedSecurity {
+    fn allows_field(&self, action: &str, target: &Value) -> bool {
+        self.inner.allows_field(action, target)
+    }
     fn allows(&self, capability: &str) -> bool {
         self.inner.allows(capability)
+    }
+    fn allows_annotation(&self, action: &str, target: &Value) -> bool {
+        self.inner.allows_annotation(action, target)
     }
     fn allows_annotation_create(&self) -> bool {
         self.inner.allows_annotation_create()

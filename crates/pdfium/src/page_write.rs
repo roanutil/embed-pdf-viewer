@@ -82,7 +82,14 @@ impl crate::PageView<'_> {
         let mut removed = 0u32;
         // SAFETY: the page handle is live and `removed` is a valid
         // out-parameter.
-        let ok = unsafe { pdfium_sys::EPDFPage_ApplyRedactions(self.as_raw(), &raw mut removed) };
+        let ok = unsafe {
+            pdfium_sys::EPDFPage_ApplyRedactions(
+                self.as_raw(),
+                std::ptr::null(),
+                0,
+                &raw mut removed,
+            )
+        };
         (ok != 0).then_some(removed)
     }
 
@@ -91,13 +98,33 @@ impl crate::PageView<'_> {
     /// The count is COLLATERAL: annotations other than the marking that
     /// went with it, which is popups cascading and widgets detaching.
     pub fn apply_redaction(&self, annotation: &crate::Annotation<'_>) -> Option<u32> {
+        self.apply_redaction_marks(std::slice::from_ref(annotation))
+    }
+
+    /// Apply these markings together, in one pass.
+    ///
+    /// `EPDFPage_ApplyRedactions` with explicit marks: their regions are
+    /// applied at once, so each image under them is read and written once.
+    /// `None` is PDFium's false: a mark that is not a redaction of this page,
+    /// nothing to apply, or a failure. An empty slice is refused here rather
+    /// than passed through, because the native call reads an empty list as
+    /// "every marking on the page".
+    pub fn apply_redaction_marks(&self, marks: &[crate::Annotation<'_>]) -> Option<u32> {
+        if marks.is_empty() {
+            return None;
+        }
+        let handles: Vec<pdfium_sys::FPDF_ANNOTATION> =
+            marks.iter().map(|annotation| annotation.as_raw()).collect();
+        let count = i32::try_from(handles.len()).ok()?;
         let mut removed = 0u32;
-        // SAFETY: both handles are live and `removed` is a valid
-        // out-parameter.
+        // SAFETY: the page handle and every annotation handle are live, the
+        // handle array is `count` long and outlives the call, and `removed`
+        // is a valid out-parameter.
         let ok = unsafe {
-            pdfium_sys::EPDFAnnot_ApplyRedaction(
+            pdfium_sys::EPDFPage_ApplyRedactions(
                 self.as_raw(),
-                annotation.as_raw(),
+                handles.as_ptr(),
+                count,
                 &raw mut removed,
             )
         };
@@ -184,6 +211,33 @@ impl Document {
         }
     }
 
+    /// `EPDFPage_InsertBlankRaw`: a blank page of `width` by `height` points
+    /// at `index` (0 to the page count), made without loading it, at
+    /// `object_number`, or the next free number for 0. A number other than
+    /// 0 needs a layer transaction and a free number. An index out of range
+    /// is refused, never clamped; `false` changed nothing.
+    pub fn insert_blank_page_raw(
+        &self,
+        index: u32,
+        width: f64,
+        height: f64,
+        object_number: u32,
+    ) -> bool {
+        let Ok(index) = i32::try_from(index) else {
+            return false;
+        };
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFPage_InsertBlankRaw(
+                self.as_raw(),
+                index,
+                width,
+                height,
+                std::os::raw::c_ulong::from(object_number),
+            ) != 0
+        }
+    }
+
     /// Remove a page.
     ///
     /// The object number is retired, not freed.
@@ -220,9 +274,6 @@ impl AnnotationFlattenStatus {
         }
     }
 }
-
-/// `FPDF_SAVE_FLAGS`: a whole file rather than an incremental update.
-const FPDF_NO_INCREMENTAL: std::os::raw::c_ulong = 1 << 1;
 
 impl crate::PageView<'_> {
     /// `EPDFPage_FlattenAnnotations`: flatten a chosen set of this page's
@@ -284,23 +335,6 @@ impl crate::PageView<'_> {
         if exported.is_null() {
             return Ok(None);
         }
-        struct Scratch(pdfium_sys::FPDF_DOCUMENT);
-        impl Drop for Scratch {
-            fn drop(&mut self) {
-                // SAFETY: created above and closed exactly once.
-                unsafe { pdfium_sys::FPDF_CloseDocument(self.0) };
-            }
-        }
-        let scratch = Scratch(exported);
-        let mut size: std::os::raw::c_ulong = 0;
-        // SAFETY: the handle is live and `size` is a valid out-parameter.
-        let ptr = unsafe {
-            pdfium_sys::EPDF_SaveDocumentToOwnedBuffer(
-                scratch.0,
-                FPDF_NO_INCREMENTAL,
-                &raw mut size,
-            )
-        };
-        crate::save::owned_buffer(ptr, size).map(Some).ok_or(crate::PdfiumError::Save)
+        crate::save::save_scratch_document(exported).map(Some).ok_or(crate::PdfiumError::Save)
     }
 }

@@ -72,11 +72,11 @@ public struct RenderCapability: Sendable {
 
   /// A small raster `maxWidth` device pixels wide.
   public func renderThumbnail(
-    _ page: PageRef, maxWidth: Double, includeAnnotations: Bool? = nil
+    _ page: PageRef, maxWidth: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil
   ) async throws(PDFError) -> RenderedPage {
     let image = try await bridgedCancellable { token in
       try await handle.renderThumbnail(
-        page: page, maxWidth: maxWidth, includeAnnotations: includeAnnotations, cancel: token)
+        page: page, maxWidth: maxWidth, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields, cancel: token)
     }
     return try RenderedPage(image)
   }
@@ -101,11 +101,11 @@ public struct RenderCapability: Sendable {
 
   /// The version of the raster these options would produce. It goes up when
   /// the page's pixels change.
-  public func renderEpoch(_ page: PageRef, includeAnnotations: Bool? = nil) async throws(PDFError)
+  public func renderEpoch(_ page: PageRef, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError)
     -> UInt64
   {
     try await bridged {
-      try await handle.renderEpoch(page: page, includeAnnotations: includeAnnotations)
+      try await handle.renderEpoch(page: page, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields)
     }
   }
 
@@ -123,17 +123,17 @@ public struct RenderCapability: Sendable {
 
   /// Render at the scale a view shows the page (a `StagePageTransform`'s
   /// `renderScale`), conformed through the policy's render points.
-  public func renderSource(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil)
+  public func renderSource(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil)
     async throws(PDFError) -> RenderedPage
   {
     let image = try await bridgedCancellable { token in
-      try await handle.renderSource(page: page, scale: scale, includeAnnotations: includeAnnotations, cancel: token)
+      try await handle.renderSource(page: page, scale: scale, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields, cancel: token)
     }
     return try RenderedPage(image)
   }
 
-  public func sourceKey(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil) async throws(PDFError) -> String {
-    try await bridged { try await handle.sourceKey(page: page, scale: scale, includeAnnotations: includeAnnotations) }
+  public func sourceKey(_ page: PageRef, scale: Double, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError) -> String {
+    try await bridged { try await handle.sourceKey(page: page, scale: scale, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields) }
   }
 
   public func conformViewport(_ page: PageRef, scale: Double) async throws(PDFError) -> RenderViewport {
@@ -161,8 +161,8 @@ public struct RenderViewDemand: Sendable {
   let handle: RenderViewDemandHandle
   let render: RenderCapability
 
-  public func setDemand(_ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Bool? = nil) async throws(PDFError) {
-    try await bridged { try await handle.setDemand(page: page, demand: demand, includeAnnotations: includeAnnotations) }
+  public func setDemand(_ page: PageRef, _ demand: RenderPageViewDemand, includeAnnotations: Bool? = nil, includeFormFields: Bool? = nil) async throws(PDFError) {
+    try await bridged { try await handle.setDemand(page: page, demand: demand, includeAnnotations: includeAnnotations, includeFormFields: includeFormFields) }
   }
 
   public func plan(_ page: PageRef) async throws(PDFError) -> RenderTilePlan {

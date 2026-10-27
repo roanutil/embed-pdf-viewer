@@ -1,0 +1,2461 @@
+[
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "incomplete-tree-is-refused",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "refused",
+              "nodes": [],
+              "diagnostics": [
+                {
+                  "code": "incomplete-tree",
+                  "message": "refused: the action tree is incomplete"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "incomplete-tree",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "executed-then-failed-is-partial",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "executed"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "second broke"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: second broke"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "a-document-failure-drops-deferred-work",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "goto",
+                  "status": "skipped"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "exploded"
+                },
+                {
+                  "path": [
+                    0,
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "skipped"
+                },
+                {
+                  "path": [
+                    0,
+                    1
+                  ],
+                  "type": "reset-form",
+                  "status": "skipped"
+                },
+                {
+                  "path": [
+                    0,
+                    2
+                  ],
+                  "type": "hide",
+                  "status": "skipped"
+                },
+                {
+                  "path": [
+                    0,
+                    3
+                  ],
+                  "type": "uri",
+                  "status": "skipped"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: exploded"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "policy-matrix-defaults",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "uri",
+                  "status": "blocked"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "blocked",
+                  "message": "uri: policy 'report' for origin 'lifecycle'"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "uri",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 10,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "launch",
+                  "status": "blocked"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "goto-remote",
+                  "status": "blocked"
+                },
+                {
+                  "path": [
+                    1
+                  ],
+                  "type": "goto-embedded",
+                  "status": "blocked"
+                },
+                {
+                  "path": [
+                    2
+                  ],
+                  "type": "sound",
+                  "status": "blocked"
+                },
+                {
+                  "path": [
+                    3
+                  ],
+                  "type": "movie",
+                  "status": "blocked"
+                },
+                {
+                  "path": [
+                    4
+                  ],
+                  "type": "import-data",
+                  "status": "blocked"
+                },
+                {
+                  "path": [
+                    5
+                  ],
+                  "type": "rendition",
+                  "status": "no-executor"
+                },
+                {
+                  "path": [
+                    6
+                  ],
+                  "type": "thread",
+                  "status": "no-executor"
+                },
+                {
+                  "path": [
+                    7
+                  ],
+                  "type": "set-ocg-state",
+                  "status": "no-executor"
+                },
+                {
+                  "path": [
+                    8
+                  ],
+                  "type": "transition",
+                  "status": "no-executor"
+                },
+                {
+                  "path": [
+                    9
+                  ],
+                  "type": "goto-3d-view",
+                  "status": "no-executor"
+                },
+                {
+                  "path": [
+                    10
+                  ],
+                  "type": "unknown",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "blocked",
+                  "message": "launch: never executable"
+                },
+                {
+                  "code": "blocked",
+                  "message": "goto-remote: never executable"
+                },
+                {
+                  "code": "blocked",
+                  "message": "goto-embedded: never executable"
+                },
+                {
+                  "code": "blocked",
+                  "message": "sound: never executable"
+                },
+                {
+                  "code": "blocked",
+                  "message": "movie: never executable"
+                },
+                {
+                  "code": "blocked",
+                  "message": "import-data: never executable"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "launch",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "goto-remote",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "goto-embedded",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "sound",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "movie",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "import-data",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "a-print-typed-node-uses-the-print-row",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "print",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "print: no executor registered"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "print",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "policy-overrides",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "uri",
+                  "status": "blocked"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "blocked",
+                  "message": "uri: policy 'report' for origin 'hover'"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "uri",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 8,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "goto",
+                  "status": "blocked"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "blocked",
+                  "message": "goto: policy 'report' for origin 'user'"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "goto",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "execute-named",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "named",
+                  "status": "no-executor",
+                  "detail": "no UI adapter installed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-adapter",
+                  "message": "print: no UI adapter installed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-adapter",
+                "action": "named",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "uri-without-an-adapter",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "uri",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-adapter",
+                  "message": "uri: no UI adapter installed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-adapter",
+                "action": "uri",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "print-refusals",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "named",
+                  "status": "no-executor",
+                  "detail": "no UI adapter installed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-adapter",
+                  "message": "print: no UI adapter installed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "b.onDiagnostic",
+            "args": [
+              {
+                "code": "no-adapter",
+                "action": "named",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "named",
+                  "status": "blocked",
+                  "detail": "doc.print is not allowed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "blocked",
+                  "message": "print: doc.print is not allowed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "named",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "hide-and-later-document-work",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "failed",
+                  "detail": "refused"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "reset-form",
+                  "status": "skipped"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "hide: annotation 7: refused"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "hide-reports-honestly",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-commit-sink",
+                  "message": "hide: no annotation commit sink registered (annotation plugin absent)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-commit-sink",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 4,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-commit-sink",
+                  "message": "hide: no form commit sink registered (form plugin absent)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-commit-sink",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "executed",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "executed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "unresolved-target",
+                  "message": "hide: no field named 'ghost'"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "unresolved-target",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "failed",
+                  "detail": "PermissionDenied: doc.annotate.modify"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "hide: annotation 7: PermissionDenied: doc.annotate.modify"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 8,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 6,
+            "resolved": {
+              "status": "executed",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "executed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "hide: annotation 7: first refused"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 9,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 7,
+            "resolved": {
+              "status": "executed",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "executed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "hide: annotation 7: failed"
+                },
+                {
+                  "code": "executor-failed",
+                  "message": "hide: annotation 8: second"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "hide-form-failures",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "failed",
+                  "detail": "form refused"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "hide: form refused"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "failed",
+                  "detail": "failed"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "hide: failed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "hide-sink-throws",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "rejected": {
+              "$error": {
+                "name": "Error",
+                "message": "sink broke"
+              }
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "hide-forms-read-rejects",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 2,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "rejected": {
+              "$error": {
+                "name": "PluginError",
+                "message": "closed",
+                "code": "operation-failed",
+                "capability": "actions",
+                "permission": null,
+                "cause": {
+                  "$error": {
+                    "name": "EngineError",
+                    "message": "closed",
+                    "code": "DocClosed"
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "document-executors",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "reset-form",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "reset-form: no executor registered"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "reset-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 4,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "inert"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "javascript: no executor registered (scripting unavailable)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "reset-form",
+                  "status": "inert",
+                  "detail": "nothing to reset"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-inert",
+                  "message": "reset-form: nothing to reset"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-inert",
+                "action": "reset-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "reset-form",
+                  "status": "failed",
+                  "detail": "reset refused"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "reset-form: reset refused"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "reset-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 8,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 6,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "reset-form",
+                  "status": "failed",
+                  "detail": "reset threw"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "reset-form: reset threw"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "reset-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 9,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 7,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "reset-form",
+                  "status": "failed",
+                  "detail": "reset rejected"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "reset-form: reset rejected"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "reset-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "navigation-executors",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "goto",
+                  "status": "no-executor"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "named",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "goto: no executor registered"
+                },
+                {
+                  "code": "no-executor",
+                  "message": "named: no executor registered"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "goto",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "named",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "goto",
+                  "status": "inert",
+                  "detail": "no stage"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-inert",
+                  "message": "goto: no stage"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-inert",
+                "action": "goto",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 6,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "goto",
+                  "status": "failed",
+                  "detail": "goto threw"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "goto: goto threw"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "goto",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 5,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "goto",
+                  "status": "failed",
+                  "detail": "goto rejected"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "goto: goto rejected"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "goto",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "executors-are-last-wins-and-identity-safe",
+    "sourceOwner": "actions/services/ports.ts registerExecutor; actions/dispatch/run.ts",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "returned": {
+          "$ref": 2
+        },
+        "settled": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "duplicate-executor",
+                "action": "javascript",
+                "source": null
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 8,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "inert"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "javascript: no executor registered (scripting unavailable)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "adapter-is-identity-safe",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 7,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "uri",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-adapter",
+                  "message": "uri: no UI adapter installed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 10,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 4,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "uri",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-adapter",
+                  "message": "uri: no UI adapter installed"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "sinks-and-resolver-are-identity-safe",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 8,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "hide",
+                  "status": "no-executor"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-commit-sink",
+                  "message": "hide: no annotation commit sink registered (annotation plugin absent)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-commit-sink",
+                "action": "hide",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 23,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 6,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "blocked",
+                  "detail": "no dataset resolver"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-submit-resolver",
+                  "message": "submit-form: no dataset resolver registered (form plugin missing?)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-submit-resolver",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-dispatcher.json",
+    "name": "hooks-deliver-and-isolate",
+    "sourceOwner": "core/main/src/context.ts event source/report port and event-hook.ts; actions/services/events.ts",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "inert"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "javascript: no executor registered (scripting unavailable)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnostic.bad",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          },
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [
+          {
+            "$error": {
+              "name": "Error",
+              "message": "diag observer broke"
+            }
+          },
+          {
+            "$error": {
+              "name": "Error",
+              "message": "observer broke"
+            }
+          }
+        ],
+        "threw": null
+      },
+      {
+        "stepIndex": 9,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "javascript",
+                  "status": "inert"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-executor",
+                  "message": "javascript: no executor registered (scripting unavailable)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnostic.bad",
+            "args": [
+              {
+                "code": "no-executor",
+                "action": "javascript",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [
+          {
+            "$error": {
+              "name": "Error",
+              "message": "diag observer broke"
+            }
+          },
+          {
+            "$error": {
+              "name": "Error",
+              "message": "observer broke"
+            }
+          }
+        ],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "payload-less-submit-is-inert",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "inert",
+                  "detail": "submit payload unavailable (older runtime extraction)"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "submit-payload-unavailable",
+                  "message": "submit-form: payload unavailable (older runtime extraction) — node inert"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "submit-payload-unavailable",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "no-resolver",
+    "sourceOwner": "actions/submit/perform.ts and dispatch/run.ts policy/submit branch",
+    "channels": [
+      {
+        "stepIndex": 3,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "blocked",
+                  "detail": "no dataset resolver"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-submit-resolver",
+                  "message": "submit-form: no dataset resolver registered (form plugin missing?)"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-submit-resolver",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "resolver-failures",
+    "sourceOwner": "actions/submit/perform.ts and dispatch/run.ts policy/submit branch",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "failed",
+                  "detail": "no fields"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "submit-form: dataset resolution: no fields"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "failed",
+                  "detail": "field plane gone"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "submit-form: dataset resolution: field plane gone"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "no-sink",
+    "sourceOwner": "actions/submit/perform.ts and dispatch/run.ts policy/submit branch",
+    "channels": [
+      {
+        "stepIndex": 4,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "blocked",
+                  "detail": "no submit sink"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "no-submit-sink",
+                  "message": "submit-form: no handler installed and the document has no submit-capable home"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "no-submit-sink",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "the-document-home",
+    "sourceOwner": "actions/submit/perform.ts and dispatch/run.ts policy/submit branch",
+    "channels": [
+      {
+        "stepIndex": 6,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 3,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "failed",
+                  "detail": "permission denied: doc.forms.submit"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "document home refused submit: permission denied: doc.forms.submit"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "handler-contract",
+    "sourceOwner": "actions/submit/perform.ts and dispatch/run.ts policy/submit branch",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "failed",
+                  "detail": "sync refuse"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "submit handler threw: sync refuse"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      },
+      {
+        "stepIndex": 8,
+        "returned": null,
+        "settled": [],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "executor-failed",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "submit-policy",
+    "sourceOwner": "actions/submit/perform.ts and dispatch/run.ts policy/submit branch",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "inert",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "blocked"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "blocked",
+                  "message": "submit-form: policy 'report' for origin 'user'"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [
+          {
+            "fn": "onDiagnosticReported",
+            "args": [
+              {
+                "code": "blocked",
+                "action": "submit-form",
+                "source": {
+                  "kind": "api"
+                }
+              }
+            ]
+          }
+        ],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  },
+  {
+    "file": "plugins/actions-submit.json",
+    "name": "submit-is-deferred-behind-document-work",
+    "sourceOwner": "actions/dispatch/run.ts; services/policy.ts; lifecycle/document-events.ts print door",
+    "channels": [
+      {
+        "stepIndex": 5,
+        "returned": null,
+        "settled": [
+          {
+            "promise": 2,
+            "resolved": {
+              "status": "partial",
+              "nodes": [
+                {
+                  "path": [],
+                  "type": "submit-form",
+                  "status": "skipped"
+                },
+                {
+                  "path": [
+                    0
+                  ],
+                  "type": "javascript",
+                  "status": "failed",
+                  "detail": "x"
+                }
+              ],
+              "diagnostics": [
+                {
+                  "code": "executor-failed",
+                  "message": "javascript: x"
+                }
+              ]
+            }
+          }
+        ],
+        "callbacks": [],
+        "reports": [],
+        "threw": null
+      }
+    ]
+  }
+]

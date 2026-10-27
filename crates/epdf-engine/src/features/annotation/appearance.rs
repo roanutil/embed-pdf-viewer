@@ -1,52 +1,66 @@
-//! Rendering the `/AP` streams a page's annotations carry.
+//! Rendering a page's annotation appearances, and reading one as a drawing.
 //!
-//! G7. Ports `services/src/features/annotations/AnnotationAppearanceReader.ts`.
-//! Operation: `annotations.renderAppearances`.
+//! G7. Ports `services/src/features/annotations/AnnotationAppearanceReader.ts`
+//! and `AnnotationFlattener.readAppearance`. Operations:
+//! `annotations.renderAppearances` (and its encoded twin) and
+//! `annotations.readAppearance`.
 //!
-//! One bitmap per annotation per requested mode, each sized to its own
-//! annotation's box rather than to the page. An annotation with no `/AP` at
-//! all is skipped, which is most of them: a viewer draws a highlight itself
-//! and only a baked appearance needs rasterizing. That skip is also why the
-//! widget appearance-generation fallback in [`render_one`] never runs, in
-//! this port and in the TypeScript it came from; see the comment there.
+//! One bitmap per annotation of one family (the page's annotations except
+//! widgets, or its widgets), per mode it stores and per state of that mode,
+//! each sized to its own box rather than to the page and labelled with its
+//! mode and state (17350fb4c). Every state comes back, whatever `/AS` says:
+//! the annotation's `appearanceState` says which one shows.
 //!
-//! # Rotation is stripped for exactly one family, and the reason is narrow
+//! An annotation with no normal appearance in the file is drawn as PDFium
+//! draws it in memory, into the box that drawing takes
+//! (`EPDFAnnot_GetDrawingRect`), which can reach past `/Rect`; nothing is
+//! written (25dd21f38). One PDFium can draw only by generating an
+//! appearance into the file has no raster.
 //!
-//! A box-family annotation written by this engine puts its rotation in the
-//! appearance stream's `/Matrix` and keeps the logical box in
-//! `/EMBD_Metadata /UnrotatedRect`. For those, and ONLY those, the raster is
-//! drawn flat and placed by the unrotated box, so a consumer re-applies the
-//! angle as a view transform and rotating never re-renders.
+//! # A box kind drawn turned renders turned back upright
 //!
-//! Everything else renders as it is. A vertex kind has its rotation baked
-//! into its geometry, so there is nothing in the matrix to strip; a foreign
-//! PDF's `/Matrix` can be any affine at all and stripping it would move the
-//! drawing. A free-text CALLOUT is excluded even carrying both fields,
-//! because only its text box tilts, through an inline `cm` mid-stream, while
-//! the leader stays in page space: the form `/Matrix` is identity and there
-//! is nothing to strip there either.
+//! A square, circle, free text, stamp or caret drawn turned
+//! ([`read_annotation_turn`]), whose drawing stays inside the turned box
+//! ([`pdf_appearance_turn_of`]), renders upright into its `box`, and `rect`
+//! is that box: a consumer re-applies the record's `rotation` as a view
+//! transform, so a new turn needs no new raster. The turn is the caller's to
+//! pass (runtime 5e9241945): the fork's `EPDF_RenderAnnotBitmapUnrotated`
+//! takes it rather than finding it.
 //!
-//! The condition is duplicated in the plugin that re-applies the angle, so
-//! changing it here changes what a viewer draws somewhere else.
+//! Everything else renders as the page shows it, placed by `/Rect`: a kind
+//! drawn from turned points, a free-text callout (its line isn't turned), a
+//! turned drawing that reaches past its box, an appearance with any other
+//! matrix.
+//!
+//! # Skips
+//!
+//! An appearance that can't be drawn is left out, with nothing in its place:
+//! a degenerate box, or a render PDFium refuses. That is upstream's rule
+//! (`rasterize` answers `null` and the loop moves on); its result has no
+//! per-annotation skip record either, and failing the page would hide every
+//! other appearance on it.
 
-use pdfium::AppearanceMode;
+use pdfium::{AppearanceMode, AppearanceTurn, PdfiumError, RectF};
 use serde::{Deserialize, Serialize};
 
-use super::read::identity::read_annotation_identity;
-use super::read::transform::{read_rotation, read_unrotated_rect};
-use super::subtype::code;
-use crate::access::PageAccess;
+use super::read::record::annotation_ref_of;
+use super::read::turn::{AnnotationTurn, read_annotation_turn};
+use super::subtype::{AnnotationSubtype, code};
+use crate::access::{DocumentAccess, PageAccess};
 use crate::cancel::CancelToken;
 use crate::error::{EngineError, EngineErrorCode};
 use crate::features::annotation::intent::FreeTextIntent;
 use crate::features::annotation::read::dictionary_read;
+use crate::features::annotation::write::resolve::resolve_annotation;
 use crate::features::render::geometry::{
-    RenderViewport, device_size, display_rect_to_device_matrix, pdf_rect_to_display_rect,
+    RenderViewport, device_size, page_rect_of_display_rect, pdf_rect_to_display_rect, render_matrix,
 };
-use crate::features::render::raster::PageRaster;
-use crate::geom::{PdfRect, PdfRotation, normalize_pdf_rect};
+use crate::features::render::raster::{PageRaster, read_page_box};
+use crate::geom::{
+    PdfRect, PdfRotation, is_same_pdf_rect, normalize_pdf_rect, pdf_rect_turned_bounds,
+};
 use crate::identity::{AnnotationRef, PageObjectNumber};
-use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
+use crate::session::document::DocumentSession;
 
 /// The per-appearance output-pixel ceiling.
 ///
@@ -61,30 +75,52 @@ use crate::revision::{PageState, RevisionToken, WeakAnnotationState};
 /// `max_output_pixels` still applies afterwards, and that one refuses.
 pub const APPEARANCE_PIXEL_CLAMP: f64 = 16_000_000.0;
 
-/// The `/AP` sub-dictionaries, with the bit each occupies in
-/// `EPDFAnnot_GetAvailableAppearanceModes`.
-const MODES: [(AppearanceMode, i32); 3] =
-    [(AppearanceMode::Normal, 1), (AppearanceMode::Rollover, 2), (AppearanceMode::Down, 4)];
+/// The `/AP` sub-dictionaries in the one order the engine renders and names
+/// them, with the bit each occupies in `EPDFAnnot_GetAvailableAppearanceModes`.
+const MODES: [(AppearanceModeName, AppearanceMode, i32); 3] = [
+    (AppearanceModeName::Normal, AppearanceMode::Normal, 1),
+    (AppearanceModeName::Rollover, AppearanceMode::Rollover, 2),
+    (AppearanceModeName::Down, AppearanceMode::Down, 4),
+];
 
-/// The subtypes whose rotation lives in the appearance `/Matrix`.
-///
-/// Free text, square, circle, stamp and caret. This set must cover exactly
-/// the kinds whose readers surface the rotation pair, because the consumer
-/// that re-applies the angle keys off the same two DTO fields.
-const BOX_FAMILY: [i32; 5] = [code::FREETEXT, code::SQUARE, code::CIRCLE, code::STAMP, code::CARET];
+/// The normal appearance's bit: the one PDFium draws in memory when the file
+/// has none.
+const NORMAL_BIT: i32 = 1;
 
-/// What to render, and how big.
+/// At most this many states of one mode are rendered; past it, only the one
+/// the annotation shows. Check boxes and radio buttons have two.
+const MAX_STATES: usize = 8;
+
+/// Which of a page's annotations a render covers (`AnnotationFamily`): its
+/// annotations except widgets (`page.annotations`), or its widgets
+/// (`page.forms`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum AnnotationFamily {
+    Annotations,
+    Widgets,
+}
+
+impl AnnotationFamily {
+    /// The family of an annotation with subtype code `subtype_code`
+    /// (`familyOfCode`).
+    pub fn of_code(subtype_code: i32) -> Self {
+        if subtype_code == code::WIDGET { Self::Widgets } else { Self::Annotations }
+    }
+}
+
+/// What to render, and how big (`AnnotationAppearanceRenderOptions`).
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", default)]
 pub struct AppearanceRenderOptions {
-    /// Device pixels per PDF unit. A caller that cares about device pixel
-    /// ratio folds it in here.
-    pub scale: f64,
+    /// The size, as for a page render: the appearances come out at the scale
+    /// the page has at this viewport. `Width` is the width of the whole
+    /// turned page. `None` is scale 1.
+    pub viewport: Option<RenderViewport>,
     pub rotation: PdfRotation,
-    /// Which modes to emit. A mode an annotation does not have is skipped
-    /// rather than emitted empty. Empty means normal, which is the default
-    /// and the only one most documents have.
-    pub modes: Vec<AppearanceModeName>,
+    /// Which modes to render, of those each annotation stores. `None` is
+    /// every mode; an empty list asks for nothing and is refused.
+    pub modes: Option<Vec<AppearanceModeName>>,
     /// The caller's own budget, applied after [`APPEARANCE_PIXEL_CLAMP`] and
     /// with the opposite behaviour: it refuses.
     pub max_output_pixels: Option<u64>,
@@ -92,11 +128,11 @@ pub struct AppearanceRenderOptions {
 
 impl Default for AppearanceRenderOptions {
     fn default() -> Self {
-        Self { scale: 1.0, rotation: PdfRotation::None, modes: Vec::new(), max_output_pixels: None }
+        Self { viewport: None, rotation: PdfRotation::None, modes: None, max_output_pixels: None }
     }
 }
 
-/// The wire spelling of an appearance mode.
+/// The wire spelling of an appearance mode (`AnnotationAppearanceMode`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub enum AppearanceModeName {
@@ -105,192 +141,257 @@ pub enum AppearanceModeName {
     Down,
 }
 
-impl AppearanceModeName {
-    fn of(mode: AppearanceMode) -> Self {
-        match mode {
-            AppearanceMode::Normal => Self::Normal,
-            AppearanceMode::Rollover => Self::Rollover,
-            AppearanceMode::Down => Self::Down,
-        }
-    }
-}
-
-/// One rendered appearance, with what a consumer needs to place it.
+/// One rendered appearance, with what a consumer needs to place it
+/// (`AnnotationAppearanceRaster<PdfCoordinates>`).
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnnotationAppearanceRaster {
     pub annotation_ref: AnnotationRef,
     pub mode: AppearanceModeName,
-    /// The placement box in PDF user space. The LOGICAL box for a
-    /// rotation-stripped render, and `/Rect` otherwise.
+    /// The state this image draws, when the mode stores several; `None`
+    /// when the mode is a single appearance or drawn in memory.
+    pub state: Option<String>,
+    /// The placement box in the file's coordinates: the turned box for a
+    /// box kind drawn turned, the drawing's own box for one drawn in memory,
+    /// and `/Rect` otherwise.
     pub rect: PdfRect,
     pub raster: PageRaster,
 }
 
-/// Every appearance on one page.
+/// Every appearance of one family on one page
+/// (`AnnotationAppearancesResult<PdfCoordinates>`).
 #[derive(Debug, Clone, PartialEq)]
 pub struct AnnotationAppearancesResult {
-    pub page_state: PageState,
+    pub page: PageObjectNumber,
     pub appearances: Vec<AnnotationAppearanceRaster>,
 }
 
-/// Render a page's appearance streams.
+/// One image to render for a mode: the state to draw (`None`: the one `/AS`
+/// selects) and the state the image is labelled with.
+struct StateToRender {
+    draw: Option<String>,
+    label: Option<String>,
+}
+
+/// A mode that is a single appearance, or drawn in memory: one image, no
+/// state.
+fn shown_only() -> Vec<StateToRender> {
+    vec![StateToRender { draw: None, label: None }]
+}
+
+/// Render the appearances of one family of `page`'s annotations
+/// (`AnnotationAppearanceReader.render`).
 pub fn render_page_appearances(
+    document: &pdfium::Document,
     page: &dyn PageAccess,
     page_object_number: PageObjectNumber,
-    revision: &RevisionToken,
+    family: AnnotationFamily,
     options: &AppearanceRenderOptions,
     cancel: &CancelToken,
 ) -> Result<AnnotationAppearancesResult, EngineError> {
     cancel.check()?;
     let view = page.view();
-    let page_height = f64::from(view.height());
-    let scale = normalize_scale(options.scale);
-    let wanted = resolve_modes(&options.modes);
+    let modes = resolve_modes(options.modes.as_deref())?;
+    let page_box = read_page_box(view);
+    let scale = viewport_scale(
+        options.viewport,
+        page_box.right - page_box.left,
+        page_box.top - page_box.bottom,
+        options.rotation,
+    )?;
 
     let mut appearances = Vec::new();
-    let mut has_any_weak = false;
-
     for index in 0..view.annotation_count() {
         cancel.check()?;
         let Some(annotation) = view.annotation(index) else {
             continue;
         };
-
-        let available = annotation.available_appearance_modes();
-        let identity = read_annotation_identity(&annotation, page_object_number, index, revision)?;
-        if identity.quality == crate::identity::AnnotationIdentityQuality::Weak {
-            has_any_weak = true;
+        let subtype_code = annotation.subtype_code();
+        if AnnotationFamily::of_code(subtype_code) != family {
+            continue;
         }
-        // After the identity read, not before: the weak flag is a property of
-        // the page, so an annotation with no `/AP` still contributes to it.
-        if available == 0 {
+        let available = annotation.available_appearance_modes();
+        // With no normal appearance stored, where the engine draws one in
+        // memory.
+        let drawn = if available & NORMAL_BIT != 0 {
+            None
+        } else {
+            annotation
+                .drawing_rect(AppearanceMode::Normal)
+                .map(|rect| normalize_pdf_rect(pdf_rect(rect)))
+        };
+        if available == 0 && drawn.is_none() {
             continue;
         }
 
-        let subtype_code = annotation.subtype_code();
-        let unrotated = if strips_rotation(&annotation, subtype_code)? {
-            read_unrotated_rect(&annotation)?
-        } else {
-            None
-        };
-        // Normalized once, here: both the wire `rect` and the render matrix
+        let annotation_ref = annotation_ref_of(document, &annotation, page_object_number, index);
+        // Normalized once, here: the wire `rect` and the render matrix both
         // rest on the invariant, and `/Rect` itself is not normalized.
-        let raw = annotation.rect();
-        let rect = normalize_pdf_rect(unrotated.unwrap_or(PdfRect {
-            left: f64::from(raw.left),
-            bottom: f64::from(raw.bottom),
-            right: f64::from(raw.right),
-            top: f64::from(raw.top),
-        }));
+        let page_rect = normalize_pdf_rect(pdf_rect(annotation.rect()));
+        let stripped = match read_annotation_turn(&annotation) {
+            Some(turn) => {
+                let intent = if subtype_code == code::FREETEXT {
+                    Some(FreeTextIntent::from_name(
+                        dictionary_read("IT", annotation.intent())?.as_deref(),
+                    ))
+                } else {
+                    None
+                };
+                pdf_appearance_turn_of(
+                    subtype_code,
+                    page_rect,
+                    turn.content_box,
+                    turn.rotation,
+                    intent,
+                )
+                .map(|_| turn)
+            }
+            None => None,
+        };
+        let rect = stripped.map_or(page_rect, |turn| normalize_pdf_rect(turn.content_box));
 
-        for (mode, bit) in MODES {
-            if available & bit == 0 || !wanted.contains(&AppearanceModeName::of(mode)) {
+        for (name, mode, bit) in MODES {
+            if !modes.contains(&name) {
                 continue;
             }
-            cancel.check()?;
-            let Some(raster) = render_one(
-                view,
-                &annotation,
-                mode,
-                rect,
-                page_height,
-                options,
-                scale,
-                unrotated.is_some(),
-                subtype_code,
-            )?
-            else {
-                continue;
+            let stored = available & bit != 0;
+            let target = match (stored, name, drawn) {
+                (true, _, _) => rect,
+                (false, AppearanceModeName::Normal, Some(drawn)) => drawn,
+                _ => continue,
             };
-            appearances.push(AnnotationAppearanceRaster {
-                annotation_ref: identity.annotation_ref.clone(),
-                mode: AppearanceModeName::of(mode),
-                rect,
-                raster,
-            });
+            let states = if stored { states_of(&annotation, mode)? } else { shown_only() };
+            for state in states {
+                cancel.check()?;
+                let raster = render_one(
+                    view,
+                    &annotation,
+                    mode,
+                    state.draw.as_deref(),
+                    target,
+                    page_box,
+                    options,
+                    scale,
+                    if stored { stripped } else { None },
+                )?;
+                let Some(raster) = raster else {
+                    continue;
+                };
+                appearances.push(AnnotationAppearanceRaster {
+                    annotation_ref: annotation_ref.clone(),
+                    mode: name,
+                    state: state.label,
+                    rect: target,
+                    raster,
+                });
+            }
         }
     }
 
-    Ok(AnnotationAppearancesResult {
-        page_state: PageState {
-            page_object_number,
-            revision: revision.clone(),
-            weak_annotation_state: WeakAnnotationState::Known {
-                has_any_weak_annotations: has_any_weak,
-            },
-        },
-        appearances,
-    })
+    Ok(AnnotationAppearancesResult { page: page_object_number, appearances })
 }
 
-/// Whether this annotation's rotation lives in its appearance `/Matrix`.
-fn strips_rotation(
-    annotation: &pdfium::Annotation<'_>,
+/// The turn an annotation's appearance raster is drawn without, degrees
+/// clockwise, or `None` when it is drawn as the page shows it
+/// (`pdfAppearanceTurnOf`). A box kind drawn turned whose drawing stays
+/// inside the turned box (`rect` is the upright box around it) renders
+/// upright over `content_box`. A callout and a drawing that reaches past its
+/// box render as the page shows them.
+pub fn pdf_appearance_turn_of(
     subtype_code: i32,
-) -> Result<bool, EngineError> {
-    if !BOX_FAMILY.contains(&subtype_code) {
-        return Ok(false);
+    rect: PdfRect,
+    content_box: PdfRect,
+    rotation: f64,
+    intent: Option<FreeTextIntent>,
+) -> Option<f64> {
+    let box_kind = [
+        AnnotationSubtype::Square,
+        AnnotationSubtype::Circle,
+        AnnotationSubtype::FreeText,
+        AnnotationSubtype::Stamp,
+        AnnotationSubtype::Caret,
+    ]
+    .iter()
+    .any(|subtype| subtype.code() == subtype_code);
+    if !box_kind || rotation == 0.0 || rotation.is_nan() {
+        return None;
     }
-    if subtype_code == code::FREETEXT {
-        let intent =
-            FreeTextIntent::from_name(dictionary_read("IT", annotation.intent())?.as_deref());
-        if intent == FreeTextIntent::FreeTextCallout {
-            return Ok(false);
-        }
+    if subtype_code == code::FREETEXT && intent == Some(FreeTextIntent::FreeTextCallout) {
+        return None;
     }
-    Ok(read_rotation(annotation)?.is_some())
+    is_same_pdf_rect(pdf_rect_turned_bounds(content_box, rotation), rect).then_some(rotation)
 }
 
-/// One appearance into one bitmap.
+/// The images to render for a stored mode (`statesOf`): one per state it
+/// stores, so a caller has every look of a check box whatever it shows now;
+/// one, with no state, for a single appearance; only the shown state when
+/// there are more than [`MAX_STATES`].
+fn states_of(
+    annotation: &pdfium::Annotation<'_>,
+    mode: AppearanceMode,
+) -> Result<Vec<StateToRender>, EngineError> {
+    let names = annotation.appearance_state_names(mode).map_err(read_failed("/AP states"))?;
+    if names.is_empty() {
+        return Ok(shown_only());
+    }
+    if names.len() > MAX_STATES {
+        let shown = annotation.appearance_state().map_err(read_failed("/AS"))?;
+        return Ok(vec![StateToRender { draw: None, label: shown }]);
+    }
+    Ok(names
+        .into_iter()
+        .map(|name| StateToRender { draw: Some(name.clone()), label: Some(name) })
+        .collect())
+}
+
+fn read_failed(what: &'static str) -> impl Fn(PdfiumError) -> EngineError {
+    move |e| {
+        EngineError::with_message(
+            EngineErrorCode::RuntimeUnavailable,
+            format!("reading {what} of an annotation failed: {e}"),
+        )
+    }
+}
+
+fn pdf_rect(rect: RectF) -> PdfRect {
+    PdfRect {
+        left: f64::from(rect.left),
+        bottom: f64::from(rect.bottom),
+        right: f64::from(rect.right),
+        top: f64::from(rect.top),
+    }
+}
+
+/// The counterclockwise angle the file and the fork take for a clockwise
+/// one, in `(-180, 180]` (`pdfFromClockwise`).
+pub(crate) fn pdf_from_clockwise(degrees: f64) -> f64 {
+    let counterclockwise = (((-degrees % 360.0) + 360.0) % 360.0) + 0.0;
+    if counterclockwise > 180.0 { counterclockwise - 360.0 } else { counterclockwise }
+}
+
+/// One appearance into one bitmap, sized to `rect` (`renderOne`): the
+/// stored appearance, or the one PDFium draws in memory. `None` when there
+/// is nothing to draw or PDFium refuses the draw.
 #[allow(clippy::too_many_arguments)]
 fn render_one(
     view: &pdfium::PageView<'_>,
     annotation: &pdfium::Annotation<'_>,
     mode: AppearanceMode,
+    state: Option<&str>,
     rect: PdfRect,
-    page_height: f64,
+    page_box: PdfRect,
     options: &AppearanceRenderOptions,
     scale: f64,
-    strip_rotation: bool,
-    subtype_code: i32,
+    turn: Option<AnnotationTurn>,
 ) -> Result<Option<PageRaster>, EngineError> {
-    if !annotation.has_appearance_stream(mode) {
-        // THE WIDGET FALLBACK IS UNREACHABLE, HERE AND IN THE TYPESCRIPT.
-        //
-        // It is meant for a widget that ships with no baked `/AP` because the
-        // producer expected the viewer to draw the control. It never runs,
-        // and not for the reason it looks like: the caller reads
-        // `available_appearance_modes` ONCE, before any generation could
-        // happen, and then skips every mode whose bit is clear in that same
-        // word. A widget with no `/AP` has a word of zero, so every mode is
-        // skipped and this function is never entered for it. The guard higher
-        // up that also skips a zero word is redundant with the per-mode check
-        // and removing it changes nothing.
-        //
-        // Not for want of PDFium support: `EPDFAnnot_GenerateFormFieldAP`
-        // does produce an appearance for a widget reachable from `/AcroForm`,
-        // which `annotation_appearances.pdf` carries and
-        // `generating_a_form_fields_appearance_never_reaches_the_reader`
-        // demonstrates by calling it directly. The reader still emits nothing
-        // for that widget, on either side.
-        //
-        // Ported as it stands rather than fixed. Generating an appearance is
-        // a WRITE into the open document, and making a read start performing
-        // one is a behaviour change that belongs to whoever owns the
-        // operation, not to a port of it.
-        let generated = subtype_code == code::WIDGET
-            && !dictionary_read("AP", annotation.has_key("AP"))?
-            && annotation.generate_form_field_appearance()
-            && annotation.has_appearance_stream(mode);
-        if !generated {
-            return Ok(None);
-        }
+    // Degenerate: no renderable output, and it would divide by zero in the
+    // matrix (`rasterize`).
+    if rect.right <= rect.left || rect.top <= rect.bottom {
+        return Ok(None);
     }
-
     let area = ((rect.right - rect.left) * (rect.top - rect.bottom)).max(1.0);
     let effective_scale = scale.min((APPEARANCE_PIXEL_CLAMP / area).sqrt());
 
-    let display_rect = pdf_rect_to_display_rect(rect, page_height);
+    let display_rect = pdf_rect_to_display_rect(rect, page_box);
     let (width, height) = device_size(
         display_rect,
         options.rotation,
@@ -302,27 +403,49 @@ fn render_one(
         if pixels > budget {
             return Err(EngineError::with_message(
                 EngineErrorCode::InvalidArg,
+                // `allocateRaster`'s text, word for word.
                 format!(
-                    "appearance output {width}x{height} exceeds the {budget}-pixel budget; \
-                     request a smaller scale"
+                    "render output {width}x{height} exceeds the {budget}-pixel budget \u{2014} \
+                     request a smaller width (or tiles, once available)"
                 ),
             ));
         }
     }
 
-    let matrix = display_rect_to_device_matrix(display_rect, options.rotation, width, height);
-    let bitmap = view
-        .render_annotation_rgba_with_matrix(
-            annotation,
-            mode,
-            width,
-            height,
-            matrix.to_array(),
-            strip_rotation,
-        )
-        .map_err(|e| {
-            EngineError::with_message(EngineErrorCode::RuntimeUnavailable, e.to_string())
-        })?;
+    let matrix =
+        render_matrix(page_rect_of_display_rect(display_rect), options.rotation, width, height);
+    // A box kind drawn turned renders turned back upright into its own box;
+    // the fork takes the turn the read found, in the file's counterclockwise
+    // angle.
+    let turn = turn.map(|turn| AppearanceTurn {
+        degrees: pdf_from_clockwise(turn.rotation) as f32,
+        unrotated_box: RectF {
+            left: turn.content_box.left as f32,
+            top: turn.content_box.top as f32,
+            right: turn.content_box.right as f32,
+            bottom: turn.content_box.bottom as f32,
+        },
+    });
+    let bitmap = match view.render_annotation_rgba_with_matrix(
+        annotation,
+        mode,
+        state,
+        width,
+        height,
+        matrix.to_array(),
+        turn,
+    ) {
+        Ok(bitmap) => bitmap,
+        // The bitmap couldn't be made or PDFium drew nothing: no raster,
+        // as `rasterize` answers `null`.
+        Err(PdfiumError::Bitmap) => return Ok(None),
+        Err(e) => {
+            return Err(EngineError::with_message(
+                EngineErrorCode::RuntimeUnavailable,
+                e.to_string(),
+            ));
+        }
+    };
 
     Ok(Some(PageRaster {
         width: bitmap.width,
@@ -330,6 +453,103 @@ fn render_one(
         stride: bitmap.stride,
         rgba: bitmap.bgra,
     }))
+}
+
+/// An annotation's `appearance` resource: what its normal appearance draws,
+/// as a one-page PDF, without the turn it reads (`readAppearance`,
+/// `exportUnturnedAppearance`). Only a kind that takes an appearance
+/// resource has one (`ANNOTATION_RESOURCE_ROLES`: the stamp).
+pub fn read_appearance(
+    session: &DocumentSession,
+    page_object_number: PageObjectNumber,
+    annotation_ref: &AnnotationRef,
+    cancel: &CancelToken,
+) -> Result<Vec<u8>, EngineError> {
+    cancel.check()?;
+    let owned = session.document()?;
+    let page = owned.page(page_object_number)?;
+    if let AnnotationRef::Index { revision, .. } = annotation_ref {
+        session.validate_revision(revision)?;
+    }
+    let annotation = resolve_annotation(owned.document(), page.view(), annotation_ref)?;
+    let subtype = AnnotationSubtype::from_code(annotation.subtype_code());
+    if subtype != AnnotationSubtype::Stamp {
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            format!("a {} annotation has no 'appearance' resource", subtype.as_str()),
+        ));
+    }
+    unturned_appearance(&annotation)?.ok_or_else(|| {
+        EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "the annotation has no normal appearance to read",
+        )
+    })
+}
+
+/// An annotation's normal appearance as a one-page drawing document, saved
+/// (`EPDFAnnot_ExportAppearance`), without the turn the annotation reads: a
+/// copy made from its data turns it again (`exportUnturnedAppearance`).
+/// `None` when there is no normal appearance.
+pub fn unturned_appearance(
+    annotation: &pdfium::Annotation<'_>,
+) -> Result<Option<Vec<u8>>, EngineError> {
+    let exported = match read_annotation_turn(annotation) {
+        None => annotation.export_appearance(0.0, None),
+        Some(turn) => annotation.export_appearance(
+            pdf_from_clockwise(turn.rotation) as f32,
+            Some(RectF {
+                left: turn.content_box.left as f32,
+                top: turn.content_box.top as f32,
+                right: turn.content_box.right as f32,
+                bottom: turn.content_box.bottom as f32,
+            }),
+        ),
+    };
+    exported.map_err(|_| {
+        EngineError::with_message(EngineErrorCode::DocOpenFailed, "failed to save the appearance")
+    })
+}
+
+/// The scale the page has at `viewport`, as a full-page render would use it
+/// (`viewportScale`): a `Scale` viewport's own, or a `Width` viewport's width
+/// over the width of the page as `rotation` turns it.
+fn viewport_scale(
+    viewport: Option<RenderViewport>,
+    page_width: f64,
+    page_height: f64,
+    rotation: PdfRotation,
+) -> Result<f64, EngineError> {
+    match viewport {
+        None => Ok(1.0),
+        Some(RenderViewport::Scale { scale }) => Ok(normalize_scale(scale)),
+        // An appearance takes a screen viewport (`PageScreenViewport`). A
+        // `dpi` one reaches `viewportScale`'s width branch with no width,
+        // and is refused there.
+        Some(RenderViewport::Dpi { .. }) => Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "render viewport width must be positive",
+        )),
+        Some(RenderViewport::Width { width }) => {
+            let page_width =
+                if matches!(rotation, PdfRotation::Clockwise90 | PdfRotation::Clockwise270) {
+                    page_height
+                } else {
+                    page_width
+                };
+            // `!(page_width > 0)`, which also refuses a NaN.
+            if !width.is_finite()
+                || width <= 0.0
+                || page_width.partial_cmp(&0.0) != Some(std::cmp::Ordering::Greater)
+            {
+                return Err(EngineError::with_message(
+                    EngineErrorCode::InvalidArg,
+                    "render viewport width must be positive",
+                ));
+            }
+            Ok(width / page_width)
+        }
+    }
 }
 
 /// A scale that is not a usable number becomes one.
@@ -341,45 +561,115 @@ fn normalize_scale(scale: f64) -> f64 {
     if scale.is_finite() && scale > 0.0 { scale } else { 1.0 }
 }
 
-/// An empty request means normal, which is what nearly every document has.
-fn resolve_modes(requested: &[AppearanceModeName]) -> Vec<AppearanceModeName> {
+/// The modes a request asks for, in [`MODES`] order (`appearanceModesOf`):
+/// every mode when it names none. An empty list asks for nothing and is
+/// refused.
+fn resolve_modes(
+    requested: Option<&[AppearanceModeName]>,
+) -> Result<Vec<AppearanceModeName>, EngineError> {
+    let every = MODES.map(|(name, _, _)| name);
+    let Some(requested) = requested else {
+        return Ok(every.to_vec());
+    };
     if requested.is_empty() {
-        return vec![AppearanceModeName::Normal];
+        return Err(EngineError::with_message(
+            EngineErrorCode::InvalidArg,
+            "modes must name at least one mode",
+        )
+        .with_details(serde_json::json!({ "field": "modes" })));
     }
-    requested.to_vec()
+    Ok(every.into_iter().filter(|mode| requested.contains(mode)).collect())
 }
 
 #[cfg(test)]
 mod tests {
-    use super::super::subtype::AnnotationSubtype;
     use super::*;
 
+    /// `box` turned by `degrees` (clockwise) about its middle: the `/Rect`
+    /// a drawing that stays inside the turned box has.
+    fn turned(content_box: PdfRect, degrees: f64) -> PdfRect {
+        pdf_rect_turned_bounds(content_box, degrees)
+    }
+
+    const BOX: PdfRect = PdfRect { left: 240.0, bottom: 600.0, right: 340.0, top: 660.0 };
+
     #[test]
-    fn the_box_family_is_the_five_subtypes_whose_readers_carry_the_rotation_pair() {
-        // Stated against the subtype catalog rather than as five numbers, so
-        // a renumbering is caught here and not by a picture drawn in the
-        // wrong place.
-        let expected = [
+    fn only_a_box_kind_whose_drawing_stays_inside_its_turned_box_renders_upright() {
+        // `appearanceTurn.ts`: stated against the subtype catalog rather than
+        // as five numbers, so a renumbering is caught here and not by a
+        // picture drawn in the wrong place.
+        for subtype in [
             AnnotationSubtype::FreeText,
             AnnotationSubtype::Square,
             AnnotationSubtype::Circle,
             AnnotationSubtype::Stamp,
             AnnotationSubtype::Caret,
-        ];
-        assert_eq!(BOX_FAMILY.len(), expected.len());
-        for subtype in expected {
-            assert!(BOX_FAMILY.contains(&subtype.code()), "{subtype:?}");
+        ] {
+            assert_eq!(
+                pdf_appearance_turn_of(subtype.code(), turned(BOX, 330.0), BOX, 330.0, None),
+                Some(330.0),
+                "{subtype:?}",
+            );
         }
-        // The vertex kinds must NOT be here: their rotation is baked into
-        // their geometry, so stripping a matrix would move the drawing.
+        // A kind drawn from points has its turn in its points: nothing to
+        // take out.
         for subtype in [
             AnnotationSubtype::Line,
             AnnotationSubtype::Polygon,
             AnnotationSubtype::Polyline,
             AnnotationSubtype::Ink,
         ] {
-            assert!(!BOX_FAMILY.contains(&subtype.code()), "{subtype:?}");
+            assert_eq!(
+                pdf_appearance_turn_of(subtype.code(), turned(BOX, 330.0), BOX, 330.0, None),
+                None,
+                "{subtype:?}",
+            );
         }
+        let square = AnnotationSubtype::Square.code();
+        // A drawing that reaches past its turned box (a cloudy border's
+        // bumps) renders as the page shows it.
+        let wider = PdfRect { left: 200.0, ..turned(BOX, 330.0) };
+        assert_eq!(pdf_appearance_turn_of(square, wider, BOX, 330.0, None), None);
+        // Upright is no turn.
+        assert_eq!(pdf_appearance_turn_of(square, BOX, BOX, 0.0, None), None);
+        // A callout's line isn't turned.
+        let free_text = AnnotationSubtype::FreeText.code();
+        assert_eq!(
+            pdf_appearance_turn_of(
+                free_text,
+                turned(BOX, 330.0),
+                BOX,
+                330.0,
+                Some(FreeTextIntent::FreeTextCallout),
+            ),
+            None,
+        );
+        assert_eq!(
+            pdf_appearance_turn_of(
+                free_text,
+                turned(BOX, 330.0),
+                BOX,
+                330.0,
+                Some(FreeTextIntent::FreeText),
+            ),
+            Some(330.0),
+        );
+    }
+
+    #[test]
+    fn a_clockwise_turn_goes_to_the_fork_counterclockwise() {
+        // `pdfFromClockwise`: 330 clockwise is 30 counterclockwise.
+        assert_eq!(pdf_from_clockwise(330.0), 30.0);
+        assert_eq!(pdf_from_clockwise(90.0), -90.0);
+        assert_eq!(pdf_from_clockwise(180.0), 180.0);
+        assert_eq!(pdf_from_clockwise(0.0), 0.0);
+    }
+
+    #[test]
+    fn a_widget_is_the_forms_and_everything_else_the_annotations() {
+        assert_eq!(AnnotationFamily::of_code(code::WIDGET), AnnotationFamily::Widgets);
+        assert_eq!(AnnotationFamily::of_code(code::SQUARE), AnnotationFamily::Annotations);
+        assert_eq!(AnnotationFamily::of_code(code::STAMP), AnnotationFamily::Annotations);
     }
 
     #[test]
@@ -392,9 +682,30 @@ mod tests {
     }
 
     #[test]
-    fn no_requested_mode_means_normal() {
-        assert_eq!(resolve_modes(&[]), vec![AppearanceModeName::Normal]);
-        assert_eq!(resolve_modes(&[AppearanceModeName::Down]), vec![AppearanceModeName::Down],);
+    fn a_width_viewport_is_the_width_of_the_turned_page() {
+        let scale = |viewport, rotation| viewport_scale(viewport, 200.0, 400.0, rotation);
+        assert_eq!(scale(None, PdfRotation::None), Ok(1.0));
+        assert_eq!(
+            scale(Some(RenderViewport::Scale { scale: 3.0 }), PdfRotation::Clockwise90),
+            Ok(3.0)
+        );
+        assert_eq!(scale(Some(RenderViewport::Width { width: 400.0 }), PdfRotation::None), Ok(2.0));
+        assert_eq!(
+            scale(Some(RenderViewport::Width { width: 400.0 }), PdfRotation::Clockwise90),
+            Ok(1.0)
+        );
+        let refused = scale(Some(RenderViewport::Width { width: 0.0 }), PdfRotation::None)
+            .expect_err("a zero width is refused");
+        assert_eq!(refused.code, EngineErrorCode::InvalidArg);
+    }
+
+    #[test]
+    fn no_modes_means_every_mode_and_an_empty_list_is_refused() {
+        use AppearanceModeName::{Down, Normal, Rollover};
+        assert_eq!(resolve_modes(None), Ok(vec![Normal, Rollover, Down]));
+        assert_eq!(resolve_modes(Some(&[Down, Normal])), Ok(vec![Normal, Down]));
+        let refused = resolve_modes(Some(&[])).expect_err("an empty list is refused");
+        assert_eq!(refused.code, EngineErrorCode::InvalidArg);
     }
 
     #[test]

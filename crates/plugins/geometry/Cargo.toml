@@ -20,3 +20,6 @@ serde = { version = "1", features = ["derive"] }
 epdf-kernel = { path = "../../epdf-kernel", optional = true }
 serde_json = { version = "1", features = ["float_roundtrip"], optional = true }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }

@@ -1,0 +1,62 @@
+(node:38953) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current dispatcher executes document work before deferred navigation and URI callbacks (652.297208ms)
+✔ current tree reads return catalog, field, page and annotation trees through current services (3.129542ms)
+✔ every owned dispatch and submit result, observer report and callback order has an exact semantic expectation (31.088625ms)
+✔ raw tree resolution uses current refs, returns exact values and memoizes the catalog (1.576ms)
+✔ hide resolves fields and widgets through the forms plane before annotation patches (1.931709ms)
+✔ submit normalizes the resolver intent and sends current request fields and ISO clock to the home (1.731333ms)
+✔ handler acceptance bypasses the home, exposes the optional delegate and detached failure stays external (1.367291ms)
+✔ queued execution does not run or settle later work before the deferred executor answers (1.217667ms)
+✔ settings patches retain untouched policy origins and canExecute follows current policy (1.819959ms)
+✔ event listeners report exceptions to the kernel and preserve sibling delivery and unsubscribe identity (1.46025ms)
+✔ pure trigger descriptors and URL encoding have exact independent results (0.191458ms)
+✔ current factory preserves actual scripting enablement with null or omitted overrides (0.063167ms)
+✔ all 29 link inputs and exact outcomes remain frozen (92.322167ms)
+✔ every owned operation and diagnostic callback payload is precisely accounted for (21.163167ms)
+✔ named execution events carry the current source/tree/result and preserve link provenance (0.915ms)
+✔ legacy registrations, builders and deferred scenario source sections remain byte exact (0.736708ms)
+✔ current registered factory keeps a scripting realm enabled with a null factory override (0.770542ms)
+(node:38954) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ page triggers preserve O/PO, PC/C and visibility fan-out order (651.287625ms)
+✔ all 42 cases assert complete current results, exact callback order and named negative channels (32.016667ms)
+✔ M14 executor print distinguishes kernel origin refusal, adapter policy and accepted user print (2.073042ms)
+✔ every case pins engine arguments, catalog/cache reads, diagnostic event payloads and all promise settlements (0.45875ms)
+✔ six annotation events and first-party hints preserve full origin/source/event and execution notifications (0.144459ms)
+✔ adapter installation coalesces reports and completion observers run once after both document steps (0.105167ms)
+✔ slow page reads and save operations retain call order; held print observes adapter disposal before settlement (0.110125ms)
+✔ cache invalidation and close/reopen own current document subscriptions and drop all old registrations (0.084125ms)
+✔ all registry event channels and canDispatch booleans remain explicit (0.246459ms)
+✔ prior C2 current 76 complete inputs and exact outcomes remain unchanged (35.111708ms)
+✔ all 42 original occurrences remain archived and all current inputs match the C3 mapping (9.022625ms)
+(node:38955) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ current hover driver calls the shipping pump with paired exit and enter triggers (642.400083ms)
+✔ script cases pin complete successful, inert, failed and budget outcomes independently (34.286541ms)
+✔ hover coalesces only intermediate targets and releases paired work atomically (4.072208ms)
+✔ hover compares stable object and base-index addresses and preserves current scope and source (2.179625ms)
+✔ scripts commit typed current form effects before annotation effects and skip failed streams (3.377625ms)
+✔ script world preserves current form values, page-space annotation conversion, identity and event refs (0.919167ms)
+✔ script provenance retains all 24 field/link/annotation/page/document event inputs (5.289166ms)
+✔ configured and default environment inputs use owner claims, target seed, host clock and exact budgets (3.995ms)
+✔ script realm faults rebuild and caller/document cleanup disposes actual resources (3.142959ms)
+✔ form surface preserves UI arguments, boot/user phases, detached/permission/reentrant refusals and observer isolation (4.778792ms)
+✔ external print and submit run after transaction outputs and respect executor origin policy (1.797791ms)
+✔ exact rejection and host-report channels remain separately named with no pending returned calls (31.378375ms)
+✔ enabled default factory stays enabled, exposes settings and closes without a scripted VM substitution (0.783167ms)
+✔ all external script diagnostic, failure and action diagnostic channels are exact and source-derived (21.205875ms)
+✔ prior C3 complete current 42 inputs and exact runtime outcomes remain unchanged (27.796083ms)
+✔ every C4 original occurrence and current input/outcome has an exact accounted mapping (41.745458ms)
+✔ world reads use actual current operation arguments and never synthesize owner apply or mutation facts (27.064416ms)
+✔ source provenance, frozen archives and aggregate authority hashes remain exact (7.472333ms)
+✔ transaction ports return literal body and detached boot/run outputs (1.900375ms)
+✔ boot without effects reads the world once and failed runs never invoke either commit sink (1.0465ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1795.316542

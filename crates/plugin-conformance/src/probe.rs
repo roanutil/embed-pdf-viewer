@@ -7,14 +7,14 @@ use std::rc::Rc;
 
 use epdf_kernel::error::plugin_error;
 use epdf_kernel::event_hook::EventHookSource;
-use epdf_kernel::geometry::{PageRef, PageSpace, PdfEdges, Point, Quad, Rect};
-use epdf_kernel::plugin::{ControllerContext, Created, EffectContext, PluginContext, PluginDef};
+use epdf_kernel::geometry::PageRef;
+use epdf_kernel::plugin::{ControllerContext, Created, EffectContext, PluginDef};
 use epdf_kernel::rt::Promise;
-use epdf_kernel::scope::{Teardown, cancelled};
+use epdf_kernel::scope::cancelled;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::{SliceJson, SliceReducer, SliceState};
 use epdf_kernel::types::PluginScope;
-use epdf_kernel::{Action, AnyPlugin, AnyToken, DOCUMENTS, Error};
+use epdf_kernel::{AnyPlugin, AnyToken, DOCUMENTS, Error};
 use serde_json::{Value, json};
 
 use crate::harness::{Harness, HarnessPlugin, Outcome};
@@ -37,29 +37,6 @@ fn finish(step: Option<&Value>, h: &Harness) -> Result<Option<Promise<()>>, Erro
     Ok(None)
 }
 
-/// A probe's capability.
-#[derive(Clone)]
-pub struct ProbeCapability {
-    ctx: PluginContext,
-    harness: Harness,
-    name: String,
-}
-
-const MEMBERS: &[&str] = &[
-    "dispatch",
-    "state",
-    "document",
-    "core",
-    "documentId",
-    "handleId",
-    "handleFor",
-    "get",
-    "tryGet",
-    "forDocument",
-    "tryForDocument",
-    "cleanup",
-];
-
 fn arg(args: &[Value], i: usize) -> Option<&Value> {
     args.get(i).filter(|v| !epdf_kernel::is_undefined(v))
 }
@@ -68,73 +45,7 @@ fn str_arg(args: &[Value], i: usize) -> String {
     arg(args, i).and_then(Value::as_str).unwrap_or_default().to_string()
 }
 
-impl ProbeCapability {
-    fn call(&self, method: &str, args: &[Value]) -> Outcome {
-        let ctx = &self.ctx;
-        let value = |v: Value| Outcome::Returned(v);
-        let result = |r: Result<bool, Error>| match r {
-            Ok(b) => Outcome::Returned(json!(b)),
-            Err(e) => Outcome::Threw(e),
-        };
-        match method {
-            "dispatch" => {
-                let action = arg(args, 0).cloned().unwrap_or(Value::Null);
-                ctx.dispatch_any(&action);
-                value(epdf_kernel::undefined())
-            }
-            "state" => value(match ctx.state_any() {
-                Some(state) => state.downcast_ref::<Value>().cloned().unwrap_or(Value::Null),
-                None => epdf_kernel::undefined(),
-            }),
-            "document" => {
-                value(ctx.document().map_or(Value::Null, |m| serde_json::to_value(m).unwrap()))
-            }
-            "core" => value(serde_json::to_value(&*ctx.core()).unwrap()),
-            "documentId" => value(ctx.document_id().map_or(Value::Null, |d| json!(d))),
-            "handleId" => value(ctx.doc().map_or(Value::Null, |d| json!(d.id()))),
-            "handleFor" => {
-                let id = arg(args, 0).and_then(Value::as_str);
-                value(ctx.document_handle(id).map_or(Value::Null, |d| json!(d.id())))
-            }
-            "get" => {
-                result(ctx.get_any(&self.harness.token(&str_arg(args, 0), None)).map(|_| true))
-            }
-            "tryGet" => result(
-                ctx.try_get_any(&self.harness.token(&str_arg(args, 0), None)).map(|c| c.is_some()),
-            ),
-            "forDocument" => result(
-                ctx.for_document_any(
-                    &self.harness.token(&str_arg(args, 0), None),
-                    &str_arg(args, 1),
-                )
-                .map(|_| true),
-            ),
-            "tryForDocument" => result(
-                ctx.try_for_document_any(
-                    &self.harness.token(&str_arg(args, 0), None),
-                    &str_arg(args, 1),
-                )
-                .map(|c| c.is_some()),
-            ),
-            "cleanup" => {
-                let label = arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined);
-                let h = self.harness.clone();
-                let name = self.name.clone();
-                ctx.cleanup_fn(move || h.log(&format!("{name}.cleanup"), vec![label]));
-                value(epdf_kernel::undefined())
-            }
-            other => {
-                Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function")))
-            }
-        }
-    }
-}
-
 pub struct Probe;
-
-fn where_of(ctx: &PluginContext) -> Value {
-    ctx.document_id().map_or(Value::Null, |d| json!(d))
-}
 
 fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
     let config = config.clone();
@@ -168,155 +79,18 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         _ => PluginScope::Workspace,
     };
 
-    let initial = config.get("initialState").cloned();
-    let initial_state: Rc<dyn Fn() -> SliceState> =
-        Rc::new(move || Rc::new(initial.clone().unwrap_or_else(|| json!({}))) as SliceState);
-
-    let rules = config.get("reduce").cloned().unwrap_or(Value::Null);
-    let reducer: SliceReducer = Rc::new(move |state: &SliceState, action: &dyn Action| {
-        let action = action.to_json();
-        let kind = action.get("type").and_then(Value::as_str).unwrap_or_default();
-        match rules.get(kind).and_then(Value::as_str) {
-            Some("replace") => {
-                Some(Rc::new(action.get("state").cloned().unwrap_or_else(epdf_kernel::undefined))
-                    as SliceState)
-            }
-            Some("merge") => {
-                let mut next = state
-                    .downcast_ref::<Value>()
-                    .and_then(Value::as_object)
-                    .cloned()
-                    .unwrap_or_default();
-                if let Some(patch) = action.get("state").and_then(Value::as_object) {
-                    for (k, v) in patch {
-                        next.insert(k.clone(), v.clone());
-                    }
-                }
-                Some(Rc::new(Value::Object(next)) as SliceState)
-            }
-            _ => None,
-        }
+    let initial = config.get("state").cloned();
+    let initial_state: Rc<dyn Fn() -> SliceState> = Rc::new(move || {
+        Rc::new(initial.clone().unwrap_or_else(epdf_kernel::undefined)) as SliceState
     });
+
+    let reducer: SliceReducer = Rc::new(|_, _| None);
     let to_json: SliceJson =
-        Rc::new(|state: &dyn Any| state.downcast_ref::<Value>().cloned().unwrap_or(Value::Null));
-
-    let create_config = config.get("create").filter(|v| v.is_object()).cloned();
-    let create = create_config.clone().map(|create| {
-        let h = h.clone();
-        let name = name.clone();
-        Rc::new(move |cx: ControllerContext| create_api(&name, &create, &h, cx))
-            as epdf_kernel::plugin::CreateFn
-    });
-    let capability = token.as_ref().filter(|_| create_config.is_none()).map(|_| {
-        let h = h.clone();
-        let name = name.clone();
-        let throws = config.get("capabilityThrows").cloned();
-        Rc::new(move |ctx: PluginContext| {
-            h.log(&format!("{name}.capability"), vec![where_of(&ctx)]);
-            if let Some(error) = &throws {
-                return Err(Error::from_spec(error));
-            }
-            Ok(Rc::new(ProbeCapability { ctx, harness: h.clone(), name: name.clone() })
-                as Rc<dyn Any>)
-        }) as epdf_kernel::plugin::CapabilityFn
-    });
-
-    let init =
-        config.get("init").filter(|v| !v.is_null() && *v != &Value::Bool(false)).cloned().map(
-            |step| {
-                let h = h.clone();
-                let name = name.clone();
-                Rc::new(move |ctx: PluginContext| {
-                    h.log(&format!("{name}.init"), vec![where_of(&ctx)]);
-                    finish(Some(&step), &h)
-                }) as epdf_kernel::plugin::InitFn
-            },
-        );
-
-    let effects = config.get("effects").filter(|v| !v.is_null()).cloned().map(|effects| {
-        let h = h.clone();
-        let name = name.clone();
-        Rc::new(move |fx: EffectContext| {
-            h.log(&format!("{name}.effects"), vec![where_of(&fx)]);
-            if let Some(error) = effects.get("throws") {
-                return Err(Error::from_spec(error));
-            }
-            let listener_throws = effects.get("listenerThrows").cloned();
-            let listened = {
-                let h = h.clone();
-                let name = name.clone();
-                Rc::new(move |what: &str, args: Vec<Value>| -> Result<(), Error> {
-                    h.log(&format!("{name}.{what}"), args);
-                    match &listener_throws {
-                        Some(error) => Err(Error::from_spec(error)),
-                        None => Ok(()),
-                    }
-                })
-            };
-            for kind in effects.get("onAction").and_then(Value::as_array).into_iter().flatten() {
-                let listened = listened.clone();
-                let at = where_of(&fx);
-                fx.on_action(kind.as_str().unwrap_or_default(), move |action| {
-                    listened("onAction", vec![at.clone(), action.to_json()])
-                });
-            }
-            if effects.get("watchActive").and_then(Value::as_bool) == Some(true) {
-                let listened = listened.clone();
-                let at = where_of(&fx);
-                let ctx = fx.ctx.clone();
-                fx.watch(
-                    move || ctx.core().active_id.clone(),
-                    |a, b| a == b,
-                    move |next, previous| {
-                        let show =
-                            |v: &Option<String>| v.as_ref().map_or(Value::Null, |s| json!(s));
-                        listened("watchActive", vec![at.clone(), show(next), show(previous)])
-                    },
-                );
-            }
-            if effects.get("watchState").and_then(Value::as_bool) == Some(true) {
-                let listened = listened.clone();
-                let at = where_of(&fx);
-                let ctx = fx.ctx.clone();
-                let relay = std::cell::RefCell::new(effects.get("watchDispatchOnce").cloned());
-                let dispatcher = fx.ctx.clone();
-                fx.watch(
-                    move || ctx.state_any(),
-                    // `Object.is` on the state object.
-                    |a, b| match (a, b) {
-                        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
-                        (None, None) => true,
-                        _ => false,
-                    },
-                    move |next, previous| {
-                        let action = relay.borrow_mut().take();
-                        if let Some(action) = action {
-                            dispatcher.dispatch_any(&action);
-                        }
-                        let show = |v: &Option<SliceState>| match v {
-                            Some(s) => s.downcast_ref::<Value>().cloned().unwrap_or(Value::Null),
-                            None => epdf_kernel::undefined(),
-                        };
-                        listened("watchState", vec![at.clone(), show(next), show(previous)])
-                    },
-                );
-            }
-            if let Some(step) = effects.get("cleanup").filter(|v| !v.is_null()).cloned() {
-                let h = h.clone();
-                let name = name.clone();
-                let at = where_of(&fx);
-                let teardown: Teardown = Box::new(move || {
-                    h.log(&format!("{name}.teardown"), vec![at]);
-                    finish(Some(&step), &h)
-                });
-                fx.cleanup(teardown);
-            }
-            if let Some(action) = effects.get("dispatch") {
-                fx.dispatch_any(action);
-            }
-            Ok(())
-        }) as epdf_kernel::plugin::EffectsFn
-    });
+        Rc::new(|state| state.downcast_ref::<Value>().cloned().unwrap_or(Value::Null));
+    let (h, create_name) = (h.clone(), name.clone());
+    let create =
+        Some(Rc::new(move |cx: ControllerContext| create_api(&create_name, &config, &h, cx))
+            as epdf_kernel::plugin::CreateFn);
 
     Ok(Rc::new(PluginDef {
         id: name,
@@ -328,10 +102,13 @@ fn build(config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
         reducer,
         to_json,
         to_text: None,
-        capability,
-        init,
-        effects,
+        settings: None,
+        capability: None,
+        init: None,
+        effects: None,
         create,
+        resolves_any_capability: false,
+        in_scope: None,
     }))
 }
 
@@ -365,16 +142,14 @@ impl HarnessPlugin for Probe {
         if let Some(controller) = capability.downcast_ref::<ProbeController>() {
             return Some(controller.call(method, &args));
         }
-        let probe = capability.downcast_ref::<ProbeCapability>()?;
-        Some(probe.call(method, &args))
+        None
     }
 
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
         if capability.downcast_ref::<ProbeController>().is_some() {
             return Some(API.to_vec());
         }
-        capability.downcast_ref::<ProbeCapability>()?;
-        Some(MEMBERS.to_vec())
+        None
     }
 }
 
@@ -384,7 +159,9 @@ impl HarnessPlugin for Probe {
 const API: &[&str] = &[
     "instanceId",
     "state",
-    "dispatch",
+    "replaceState",
+    "mergeState",
+    "sameState",
     "docCall",
     "pageCall",
     "allows",
@@ -401,8 +178,6 @@ const API: &[&str] = &[
     "latestCancel",
     "latestRunning",
     "acquire",
-    "forPage",
-    "tryForPage",
     "assertPageRef",
     "getPage",
     "get",
@@ -411,6 +186,12 @@ const API: &[&str] = &[
     "tryForDocument",
     "cleanup",
     "signalReason",
+    "document",
+    "documentId",
+    "handleId",
+    "handleFor",
+    "pageOf",
+    "notify",
 ];
 
 /// `controller.abort()` with no reason: the platform's `DOMException`.
@@ -448,30 +229,6 @@ fn strict_equal(a: &Value, b: &Value) -> bool {
     }
 }
 
-fn describe_space(space: &PageSpace) -> Value {
-    let point = Point { x: 10.0, y: 20.0 };
-    let quad = Quad {
-        p1: Point { x: 1.0, y: 2.0 },
-        p2: Point { x: 3.0, y: 2.0 },
-        p3: Point { x: 1.0, y: 4.0 },
-        p4: Point { x: 3.0, y: 4.0 },
-    };
-    let edges = space.page_rect_to_pdf(Rect { x: 10.0, y: 20.0, width: 20.0, height: 40.0 });
-    json!({
-        "crop": space.crop,
-        "width": space.width,
-        "height": space.height,
-        "pdfToPage": space.pdf_to_page(point),
-        "pageToPdf": space.page_to_pdf(point),
-        "pdfOriginToPage": space.pdf_to_page(Point { x: 0.0, y: 0.0 }),
-        "pageOriginToPdf": space.page_to_pdf(Point { x: 0.0, y: 0.0 }),
-        "pdfRectToPage": space.pdf_rect_to_page(PdfEdges { left: 10.0, bottom: 20.0, right: 30.0, top: 60.0 }),
-        "pageRectToPdf": { "left": edges.left, "right": edges.right, "top": edges.top, "bottom": edges.bottom },
-        "pdfQuadToPage": space.pdf_quad_to_page(quad),
-        "pageQuadToPdf": space.page_quad_to_pdf(quad),
-    })
-}
-
 /// A `create` probe's api.
 pub struct ProbeController {
     cx: ControllerContext,
@@ -491,7 +248,7 @@ fn create_api(
         &format!("{name}.create"),
         vec![cx.document_id().map_or(Value::Null, |d| json!(d)), json!(cx.instance_id())],
     );
-    if let Some(error) = config.get("throws") {
+    if let Some(error) = config.get("createThrows") {
         return Err(Error::from_spec(error));
     }
     let source = cx.event_source::<Value>();
@@ -502,59 +259,131 @@ fn create_api(
         source,
         controllers: RefCell::new(HashMap::new()),
     });
-    let connect =
-        config.get("connect").filter(|c| !c.is_null() && **c != Value::Bool(false)).cloned().map(
-            |connect| {
-                let (h, name, cx) = (h.clone(), name.to_string(), cx.clone());
-                Rc::new(move || -> Result<(), Error> {
-                    h.log(
-                        &format!("{name}.connect"),
-                        vec![cx.document_id().map_or(Value::Null, |d| json!(d))],
-                    );
-                    if connect.is_boolean() {
-                        return Ok(());
-                    }
-                    if let Some(error) = connect.get("throws") {
-                        return Err(Error::from_spec(error));
-                    }
-                    if let Some(action) = connect.get("dispatch") {
-                        cx.dispatch_any(action);
-                    }
-                    if connect.get("listenDoc").and_then(Value::as_bool) == Some(true) {
-                        let (h, name) = (h.clone(), name.clone());
-                        let off = cx.doc()?.subscribe(Rc::new(move |event: &Value| {
+    let connect = config
+        .get("connect")
+        .filter(|c| !c.is_null() && **c != Value::Bool(false))
+        .cloned()
+        .map(|connect| {
+            let (h, name, cx) = (h.clone(), name.to_string(), cx.clone());
+            Rc::new(move || -> Result<(), Error> {
+                h.log(
+                    &format!("{name}.connect"),
+                    vec![cx.document_id().map_or(Value::Null, |d| json!(d))],
+                );
+                if connect.is_boolean() {
+                    return Ok(());
+                }
+                if let Some(error) = connect.get("throws") {
+                    return Err(Error::from_spec(error));
+                }
+                let at = cx.document_id().map_or(Value::Null, |d| json!(d));
+                if connect.get("watchState").and_then(Value::as_bool) == Some(true) {
+                    let (h, name, cx, at) = (h.clone(), name.clone(), cx.clone(), at.clone());
+                    let relay = RefCell::new(connect.get("watchMergeOnce").cloned());
+                    let listener_error = connect.get("listenerThrows").cloned();
+                    let lease = cx.lease().clone();
+                    let owner = cx.clone();
+                    let off = lease.on_change(move |change| {
+                        let patch = relay.borrow_mut().take();
+                        if let Some(patch) = patch {
+                            let next = merge_state(&cx, &patch);
+                            cx.lease().write(Rc::new(next));
+                        }
+                        let show = |v: &SliceState| {
+                            v.downcast_ref::<Value>()
+                                .cloned()
+                                .unwrap_or_else(epdf_kernel::undefined)
+                        };
+                        h.log(
+                            &format!("{name}.watchState"),
+                            vec![at.clone(), show(&change.next), show(&change.previous)],
+                        );
+                        listener_error.as_ref().map_or(Ok(()), |e| Err(Error::from_spec(e)))
+                    });
+                    owner.listen(off);
+                }
+                if connect.get("watchActive").and_then(Value::as_bool) == Some(true) {
+                    let docs = cx.get(&*DOCUMENTS)?;
+                    let (h, name, at) = (h.clone(), name.clone(), at.clone());
+                    let listener_error = connect.get("listenerThrows").cloned();
+                    EffectContext { ctx: cx.plugin_context().clone() }.watch(
+                        move || docs.get_active_id(),
+                        |a, b| a == b,
+                        move |next, previous| {
                             h.log(
-                                &format!("{name}.docEvent"),
-                                vec![event.get("type").cloned().unwrap_or(Value::Null)],
+                                &format!("{name}.watchActive"),
+                                vec![at.clone(), json!(next), json!(previous)],
                             );
-                        }));
+                            listener_error.as_ref().map_or(Ok(()), |e| Err(Error::from_spec(e)))
+                        },
+                    );
+                }
+                if let Some(step) =
+                    connect.get("cleanup").filter(|s| **s != Value::Bool(false)).cloned()
+                {
+                    let (h, name, at) = (h.clone(), name.clone(), at.clone());
+                    cx.cleanup(Box::new(move || {
+                        h.log(&format!("{name}.teardown"), vec![at]);
+                        finish(Some(&step), &h)
+                    }));
+                }
+                if let Some(value) = connect.get("replaceState") {
+                    cx.lease().write(Rc::new(value.clone()));
+                }
+                if let Some(token) = connect.get("tryGet").and_then(Value::as_str) {
+                    h.log(
+                        &format!("{name}.tryGet"),
+                        vec![json!(token), json!(cx.try_get_any(&h.token(token, None))?.is_some())],
+                    );
+                }
+                if connect.get("listenDoc").and_then(Value::as_bool) == Some(true) {
+                    let (h, name) = (h.clone(), name.clone());
+                    let off = cx.doc()?.subscribe(Rc::new(move |event: &Value| {
+                        h.log(
+                            &format!("{name}.docEvent"),
+                            vec![event.get("type").cloned().unwrap_or(Value::Null)],
+                        );
+                    }));
+                    cx.listen(off);
+                }
+                if let Some(pon) = connect.get("readPage").and_then(Value::as_u64) {
+                    let page = PageRef::new(pon as u32);
+                    let index = cx
+                        .get_page(page)
+                        .and_then(|p| p.get("index").cloned())
+                        .unwrap_or(Value::Null);
+                    let width = cx
+                        .get_page(page)
+                        .and_then(|p| p.get("size").and_then(|s| s.get("width")).cloned())
+                        .unwrap_or(Value::Null);
+                    h.log(&format!("{name}.page"), vec![index, width]);
+                }
+                if connect.get("listenActive").and_then(Value::as_bool) == Some(true) {
+                    let documents = cx.get(&*DOCUMENTS)?;
+                    if let Some(events) = documents.events() {
+                        let (h, name) = (h.clone(), name.clone());
+                        let off = events.active_changed.on(move |event| {
+                            h.log(&format!("{name}.activeChanged"), vec![event.clone()]);
+                            Ok(())
+                        });
                         cx.listen(off);
                     }
-                    if let Some(pon) = connect.get("readPage").and_then(Value::as_u64) {
-                        let page = PageRef::new(pon as u32);
-                        let index = cx
-                            .get_page(page)
-                            .and_then(|p| p.get("index").cloned())
-                            .unwrap_or(Value::Null);
-                        let width = cx.try_for_page(page).map_or(Value::Null, |s| json!(s.width));
-                        h.log(&format!("{name}.page"), vec![index, width]);
-                    }
-                    if connect.get("listenActive").and_then(Value::as_bool) == Some(true) {
-                        let documents = cx.get(&*DOCUMENTS)?;
-                        if let Some(events) = documents.events() {
-                            let (h, name) = (h.clone(), name.clone());
-                            let off = events.active_changed.on(move |event| {
-                                h.log(&format!("{name}.activeChanged"), vec![event.clone()]);
-                                Ok(())
-                            });
-                            cx.listen(off);
-                        }
-                    }
-                    Ok(())
-                }) as epdf_kernel::plugin::ConnectFn
-            },
-        );
+                }
+                Ok(())
+            }) as epdf_kernel::plugin::ConnectFn
+        });
     Ok(Created { api: api as Rc<dyn Any>, connect })
+}
+
+fn merge_state(cx: &ControllerContext, patch: &Value) -> Value {
+    let mut next = cx
+        .state_any()
+        .and_then(|s| s.downcast_ref::<Value>().and_then(Value::as_object).cloned())
+        .unwrap_or_default();
+    if let Some(patch) = patch.as_object() {
+        next.extend(patch.clone());
+    }
+    Value::Object(next)
 }
 
 impl ProbeController {
@@ -579,8 +408,51 @@ impl ProbeController {
                     .and_then(|s| s.downcast_ref::<Value>().cloned())
                     .unwrap_or(Value::Null),
             ),
-            "dispatch" => {
-                cx.dispatch_any(&arg(args, 0).cloned().unwrap_or(Value::Null));
+            "replaceState" | "mergeState" => {
+                let value = arg(args, 0).cloned().unwrap_or_else(epdf_kernel::undefined);
+                let next = if method == "mergeState" { merge_state(cx, &value) } else { value };
+                cx.lease().write(Rc::new(next));
+                Outcome::undefined()
+            }
+            // `ctx.state.update(s => s)`: a write of the same state, which
+            // still reports a closed instance.
+            "sameState" => {
+                let lease = cx.lease();
+                lease.write(lease.read());
+                Outcome::undefined()
+            }
+            "document" => Outcome::Returned(cx.document().map_or(Value::Null, |d| json!(d))),
+            "documentId" => Outcome::Returned(cx.document_id().map_or(Value::Null, |d| json!(d))),
+            "handleId" => Outcome::from_result(cx.doc().map(|d| json!(d.id()))),
+            "handleFor" => Outcome::Returned(
+                cx.document_handle(arg(args, 0).and_then(Value::as_str))
+                    .map_or(Value::Null, |d| json!(d.id())),
+            ),
+            "pageOf" => {
+                let page = arg(args, 0).cloned().unwrap_or(Value::Null);
+                let found = if let Some(index) = page.as_u64() {
+                    cx.document().and_then(|d| {
+                        d.pages.as_array().and_then(|pages| pages.get(index as usize)).cloned()
+                    })
+                } else {
+                    PageRef::from_json(&page).and_then(|p| cx.get_page(p))
+                };
+                match found {
+                    Some(page) => Outcome::Returned(page),
+                    None => Outcome::Threw(plugin_error(
+                        "not-found",
+                        &self.name,
+                        format!(
+                            "page {} is not in this document",
+                            page.as_u64().or_else(|| page["objectNumber"].as_u64()).unwrap_or(0)
+                        ),
+                        None,
+                        None,
+                    )),
+                }
+            }
+            "notify" => {
+                cx.notify();
                 Outcome::undefined()
             }
             "docCall" => match cx.doc() {
@@ -593,9 +465,6 @@ impl ProbeController {
                     Ok(doc) => doc,
                     Err(error) => return Outcome::Threw(error),
                 };
-                if let Err(error) = doc.page_index(pon) {
-                    return Outcome::Threw(error);
-                }
                 let path = format!("page.{}", str_arg(args, 1));
                 Outcome::Promise(doc.call(
                     &path,
@@ -614,11 +483,24 @@ impl ProbeController {
             "docRead" => match cx.doc() {
                 Ok(doc) => Outcome::Returned(match str_arg(args, 0).as_str() {
                     "id" => json!(doc.id()),
+                    "objectNumbers.held" => json!(doc.held_object_numbers()),
+                    "objectNumbers.take" => match doc.take_object_number() {
+                        Ok(n) => json!(n),
+                        Err(e) => return Outcome::Threw(e),
+                    },
                     "capabilities" => doc.capabilities(),
-                    "security.effectiveScope" => json!(doc.security().effective_scope()),
+                    "security.scope" => json!(doc.security().effective_scope()),
                     "security.identity" => doc.security().identity(),
-                    "security.current" => doc.security().current(),
+                    "security.state" => doc.security().current(),
                     "security.passwordPrompt" => doc.security().password_prompt(),
+                    "security.allowsAnnotation" => json!(doc.security().allows_annotation(
+                        &str_arg(args, 1),
+                        arg(args, 2).unwrap_or(&Value::Null)
+                    )),
+                    "security.allowsField" => json!(
+                        doc.security()
+                            .allows_field(&str_arg(args, 1), arg(args, 2).unwrap_or(&Value::Null))
+                    ),
                     "security.allowsAnnotationCreate" => {
                         json!(doc.security().allows_annotation_create())
                     }
@@ -631,7 +513,9 @@ impl ProbeController {
                     "security.allowsAnnotationGroupAssignment" => {
                         json!(doc.security().allows_annotation_group_assignment(&str_arg(args, 1)))
                     }
-                    "events.lastServerId" => json!(doc.last_server_id()),
+                    "events.lastServerId" => doc
+                        .last_server_id()
+                        .map_or(Value::Null, |n| n.parse::<i64>().map_or(json!(n), |n| json!(n))),
                     _ => epdf_kernel::undefined(),
                 }),
                 Err(error) => Outcome::Threw(error),
@@ -751,16 +635,9 @@ impl ProbeController {
                     }),
                 ))
             }
-            "forPage" | "tryForPage" | "assertPageRef" | "getPage" => {
+            "assertPageRef" | "getPage" => {
                 let page = PageRef::new(arg(args, 0).and_then(Value::as_u64).unwrap_or(0) as u32);
                 match method {
-                    "forPage" => match cx.for_page(page) {
-                        Ok(space) => Outcome::Returned(describe_space(&space)),
-                        Err(error) => Outcome::Threw(error),
-                    },
-                    "tryForPage" => Outcome::Returned(
-                        cx.try_for_page(page).map_or(Value::Null, |space| describe_space(&space)),
-                    ),
                     "assertPageRef" => match cx.assert_page_ref(page) {
                         Ok(()) => Outcome::undefined(),
                         Err(error) => Outcome::Threw(error),

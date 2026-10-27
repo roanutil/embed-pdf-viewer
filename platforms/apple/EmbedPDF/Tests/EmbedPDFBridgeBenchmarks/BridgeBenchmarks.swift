@@ -256,7 +256,7 @@ struct BridgeBenchmarks {
       async let result = o.search.search(SearchQuery(text: "e"))
       for await event in events {
         switch event {
-        case .progress:
+        case .progressChanged:
           scan.events += 1
           if scan.first.isNaN { scan.first = nanoseconds(clock.now - start) }
         case .completed:

@@ -7,19 +7,19 @@ use epdf_kernel::rt::Promise;
 use serde_json::{Value, json};
 
 use crate::blank_page::blank_page_pdf;
-use crate::contract::{Mark, SignatureFieldEvent};
+use crate::contract::{Mark, OperationOptions, SignatureClearedEvent, SignatureFilledEvent};
 use crate::controller::SignatureCapability;
-use crate::promise::await_engine;
-use crate::read::signatures::truthy;
-use crate::services::events::origin_api;
+use crate::js::truthy;
+use crate::promise::adopt;
+use crate::services::errors::verb;
 
 impl SignatureCapability {
-    /// `setAppearance(field, pdf)`: `unsupported` without the engine door,
-    /// `conflict` on a signed field; then the form is re-read.
-    fn set_appearance(&self, field: Value, pdf: Vec<u8>) -> Promise<()> {
+    /// `setAppearance(field, pdf, options)`: `unsupported` without the
+    /// engine door, `conflict` on a signed field.
+    fn set_appearance(&self, field: Value, pdf: Vec<u8>, options: OperationOptions) -> Promise<()> {
         let this = self.clone();
         Promise::spawn(async move {
-            let doc = this.require_doc()?;
+            let doc = this.cx().doc()?;
             if !doc.has("forms.setSignatureAppearance") {
                 return Err(plugin_error(
                     code::UNSUPPORTED,
@@ -32,54 +32,71 @@ impl SignatureCapability {
             if let Some(signature) = this.get_signature(&field)
                 && signature.get("signed").is_some_and(truthy)
             {
-                let name = match signature.get("fieldName") {
-                    Some(Value::String(name)) => name.clone(),
-                    Some(Value::Null) => "null".into(),
-                    Some(other) => other.to_string(),
-                    None => "undefined".into(),
-                };
                 return Err(plugin_error(
                     code::CONFLICT,
                     "signature",
-                    format!("'{name}' is signed"),
+                    format!("'{}' is signed", crate::js::template(signature.get("fieldName"))),
                     None,
                     None,
                 ));
             }
-            await_engine(doc.call(
+            let call = doc.call(
                 "forms.setSignatureAppearance",
                 None,
-                vec![field, json!({ "pdf": Bytes(pdf).to_json(), "pageIndex": 0 })],
-            ))
-            .await?;
-            this.form().refresh().await
+                vec![field, json!({ "pdf": Bytes(pdf).to_json() })],
+            );
+            this.cancellable(options.signal, call).await?;
+            Ok(())
         })
     }
 
-    /// `fillField(field, mark)`: draw the mark into the field; a signed
-    /// field refuses `conflict`.
-    pub fn fill_field(&self, field: Value, mark: Mark) -> Promise<()> {
+    /// `fillField(field, mark, options)`, unwrapped: the placement rule
+    /// calls it as it is.
+    pub(crate) fn fill_field_raw(
+        &self,
+        field: Value,
+        mark: Mark,
+        options: OperationOptions,
+    ) -> Promise<()> {
         let this = self.clone();
-        self.with_busy(move || {
-            Promise::spawn(async move {
-                let bytes = this.mark_bytes(&mark).await?;
-                this.set_appearance(field.clone(), bytes).await?;
-                this.clear_if_target(&field);
-                this.0.events.filled.emit(&SignatureFieldEvent { field, origin: origin_api() });
-                Ok(())
-            })
+        Promise::spawn(async move {
+            this.assert_allowed_field("fill", &field, "signature.fillField")?;
+            let busy = this.clone();
+            adopt(this.with_busy(move || {
+                Promise::spawn(async move {
+                    let bytes = busy.mark_bytes(&mark).await?;
+                    busy.set_appearance(field.clone(), bytes, options).await?;
+                    busy.clear_if_target(&field);
+                    busy.0.events.filled.emit(&SignatureFilledEvent { field });
+                    Ok(())
+                })
+            }))
+            .await
         })
     }
 
-    /// `clearField(field)`: undo a visual fill with a blank appearance.
-    pub fn clear_field(&self, field: Value) -> Promise<()> {
+    /// `fillField(field, mark, options)`: draw a mark into a field without
+    /// signing. Fires `onFilled`. Rejects `permission-denied` for a field
+    /// you may not fill in, `conflict` on a signed field.
+    pub fn fill_field(&self, field: Value, mark: Mark, options: OperationOptions) -> Promise<()> {
+        verb(self.fill_field_raw(field, mark, options))
+    }
+
+    /// `clearField(field, options)`: take a drawn mark out of a field.
+    /// Fires `onCleared`.
+    pub fn clear_field(&self, field: Value, options: OperationOptions) -> Promise<()> {
         let this = self.clone();
-        self.with_busy(move || {
-            Promise::spawn(async move {
-                this.set_appearance(field.clone(), blank_page_pdf()).await?;
-                this.0.events.cleared.emit(&SignatureFieldEvent { field, origin: origin_api() });
-                Ok(())
-            })
-        })
+        verb(Promise::spawn(async move {
+            this.assert_allowed_field("fill", &field, "signature.clearField")?;
+            let busy = this.clone();
+            adopt(this.with_busy(move || {
+                Promise::spawn(async move {
+                    busy.set_appearance(field.clone(), blank_page_pdf(), options).await?;
+                    busy.0.events.cleared.emit(&SignatureClearedEvent { field });
+                    Ok(())
+                })
+            }))
+            .await
+        }))
     }
 }

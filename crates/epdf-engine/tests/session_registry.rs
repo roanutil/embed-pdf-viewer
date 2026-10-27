@@ -138,17 +138,51 @@ fn a_document_needing_a_password_parks_and_keeps_its_bytes() {
 }
 
 #[test]
-fn a_wrong_password_on_an_unparked_document_leaves_nothing_behind() {
-    // DocPasswordIncorrect is not a parkable state: the caller gave a password
-    // and it was wrong, so there is nothing to hold for a retry that a fresh
-    // open would not do better.
+fn a_wrong_password_parks_too_and_the_right_one_unlocks() {
+    // `WorkerHost.handleOpen` parks on a wrong password as on a missing one
+    // (`isPasswordOpenError`): the caller is prompted again, and the retry
+    // does not transfer the document again.
     let mut registry = SessionRegistry::new();
     let key = SessionKey::document("locked");
     let error = registry
         .open_memory(key.clone(), encrypted(), Some("wrong"), SessionAuthority::unrestricted())
         .expect_err("wrong password");
     assert_eq!(error.code, EngineErrorCode::DocPasswordIncorrect);
-    assert!(!registry.contains(&key));
+    assert!(registry.is_locked(&key), "the session did not park");
+
+    let again = registry.unlock_parked(&key, "wrong again").expect_err("still wrong");
+    assert_eq!(again.code, EngineErrorCode::DocPasswordIncorrect);
+    assert!(registry.is_locked(&key), "a wrong unlock dropped the parked session");
+    registry.unlock_parked(&key, "user").expect("unlock");
+    assert_eq!(registry.session(&key).expect("open").page_count().expect("pages"), 1);
+}
+
+#[test]
+fn a_layer_whose_base_needs_a_password_parks_and_unlocks_through_its_base() {
+    // A layer open parks how it loads (`parkLocked`): the base's key and
+    // bytes, and what the layer starts as. The unlock registers the base.
+    let mut registry = SessionRegistry::new();
+    let key = SessionKey::layer("doc", "mine");
+    let error = registry
+        .open_layer_memory(
+            key.clone(),
+            "base",
+            &encrypted(),
+            None,
+            SessionAuthority::unrestricted(),
+        )
+        .expect_err("needs a password");
+    assert_eq!(error.code, EngineErrorCode::DocPasswordRequired);
+    assert!(registry.is_locked(&key));
+    assert!(!registry.bases().is_registered("base"), "a failed base stayed registered");
+
+    let wrong = registry.unlock_parked(&key, "wrong").expect_err("wrong password");
+    assert_eq!(wrong.code, EngineErrorCode::DocPasswordIncorrect);
+    assert!(!registry.bases().is_registered("base"));
+
+    registry.unlock_parked(&key, "user").expect("unlock");
+    assert_eq!(registry.bases().ref_count("base"), 1);
+    assert_eq!(registry.session(&key).expect("open").page_count().expect("pages"), 1);
 }
 
 #[test]

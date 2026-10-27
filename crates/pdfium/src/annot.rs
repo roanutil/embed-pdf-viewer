@@ -201,6 +201,14 @@ impl Annotation<'_> {
         Ok(unsafe { pdfium_sys::FPDFAnnot_HasKey(self.handle, key.as_ptr()) } != 0)
     }
 
+    /// The object type of `key`'s value (`FPDFAnnot_GetValueType`,
+    /// `FPDF_OBJECT_*`): `0` when the key is absent, `6` for a dictionary.
+    pub fn value_type(&self, key: &str) -> Result<i32, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: the handle is live and the key outlives the call.
+        Ok(unsafe { pdfium_sys::FPDFAnnot_GetValueType(self.handle, key.as_ptr()) })
+    }
+
     /// A UTF-16 string entry.
     ///
     /// `None` when the key is absent, `Some("")` when it is present and
@@ -254,19 +262,16 @@ impl Annotation<'_> {
 
     /// `/CA`, as 0..=1.
     ///
-    /// The native value is 0..=255 and the division is exact only at the
-    /// ends, so a round trip through this is lossy by a fraction of a level.
-    /// It is still the right path: it is the same number
-    /// `EPDFAnnot_GenerateAppearance` composites with, and a raw `/CA` read
-    /// is not.
+    /// The fork reads `/CA` as stored, clamped to 0..=1, and 1 when absent:
+    /// the same number `EPDFAnnot_GenerateAppearance` composites with, which
+    /// a raw `/CA` read is not. It used to hand back a byte; it is an `f32`
+    /// now, widened here the way the TypeScript's `readF32` widens it, so
+    /// both sides produce the same JSON number.
     pub fn opacity(&self) -> Option<f64> {
-        let mut alpha = 0u32;
-        // SAFETY: the handle is live and `alpha` is a valid out-parameter.
-        let ok = unsafe { pdfium_sys::EPDFAnnot_GetOpacity(self.handle, &raw mut alpha) };
-        // In f64 because the wire value is, and 128/255 is 0.5019607843137255
-        // there against 0.50196081 through an f32. The two are not the same
-        // JSON number and the vector comparison is exact.
-        (ok != 0).then(|| f64::from(alpha as u8) / 255.0)
+        let mut opacity = 0f32;
+        // SAFETY: the handle is live and `opacity` is a valid out-parameter.
+        let ok = unsafe { pdfium_sys::EPDFAnnot_GetOpacity(self.handle, &raw mut opacity) };
+        (ok != 0).then(|| f64::from(opacity))
     }
 
     /// The effective border style and width.
@@ -588,6 +593,138 @@ impl Annotation<'_> {
         unsafe { pdfium_sys::EPDFAnnot_HasAppearanceStream(self.handle, mode as i32) != 0 }
     }
 
+    /// `/AS`, the appearance state the annotation shows, as the name's bytes.
+    /// `None` when it names none.
+    pub fn appearance_state(&self) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: a null buffer with zero length is the measure call.
+        let bytes = unsafe {
+            pdfium_sys::EPDFAnnot_GetAppearanceState(self.handle, std::ptr::null_mut(), 0)
+        };
+        if bytes == 0 {
+            return Ok(None);
+        }
+        let text = read_utf8(|buffer, len| {
+            // SAFETY: the handle is live and `len` describes `buffer`.
+            unsafe { pdfium_sys::EPDFAnnot_GetAppearanceState(self.handle, buffer, len) }
+        })?;
+        Ok(Some(text.unwrap_or_default()))
+    }
+
+    /// The states `mode` stores, in the file's key order
+    /// (`EPDFAnnot_GetAppearanceStateCount`, `EPDFAnnot_GetAppearanceStateName`):
+    /// none when the mode is a single stream or missing. Each is the name
+    /// [`crate::PageView::render_annotation_rgba_with_matrix`] takes as its
+    /// `state`.
+    pub fn appearance_state_names(&self, mode: AppearanceMode) -> Result<Vec<String>, PdfiumError> {
+        // SAFETY: the handle is live.
+        let count =
+            unsafe { pdfium_sys::EPDFAnnot_GetAppearanceStateCount(self.handle, mode as i32) };
+        let mut names = Vec::new();
+        for index in 0..count.max(0) {
+            let name = read_utf8(|buffer, len| {
+                // SAFETY: the handle is live and `len` describes `buffer`.
+                unsafe {
+                    pdfium_sys::EPDFAnnot_GetAppearanceStateName(
+                        self.handle,
+                        mode as i32,
+                        index,
+                        buffer,
+                        len,
+                    )
+                }
+            })?;
+            if let Some(name) = name {
+                names.push(name);
+            }
+        }
+        Ok(names)
+    }
+
+    /// Where `mode`'s appearance is drawn, in page space, without writing
+    /// anything (`EPDFAnnot_GetDrawingRect`): a stored appearance fitted into
+    /// `/Rect`, or, with none, the box the normal appearance PDFium draws in
+    /// memory takes, which can reach past `/Rect`. `None` when nothing can be
+    /// drawn without writing an appearance.
+    pub fn drawing_rect(&self, mode: AppearanceMode) -> Option<RectF> {
+        let mut rect = pdfium_sys::FS_RECTF::default();
+        // SAFETY: the handle is live and `rect` is a valid out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetDrawingRect(self.handle, mode as i32, &raw mut rect)
+        };
+        (ok != 0).then(|| rect.into())
+    }
+
+    /// `EPDFAnnot_ExportAppearance`, saved whole: the normal appearance as a
+    /// one-page drawing document, with `degrees` (counterclockwise) about
+    /// `unrotated_box` taken out. `Ok(None)` when there is no normal
+    /// appearance, `Err(Save)` when the new document would not serialize.
+    /// The source document is untouched.
+    pub fn export_appearance(
+        &self,
+        degrees: f32,
+        unrotated_box: Option<RectF>,
+    ) -> Result<Option<Vec<u8>>, PdfiumError> {
+        let unrotated_box = unrotated_box.map(|rect| pdfium_sys::FS_RECTF {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+        });
+        let box_ptr = unrotated_box.as_ref().map_or(std::ptr::null(), std::ptr::from_ref);
+        // SAFETY: the handle is live, and `box_ptr` is null or points at a
+        // local that outlives the call.
+        let exported =
+            unsafe { pdfium_sys::EPDFAnnot_ExportAppearance(self.handle, degrees, box_ptr) };
+        if exported.is_null() {
+            return Ok(None);
+        }
+        crate::save::save_scratch_document(exported).map(Some).ok_or(PdfiumError::Save)
+    }
+
+    /// `/MK /R`, the widget's turn in degrees counterclockwise, as the file
+    /// holds it; 0 when absent.
+    pub fn mk_rotation(&self) -> i32 {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_GetMKRotation(self.handle) }
+    }
+
+    /// One `/MK` text entry by `EPDF_MK_TEXT` (`/CA` is 0): `None` when
+    /// absent, `Some("")` when present and empty.
+    pub fn mk_text(&self, which: i32) -> Result<Option<String>, PdfiumError> {
+        // SAFETY: a null buffer with zero length is the measure call.
+        let bytes =
+            unsafe { pdfium_sys::EPDFAnnot_GetMKText(self.handle, which, std::ptr::null_mut(), 0) };
+        if bytes == 0 {
+            return Ok(None);
+        }
+        let text = read_utf16_bytes(|buffer, len| {
+            // SAFETY: the handle is live and `len` describes `buffer` in bytes.
+            unsafe { pdfium_sys::EPDFAnnot_GetMKText(self.handle, which, buffer, len) }
+        })?;
+        Ok(Some(text.unwrap_or_default()))
+    }
+
+    /// The face of the font `/DA` names
+    /// (`EPDFAnnot_GetDefaultAppearanceFontFace`): its family, weight and
+    /// italic, as the font's dictionary says. `None` when `/DA` names no font.
+    pub fn default_appearance_font_face(&self) -> Result<Option<(String, i32, bool)>, PdfiumError> {
+        let (mut weight, mut italic) = (0i32, 0i32);
+        let family = read_utf16_bytes(|buffer, len| {
+            // SAFETY: the handle is live, `len` describes `buffer` in bytes,
+            // and the two out-parameters are valid.
+            unsafe {
+                pdfium_sys::EPDFAnnot_GetDefaultAppearanceFontFace(
+                    self.handle,
+                    buffer,
+                    len,
+                    &raw mut weight,
+                    &raw mut italic,
+                )
+            }
+        })?;
+        Ok(family.filter(|family| !family.is_empty()).map(|family| (family, weight, italic != 0)))
+    }
+
     /// One `/MK` appearance-characteristics colour, by `EPDF_MK_COLORTYPE`.
     ///
     /// A widget's border and background live in `/MK`, not in `/C`, which is
@@ -616,6 +753,15 @@ impl Annotation<'_> {
     pub fn file_attachment(&self) -> Option<Attachment<'_>> {
         // SAFETY: the handle is live for the borrow this returns.
         let handle = unsafe { pdfium_sys::FPDFAnnot_GetFileAttachment(self.handle) };
+        (!handle.is_null()).then_some(Attachment { handle, _annotation: PhantomData })
+    }
+
+    /// The same file, for writing (`EPDFAnnot_GetFileAttachmentForWrite`):
+    /// inside a layer transaction the file specification is copied up first,
+    /// so a change reaches only this layer.
+    pub fn file_attachment_for_write(&self) -> Option<Attachment<'_>> {
+        // SAFETY: the handle is live for the borrow this returns.
+        let handle = unsafe { pdfium_sys::EPDFAnnot_GetFileAttachmentForWrite(self.handle) };
         (!handle.is_null()).then_some(Attachment { handle, _annotation: PhantomData })
     }
 
@@ -711,6 +857,200 @@ impl Annotation<'_> {
         let ok =
             unsafe { pdfium_sys::EPDFAnnot_GetAPMatrix(self.handle, mode as i32, &raw mut matrix) };
         (ok != 0).then(|| matrix.into())
+    }
+
+    /// The form the normal appearance is drawn in and the matrix that places
+    /// it on the page (`EPDFAnnot_GetAppearanceTransform`): the form's
+    /// `/BBox` and the whole transform a viewer applies, its `/Matrix` and
+    /// the fit onto `/Rect` together. `None` when there is no normal
+    /// appearance, or its box is empty.
+    pub fn appearance_transform(&self) -> Option<(RectF, MatrixF)> {
+        let mut rect = pdfium_sys::FS_RECTF::default();
+        let mut matrix = pdfium_sys::FS_MATRIX::default();
+        // SAFETY: the handle is live and both out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetAppearanceTransform(
+                self.handle,
+                &raw mut rect,
+                &raw mut matrix,
+            )
+        };
+        (ok != 0).then(|| (rect.into(), matrix.into()))
+    }
+
+    /// A boolean entry of the dictionary, such as a popup's `/Open`
+    /// (`EPDFAnnot_GetBooleanValue`). `None` when it is absent or not a
+    /// boolean.
+    pub fn boolean_value(&self, key: &str) -> Result<Option<bool>, PdfiumError> {
+        let key = c_key(key)?;
+        let mut value = 0;
+        // SAFETY: the handle and key are live and `value` is a valid
+        // out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetBooleanValue(self.handle, key.as_ptr(), &raw mut value)
+        };
+        Ok((ok != 0).then_some(value != 0))
+    }
+
+    /// One `/EMBD_Metadata` boolean entry
+    /// (`EPDFAnnot_GetEmbedMetadataBoolean`). `None` when it is absent.
+    pub fn embed_metadata_boolean(&self, key: &str) -> Result<Option<bool>, PdfiumError> {
+        let key = c_key(key)?;
+        let mut value = 0;
+        // SAFETY: the handle and key are live and `value` is a valid
+        // out-parameter.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetEmbedMetadataBoolean(self.handle, key.as_ptr(), &raw mut value)
+        };
+        Ok((ok != 0).then_some(value != 0))
+    }
+
+    /// A line's `/Cap`, `/CP` and `/CO` (`EPDFAnnot_GetLineCaption`). `None`
+    /// when the annotation is not a line or the read fails.
+    pub fn line_caption(&self) -> Option<LineCaption> {
+        let mut enabled = 0;
+        let mut position = pdfium_sys::EPDF_CAPTION_POSITION::default();
+        let mut offset = pdfium_sys::EPDF_CAPTION_OFFSET::default();
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetLineCaption(
+                self.handle,
+                &raw mut enabled,
+                &raw mut position,
+                &raw mut offset,
+            )
+        };
+        (ok != 0).then_some(LineCaption {
+            enabled: enabled != 0,
+            position_code: position as i32,
+            along: offset.along,
+            perpendicular: offset.perpendicular,
+        })
+    }
+
+    /// A polygon's or polyline's caption, as `/EMBD_Metadata` keeps it
+    /// (`EPDFAnnot_GetShapeCaption`): whether it shows, and its manual
+    /// center when it has one. `None` when the read fails.
+    pub fn shape_caption(&self) -> Option<ShapeCaption> {
+        let mut enabled = 0;
+        let mut has_center = 0;
+        let mut center = pdfium_sys::FS_POINTF::default();
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetShapeCaption(
+                self.handle,
+                &raw mut enabled,
+                &raw mut has_center,
+                &raw mut center,
+            )
+        };
+        (ok != 0).then(|| ShapeCaption {
+            enabled: enabled != 0,
+            center: (has_center != 0).then(|| center.into()),
+        })
+    }
+
+    /// A line's `/LL`, `/LLE` and `/LLO` (`EPDFAnnot_GetLineLeader`):
+    /// length, extension and offset. `None` when the read fails.
+    pub fn line_leader(&self) -> Option<(f32, f32, f32)> {
+        let (mut length, mut extension, mut offset) = (0f32, 0f32, 0f32);
+        // SAFETY: the handle is live and the three out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFAnnot_GetLineLeader(
+                self.handle,
+                &raw mut length,
+                &raw mut extension,
+                &raw mut offset,
+            )
+        };
+        (ok != 0).then_some((length, extension, offset))
+    }
+}
+
+/// A line's caption (`/Cap`, `/CP`, `/CO`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LineCaption {
+    pub enabled: bool,
+    /// The raw `EPDF_CAPTION_POSITION`: 0 inline, 1 top.
+    pub position_code: i32,
+    /// `/CO`, along the line and across it.
+    pub along: f32,
+    pub perpendicular: f32,
+}
+
+/// A polygon's or polyline's caption.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ShapeCaption {
+    pub enabled: bool,
+    /// The label's manual center, in the file's coordinates.
+    pub center: Option<PointF>,
+}
+
+impl Document {
+    /// `EPDFLayer_GetBirthName`: the page and the position in the base
+    /// page's `/Annots` an annotation object was born at, when this layer
+    /// promoted it from an inline annotation of the base. `None` for any
+    /// other object, and for a document that is not a layer.
+    pub fn layer_birth_name(&self, object_number: u32) -> Option<(u32, u32)> {
+        let (mut page, mut birth): (std::os::raw::c_ulong, std::os::raw::c_ulong) = (0, 0);
+        // SAFETY: the handle is live and both out-parameters are valid.
+        let ok = unsafe {
+            pdfium_sys::EPDFLayer_GetBirthName(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(object_number),
+                &raw mut page,
+                &raw mut birth,
+            )
+        };
+        if ok == 0 {
+            return None;
+        }
+        Some((u32::try_from(page).ok()?, u32::try_from(birth).ok()?))
+    }
+
+    /// `EPDFLayer_IsPagePromoted`: whether this layer promoted the page's
+    /// inline annotations, so they resolve through their births rather than
+    /// by position. `false` for a document that is not a layer.
+    pub fn layer_is_page_promoted(&self, page_object_number: u32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFLayer_IsPagePromoted(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(page_object_number),
+            ) != 0
+        }
+    }
+
+    /// `EPDFLayer_GetBirthObjectNumber`: the object the inline annotation
+    /// born at `birth_index` of the page became when this layer promoted the
+    /// page. `None` when the page is not promoted or had no inline
+    /// annotation there.
+    pub fn layer_birth_object_number(
+        &self,
+        page_object_number: u32,
+        birth_index: u32,
+    ) -> Option<u32> {
+        // SAFETY: the handle is live.
+        let number = unsafe {
+            pdfium_sys::EPDFLayer_GetBirthObjectNumber(
+                self.as_raw(),
+                std::os::raw::c_ulong::from(page_object_number),
+                std::os::raw::c_ulong::from(birth_index),
+            )
+        };
+        u32::try_from(number).ok().filter(|number| *number > 0)
+    }
+
+    /// `EPDFPage_PromoteInlineAnnotsRaw`: make every inline annotation of a
+    /// page's `/Annots` an object, without loading the page. On a layer the
+    /// first promotion of a page the base has records its births. Answers
+    /// how many moved, or `None` when the runtime refused.
+    pub fn promote_inline_annotations_raw(&self, page_index: u32) -> Option<u32> {
+        let page_index = i32::try_from(page_index).ok()?;
+        // SAFETY: the handle is live.
+        let moved =
+            unsafe { pdfium_sys::EPDFPage_PromoteInlineAnnotsRaw(self.as_raw(), page_index) };
+        u32::try_from(moved).ok()
     }
 }
 
@@ -954,6 +1294,25 @@ impl<'owner> Attachment<'owner> {
         let mime = CString::new(mime).map_err(|_| PdfiumError::InvalidArgument("mime type"))?;
         // SAFETY: the handle is live and the string outlives the call.
         Ok(unsafe { pdfium_sys::EPDFAttachment_SetSubtype(self.handle, mime.as_ptr()) != 0 })
+    }
+
+    /// `/UF` and `/F`, the file name. Every other entry is kept. PDFium
+    /// refuses an empty name.
+    pub fn set_name(&self, name: &str) -> bool {
+        let name: Vec<u16> = name.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAttachment_SetName(self.handle, name.as_ptr()) != 0 }
+    }
+
+    /// One `/Params` string entry, written as a text string.
+    pub fn set_string_value(&self, key: &str, value: &str) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        let value: Vec<u16> = value.encode_utf16().chain(std::iter::once(0)).collect();
+        // SAFETY: the handle is live and both strings outlive the call.
+        Ok(unsafe {
+            pdfium_sys::FPDFAttachment_SetStringValue(self.handle, key.as_ptr(), value.as_ptr())
+                != 0
+        })
     }
 
     /// `/Desc`.

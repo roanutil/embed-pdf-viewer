@@ -39,6 +39,10 @@ public final class PDFViewer: Sendable {
     finishStreams()
   }
 
+  /// Bytes that are not a PDF fail the open (`operation-failed`, "failed to
+  /// open base document") and leave a `.failed` tab. A wrong `password`
+  /// does not fail it: the document opens `.locked`, and its `.locked`
+  /// event says a password was given.
   public func open(_ data: Data, name: String? = nil, password: String? = nil) async throws(PDFError) -> DocumentInfo {
     try await measured("open") { () async throws(PDFError) in
       try await bridged {
@@ -48,9 +52,9 @@ public final class PDFViewer: Sendable {
   }
 
   /// Unlock a document that opened `.locked` (password-protected and opened
-  /// without one). Throws `permission-denied` for a wrong password (the
-  /// detail begins with the engine's `DocPasswordIncorrect`); the tab stays
-  /// locked.
+  /// or with a wrong one). Throws `permission-denied` for a wrong password,
+  /// with the engine's own message ("incorrect document password"); the tab
+  /// stays locked.
   public func unlock(_ document: DocumentInfo, password: String) async throws(PDFError) {
     try await bridged { try await host.unlockDocument(documentId: document.id, password: password) }
   }

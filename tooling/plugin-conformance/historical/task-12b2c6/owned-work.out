@@ -1,0 +1,6 @@
+src/suites/link.ts(142,72): error TS2322: Type 'null' is not assignable to type 'PdfActionTree<PageDestination> | undefined'.
+src/suites/link.ts(145,33): error TS2353: Object literal may only specify known properties, and 'inReplyTo' does not exist in type '{ type: "group" | "reply"; to: AnnotationRef; }'.
+src/suites/link.ts(146,33): error TS2353: Object literal may only specify known properties, and 'inReplyTo' does not exist in type '{ type: "group" | "reply"; to: AnnotationRef; }'.
+src/suites/link.ts(147,33): error TS2353: Object literal may only specify known properties, and 'inReplyTo' does not exist in type '{ type: "group" | "reply"; to: AnnotationRef; }'.
+src/suites/link.ts(250,106): error TS2353: Object literal may only specify known properties, and 'changed' does not exist in type 'MutationMeta'.
+src/suites/link.ts(581,103): error TS2353: Object literal may only specify known properties, and 'inReplyTo' does not exist in type '{ type: "group" | "reply"; to: AnnotationRef; }'.

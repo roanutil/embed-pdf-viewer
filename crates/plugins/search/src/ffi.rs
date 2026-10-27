@@ -2,20 +2,20 @@
 //! enum. Every method hops to the kernel thread through `KernelBound`.
 //!
 //! The records the plugin's own types can carry derive in place
-//! (`SearchQuery`, `SearchMode`, `SearchStatus`, `SearchProgress`,
-//! `SearchSnippet`, `SearchResultStatus`, `SearchCancelReason`, and the
-//! started and cancelled events) and are re-exported here. The rest are
-//! mirrors, each for a reason uniffi cannot carry: `usize` counts and
-//! indices (`SearchHit`, `SearchResult`, the progress, completed and
-//! active-hit events), the Stage's reveal types and their two-level options
-//! (`SearchRevealOptions`, `SearchConfig`), and `TextSegment`, whose quad and
-//! rect are `epdf-geometry` types. A count that does not fit a `u32` is an
+//! (`SearchQuery`, `SearchStatus`, `SearchProgress`, `SearchSnippet`,
+//! `SearchResultStatus`, `SearchCancelReason`, and the started and cancelled
+//! events) and are re-exported here. The rest are mirrors, each for a reason
+//! uniffi cannot carry: `usize` counts and indices (`SearchHit`,
+//! `SearchResult`, the progress, completed and active-hit events), the
+//! Stage's reveal types and their two-level options (`SearchRevealOptions`,
+//! `SearchConfig`), and `TextSegment`, whose quad and rect are
+//! `epdf-geometry` types. A count that does not fit a `u32` is an
 //! `invalid-state` error, never a clamp.
 
 use std::sync::Arc;
 
 use epdf_ffi::{
-    CancelToken, KernelBound, KernelPost, PageRef, PluginErrorInfo, Rect, Subscription, TextQuad,
+    CancelToken, KernelBound, KernelPost, PageRef, PluginErrorInfo, Quad, Rect, Subscription,
     ViewerError,
 };
 use epdf_kernel::error::{code, plugin_error};
@@ -23,25 +23,32 @@ use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Error, Unsubscribe};
 use epdf_plugin_stage::{RevealAnchor, RevealAnchorValue, RevealWord, ScrollBehaviorKind};
 
-use crate::{OperationOptions, SearchCapability, SearchFindAllOptions, SearchOptions};
+use crate::{
+    HitTarget, OperationOptions, PageTarget, SearchCapability, SearchFindAllOptions, SearchOptions,
+};
 pub use crate::{
-    SearchCancelReason, SearchCancelledEvent, SearchMode, SearchProgress, SearchQuery,
-    SearchResultStatus, SearchSnippet, SearchStartedEvent, SearchStatus,
+    SearchCancelReason, SearchCancelledEvent, SearchProgress, SearchQuery, SearchResultStatus,
+    SearchSnippet, SearchStartedEvent, SearchStatus,
 };
 
 /// One merged visual line of a match, in page space.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct TextSegment {
-    pub quad: TextQuad,
+    pub quad: Quad,
     pub rect: Rect,
     /// The reading direction along the baseline: `1` or `-1`.
     pub advance: f64,
 }
 
+/// A quad's named corners.
+fn quad(q: epdf_geometry::Quad) -> Quad {
+    q.into()
+}
+
 impl From<&crate::TextSegment> for TextSegment {
     fn from(segment: &crate::TextSegment) -> Self {
         TextSegment {
-            quad: segment.quad.into(),
+            quad: quad(segment.quad),
             rect: segment.rect.into(),
             advance: segment.advance,
         }
@@ -54,15 +61,15 @@ impl From<&crate::TextSegment> for TextSegment {
 pub struct SearchHit {
     pub page: PageRef,
     pub page_index: u32,
-    /// Engine text-page character offsets (PDFium character indices, the
-    /// space geometry and selection use), not UTF-16 offsets into extracted
-    /// text. `snippet`'s offsets are UTF-16.
-    pub char_start: f64,
-    pub char_count: f64,
+    /// A range of the page's characters (PDFium character indices, the
+    /// space geometry and selection use), not UTF-16 offsets into
+    /// extracted text.
+    pub start: f64,
+    pub count: f64,
     pub segments: Vec<TextSegment>,
     /// The union of the segments; absent when the match has none.
     pub bounds: Option<Rect>,
-    /// Context around the match, `SearchMode::Full` only.
+    /// The text around the match, when the search asked for snippets.
     pub snippet: Option<SearchSnippet>,
 }
 
@@ -73,8 +80,8 @@ impl TryFrom<&crate::SearchHit> for SearchHit {
         Ok(SearchHit {
             page: hit.page.into(),
             page_index: whole(hit.page_index, "a hit's page index")?,
-            char_start: hit.char_start,
-            char_count: hit.char_count,
+            start: hit.start,
+            count: hit.count,
             segments: hit.segments.iter().map(TextSegment::from).collect(),
             bounds: hit.bounds.map(Rect::from),
             snippet: hit.snippet.clone(),
@@ -157,8 +164,8 @@ impl From<SearchScrollBehavior> for ScrollBehaviorKind {
 }
 
 /// How a navigated hit arrives, when a Stage is installed. Merged per field
-/// over `SearchConfig.reveal` over the find-bar default (the hit at 35% from
-/// the top, scrolled smoothly); a `None` field leaves the layer below.
+/// over the `reveal` setting (by default the hit at 35% from the top,
+/// scrolled smoothly); a `None` field leaves the setting.
 #[derive(Clone, Copy, Debug, Default, PartialEq, uniffi::Record)]
 pub struct SearchRevealOptions {
     #[uniffi(default = None)]
@@ -176,44 +183,49 @@ impl From<SearchRevealOptions> for crate::SearchRevealOptions {
     }
 }
 
+/// The settings an app registers, over the defaults.
 #[derive(Clone, Copy, Debug, Default, PartialEq, uniffi::Record)]
 pub struct SearchConfig {
-    /// Arrival defaults for `next_hit`, `previous_hit` and `go_to_hit`.
+    /// Arrival for `next_hit`, `previous_hit` and `go_to_hit`.
     #[uniffi(default = None)]
     pub reveal: Option<SearchRevealOptions>,
 }
 
 impl From<SearchConfig> for crate::SearchConfig {
     fn from(config: SearchConfig) -> Self {
-        crate::SearchConfig { reveal: config.reveal.map(Into::into) }
+        crate::SearchConfig {
+            reveal: config.reveal.map(|reveal| crate::SearchRevealConfig {
+                anchor: reveal.anchor.map(|anchor| Some(anchor.into())),
+                behavior: reveal.behavior.map(Into::into),
+            }),
+            highlight: None,
+        }
     }
 }
 
 // ── events ────────────────────────────────────────────────────────────────────
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct SearchProgressEvent {
-    pub scanned: f64,
-    pub total: f64,
+pub struct SearchProgressChangedEvent {
+    pub pages_searched: f64,
+    pub page_count: f64,
     pub hit_count: u32,
-    pub operation_id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct SearchCompletedEvent {
     pub hit_count: u32,
-    pub operation_id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct SearchFailedEvent {
     pub error: PluginErrorInfo,
-    pub operation_id: String,
 }
 
+/// `index` is `None` when no hit is active (the plugin's `-1`).
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct SearchActiveHitChangedEvent {
-    pub index: u32,
+    pub index: Option<u32>,
     pub hit: Option<SearchHit>,
 }
 
@@ -222,7 +234,7 @@ pub struct SearchActiveHitChangedEvent {
 #[derive(Clone, Debug, PartialEq, uniffi::Enum)]
 pub enum SearchEvent {
     Started { event: SearchStartedEvent },
-    Progress { event: SearchProgressEvent },
+    ProgressChanged { event: SearchProgressChangedEvent },
     Completed { event: SearchCompletedEvent },
     Cancelled { event: SearchCancelledEvent },
     Failed { event: SearchFailedEvent },
@@ -238,8 +250,9 @@ pub trait SearchEventListener: Send + Sync {
     fn on_end(&self);
 }
 
+/// The kernel's `{code, message, capability, permission}` on the mirror.
 fn error_info(info: crate::PluginErrorInfo) -> PluginErrorInfo {
-    PluginErrorInfo { code: info.code, message: info.message, capability: info.capability }
+    info.into()
 }
 
 /// A count or index as a `u32`, or `invalid-state`. Shared with the
@@ -285,10 +298,11 @@ fn abortable() -> (AbortSignal, impl Fn(Option<serde_json::Value>) + 'static) {
 pub fn start_search(
     cap: &SearchCapability,
     query: SearchQuery,
-    start_page: Option<PageRef>,
+    from: Option<PageRef>,
 ) -> Result<epdf_kernel::Promise<crate::SearchResult>, Error> {
     let (signal, abort) = abortable();
-    let options = SearchOptions { start_page: start_page.map(Into::into), signal: Some(signal) };
+    let options =
+        SearchOptions { from: from.map(|page| PageTarget::Ref(page.into())), signal: Some(signal) };
     Ok(open(cap)?.search(query, options).with_abort(abort))
 }
 
@@ -298,10 +312,10 @@ pub fn start_search(
 pub fn start_find_all(
     cap: &SearchCapability,
     query: SearchQuery,
-    mode: Option<SearchMode>,
-) -> Result<epdf_kernel::Promise<Vec<crate::SearchHit>>, Error> {
+    snippets: Option<bool>,
+) -> Result<epdf_kernel::Promise<Vec<std::rc::Rc<crate::SearchHit>>>, Error> {
     let (signal, abort) = abortable();
-    let options = SearchFindAllOptions { signal: Some(signal), mode };
+    let options = SearchFindAllOptions { signal: Some(signal), snippets };
     Ok(open(cap)?.find_all(query, options).with_abort(abort))
 }
 
@@ -320,27 +334,28 @@ impl SearchHandle {
 
 #[uniffi::export]
 impl SearchHandle {
-    /// Would a search be served now. `None` or `Rects` needs
-    /// `doc.text.search`; `Full` also `doc.text.copy`.
-    pub async fn can_search(&self, mode: Option<SearchMode>) -> Result<bool, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.can_search(mode))).await
+    /// Would a search be served now: `doc.text.search`, and with
+    /// `snippets: Some(true)` also `doc.text.copy`.
+    pub async fn can_search(&self, snippets: Option<bool>) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_search(snippets))).await
     }
 
     /// Start a new search, superseding a running one. Hits stream into the
     /// session and the first becomes active. Resolves when the scan
     /// completes, is superseded or is cancelled (cancelling keeps the hits
     /// found so far); rejects only on a real failure. An empty `query.text`
-    /// clears the session.
+    /// clears the session. `from` is where the scan starts; `None` is the
+    /// Stage's current page when a Stage is installed.
     pub async fn search(
         &self,
         query: SearchQuery,
-        start_page: Option<PageRef>,
+        from: Option<PageRef>,
         cancel: Arc<CancelToken>,
     ) -> Result<SearchResult, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| start_search(c, query, start_page),
+                move |c| start_search(c, query, from),
                 |result| SearchResult::try_from(result).map_err(Into::into),
             )
             .await?
@@ -392,7 +407,7 @@ impl SearchHandle {
             .call(move |c| {
                 open(c)?
                     .next_hit(reveal.map(Into::into))?
-                    .as_ref()
+                    .as_deref()
                     .map(SearchHit::try_from)
                     .transpose()
             })
@@ -408,7 +423,7 @@ impl SearchHandle {
             .call(move |c| {
                 open(c)?
                     .previous_hit(reveal.map(Into::into))?
-                    .as_ref()
+                    .as_deref()
                     .map(SearchHit::try_from)
                     .transpose()
             })
@@ -424,8 +439,8 @@ impl SearchHandle {
         self.cap
             .call(move |c| {
                 open(c)?
-                    .go_to_hit(index as isize, reveal.map(Into::into))?
-                    .as_ref()
+                    .go_to_hit(HitTarget::Index(index as isize), reveal.map(Into::into))?
+                    .as_deref()
                     .map(SearchHit::try_from)
                     .transpose()
             })
@@ -450,19 +465,25 @@ impl SearchHandle {
 
     /// Hits found so far, or those on one page.
     pub async fn hits(&self, page: Option<PageRef>) -> Result<Vec<SearchHit>, ViewerError> {
-        self.cap.call(move |c| hits(open(c)?.list_hits(page.map(Into::into)).as_slice())).await
+        self.cap
+            .call(move |c| {
+                hits(open(c)?.list_hits(page.map(|p| PageTarget::Ref(p.into()))).as_slice())
+            })
+            .await
     }
 
     /// How many hits so far, or on one page.
     pub async fn hit_count(&self, page: Option<PageRef>) -> Result<u32, ViewerError> {
         self.cap
-            .call(move |c| whole(open(c)?.get_hit_count(page.map(Into::into)), "a hit count"))
+            .call(move |c| {
+                let page = page.map(|p| PageTarget::Ref(p.into()));
+                whole(open(c)?.get_hit_count(page), "a hit count")
+            })
             .await
     }
 
-    /// The pages with at least one hit, by ascending page object number
-    /// (the order of the TypeScript's `Object.values(hitsByPage)`), which
-    /// is not document order once pages are moved or inserted.
+    /// The pages with at least one hit, in document order (the page list's,
+    /// which moving a page changes).
     pub async fn pages_with_hits(&self) -> Result<Vec<PageRef>, ViewerError> {
         self.cap
             .call(|c| Ok(open(c)?.list_pages_with_hits().into_iter().map(PageRef::from).collect()))
@@ -481,12 +502,12 @@ impl SearchHandle {
 
     pub async fn active_hit(&self) -> Result<Option<SearchHit>, ViewerError> {
         self.cap
-            .call(|c| open(c)?.get_active_hit().as_ref().map(SearchHit::try_from).transpose())
+            .call(|c| open(c)?.get_active_hit().map(|hit| SearchHit::try_from(&*hit)).transpose())
             .await
     }
 
     pub async fn progress(&self) -> Result<SearchProgress, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_progress())).await
+        self.cap.call(|c| Ok(*open(c)?.get_progress())).await
     }
 
     /// The failure that ended the last search, if it failed.
@@ -495,19 +516,19 @@ impl SearchHandle {
     }
 
     /// Run a query to completion and return every hit, in page order,
-    /// touching no session state. `mode: None` is `Full`, falling back to
-    /// `Rects` when snippets are denied. Cancelling rejects
+    /// touching no session state. `snippets: None` asks for snippets and
+    /// falls back to none when they are denied. Cancelling rejects
     /// `operation-cancelled`.
     pub async fn find_all(
         &self,
         query: SearchQuery,
-        mode: Option<SearchMode>,
+        snippets: Option<bool>,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<SearchHit>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| start_find_all(c, query, mode),
+                move |c| start_find_all(c, query, snippets),
                 |found| hits(&found).map_err(Into::into),
             )
             .await?
@@ -535,31 +556,29 @@ impl SearchHandle {
                     }
                     let offs: Vec<Unsubscribe> = vec![
                         relay!(on_started, |e| SearchEvent::Started { event: e.clone() }),
-                        relay!(on_progress, |e| SearchEvent::Progress {
-                            event: SearchProgressEvent {
-                                scanned: e.scanned,
-                                total: e.total,
+                        relay!(on_progress_changed, |e| SearchEvent::ProgressChanged {
+                            event: SearchProgressChangedEvent {
+                                pages_searched: e.pages_searched,
+                                page_count: e.page_count,
                                 hit_count: whole(e.hit_count, "a hit count")?,
-                                operation_id: e.operation_id.clone(),
                             },
                         }),
                         relay!(on_completed, |e| SearchEvent::Completed {
                             event: SearchCompletedEvent {
                                 hit_count: whole(e.hit_count, "a hit count")?,
-                                operation_id: e.operation_id.clone(),
                             },
                         }),
                         relay!(on_cancelled, |e| SearchEvent::Cancelled { event: e.clone() }),
                         relay!(on_failed, |e| SearchEvent::Failed {
-                            event: SearchFailedEvent {
-                                error: error_info(e.error.clone()),
-                                operation_id: e.operation_id.clone(),
-                            },
+                            event: SearchFailedEvent { error: error_info(e.error.clone()) },
                         }),
                         relay!(on_active_hit_changed, |e| SearchEvent::ActiveHitChanged {
                             event: SearchActiveHitChangedEvent {
-                                index: whole(e.index, "the active hit index")?,
-                                hit: e.hit.as_ref().map(SearchHit::try_from).transpose()?,
+                                index: match usize::try_from(e.index) {
+                                    Ok(index) => Some(whole(index, "the active hit index")?),
+                                    Err(_) => None,
+                                },
+                                hit: e.hit.as_deref().map(SearchHit::try_from).transpose()?,
                             },
                         }),
                         relay!(on_cleared, |_e| SearchEvent::Cleared),

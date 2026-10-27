@@ -50,6 +50,15 @@ impl Drop for Library {
         DEPTH.with(|depth| {
             let next = depth.get() - 1;
             depth.set(next);
+            // On wasm32 the Rust core is linked into the JS runtime's module
+            // and shares its one PDFium instance. JS owns that instance's
+            // init and teardown, and its documents and pages are not counted
+            // here, so destroying the library when the last Rust guard drops
+            // would free PDFium's globals under JS handles that are still
+            // open. Teardown is left to JS. (The init in `acquire` stays: a
+            // second `FPDF_InitLibrary` returns at once when JS already ran
+            // one, `fpdfsdk/fpdf_view.cpp:224` in the fork.)
+            #[cfg(not(target_arch = "wasm32"))]
             if next == 0 {
                 // SAFETY: every Document holds an Rc<Library>, so the depth
                 // cannot reach zero while a document handle from this thread

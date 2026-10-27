@@ -5,7 +5,7 @@ use epdf_plugin_stage::ffi::{
     StageArrivalAlignValue, StageGap, StageGridColumns, StageRevealOptions, StageRevealZoom,
     StageSettings, StageSettingsPatch, StageZoomTarget,
 };
-use epdf_plugin_stage::{PartialSettings, RevealOptions, ZoomTarget, default_settings};
+use epdf_plugin_stage::{RevealOptions, ZoomTarget, default_settings};
 
 #[test]
 fn the_default_settings_round_trip() {
@@ -24,7 +24,7 @@ fn a_patch_sets_only_what_it_names() {
         arrival_align: None,
         ..Default::default()
     };
-    let partial = PartialSettings::try_from(patch).unwrap();
+    let partial = epdf_plugin_stage::StageSettingsPatch::try_from(patch).unwrap();
     assert_eq!(partial.padding, Some(8.0));
     assert_eq!(partial.gap, Some(epdf_plugin_stage::Gap::Px { px: 4.0 }));
     assert_eq!(partial.columns, Some(epdf_plugin_stage::GridColumns::Count(3.0)));
@@ -82,11 +82,10 @@ use serde_json::json;
 const PAGE_2: PageRef = PageRef { page_object_number: 2 };
 
 fn three_pages() -> TestSpec {
-    let box_ = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
     let page = |pon: u32, index: u32| {
-        json!({ "index": index, "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
+        json!({ "index": index, "ref": { "kind": "objectNumber", "objectNumber": pon },
             "label": null, "size": { "width": 600, "height": 800 }, "rotation": 0,
-            "userUnit": 1, "boxes": { "media": box_, "crop": box_ } })
+            "userUnit": 1 })
     };
     TestSpec::new(json!({ "documents": { DOCUMENT: {
         "id": DOCUMENT, "security": { "allows": "*" },
@@ -97,11 +96,42 @@ fn three_pages() -> TestSpec {
 type Reports = Arc<Mutex<Vec<String>>>;
 
 fn handle_with(config: StageConfig) -> (KernelThread<TestKernel>, Arc<StageHandle>, Reports) {
+    handle_on(config, false)
+}
+
+/// A host clock with 16 ms frames on the kernel thread's timers, as a
+/// browser's `browserClock()` gives the stage its frames.
+struct FrameClock;
+
+impl epdf_kernel::clock::HostClock for FrameClock {
+    fn now(&self) -> f64 {
+        epdf_kernel::rt::now()
+    }
+    fn after(&self, ms: f64, run: Box<dyn FnOnce()>) -> epdf_kernel::Unsubscribe {
+        let timer = epdf_kernel::rt::set_timeout(ms, run);
+        epdf_kernel::Unsubscribe::new(move || epdf_kernel::rt::clear_timer(timer))
+    }
+    fn has_frames(&self) -> bool {
+        true
+    }
+    fn next_frame(&self, run: Box<dyn FnOnce(f64)>) -> epdf_kernel::Unsubscribe {
+        self.after(16.0, Box::new(move || run(epdf_kernel::rt::now())))
+    }
+}
+
+fn handle_on(
+    config: StageConfig,
+    frames: bool,
+) -> (KernelThread<TestKernel>, Arc<StageHandle>, Reports) {
     let thread = KernelThread::spawn(move |_| {
         let config = config.into_config()?;
-        TestKernel::open(
+        let clock: Rc<dyn epdf_kernel::clock::HostClock> =
+            if frames { Rc::new(FrameClock) } else { Rc::new(epdf_kernel::clock::TimerClock) };
+        TestKernel::open_with_clock(
             vec![stage_plugin(StagePluginOptions { config, ..Default::default() })],
             three_pages(),
+            epdf_kernel::KernelOptions::default(),
+            clock,
         )
     })
     .unwrap();
@@ -117,8 +147,10 @@ fn handle_with(config: StageConfig) -> (KernelThread<TestKernel>, Arc<StageHandl
     (thread, handle, reports)
 }
 
+/// The test kernel's host clock has no frames, so navigation jumps. Motion
+/// runs on the kernel's host clock, not on a stage option.
 fn frameless() -> (KernelThread<TestKernel>, Arc<StageHandle>, Reports) {
-    handle_with(StageConfig { frames: false, ..Default::default() })
+    handle_with(StageConfig::default())
 }
 
 fn sized(stage: &StageHandle) {
@@ -160,7 +192,8 @@ fn navigation_moves_the_current_page() {
     assert!(!block_on(stage.can_go_previous()).unwrap());
     block_on(stage.go_to_page(PAGE_2, instant())).unwrap();
     assert_eq!(block_on(stage.current_page_index()).unwrap(), 1);
-    assert_eq!(block_on(stage.current_page()).unwrap().map(|p| p.page), Some(PAGE_2));
+    assert_eq!(block_on(stage.current_page()).unwrap(), Some(PAGE_2));
+    assert_eq!(block_on(stage.page_count()).unwrap(), 3);
     block_on(stage.go_to_last_page(instant())).unwrap();
     assert_eq!(block_on(stage.current_page_index()).unwrap(), 2);
     assert!(!block_on(stage.can_go_next()).unwrap());
@@ -206,7 +239,9 @@ fn page_and_viewport_points_round_trip() {
 fn settings_update_and_reset() {
     let (_thread, stage, _) = frameless();
     sized(&stage);
-    block_on(stage.set_layout(StageLayout::Horizontal)).unwrap();
+    let horizontal =
+        StageSettingsPatch { layout: Some(StageLayout::Horizontal), ..Default::default() };
+    block_on(stage.update_settings(horizontal)).unwrap();
     assert_eq!(block_on(stage.settings()).unwrap().layout, StageLayout::Horizontal);
     block_on(stage.reset_settings()).unwrap();
     assert_eq!(block_on(stage.settings()).unwrap().layout, StageLayout::Vertical);
@@ -281,9 +316,11 @@ fn concurrent_pans_all_land() {
     assert_eq!(end, block_on(serial.camera()).unwrap());
 }
 
+// Motion runs on the kernel's host clock: the test kernel gets one with
+// frames.
 #[test]
 fn motion_in_flight_at_close_stops() {
-    let (thread, stage, reports) = handle_with(StageConfig::default());
+    let (thread, stage, reports) = handle_on(StageConfig::default(), true);
     sized(&stage);
     block_on(stage.fling(0.0, -4000.0)).unwrap();
     assert!(block_on(stage.is_moving()).unwrap());
@@ -336,7 +373,9 @@ fn navigation_zoom_and_settings_are_observed() {
     sized(&stage);
     block_on(stage.go_to_page_index(1, instant())).unwrap();
     block_on(stage.zoom_in()).unwrap();
-    block_on(stage.set_layout(StageLayout::Horizontal)).unwrap();
+    let horizontal =
+        StageSettingsPatch { layout: Some(StageLayout::Horizontal), ..Default::default() };
+    block_on(stage.update_settings(horizontal)).unwrap();
     drain(&thread);
     let seen = events.0.lock().unwrap();
     assert!(
@@ -346,7 +385,7 @@ fn navigation_zoom_and_settings_are_observed() {
     );
     assert!(
         seen.iter().any(|e| matches!(e, StageEvent::PageChanged { event }
-        if event.page_index == 1 && event.page.as_ref().map(|p| p.page) == Some(PAGE_2))),
+        if event.page_index == 1 && event.page == Some(PAGE_2))),
         "{seen:?}"
     );
     assert!(

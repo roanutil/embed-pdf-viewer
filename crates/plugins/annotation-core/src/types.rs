@@ -1,1588 +1,1689 @@
-//! `types.ts`: the model, messages, effects and render vocabulary, plus the
-//! `@embedpdf/engine-core/runtime` DTO types the model carries.
-//!
-//! Every type serializes to the JSON the TypeScript object prints: optional
-//! members are skipped when absent, `null` members (`ref`, `interiorColor`,
-//! `hovered`) print as `null`. The TypeScript `Vec` is [`Point`] here (a
-//! `Vec` would shadow Rust's), and `Rect` / `TextQuad` are the
-//! `epdf_geometry` types.
+//! `types.ts`: the core's vocabulary. Records hold the engine's annotation
+//! as JSON ([`Annotation`]); everything the core works out from one is
+//! typed. Each object type remembers its member order (`object.rs`).
 
+use std::fmt;
 use std::rc::Rc;
 
 use indexmap::IndexMap;
-use serde::de::{self, MapAccess, Visitor};
-use serde::ser::SerializeMap;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 
-pub use epdf_geometry::{Point, Rect, Size, TextQuad};
+pub use epdf_geometry::{Point, Quad, QuadRing, Rect};
 
-use crate::js::{IdSet, Nullable, Record};
-pub use crate::measurement::{DistanceAppearance, MeasurementAppearance};
-pub use crate::measurement_shape::ShapeMeasurementAppearance;
-pub use crate::richtext::RichTextDocumentInput;
+use crate::js::Record;
+use crate::json::{self, Object};
+use crate::object::{Json, JsonError, Nullable};
+use crate::{js_object, js_strings, js_union};
 
-/// `Vec` in the TypeScript: a content-space point.
-pub type Vec2 = Point;
-/// Four positional content-space points (selection chrome, OBB corners).
-pub type Quad = [Point; 4];
 pub type Id = String;
 pub type Cursor = String;
-/// `PageObjectNumber` (`@embedpdf/core`): a page's PDF object number.
-pub type PageObjectNumber = u32;
+/// An annotation kind's name (`kinds/`): its subtype, a widget's field
+/// family kind (`widget-text`…), or `free-text-callout`.
+pub type KindName = String;
+pub type LineEnding = String;
+/// Engine fields by name, as a create or an update states them.
+pub type FieldValues = Object;
+/// The engine's annotation, in page space: the only data a record holds.
+pub type Annotation = Rc<Object>;
+/// A draft or patch, as the engine takes it.
+pub type AnnotationDraft = Object;
+pub type AnnotationPatch = Object;
 
-/// `PageRef['kind']`: `objectNumber` is the only kind.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum PageRefKind {
-    #[default]
-    ObjectNumber,
-}
-
-/// `PageRef` (`@embedpdf/engine-core/runtime`): a page's durable address.
-/// The model keys pages by `page_object_number` and passes the address
-/// itself around.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct PageRef {
-    pub kind: PageRefKind,
-    pub page_object_number: PageObjectNumber,
+js_object! {
+    /// A page address (`{ kind: 'objectNumber', objectNumber }`).
+    pub struct PageRef {
+        "kind" => pub kind: String,
+        "objectNumber" => pub object_number: f64,
+    }
 }
 
 impl PageRef {
-    /// `toPageRef(pon)`.
-    pub fn new(page_object_number: PageObjectNumber) -> Self {
-        PageRef { kind: PageRefKind::ObjectNumber, page_object_number }
+    pub fn new(object_number: f64) -> Self {
+        PageRef { kind: "objectNumber".into(), object_number, order: Default::default() }
     }
 
-    /// `page.pageObjectNumber`.
-    pub fn pon(&self) -> PageObjectNumber {
-        self.page_object_number
+    /// `page.objectNumber` of a page ref read off a record's annotation.
+    pub fn number_of(value: Option<&Value>) -> Option<f64> {
+        value.and_then(|v| v.get("objectNumber")).and_then(json::number)
     }
 
-    /// Two addresses name the same page.
-    pub fn same_page(&self, other: &PageRef) -> bool {
-        self.page_object_number == other.page_object_number
+    pub fn of_value(value: &Value) -> Option<PageRef> {
+        PageRef::read(value).ok()
     }
 }
 
-fn is_false(b: &bool) -> bool {
-    !*b
-}
-
-// ── engine-core runtime primitives ──────────────────────────────────────────
-
-/// `/LE` line ending.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum LineEnding {
-    None,
-    Square,
-    Circle,
-    Diamond,
-    OpenArrow,
-    ClosedArrow,
-    Butt,
-    ROpenArrow,
-    RClosedArrow,
-    Slash,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct LineEndings {
-    pub start: LineEnding,
-    pub end: LineEnding,
-}
-
-/// `Partial<LineEndings>`: a per-side endings write.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct LineEndingsPatch {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub start: Option<LineEnding>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub end: Option<LineEnding>,
-}
-
-impl LineEndingsPatch {
-    /// `{ ...base, ...self }`.
-    pub fn over(&self, base: LineEndings) -> LineEndings {
-        LineEndings { start: self.start.unwrap_or(base.start), end: self.end.unwrap_or(base.end) }
-    }
-
-    /// `{ ...self, ...next }`.
-    pub fn merge(&self, next: &LineEndingsPatch) -> LineEndingsPatch {
-        LineEndingsPatch { start: next.start.or(self.start), end: next.end.or(self.end) }
+js_object! {
+    /// A line's endings; either may be missing (a tool's partial defaults).
+    pub struct LineEndings {
+        "start" => pub start: Option<LineEnding>,
+        "end" => pub end: Option<LineEnding>,
     }
 }
 
-/// Effective blend mode of an annotation's normal appearance.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum BlendMode {
-    #[default]
-    Normal,
-    Multiply,
-    Screen,
-    Overlay,
-    Darken,
-    Lighten,
-    ColorDodge,
-    ColorBurn,
-    HardLight,
-    SoftLight,
-    Difference,
-    Exclusion,
-    Hue,
-    Saturation,
-    Color,
-    Luminosity,
+impl LineEndings {
+    pub fn new(start: &str, end: &str) -> Self {
+        LineEndings { start: Some(start.into()), end: Some(end.into()), order: Default::default() }
+    }
 }
 
-/// The `/F` flags, one boolean per bit.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotationFlags {
-    pub invisible: bool,
-    pub hidden: bool,
-    pub print: bool,
-    pub no_zoom: bool,
-    pub no_rotate: bool,
-    pub no_view: bool,
-    pub read_only: bool,
-    pub locked: bool,
-    pub toggle_no_view: bool,
-    pub locked_contents: bool,
+js_object! {
+    /// Where a text-edit annotation anchors: the boundary glyph's cell and the reading direction.
+    pub struct TextEndAnchor {
+        "glyphQuad" => pub glyph_quad: Quad,
+        "advance" => pub advance: f64,
+    }
 }
 
-/// `Partial<AnnotationFlags>`.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotationFlagsPatch {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub invisible: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hidden: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub print: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub no_zoom: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub no_rotate: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub no_view: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub read_only: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub locked: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub toggle_no_view: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub locked_contents: Option<bool>,
+js_object! {
+    /// The per-page view a screen-anchored projection takes (`ViewEnv`).
+    pub struct ViewEnv {
+        "zoom" => pub zoom: f64,
+        "rotation" => pub rotation: f64,
+    }
 }
 
-/// `RevisionToken`: the page generation an index ref was read at.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RevisionToken {
-    pub doc_session_id: String,
-    pub page: PageRef,
-    pub generation: f64,
+impl ViewEnv {
+    pub fn new(zoom: f64, rotation: f64) -> Self {
+        ViewEnv { zoom, rotation, order: Default::default() }
+    }
 }
 
-/// `AnnotationRef`: how the engine addresses an annotation.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum AnnotationRef {
-    ObjectNumber { page: PageRef, annot_object_number: f64 },
-    Nm { page: PageRef, nm: String },
-    Index { page: PageRef, index: f64, revision: RevisionToken },
+// ── shapes ──────────────────────────────────────────────────────────────────
+
+js_object! {
+    /// The box family's shape: the engine's box, its turn, and whether it draws the ellipse.
+    pub struct BoxShape {
+        "box" => pub box_: Rect,
+        "rotation" => pub rotation: f64,
+        "ellipse" => pub ellipse: bool,
+    }
 }
 
-/// `PdfDestination`: an explicit in-document destination.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all_fields = "camelCase")]
-pub enum PdfDestination {
-    #[serde(rename = "xyz")]
-    Xyz {
-        page: PageRef,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        left: Nullable<f64>,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        top: Nullable<f64>,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        zoom: Nullable<f64>,
-    },
-    #[serde(rename = "fit")]
-    Fit { page: PageRef },
-    #[serde(rename = "fitH")]
-    FitH {
-        page: PageRef,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        top: Nullable<f64>,
-    },
-    #[serde(rename = "fitV")]
-    FitV {
-        page: PageRef,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        left: Nullable<f64>,
-    },
-    #[serde(rename = "fitR")]
-    FitR { page: PageRef, left: f64, bottom: f64, right: f64, top: f64 },
-    #[serde(rename = "fitB")]
-    FitB { page: PageRef },
-    #[serde(rename = "fitBH")]
-    FitBH {
-        page: PageRef,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        top: Nullable<f64>,
-    },
-    #[serde(rename = "fitBV")]
-    FitBV {
-        page: PageRef,
-        #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-        left: Nullable<f64>,
-    },
+js_object! {
+    pub struct LinePoints {
+        "start" => pub start: Point,
+        "end" => pub end: Point,
+    }
 }
 
-/// `PdfLinkTarget`: where a link points, normalized.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case")]
-pub enum PdfLinkTarget {
-    Goto { destination: PdfDestination },
-    Uri { uri: String },
-    GotoRemote { file: String },
-    Launch { path: String },
-    Javascript,
-    Named { name: String },
-    Unsupported,
+impl LinePoints {
+    pub fn new(start: Point, end: Point) -> Self {
+        LinePoints { start, end, order: Default::default() }
+    }
 }
 
-/// `PdfPoint`: PDF user space, y-up.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PdfPoint {
-    pub x: f64,
-    pub y: f64,
+js_object! {
+    /// A line: its two ends upright, and their endings.
+    pub struct LineShape {
+        "linePoints" => pub line_points: LinePoints,
+        "lineEndings" => pub line_endings: Option<LineEndings>,
+        "rotation" => pub rotation: f64,
+    }
 }
 
-/// `PdfRect`: PDF user space as edges.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct PdfRect {
-    pub left: f64,
-    pub bottom: f64,
-    pub right: f64,
-    pub top: f64,
+js_object! {
+    /// A polygon (`closed`) or polyline: its vertices upright.
+    pub struct PolyShape {
+        "vertices" => pub vertices: Vec<Point>,
+        "closed" => pub closed: bool,
+        "lineEndings" => pub line_endings: Option<LineEndings>,
+        /// A measurement's caption center, upright with the vertices; `null` places it automatically.
+        "captionCenter" => pub caption_center: Option<Nullable<Point>>,
+        "rotation" => pub rotation: f64,
+    }
 }
 
-/// `CaretIntent | StrikeoutIntent | InkIntent`: the normalized `/IT` of an
-/// annotation authored before a DTO exists.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum Intent {
-    Replace,
-    StrikeoutTextEdit,
-    InkHighlight,
+js_object! {
+    /// Ink: its strokes upright.
+    pub struct InkShape {
+        "inkList" => pub ink_list: Vec<Vec<Point>>,
+        "rotation" => pub rotation: f64,
+    }
 }
 
-// ── geometry ────────────────────────────────────────────────────────────────
-
-/// A text-edit anchor: the boundary glyph's cell plus the reading direction
-/// along its baseline (`1` toward `end`, `-1` toward `start`).
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextEndAnchor {
-    pub glyph_quad: TextQuad,
-    pub advance: f64,
+js_object! {
+    /// Text markup's or a text redaction's quads.
+    pub struct QuadsShape {
+        "quadPoints" => pub quad_points: Vec<Quad>,
+    }
 }
 
-/// The per-page view environment the screen-anchor projection consumes.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ViewEnv {
-    pub zoom: f64,
-    pub rotation: f64,
+js_object! {
+    /// A caret: its box and its turn.
+    pub struct CaretShape {
+        "box" => pub box_: Rect,
+        "rotation" => pub rotation: f64,
+    }
 }
 
-/// A free-text callout's leader.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Callout {
-    pub tip: Point,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub knee: Option<Point>,
-    pub ending: LineEnding,
+js_object! {
+    /// A free text: its box, its turn, and a callout's line.
+    pub struct TextBoxShape {
+        "box" => pub box_: Rect,
+        "rotation" => pub rotation: f64,
+        "calloutLine" => pub callout_line: Nullable<Vec<Point>>,
+        "lineEnding" => pub line_ending: Nullable<LineEnding>,
+    }
 }
 
-/// Content-space geometry, the one thing hit-testing, editing and rendering
-/// work on. `rot` is kept as given: absent and `0` print differently.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "t", rename_all = "lowercase")]
-pub enum Geom {
-    Rect {
-        rect: Rect,
-        ellipse: bool,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
-    Line {
-        a: Point,
-        b: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        ends: Option<LineEndings>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
-    Poly {
-        points: Vec<Point>,
-        closed: bool,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        ends: Option<LineEndings>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
-    Quads {
-        quads: Vec<TextQuad>,
-    },
-    Caret {
-        rect: Rect,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
-    Ink {
-        strokes: Vec<Vec<Point>>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
-    Text {
-        rect: Rect,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        callout: Option<Callout>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
+js_union! {
+    /// An annotation's shape: what hit-testing, gestures and drawing work on.
+    pub enum Shape ("kind") {
+        "box" => Box(BoxShape),
+        "line" => Line(LineShape),
+        "poly" => Poly(PolyShape),
+        "ink" => Ink(InkShape),
+        "quads" => Quads(QuadsShape),
+        "caret" => Caret(CaretShape),
+        "text-box" => TextBox(TextBoxShape),
+    }
 }
 
-/// `Geom['t']`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GeomVariant {
-    Rect,
-    Line,
-    Poly,
-    Quads,
-    Caret,
-    Ink,
-    Text,
+impl Shape {
+    pub fn kind(&self) -> &'static str {
+        self.tag()
+    }
+
+    pub fn is_points(&self) -> bool {
+        matches!(self, Shape::Line(_) | Shape::Poly(_) | Shape::Ink(_))
+    }
 }
 
-impl Geom {
-    pub fn variant(&self) -> GeomVariant {
-        match self {
-            Geom::Rect { .. } => GeomVariant::Rect,
-            Geom::Line { .. } => GeomVariant::Line,
-            Geom::Poly { .. } => GeomVariant::Poly,
-            Geom::Quads { .. } => GeomVariant::Quads,
-            Geom::Caret { .. } => GeomVariant::Caret,
-            Geom::Ink { .. } => GeomVariant::Ink,
-            Geom::Text { .. } => GeomVariant::Text,
+// ── style ───────────────────────────────────────────────────────────────────
+
+js_object! {
+    /// How an annotation is drawn, by the engine's field names (`Style`).
+    pub struct Style {
+        "color" => pub color: Option<Value>,
+        "interiorColor" => pub interior_color: Nullable<String>,
+        "strokeWidth" => pub stroke_width: f64,
+        "opacity" => pub opacity: Option<Value>,
+        "blendMode" => pub blend_mode: Option<Value>,
+        "borderStyle" => pub border_style: Option<Value>,
+        "dashArray" => pub dash_array: Nullable<Vec<f64>>,
+        "cloudyIntensity" => pub cloudy_intensity: Nullable<f64>,
+    }
+}
+
+impl Style {
+    /// The stroke colour as text (`null` or absent as `None`).
+    pub fn color_str(&self) -> Option<&str> {
+        self.color.as_ref().and_then(Value::as_str)
+    }
+
+    pub fn opacity_value(&self) -> Option<Value> {
+        self.opacity.clone()
+    }
+
+    pub fn blend_str(&self) -> Option<&str> {
+        self.blend_mode.as_ref().and_then(Value::as_str)
+    }
+
+    pub fn border_str(&self) -> Option<&str> {
+        self.border_style.as_ref().and_then(Value::as_str)
+    }
+
+    /// The stroke a shape's bounds and drawing depend on.
+    pub fn stroke(&self) -> Stroke {
+        Stroke {
+            stroke_width: self.stroke_width,
+            cloudy_intensity: self.cloudy_intensity.as_option().copied(),
         }
     }
+}
 
-    /// `'rect' in g`: the box of a rect, caret or text geom.
-    pub fn rect(&self) -> Option<&Rect> {
+/// What a shape's bounds, hit test and drawing depend on besides the shape (`Stroke`).
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct Stroke {
+    pub stroke_width: f64,
+    pub cloudy_intensity: Option<f64>,
+}
+
+impl Stroke {
+    pub fn width(stroke_width: f64) -> Self {
+        Stroke { stroke_width, cloudy_intensity: None }
+    }
+
+    /// A cloud's intensity when it is truthy (`cloudyIntensity && …`).
+    pub fn cloud(&self) -> Option<f64> {
+        self.cloudy_intensity.filter(|i| *i != 0.0 && !i.is_nan())
+    }
+
+    /// Read `{ strokeWidth, cloudyIntensity? }` (a `Stroke` or a whole `Style`).
+    pub fn of_value(value: &Value) -> Result<Self, JsonError> {
+        let object = value.as_object().ok_or_else(|| JsonError::new("not a stroke"))?;
+        Ok(Stroke {
+            stroke_width: json::get_num(object, "strokeWidth").unwrap_or(f64::NAN),
+            cloudy_intensity: json::get(object, "cloudyIntensity").and_then(json::number),
+        })
+    }
+}
+
+js_object! {
+    /// How an annotation's text is set (`TextStyle`).
+    pub struct TextStyle {
+        "fontFamily" => pub font_family: Option<Value>,
+        "fontSize" => pub font_size: Option<Value>,
+        "fontColor" => pub font_color: Option<Value>,
+        "textAlign" => pub text_align: Option<Value>,
+        "bold" => pub bold: Option<bool>,
+        "italic" => pub italic: Option<bool>,
+        "underline" => pub underline: Option<bool>,
+    }
+}
+
+impl TextStyle {
+    pub fn size(&self) -> f64 {
+        self.font_size.as_ref().and_then(json::number).unwrap_or(f64::NAN)
+    }
+    pub fn family(&self) -> Option<&str> {
+        self.font_family.as_ref().and_then(Value::as_str)
+    }
+    pub fn color(&self) -> Option<&str> {
+        self.font_color.as_ref().and_then(Value::as_str)
+    }
+    pub fn align(&self) -> Option<&str> {
+        self.text_align.as_ref().and_then(Value::as_str)
+    }
+}
+
+// ── records ─────────────────────────────────────────────────────────────────
+
+js_strings! {
+    /// How a record renders: the engine's raster or live.
+    pub enum Source {
+        "baked" => Baked,
+        "vector" => Vector,
+    }
+}
+
+js_object! {
+    /// The session's authority over a record (permissions.md).
+    pub struct Authority {
+        "update" => pub update: bool,
+        "delete" => pub delete: bool,
+    }
+}
+
+/// A lent record's live drawing, from its lender (`ModelAnnotation.painter`).
+#[derive(Clone, Default)]
+pub struct Painter(pub Option<Rc<dyn Fn(Rect) -> Vec<SceneNode>>>);
+
+impl Painter {
+    pub fn is_some(&self) -> bool {
+        self.0.is_some()
+    }
+}
+
+impl fmt::Debug for Painter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(if self.0.is_some() { "Painter(..)" } else { "Painter(None)" })
+    }
+}
+
+impl PartialEq for Painter {
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.0, &other.0) {
+            (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Json for Painter {
+    fn from_json(_: Option<&Value>) -> Result<Self, JsonError> {
+        Ok(Painter(None))
+    }
+    fn to_json(&self) -> Option<Value> {
+        None
+    }
+}
+
+js_object! {
+    /// One annotation as the core works on it (`ModelAnnotation`).
+    pub struct ModelAnnotation {
+        "id" => pub id: Id,
+        /// A record this session created that the engine hasn't written yet.
+        "unconfirmed" => pub unconfirmed: Option<bool>,
+        "source" => pub source: Source,
+        "apBox" => pub ap_box: Option<Rect>,
+        "apRot" => pub ap_rot: Option<f64>,
+        "pictureVersion" => pub picture_version: Option<f64>,
+        "painter" => pub painter: Painter,
+        "authority" => pub authority: Option<Authority>,
+        "annotation" => pub annotation: Annotation,
+    }
+}
+
+impl ModelAnnotation {
+    /// The record's subtype.
+    pub fn subtype(&self) -> &str {
+        json::get_str(&self.annotation, "subtype").unwrap_or("")
+    }
+
+    /// `record.annotation.page.objectNumber`.
+    pub fn page_number(&self) -> Option<f64> {
+        PageRef::number_of(self.annotation.get("page"))
+    }
+
+    pub fn page(&self) -> PageRef {
+        self.annotation
+            .get("page")
+            .and_then(PageRef::of_value)
+            .unwrap_or_else(|| PageRef::new(f64::NAN))
+    }
+
+    /// The record with `annotation`, the rest as it is (`{ ...record, annotation }`).
+    pub fn with_annotation(&self, annotation: Object) -> ModelAnnotation {
+        ModelAnnotation { annotation: Rc::new(annotation), ..self.clone() }
+    }
+}
+
+// ── session ─────────────────────────────────────────────────────────────────
+
+js_object! {
+    /// An alignment guide from move snapping.
+    pub struct Guide {
+        "axis" => pub axis: String,
+        "at" => pub at: f64,
+        "lo" => pub lo: f64,
+        "hi" => pub hi: f64,
+    }
+}
+
+js_object! {
+    /// Snapping settings (`SnapSettings`).
+    pub struct SnapSettings {
+        "alignment" => pub alignment: bool,
+        "alignmentThreshold" => pub alignment_threshold: f64,
+        "rotation" => pub rotation: bool,
+        "rotationAngles" => pub rotation_angles: Vec<f64>,
+        "rotationThreshold" => pub rotation_threshold: f64,
+    }
+}
+
+/// A tool's click-create policy (`ClickCreate`): a box (`width`, `height`)
+/// or a line (`length`, `rotation`), and its `anchor`. Kept as the object the
+/// tool gave, members it doesn't know included, since a draft carries it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ClickCreate(pub Object);
+
+impl ClickCreate {
+    fn number(&self, name: &str) -> Option<f64> {
+        json::get(&self.0, name).and_then(json::number)
+    }
+    pub fn width(&self) -> f64 {
+        self.number("width").unwrap_or(f64::NAN)
+    }
+    pub fn height(&self) -> f64 {
+        self.number("height").unwrap_or(f64::NAN)
+    }
+    /// `'length' in policy`: a line policy.
+    pub fn is_line(&self) -> bool {
+        self.0.contains_key("length")
+    }
+    pub fn length(&self) -> f64 {
+        self.number("length").unwrap_or(f64::NAN)
+    }
+    pub fn rotation(&self) -> f64 {
+        self.number("rotation").unwrap_or(0.0)
+    }
+    pub fn anchor(&self) -> Option<&str> {
+        json::get_str(&self.0, "anchor")
+    }
+}
+
+impl Json for ClickCreate {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        Object::from_json(value).map(ClickCreate)
+    }
+    fn to_json(&self) -> Option<Value> {
+        Some(Value::Object(self.0.clone()))
+    }
+}
+
+/// `ClickCreate | false`.
+#[derive(Clone, Debug, PartialEq)]
+pub enum ClickPolicy {
+    Off,
+    On(ClickCreate),
+}
+
+impl ClickPolicy {
+    pub fn create(&self) -> Option<&ClickCreate> {
         match self {
-            Geom::Rect { rect, .. } | Geom::Caret { rect, .. } | Geom::Text { rect, .. } => {
-                Some(rect)
-            }
+            ClickPolicy::Off => None,
+            ClickPolicy::On(c) => Some(c),
+        }
+    }
+}
+
+impl Json for ClickPolicy {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        match value {
+            Some(Value::Bool(false)) => Ok(ClickPolicy::Off),
+            other => ClickCreate::from_json(other).map(ClickPolicy::On),
+        }
+    }
+    fn to_json(&self) -> Option<Value> {
+        match self {
+            ClickPolicy::Off => Some(Value::Bool(false)),
+            ClickPolicy::On(c) => c.to_json(),
+        }
+    }
+}
+
+js_object! {
+    pub struct CreateRect {
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: Option<String>,
+        "page" => pub page: PageRef,
+        "from" => pub from: Point,
+        "to" => pub to: Point,
+        "displayRotation" => pub display_rotation: Option<f64>,
+        "upright" => pub upright: Option<bool>,
+        "clickCreate" => pub click_create: Option<ClickPolicy>,
+        "flags" => pub flags: Option<Object>,
+    }
+}
+
+js_object! {
+    pub struct CreateDistance {
+        "step" => pub step: String,
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: String,
+        "page" => pub page: PageRef,
+        "from" => pub from: Point,
+        "to" => pub to: Point,
+        "measure" => pub measure: Object,
+        "flags" => pub flags: Option<Object>,
+    }
+}
+
+js_object! {
+    pub struct CreateLine {
+        "measure" => pub measure: Option<Object>,
+        "capture" => pub capture: Option<String>,
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: Option<String>,
+        "page" => pub page: PageRef,
+        "from" => pub from: Point,
+        "to" => pub to: Point,
+        "displayRotation" => pub display_rotation: Option<f64>,
+        "upright" => pub upright: Option<bool>,
+        "clickCreate" => pub click_create: Option<ClickPolicy>,
+        "flags" => pub flags: Option<Object>,
+    }
+}
+
+js_object! {
+    pub struct CreatePoly {
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: Option<String>,
+        "page" => pub page: PageRef,
+        "points" => pub points: Vec<Point>,
+        "current" => pub current: Point,
+        "closed" => pub closed: bool,
+        "measure" => pub measure: Option<Object>,
+        "flags" => pub flags: Option<Object>,
+    }
+}
+
+js_object! {
+    pub struct CreateInk {
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: Option<String>,
+        "page" => pub page: PageRef,
+        "strokes" => pub strokes: Vec<Vec<Point>>,
+        "intent" => pub intent: Option<String>,
+        "flags" => pub flags: Option<Object>,
+    }
+}
+
+js_object! {
+    pub struct CreateCallout {
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: Option<String>,
+        "page" => pub page: PageRef,
+        "step" => pub step: String,
+        "tip" => pub tip: Point,
+        "current" => pub current: Point,
+        "displayRotation" => pub display_rotation: Option<f64>,
+        "upright" => pub upright: Option<bool>,
+        "pageBox" => pub page_box: Option<Rect>,
+        "flags" => pub flags: Option<Object>,
+        "knee" => pub knee: Option<Point>,
+        "boxFrom" => pub box_from: Option<Point>,
+        "boxTo" => pub box_to: Option<Point>,
+    }
+}
+
+js_object! {
+    pub struct MoveDraft {
+        "ids" => pub ids: Vec<Id>,
+        "start" => pub start: Point,
+        "delta" => pub delta: Point,
+        "guides" => pub guides: Vec<Guide>,
+    }
+}
+
+js_object! {
+    pub struct HandleDraft {
+        "id" => pub id: Id,
+        "handle" => pub handle: String,
+        "base" => pub base: Shape,
+        "current" => pub current: Shape,
+        "view" => pub view: Option<ViewEnv>,
+    }
+}
+
+js_object! {
+    pub struct RotateDraft {
+        "ids" => pub ids: Vec<Id>,
+        "pivot" => pub pivot: Point,
+        "start" => pub start: Point,
+        "current" => pub current: Point,
+        "view" => pub view: Option<ViewEnv>,
+        "free" => pub free: Option<bool>,
+    }
+}
+
+js_object! {
+    pub struct GroupDraft {
+        "op" => pub op: String,
+        "ids" => pub ids: Vec<Id>,
+        "handle" => pub handle: String,
+        "anchor" => pub anchor: Point,
+        "base" => pub base: Rect,
+        "current" => pub current: Rect,
+        "view" => pub view: Option<ViewEnv>,
+    }
+}
+
+js_object! {
+    pub struct CaptionDraft {
+        "id" => pub id: Id,
+        "start" => pub start: Point,
+        "delta" => pub delta: Point,
+    }
+}
+
+js_object! {
+    pub struct LeaderDraft {
+        "id" => pub id: Id,
+        "start" => pub start: Point,
+        "delta" => pub delta: f64,
+    }
+}
+
+js_object! {
+    pub struct MarqueeDraft {
+        "page" => pub page: PageRef,
+        "from" => pub from: Point,
+        "to" => pub to: Point,
+    }
+}
+
+js_union! {
+    /// The gesture in progress (`Draft`).
+    pub enum Draft ("kind") {
+        "create-rect" => CreateRect(CreateRect),
+        "create-distance" => CreateDistance(CreateDistance),
+        "create-line" => CreateLine(CreateLine),
+        "create-poly" => CreatePoly(CreatePoly),
+        "create-ink" => CreateInk(CreateInk),
+        "create-callout" => CreateCallout(CreateCallout),
+        "move" => Move(MoveDraft),
+        "handle" => Handle(HandleDraft),
+        "rotate" => Rotate(RotateDraft),
+        "group" => Group(GroupDraft),
+        "caption" => Caption(CaptionDraft),
+        "leader" => Leader(LeaderDraft),
+        "marquee" => Marquee(MarqueeDraft),
+    }
+}
+
+impl Draft {
+    /// A draft that creates a record (`draft.kind.startsWith('create-')`,
+    /// `view.ts`): one of the six `create-*` drafts. Read from the variant,
+    /// not by printing the draft (review finding N10).
+    pub fn is_create(&self) -> bool {
+        matches!(
+            self,
+            Draft::CreateRect(_)
+                | Draft::CreateDistance(_)
+                | Draft::CreateLine(_)
+                | Draft::CreatePoly(_)
+                | Draft::CreateInk(_)
+                | Draft::CreateCallout(_)
+        )
+    }
+
+    /// The page a draft that has one (`'page' in draft`) is on.
+    pub fn page(&self) -> Option<&PageRef> {
+        match self {
+            Draft::CreateRect(d) => Some(&d.page),
+            Draft::CreateDistance(d) => Some(&d.page),
+            Draft::CreateLine(d) => Some(&d.page),
+            Draft::CreatePoly(d) => Some(&d.page),
+            Draft::CreateInk(d) => Some(&d.page),
+            Draft::CreateCallout(d) => Some(&d.page),
+            Draft::Marquee(d) => Some(&d.page),
             _ => None,
         }
     }
 
-    /// The `rot` member where the variant has one.
-    pub fn rot(&self) -> Option<f64> {
+    /// The ids a gesture in progress works on.
+    pub fn ids(&self) -> Vec<&Id> {
         match self {
-            Geom::Rect { rot, .. }
-            | Geom::Line { rot, .. }
-            | Geom::Poly { rot, .. }
-            | Geom::Caret { rot, .. }
-            | Geom::Ink { rot, .. }
-            | Geom::Text { rot, .. } => *rot,
-            Geom::Quads { .. } => None,
+            Draft::Move(d) => d.ids.iter().collect(),
+            Draft::Rotate(d) => d.ids.iter().collect(),
+            Draft::Group(d) => d.ids.iter().collect(),
+            Draft::Handle(d) => vec![&d.id],
+            Draft::Caption(d) => vec![&d.id],
+            Draft::Leader(d) => vec![&d.id],
+            _ => Vec::new(),
         }
     }
+}
 
-    /// A text geom with a callout.
-    pub fn is_callout(&self) -> bool {
-        matches!(self, Geom::Text { callout: Some(_), .. })
+js_object! {
+    /// A live text-markup preview, per page (`MarkupPreview`).
+    pub struct MarkupPreview {
+        "subtype" => pub subtype: KindName,
+        "preset" => pub preset: String,
+        "byPage" => pub by_page: Record<Vec<Quad>>,
     }
 }
 
-/// How a shape's outline is stroked.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "lowercase")]
-pub enum Border {
-    #[default]
-    Solid,
-    Dashed {
-        dash: Vec<f64>,
-    },
-    Cloudy {
-        intensity: f64,
-    },
+/// Which annotations people may change by hand (`EditableKinds`).
+#[derive(Clone, Debug, PartialEq)]
+pub enum EditableKinds {
+    All(bool),
+    Kinds(Vec<String>),
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Style {
-    pub color: String,
-    pub interior_color: Option<String>,
-    pub stroke_width: f64,
-    pub opacity: f64,
-    pub blend_mode: BlendMode,
-    pub border: Border,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum TextAlign {
-    Left,
-    Center,
-    Right,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TextStyle {
-    pub font_family: String,
-    pub font_size: f64,
-    pub font_color: String,
-    pub text_align: TextAlign,
-    /// The rich body's formatting (free text only). Absent is off.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bold: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub italic: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub underline: Option<bool>,
-}
-
-/// The one flat vocabulary for editable appearance properties. `extra`
-/// holds members a patch brought that no key names: `{ ...base, ...patch }`
-/// keeps them, so a resolved defaults bag prints them too.
-///
-/// Member order is `defaultsFor`'s `{ ...m.style, ...initialTextStyle, ...d,
-/// lineEndings }`: the style and text keys, then what the tool's patch adds,
-/// then `lineEndings`, which goes last unless the patch itself set it.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct AnnotationProps {
-    pub color: String,
-    pub interior_color: Option<String>,
-    pub stroke_width: f64,
-    pub opacity: f64,
-    pub blend_mode: BlendMode,
-    pub border: Border,
-    pub font_family: String,
-    pub font_size: f64,
-    pub font_color: String,
-    pub text_align: TextAlign,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub bold: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub italic: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub underline: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon: Option<String>,
-    #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-    pub link: Nullable<PdfLinkTarget>,
-    #[serde(flatten)]
-    pub extra: serde_json::Map<String, Value>,
-    pub line_endings: LineEndings,
-}
-
-/// `PropKey`: a key of [`AnnotationProps`].
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum PropKey {
-    Color,
-    InteriorColor,
-    StrokeWidth,
-    Opacity,
-    BlendMode,
-    Border,
-    LineEndings,
-    FontFamily,
-    FontSize,
-    FontColor,
-    TextAlign,
-    Bold,
-    Italic,
-    Underline,
-    Icon,
-    Link,
-}
-
-impl PropKey {
-    pub const ALL: [PropKey; 16] = [
-        PropKey::Color,
-        PropKey::InteriorColor,
-        PropKey::StrokeWidth,
-        PropKey::Opacity,
-        PropKey::BlendMode,
-        PropKey::Border,
-        PropKey::LineEndings,
-        PropKey::FontFamily,
-        PropKey::FontSize,
-        PropKey::FontColor,
-        PropKey::TextAlign,
-        PropKey::Bold,
-        PropKey::Italic,
-        PropKey::Underline,
-        PropKey::Icon,
-        PropKey::Link,
-    ];
-
-    pub fn as_str(self) -> &'static str {
+impl Json for EditableKinds {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        match value {
+            Some(Value::Bool(b)) => Ok(EditableKinds::All(*b)),
+            other => Vec::<String>::from_json(other).map(EditableKinds::Kinds),
+        }
+    }
+    fn to_json(&self) -> Option<Value> {
         match self {
-            PropKey::Color => "color",
-            PropKey::InteriorColor => "interiorColor",
-            PropKey::StrokeWidth => "strokeWidth",
-            PropKey::Opacity => "opacity",
-            PropKey::BlendMode => "blendMode",
-            PropKey::Border => "border",
-            PropKey::LineEndings => "lineEndings",
-            PropKey::FontFamily => "fontFamily",
-            PropKey::FontSize => "fontSize",
-            PropKey::FontColor => "fontColor",
-            PropKey::TextAlign => "textAlign",
-            PropKey::Bold => "bold",
-            PropKey::Italic => "italic",
-            PropKey::Underline => "underline",
-            PropKey::Icon => "icon",
-            PropKey::Link => "link",
+            EditableKinds::All(b) => Some(Value::Bool(*b)),
+            EditableKinds::Kinds(list) => list.to_json(),
         }
-    }
-
-    pub fn parse(key: &str) -> Option<PropKey> {
-        PropKey::ALL.into_iter().find(|k| k.as_str() == key)
     }
 }
 
-/// `AnnotationPropsPatch`: a partial property write. `interiorColor` and
-/// `link` have three states (absent, `null` to clear, a value). `order` is
-/// every key the patch carried, in the order it arrived (members no key
-/// names included, which `extra` holds): the `props` patch effect reports
-/// them in that order.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct AnnotationPropsPatch {
-    pub color: Option<String>,
-    pub interior_color: Nullable<String>,
-    pub stroke_width: Option<f64>,
-    pub opacity: Option<f64>,
-    pub blend_mode: Option<BlendMode>,
-    pub border: Option<Border>,
-    pub line_endings: Option<LineEndingsPatch>,
-    pub font_family: Option<String>,
-    pub font_size: Option<f64>,
-    pub font_color: Option<String>,
-    pub text_align: Option<TextAlign>,
-    pub bold: Option<bool>,
-    pub italic: Option<bool>,
-    pub underline: Option<bool>,
-    pub icon: Option<String>,
-    pub link: Nullable<PdfLinkTarget>,
-    pub extra: serde_json::Map<String, Value>,
-    pub order: Vec<String>,
+/// The records a gesture works on, by id, in insertion order (`byId`).
+pub type ById = IndexMap<Id, Rc<ModelAnnotation>>;
+
+/// What every transition and read takes: the session and the records it
+/// works on (`Model = Session & AnnotationView`). The members that stand
+/// for JavaScript references (arrays and objects whose identity
+/// `sameSession` checks) are `Rc`s, so a transition that keeps one keeps
+/// its identity.
+#[derive(Clone, Debug)]
+pub struct Model {
+    pub selected: Rc<Vec<Id>>,
+    pub hovered: Option<Id>,
+    pub draft: Option<Rc<Draft>>,
+    pub preview: Option<Rc<MarkupPreview>>,
+    pub object_numbers: Rc<Vec<f64>>,
+    pub defaults: Rc<IndexMap<String, FieldValues>>,
+    pub hit_margin: f64,
+    pub editing: Option<Id>,
+    pub snap: Rc<SnapSettings>,
+    pub editable: Rc<EditableKinds>,
+    pub by_id: Rc<ById>,
+    pub order: Rc<Vec<Id>>,
 }
 
-impl AnnotationPropsPatch {
-    /// Whether the member `key` is present (and not undefined).
-    pub fn has(&self, key: &str) -> bool {
-        match PropKey::parse(key) {
-            Some(PropKey::Color) => self.color.is_some(),
-            Some(PropKey::InteriorColor) => !self.interior_color.is_undefined(),
-            Some(PropKey::StrokeWidth) => self.stroke_width.is_some(),
-            Some(PropKey::Opacity) => self.opacity.is_some(),
-            Some(PropKey::BlendMode) => self.blend_mode.is_some(),
-            Some(PropKey::Border) => self.border.is_some(),
-            Some(PropKey::LineEndings) => self.line_endings.is_some(),
-            Some(PropKey::FontFamily) => self.font_family.is_some(),
-            Some(PropKey::FontSize) => self.font_size.is_some(),
-            Some(PropKey::FontColor) => self.font_color.is_some(),
-            Some(PropKey::TextAlign) => self.text_align.is_some(),
-            Some(PropKey::Bold) => self.bold.is_some(),
-            Some(PropKey::Italic) => self.italic.is_some(),
-            Some(PropKey::Underline) => self.underline.is_some(),
-            Some(PropKey::Icon) => self.icon.is_some(),
-            Some(PropKey::Link) => !self.link.is_undefined(),
-            None => self.extra.contains_key(key),
-        }
+/// The session a transition returns (`Session`).
+#[derive(Clone, Debug)]
+pub struct Session {
+    pub selected: Rc<Vec<Id>>,
+    pub hovered: Option<Id>,
+    pub draft: Option<Rc<Draft>>,
+    pub preview: Option<Rc<MarkupPreview>>,
+    pub object_numbers: Rc<Vec<f64>>,
+    pub defaults: Rc<IndexMap<String, FieldValues>>,
+    pub hit_margin: f64,
+    pub editing: Option<Id>,
+    pub snap: Rc<SnapSettings>,
+    pub editable: Rc<EditableKinds>,
+}
+
+fn opt_rc_eq<T>(a: &Option<Rc<T>>, b: &Option<Rc<T>>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+        (None, None) => true,
+        _ => false,
+    }
+}
+
+impl Session {
+    /// `sameSession`: every field the same value, arrays and objects by identity.
+    pub fn same(&self, other: &Session) -> bool {
+        Rc::ptr_eq(&self.selected, &other.selected)
+            && self.hovered == other.hovered
+            && opt_rc_eq(&self.draft, &other.draft)
+            && opt_rc_eq(&self.preview, &other.preview)
+            && Rc::ptr_eq(&self.object_numbers, &other.object_numbers)
+            && Rc::ptr_eq(&self.defaults, &other.defaults)
+            && (self.hit_margin == other.hit_margin
+                || (self.hit_margin.is_nan() && other.hit_margin.is_nan()))
+            && self.editing == other.editing
+            && Rc::ptr_eq(&self.snap, &other.snap)
+            && match (&*self.editable, &*other.editable) {
+                (EditableKinds::All(a), EditableKinds::All(b)) => a == b,
+                _ => Rc::ptr_eq(&self.editable, &other.editable),
+            }
     }
 
-    /// `Object.keys(patch)`: the recorded order, then any member set in Rust
-    /// without being recorded, in declaration order.
-    pub fn keys(&self) -> Vec<String> {
-        let mut keys: Vec<String> = self.order.iter().filter(|k| self.has(k)).cloned().collect();
-        for key in PropKey::ALL {
-            if self.has(key.as_str()) && !keys.iter().any(|k| k == key.as_str()) {
-                keys.push(key.as_str().to_string());
-            }
-        }
-        for key in self.extra.keys() {
-            if !keys.contains(key) {
-                keys.push(key.clone());
-            }
-        }
-        keys
-    }
-
-    /// `{ ...self, ...next }`: `next`'s members win; keys keep their first
-    /// position and new ones append.
-    pub fn spread(&self, next: &AnnotationPropsPatch) -> AnnotationPropsPatch {
-        let mut out = self.clone();
-        if next.color.is_some() {
-            out.color.clone_from(&next.color);
-        }
-        if !next.interior_color.is_undefined() {
-            out.interior_color = next.interior_color.clone();
-        }
-        if next.stroke_width.is_some() {
-            out.stroke_width = next.stroke_width;
-        }
-        if next.opacity.is_some() {
-            out.opacity = next.opacity;
-        }
-        if next.blend_mode.is_some() {
-            out.blend_mode = next.blend_mode;
-        }
-        if next.border.is_some() {
-            out.border.clone_from(&next.border);
-        }
-        if next.line_endings.is_some() {
-            out.line_endings = next.line_endings;
-        }
-        if next.font_family.is_some() {
-            out.font_family.clone_from(&next.font_family);
-        }
-        if next.font_size.is_some() {
-            out.font_size = next.font_size;
-        }
-        if next.font_color.is_some() {
-            out.font_color.clone_from(&next.font_color);
-        }
-        if next.text_align.is_some() {
-            out.text_align = next.text_align;
-        }
-        if next.bold.is_some() {
-            out.bold = next.bold;
-        }
-        if next.italic.is_some() {
-            out.italic = next.italic;
-        }
-        if next.underline.is_some() {
-            out.underline = next.underline;
-        }
-        if next.icon.is_some() {
-            out.icon.clone_from(&next.icon);
-        }
-        if !next.link.is_undefined() {
-            out.link = next.link.clone();
-        }
-        for (k, v) in &next.extra {
-            out.extra.insert(k.clone(), v.clone());
-        }
-        let mut order = self.keys();
-        for key in next.keys() {
-            if !order.contains(&key) {
-                order.push(key);
-            }
-        }
-        out.order = order;
+    /// The session as the TypeScript object prints it.
+    pub fn to_object(&self) -> Object {
+        let mut out = Object::new();
+        out.insert("selected".into(), self.selected.json());
+        out.insert("hovered".into(), self.hovered.clone().map_or(Value::Null, Value::String));
+        out.insert("draft".into(), self.draft.as_ref().map_or(Value::Null, |d| d.json()));
+        out.insert("preview".into(), self.preview.as_ref().map_or(Value::Null, |p| p.json()));
+        out.insert("objectNumbers".into(), self.object_numbers.json());
+        let defaults: Object =
+            self.defaults.iter().map(|(k, v)| (k.clone(), Value::Object(v.clone()))).collect();
+        out.insert("defaults".into(), Value::Object(defaults));
+        out.insert("hitMargin".into(), json::num(self.hit_margin));
+        out.insert("editing".into(), self.editing.clone().map_or(Value::Null, Value::String));
+        out.insert("snap".into(), self.snap.json());
+        out.insert("editable".into(), self.editable.json());
         out
     }
 }
 
-impl Serialize for AnnotationPropsPatch {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(None)?;
-        for key in self.keys() {
-            match PropKey::parse(&key) {
-                Some(PropKey::Color) => map.serialize_entry(&key, &self.color)?,
-                Some(PropKey::InteriorColor) => map.serialize_entry(&key, &self.interior_color)?,
-                Some(PropKey::StrokeWidth) => map.serialize_entry(&key, &self.stroke_width)?,
-                Some(PropKey::Opacity) => map.serialize_entry(&key, &self.opacity)?,
-                Some(PropKey::BlendMode) => map.serialize_entry(&key, &self.blend_mode)?,
-                Some(PropKey::Border) => map.serialize_entry(&key, &self.border)?,
-                Some(PropKey::LineEndings) => map.serialize_entry(&key, &self.line_endings)?,
-                Some(PropKey::FontFamily) => map.serialize_entry(&key, &self.font_family)?,
-                Some(PropKey::FontSize) => map.serialize_entry(&key, &self.font_size)?,
-                Some(PropKey::FontColor) => map.serialize_entry(&key, &self.font_color)?,
-                Some(PropKey::TextAlign) => map.serialize_entry(&key, &self.text_align)?,
-                Some(PropKey::Bold) => map.serialize_entry(&key, &self.bold)?,
-                Some(PropKey::Italic) => map.serialize_entry(&key, &self.italic)?,
-                Some(PropKey::Underline) => map.serialize_entry(&key, &self.underline)?,
-                Some(PropKey::Icon) => map.serialize_entry(&key, &self.icon)?,
-                Some(PropKey::Link) => map.serialize_entry(&key, &self.link)?,
-                None => map.serialize_entry(&key, &self.extra[&key])?,
-            }
+impl Model {
+    pub fn session(&self) -> Session {
+        Session {
+            selected: self.selected.clone(),
+            hovered: self.hovered.clone(),
+            draft: self.draft.clone(),
+            preview: self.preview.clone(),
+            object_numbers: self.object_numbers.clone(),
+            defaults: self.defaults.clone(),
+            hit_margin: self.hit_margin,
+            editing: self.editing.clone(),
+            snap: self.snap.clone(),
+            editable: self.editable.clone(),
         }
-        map.end()
+    }
+
+    /// `{ ...session, byId, order }`.
+    pub fn of(session: Session, by_id: Rc<ById>, order: Rc<Vec<Id>>) -> Model {
+        Model {
+            selected: session.selected,
+            hovered: session.hovered,
+            draft: session.draft,
+            preview: session.preview,
+            object_numbers: session.object_numbers,
+            defaults: session.defaults,
+            hit_margin: session.hit_margin,
+            editing: session.editing,
+            snap: session.snap,
+            editable: session.editable,
+            by_id,
+            order,
+        }
+    }
+
+    pub fn record(&self, id: &str) -> Option<&ModelAnnotation> {
+        self.by_id.get(id).map(|r| &**r)
+    }
+
+    pub fn is_selected(&self, id: &str) -> bool {
+        self.selected.iter().any(|s| s == id)
+    }
+
+    pub fn draft(&self) -> Option<&Draft> {
+        self.draft.as_deref()
+    }
+
+    /// The model with another selection (`{ ...model, selected }`).
+    pub fn with_selected(&self, selected: Vec<Id>) -> Model {
+        Model { selected: Rc::new(selected), ..self.clone() }
+    }
+
+    /// The model with another draft.
+    pub fn with_draft(&self, draft: Option<Draft>) -> Model {
+        Model { draft: draft.map(Rc::new), ..self.clone() }
     }
 }
 
-impl<'de> Deserialize<'de> for AnnotationPropsPatch {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct PatchVisitor;
-        impl<'de> Visitor<'de> for PatchVisitor {
-            type Value = AnnotationPropsPatch;
-            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-                f.write_str("an annotation props patch")
-            }
-            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
-                let mut p = AnnotationPropsPatch::default();
-                while let Some(key) = map.next_key::<String>()? {
-                    match PropKey::parse(&key) {
-                        Some(PropKey::Color) => p.color = Some(map.next_value()?),
-                        Some(PropKey::InteriorColor) => p.interior_color = map.next_value()?,
-                        Some(PropKey::StrokeWidth) => p.stroke_width = Some(map.next_value()?),
-                        Some(PropKey::Opacity) => p.opacity = Some(map.next_value()?),
-                        Some(PropKey::BlendMode) => p.blend_mode = Some(map.next_value()?),
-                        Some(PropKey::Border) => p.border = Some(map.next_value()?),
-                        Some(PropKey::LineEndings) => p.line_endings = Some(map.next_value()?),
-                        Some(PropKey::FontFamily) => p.font_family = Some(map.next_value()?),
-                        Some(PropKey::FontSize) => p.font_size = Some(map.next_value()?),
-                        Some(PropKey::FontColor) => p.font_color = Some(map.next_value()?),
-                        Some(PropKey::TextAlign) => p.text_align = Some(map.next_value()?),
-                        Some(PropKey::Bold) => p.bold = Some(map.next_value()?),
-                        Some(PropKey::Italic) => p.italic = Some(map.next_value()?),
-                        Some(PropKey::Underline) => p.underline = Some(map.next_value()?),
-                        Some(PropKey::Icon) => p.icon = Some(map.next_value()?),
-                        Some(PropKey::Link) => p.link = map.next_value()?,
-                        None => {
-                            let v: Value = map.next_value()?;
-                            p.extra.insert(key.clone(), v);
-                        }
-                    }
-                    if !p.order.contains(&key) {
-                        p.order.push(key);
-                    }
-                }
-                Ok(p)
+fn read_member<T: Json>(object: &Object, key: &str) -> Result<T, JsonError> {
+    T::from_json(object.get(key)).map_err(|e| e.at(key))
+}
+
+impl Json for Model {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        let object =
+            value.and_then(Value::as_object).ok_or_else(|| JsonError::new("not a model"))?;
+        let defaults: IndexMap<String, FieldValues> =
+            match object.get("defaults").and_then(Value::as_object) {
+                Some(map) => map
+                    .iter()
+                    .map(|(k, v)| {
+                        Ok((
+                            k.clone(),
+                            v.as_object().cloned().ok_or_else(|| JsonError::new("defaults"))?,
+                        ))
+                    })
+                    .collect::<Result<_, JsonError>>()?,
+                None => IndexMap::new(),
+            };
+        let mut by_id = ById::new();
+        if let Some(map) = object.get("byId").and_then(Value::as_object) {
+            for (id, record) in map {
+                by_id.insert(
+                    id.clone(),
+                    Rc::new(ModelAnnotation::read(record).map_err(|e| e.at(id))?),
+                );
             }
         }
-        deserializer.deserialize_map(PatchVisitor)
+        Ok(Model {
+            selected: Rc::new(read_member(object, "selected")?),
+            hovered: read_member::<Nullable<String>>(object, "hovered")
+                .map(Nullable::into_option)
+                .unwrap_or(None),
+            draft: read_member::<Nullable<Draft>>(object, "draft")?.into_option().map(Rc::new),
+            preview: read_member::<Nullable<MarkupPreview>>(object, "preview")
+                .map(Nullable::into_option)
+                .unwrap_or(None)
+                .map(Rc::new),
+            object_numbers: Rc::new(read_member(object, "objectNumbers").unwrap_or_default()),
+            defaults: Rc::new(defaults),
+            hit_margin: read_member(object, "hitMargin")?,
+            editing: read_member::<Nullable<String>>(object, "editing")
+                .map(Nullable::into_option)
+                .unwrap_or(None),
+            snap: Rc::new(read_member(object, "snap")?),
+            editable: Rc::new(read_member(object, "editable").unwrap_or(EditableKinds::All(true))),
+            by_id: Rc::new(by_id),
+            order: Rc::new(read_member(object, "order")?),
+        })
+    }
+    fn to_json(&self) -> Option<Value> {
+        let mut out = self.session().to_object();
+        let by_id: Object = self.by_id.iter().map(|(k, v)| (k.clone(), v.json())).collect();
+        out.insert("byId".into(), Value::Object(by_id));
+        out.insert("order".into(), self.order.json());
+        Some(Value::Object(out))
     }
 }
 
-// ── the model ───────────────────────────────────────────────────────────────
+// ── results and effects ─────────────────────────────────────────────────────
 
-/// Render source of a stored annotation.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Source {
-    Baked,
-    Vector,
+/// What one message changed in the records (`ChangeSet`).
+#[derive(Clone, Debug, Default)]
+pub struct ChangeSet {
+    pub put: Vec<Rc<ModelAnnotation>>,
+    pub drop: Vec<Id>,
+    pub patches: IndexMap<Id, AnnotationPatch>,
 }
 
-/// Render source of a render item: a draft or preview is a `ghost`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum RenderSource {
-    Baked,
-    Vector,
-    Ghost,
-}
+impl ChangeSet {
+    pub fn is_empty(&self) -> bool {
+        self.put.is_empty() && self.drop.is_empty()
+    }
 
-impl From<Source> for RenderSource {
-    fn from(s: Source) -> Self {
-        match s {
-            Source::Baked => RenderSource::Baked,
-            Source::Vector => RenderSource::Vector,
-        }
+    pub fn to_object(&self) -> Object {
+        let patches: Object =
+            self.patches.iter().map(|(k, v)| (k.clone(), Value::Object(v.clone()))).collect();
+        json::object([
+            ("put", Value::Array(self.put.iter().map(|r| r.json()).collect())),
+            ("drop", self.drop.json()),
+            ("patches", Value::Object(patches)),
+        ])
     }
 }
 
-/// A redaction label (`/OverlayText` + `/Repeat`).
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Label {
-    pub text: String,
-    pub repeat: bool,
+js_object! {
+    pub struct CapturedEffect {
+        "tool" => pub tool: String,
+        "page" => pub page: PageRef,
+        "geometry" => pub geometry: Shape,
+    }
 }
 
-/// The session's authority over a record.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Authority {
-    pub update: bool,
-    pub delete: bool,
+js_object! {
+    pub struct CreateEffect {
+        "id" => pub id: Id,
+        "draft" => pub draft: AnnotationDraft,
+    }
 }
 
-/// A stored annotation. It serializes through the impl below, which writes
-/// the members in the order the TypeScript object that built it has.
-#[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Annot {
-    pub id: Id,
-    #[serde(rename = "ref", default)]
-    pub ref_: Option<AnnotationRef>,
-    /// The page this annotation lives on.
-    pub page: PageRef,
-    pub subtype: String,
-    pub geom: Geom,
-    pub style: Style,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<TextStyle>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub label: Option<Label>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub measure: Option<MeasurementAppearance>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon: Option<String>,
-    pub flags: AnnotationFlags,
-    pub source: Source,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_box: Option<Rect>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_rot: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_version: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub authority: Option<Authority>,
-    /// The engine `AnnotationDTO`, carried verbatim.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub data: Option<Value>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub intent: Option<Intent>,
-    #[serde(default, skip_serializing_if = "Nullable::is_undefined")]
-    pub link: Nullable<PdfLinkTarget>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub irt: Option<Id>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub group: Option<String>,
+js_object! {
+    pub struct PatchEffect {
+        "id" => pub id: Id,
+        "patch" => pub patch: AnnotationPatch,
+    }
 }
 
-/// A member of [`Annot`], for the member orders below.
-#[derive(Clone, Copy)]
-enum AnnotKey {
-    Id,
-    Ref,
-    Page,
-    Subtype,
-    Geom,
-    Style,
-    Text,
-    Label,
-    Measure,
-    Icon,
-    Flags,
-    Source,
-    ApBox,
-    ApRot,
-    ApVersion,
-    Authority,
-    Data,
-    Intent,
-    Link,
-    Irt,
-    Group,
+js_object! {
+    pub struct IdEffect {
+        "id" => pub id: Id,
+    }
 }
 
-/// `fromDTO` (`repository/index.ts`): identity, `flags`, `source` and the
-/// DTO, then `irt`/`group`, `style`, the kind's slice (a dimension's
-/// `measure` before its `geom`, the rest after), and `apBox`/`apRot`. The
-/// session's `authority` and `apVersion` are spread on later.
-const FROM_DTO_ORDER: [AnnotKey; 21] = {
-    use AnnotKey::*;
-    [
-        Id, Ref, Page, Subtype, Flags, Source, Data, Irt, Group, Style, Measure, Geom, Text, Label,
-        Icon, Link, Intent, ApBox, ApRot, Authority, ApVersion,
-    ]
-};
+js_object! {
+    pub struct SyncLinkEffect {
+        "id" => pub id: Id,
+        "target" => pub target: Value,
+    }
+}
 
-/// The reducer's create literals (`update.ts`): `geom`, `style` and the
-/// kind's extras, then `flags` and `source`. A caret replacement writes
-/// `intent` ahead of `geom`; ink writes it after `style` (handled in
-/// [`Annot::member_order`]).
-const DRAWN_ORDER: [AnnotKey; 21] = {
-    use AnnotKey::*;
-    [
-        Id, Ref, Page, Subtype, Intent, Geom, Measure, Style, Text, Label, Icon, Link, Flags,
-        Source, Irt, Group, Data, ApBox, ApRot, Authority, ApVersion,
-    ]
-};
+js_union! {
+    /// Engine work a message asks for (`Effect`).
+    pub enum Effect ("type") {
+        "captured" => Captured(CapturedEffect),
+        "create" => Create(CreateEffect),
+        "patch" => Patch(PatchEffect),
+        "text" => Text(IdEffect),
+        "syncLink" => SyncLink(SyncLinkEffect),
+        "delete" => Delete(IdEffect),
+    }
+}
 
-/// A stored record that is neither: the base members, then what spreads
-/// appended after `source`.
-const STORED_ORDER: [AnnotKey; 21] = {
-    use AnnotKey::*;
-    [
-        Id, Ref, Page, Subtype, Intent, Geom, Style, Flags, Source, Text, Label, Measure, Icon,
-        Link, Irt, Group, Data, ApBox, ApRot, Authority, ApVersion,
-    ]
-};
+impl Effect {
+    pub fn create(id: &str, draft: AnnotationDraft) -> Effect {
+        Effect::Create(CreateEffect { id: id.into(), draft, order: Default::default() })
+    }
+    pub fn patch(id: &str, patch: AnnotationPatch) -> Effect {
+        Effect::Patch(PatchEffect { id: id.into(), patch, order: Default::default() })
+    }
+    pub fn text(id: &str) -> Effect {
+        Effect::Text(IdEffect { id: id.into(), order: Default::default() })
+    }
+    pub fn delete(id: &str) -> Effect {
+        Effect::Delete(IdEffect { id: id.into(), order: Default::default() })
+    }
+    pub fn sync_link(id: &str, target: Value) -> Effect {
+        Effect::SyncLink(SyncLinkEffect { id: id.into(), target, order: Default::default() })
+    }
+}
 
-impl Annot {
-    /// The member order of the TypeScript object, read off what the record
-    /// carries since the Rust struct keeps no order of its own: `data` with
-    /// `apBox` is `fromDTO`'s, no `ref` yet is a reducer create, anything
-    /// else a stored record grown by spreads.
-    fn member_order(&self) -> impl Iterator<Item = AnnotKey> {
-        let (order, ink) = if self.data.is_some() && self.ap_box.is_some() {
-            (&FROM_DTO_ORDER, false)
-        } else if self.ref_.is_none() {
-            (&DRAWN_ORDER, self.subtype == "ink")
-        } else {
-            (&STORED_ORDER, false)
+/// One message's result (`UpdateResult`).
+#[derive(Clone, Debug)]
+pub struct UpdateResult {
+    pub session: Session,
+    pub change: ChangeSet,
+    pub effects: Vec<Effect>,
+}
+
+// ── view output ─────────────────────────────────────────────────────────────
+
+js_object! {
+    /// A draggable handle (`Handle`).
+    pub struct Handle {
+        "id" => pub id: String,
+        "at" => pub at: Point,
+        /// Absent where the TypeScript's cursor table has none (a box turned
+        /// by a non-finite angle).
+        "cursor" => pub cursor: Option<Cursor>,
+    }
+}
+
+impl Handle {
+    pub fn new(id: impl Into<String>, at: Point, cursor: impl Into<String>) -> Self {
+        Handle::maybe(id, at, Some(cursor.into()))
+    }
+    /// A handle whose cursor may be absent.
+    pub fn maybe(id: impl Into<String>, at: Point, cursor: Option<Cursor>) -> Self {
+        Handle { id: id.into(), at, cursor, order: Default::default() }
+    }
+}
+
+js_object! {
+    /// Chrome grab-zone geometry (`ChromeGeometry`).
+    pub struct ChromeGeometry {
+        "handleTol" => pub handle_tol: f64,
+        "knobTol" => pub knob_tol: f64,
+        "knobOffset" => pub knob_offset: f64,
+        "rotationHandle" => pub rotation_handle: Option<bool>,
+    }
+}
+
+js_object! {
+    pub struct RectNode {
+        "rect" => pub rect: Rect,
+    }
+}
+
+js_object! {
+    pub struct LineNode {
+        "a" => pub a: Point,
+        "b" => pub b: Point,
+    }
+}
+
+js_object! {
+    pub struct PolyNode {
+        "points" => pub points: Vec<Point>,
+        "closed" => pub closed: bool,
+    }
+}
+
+js_object! {
+    pub struct PathNode {
+        "d" => pub d: String,
+    }
+}
+
+js_union! {
+    /// The geometry-only draw vocabulary (`RenderNode`).
+    pub enum RenderNode ("kind") {
+        "rect" => Rect(RectNode),
+        "ellipse" => Ellipse(RectNode),
+        "line" => Line(LineNode),
+        "poly" => Poly(PolyNode),
+        "path" => Path(PathNode),
+    }
+}
+
+impl RenderNode {
+    pub fn rect(rect: Rect) -> Self {
+        RenderNode::Rect(RectNode { rect, order: Default::default() })
+    }
+    pub fn ellipse(rect: Rect) -> Self {
+        RenderNode::Ellipse(RectNode { rect, order: Default::default() })
+    }
+    pub fn line(a: Point, b: Point) -> Self {
+        RenderNode::Line(LineNode { a, b, order: Default::default() })
+    }
+    pub fn poly(points: Vec<Point>, closed: bool) -> Self {
+        RenderNode::Poly(PolyNode { points, closed, order: Default::default() })
+    }
+    pub fn path(d: String) -> Self {
+        RenderNode::Path(PathNode { d, order: Default::default() })
+    }
+}
+
+js_object! {
+    /// How to paint one node (`Paint`); an absent member means none.
+    #[derive(Default)]
+    pub struct Paint {
+        "fill" => pub fill: Option<Value>,
+        "stroke" => pub stroke: Option<Value>,
+        "width" => pub width: Option<f64>,
+        "opacity" => pub opacity: Option<Value>,
+        "dash" => pub dash: Option<Vec<f64>>,
+        "blend" => pub blend: Option<String>,
+        "lineCap" => pub line_cap: Option<String>,
+        "join" => pub join: Option<String>,
+        "fillRule" => pub fill_rule: Option<String>,
+    }
+}
+
+/// A font program a scene's text draws in (`SceneFontProgram`): mounted
+/// under its own family, weight and style. The core names no font data of
+/// its own; whoever draws text (the form painter) brings its programs.
+pub trait SceneFontProgram: fmt::Debug {
+    /// The program's members as its object prints them, `load` aside.
+    fn members(&self) -> Object;
+    fn family(&self) -> &str;
+    fn weight(&self) -> f64;
+    /// `'normal'` or `'italic'`.
+    fn style(&self) -> &str;
+    /// The program's bytes.
+    fn load(&self) -> &[u8];
+}
+
+/// A shared font program.
+#[derive(Clone, Debug)]
+pub struct FontProgramRef(pub Rc<dyn SceneFontProgram>);
+
+impl PartialEq for FontProgramRef {
+    fn eq(&self, other: &Self) -> bool {
+        Rc::ptr_eq(&self.0, &other.0) || self.0.members() == other.0.members()
+    }
+}
+
+impl Json for FontProgramRef {
+    fn from_json(_: Option<&Value>) -> Result<Self, JsonError> {
+        Err(JsonError::new("a font program doesn't read from JSON"))
+    }
+    fn to_json(&self) -> Option<Value> {
+        Some(Value::Object(self.0.members()))
+    }
+}
+
+js_object! {
+    pub struct ShapeScene {
+        "rect" => pub rect: Option<Rect>,
+        "a" => pub a: Option<Point>,
+        "b" => pub b: Option<Point>,
+        "points" => pub points: Option<Vec<Point>>,
+        "closed" => pub closed: Option<bool>,
+        "d" => pub d: Option<String>,
+        "paint" => pub paint: Paint,
+        "clip" => pub clip: Option<Rect>,
+    }
+}
+
+js_object! {
+    /// Painted text (`SceneNode` of kind `text`).
+    pub struct TextScene {
+        "at" => pub at: Point,
+        "text" => pub text: String,
+        "fontSize" => pub font_size: f64,
+        "fontFamily" => pub font_family: Option<String>,
+        "rotation" => pub rotation: Option<f64>,
+        "paint" => pub paint: Paint,
+        "clip" => pub clip: Option<Rect>,
+    }
+}
+
+js_object! {
+    /// Text placed character by character (`SceneNode` of kind `glyphs`).
+    pub struct GlyphsScene {
+        "at" => pub at: Point,
+        "text" => pub text: String,
+        "offsets" => pub offsets: Vec<f64>,
+        "fontSize" => pub font_size: f64,
+        "fontFamily" => pub font_family: String,
+        "fontWeight" => pub font_weight: Option<f64>,
+        "fontStyle" => pub font_style: Option<String>,
+        "rotation" => pub rotation: Option<f64>,
+        "program" => pub program: Option<FontProgramRef>,
+        "paint" => pub paint: Paint,
+        "clip" => pub clip: Option<Rect>,
+    }
+}
+
+js_union! {
+    /// A fully painted draw node (`SceneNode`): a renderer maps each to one element.
+    pub enum SceneNode ("kind") {
+        "rect" => Rect(ShapeScene),
+        "ellipse" => Ellipse(ShapeScene),
+        "line" => Line(ShapeScene),
+        "poly" => Poly(ShapeScene),
+        "path" => Path(ShapeScene),
+        "text" => Text(TextScene),
+        "glyphs" => Glyphs(GlyphsScene),
+    }
+}
+
+impl SceneNode {
+    /// `{ ...node, paint }`: a geometry node painted.
+    pub fn painted(node: &RenderNode, paint: Paint) -> SceneNode {
+        let mut scene = ShapeScene {
+            rect: None,
+            a: None,
+            b: None,
+            points: None,
+            closed: None,
+            d: None,
+            paint,
+            clip: None,
+            order: Default::default(),
         };
-        order
-            .iter()
-            .copied()
-            .flat_map(move |key| match (ink, key) {
-                (true, AnnotKey::Intent) => [None, None],
-                (true, AnnotKey::Style) => [Some(AnnotKey::Style), Some(AnnotKey::Intent)],
-                _ => [Some(key), None],
-            })
-            .flatten()
-    }
-}
-
-impl Serialize for Annot {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        fn put<M: SerializeMap, T: Serialize>(
-            map: &mut M,
-            key: &str,
-            value: Option<&T>,
-        ) -> Result<(), M::Error> {
-            match value {
-                Some(v) => map.serialize_entry(key, v),
-                None => Ok(()),
+        let keys: &[&str] = match node {
+            RenderNode::Rect(n) | RenderNode::Ellipse(n) => {
+                scene.rect = Some(n.rect);
+                &["rect", "paint"]
             }
-        }
-        let mut map = serializer.serialize_map(None)?;
-        for key in self.member_order() {
-            let m = &mut map;
-            match key {
-                AnnotKey::Id => put(m, "id", Some(&self.id)),
-                AnnotKey::Ref => put(m, "ref", Some(&self.ref_)),
-                AnnotKey::Page => put(m, "page", Some(&self.page)),
-                AnnotKey::Subtype => put(m, "subtype", Some(&self.subtype)),
-                AnnotKey::Geom => put(m, "geom", Some(&self.geom)),
-                AnnotKey::Style => put(m, "style", Some(&self.style)),
-                AnnotKey::Text => put(m, "text", self.text.as_ref()),
-                AnnotKey::Label => put(m, "label", self.label.as_ref()),
-                AnnotKey::Measure => put(m, "measure", self.measure.as_ref()),
-                AnnotKey::Icon => put(m, "icon", self.icon.as_ref()),
-                AnnotKey::Flags => put(m, "flags", Some(&self.flags)),
-                AnnotKey::Source => put(m, "source", Some(&self.source)),
-                AnnotKey::ApBox => put(m, "apBox", self.ap_box.as_ref()),
-                AnnotKey::ApRot => put(m, "apRot", self.ap_rot.as_ref()),
-                AnnotKey::ApVersion => put(m, "apVersion", self.ap_version.as_ref()),
-                AnnotKey::Authority => put(m, "authority", self.authority.as_ref()),
-                AnnotKey::Data => put(m, "data", self.data.as_ref()),
-                AnnotKey::Intent => put(m, "intent", self.intent.as_ref()),
-                AnnotKey::Link => put(m, "link", (!self.link.is_undefined()).then_some(&self.link)),
-                AnnotKey::Irt => put(m, "irt", self.irt.as_ref()),
-                AnnotKey::Group => put(m, "group", self.group.as_ref()),
-            }?;
-        }
-        map.end()
-    }
-}
-
-/// A draggable handle.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Handle {
-    pub id: String,
-    pub at: Point,
-    pub cursor: Cursor,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Axis {
-    X,
-    Y,
-}
-
-/// An alignment guide.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct Guide {
-    pub axis: Axis,
-    pub at: f64,
-    pub lo: f64,
-    pub hi: f64,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SnapSettings {
-    pub guides: bool,
-    pub guide_threshold: f64,
-    pub rotation: bool,
-    pub rotation_angles: Vec<f64>,
-    pub rotation_threshold: f64,
-}
-
-/// `Partial<SnapSettings>`.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct SnapSettingsPatch {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub guides: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub guide_threshold: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rotation: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rotation_angles: Option<Vec<f64>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rotation_threshold: Option<f64>,
-}
-
-/// A click-create box anchor.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "kebab-case")]
-pub enum BoxAnchor {
-    Center,
-    TopLeft,
-}
-
-/// `ClickCreate`: a default-size box (`width`/`height`/`anchor`) or a
-/// default-length segment (`length`/`angleDeg`). The TypeScript tells the arms
-/// apart by `'length' in policy` in one place and `'width' in policy` in
-/// others, so an object carrying both answers differently to each; the
-/// members stay optional here to keep that.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ClickCreate {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub width: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub height: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub anchor: Option<BoxAnchor>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub length: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub angle_deg: Option<f64>,
-}
-
-impl ClickCreate {
-    pub fn boxed(width: f64, height: f64, anchor: Option<BoxAnchor>) -> Self {
-        ClickCreate { width: Some(width), height: Some(height), anchor, ..Default::default() }
-    }
-
-    pub fn segment(length: f64, angle_deg: Option<f64>) -> Self {
-        ClickCreate { length: Some(length), angle_deg, ..Default::default() }
-    }
-
-    /// `'length' in policy`.
-    pub fn is_segment(&self) -> bool {
-        self.length.is_some()
-    }
-
-    /// `'width' in policy`.
-    pub fn has_width(&self) -> bool {
-        self.width.is_some()
-    }
-}
-
-/// `ClickCreate | false`: a tool's click policy, or `false` to suppress a
-/// kind's own click fallback.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ClickCreateOption {
-    Policy(ClickCreate),
-    Off,
-}
-
-impl ClickCreateOption {
-    /// `d.clickCreate && 'width' in d.clickCreate`.
-    pub fn box_policy(this: Option<&Self>) -> Option<ClickCreate> {
-        match this {
-            Some(ClickCreateOption::Policy(p)) if p.has_width() => Some(*p),
-            _ => None,
-        }
-    }
-
-    /// `d.clickCreate && 'length' in d.clickCreate`.
-    pub fn segment_policy(this: Option<&Self>) -> Option<ClickCreate> {
-        match this {
-            Some(ClickCreateOption::Policy(p)) if p.is_segment() => Some(*p),
-            _ => None,
-        }
-    }
-}
-
-impl Serialize for ClickCreateOption {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            ClickCreateOption::Policy(p) => p.serialize(serializer),
-            ClickCreateOption::Off => serializer.serialize_bool(false),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for ClickCreateOption {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let value = Value::deserialize(deserializer)?;
-        match value {
-            Value::Bool(false) => Ok(ClickCreateOption::Off),
-            other => ClickCreate::deserialize(other)
-                .map(ClickCreateOption::Policy)
-                .map_err(de::Error::custom),
-        }
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum CalloutStep {
-    Knee,
-    Box,
-}
-
-/// The two stages of a distance draft: drag the endpoints, then place the
-/// dimension line.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum DistanceStep {
-    Endpoints,
-    Offset,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GroupOp {
-    Resize,
-}
-
-/// The in-progress gesture. Each variant's members follow the order
-/// `update.ts` writes them: the object literal that starts the gesture, then
-/// the members later samples spread in.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "g", rename_all = "kebab-case", rename_all_fields = "camelCase")]
-pub enum Draft {
-    CreateRect {
-        subtype: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        page: PageRef,
-        from: Point,
-        to: Point,
-        ellipse: bool,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        display_rotation: Option<f64>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        upright: Option<bool>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        click_create: Option<ClickCreateOption>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-    },
-    CreateDistance {
-        step: DistanceStep,
-        subtype: String,
-        preset: String,
-        page: PageRef,
-        from: Point,
-        to: Point,
-        measure: DistanceAppearance,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-    },
-    CreateLine {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        measure: Option<MeasurementAppearance>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        capture: Option<String>,
-        subtype: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        page: PageRef,
-        from: Point,
-        to: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        click_create: Option<ClickCreateOption>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-    },
-    CreatePoly {
-        subtype: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        page: PageRef,
-        points: Vec<Point>,
-        cur: Point,
-        closed: bool,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        measure: Option<ShapeMeasurementAppearance>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-    },
-    CreateInk {
-        subtype: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        page: PageRef,
-        strokes: Vec<Vec<Point>>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        intent: Option<Intent>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-    },
-    CreateCallout {
-        subtype: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        page: PageRef,
-        step: CalloutStep,
-        tip: Point,
-        cur: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        display_rotation: Option<f64>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        upright: Option<bool>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        page_box: Option<Rect>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-        // Set by later clicks, so they follow what the tip click wrote.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        knee: Option<Point>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        box_from: Option<Point>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        box_to: Option<Point>,
-    },
-    Move {
-        ids: Vec<Id>,
-        start: Point,
-        delta: Point,
-        guides: Vec<Guide>,
-    },
-    Handle {
-        id: Id,
-        handle: String,
-        base: Geom,
-        cur: Geom,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        view: Option<ViewEnv>,
-    },
-    Rotate {
-        ids: Vec<Id>,
-        pivot: Point,
-        start: Point,
-        cur: Point,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        view: Option<ViewEnv>,
-        // Set by the first move sample, after the press wrote `view`.
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        free: Option<bool>,
-    },
-    Group {
-        op: GroupOp,
-        ids: Vec<Id>,
-        handle: String,
-        anchor: Point,
-        base: Rect,
-        cur: Rect,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        view: Option<ViewEnv>,
-    },
-    Caption {
-        id: Id,
-        start: Point,
-        delta: Point,
-    },
-    Leader {
-        id: Id,
-        start: Point,
-        delta: f64,
-    },
-    Marquee {
-        page: PageRef,
-        from: Point,
-        to: Point,
-    },
-}
-
-/// The fields of a rotate draft, for [`crate::update::rotate_draft_delta`].
-#[derive(Clone, Debug, PartialEq)]
-pub struct RotateDraft<'a> {
-    pub ids: &'a [Id],
-    pub pivot: Point,
-    pub start: Point,
-    pub cur: Point,
-    pub free: Option<bool>,
-    pub view: Option<ViewEnv>,
-}
-
-impl Draft {
-    /// The rotate draft's fields, when this is one.
-    pub fn as_rotate(&self) -> Option<RotateDraft<'_>> {
-        match self {
-            Draft::Rotate { ids, pivot, start, cur, free, view } => Some(RotateDraft {
-                ids,
-                pivot: *pivot,
-                start: *start,
-                cur: *cur,
-                free: *free,
-                view: *view,
-            }),
-            _ => None,
-        }
-    }
-
-    /// `draft.g.startsWith('create-')`: a creation draft, not an edit
-    /// gesture. No wildcard arm, so a new variant has to pick a side.
-    pub fn is_create(&self) -> bool {
-        match self {
-            Draft::CreateRect { .. }
-            | Draft::CreateDistance { .. }
-            | Draft::CreateLine { .. }
-            | Draft::CreatePoly { .. }
-            | Draft::CreateInk { .. }
-            | Draft::CreateCallout { .. } => true,
-            Draft::Move { .. }
-            | Draft::Handle { .. }
-            | Draft::Rotate { .. }
-            | Draft::Group { .. }
-            | Draft::Caption { .. }
-            | Draft::Leader { .. }
-            | Draft::Marquee { .. } => false,
-        }
-    }
-
-    /// `'page' in draft`: the creation drafts and the marquee.
-    pub fn page(&self) -> Option<PageRef> {
-        match self {
-            Draft::CreateRect { page, .. }
-            | Draft::CreateDistance { page, .. }
-            | Draft::CreateLine { page, .. }
-            | Draft::CreatePoly { page, .. }
-            | Draft::CreateInk { page, .. }
-            | Draft::CreateCallout { page, .. }
-            | Draft::Marquee { page, .. } => Some(*page),
-            _ => None,
-        }
-    }
-
-    /// `'id' in draft ? draft.id : undefined`: the single-annotation edits.
-    pub fn id(&self) -> Option<&Id> {
-        match self {
-            Draft::Handle { id, .. } | Draft::Caption { id, .. } | Draft::Leader { id, .. } => {
-                Some(id)
+            RenderNode::Line(n) => {
+                scene.a = Some(n.a);
+                scene.b = Some(n.b);
+                &["a", "b", "paint"]
             }
-            _ => None,
-        }
-    }
-
-    /// `'ids' in draft ? draft.ids : undefined`.
-    pub fn ids(&self) -> Option<&[Id]> {
-        match self {
-            Draft::Move { ids, .. } | Draft::Rotate { ids, .. } | Draft::Group { ids, .. } => {
-                Some(ids)
+            RenderNode::Poly(n) => {
+                scene.points = Some(n.points.clone());
+                scene.closed = Some(n.closed);
+                &["points", "closed", "paint"]
             }
-            _ => None,
+            RenderNode::Path(n) => {
+                scene.d = Some(n.d.clone());
+                &["d", "paint"]
+            }
+        };
+        let scene = scene.ordered(keys);
+        match node {
+            RenderNode::Rect(_) => SceneNode::Rect(scene),
+            RenderNode::Ellipse(_) => SceneNode::Ellipse(scene),
+            RenderNode::Line(_) => SceneNode::Line(scene),
+            RenderNode::Poly(_) => SceneNode::Poly(scene),
+            RenderNode::Path(_) => SceneNode::Path(scene),
+        }
+    }
+
+    /// A path node.
+    pub fn path(d: String, paint: Paint) -> SceneNode {
+        SceneNode::painted(&RenderNode::path(d), paint)
+    }
+
+    pub fn paint(&self) -> &Paint {
+        match self {
+            SceneNode::Rect(s)
+            | SceneNode::Ellipse(s)
+            | SceneNode::Line(s)
+            | SceneNode::Poly(s)
+            | SceneNode::Path(s) => &s.paint,
+            SceneNode::Text(t) => &t.paint,
+            SceneNode::Glyphs(g) => &g.paint,
+        }
+    }
+
+    pub fn clip(&self) -> Option<Rect> {
+        match self {
+            SceneNode::Rect(s)
+            | SceneNode::Ellipse(s)
+            | SceneNode::Line(s)
+            | SceneNode::Poly(s)
+            | SceneNode::Path(s) => s.clip,
+            SceneNode::Text(t) => t.clip,
+            SceneNode::Glyphs(g) => g.clip,
         }
     }
 }
 
-/// A live text-markup preview, per page.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MarkupPreview {
-    pub subtype: String,
-    pub preset: String,
-    /// `Record<number, TextQuad[]>`: integer pages first, then the rest in
-    /// insertion order.
-    pub by_page: Record<Vec<TextQuad>>,
+js_object! {
+    pub struct OutlineNode {
+        "rect" => pub rect: Rect,
+    }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum PolySubtype {
-    Polygon,
-    Polyline,
+js_object! {
+    pub struct ObbNode {
+        "corners" => pub corners: Vec<Point>,
+        "angle" => pub angle: f64,
+    }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum CreationDraftKind {
-    Poly,
+js_object! {
+    pub struct HandleNode {
+        "at" => pub at: Point,
+        "cursor" => pub cursor: Option<Cursor>,
+        "rot" => pub rot: Option<f64>,
+        "role" => pub role: String,
+        "active" => pub active: bool,
+    }
 }
 
-/// Anchor and affordances for UI that controls an in-progress creation.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct CreationDraftAnchor {
-    pub kind: CreationDraftKind,
-    pub subtype: PolySubtype,
-    pub page: PageRef,
-    pub bounds: Rect,
-    pub point_count: usize,
-    pub min_points: usize,
-    pub can_finish: bool,
+js_object! {
+    pub struct KnobNode {
+        "at" => pub at: Point,
+        "from" => pub from: Point,
+    }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Model {
-    /// Shared so a step that leaves the annotations alone (every draft
-    /// pointermove) clones a pointer rather than every annotation's JSON,
-    /// as the TypeScript's spread shares the object.
-    /// Insertion-ordered, as the TypeScript `byId` object is: a new record
-    /// goes last, a replaced one keeps its place.
-    pub by_id: Rc<ById>,
-    pub order: Rc<Vec<Id>>,
-    pub selected: Vec<Id>,
-    pub hovered: Option<Id>,
-    /// Shared, so a step that keeps the draft keeps the same one: a new
-    /// `Rc` is the TypeScript's new draft object, which is what
-    /// `draftChanged` announces.
-    pub draft: Option<Rc<Draft>>,
-    pub preview: Option<MarkupPreview>,
-    pub seq: f64,
-    pub style: Style,
-    /// Insertion-ordered, as the TypeScript `{ ...m.defaults, [subtype]: next }`
-    /// keeps a configured tool where it was first set.
-    pub defaults: IndexMap<String, AnnotationPropsPatch>,
-    pub hit_margin: f64,
-    pub editing: Option<Id>,
-    pub snap: SnapSettings,
+js_object! {
+    pub struct GuideNode {
+        "axis" => pub axis: String,
+        "at" => pub at: f64,
+        "lo" => pub lo: f64,
+        "hi" => pub hi: f64,
+    }
 }
 
-/// `Model.byId`: the records by id, in insertion order.
-pub type ById = IndexMap<Id, Annot>;
-
-/// Selection-chrome geometry in content units.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ChromeGeom {
-    pub handle_tol: f64,
-    pub knob_tol: f64,
-    pub knob_offset: f64,
+js_object! {
+    pub struct GuideLine {
+        "a" => pub a: Point,
+        "b" => pub b: Point,
+        "role" => pub role: String,
+    }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+js_object! {
+    pub struct RotateGuidesNode {
+        "center" => pub center: Point,
+        "angle" => pub angle: f64,
+        "lines" => pub lines: Vec<GuideLine>,
+    }
+}
+
+js_union! {
+    /// Selection chrome (`ChromeNode`).
+    pub enum ChromeNode ("kind") {
+        "outline" => Outline(OutlineNode),
+        "obb" => Obb(ObbNode),
+        "handle" => Handle(HandleNode),
+        "rotate-knob" => RotateKnob(KnobNode),
+        "guide" => Guide(GuideNode),
+        "rotate-guides" => RotateGuides(RotateGuidesNode),
+        "marquee" => Marquee(OutlineNode),
+    }
+}
+
+js_object! {
+    /// A redaction's label, as its hover preview draws it.
+    pub struct RedactLabel {
+        "text" => pub text: String,
+        "repeat" => pub repeat: Option<Value>,
+    }
+}
+
+js_object! {
+    /// Where a render item draws: its box, turn and scale.
+    pub struct Frame {
+        "box" => pub box_: Rect,
+        "rotation" => pub rotation: f64,
+        "scale" => pub scale: f64,
+    }
+}
+
+js_object! {
+    /// The engine's raster inside a frame.
+    pub struct Raster {
+        "box" => pub box_: Rect,
+        "rotation" => pub rotation: f64,
+    }
+}
+
+js_strings! {
+    /// How a render item paints (`RenderItem['source']`).
+    pub enum ItemSource {
+        "baked" => Baked,
+        "vector" => Vector,
+        "draft" => Draft,
+        "ghost" => Ghost,
+    }
+}
+
+impl From<Source> for ItemSource {
+    fn from(source: Source) -> Self {
+        match source {
+            Source::Baked => ItemSource::Baked,
+            Source::Vector => ItemSource::Vector,
+        }
+    }
+}
+
+/// A lent record's drawing, made the first time it's asked for.
+#[derive(Clone, Default)]
+pub struct LentScene(pub Option<Rc<dyn Fn() -> Vec<SceneNode>>>);
+
+impl fmt::Debug for LentScene {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(if self.0.is_some() { "LentScene(..)" } else { "LentScene(None)" })
+    }
+}
+
+impl PartialEq for LentScene {
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.0, &other.0) {
+            (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+            (None, None) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Json for LentScene {
+    fn from_json(_: Option<&Value>) -> Result<Self, JsonError> {
+        Ok(LentScene(None))
+    }
+    fn to_json(&self) -> Option<Value> {
+        self.0.as_ref().map(|_| {
+            let mut marker = Object::new();
+            marker.insert("$function".into(), Value::Bool(true));
+            Value::Object(marker)
+        })
+    }
+}
+
+js_object! {
+    /// Per-annotation render data (`RenderItem`).
+    pub struct RenderItem {
+        "id" => pub id: Id,
+        "ref" => pub reference: Option<Value>,
+        "annotation" => pub annotation: Option<Annotation>,
+        "subtype" => pub subtype: KindName,
+        "geometry" => pub geometry: Shape,
+        "box" => pub box_: Rect,
+        "apBox" => pub ap_box: Option<Rect>,
+        "style" => pub style: Style,
+        "text" => pub text: Option<TextStyle>,
+        "icon" => pub icon: Option<Value>,
+        "label" => pub label: Option<RedactLabel>,
+        "measure" => pub measure: Option<Object>,
+        "source" => pub source: ItemSource,
+        "pictureVersion" => pub picture_version: Option<f64>,
+        "lentScene" => pub lent_scene: LentScene,
+        "ghostOpacity" => pub ghost_opacity: Option<f64>,
+        "selected" => pub selected: bool,
+        "hovered" => pub hovered: Option<bool>,
+        "rot" => pub rot: Option<f64>,
+        "apRot" => pub ap_rot: Option<f64>,
+        "blend" => pub blend: Option<String>,
+        "frame" => pub frame: Option<Frame>,
+        "raster" => pub raster: Option<Nullable<Raster>>,
+    }
+}
+
+js_object! {
+    pub struct AnnotTarget {
+        "id" => pub id: Id,
+    }
+}
+
+js_object! {
+    pub struct HandleTarget {
+        "id" => pub id: Id,
+        "handle" => pub handle: String,
+        "cursor" => pub cursor: Option<Cursor>,
+    }
+}
+
+js_object! {
+    pub struct RotateTarget {
+        "ids" => pub ids: Vec<Id>,
+        "pivot" => pub pivot: Point,
+    }
+}
+
+js_object! {
+    pub struct GroupHandleTarget {
+        "ids" => pub ids: Vec<Id>,
+        "handle" => pub handle: String,
+        "cursor" => pub cursor: Option<Cursor>,
+        "box" => pub box_: Rect,
+    }
+}
+
+js_object! {
+    pub struct EmptyTarget {}
+}
+
+js_union! {
+    /// What's under a page point (`Target`).
+    pub enum Target ("kind") {
+        "handle" => Handle(HandleTarget),
+        "rotate" => Rotate(RotateTarget),
+        "group-handle" => GroupHandle(GroupHandleTarget),
+        "annot" => Annot(AnnotTarget),
+        "empty" => Empty(EmptyTarget),
+    }
+}
+
+impl Target {
+    pub fn empty() -> Target {
+        Target::Empty(EmptyTarget { order: Default::default() })
+    }
+    pub fn annot(id: &str) -> Target {
+        Target::Annot(AnnotTarget { id: id.into(), order: Default::default() })
+    }
+}
+
+js_object! {
+    /// A rotation in progress, for the badge (`RotationAnchor`).
+    pub struct RotationAnchor {
+        "page" => pub page: PageRef,
+        "at" => pub at: Point,
+        "angle" => pub angle: f64,
+    }
+}
+
+js_object! {
+    /// Anchor for a poly creation draft's controls (`CreationDraftAnchor`).
+    pub struct CreationDraftAnchor {
+        "kind" => pub kind: String,
+        "subtype" => pub subtype: String,
+        "page" => pub page: PageRef,
+        "bounds" => pub bounds: Rect,
+        "pointCount" => pub point_count: f64,
+        "minPoints" => pub min_points: f64,
+        "canFinish" => pub can_finish: bool,
+    }
+}
+
+js_object! {
+    /// Settings for straightening a freehand stroke (`InkStraightenOptions`).
+    pub struct InkStraightenOptions {
+        "deviationThreshold" => pub deviation_threshold: f64,
+        "axisSnapDegrees" => pub axis_snap_degrees: f64,
+    }
+}
+
+js_object! {
+    /// A box placement: a box and the turn an upright tool gives it.
+    pub struct BoxPlacement {
+        "rect" => pub rect: Rect,
+        "rot" => pub rot: f64,
+    }
+}
+
+js_object! {
+    /// A segment placement.
+    pub struct SegmentPlacement {
+        "a" => pub a: Point,
+        "b" => pub b: Point,
+    }
+}
+
+js_union! {
+    /// Where a create gesture puts what it makes (`Placement`).
+    pub enum Placement ("kind") {
+        "box" => Box(BoxPlacement),
+        "segment" => Segment(SegmentPlacement),
+    }
+}
+
+impl Placement {
+    pub fn boxed(rect: Rect, rot: f64) -> Placement {
+        Placement::Box(BoxPlacement { rect, rot, order: Default::default() })
+    }
+    pub fn segment(a: Point, b: Point) -> Placement {
+        Placement::Segment(SegmentPlacement { a, b, order: Default::default() })
+    }
+}
+
+/// The input of a pointer message (`PointerInput`).
+#[derive(Clone, Debug, Default)]
 pub struct PointerInput {
-    /// The page the sample resolved against.
-    pub page: PageRef,
+    pub page: Option<PageRef>,
     pub point: Point,
     pub shift: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub finish: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub page_box: Option<Rect>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub chrome: Option<ChromeGeom>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub chrome: Option<ChromeGeometry>,
     pub display_rotation: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub scale: Option<f64>,
     pub zoom: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub upright: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub inert: Option<IdSet>,
+    pub inert: Option<crate::js::IdSet>,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+impl PointerInput {
+    pub fn page(&self) -> PageRef {
+        self.page.clone().unwrap_or_else(|| PageRef::new(f64::NAN))
+    }
+
+    pub fn page_number(&self) -> f64 {
+        self.page.as_ref().map_or(f64::NAN, |p| p.object_number)
+    }
+
+    pub fn read(value: &Value) -> Result<Self, JsonError> {
+        let object = value.as_object().ok_or_else(|| JsonError::new("not a pointer input"))?;
+        let inert = object
+            .get("inert")
+            .filter(|v| !json::undefined(Some(v)))
+            .map(crate::js::IdSet::of_value);
+        Ok(PointerInput {
+            page: read_member(object, "page")?,
+            point: read_member(object, "point")?,
+            shift: read_member::<Option<bool>>(object, "shift")?.unwrap_or(false),
+            finish: read_member(object, "finish")?,
+            page_box: read_member(object, "pageBox")?,
+            chrome: read_member(object, "chrome")?,
+            display_rotation: read_member(object, "displayRotation")?,
+            scale: read_member(object, "scale")?,
+            zoom: read_member(object, "zoom")?,
+            upright: read_member(object, "upright")?,
+            inert,
+        })
+    }
+}
+
+/// A pointer phase.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Phase {
     Down,
     Move,
     Up,
 }
 
-/// Pure straight-line recognition settings for a freehand stroke.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InkStraightenOptions {
-    pub deviation_threshold: f64,
-    pub axis_snap_degrees: f64,
+impl Phase {
+    fn read(text: &str) -> Result<Phase, JsonError> {
+        match text {
+            "down" => Ok(Phase::Down),
+            "move" => Ok(Phase::Move),
+            "up" => Ok(Phase::Up),
+            other => Err(JsonError::new(format!("not a phase: {other}"))),
+        }
+    }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "t", rename_all = "camelCase", rename_all_fields = "camelCase")]
-pub enum Msg {
+/// The messages `update` takes (`Message`).
+#[derive(Clone, Debug)]
+pub enum Message {
     EditPointer {
         phase: Phase,
-        #[serde(rename = "in")]
         input: PointerInput,
     },
     MarqueePointer {
         phase: Phase,
-        #[serde(rename = "in")]
         input: PointerInput,
     },
-    CreatePointer {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        measure: Option<MeasurementAppearance>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        capture: Option<String>,
-        phase: Phase,
-        subtype: String,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        intent: Option<Intent>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        click_create: Option<ClickCreateOption>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        defer_ink_commit: Option<bool>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        straighten_ink: Option<InkStraightenOptions>,
-        #[serde(rename = "in")]
-        input: PointerInput,
-    },
+    CreatePointer(Box<CreatePointerMessage>),
     FinishInkDraft,
     FinishCreationDraft,
-    /// Programmatic creation from page-space geometry: the data API's
-    /// `create`.
-    CreateAnnot {
-        page: PageRef,
-        subtype: String,
-        geom: Geom,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        preset: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        props: Option<AnnotationPropsPatch>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        select: Option<bool>,
-    },
     CreateCaret {
         page: PageRef,
         anchor: TextEndAnchor,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
+        flags: Option<Object>,
     },
     CreateReplaceText {
         page: PageRef,
-        quads: Vec<TextQuad>,
+        quads: Vec<Quad>,
         anchor: TextEndAnchor,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         preset: Option<String>,
     },
     CreateMarkup {
-        subtype: String,
+        subtype: KindName,
         page: PageRef,
-        quads: Vec<TextQuad>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
+        quads: Vec<Quad>,
         preset: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        flags: Option<AnnotationFlagsPatch>,
+        flags: Option<Object>,
     },
     SetMarkupPreview {
-        subtype: String,
-        quads_by_page: Record<Vec<TextQuad>>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
+        subtype: KindName,
+        quads_by_page: Record<Vec<Quad>>,
         preset: Option<String>,
     },
     ClearMarkupPreview,
     Deselect {
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         ids: Option<Vec<Id>>,
     },
     Hover {
@@ -1590,55 +1691,36 @@ pub enum Msg {
     },
     Select {
         ids: Vec<Id>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
         add: Option<bool>,
     },
-    SetProps {
-        patch: AnnotationPropsPatch,
+    SetFields {
+        patches: IndexMap<Id, FieldValues>,
+    },
+    SetTextFormat {
+        format: String,
+        on: bool,
+    },
+    SetLink {
+        target: Value,
     },
     SetFlags {
-        patch: AnnotationFlagsPatch,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
+        patch: Object,
         ids: Option<Vec<Id>>,
     },
     SetDefaults {
-        subtype: String,
-        patch: AnnotationPropsPatch,
+        preset: String,
+        patch: FieldValues,
     },
     SetSnap {
-        patch: SnapSettingsPatch,
+        patch: Object,
     },
-    #[serde(rename = "rotate90")]
-    Rotate90,
+    RotateSelection {
+        degrees: f64,
+    },
     ResetRotation,
     Delete,
     Cancel,
-    Loaded {
-        annots: Vec<Annot>,
-    },
-    Hydrated {
-        annots: Vec<Annot>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        bump_ap: Option<bool>,
-    },
-    Created {
-        temp_id: Id,
-        id: Id,
-        #[serde(rename = "ref")]
-        ref_: AnnotationRef,
-    },
-    CreateFailed {
-        temp_id: Id,
-    },
-    Upsert {
-        annots: Vec<Annot>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        bump_ap: Option<bool>,
-    },
-    BumpAp {
-        ids: Vec<Id>,
-    },
-    Remove {
+    Forget {
         ids: Vec<Id>,
     },
     BeginTextEdit {
@@ -1650,231 +1732,135 @@ pub enum Msg {
     },
     SetRichText {
         id: Id,
-        doc: RichTextDocumentInput,
+        doc: Object,
     },
     EndTextEdit,
 }
 
-/// What a committed edit changed.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "lowercase")]
-pub enum PatchScope {
-    Geometry,
-    Caption,
-    Leader,
-    /// The user's patch keys, verbatim (a key no [`PropKey`] names included).
-    Props {
-        keys: Vec<String>,
-    },
+/// A `createPointer` message.
+#[derive(Clone, Debug)]
+pub struct CreatePointerMessage {
+    pub measure: Option<Object>,
+    pub capture: Option<String>,
+    pub phase: Phase,
+    pub subtype: KindName,
+    pub preset: Option<String>,
+    pub intent: Option<String>,
+    pub click_create: Option<ClickPolicy>,
+    pub flags: Option<Object>,
+    pub defer_ink_commit: Option<bool>,
+    pub straighten_ink: Option<InkStraightenOptions>,
+    pub input: PointerInput,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "fx", rename_all = "camelCase")]
-pub enum Effect {
-    Captured {
-        tool: String,
-        page: PageRef,
-        geom: Geom,
-    },
-    Create {
-        id: Id,
-    },
-    CreateGroup {
-        primary: Id,
-        members: Vec<Id>,
-    },
-    Patch {
-        id: Id,
-        scope: PatchScope,
-        #[serde(rename = "apChanged", default, skip_serializing_if = "is_false")]
-        ap_changed: bool,
-    },
-    Flags {
-        id: Id,
-    },
-    SyncLink {
-        id: Id,
-        target: Option<PdfLinkTarget>,
-    },
-    Delete {
-        #[serde(rename = "ref")]
-        ref_: AnnotationRef,
-    },
-}
-
-/// Per-annotation render data.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct RenderItem {
-    pub id: Id,
-    #[serde(rename = "ref", default)]
-    pub ref_: Option<AnnotationRef>,
-    pub subtype: String,
-    pub geom: Geom,
-    #[serde(rename = "box")]
-    pub box_: Rect,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_box: Option<Rect>,
-    pub style: Style,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub text: Option<TextStyle>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub label: Option<Label>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub measure: Option<MeasurementAppearance>,
-    pub source: RenderSource,
-    pub selected: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub hovered: Option<bool>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub rot: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ap_rot: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub blend: Option<BlendMode>,
-}
-
-/// The geometry-only draw vocabulary.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "lowercase")]
-pub enum RenderNode {
-    Rect { rect: Rect },
-    Ellipse { rect: Rect },
-    Line { a: Point, b: Point },
-    Poly { points: Vec<Point>, closed: bool },
-    Path { d: String },
-}
-
-/// `'round'`: the one stroke cap and join `Paint` names.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum Round {
-    Round,
-}
-
-/// How to paint one node; absent members mean none.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct Paint {
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub fill: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub stroke: Option<String>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub width: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub opacity: Option<f64>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub dash: Option<Vec<f64>>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub blend: Option<BlendMode>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub cap: Option<Round>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub join: Option<Round>,
-}
-
-/// A fully painted draw node.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "lowercase", rename_all_fields = "camelCase")]
-pub enum SceneNode {
-    Rect {
-        rect: Rect,
-        paint: Paint,
-    },
-    Ellipse {
-        rect: Rect,
-        paint: Paint,
-    },
-    Line {
-        a: Point,
-        b: Point,
-        paint: Paint,
-    },
-    Poly {
-        points: Vec<Point>,
-        closed: bool,
-        paint: Paint,
-    },
-    Path {
-        d: String,
-        paint: Paint,
-    },
-    Text {
-        at: Point,
-        text: String,
-        font_size: f64,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        font_family: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rotation: Option<f64>,
-        paint: Paint,
-    },
-}
-
-impl SceneNode {
-    /// A geometry node with its paint.
-    pub fn painted(node: RenderNode, paint: Paint) -> SceneNode {
-        match node {
-            RenderNode::Rect { rect } => SceneNode::Rect { rect, paint },
-            RenderNode::Ellipse { rect } => SceneNode::Ellipse { rect, paint },
-            RenderNode::Line { a, b } => SceneNode::Line { a, b, paint },
-            RenderNode::Poly { points, closed } => SceneNode::Poly { points, closed, paint },
-            RenderNode::Path { d } => SceneNode::Path { d, paint },
-        }
+impl Message {
+    pub fn read(value: &Value) -> Result<Message, JsonError> {
+        let object = value.as_object().ok_or_else(|| JsonError::new("not a message"))?;
+        let ty = object.get("type").and_then(Value::as_str).unwrap_or("");
+        let phase = || -> Result<Phase, JsonError> {
+            Phase::read(&read_member::<String>(object, "phase")?)
+        };
+        let input = || -> Result<PointerInput, JsonError> {
+            PointerInput::read(object.get("in").ok_or_else(|| JsonError::new("in: missing"))?)
+        };
+        let fields = |key: &str| -> Result<IndexMap<Id, FieldValues>, JsonError> {
+            let map = object
+                .get(key)
+                .and_then(Value::as_object)
+                .ok_or_else(|| JsonError::new(format!("{key}: missing")))?;
+            map.iter()
+                .map(|(k, v)| {
+                    Ok((k.clone(), v.as_object().cloned().ok_or_else(|| JsonError::new("patch"))?))
+                })
+                .collect()
+        };
+        Ok(match ty {
+            "editPointer" => Message::EditPointer { phase: phase()?, input: input()? },
+            "marqueePointer" => Message::MarqueePointer { phase: phase()?, input: input()? },
+            "createPointer" => Message::CreatePointer(Box::new(CreatePointerMessage {
+                measure: read_member(object, "measure")?,
+                capture: read_member(object, "capture")?,
+                phase: phase()?,
+                subtype: read_member(object, "subtype")?,
+                preset: read_member(object, "preset")?,
+                intent: read_member(object, "intent")?,
+                click_create: read_member(object, "clickCreate")?,
+                flags: read_member(object, "flags")?,
+                defer_ink_commit: read_member(object, "deferInkCommit")?,
+                straighten_ink: read_member(object, "straightenInk")?,
+                input: input()?,
+            })),
+            "finishInkDraft" => Message::FinishInkDraft,
+            "finishCreationDraft" => Message::FinishCreationDraft,
+            "createCaret" => Message::CreateCaret {
+                page: read_member(object, "page")?,
+                anchor: read_member(object, "anchor")?,
+                flags: read_member(object, "flags")?,
+            },
+            "createReplaceText" => Message::CreateReplaceText {
+                page: read_member(object, "page")?,
+                quads: read_member(object, "quads")?,
+                anchor: read_member(object, "anchor")?,
+                preset: read_member(object, "preset")?,
+            },
+            "createMarkup" => Message::CreateMarkup {
+                subtype: read_member(object, "subtype")?,
+                page: read_member(object, "page")?,
+                quads: read_member(object, "quads")?,
+                preset: read_member(object, "preset")?,
+                flags: read_member(object, "flags")?,
+            },
+            "setMarkupPreview" => Message::SetMarkupPreview {
+                subtype: read_member(object, "subtype")?,
+                quads_by_page: read_member(object, "quadsByPage")?,
+                preset: read_member(object, "preset")?,
+            },
+            "clearMarkupPreview" => Message::ClearMarkupPreview,
+            "deselect" => Message::Deselect { ids: read_member(object, "ids")? },
+            "hover" => Message::Hover {
+                id: read_member::<Nullable<String>>(object, "id")
+                    .map(Nullable::into_option)
+                    .unwrap_or(None),
+            },
+            "select" => Message::Select {
+                ids: read_member(object, "ids")?,
+                add: read_member(object, "add")?,
+            },
+            "setFields" => Message::SetFields { patches: fields("patches")? },
+            "setTextFormat" => Message::SetTextFormat {
+                format: read_member(object, "format")?,
+                on: read_member(object, "on")?,
+            },
+            "setLink" => {
+                Message::SetLink { target: object.get("target").cloned().unwrap_or(Value::Null) }
+            }
+            "setFlags" => Message::SetFlags {
+                patch: read_member(object, "patch")?,
+                ids: read_member(object, "ids")?,
+            },
+            "setDefaults" => Message::SetDefaults {
+                preset: read_member(object, "preset")?,
+                patch: read_member(object, "patch")?,
+            },
+            "setSnap" => Message::SetSnap { patch: read_member(object, "patch")? },
+            "rotateSelection" => {
+                Message::RotateSelection { degrees: read_member(object, "degrees")? }
+            }
+            "resetRotation" => Message::ResetRotation,
+            "delete" => Message::Delete,
+            "cancel" => Message::Cancel,
+            "forget" => Message::Forget { ids: read_member(object, "ids")? },
+            "beginTextEdit" => Message::BeginTextEdit { id: read_member(object, "id")? },
+            "setText" => Message::SetText {
+                id: read_member(object, "id")?,
+                text: read_member(object, "text")?,
+            },
+            "setRichText" => Message::SetRichText {
+                id: read_member(object, "id")?,
+                doc: read_member(object, "doc")?,
+            },
+            "endTextEdit" => Message::EndTextEdit,
+            other => return Err(JsonError::new(format!("unknown message type {other:?}"))),
+        })
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum GuideRole {
-    Axis,
-    Indicator,
-}
-
-/// One finished rotation-guide segment.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct GuideLine {
-    pub a: Point,
-    pub b: Point,
-    pub role: GuideRole,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "kebab-case")]
-pub enum ChromeNode {
-    Outline {
-        rect: Rect,
-    },
-    Obb {
-        corners: Quad,
-        angle: f64,
-    },
-    Handle {
-        at: Point,
-        cursor: Cursor,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        rot: Option<f64>,
-    },
-    RotateKnob {
-        at: Point,
-        from: Point,
-    },
-    Guide {
-        axis: Axis,
-        at: f64,
-        lo: f64,
-        hi: f64,
-    },
-    AngleChip {
-        at: Point,
-        angle: f64,
-    },
-    RotateGuides {
-        center: Point,
-        angle: f64,
-        lines: Vec<GuideLine>,
-    },
-    Marquee {
-        rect: Rect,
-    },
 }

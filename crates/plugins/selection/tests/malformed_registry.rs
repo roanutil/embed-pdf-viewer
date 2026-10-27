@@ -1,6 +1,8 @@
-//! One registry row that fails to decode costs only its own page, as
-//! `pages[i]?.ref.pageObjectNumber` does in the TypeScript: the other
-//! pages still select and read.
+//! One registry row that fails to decode costs only its own page (S1), as
+//! `pages[i]?.ref` does in the TypeScript: the other pages still select and
+//! read.
+
+mod common;
 
 use std::rc::Rc;
 
@@ -12,20 +14,16 @@ use epdf_plugin_selection::*;
 use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
 use serde_json::{Value, json};
 
-/// Three pages answering "abc", page 2's row with no `boxes`.
+use common::{layout, page_row, run};
+
+/// Three pages answering "abc", page 2's row with a ref of no kind.
 fn kernel() -> Kernel {
     rt::reset();
-    let box_ = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
-    let glyph = |left: f64| json!({ "looseBox": { "left": left, "bottom": 738, "right": left + 6.0, "top": 750 }, "flags": 0 });
     let pages: Vec<Value> = (0..3u32)
         .map(|i| {
-            let mut row = json!({
-                "index": i, "ref": { "kind": "objectNumber", "pageObjectNumber": i + 1 }, "label": null,
-                "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
-                "boxes": { "media": box_, "crop": box_ }
-            });
+            let mut row = page_row(i, i + 1);
             if i == 1 {
-                row.as_object_mut().unwrap().remove("boxes");
+                row["ref"] = json!({ "objectNumber": 2 });
             }
             row
         })
@@ -35,12 +33,8 @@ fn kernel() -> Kernel {
             "pages": pages,
             "security": { "allows": ["doc.text.select", "doc.text.copy"] },
             "responses": [
-                { "path": "page.text.read", "value": { "text": "abc", "charCount": 3 } },
-                { "path": "page.geometry.read", "value": { "runs": [{
-                    "rect": { "left": 50, "bottom": 738, "right": 68, "top": 750 },
-                    "charStart": 0,
-                    "glyphs": [glyph(50.0), glyph(56.0), glyph(62.0)]
-                }] } }
+                { "path": "page.text.get", "value": { "text": "abc", "charCount": 3 } },
+                { "path": "page.text.layout", "value": layout(vec![run(0, 3, 50.0, 50.0)]) }
             ]
         } }
     }));
@@ -50,14 +44,20 @@ fn kernel() -> Kernel {
             interaction_plugin(InteractionConfig::default()),
             selection_plugin(SelectionConfig::default()),
         ],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
+        KernelOptions {
+            report: None,
+            on_dispatch: None,
+            release_closed_sessions: false,
+            printer: None,
+        },
     )
     .unwrap();
     let _ = kernel.start();
     rt::run_until_stalled();
-    let _ = kernel
-        .documents()
-        .open(OpenSource::Input(json!({ "kind": "bytes", "id": "a" })), OpenOptions::default());
+    let _ = kernel.documents().open(
+        OpenSource::Input(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })),
+        OpenOptions::default(),
+    );
     rt::run_until_stalled();
     kernel
 }
@@ -65,7 +65,7 @@ fn kernel() -> Kernel {
 #[test]
 fn a_page_beside_a_malformed_row_still_selects() {
     let kernel = kernel();
-    let selection = kernel.capability(&SELECTION, Some("a")).unwrap();
+    let selection = common::selection(&kernel);
     let _ = selection.ensure_loaded(PageRef::new(1));
     rt::run_until_stalled();
     selection.select_page(PageRef::new(1)).unwrap();
@@ -75,14 +75,14 @@ fn a_page_beside_a_malformed_row_still_selects() {
 }
 
 #[test]
-fn a_read_across_a_malformed_row_reads_every_page() {
+fn a_read_across_a_malformed_row_reads_every_other_page() {
     let kernel = kernel();
-    let selection = kernel.capability(&SELECTION, Some("a")).unwrap();
+    let selection = common::selection(&kernel);
     let range = TextRange {
         start: TextPosition { page: PageRef::new(1), index: 0 },
         end: TextPosition { page: PageRef::new(3), index: 3 },
     };
     let read = selection.read_text_in_range(range, OperationOptions::default());
     rt::run_until_stalled();
-    assert_eq!(read.peek().expect("settled").expect("read"), "abc\nabc\nabc");
+    assert_eq!(read.peek().expect("settled").expect("read"), "abc\nabc");
 }

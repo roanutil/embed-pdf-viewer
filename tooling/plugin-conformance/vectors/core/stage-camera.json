@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/stage: projection, camera operations, travel and clamp, scroll metrics, placement, reveal, zoom intent.",
   "cases": [

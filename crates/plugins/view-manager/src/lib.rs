@@ -8,6 +8,7 @@
 //! the JavaScript property order the pane record enumerates in.
 
 use epdf_kernel::{AnyPlugin, DOCUMENTS, define};
+use serde_json::Value;
 
 pub mod contract;
 pub mod controller;
@@ -28,17 +29,19 @@ pub use contract::{
 };
 pub use controller::{ViewManagerCapability, create_view_manager_controller};
 pub use model::{
-    Pane, ViewManagerAction, ViewManagerState, initial_view_manager_state, view_manager_reducer,
+    Pane, Panes, ViewManagerState, add_document, create_pane, initial_view_manager_state,
+    move_document_between, move_document_within, move_pane, next_pane_id, pane_of_document,
+    reconcile, remove_document, remove_pane, rename_document, set_active_document,
+    set_focused_pane,
 };
 pub use record::JsRecord;
 
-/// `viewManagerPlugin()`: workspace-scoped, because panes are a workspace
-/// concern.
+/// `viewManagerPlugin()`: which documents each pane shows. Workspace-scoped,
+/// because panes span documents.
 pub fn view_manager_plugin() -> AnyPlugin {
-    define::<ViewManagerState, ViewManagerAction>("view-manager")
+    define::<ViewManagerState, Value>("view-manager")
         .requires(DOCUMENTS.any())
         .initial_state(initial_view_manager_state)
-        .reduce(view_manager_reducer)
         .create(&VIEW_MANAGER, |cx| {
             let (api, connect) = create_view_manager_controller(cx);
             Ok((api, Some(connect)))

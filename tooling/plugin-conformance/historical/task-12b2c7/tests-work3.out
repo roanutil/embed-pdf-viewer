@@ -1,0 +1,28 @@
+(node:58436) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ metadata opens idle, loads both mirrors on demand and returns complete current fields (575.874292ms)
+✔ lazy load stays pending until both mirrors resync and loaded ensureLoaded does no extra work (1.717209ms)
+✔ standard write has an exact patch/result and confirmed previous/keys/local origin (1.26525ms)
+✔ custom deferred write retains old value until confirmation and leaves standard data intact (1.130375ms)
+✔ unconfirmed write results cannot mutate the mirror or emit updated (1.003667ms)
+✔ loads emit only resynced; facts keep both origins, shallow keys, and unsubscribe silence (1.491917ms)
+✔ custom comparison preserves equal/changed values and witnesses added and removed keys (0.9005ms)
+✔ concurrent loads deduplicate and explicit in-flight refresh queues exactly one re-read (1.073375ms)
+✔ both newer confirmed values win over stale load answers (0.970917ms)
+✔ close suppresses late reads and all callbacks; reopen starts fresh idle mirrors (2.523958ms)
+✔ permissions are synchronous selectors and local refusal never reaches either write service (1.556667ms)
+✔ failed reads/refusals preserve snapshots and refresh recovers each independent mirror (3.537333ms)
+✔ every negative channel is an exact named rejection; all other throws, reports and error data fail (12.021541ms)
+✔ confirmed standard/custom callbacks see new snapshots before their immediate/deferred writes resolve (0.348167ms)
+✔ pre-aborted writes refuse locally and permission refusal precedes cancellation for both surfaces (0.438167ms)
+✔ cancelled lazy waiter rejects while a second waiter receives both eventual reads (0.198ms)
+✔ caller cancellation rejects both deferred writes without projecting their unconfirmed results (0.252042ms)
+✔ closing rejects in-flight writes and releases subscriptions before late confirmations (0.217208ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 936.583583

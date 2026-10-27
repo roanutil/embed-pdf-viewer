@@ -16,6 +16,7 @@ use serde_json::Value;
 
 use crate::action::Action;
 use crate::error::Error;
+use crate::event_hook::EventHookSource;
 use crate::types::CoreState;
 
 pub type Report = Rc<dyn Fn(&Error)>;
@@ -115,7 +116,16 @@ impl<F: ?Sized> Listeners<F> {
 #[derive(Clone)]
 pub struct SliceLease(Rc<LeaseInner>);
 
+#[derive(Clone)]
+pub struct SliceChange {
+    pub next: SliceState,
+    pub previous: SliceState,
+}
+
 struct LeaseInner {
+    closed_reported: Cell<bool>,
+    report: Report,
+    changed: EventHookSource<SliceChange>,
     key: String,
     instance_id: String,
     live: Cell<bool>,
@@ -161,12 +171,7 @@ impl SliceLease {
         let next = (self.0.reducer)(&state, action);
         let store = self.0.store.upgrade();
         if let Some(next) = next {
-            *self.0.state.borrow_mut() = next;
-            if let Some(store) = &store {
-                self.0.revision.set(store.next_slice_revision());
-                store.bump();
-                store.emit_change();
-            }
+            self.write(next);
         }
         if let Some(store) = &store {
             store.emit_action(action);
@@ -174,11 +179,49 @@ impl SliceLease {
         true
     }
 
+    /// Replace this instance's state. A revoked lease can never publish again.
+    pub fn write(&self, next: SliceState) -> bool {
+        if !self.live() {
+            if !self.0.closed_reported.replace(true) {
+                (self.0.report)(&crate::error::plugin_error(
+                    "instance-closed",
+                    self.key().split("::").next().unwrap_or(self.key()),
+                    format!(
+                        "a state update after the instance closed ({}); dropped",
+                        self.instance_id()
+                    ),
+                    None,
+                    None,
+                ));
+            }
+            return false;
+        }
+        let previous = self.read();
+        if Rc::ptr_eq(&previous, &next) {
+            return true;
+        }
+        *self.0.state.borrow_mut() = next.clone();
+        if let Some(store) = self.0.store.upgrade() {
+            self.0.revision.set(store.next_slice_revision());
+            store.notify();
+        }
+        self.0.changed.emit(&SliceChange { next, previous });
+        true
+    }
+
+    pub fn on_change(
+        &self,
+        listener: impl Fn(&SliceChange) -> Result<(), Error> + 'static,
+    ) -> Unsubscribe {
+        self.0.changed.on(listener)
+    }
+
     pub fn revoke(&self) {
         if !self.0.live.get() {
             return;
         }
         self.0.live.set(false);
+        self.0.changed.dispose();
         let Some(store) = self.0.store.upgrade() else { return };
         let current =
             store.leases.borrow().get(&self.0.key).is_some_and(|l| Rc::ptr_eq(&l.0, &self.0));
@@ -221,6 +264,8 @@ pub struct Store {
     change: Listeners<ChangeListener>,
     action: Listeners<ActionEntry>,
     emitting: Cell<bool>,
+    holds: Cell<u32>,
+    held_change: Cell<bool>,
     pending: Cell<bool>,
     report: Report,
     /// Moves on every change to core or to the set of slices or their
@@ -247,6 +292,8 @@ impl Store {
             change: Listeners::default(),
             action: Listeners::default(),
             emitting: Cell::new(false),
+            holds: Cell::new(0),
+            held_change: Cell::new(false),
             pending: Cell::new(false),
             report,
             revision: Cell::new(0),
@@ -282,7 +329,23 @@ impl Store {
         }
     }
 
+    /// Keep notifications together across one transaction or event burst.
+    pub fn hold(&self) -> StoreHold {
+        self.holds.set(self.holds.get() + 1);
+        StoreHold { store: self.this.clone() }
+    }
+
+    /// Wake readers of resources and pending views, without a reducer action.
+    pub fn notify(&self) {
+        self.bump();
+        self.emit_change();
+    }
+
     fn emit_change(&self) {
+        if self.holds.get() > 0 {
+            self.held_change.set(true);
+            return;
+        }
         if self.emitting.get() {
             self.pending.set(true);
             return;
@@ -350,6 +413,9 @@ impl Store {
             prior.revoke();
         }
         let lease = SliceLease(Rc::new(LeaseInner {
+            closed_reported: Cell::new(false),
+            report: self.report.clone(),
+            changed: EventHookSource::new(Some(self.report.clone())),
             key: key.to_string(),
             instance_id,
             live: Cell::new(true),
@@ -577,5 +643,20 @@ impl Unsubscribe {
 impl From<Rc<dyn Fn()>> for Unsubscribe {
     fn from(remove: Rc<dyn Fn()>) -> Self {
         Unsubscribe::new(move || remove())
+    }
+}
+
+/// Releases the outermost store hold even when construction returns an error.
+pub struct StoreHold {
+    store: Weak<Store>,
+}
+impl Drop for StoreHold {
+    fn drop(&mut self) {
+        if let Some(store) = self.store.upgrade() {
+            store.holds.set(store.holds.get().saturating_sub(1));
+            if store.holds.get() == 0 && store.held_change.replace(false) {
+                store.emit_change();
+            }
+        }
     }
 }

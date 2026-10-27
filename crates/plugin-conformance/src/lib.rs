@@ -11,6 +11,7 @@
 #![allow(clippy::type_complexity)]
 
 pub mod canonical;
+pub mod exceptions;
 pub mod fake_engine;
 pub mod harness;
 /// Moved to the kernel, which prints actions and state with it.
@@ -27,7 +28,7 @@ pub use harness::{Answer, Callback, Harness, HarnessPlugin, LiveFn, Outcome, Rel
 pub use scenario::Registry;
 
 /// The envelope version the generator writes (`vectors.ts`).
-pub const SCHEMA_VERSION: u64 = 1;
+pub const SCHEMA_VERSION: u64 = 2;
 
 /// Drop object members that are JavaScript `undefined`, as JSON would. The
 /// TypeScript's canonical form never prints them, so a Rust value carrying
@@ -94,6 +95,7 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
     let verbose = std::env::var("PLUGIN_CONFORMANCE_VERBOSE").is_ok();
     let mut failures = Vec::new();
     let mut ran = 0;
+    let mut exceptions_seen = Vec::new();
     for case in suite["cases"].as_array().expect("cases") {
         let name = case["name"].as_str().unwrap_or("?");
         if only.as_deref().is_some_and(|o| !name.contains(o)) {
@@ -111,7 +113,7 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
                         failures.push(format!("{name}: panicked: {}", panic_message(panic)));
                         epdf_kernel::rt::reset();
                     }
-                    Ok(run) => {
+                    Ok(mut run) => {
                         let expected = case["trace"].as_array().cloned().unwrap_or_default();
                         if verbose {
                             eprintln!(
@@ -119,7 +121,18 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
                                 serde_json::to_string_pretty(&run.trace).unwrap()
                             );
                         }
-                        if let Some(diff) = compare_trace(&expected, &run.trace) {
+                        let mut stale = None;
+                        for entry in exceptions::for_case(file, name) {
+                            exceptions_seen.push(name.to_string());
+                            if let Err(why) = exceptions::apply(entry, &expected, &mut run.trace) {
+                                stale = Some(why);
+                            }
+                        }
+                        if let Some(why) = stale {
+                            let diff = compare_trace(&expected, &run.trace)
+                                .unwrap_or_else(|| "no other difference".into());
+                            failures.push(format!("{name}: {why}; trace: {diff}"));
+                        } else if let Some(diff) = compare_trace(&expected, &run.trace) {
                             failures.push(format!("{name}: {diff}"));
                         } else if !run.unmatched.is_empty()
                             && case["allowUnmatched"].as_bool() != Some(true)
@@ -157,6 +170,16 @@ pub fn assert_suite(file: &str, registry: &Registry, functions: &FunctionTable) 
         }
     }
     assert!(ran > 0, "{file}: no case ran");
+    if only.is_none() {
+        for entry in exceptions::all().iter().filter(|e| e.file == file) {
+            if !exceptions_seen.contains(&entry.case) {
+                failures.push(format!(
+                    "{}: outcome exception is stale: no scenario case of that name ran",
+                    entry.case
+                ));
+            }
+        }
+    }
     if !failures.is_empty() {
         panic!(
             "{file}: {} of {ran} cases differ from the TypeScript:\n  {}",

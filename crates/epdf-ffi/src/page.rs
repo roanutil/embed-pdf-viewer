@@ -43,7 +43,7 @@ pub fn decode_page(page: &Value) -> Result<PageInfo, Error> {
     let reference =
         page.get("ref").ok_or_else(|| malformed(format!("a page without \"ref\": {page}")))?;
     Ok(PageInfo {
-        page: PageRef { page_object_number: whole(reference, "pageObjectNumber", "a page ref")? },
+        page: PageRef { page_object_number: whole(reference, "objectNumber", "a page ref")? },
         index: whole(page, "index", "a page")?,
         width: number(size, "width", "a page size")?,
         height: number(size, "height", "a page size")?,
@@ -64,7 +64,7 @@ mod tests {
     #[test]
     fn a_layout_page_decodes_to_page_info() {
         let page = json!({
-            "ref": { "kind": "objectNumber", "pageObjectNumber": 7 }, "index": 2, "rotation": 90,
+            "ref": { "kind": "objectNumber", "objectNumber": 7 }, "index": 2, "rotation": 90,
             "size": { "width": 612.0, "height": 792.0 }
         });
         assert_eq!(
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn a_page_without_its_size_is_invalid_state() {
         let page = json!({
-            "ref": { "kind": "objectNumber", "pageObjectNumber": 7 }, "index": 2, "rotation": 0
+            "ref": { "kind": "objectNumber", "objectNumber": 7 }, "index": 2, "rotation": 0
         });
         assert_eq!(decode_page(&page).unwrap_err().code(), Some("invalid-state"));
     }

@@ -46,6 +46,8 @@ pub struct DocumentMeta {
     /// Bumps each time a mutation event replaces the page registry.
     pub revision: u64,
     pub render_policy: Value,
+    #[serde(default)]
+    pub has_unsaved_changes: bool,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
@@ -83,7 +85,9 @@ fn canonical_error<S: Serializer>(error: &Option<Error>, s: S) -> Result<S::Ok, 
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoreState {
-    pub documents: IndexMap<String, DocumentMeta>,
+    /// Each behind an `Rc`, so an unchanged document keeps its identity
+    /// across core updates, as `{ ...documents, [id]: next }` keeps it.
+    pub documents: IndexMap<String, Rc<DocumentMeta>>,
     pub pending: IndexMap<String, PendingMeta>,
     pub order: Vec<String>,
     pub active_id: Option<String>,
@@ -107,6 +111,8 @@ pub struct DocInfo {
     pub name: Option<String>,
     pub status: DocStatus,
     pub page_count: u32,
+    #[serde(default)]
+    pub has_unsaved_changes: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub password_provided: Option<bool>,
     /// `error` only: why the open failed, as `{code, message, capability}`.
@@ -120,6 +126,8 @@ pub struct PluginErrorInfo {
     pub code: String,
     pub message: String,
     pub capability: String,
+    #[serde(default)]
+    pub permission: Option<String>,
 }
 
 impl DocInfo {
@@ -129,6 +137,7 @@ impl DocInfo {
             name: meta.name.clone(),
             status: DocStatus::Ready,
             page_count: meta.page_count,
+            has_unsaved_changes: meta.has_unsaved_changes,
             password_provided: None,
             error: None,
         }
@@ -144,6 +153,7 @@ impl DocInfo {
                 PendingStatus::Error => DocStatus::Error,
             },
             page_count: 0,
+            has_unsaved_changes: false,
             password_provided: meta.password_provided,
             error: match (meta.status, &meta.error) {
                 (PendingStatus::Error, Some(error)) => serde_json::from_value(
@@ -163,6 +173,7 @@ pub fn doc_info_equals(a: &DocInfo, b: &DocInfo) -> bool {
         && a.name == b.name
         && a.status == b.status
         && a.page_count == b.page_count
+        && a.has_unsaved_changes == b.has_unsaved_changes
         && a.password_provided == b.password_provided
         && a.error.as_ref().map(|e| &e.code) == b.error.as_ref().map(|e| &e.code)
         && a.error.as_ref().map(|e| &e.message) == b.error.as_ref().map(|e| &e.message)

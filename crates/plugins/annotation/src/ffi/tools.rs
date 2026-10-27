@@ -1,9 +1,7 @@
-use epdf_ffi::{
-    AnnotationFlagsPatch, AnnotationPropKey, AnnotationProps, AnnotationPropsPatch, KernelBound,
-    ViewerError,
-};
+use epdf_ffi::{KernelBound, ViewerError};
+use serde_json::Value;
 
-use super::{AnnotationSnapSettings, AnnotationSnapSettingsPatch, open};
+use super::{object_of, open};
 use crate::AnnotationCapability;
 
 /// The authoring tools and their per-tool defaults.
@@ -12,8 +10,8 @@ pub struct AnnotationToolsHandle {
     pub(crate) cap: KernelBound<AnnotationCapability>,
 }
 
-/// One authoring tool. Activate it through plan 01's
-/// `InteractionHandle.activate_tool(id)`.
+/// One authoring tool (`ResolvedTool`). Activate it through the interaction
+/// handle's `activate_tool(id)`.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct AnnotationTool {
     pub id: String,
@@ -22,150 +20,110 @@ pub struct AnnotationTool {
     pub cursor: String,
     pub enables: Vec<String>,
     pub upright: bool,
-    pub defaults: Option<AnnotationPropsPatch>,
-    pub flags: Option<AnnotationFlagsPatch>,
+    /// The tool as the plugin resolves it, every member.
+    pub tool_json: String,
 }
 
-impl From<crate::AnnotationTool> for AnnotationTool {
-    fn from(t: crate::AnnotationTool) -> Self {
-        AnnotationTool {
-            id: t.id,
-            subtype: t.subtype,
-            preset: t.preset,
-            cursor: t.cursor,
-            enables: t.enables,
-            upright: t.upright,
-            defaults: t.defaults.map(props_patch_out),
-            flags: t.flags.map(Into::into),
-        }
+fn tool_out(tool: &Value) -> AnnotationTool {
+    let s = |k: &str| tool.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+    // `enables` is a set; its JSON is a list.
+    let enables = tool
+        .get("enables")
+        .and_then(|e| e.as_array().or_else(|| e.get("$set").and_then(Value::as_array)))
+        .map(|list| list.iter().filter_map(Value::as_str).map(str::to_string).collect())
+        .unwrap_or_default();
+    AnnotationTool {
+        id: s("id"),
+        subtype: s("subtype"),
+        preset: s("preset"),
+        cursor: s("cursor"),
+        enables,
+        upright: tool.get("upright").and_then(Value::as_bool).unwrap_or(false),
+        tool_json: tool.to_string(),
     }
 }
 
-/// A core props patch as the foreign record: set values carry over, a
-/// `null` `interiorColor` or `link` goes into `clear`. Vendor keys in
-/// `extra` are dropped.
-fn props_patch_out(p: epdf_annotation_core::AnnotationPropsPatch) -> AnnotationPropsPatch {
-    use epdf_annotation_core::js::Nullable;
-    let mut clear = Vec::new();
-    let interior_color = match p.interior_color {
-        Nullable::Value(c) => Some(c),
-        Nullable::Null => {
-            clear.push(AnnotationPropKey::InteriorColor);
-            None
-        }
-        Nullable::Undefined => None,
-    };
-    let link = match p.link {
-        Nullable::Value(l) => Some(l.into()),
-        Nullable::Null => {
-            clear.push(AnnotationPropKey::Link);
-            None
-        }
-        Nullable::Undefined => None,
-    };
-    AnnotationPropsPatch {
-        color: p.color,
-        interior_color,
-        stroke_width: p.stroke_width,
-        opacity: p.opacity,
-        blend_mode: p.blend_mode.map(Into::into),
-        border: p.border.map(Into::into),
-        line_endings: p.line_endings.map(|e| epdf_ffi::AnnotationLineEndingsPatch {
-            start: e.start.map(Into::into),
-            end: e.end.map(Into::into),
-        }),
-        font_family: p.font_family,
-        font_size: p.font_size,
-        font_color: p.font_color,
-        text_align: p.text_align.map(Into::into),
-        bold: p.bold,
-        italic: p.italic,
-        underline: p.underline,
-        icon: p.icon,
-        link,
-        clear,
-    }
-}
-
-/// One editable property of a tool or a selection, as a panel shows it.
-/// The members beyond `key` and `label` depend on the key: a range for
-/// `opacity`, `stroke_width` and `font_size`, `cloudy` for `border`,
-/// `options` for `icon`.
+/// One editable property of a tool or a selection, as a panel shows it
+/// (`AnnotationProperty`): its key, control, label and, by control, a range
+/// or options. The rest of the description is in `property_json`.
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
-pub struct AnnotationPropSpec {
-    pub key: AnnotationPropKey,
+pub struct AnnotationProperty {
+    pub key: String,
+    pub control: String,
     pub label: String,
-    pub min: Option<f64>,
-    pub max: Option<f64>,
-    pub step: Option<f64>,
-    pub cloudy: Option<bool>,
-    pub options: Option<Vec<String>>,
+    pub label_key: Option<String>,
+    pub property_json: String,
 }
 
-impl From<epdf_annotation_core::PropSpec> for AnnotationPropSpec {
-    fn from(s: epdf_annotation_core::PropSpec) -> Self {
-        AnnotationPropSpec {
-            key: s.key.into(),
-            label: s.label.to_string(),
-            min: s.min,
-            max: s.max,
-            step: s.step,
-            cloudy: s.cloudy,
-            options: s.options.map(|o| o.iter().map(|s| s.to_string()).collect()),
-        }
-    }
+pub(crate) fn properties_out(list: &Value) -> Vec<AnnotationProperty> {
+    list.as_array()
+        .map(|list| {
+            list.iter()
+                .map(|p| {
+                    let s = |k: &str| p.get(k).and_then(Value::as_str).map(str::to_string);
+                    AnnotationProperty {
+                        key: s("key").unwrap_or_default(),
+                        control: s("control").unwrap_or_default(),
+                        label: s("label").unwrap_or_default(),
+                        label_key: s("labelKey"),
+                        property_json: p.to_string(),
+                    }
+                })
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 #[uniffi::export]
 impl AnnotationToolsHandle {
+    /// `tools.list()`.
     pub async fn tools(&self) -> Result<Vec<AnnotationTool>, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.list_tools().into_iter().map(Into::into).collect())).await
+        self.cap.call(|c| Ok(open(c)?.tools_list().iter().map(tool_out).collect())).await
     }
 
+    /// `tools.get(id)`.
     pub async fn tool(&self, id: String) -> Result<Option<AnnotationTool>, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.get_tool(&id).map(Into::into))).await
-    }
-
-    pub async fn defaults(&self, tool_id: String) -> Result<AnnotationProps, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.get_tool_defaults(&tool_id).into())).await
-    }
-
-    pub async fn set_defaults(
-        &self,
-        tool_id: String,
-        patch: AnnotationPropsPatch,
-    ) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.set_tool_defaults(&tool_id, patch.try_into()?);
-                Ok(())
+                let tool = open(c)?.tools_get(&id);
+                Ok((!tool.is_null()).then(|| tool_out(&tool)))
             })
             .await
     }
 
-    pub async fn prop_specs(
+    /// `tools.getDefaults(id)`: the engine's field bag a new annotation from
+    /// this tool starts with.
+    pub async fn defaults(&self, tool_id: String) -> Result<String, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.tools_get_defaults(&tool_id).to_string())).await
+    }
+
+    /// `tools.updateDefaults(id, changes)`.
+    pub async fn update_defaults(
         &self,
         tool_id: String,
-    ) -> Result<Vec<AnnotationPropSpec>, ViewerError> {
+        changes_json: String,
+    ) -> Result<(), ViewerError> {
         self.cap
             .call(move |c| {
-                Ok(open(c)?.list_prop_specs(&tool_id).into_iter().map(Into::into).collect())
+                let changes = object_of(&changes_json)?;
+                open(c)?.tools_update_defaults(&tool_id, &changes)
             })
             .await
     }
 
-    pub async fn snap_settings(&self) -> Result<AnnotationSnapSettings, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_snap_settings().into())).await
-    }
-
-    pub async fn update_snap_settings(
+    /// `tools.getProperties(id)`: what the tool's style panel shows.
+    pub async fn properties(
         &self,
-        patch: AnnotationSnapSettingsPatch,
-    ) -> Result<(), ViewerError> {
+        tool_id: String,
+    ) -> Result<super::AnnotationSelectionProps, ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.update_snap_settings(patch.into());
-                Ok(())
+                let read = open(c)?.tools_get_properties(&tool_id);
+                Ok(super::AnnotationSelectionProps {
+                    properties: properties_out(read.get("properties").unwrap_or(&Value::Null)),
+                    values_json: read.get("values").cloned().unwrap_or(Value::Null).to_string(),
+                    mixed: Vec::new(),
+                })
             })
             .await
     }

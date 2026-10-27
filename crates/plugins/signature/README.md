@@ -1,110 +1,137 @@
 # epdf-plugin-signature
 
-`packages/plugin/signature` in Rust at the v3 contract: document-scoped digital signing over
-`epdf-signature-core`. All 54 cases in two vector files replay identically
-(`cargo test -p epdf-plugin-signature`):
+`packages/plugin/signature` in Rust on the current kernel: document-scoped digital signing over
+`epdf-signature-core`. All 53 cases in two vector files replay identically
+(`cargo test -p epdf-plugin-signature`), with no member-order allowance and no outcome exception:
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/signature.json` | scenario | 35 | reads over the snapshot, the authority twins, hydration and the working-copy invalidation edge, document events, fills, the sign-here target, one-shot and two-phase signing, the destination rule, the armed-mark handler, the two unit-test shapes |
-| `vectors/plugins/signature-functions.json` | function | 19 | the reducer, `blankPagePdf`, `markRoleOf`, `isTarget`, `sameRef` |
+| `vectors/plugins/signature.json` | scenario | 39 | reads over the mirrored snapshot, the per-field authority twins, loading and the working-copy invalidation edge, document events, fills, the sign-here target, one-shot and two-phase signing, the destination rule, the armed-mark handler, the connected controller |
+| `vectors/plugins/signature-functions.json` | function | 14 | `initialSignatureState`, `setVerdicts`, `setTarget`, `setBusy`, `blankPagePdf`, `markRoleOf`, `sameFieldRef` |
 
 The scenario registry runs the real interaction, annotation, form and stamp adapters beside this
-one. The generator is `tooling/plugin-conformance/src/suites/signature-plugin.ts`.
+one. The generator is `tooling/plugin-conformance/src/suites/signature-plugin.ts`. Some of its
+`covers` texts still describe the pre-upstream plugin; the traces are current. The list is in
+"Stale case descriptions" below.
+
+`tests/behavior.rs` names the facts the brief asks for on top of the replay (a free asset placement
+falls back to the stamp plugin and settles on annotation 60, an imported signatures library's mark
+reaches a field as a sign request, a refused fill and a failed signer clean up, an annotation hit
+keeps precedence over the armed mark) and drives what no vector reaches: a settings change, a
+signal that fires before the seal, a parked signing the engine disowns, and a cancellation for
+another signing.
 
 ## Shape
 
-The files follow the TypeScript. `contract.rs`, `model.rs` and `blank_page.rs` are the vocabulary,
-the slice and the clearing appearance. `controller.rs` builds the services once and each area is an
-`impl` block on the one `SignatureCapability`: `services/{authority,events,marks,siblings,store}`,
-`read/signatures`, `sync/{hydration,document_events}`, `write/{sign,fill,place}` and
-`tools/armed_mark`. `signature_plugin` requires the form token and takes the interaction, stamp and
-annotation tokens as optional; its `connect` registers `ArmedMarkHandler` when both the hub and the
-stamp plugin are there.
+The files follow the TypeScript. `contract.rs`, `model.rs`, `blank_page.rs` and `connect.rs` are
+the vocabulary, the session state and its transitions, the clearing appearance and the sibling
+wiring. `controller.rs` builds the services once; each area is an `impl` block on the one
+`SignatureCapability`: `services/{authority,errors,events,marks,settings,siblings,store}`,
+`read/{signatures,judging}`, `sync/{signatures,validation}`, `write/{sign,fill,place}` and
+`tools/armed_mark`.
 
-Engine DTOs stay `serde_json::Value`, as they do in `epdf-signature-core`: the snapshot, a
-`SignatureDTO`, a verdict, a field ref. `Mark` is an enum (`Asset` or `Source`), a signer is a
-`SignerSource` (a `SignerPort` or a thunk resolving one), and `placeMark`'s target is `PlaceTarget`.
-`analyzeChanges` and `readRevision` answer `Result<Promise<_>, _>`, because the TypeScript throws
-synchronously when the engine has no signatures service. The TypeScript memoizes the two lists per
-snapshot to keep them reference-stable; the Rust hands out copies.
+The session state is `{ verdicts, target, busy }`, changed only by `set_verdicts`, `set_target` and
+`set_busy`. The verdicts and the target are held by `Rc`, so a transition tells the same value from
+an equal one as `===` does. The signature facts (`{ snapshot, pending }`) are the kernel mirror
+`signatures`, loaded from `signatures.list` and folded from confirmed events by
+`fold_signature_event`. `onSigned` and `onProtectionChanged` fire from the mirror's `changed`, for
+every session alike, and a two-phase signing parks and clears through `signatures.prepared`,
+`signatures.cancelled` and `signatures.completed`.
 
-`SignatureHost::console_error` is the `globalThis.console?.error` the plugin reports a failing
-listener and every background failure to.
+The settings are `{ key, mode, trust, allowCertify }` in the kernel's settings store. A key (a
+`SignerPort` or a function answering one) and a trust port are not JSON, so the store holds a handle
+into the registration's `PortTable`, as stamp holds its asset engine. Both are `whole`. Engine DTOs
+stay `serde_json::Value`, as they do in `epdf-signature-core`.
+
+`console.rs` is the `globalThis.console?.error` the plugin reports background failures to (a
+validation, an armed mark that fails to land). Listener failures go to the kernel report.
+
+## Migrating from the pre-13.25 API
+
+For `epdf-viewer-host` and `epdf-web` (Task 13.33).
+
+| Old | New |
+|---|---|
+| `signature_plugin(SignatureConfig { mode, signer, trust, allow_certify, host })` | `signature_plugin(SignatureConfig { key, mode, trust, allow_certify })`, each `Option<Option<_>>` for "not given" and `null`; `SignatureHost` is `console::set_sink` |
+| `SignerSource::{Port, Thunk, Host { resolve, available }}` | `SignatureKey::{Port, Thunk}`. The mode follows the key setting, as `services/authority.ts` reads it: a host that wants `visual` until its slot holds a signer registers the mode or updates the key setting |
+| `SignFieldInput.signer`, `.attribution` | `.key` (a per-call key) and `.signer` (the `SignatureSignerInput` facts). The ffi records `SignatureSignInput` and `SignaturePrepareInput` name it `signer` (`SignatureSignerInput`), as the TypeScript does, since Task 14.7 |
+| `SignerPort` as a setting | `SignatureKey::port(port)`, held by `Rc` and compared by identity: a clone is the same key, a port rebuilt from the same parts is another (a Rust-only divergence, below) |
+| `create_signature_capability`, `signature_reducer`, `SignatureAction`, `ResourceStatus` | removed with the TypeScript; `get_status` answers the kernel's `mirror::ResourceStatus` |
+| `abort_pending()` | `cancel_pending(options)`, over `signatures.cancel` |
+| `can_sign()`, `can_fill()` | `can_sign(&field)`, `can_fill(&field)`: per field, by `ctx.allowsField`; new `can_read_revision()` |
+| `on_invalidating`, `SignatureInvalidatingEvent`, `SignatureFieldEvent` | `on_invalidation_predicted`, `SignatureInvalidationPredictedEvent`, `SignatureFilledEvent`, `SignatureClearedEvent` (no `origin`) |
+| `refresh()`, `validate(ValidateRequest)`, `analyze_changes(input) -> Result<Promise>`, `read_revision(&target) -> Result<Promise>` | every verb takes `OperationOptions` or `SignatureValidateOptions` and answers a `Promise`; `read_revision` needs `doc.download` and reads `signatures.downloadRevision` |
+| `list_signatures`, `list_unsigned_fields` | answer `Rc<Vec<Value>>`, memoized per snapshot and verdicts; each signed entry carries its `verdict` |
+| `PlaceTarget::Free(StampPlacement)` | `PlaceTarget::Free(Value)`, a `StampPlacement` as JSON (`page`, `center`, `targetWidth`) |
+| `is_target`, `same_ref` | `set_target`, `same_field_ref`; refs are `{ kind: 'objectNumber', objectNumber }` |
+
+`src/ffi/` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33. `SignatureHandle::abort_pending` is `cancel_pending`, `can_sign` and `can_fill` take
+a field, `SignatureEvent::Invalidating` is `InvalidationPredicted`, `SignatureSignerClaims` reads
+`signedAt`, and a signer completion's `fail` raises a plain error, which the verb answers as
+`operation-failed` with that cause, as a rejecting TypeScript signer port is answered
+(`sign-with-a-raw-signer`). Known call sites: `crates/epdf-viewer-host` (`session.rs`,
+`api.rs`, `lib.rs`, `tests/common/mod.rs`, `tests/viewer_host.rs`) and `crates/epdf-web`
+(`src/adapters.rs`).
 
 ## Turn order
 
-`src/promise.rs` carries the rules. An awaited engine call resumes one turn later than a plain
-promise, because the guarded handle answers an `AbortablePromise`. The first replay put every
-snapshot ahead of the form plugin's until `refresh` awaited that way. `return promise` from an
-`async` function costs the adoption turns (`adopt`), and `.then(...).catch(...)` chains take one
-more turn before the report.
+Each TypeScript `await` is a plain `.await`, and `return promise` from an `async` function adopts it
+(`promise::adopt`). The one exception is the dynamic import, listed below.
 
-WebCrypto answers from libuv's pool in the TypeScript, so only the cases whose call reaches the
-completion gate or a CMS build set `awaitCalls`. Every validation the plugin starts on its own
-(the initial read, a new version, a scheduled re-judgement, the one after signing) judges a snapshot
-whose revision chain is broken, which never reads a CMS. That keeps background work on microtasks,
-where both sides order it the same way. The cost: this suite never has the plugin judge a CMS
-itself; `vectors/core/signature-document.json` pins that.
+## Kept and new Rust-only divergences
 
-## Harness change
+None is reached by a vector.
 
-The fake engine's `forms` proxy now drops any `forms.*` member a document's `lacks` list names,
-`submit` aside, on both sides (`fake-engine.ts` and `fake_engine.rs`). Before, only
-`forms.applyEffects` could be taken away, and the Rust `has` answered false for every other
-`forms.*` member. The cases need `forms.setSignatureAppearance` absent to reach `unsupported` and a
-false `canFill`.
-
-## Coverage
-
-Across the whole corpus the generators reach all 1,375 of the package's statements and 303 of its
-307 branches (`vectors/coverage.json`). The four branches left need a document plugin without a
-document, which the v3 kernel never builds: a controller exists only after its session has a handle,
-so `ctx.doc` is always set.
-
-- `services/authority.ts:10`, the `?? false` of `ctx.doc?.security`.
-- `services/store.ts:27`, `requireDoc`'s `not-ready`.
-- `services/store.ts:43`, `documentId`'s `not-ready`.
-- `sync/document-events.ts:17`, the early return without a document.
+- The key and trust settings are stored as handles (`services/settings.rs`).
+- `strict_eq` compares two JSON objects as unequal (`js.rs`): a copy has no identity to share.
+  `getSignature` compares widget object numbers, which are numbers or `undefined`.
+- `SealUnlessCancelled` forwards every `DocumentHandle` member but `signatures.complete` to the
+  guarded handle. The TypeScript's stand-in has only `signatures`, so any other member would be a
+  `TypeError`; `epdf-signature-core`'s `sign` calls only `signatures.*`.
+- `await import('@embedpdf/core-signature')` is one turn (`sync/validation.rs` `import_module`),
+  Ruling13.25. Node 24.20.0 resumes it eight turns after the call for an already evaluated module
+  (measured with a scratch probe); module-load turns are the host's, not a contract, and the
+  vectors pass at one and at two. The cost: a native caller racing a validation against another
+  microtask chain can see a different interleaving than Node.
+- The key and trust settings compare by identity (`SignatureKey::same`, the trust `Rc`), where the
+  TypeScript store's `sameValue` deep-compares plain objects
+  (`packages/core/main/src/settings.ts:204-218`, called at `:156` and `:191`). The consequence: a
+  CMS port rebuilt over the same `sign` function reports a settings change here and none in the
+  TypeScript. A raw port's chain is an array of `Uint8Array`s, which `sameValue` compares
+  element by element and each buffer by identity: a raw port rebuilt with new buffers is a change
+  on both sides, one reusing the same buffers and `sign` is a change only here. Task 13.11 made the same choice for
+  interaction's tools (`docs/research/rust-plugins-branch-review.md:92`).
+- `PortTable` keeps a key or trust port for as long as a stored setting names it, as the
+  TypeScript's `resolved.from` does: the store's registered value still names the first ones, and
+  `resetSettings` must find them. Since Task 14.5 (M37, `2f61c24ba`, `868a998b6`) the table
+  releases an entry once no stored settings name it, so a host that swaps keys no longer grows it
+  by one entry per swap. Stamp's `EngineTable` and i18n's loader table got the same release.
 
 ## Pinned TypeScript behaviour
 
-A raw signer's certificate subject becomes the default `/Name` even when the signing then fails,
-and the caller's `attribution` spreads over it (`sign-with-a-raw-signer`). `isTarget` in
-`write/sign.ts` is exported and never called; a function case covers it. `getSignature` for an
-address with neither `kind` nor `annotObjectNumber` compares `undefined` against every widget, so
-it would match a signature whose widget is null; no vector sends one, and the Rust keeps that
-comparison.
+`foldSignatureEvent` clears a parked signing on any `signatures.cancelled`, whatever its
+`signingId` (`model.ts:145-146`), and the Rust fold does the same
+(`a_cancellation_clears_the_parked_signing_whatever_its_id`). A cancellation published for another
+signing therefore unparks this one. That is upstream behaviour; Task 14 did not change it, and the decision is the user's.
+
+## Stale case descriptions
+
+The generator's `covers` texts for these cases describe the pre-upstream plugin. The traces are the
+current TypeScript's; the generator is not changed here.
+
+| Case | Stale claim | Current behaviour |
+|---|---|---|
+| `signature-service-refuses-unsupported` | no signatures service; `readRevision` throws synchronously; `abortPending` | the service answers `Unsupported`; `readRevision` rejects; `cancelPending` |
+| `authority-twins` | `canSign` needs a configured signer, `canFill` the engine door | both are `allowsField` on the form's field |
+| `the-initial-read-fails` | the initial read is reported | the mirror's status reads `error`; nothing is reported |
+| `document-events` | an aborted signing; a field-set change re-judges soon | `signatures.cancelled`; a field-set change reloads, and a load re-judges at once |
+| `fill-and-clear` | a fill re-reads the form | no form re-read |
+| `two-phase-signing`, `sign-one-shot` | completion re-reads; the caller's attribution | the mirror folds `signatures.completed` and re-judges soon; `signer` |
+| `abort-the-parked-signing`, `a-parked-signing-from-elsewhere` | `abortPending` | `cancelPending` |
+| `sign-with-a-raw-signer` | the caller's attribution | `signer` |
+| `sign-without-a-signer` | an unresolvable mark rejects `not-found` | the one step rejects `invalid-input` (no key) |
 
 ## Mutation testing
 
-`scripts/mutants.sh -p epdf-plugin-signature --test-package epdf-plugin-signature --file <file>`,
-file by file over every module but `harness.rs`, catches 148 of 150 viable mutants (148 caught, 0
-timeouts; 132 unviable). Fifteen of those are killed by new cases, each checked by applying the
-mutant by hand:
-
-- `signed-by-truthiness`: signatures whose `signed` is null, 0, `''`, 1, `'x'`, `{}` and `[]`.
-  It kills the eight mutants of `truthy` (`read/signatures.rs:23` to `:27`). The case first
-  failed in the Rust for another reason: `validate_signatures` in `epdf-signature-core` judged only
-  `signed == true`, where `verdict.ts` skips on `!signature.signed`. That is fixed, with
-  `validate-signed-by-truthiness` in `signature-core.ts`.
-- `get-signature-edges`: a widget the snapshot carries and the form plugin does not, which only
-  the snapshot lookup finds (the `!` at `read/signatures.rs:98`), and an `objectNumber` address
-  with no number at all against a signature whose field ref also has none, which only
-  `is_field_ref` turns away (`:50` replaced with `true`).
-- `the-sign-here-target` now reads `getTarget` while a target is set: both replacements of
-  `get_target` (`:158`).
-- `an-armed-mark-reports-its-handler` listens to `onGestureStarted`: both replacements of the
-  armed-mark handler's `id` (`tools/armed_mark.rs:44`).
-- `a-legacy-stamp-tool-keeps-the-arm`: a tool that enables the legacy `annotation-stamp` tag keeps
-  the stamp armed without being the armed-stamp tool, so `enabled_for` replaced with `true`
-  (`tools/armed_mark.rs:52`) drops the mark into the field where the TypeScript places a stamp.
-
-The two survivors:
-
-- `src/read/signatures.rs:51`, `&&` to `||` in `is_field_ref`. The two differ only for an address
-  without a `kind`, and `widget_object_of` answers every such address first, so `is_field_ref`
-  never sees one.
-- `src/sync/hydration.rs:111`, `&&` to `||` in the invalidation detail's filter. Null and
-  `{"$undefined": true}` then pass the filter, but `as_str` maps both to `None`, so the detail is
-  the empty string either way.
+Not rerun for this port. The counts the pre-13.25 README gave were over files this task replaced
+(`sync/hydration.rs`, `sync/document_events.rs`); the in-diff run over Task 14's changed lines (`4a0b9c126..172f5369d`, 2026-10-27) caught 9 of 9 viable mutants.

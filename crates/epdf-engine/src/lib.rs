@@ -43,5 +43,6 @@ pub mod dispatch;
 pub mod host;
 
 pub mod features;
+pub mod page_space;
 pub mod session;
 pub mod spike;

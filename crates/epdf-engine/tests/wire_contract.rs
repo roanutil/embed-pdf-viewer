@@ -1,7 +1,7 @@
 //! Every wire kind reaches an implementation.
 //!
 //! Replays `vectors/wire/requests.json`, which the TypeScript compiler
-//! produced by reading the `WorkerRequest` union: eighty-four kinds and the
+//! produced by reading the `WorkerRequest` union: eighty-nine kinds and the
 //! arguments each one carries.
 //!
 //! # What a dispatcher can get wrong that a compiler cannot catch
@@ -15,13 +15,17 @@
 //! The check is deliberately weak about SUCCESS and strict about ROUTING. An
 //! arm is exercised with a body built from the vector's own field names, and
 //! what is asserted is that the kind is not refused as unknown (the
-//! dispatcher's `InvalidArg` "unknown request kind: …", as `WorkerHost`'s):
-//! whether the operation then succeeds depends on the fixture, and pinning
-//! results is what the other sixty-odd suites do. What cannot be allowed is
-//! a kind the dispatcher has never heard of.
+//! dispatcher's `InvalidArg` "unknown request kind: …", as `WorkerHost`'s)
+//! and does not answer `NotImplemented`: whether the operation then succeeds
+//! depends on the fixture, and pinning results is what the other suites do.
 
-use epdf_engine::error::EngineErrorCode;
-use epdf_engine::host::{Host, Payloads};
+use epdf_engine::error::{EngineError, EngineErrorCode};
+use epdf_engine::features::render::raster::PageRaster;
+use epdf_engine::features::server::{EncodedImage, ImageEncoder, RenderEncode};
+use epdf_engine::host::{
+    AUTHORITY_KINDS, FLOOR_ONLY_KINDS, Host, JobEnvelope, JobId, Payloads, RequestEffect,
+    WRITE_KINDS,
+};
 
 const VECTOR: &str = "tooling/engine-conformance/vectors/wire/requests.json";
 
@@ -34,11 +38,38 @@ const DOC_ID: &str = "doc-1";
 /// arms have something real to act on.
 const FIXTURE: &str = "tooling/engine-conformance/fixtures/annotation_kinds.pdf";
 
+/// The kinds upstream's union dropped (`docs/research/catchup-engine-vector-diffs.md`,
+/// "Removed"), and `signatures.abort`, renamed `signatures.cancel`
+/// (7bccc4f35).
+const RETIRED: &[&str] = &[
+    "annotations.listFullPage",
+    "annotations.listRawAll",
+    "annotations.listRawPage",
+    "annotations.move",
+    "attachments.create",
+    "attachments.delete",
+    "forms.applyEffects",
+    "forms.attachWidget",
+    "pages.delete",
+    "pages.insert",
+    "pages.insertBlank",
+    "pages.move",
+    "pages.rotate",
+    "pieceInfo.clear",
+    "signatures.abort",
+];
+
 #[derive(Debug)]
 struct Case {
     kind: String,
     fields: Vec<(String, bool)>,
     control: bool,
+}
+
+impl Case {
+    fn has(&self, name: &str) -> bool {
+        self.fields.iter().any(|(n, _)| n == name)
+    }
 }
 
 fn cases() -> Vec<Case> {
@@ -68,12 +99,33 @@ fn cases() -> Vec<Case> {
         .collect()
 }
 
+/// An encoder that answers empty bytes, so the `*Encoded` kinds reach their
+/// arm's end rather than the host's refusal for having no encoder.
+struct NullEncoder;
+
+impl ImageEncoder for NullEncoder {
+    fn encode(
+        &self,
+        raster: &PageRaster,
+        _encode: &RenderEncode,
+    ) -> Result<EncodedImage, EngineError> {
+        Ok(EncodedImage {
+            content_type: "image/png".into(),
+            width: raster.width,
+            height: raster.height,
+            bytes: Vec::new(),
+        })
+    }
+}
+
 fn open() -> Host {
-    let mut host = Host::new();
+    let mut host = Host::new().with_encoder(Box::new(NullEncoder));
     let bytes = std::fs::read(test_support::workspace_root().join(FIXTURE))
         .unwrap_or_else(|e| panic!("read {FIXTURE}: {e}"));
     let response = host.call(
-        &serde_json::json!({ "kind": "open.fatMem", "docId": DOC_ID }).to_string(),
+        &serde_json::json!({ "kind": "open.fatMem", "effect": "open", "jobId": 1,
+            "docId": DOC_ID })
+        .to_string(),
         vec![bytes],
     );
     let body: serde_json::Value = serde_json::from_str(&response.json).expect("the response");
@@ -81,17 +133,24 @@ fn open() -> Host {
     host
 }
 
-/// The wire's `PageRef`.
-fn page_ref(page_object_number: u64) -> serde_json::Value {
-    serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": page_object_number })
+/// The wire's `PageRef` (595bdc6c7).
+fn page_ref(object_number: u64) -> serde_json::Value {
+    serde_json::json!({ "kind": "objectNumber", "objectNumber": object_number })
 }
 
-/// Send one request to `host` and answer the whole envelope.
+/// An `AnnotationRef` by object number.
+fn annotation_ref(page: u64, object_number: u64) -> serde_json::Value {
+    serde_json::json!({ "kind": "objectNumber", "page": page_ref(page),
+        "objectNumber": object_number })
+}
+
+/// Send one request to `host` and answer the whole envelope, filled in as
+/// a client fills it ([`Host::call_filled`]).
 fn send(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
     let mut request = request;
-    request["jobId"] = "job-2".into();
+    request["jobId"] = 2.into();
     request["docId"] = DOC_ID.into();
-    let response = host.call(&request.to_string(), Vec::new());
+    let response = host.call_filled(&request.to_string(), Vec::new());
     serde_json::from_str(&response.json).expect("every response is JSON")
 }
 
@@ -104,12 +163,10 @@ fn send(host: &mut Host, request: serde_json::Value) -> serde_json::Value {
 fn placeholder(name: &str) -> serde_json::Value {
     match name {
         "toIndex" | "destIndex" | "pageIndex" | "count" => serde_json::json!(1),
-        "widget" => serde_json::json!({ "kind": "objectNumber", "page": page_ref(1),
-            "annotObjectNumber": 1 }),
+        "widget" => annotation_ref(1, 1),
         "page" => page_ref(1),
         "pages" => serde_json::json!([page_ref(1)]),
-        "refs" => serde_json::json!([{ "kind": "index", "page": page_ref(1), "index": 0,
-            "revision": { "docSessionId": "s", "page": page_ref(1), "generation": 0 } }]),
+        "refs" => serde_json::json!([annotation_ref(1, 1)]),
         "ref" => serde_json::json!({ "kind": "key", "key": "nothing" }),
         "rotation" => serde_json::json!(90),
         "usage" => serde_json::json!("display"),
@@ -127,22 +184,30 @@ fn placeholder(name: &str) -> serde_json::Value {
         "encode" => serde_json::json!({ "format": "png" }),
         "weight" => serde_json::json!(400),
         "italic" => serde_json::json!(-1),
+        "opId" => serde_json::json!("op-1"),
+        "authority" => serde_json::json!({ "identity": {}, "grants": null }),
         "path" | "basePath" => serde_json::json!("/nonexistent/for-this-check.pdf"),
         _ => serde_json::json!("x"),
     }
 }
 
-/// The body for one kind: the envelope, plus every required argument.
+/// The body for one kind: the envelope, plus every required argument. The
+/// vector names the `effect` field and not its value, which is the kind's
+/// own ([`RequestEffect::of`]).
 fn request(case: &Case) -> String {
     let mut body = serde_json::Map::new();
     body.insert("kind".into(), case.kind.as_str().into());
-    body.insert("jobId".into(), "job-1".into());
+    body.insert("jobId".into(), 1.into());
     body.insert("docId".into(), DOC_ID.into());
     for (name, optional) in &case.fields {
         if *optional {
             continue;
         }
-        body.insert(name.clone(), placeholder(name));
+        let value = match name.as_str() {
+            "effect" => RequestEffect::of(&case.kind).expect("a stated effect").as_str().into(),
+            _ => placeholder(name),
+        };
+        body.insert(name.clone(), value);
     }
     serde_json::Value::Object(body).to_string()
 }
@@ -159,9 +224,9 @@ fn payloads() -> Payloads {
 #[test]
 fn every_wire_kind_routes_to_an_implementation() {
     let cases = cases();
-    assert_eq!(cases.len(), 84, "the vector and the protocol disagree about how many kinds exist");
+    assert_eq!(cases.len(), 89, "the vector and the protocol disagree about how many kinds exist");
 
-    let mut unrouted = Vec::new();
+    let mut wrong = Vec::new();
     for case in &cases {
         // A control frame steers the worker rather than asking it for a
         // result. They are routed too, and covered by their own tests; what
@@ -181,20 +246,277 @@ fn every_wire_kind_routes_to_an_implementation() {
         let response = host.call(&request(case), payloads());
         let body: serde_json::Value =
             serde_json::from_str(&response.json).expect("every response is JSON");
-        let Some(error) = body.get("error") else { continue };
-        let message = error["message"].as_str().unwrap_or("");
+        let message = body["error"]["message"].as_str().unwrap_or("");
         if message.starts_with(UNKNOWN_KIND) {
-            unrouted.push(format!("{}: {message}", case.kind));
+            wrong.push(format!("{}: {message}", case.kind));
+        } else if body["error"]["code"] == "NotImplemented" {
+            wrong.push(format!("{} answers NotImplemented: {message}", case.kind));
         }
     }
 
     assert!(
-        unrouted.is_empty(),
-        "{} of {} kinds reach no implementation:\n  {}",
-        unrouted.len(),
+        wrong.is_empty(),
+        "{} of {} kinds:\n  {}",
+        wrong.len(),
         cases.len(),
-        unrouted.join("\n  "),
+        wrong.join("\n  ")
     );
+}
+
+#[test]
+fn every_removed_kind_is_unknown_to_the_wire() {
+    // Answered as `WorkerHost` answers a kind it has no case for. 8.8
+    // retired `attachments.create`, `attachments.delete` and
+    // `pieceInfo.clear`; 8.12 the three annotation listings; 8.16
+    // `annotations.move`; 8.18 the five page structure kinds, now
+    // `document.apply` ops; 8.20 `forms.applyEffects`, whose effects are
+    // `document.apply` ops; 8.21 `forms.attachWidget`, which
+    // `forms.addWidget` replaced (d7bd2d277); 8.26 `signatures.abort`,
+    // renamed `signatures.cancel` (7bccc4f35).
+    let cases = cases();
+    for kind in RETIRED.iter().copied() {
+        assert!(!cases.iter().any(|c| c.kind == kind), "{kind} is in upstream's union");
+        let mut host = open();
+        let wire = send(&mut host, serde_json::json!({ "kind": kind }));
+        assert_eq!(wire["error"]["code"], "InvalidArg", "{kind}: {wire}");
+        assert_eq!(wire["error"]["message"], format!("{UNKNOWN_KIND}{kind}"), "{kind}: {wire}");
+    }
+}
+
+#[test]
+fn the_envelope_kinds_agree_with_the_vector() {
+    // Which kinds carry `WriteJobFields` and an `authority` is read off the
+    // TypeScript union by the vector; the host's lists must say the same.
+    for case in cases() {
+        let kind = case.kind.as_str();
+        assert_eq!(case.has("opId"), WRITE_KINDS.contains(&kind), "{kind}: opId");
+        assert_eq!(
+            case.has("objectNumberFloor"),
+            WRITE_KINDS.contains(&kind) || FLOOR_ONLY_KINDS.contains(&kind),
+            "{kind}: objectNumberFloor",
+        );
+        assert_eq!(case.has("authority"), AUTHORITY_KINDS.contains(&kind), "{kind}: authority");
+    }
+}
+
+#[test]
+fn the_page_space_boundary_knows_every_wire_kind_and_no_other() {
+    // `page_space::boundary` matches `WireKind` with no catch-all, so a kind
+    // it knows is placed as converting or as holding no places. This is what
+    // keeps that list the wire's: a kind upstream adds to the union and the
+    // vector records fails here until the boundary places it.
+    use epdf_engine::page_space::boundary::WireKind;
+    let mut vector: Vec<String> = cases().into_iter().map(|c| c.kind).collect();
+    vector.sort();
+    let mut known: Vec<String> = WireKind::ALL.iter().map(|(k, _)| (*k).to_owned()).collect();
+    known.sort();
+    assert_eq!(known, vector);
+    assert_eq!(
+        WireKind::of("signatures.abort"),
+        None,
+        "signatures.abort was removed from the wire"
+    );
+}
+
+#[test]
+fn a_file_render_takes_its_target_in_page_space() {
+    // `renderOptionsInFileSpace` on the page the render opened: a target in
+    // page space ({x, y, width, height}) is read; one in the file's
+    // coordinates ({left, bottom, right, top}) is not the shape it takes.
+    let mut host = Host::new();
+    let path = test_support::workspace_root().join(FIXTURE);
+    let render = |host: &mut Host, rect: serde_json::Value| {
+        let response = host.call_filled(
+            &serde_json::json!({ "kind": "document.renderPageFile", "jobId": 3,
+                "path": path, "password": "", "pageIndex": 0,
+                "options": { "target": { "kind": "rect", "rect": rect },
+                    "viewport": { "kind": "scale", "scale": 0.5 } } })
+            .to_string(),
+            Vec::new(),
+        );
+        serde_json::from_str::<serde_json::Value>(&response.json).expect("the response")
+    };
+    let body = render(&mut host, serde_json::json!({ "x": 0, "y": 0, "width": 100, "height": 40 }));
+    assert!(body.get("error").is_none(), "{body}");
+    assert_eq!(
+        (body["result"]["raster"]["width"].as_u64(), body["result"]["raster"]["height"].as_u64()),
+        (Some(50), Some(20))
+    );
+    let body =
+        render(&mut host, serde_json::json!({ "left": 0, "bottom": 0, "right": 100, "top": 40 }));
+    assert_eq!(body["error"]["code"], "WireFormat", "{body}");
+}
+
+#[test]
+fn every_kind_states_the_effect_its_interface_does() {
+    // `effect: '…'` beside each `kind: '…'` in `worker-protocol.ts`: the
+    // host's table is that file's, and only the control frames state none.
+    let source = std::fs::read_to_string(
+        test_support::workspace_root().join("packages/engine/core/src/wire/worker-protocol.ts"),
+    )
+    .expect("the protocol");
+    let mut stated = std::collections::BTreeMap::new();
+    let mut lines = source.lines().map(str::trim).peekable();
+    while let Some(line) = lines.next() {
+        let (Some(kind), Some(next)) = (quoted(line, "kind: '"), lines.peek()) else { continue };
+        if let Some(effect) = quoted(next, "effect: '") {
+            stated.insert(kind.to_owned(), effect.to_owned());
+        }
+    }
+    let mut controls = Vec::new();
+    for case in cases() {
+        match RequestEffect::of(&case.kind) {
+            Some(effect) => assert_eq!(
+                Some(effect.as_str()),
+                stated.get(&case.kind).map(String::as_str),
+                "{}",
+                case.kind
+            ),
+            None => controls.push(case.kind),
+        }
+    }
+    controls.sort();
+    assert_eq!(controls, ["abort", "pages.workingSet", "shutdown"]);
+    assert_eq!(stated.len(), 86, "the protocol states an effect for a kind the vector lacks");
+}
+
+/// The text between `prefix` and the next `'` of `line`.
+fn quoted<'a>(line: &'a str, prefix: &str) -> Option<&'a str> {
+    let rest = line.strip_prefix(prefix)?;
+    rest.split_once('\'').map(|(value, _)| value)
+}
+
+#[test]
+fn a_write_envelope_is_read_whole() {
+    let body = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
+        "jobId": 7, "opId": "op-7", "objectNumberFloor": 900,
+        "authority": { "identity": { "userId": "u", "displayName": "U" },
+            "grants": { "scope": ["*"], "pdfBits": { "bit3": true, "bit4": true, "bit5": true,
+                "bit6": true, "bit9": true, "bit10": true, "bit11": true, "bit12": true } } } });
+    let envelope = JobEnvelope::parse("annotations.delete", &body).expect("a whole envelope");
+    assert_eq!(envelope.effect, Some(RequestEffect::Write));
+    assert_eq!(envelope.job_id.map(|j| j.to_string()), Some("7".into()));
+    assert_eq!(envelope.op_id.as_deref(), Some("op-7"));
+    assert_eq!(envelope.object_number_floor, Some(900));
+    let authority = envelope.authority.expect("an authority");
+    assert_eq!(authority.identity.user_id.as_deref(), Some("u"));
+    assert_eq!(authority.grants.expect("grants").scope, ["*"]);
+    assert_eq!(authority.protection, None);
+}
+
+#[test]
+fn an_envelope_upstream_requires_is_required() {
+    // `worker-protocol.ts`: every job a `jobId` and its kind's `effect`, a
+    // write its `opId`, and a kind that takes an `authority` one, whose
+    // `grants` may be `null` but not left out.
+    let delete = serde_json::json!({ "kind": "annotations.delete", "effect": "write",
+        "jobId": 7, "opId": "op-7", "authority": { "identity": {}, "grants": null } });
+    assert!(JobEnvelope::parse("annotations.delete", &delete).is_ok());
+    for missing in ["jobId", "effect", "opId", "authority"] {
+        let mut body = delete.clone();
+        body.as_object_mut().unwrap().remove(missing);
+        let refused = JobEnvelope::parse("annotations.delete", &body).expect_err(missing);
+        assert_eq!(refused.code, EngineErrorCode::WireFormat, "{missing}");
+        assert_eq!(
+            refused.message,
+            format!("the 'annotations.delete' request has no '{missing}'"),
+            "{missing}"
+        );
+    }
+    let mut no_grants = delete.clone();
+    no_grants["authority"] = serde_json::json!({ "identity": {} });
+    assert_eq!(
+        JobEnvelope::parse("annotations.delete", &no_grants).unwrap_err().code,
+        EngineErrorCode::WireFormat
+    );
+    // A control frame states no effect, and a kind the wire does not have
+    // has no envelope: its arm refuses it.
+    let abort = serde_json::json!({ "kind": "abort", "jobId": 3 });
+    assert_eq!(JobEnvelope::parse("abort", &abort).unwrap().job_id, Some(JobId(3)));
+    assert_eq!(
+        JobEnvelope::parse("pages.teleport", &serde_json::json!({})).unwrap(),
+        JobEnvelope::default()
+    );
+}
+
+#[test]
+fn an_effect_is_read_but_not_held_to_the_kinds() {
+    // Upstream's worker never reads `effect` at run time: a request stating
+    // another kind's effect is answered as its kind, as there.
+    let mut host = open();
+    let answer = host.call(
+        &serde_json::json!({ "kind": "pages.list", "effect": "write", "jobId": 5,
+            "docId": DOC_ID })
+        .to_string(),
+        Vec::new(),
+    );
+    let answer: serde_json::Value = serde_json::from_str(&answer.json).unwrap();
+    assert!(answer["result"]["pages"].is_array(), "{answer}");
+}
+
+#[test]
+fn a_field_the_kind_does_not_take_is_ignored() {
+    // As `WorkerHost` ignores it: a read carries no op and no authority.
+    let body = serde_json::json!({ "kind": "pages.list", "effect": "read", "jobId": 2,
+        "opId": 3, "authority": 4, "objectNumberFloor": "x" });
+    assert_eq!(
+        JobEnvelope::parse("pages.list", &body).unwrap(),
+        JobEnvelope {
+            effect: Some(RequestEffect::Read),
+            job_id: Some(JobId(2)),
+            ..JobEnvelope::default()
+        }
+    );
+}
+
+#[test]
+fn a_malformed_envelope_is_a_wire_error() {
+    let mut host = open();
+    let unchecked = serde_json::json!({ "identity": {}, "grants": null });
+    for bad in [
+        serde_json::json!({ "kind": "pages.list", "effect": "sometimes" }),
+        serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
+            "opId": 3 }),
+        serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
+            "opId": "o", "objectNumberFloor": -1 }),
+        serde_json::json!({ "kind": "forms.setValue", "effect": "write", "opId": "o",
+            "authority": { "grants": null } }),
+        serde_json::json!({ "kind": "document.apply", "effect": "write", "opId": "o",
+            "change": { "ops": [] } }),
+        serde_json::json!({ "kind": "document.apply", "effect": "write", "opId": "o",
+            "authority": { "identity": {} }, "change": { "ops": [] } }),
+        serde_json::json!({ "kind": "metadata.update", "effect": "write", "patch": {},
+            "authority": unchecked }),
+    ] {
+        let mut request = bad.clone();
+        request["docId"] = DOC_ID.into();
+        request["jobId"] = 4.into();
+        let answer: serde_json::Value =
+            serde_json::from_str(&host.call(&request.to_string(), Vec::new()).json).unwrap();
+        assert_eq!(answer["error"]["code"], "WireFormat", "{bad}: {answer}");
+    }
+    // `WorkerJobId` is a number: not a flag, and not a name.
+    for job in [r#"true"#, r#""job-1""#] {
+        let request =
+            format!(r#"{{"kind":"pages.list","effect":"read","docId":"doc-1","jobId":{job}}}"#);
+        let answer: serde_json::Value =
+            serde_json::from_str(&host.call(&request, Vec::new()).json).unwrap();
+        assert_eq!(answer["error"]["code"], "WireFormat", "{job}: {answer}");
+    }
+}
+
+#[test]
+fn an_abort_names_its_job_by_number() {
+    // `WorkerJobId` is a number. Nothing is in flight, so nothing aborts.
+    let mut host = open();
+    let answer: serde_json::Value =
+        serde_json::from_str(&host.call(r#"{"kind":"abort","jobId":41}"#, Vec::new()).json)
+            .unwrap();
+    assert_eq!(answer["result"]["aborted"], false, "{answer}");
+    let named: serde_json::Value =
+        serde_json::from_str(&host.call(r#"{"kind":"abort","jobId":"41"}"#, Vec::new()).json)
+            .unwrap();
+    assert_eq!(named["error"]["code"], "WireFormat", "{named}");
 }
 
 #[test]
@@ -267,46 +589,58 @@ fn a_page_is_addressed_by_the_ref_the_listing_answered() {
     let listing = send(&mut host, serde_json::json!({ "kind": "pages.list" }));
     let first = listing["result"]["pages"][0]["ref"].clone();
     assert_eq!(first["kind"], "objectNumber", "the listing names no PageRef: {listing}");
-    assert!(first["pageObjectNumber"].as_u64().is_some_and(|n| n > 0), "{listing}");
+    assert!(first["objectNumber"].as_u64().is_some_and(|n| n > 0), "{listing}");
 
     let text = send(&mut host, serde_json::json!({ "kind": "pages.text", "page": first }));
     assert!(text.get("error").is_none(), "pages.text refused the listing's ref: {text}");
 
     let annotations =
-        send(&mut host, serde_json::json!({ "kind": "annotations.listRawPage", "page": first }));
+        send(&mut host, serde_json::json!({ "kind": "annotations.list", "pages": [first] }));
     assert_eq!(
-        annotations["result"]["pageState"]["page"], first,
-        "the page state names its page differently from the request: {annotations}",
+        annotations["result"]["pages"],
+        serde_json::json!([first]),
+        "the list names its page differently from the request: {annotations}",
     );
 
+    // A page op of `document.apply` takes the listing's ref too.
     let rotated = send(
         &mut host,
-        serde_json::json!({ "kind": "pages.rotate", "pages": [first], "rotation": 90 }),
+        serde_json::json!({ "kind": "document.apply", "change": { "ops": [
+            { "type": "pages.rotate", "pages": [first], "rotation": 90 }] } }),
     );
     assert!(rotated.get("error").is_none(), "pages.rotate refused the listing's ref: {rotated}");
-    let layout = &rotated["result"]["result"]["layout"]["pages"][0];
+    let layout = &rotated["result"]["result"]["items"][0]["layout"]["pages"][0];
     assert_eq!(layout["ref"], first, "the rotated page lost its identity: {rotated}");
     assert_eq!(layout["rotation"], 90, "{rotated}");
 }
 
 #[test]
-fn a_flat_page_number_is_the_old_wire_and_is_refused() {
+fn a_page_ref_in_another_spelling_is_refused() {
     // `pageObjectNumber` beside the kind is what this host spoke before
-    // `9f13cea3c`. Read silently, it would keep a stale host working against
-    // one engine and failing against the other.
+    // 595bdc6c7, and a flat number what it spoke before `9f13cea3c`. Read
+    // silently, either would keep a stale host working against one engine
+    // and failing against the other.
     let mut host = open();
     let flat = send(&mut host, serde_json::json!({ "kind": "pages.text", "pageObjectNumber": 1 }));
     assert_eq!(flat["error"]["code"], format!("{:?}", EngineErrorCode::WireFormat), "{flat}");
 
-    let bare = send(&mut host, serde_json::json!({ "kind": "pages.text", "page": 1 }));
-    assert_eq!(bare["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{bare}");
-
-    let unknown = send(
-        &mut host,
-        serde_json::json!({ "kind": "pages.delete",
-            "pages": [{ "kind": "index", "pageObjectNumber": 1 }] }),
-    );
-    assert_eq!(unknown["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{unknown}");
+    // Kept divergence (`3baec217b`): a malformed PageRef is `InvalidArg`,
+    // where the TypeScript worker does not validate it.
+    for bad in [
+        serde_json::json!(1),
+        serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": 1 }),
+        serde_json::json!({ "kind": "index", "objectNumber": 1 }),
+        serde_json::json!({ "kind": "objectNumber", "objectNumber": 0 }),
+        serde_json::json!({ "kind": "objectNumber", "objectNumber": 1.5 }),
+    ] {
+        let answer = send(&mut host, serde_json::json!({ "kind": "pages.text", "page": bad }));
+        assert_eq!(answer["error"]["code"], "InvalidArg", "{bad}: {answer}");
+        let pages = send(
+            &mut host,
+            serde_json::json!({ "kind": "pages.flatten", "pages": [bad], "usage": "display" }),
+        );
+        assert_eq!(pages["error"]["code"], "InvalidArg", "{bad}: {pages}");
+    }
 }
 
 #[test]
@@ -320,12 +654,44 @@ fn a_ref_to_no_page_is_not_found() {
 }
 
 #[test]
-fn a_widget_link_names_its_widget_by_annotation_ref() {
-    // `forms.attachWidget` and `forms.detachWidget` take the widget's
-    // `AnnotationRef` (`40c96e5ab`). A bare number is the old wire, and a
-    // name or an index cannot join a field, as `FormMutator` refuses them.
+fn an_annotation_is_named_by_object_number_or_base_index_only() {
+    // bc0057f3a: the `nm` and `index` kinds are gone from the wire. A
+    // `baseIndex` names an inline annotation, and one that names no such
+    // annotation on the page is `NotFound`.
     let mut host = open();
-    let field = serde_json::json!({ "kind": "objectNumber", "fieldObjectNumber": 1 });
+    let page =
+        send(&mut host, serde_json::json!({ "kind": "pages.list" }))["result"]["pages"][0]["ref"]
+            .clone();
+    for gone in [
+        serde_json::json!({ "kind": "nm", "page": page, "nm": "x" }),
+        serde_json::json!({ "kind": "index", "page": page, "index": 0,
+            "revision": { "docSessionId": "s", "page": page, "generation": 0 } }),
+    ] {
+        let answer =
+            send(&mut host, serde_json::json!({ "kind": "annotations.delete", "ref": gone }));
+        assert_eq!(answer["error"]["code"], "WireFormat", "{gone}: {answer}");
+    }
+    let nowhere = send(
+        &mut host,
+        serde_json::json!({ "kind": "annotations.delete",
+            "ref": { "kind": "baseIndex", "page": page, "baseIndex": 9_999 } }),
+    );
+    assert_eq!(nowhere["error"]["code"], "NotFound", "{nowhere}");
+}
+
+#[test]
+fn a_widget_link_names_its_widget_by_annotation_ref() {
+    // `forms.detachWidget` takes the widget's `AnnotationRef` (`40c96e5ab`).
+    // A bare number is the old wire, the `nm` kind is gone, and a
+    // `baseIndex` cannot join a field, as `FormMutator` refuses it once the
+    // field resolves: the field tree holds widgets by reference.
+    let mut host = Host::new();
+    let response = host.call_filled(
+        &serde_json::json!({ "kind": "open.fatMem", "docId": DOC_ID }).to_string(),
+        vec![test_support::fixture("tooling/engine-conformance/fixtures/form_fields.pdf")],
+    );
+    assert!(!response.json.contains("\"error\""), "{}", response.json);
+    let field = serde_json::json!({ "kind": "objectNumber", "objectNumber": 9 });
     let bare = send(
         &mut host,
         serde_json::json!({ "kind": "forms.detachWidget", "ref": field, "widget": 9 }),
@@ -336,7 +702,17 @@ fn a_widget_link_names_its_widget_by_annotation_ref() {
         serde_json::json!({ "kind": "forms.detachWidget", "ref": field,
             "widget": { "kind": "nm", "page": page_ref(1), "nm": "w" } }),
     );
-    assert_eq!(by_name["error"]["code"], format!("{:?}", EngineErrorCode::InvalidArg), "{by_name}");
+    assert_eq!(by_name["error"]["code"], "WireFormat", "{by_name}");
+    let by_position = send(
+        &mut host,
+        serde_json::json!({ "kind": "forms.detachWidget", "ref": field,
+            "widget": { "kind": "baseIndex", "page": page_ref(3), "baseIndex": 0 } }),
+    );
+    assert_eq!(by_position["error"]["code"], "InvalidArg", "{by_position}");
+    assert_eq!(
+        by_position["error"]["message"], "widget must be addressed by object number",
+        "{by_position}"
+    );
 }
 
 #[test]
@@ -346,8 +722,8 @@ fn a_file_render_names_the_page_it_rendered() {
     // index turned out to be, beside the file's page count.
     let mut host = Host::new();
     let path = test_support::workspace_root().join(FIXTURE);
-    let response = host.call(
-        &serde_json::json!({ "kind": "document.renderPageFile", "jobId": "job-3",
+    let response = host.call_filled(
+        &serde_json::json!({ "kind": "document.renderPageFile", "jobId": 3,
             "path": path, "password": "", "pageIndex": 0,
             "options": { "scale": 0.1 } })
         .to_string(),
@@ -356,7 +732,11 @@ fn a_file_render_names_the_page_it_rendered() {
     let body: serde_json::Value = serde_json::from_str(&response.json).expect("the response");
     assert!(body.get("error").is_none(), "{body}");
     assert_eq!(body["result"]["page"]["kind"], "objectNumber", "{body}");
-    assert!(body["result"]["page"]["pageObjectNumber"].as_u64().is_some_and(|n| n > 0), "{body}");
+    assert!(body["result"]["page"]["objectNumber"].as_u64().is_some_and(|n| n > 0), "{body}");
     assert!(body["result"]["pageCount"].as_u64().is_some_and(|n| n > 0), "{body}");
+    // `{tag, page, pageCount, raster}`, the pixels payload 0.
+    assert_eq!(body["result"]["raster"]["color"], "rgba8", "{body}");
+    assert_eq!(body["result"]["raster"]["premultipliedAlpha"], false, "{body}");
+    assert_eq!(body["result"]["raster"]["data"], serde_json::json!({ "payload": 0 }), "{body}");
     assert_eq!(response.payloads.len(), 1, "the pixels ride as the payload");
 }

@@ -8,25 +8,22 @@ use serde_json::Value;
 
 use crate::contract::Mark;
 use crate::controller::SignatureCapability;
-use crate::promise::adopt;
 
 impl SignatureCapability {
-    /// `bytesOf(source)`: an `async` function over `resolveBinarySource`.
+    /// `bytesOf(source)`: an `async` function awaiting
+    /// `resolveBinarySource`.
     pub(crate) fn bytes_of(&self, source: &Value) -> Promise<Vec<u8>> {
         let resolved = resolve_binary_source(source);
         Promise::spawn(async move { Ok(resolved.await?.bytes) })
     }
 
-    /// `markBytes(mark)`: an asset's bytes from the stamp plugin, or the
-    /// bytes the embedder brought.
+    /// `markBytes(mark)`: an `async` function. An asset's bytes from the
+    /// stamp plugin (`not-found` for one it doesn't hold), or the bytes the
+    /// embedder brought.
     pub(crate) fn mark_bytes(&self, mark: &Mark) -> Promise<Vec<u8>> {
         match mark {
             Mark::Asset { asset_id } => {
-                let bytes = match self.stamp() {
-                    Ok(stamp) => stamp.and_then(|s| s.read_asset_bytes(asset_id)),
-                    Err(error) => return Promise::rejected(error),
-                };
-                match bytes {
+                match self.stamp().and_then(|stamp| stamp.read_asset_bytes(asset_id)) {
                     Some(bytes) => Promise::resolved(bytes),
                     None => Promise::rejected(plugin_error(
                         code::NOT_FOUND,
@@ -38,8 +35,10 @@ impl SignatureCapability {
                 }
             }
             Mark::Source { source } => {
+                // `return bytesOf(source)`: an async function's promise,
+                // adopted.
                 let bytes = self.bytes_of(source);
-                Promise::spawn(async move { adopt(bytes).await })
+                Promise::spawn(async move { crate::promise::adopt(bytes).await })
             }
         }
     }

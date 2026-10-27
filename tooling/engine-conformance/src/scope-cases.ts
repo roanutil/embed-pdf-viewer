@@ -45,6 +45,12 @@ export interface SetGroupProbe {
   readonly callerDefaultGroupId?: string;
 }
 
+/** Filling in or signing one form field, in `groupId` (`null`: in no group). */
+export interface FieldProbe {
+  readonly action: 'fill' | 'sign';
+  readonly groupId: string | null;
+}
+
 export interface ResolveCase {
   readonly name: string;
   readonly covers: string;
@@ -58,6 +64,13 @@ export interface ResolveCase {
   };
   readonly collab?: readonly CollabProbe[];
   readonly setGroup?: readonly SetGroupProbe[];
+  /**
+   * `checkFieldAction` per probe, `checkAnyFieldAction` per action, and
+   * `fieldRightsOf` with the identity's default group.
+   */
+  readonly fields?: readonly FieldProbe[];
+  /** `checkSetGroup` for the `fields` entity; `setGroup` is `annotations`. */
+  readonly fieldSetGroup?: readonly SetGroupProbe[];
 }
 
 /** Every capability the closed set contains, in declaration order. */
@@ -77,11 +90,15 @@ export const ALL_CAPABILITIES = [
   'doc.forms.read',
   'doc.forms.fill',
   'doc.forms.modify',
+  'doc.forms.import',
+  'doc.forms.script',
   'doc.forms.submit',
   'doc.annotate.read',
   'doc.annotate.modify',
+  'doc.annotate.import',
   'doc.metadata.modify',
   'doc.attachments.modify',
+  'doc.outline.modify',
   'doc.redact',
   'doc.sign',
   'doc.sign.certify',
@@ -165,7 +182,7 @@ export const PARSE_CASES: readonly ParseCase[] = [
 
   // Collab rejections.
   { name: 'collab-one-colon', covers: 'entity:action with no filter.', scope: 'annotations:create' },
-  { name: 'collab-unknown-entity', covers: 'Only annotations are collab-scoped today.', scope: 'comments:create:all' },
+  { name: 'collab-unknown-entity', covers: 'Only annotations and fields are collab-scoped.', scope: 'comments:create:all' },
   { name: 'collab-unknown-action', covers: 'The action set is closed.', scope: 'annotations:frobnicate:all' },
   { name: 'collab-unknown-filter', covers: 'The filter vocabulary is closed.', scope: 'annotations:create:bogus' },
   { name: 'collab-empty-created-by', covers: 'createdBy= with nothing after it.', scope: 'annotations:create:createdBy=' },
@@ -190,6 +207,18 @@ export const PARSE_CASES: readonly ParseCase[] = [
     covers: 'An empty action is not the wildcard.',
     scope: 'annotations::all',
   },
+
+  // Field scopes (4b2cdb395): `fields:<fill|sign|set-group|*>:<all|group=X>`.
+  { name: 'fields-fill-all', covers: 'Filling in every field.', scope: 'fields:fill:all' },
+  { name: 'fields-sign-group', covers: 'Signing the fields of one group.', scope: 'fields:sign:group=buyer' },
+  { name: 'fields-set-group-group', covers: 'Putting a field in one group.', scope: 'fields:set-group:group=seller' },
+  { name: 'fields-action-wildcard', covers: 'The action wildcard over fields.', scope: 'fields:*:group=buyer' },
+  { name: 'fields-group-urn', covers: 'A urn:uuid group id survives the split for fields too.', scope: 'fields:fill:group=urn:uuid:5f2b' },
+  { name: 'fields-self', covers: 'A field records no creator, so :self is refused.', scope: 'fields:fill:self' },
+  { name: 'fields-created-by', covers: 'And so is :createdBy.', scope: 'fields:sign:createdBy=alice' },
+  { name: 'fields-annotation-action', covers: 'Fields have no create action.', scope: 'fields:create:all' },
+  { name: 'fields-update', covers: 'Nor an update action.', scope: 'fields:update:group=buyer' },
+  { name: 'fields-empty-group', covers: 'group= with nothing after it.', scope: 'fields:fill:group=' },
 ] as const;
 
 const SELF = { user_id: 'u1', group_id: 'legal', groups: ['legal', 'eng'] } as const;
@@ -213,6 +242,23 @@ const SET_GROUP_PROBES: readonly SetGroupProbe[] = [
   { newGroupId: 'eng', callerDefaultGroupId: 'legal' },
 ] as const;
 
+/** The field probes every field case runs: each action, in a group, another, and none. */
+const FIELD_PROBES: readonly FieldProbe[] = [
+  { action: 'fill', groupId: 'buyer' },
+  { action: 'fill', groupId: 'seller' },
+  { action: 'fill', groupId: null },
+  { action: 'sign', groupId: 'buyer' },
+  { action: 'sign', groupId: 'seller' },
+  { action: 'sign', groupId: null },
+] as const;
+
+const FIELD_SET_GROUP_PROBES: readonly SetGroupProbe[] = [
+  { newGroupId: 'legal', callerDefaultGroupId: 'legal' },
+  { newGroupId: 'buyer', callerDefaultGroupId: 'legal' },
+  { newGroupId: 'seller', callerDefaultGroupId: 'legal' },
+  { newGroupId: 'buyer', callerDefaultGroupId: undefined },
+] as const;
+
 const EVERY_BITS = BITS_CASES.map((b) => b.name);
 
 export const RESOLVE_CASES: readonly ResolveCase[] = [
@@ -224,6 +270,8 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
     identity: SELF,
     collab: COLLAB_PROBES,
     setGroup: SET_GROUP_PROBES,
+    fields: FIELD_PROBES,
+    fieldSetGroup: FIELD_SET_GROUP_PROBES,
   },
   {
     name: 'wildcard',
@@ -233,6 +281,8 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
     identity: SELF,
     collab: COLLAB_PROBES,
     setGroup: SET_GROUP_PROBES,
+    fields: FIELD_PROBES,
+    fieldSetGroup: FIELD_SET_GROUP_PROBES,
   },
   {
     name: 'pdf-permissions',
@@ -242,6 +292,8 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
     identity: SELF,
     collab: COLLAB_PROBES,
     setGroup: SET_GROUP_PROBES,
+    fields: FIELD_PROBES,
+    fieldSetGroup: FIELD_SET_GROUP_PROBES,
   },
   {
     name: 'annotate-modify-implies-read',
@@ -303,7 +355,7 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
   {
     name: 'group-filter-needs-membership',
     covers:
-      'group=X matches only when the caller is in X, so a token cannot reach a group it does not belong to.',
+      'Named for the rule before 4b2cdb395. group=X now matches a target in group X whether or not the caller belongs to X: membership is no longer part of the filter.',
     scope: ['annotations:update:group=finance'],
     bits: ['none'],
     identity: SELF,
@@ -397,5 +449,96 @@ export const RESOLVE_CASES: readonly ResolveCase[] = [
     bits: ['copy'],
     identity: SELF,
     collab: COLLAB_PROBES,
+  },
+  {
+    name: 'grant-minted-capabilities',
+    covers:
+      'doc.forms.import, doc.forms.script, doc.annotate.import and doc.outline.modify are in the closed set and imply nothing.',
+    scope: ['doc.forms.import', 'doc.forms.script', 'doc.annotate.import', 'doc.outline.modify'],
+    bits: ['none'],
+  },
+  {
+    name: 'grant-minted-never-from-bits',
+    covers: 'No bit expands to the imports or to scripts; bit 4 or 11 expands to doc.outline.modify.',
+    scope: ['pdf.permissions'],
+    bits: ['modify', 'assemble', 'all-surfaced'],
+  },
+
+  // Field scopes (4b2cdb395). A field's group is who fills it.
+  {
+    name: 'fields-group-scopes',
+    covers: 'A group scope reaches its group only; a field in no group needs :all.',
+    scope: ['doc.open', 'fields:fill:group=buyer', 'fields:sign:group=buyer'],
+    bits: ['none'],
+    identity: SELF,
+    fields: FIELD_PROBES,
+  },
+  {
+    name: 'fields-implies-forms-read',
+    covers: 'Groups limit writes, never reads: any field scope lets the holder see the form.',
+    scope: ['fields:fill:group=buyer'],
+    bits: ['none'],
+    identity: SELF,
+    fields: FIELD_PROBES,
+  },
+  {
+    name: 'fields-narrow-per-action',
+    covers: 'A fill scope narrows filling and says nothing about signing.',
+    scope: ['doc.forms.fill', 'doc.sign', 'fields:fill:group=buyer'],
+    bits: ['none'],
+    identity: SELF,
+    fields: FIELD_PROBES,
+  },
+  {
+    name: 'fields-broad-capability-decides',
+    covers: 'Without a fields scope, doc.forms.fill decides for every field, and does not sign.',
+    scope: ['doc.forms.fill'],
+    bits: ['none'],
+    identity: SELF,
+    fields: FIELD_PROBES,
+  },
+  {
+    name: 'fields-with-pdf-permissions',
+    covers: 'pdf.permissions stays what the file allows, the fields scope narrows writing, and design is never narrowed.',
+    scope: ['pdf.permissions', 'fields:*:group=buyer'],
+    bits: ['annotate-and-modify', 'none'],
+    identity: SELF,
+    fields: FIELD_PROBES,
+  },
+  {
+    name: 'fields-all-filter',
+    covers: ':all reaches a field in no group as well.',
+    scope: ['fields:*:all'],
+    bits: ['none'],
+    identity: SELF,
+    fields: FIELD_PROBES,
+    fieldSetGroup: FIELD_SET_GROUP_PROBES,
+  },
+  {
+    name: 'fields-set-group',
+    covers: 'Your own default group always; another with fields:set-group for it.',
+    scope: ['fields:set-group:group=buyer'],
+    bits: ['none'],
+    identity: SELF,
+    setGroup: SET_GROUP_PROBES,
+    fieldSetGroup: FIELD_SET_GROUP_PROBES,
+  },
+  {
+    name: 'set-group-is-per-entity',
+    covers: "An annotation set-group scope does not put fields in groups, and the other way round.",
+    scope: ['annotations:set-group:all'],
+    bits: ['none'],
+    identity: SELF,
+    setGroup: SET_GROUP_PROBES,
+    fieldSetGroup: FIELD_SET_GROUP_PROBES,
+  },
+  {
+    name: 'fields-scope-is-not-an-annotation-scope',
+    covers: 'A fields scope does not narrow annotation collab or imply doc.annotate.read.',
+    scope: ['doc.annotate.modify', 'fields:*:all'],
+    bits: ['none'],
+    identity: SELF,
+    collab: COLLAB_PROBES,
+    fields: FIELD_PROBES,
   },
 ] as const;

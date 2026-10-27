@@ -1,749 +1,745 @@
-/**
- * `packages/plugin/form` with no actions and no annotation plugin: snapshot
- * hydration and refresh, widget geometry, the fused fill projection, value
- * writes and their queue, reset, interchange, the permission twins and the
- * reactive effect. Replayed by `crates/plugins/form/tests/conformance.rs`.
- */
-import type { ScenarioCase } from '../scenario';
-import type { Suite } from '../vectors';
-
+/** Current form fill boundary: snapshots, pending writes, confirmations, authority and lifecycle. */
+import type {
+  FormBundle,
+  FormRepairResult,
+  FormFieldValue,
+  FormImportResult,
+} from '@embedpdf/engine-core/runtime';
+import type { ScenarioCase, Step } from '../scenario';
+import type { ScenarioSuite } from '../vectors';
 import {
-  CROP2,
-  FLAGS,
-  FORM_ONLY,
-  SNAP,
-  annotations,
-  boot,
   call,
-  checkbox,
-  close,
-  combobox,
-  doc,
-  effectsOk,
-  emit,
-  fail,
-  fnSpec,
-  fqn,
-  list,
-  pushbutton,
-  listbox,
-  ref,
-  settle,
-  snapshot,
   text,
-  widgetAnnot,
-  v3Widget,
+  checkbox,
+  combobox,
+  listbox,
+  pushbutton,
+  row,
+  ref,
+  fqn,
+  placed,
+  snapshot,
+  list,
+  valueSet,
+  apply,
+  valuesAnswer,
+  resetAnswer,
+  mutationMeta,
+  valueFact,
+  scenario,
+  refused,
+  FORM_ONLY,
+  doc,
+  boot,
+  open,
+  settle,
+  emit,
+  close,
+  fnSpec,
+  REMOTE,
+  LOCAL,
+  objRef,
   pr,
-} from './form-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins the authority twins, batch writes, resets and change events, through call outcomes, settled results, engine calls and listener callbacks. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
+  fieldAnswer,
+  deleteAnswer,
+} from './form-live-fixtures';
 const NAME = text(1, 'name', 'Ada');
-const AGREE = checkbox(2, 'agree', false);
+const AGREE = checkbox(2, 'agree', false, { valueEntry: { kind: 'scalar', value: 'Off' } });
 const COLOUR = combobox(3, 'colour', 'r');
 const COLOURS = listbox(4, 'colours', ['g']);
 const FIELDS = [NAME, AGREE, COLOUR, COLOURS];
-const bytes = { $bytes: 'AQID' };
-
+const ROWS = [
+  row(101, ref(1), 1, { x: 10, y: 20, width: 100, height: 24 }),
+  row(102, ref(2), 1, { x: 50, y: 82, width: 18, height: 18 }, { fieldFamily: 'checkbox' }),
+  row(103, ref(3), 1, undefined, { fieldFamily: 'combobox' }),
+  row(104, ref(4), 1, undefined, { fieldFamily: 'listbox' }),
+];
+const FORM = snapshot(FIELDS, ROWS);
+const GRACE = text(1, 'name', 'Grace');
+const EMPTY = text(1, 'name', '');
+const RESET_FIELDS = [EMPTY, combobox(3, 'colour', ''), listbox(4, 'colours', [])];
+const RESET_ROWS = [ROWS[0]!, ROWS[2]!, ROWS[3]!];
+const ro = text(6, 'ro', 'r', { readOnly: true });
+const v = (value: string): FormFieldValue => ({ value });
+const set = (n: number, value: string): Step => call('setValue', [ref(n), v(value)]);
+const gate = { security: { allows: ['doc.forms.read'], allowsField: { fill: false } } };
+const BUNDLE: FormBundle = {
+  format: 'embedpdf/form',
+  version: 1,
+  pages: [{ page: pr(1), position: 0, size: { width: 600, height: 800 } }],
+  fields: FIELDS.map((data) => ({ data })),
+  widgets: ROWS.map((data) => ({ data, resources: {} })),
+  calculationOrder: [],
+  resources: {},
+};
+const IMPORT_BUNDLE: FormBundle = {
+  format: 'embedpdf/form',
+  version: 1,
+  pages: [],
+  fields: [{ data: text(40, 'imported', 'Imported', {}, []) }],
+  widgets: [],
+  calculationOrder: [],
+  resources: {},
+};
+const IMPORTED_FIELD = text(50, 'imported', 'Imported', {}, []);
+const IMPORTED: FormImportResult = {
+  fields: [IMPORTED_FIELD],
+  widgets: [],
+  refMap: [{ from: ref(40), to: ref(50) }],
+  dropped: [],
+  calculationOrder: [],
+  meta: mutationMeta(1, [IMPORTED_FIELD]),
+};
+const REPAIRED: FormRepairResult = {
+  acroformCreated: false,
+  fieldsLinked: 0,
+  widgetsLinked: 0,
+  fieldsUnrepairable: 0,
+  appearancesBaked: 0,
+  needsAppearancesCleared: false,
+  meta: { affectedPages: [], cacheDelta: null, opId: 'repair', undoable: false },
+};
+const INTEGER_FIELDS = [
+  text(1, 'b', 'x'),
+  text(2, '10', 'y'),
+  text(3, '2', 'z'),
+  text(4, 'a', 'w'),
+  text(5, '02', 'v'),
+];
+const READ_FIELDS = [
+  ...FIELDS,
+  text(7, 'lines', 'l1\nl2', {
+    multiline: true,
+    valueEntry: { kind: 'array', values: ['l1', 'l2'] },
+  }),
+  checkbox(8, 'multi', false, {
+    valueEntry: { kind: 'array', values: [] },
+    widgets: [{ ...placed(108, 2), onState: 'Yes', exportValue: 'Yes', checked: false }],
+  }),
+  checkbox(9, 'multi2', false, { valueEntry: { kind: 'array', values: ['On'] } }),
+  combobox(10, 'pick', 'r', { valueEntry: { kind: 'array', values: ['r', 'g'] } }),
+  listbox(11, 'one', ['r']),
+  pushbutton(12, 'go'),
+  text(13, 'odd', '', { valueEntry: { kind: 'unsupported' } }),
+  text(14, 'loose', 'l', {}, [placed(114, null)]),
+  checkbox(15, 'ticked', true),
+];
+const EVENT_TYPES = [
+  'forms.create',
+  'forms.update',
+  'forms.addWidget',
+  'forms.removeWidget',
+] as const;
 const cases: ScenarioCase[] = [
   {
     name: 'hydrates-on-open',
     covers:
-      'The capability reads the snapshot once when the document opens; reads return null and empty until it lands, then index by key and by widget. The twins follow the wildcard grant.',
+      'One deferred complete snapshot; reads and widget joins are empty until it lands. Authority is per field.',
     plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS, { defer: 'list' })]) } },
-    snapshot: SNAP,
+    engine: { documents: { a: doc([list(FORM, { defer: 'list' })]) } },
+    snapshot: ['form::a'],
     steps: [
       ...boot,
-      call('snapshot'),
-      call('fillItems', [1]),
-      call('fillItem', [101]),
-      call('field', ['obj:1']),
+      call('getSnapshot'),
+      call('listWidgets', [pr(1)]),
+      call('get', [ref(1)]),
       call('canRead'),
-      call('canFill'),
+      call('canFill', [ref(1)]),
       call('canDesign'),
-      settle('list', snapshot(FIELDS)),
-      call('snapshot'),
-      call('field', ['obj:1']),
-      call('field', ['obj:404']),
-      call('fieldForWidget', [102]),
-      call('fieldForWidget', [404]),
-      call('fillItem', [101]),
-      call('fillItem', [404]),
+      settle('list', FORM),
+      call('getSnapshot'),
+      call('get', [ref(1)]),
+      call('get', [ref(404)]),
+      call('getFieldForWidget', [placed(102)]),
+      call('getFieldForWidget', [placed(404)]),
+      call('getWidget', [objRef(101)]),
+      call('getWidget', [objRef(404)]),
     ],
   },
-  {
-    name: 'no-read-grant-never-lists',
-    covers:
-      'Without doc.forms.read the capability fires no list at open or on refresh(), the model stays empty, and the twins say which grants the session has.',
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)], { security: { allows: ['doc.forms.fill', 'doc.forms.modify'] } }) } },
-    snapshot: SNAP,
-    steps: [...boot, call('refresh'), call('snapshot'), call('canRead'), call('canFill'), call('canDesign')],
-  },
+  scenario(
+    'no-read-grant-never-lists',
+    'The readable mirror stays forbidden and never calls forms.list, including refresh.',
+    [
+      call('refresh'),
+      call('getSnapshot'),
+      call('canRead'),
+      call('canFill', [ref(1)]),
+      call('canDesign'),
+    ],
+    FORM,
+    [],
+    { security: { allows: ['doc.forms.fill', 'doc.forms.modify'] } },
+  ),
   {
     name: 'refresh-coalesces-and-forces',
     covers:
-      'A refresh while a read is in flight queues exactly one more read after it and resolves when that settles; any number of calls during the read coalesce into that one. (v2 forced a read per `refresh(true)`; v3 has no force argument.)',
+      'Current mirror coalesces concurrent refreshes; a subsequent explicit refresh starts a fresh load. No force flag.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
         a: doc([
-          list([NAME], { defer: 'first', times: 1 }),
-          list([{ ...NAME, value: 'Grace' }], { defer: 'second', times: 1 }),
-          list([{ ...NAME, value: 'Hopper' }], { defer: 'third' }),
+          list(snapshot([NAME]), { defer: 'first', times: 1 }),
+          list(snapshot([GRACE]), { defer: 'second', times: 1 }),
+          list(snapshot([text(1, 'name', 'Hopper')]), { defer: 'third' }),
         ]),
       },
     },
-    snapshot: SNAP,
+    snapshot: ['form::a'],
     steps: [
       ...boot,
       call('refresh'),
       call('refresh'),
       call('refresh'),
       settle('first', snapshot([NAME])),
-      settle('second', snapshot([{ ...NAME, value: 'Grace' }])),
-      call('snapshot'),
+      settle('second', snapshot([GRACE])),
+      call('getSnapshot'),
       call('refresh'),
-      settle('third', snapshot([{ ...NAME, value: 'Hopper' }])),
+      settle('third', snapshot([text(1, 'name', 'Hopper')])),
     ],
   },
   {
     name: 'a-failed-load-warns',
-    covers: 'A snapshot read that rejects is reported to console.warn and leaves the model empty; the next refresh reads again.',
+    covers:
+      'Current mirror exposes a failed read through error status, without console or kernel reports; refresh recovers.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
         a: doc([
-          { path: 'forms.list', times: 1, error: { name: 'PermissionDenied', message: 'permission denied: doc.forms.read', required: 'doc.forms.read' } },
-          list([NAME]),
+          {
+            path: 'forms.list',
+            times: 1,
+            error: { name: 'EngineError', message: 'intended form load refusal', code: 'Io' },
+          },
+          list(FORM),
         ]),
       },
     },
-    snapshot: SNAP,
-    steps: [...boot, call('snapshot'), call('refresh'), call('snapshot')],
+    snapshot: ['form::a'],
+    steps: [
+      ...boot,
+      call('getStatus'),
+      call('getSnapshot'),
+      call('refresh'),
+      call('getStatus'),
+      call('getSnapshot'),
+    ],
   },
   {
     name: 'widget-geometry-loads-once-per-page',
     covers:
-      'ensureGeom reads one page of annotations, keeps object-number widgets as crop-relative content boxes (skipping other subtypes and index refs), ignores a page it is loading or has loaded or does not know, and the projection (listWidgets included) joins it.',
+      'Complete page-space widget rows arrive with the one form snapshot. ensureLoaded shares that load; no annotation geometry read exists.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
         a: doc([
-          list([NAME, AGREE, text(5, 'far', 'f', {}, [[105, 2]])]),
-          annotations(
-            1,
-            [
-              widgetAnnot(1, 101),
-              widgetAnnot(1, 102, { left: 50, bottom: 700, right: 68, top: 718 }),
-              { ref: aIndex(1, 3), subtype: 'widget', rect: { left: 0, bottom: 0, right: 1, top: 1 } },
-              { ...widgetAnnot(1, 150), subtype: 'square' },
-            ],
-            { defer: 'page1' },
+          list(
+            snapshot(
+              [...FIELDS, text(5, 'far', 'f', {}, [placed(105, 2)])],
+              [...ROWS, row(105, ref(5), 2, { x: 30, y: 100, width: 100, height: 20 })],
+            ),
+            { defer: 'rows' },
           ),
-          annotations(2, [widgetAnnot(2, 105, { left: 30, bottom: 400, right: 130, top: 420 })]),
         ]),
       },
     },
-    snapshot: SNAP,
+    snapshot: ['form::a'],
     steps: [
       ...boot,
-      call('fillItems', [1]),
-      call('ensureGeom', [1]),
-      call('ensureGeom', [1]),
-      settle('page1', {
-        annotations: [
-          widgetAnnot(1, 101),
-          widgetAnnot(1, 102, { left: 50, bottom: 700, right: 68, top: 718 }),
-          { ref: aIndex(1, 3), subtype: 'widget', rect: { left: 0, bottom: 0, right: 1, top: 1 } },
-          { ...widgetAnnot(1, 150), subtype: 'square' },
-        ],
-      }),
-      call('ensureGeom', [1]),
-      call('fillItems', [1]),
-      call('fillItem', [102]),
-      call('ensureGeom', [99]),
-      call('ensureGeom', [2]),
-      call('fillItems', [2]),
-      call('fillItems', [1]),
+      call('listWidgets', [pr(1)]),
+      call('ensureLoaded', [pr(1)]),
+      call('ensureLoaded', [pr(1)]),
+      settle(
+        'rows',
+        snapshot(
+          [...FIELDS, text(5, 'far', 'f', {}, [placed(105, 2)])],
+          [...ROWS, row(105, ref(5), 2, { x: 30, y: 100, width: 100, height: 20 })],
+        ),
+      ),
+      call('ensureLoaded', [pr(1)]),
+      call('listWidgets', [pr(1)]),
+      call('getWidget', [objRef(102)]),
+      call('listWidgets', [pr(99)]),
+      call('ensureLoaded', [pr(2)]),
+      call('listWidgets', [pr(2)]),
       call('listWidgets', [pr(1)]),
     ],
   },
   {
     name: 'a-failed-geometry-read-can-retry',
-    covers: 'A page read that rejects clears the loading latch, so the next ensureGeom reads again.',
+    covers:
+      'Geometry is part of the fields load now; a refused snapshot reports once and explicit refresh retries the full current snapshot.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
         a: doc([
-          list([NAME]),
-          annotations(1, [], { times: 1, error: { name: 'EngineError', message: 'gone', code: 'Io' } }),
-          annotations(1, [widgetAnnot(1, 101)]),
+          {
+            path: 'forms.list',
+            times: 1,
+            error: { name: 'EngineError', message: 'intended widget snapshot refusal', code: 'Io' },
+          },
+          list(FORM),
         ]),
       },
     },
-    snapshot: SNAP,
-    steps: [...boot, call('ensureGeom', [1]), call('ensureGeom', [1]), call('fillItems', [1])],
+    snapshot: ['form::a'],
+    steps: [
+      ...boot,
+      call('getStatus'),
+      call('listWidgets', [pr(1)]),
+      call('refresh'),
+      call('ensureLoaded', [pr(1)]),
+      call('listWidgets', [pr(1)]),
+    ],
   },
   {
     name: 'fill-authority-fuses-into-disabled',
     covers:
-      'Without doc.forms.fill every projected item is disabled, read-only ones included; the grant is re-read on every projection, and a fillable session leaves the flag gate in charge.',
+      'Per-field fill authority and readOnly determine disabled; ordinary and readonly widgets are independently projected in two sessions.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
-        a: doc([list([NAME, text(6, 'ro', 'r', { flags: FLAGS({ readOnly: true }) })]), annotations(1, [widgetAnnot(1, 101), widgetAnnot(1, 106)])], {
-          security: { allows: ['doc.forms.read'] },
-        }),
-        b: doc([list([NAME, text(6, 'ro', 'r', { flags: FLAGS({ readOnly: true }) })]), annotations(1, [widgetAnnot(1, 101), widgetAnnot(1, 106)])]),
+        a: doc([list(snapshot([NAME, ro], [ROWS[0]!, row(106, ref(6))]))], gate),
+        b: doc([list(snapshot([NAME, ro], [ROWS[0]!, row(106, ref(6))]))]),
       },
     },
-    ...UNSNAPSHOTTED,
+    snapshot: ['form::a', 'form::b'],
     steps: [
       ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
-      call('ensureGeom', [1]),
-      call('ensureGeom', [1], 'b'),
-      call('fillItems', [1]),
-      call('fillItems', [1]),
-      call('fillItem', [101]),
-      call('fillItem', [106]),
-      call('fillItems', [1], 'b'),
-      call('fillItem', [101], 'b'),
-      call('fillItem', [101], 'b'),
+      open('b'),
+      call('listWidgets', [pr(1)]),
+      call('listWidgets', [pr(1)]),
+      call('canFill', [ref(1)]),
+      call('listWidgets', [pr(1)], 'b'),
+      call('canFill', [ref(1)], 'b'),
     ],
   },
-  {
-    name: 'typed-writes',
-    covers:
-      'setText, toggle and choose send the family value through setValue, mark the field writing, and re-read the snapshot (which clears it). A null toggle clears the group.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.setValue', value: { changedWidgets: [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })] } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('setText', ['obj:1', 'Grace']),
-      call('toggle', ['obj:2', 'Yes']),
-      call('toggle', ['obj:2', null]),
-      call('choose', ['obj:3', ['g']]),
-      call('setText', ['fqn:loose', 'x']),
+  scenario(
+    'typed-writes',
+    'Current family writes use value/checked/selectedValues and current refs; null clears a checkbox via its value vocabulary.',
+    [
+      set(1, 'Grace'),
+      call('setValue', [ref(2), { checked: true } satisfies FormFieldValue]),
+      call('setValue', [ref(2), { value: null } satisfies FormFieldValue]),
+      call('setValue', [ref(3), { value: 'g' } satisfies FormFieldValue]),
+      call('getValue', [ref(1)]),
+      call('getValue', [ref(2)]),
+      call('getValue', [ref(3)]),
     ],
-  },
-  {
-    name: 'writes-serialize',
-    covers: 'A second write waits for the first one to finish, its re-read included.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.setValue', times: 1, defer: 'first' },
-          { path: 'forms.setValue', value: { changedWidgets: [] } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('setText', ['obj:1', 'a']), call('setText', ['obj:1', 'b']), settle('first', { changedWidgets: [] })],
-  },
-  {
-    name: 'a-failed-write-reverts',
-    covers: 'An engine refusal clears the writing mark and rejects with the engine error; the queue carries on.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.setValue', times: 1, error: { name: 'EngineError', message: 'invalid value', code: 'InvalidArg' } },
-          { path: 'forms.setValue', value: { changedWidgets: [] } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('setText', ['obj:1', 'bad']), call('setText', ['obj:1', 'good'])],
-  },
-  {
-    name: 'the-write-gate',
-    covers:
-      'Without doc.forms.fill, setText/toggle/choose and reset reject with PermissionDenied before any engine call or writing mark.',
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }) } },
-    snapshot: SNAP,
-    steps: [...boot, call('setText', ['obj:1', 'x']), call('toggle', ['obj:2', 'Yes']), call('choose', ['obj:3', []]), call('reset', ['obj:1'])],
-  },
-  {
-    name: 'commit-value-without-scripting',
-    covers:
-      'commitValue is setValue plus a forced re-read: applied when widgets changed, unchanged otherwise, rejected with the engine error.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.setValue', times: 1, value: { changedWidgets: [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })] } },
-          { path: 'forms.setValue', times: 1, value: { changedWidgets: [] } },
-          { path: 'forms.setValue', error: { name: 'EngineError', message: 'nope', code: 'InvalidArg' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('commitValue', [ref(1), { type: 'text', value: 'x' }]),
-      call('commitValue', [ref(1), { type: 'text', value: 'x' }]),
-      call('commitValue', [ref(1), { type: 'text', value: 'x' }]),
+    FORM,
+    [
+      apply(valueSet(1, GRACE, [ROWS[0]!])),
+      apply(valuesAnswer(2, [checkbox(2, 'agree', true)], [ROWS[1]!], [])),
+      apply(valuesAnswer(3, [AGREE], [ROWS[1]!], [])),
+      apply(valueSet(4, combobox(3, 'colour', 'g'), [ROWS[2]!])),
     ],
-  },
-  {
-    name: 'reset-rides-the-batch',
-    covers:
-      'reset(key) applies one reset effect, re-reads, and patches the field from the fresh snapshot; a key the snapshot no longer has just clears the writing mark.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS, { times: 1 }),
-          list([{ ...NAME, value: '' }, AGREE, COLOUR, COLOURS]),
-          { path: 'forms.applyEffects', value: effectsOk(1) },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('reset', ['obj:1']), call('reset', ['obj:404'])],
-  },
-  {
-    name: 'a-failed-reset-batch-rejects',
-    covers:
-      "A failed or rejected reset entry rejects reset() with the entry's error message, or 'reset failed' without one, after the re-read; a thrown batch rejects with the engine error.",
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.applyEffects', times: 1, value: { results: [{ index: 0, status: 'failed', fields: [], changedWidgets: [], error: { code: 'Io', message: 'disk full' } }], changedWidgets: [], meta: null } },
-          { path: 'forms.applyEffects', times: 1, value: { results: [{ index: 0, status: 'rejected', fields: [], changedWidgets: [] }], changedWidgets: [], meta: null } },
-          { path: 'forms.applyEffects', error: { name: 'EngineError', message: 'batch refused', code: 'InvalidArg' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('reset', ['obj:1']), call('reset', ['obj:1']), call('reset', ['obj:1'])],
-  },
-  {
-    name: 'reset-without-the-batch',
-    covers: 'An engine with no applyEffects resets through forms.reset and patches the field it answers with; a refusal reverts and rejects.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc(
-          [
-            list(FIELDS),
-            { path: 'forms.reset', times: 1, value: { field: { ...NAME, value: '' }, changedWidgets: [] } },
-            { path: 'forms.reset', error: { name: 'EngineError', message: 'no default', code: 'InvalidArg' } },
-          ],
-          { lacks: ['forms.applyEffects'] },
-        ),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('reset', ['obj:1']), call('reset', ['obj:1'])],
-  },
-  {
-    name: 'set-value-passthrough',
-    covers: 'setValue is the raw engine door: it resolves with the engine result after a forced re-read, and rejects with the engine error.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.setValue', times: 1, value: { changedWidgets: [v3Widget({ annotObjectNumber: 101, pageObjectNumber: 1 })] } },
-          { path: 'forms.setValue', error: { name: 'EngineError', message: 'nope', code: 'InvalidArg' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('setValue', [ref(1), { type: 'text', value: 'x' }]), call('setValue', [ref(1), { type: 'text', value: 'y' }])],
-  },
-  {
-    name: 'interchange',
-    covers:
-      "exportData defaults to 'xfdf'; importData passes its format through (undefined included) and SETs the snapshot the engine answers, without a re-read; repair re-reads; each rejects with the engine error.",
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS),
-          { path: 'forms.exportData', args: ['xfdf'], value: { format: 'xfdf', data: bytes } },
-          { path: 'forms.exportData', args: ['fdf'], error: { name: 'EngineError', message: 'no fdf', code: 'NotImplemented' } },
-          { path: 'forms.importData', times: 1, value: { applied: 1, skipped: 0, snapshot: { formKind: 'acroform', needsAppearances: false, fields: [{ ...NAME, value: 'Imported' }], calculationOrder: [] } } },
-          { path: 'forms.importData', error: { name: 'EngineError', message: 'garbled', code: 'InvalidArg' } },
-          { path: 'forms.repair', times: 1, value: { fixed: 0 } },
-          { path: 'forms.repair', error: { name: 'PermissionDenied', message: 'permission denied: doc.forms.modify', required: 'doc.forms.modify' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('exportData'),
-      call('exportData', ['fdf']),
-      call('importData', [bytes]),
-      call('importData', [bytes, 'fdf']),
+  ),
+  scenario(
+    'writes-serialize',
+    'Current fills send in order without waiting for prior answers; pending reads see the later fill until both confirmations land.',
+    [
+      set(1, 'a'),
+      set(1, 'b'),
+      call('getValue', [ref(1)]),
+      settle('first', valueSet(1, text(1, 'name', 'a'), [ROWS[0]!]).value),
+      settle('second', valueSet(2, text(1, 'name', 'b'), [ROWS[0]!]).value),
+      call('getValue', [ref(1)]),
+    ],
+    FORM,
+    [
+      apply(valueSet(1, text(1, 'name', 'a'), [ROWS[0]!]), { defer: 'first' }),
+      apply(valueSet(2, text(1, 'name', 'b'), [ROWS[0]!]), { defer: 'second' }),
+    ],
+  ),
+  scenario(
+    'a-failed-write-reverts',
+    'An engine refusal rolls back the pending value and rejects; the next fill confirms normally.',
+    [set(1, 'bad'), call('getValue', [ref(1)]), set(1, 'good'), call('getValue', [ref(1)])],
+    FORM,
+    [
+      refused('invalid value', 'InvalidArg'),
+      apply(valueSet(2, text(1, 'name', 'good'), [ROWS[0]!])),
+    ],
+  ),
+  scenario(
+    'the-write-gate',
+    'Known fields denied fill reject value/checkbox/choice/reset locally before any apply.',
+    [
+      set(1, 'x'),
+      call('setValue', [ref(2), { checked: true } satisfies FormFieldValue]),
+      call('setValue', [ref(3), { value: null } satisfies FormFieldValue]),
+      call('reset', [[ref(1)]]),
+      call('getValue', [ref(1)]),
+    ],
+    FORM,
+    [],
+    gate,
+  ),
+  scenario(
+    'commit-value-without-scripting',
+    'The public validated setValue replaces commitValue: applied or unchanged comes from result.meta.undoable; a named engine refusal rejects.',
+    [set(1, 'x'), set(1, 'x'), set(1, 'y'), call('getValue', [ref(1)])],
+    FORM,
+    [
+      apply(valueSet(1, text(1, 'name', 'x'), [ROWS[0]!])),
+      apply({
+        value: {
+          ...valueSet(2, text(1, 'name', 'x')).value,
+          meta: { ...valueSet(2, text(1, 'name', 'x')).value.meta, undoable: false },
+        },
+        events: [],
+      }),
+      refused('nope', 'InvalidArg'),
+    ],
+  ),
+  scenario(
+    'reset-rides-the-batch',
+    'Current reset is one forms.reset ChangeOp and confirmed value facts, with no re-read. Unknown refs select nothing.',
+    [call('reset', [[ref(1)]]), call('getValue', [ref(1)]), call('reset', [[ref(404)]])],
+    FORM,
+    [apply(resetAnswer(1, [EMPTY], [ROWS[0]!]))],
+  ),
+  scenario(
+    'a-failed-reset-batch-rejects',
+    'Current resets are atomic apply changes; exact named engine refusals reject without stale per-entry batch statuses.',
+    [
+      call('reset', [[ref(1)]]),
+      call('getValue', [ref(1)]),
+      call('reset', [[ref(1)]]),
+      call('reset', [[ref(1)]]),
+    ],
+    FORM,
+    [
+      refused('disk full', 'Io'),
+      refused('reset refused', 'Refused'),
+      refused('batch refused', 'InvalidArg'),
+    ],
+  ),
+  scenario(
+    'reset-without-the-batch',
+    'Removed applyEffects/reset fallback is replaced by the sole current change queue; successful and refused reset preserve defaults/rollback.',
+    [call('reset', [[ref(1)]]), call('getValue', [ref(1)]), call('reset', [[ref(1)]])],
+    FORM,
+    [apply(resetAnswer(1, [EMPTY], [ROWS[0]!])), refused('no default', 'InvalidArg')],
+  ),
+  scenario(
+    'set-value-passthrough',
+    'Current setValue returns the confirmed field and status; the next refused value leaves it intact.',
+    [set(1, 'x'), set(1, 'y'), call('get', [ref(1)])],
+    FORM,
+    [apply(valueSet(1, text(1, 'name', 'x'), [ROWS[0]!])), refused('nope', 'InvalidArg')],
+  ),
+  scenario(
+    'interchange',
+    'Current bundles replace FDF/XFDF data doors; export/import/repair use current direct engine services and exact refusals.',
+    [
+      call('export'),
+      call('export', [{ fields: [ref(1)] }]),
+      call('import', [IMPORT_BUNDLE, { attribution: 'stamp' }]),
+      call('get', [ref(50)]),
+      call('import', [IMPORT_BUNDLE, { attribution: 'stamp' }]),
       call('repair'),
       call('repair', [{ bakeAppearances: true }]),
     ],
-  },
+    FORM,
+    [
+      { path: 'forms.export', times: 1, value: BUNDLE },
+      {
+        path: 'forms.export',
+        error: { name: 'EngineError', message: 'export refused', code: 'NotImplemented' },
+      },
+      {
+        path: 'forms.import',
+        times: 1,
+        value: IMPORTED,
+        events: fieldAnswer('forms.create', 1, IMPORTED_FIELD).events,
+      },
+      {
+        path: 'forms.import',
+        error: { name: 'EngineError', message: 'garbled bundle', code: 'InvalidArg' },
+      },
+      { path: 'forms.repair', times: 1, value: REPAIRED },
+      {
+        path: 'forms.repair',
+        error: { name: 'EngineError', message: 'repair refused', code: 'Refused' },
+      },
+    ],
+  ),
   {
     name: 'the-twins',
-    covers: 'canRead, canFill and canDesign each mirror one grant, independently.',
+    covers:
+      'Read/design grants and per-field fill authority are independently exposed by the current twins.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
-        a: doc([list(FIELDS)], { security: { allows: ['doc.forms.read', 'doc.forms.fill'] } }),
-        b: doc([list(FIELDS)], { security: { allows: ['doc.forms.modify'] } }),
+        a: doc([list(FORM)], {
+          security: { allows: ['doc.forms.read', 'doc.forms.fill'], allowsField: { fill: true } },
+        }),
+        b: doc([list(FORM)], {
+          security: { allows: ['doc.forms.modify'], allowsField: { fill: false } },
+        }),
       },
     },
-    ...UNSNAPSHOTTED,
+    snapshot: ['form::a', 'form::b'],
     steps: [
       ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
+      open('b'),
       call('canRead'),
-      call('canFill'),
+      call('canFill', [ref(1)]),
       call('canDesign'),
       call('canRead', [], 'b'),
-      call('canFill', [], 'b'),
+      call('canFill', [ref(1)], 'b'),
       call('canDesign', [], 'b'),
     ],
   },
-  {
-    name: 'the-effect-folds-foreign-events',
-    covers:
-      'A remote form event re-reads the snapshot; an own value event is ignored; an own structural event clears the widget geometry and re-reads; stream.desynced re-reads; events without an origin and non-form events are ignored.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([list(FIELDS), annotations(1, [widgetAnnot(1, 101)])]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('ensureGeom', [1]),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'local' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'form.fieldDeleted', origin: { kind: 'local' }, deletedFieldObjectNumber: 1, removedWidgets: [] }),
-      emit({ type: 'stream.desynced' }),
-      emit({ type: 'form.imported' }),
-      emit({ type: 'annotations.created', origin: { kind: 'remote' }, pageObjectNumber: 1 }),
-      emit({ type: 'form.repaired', origin: { kind: 'remote' } }),
+  scenario(
+    'the-effect-folds-foreign-events',
+    'Current remote and local facts fold directly without reads; deletion removes the field/rows. Desynchronization reloads the complete form.',
+    [
+      call('onValueChanged', [fnSpec('valueChanged')]),
+      emit(valueFact(GRACE, [ROWS[0]!])),
+      call('getValue', [ref(1)]),
+      emit({ ...valueFact(text(1, 'name', 'Local'), [ROWS[0]!]), origin: LOCAL }),
+      call('getValue', [ref(1)]),
+      emit({ ...deleteAnswer(1, NAME, [ROWS[0]!]).events[0]! }),
+      call('get', [ref(1)]),
+      call('getWidget', [objRef(101)]),
+      emit({ type: 'stream.desynced', reason: 'backlog-overflow', ts: 0 }),
+      call('getSnapshot'),
     ],
-  },
-  {
-    name: 'the-effect-refresh-is-latched',
-    covers:
-      'While the effect is re-reading, further events coalesce into one more read queued after it (v2 dropped them); a failed re-read does not stop the queue.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list(FIELDS, { times: 1 }),
-          list([NAME], { times: 1, defer: 'remote' }),
-          { path: 'forms.list', times: 1, error: { name: 'EngineError', message: 'gone', code: 'Io' } },
-          list([AGREE]),
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'stream.desynced' }),
-      settle('remote', snapshot([NAME])),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote' }, field: NAME, changedWidgets: [] }),
+    FORM,
+  ),
+  scenario(
+    'the-effect-refresh-is-latched',
+    'While refresh is in flight current mirrors buffer facts, then replay them over the loaded snapshot. The last buffered fact wins, and later facts fold normally.',
+    [
+      call('refresh'),
+      emit(valueFact(GRACE, [ROWS[0]!])),
+      call('getValue', [ref(1)]),
+      emit(valueFact(text(1, 'name', 'Second'), [ROWS[0]!])),
+      call('getValue', [ref(1)]),
+      settle('remote', snapshot([NAME], [ROWS[0]!])),
+      call('getValue', [ref(1)]),
+      emit(valueFact(text(1, 'name', 'After'), [ROWS[0]!])),
+      call('getValue', [ref(1)]),
     ],
-  },
-  {
-    name: 'a-reset-action-without-a-batch-door',
-    covers:
-      'resetFormAction on an engine with no applyEffects resolves unchanged with an unsupported-api diagnostic and never reaches the engine; with no actions plugin there is no port to surface it through.',
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)], { lacks: ['forms.applyEffects'] }) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('resetFormAction', [null, false])],
-  },
-  {
-    name: 'close-unsubscribes',
-    covers: 'Closing the document releases the event subscription.',
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, close()],
-  },
-  {
-    name: 'geometry-on-an-offset-crop',
-    covers: 'Content boxes subtract the crop origin: a page whose crop does not start at zero.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([list([text(5, 'far', 'f', {}, [[105, 2]])]), annotations(2, [widgetAnnot(2, 105, { left: CROP2.left + 30, bottom: 400, right: 140, top: 420.5 })])]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('ensureGeom', [2]), call('fillItems', [2])],
-  },
-];
-
-const READ_FIELDS = [
-  NAME,
-  AGREE,
-  COLOUR,
-  COLOURS,
-  text(7, 'lines', '', { valueEntry: { kind: 'array', values: ['l1', 'l2'] } }),
-  checkbox(8, 'multi', false, { valueEntry: { kind: 'array', values: [] } }, [{ annotObjectNumber: 108, pageObjectNumber: 2, onState: 'Yes' }]),
-  checkbox(9, 'multi2', false, { valueEntry: { kind: 'array', values: ['On'] } }),
-  combobox(10, 'pick', '', { valueEntry: { kind: 'array', values: ['r', 'g'] } }),
-  listbox(11, 'one', [], { valueEntry: { kind: 'scalar', value: 'r' } }),
-  pushbutton(12, 'go'),
-  text(13, 'odd', '', { valueEntry: { kind: 'unsupported' } }),
-  text(14, 'loose', 'l', {}, [[114, 0]]),
-  checkbox(15, 'ticked', true),
-];
-
-const v3Cases: ScenarioCase[] = [
+    FORM,
+    [list(snapshot([NAME], [ROWS[0]!]), { defer: 'remote' })],
+  ),
+  scenario(
+    'a-reset-action-without-a-batch-door',
+    'The host reset action uses the same current forms.reset operation without an actions plugin or any removed batch API.',
+    [
+      call('resetFormAction', [null, false]),
+      call('getValue', [ref(1)]),
+      call('resetFormAction', [[], false]),
+    ],
+    FORM,
+    [apply(resetAnswer(1, RESET_FIELDS, RESET_ROWS))],
+  ),
+  scenario(
+    'close-unsubscribes',
+    'Closing releases the form instance, its mirrors and hooks; reopening constructs a fresh model.',
+    [
+      call('onValueChanged', [fnSpec('closed.valueChanged')]),
+      close(),
+      open('a'),
+      emit(valueFact(GRACE, [ROWS[0]!])),
+      call('getValue', [ref(1)]),
+    ],
+    FORM,
+  ),
+  scenario(
+    'geometry-on-an-offset-crop',
+    'Current widget rows already carry crop-relative page coordinates, including fractional dimensions; reads preserve them.',
+    [
+      call('ensureLoaded', [pr(2)]),
+      call('listWidgets', [pr(2)]),
+      call('getWidgetAt', [pr(2), { x: 35, y: 105 }]),
+    ],
+    snapshot(
+      [text(5, 'far', 'f', {}, [placed(105, 2)])],
+      [row(105, ref(5), 2, { x: 30, y: 99.5, width: 100, height: 20.5 })],
+    ),
+  ),
   {
     name: 'reads-over-the-snapshot',
     covers:
-      'getStatus walks loading to ready; listFields filters by family, exact name and widget page (an unplaced widget matches no page); getValue maps each value entry to the write vocabulary and answers null for a valueless, unsupported or unknown field; exportValues keys the valued ones by name; getFieldForWidget takes a ref or an object number, and a non-object-number ref finds nothing.',
+      'Current list filters, values, widget addresses and exportValues read complete flat field records and page rows; unplaced widgets are absent.',
     plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(READ_FIELDS, { defer: 'list' })]) } },
-    snapshot: SNAP,
+    engine: { documents: { a: doc([list(snapshot(READ_FIELDS, ROWS), { defer: 'list' })]) } },
+    snapshot: ['form::a'],
     steps: [
       ...boot,
       call('getStatus'),
-      call('listFields'),
+      call('list'),
       call('exportValues'),
-      settle('list', snapshot(READ_FIELDS)),
+      settle('list', snapshot(READ_FIELDS, ROWS)),
       call('getStatus'),
-      call('listFields'),
-      call('listFields', [{ family: 'checkbox' }]),
-      call('listFields', [{ name: 'colour' }]),
-      call('listFields', [{ name: 'nope' }]),
-      call('listFields', [{ page: pr(2) }]),
-      call('listFields', [{ family: 'text', page: pr(1) }]),
-      call('listFields', [{}]),
+      call('list'),
+      call('list', [{ family: 'checkbox' }]),
+      call('list', [{ name: 'colour' }]),
+      call('list', [{ name: 'nope' }]),
+      call('list', [{ page: pr(2) }]),
+      call('list', [{ family: 'text', page: pr(1) }]),
+      call('list', [{}]),
       ...[1, 2, 3, 4, 7, 8, 9, 10, 11, 12, 13, 15, 404].map((n) => call('getValue', [ref(n)])),
       call('getValue', [fqn('loose')]),
       call('exportValues'),
-      call('getFieldForWidget', [{ kind: 'objectNumber', page: pr(1), annotObjectNumber: 102 }]),
-      call('getFieldForWidget', [{ kind: 'nm', page: pr(1), nm: 'n1' }]),
-      call('getFieldForWidget', [{ annotObjectNumber: 104 }]),
+      call('getFieldForWidget', [objRef(102)]),
+      call('getFieldForWidget', [{ kind: 'baseIndex', page: pr(1), baseIndex: 3 }]),
+      call('getFieldForWidget', [placed(104)]),
       call('listWidgets', [pr(1)]),
     ],
   },
   {
     name: 'status-without-read-and-after-a-failed-load',
-    covers: "Without doc.forms.read the status is 'forbidden'; a load that rejects leaves it 'error'.",
+    covers:
+      'The current mirror returns forbidden without read permission and error after a named load refusal.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
-        a: doc([list(FIELDS)], { security: { allows: ['doc.forms.fill'] } }),
-        b: doc([{ path: 'forms.list', error: { name: 'EngineError', message: 'gone', code: 'Io' } }]),
+        a: doc([list(FORM)], { security: { allows: ['doc.forms.fill'] } }),
+        b: doc([
+          {
+            path: 'forms.list',
+            error: { name: 'EngineError', message: 'intended status load refusal', code: 'Io' },
+          },
+        ]),
       },
     },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
-      call('getStatus'),
-      call('getStatus', [], 'b'),
-    ],
+    snapshot: ['form::a', 'form::b'],
+    steps: [...boot, open('b'), call('getStatus'), call('getStatus', [], 'b')],
   },
   {
     name: 'batch-writes',
     covers:
-      'setValues writes each entry through the validated path in order and reports the refs that landed and the ones that threw, with the error info; importValues does the same keyed by name. Without doc.forms.fill every entry fails permission-denied.',
+      'Current batch accepts well-typed fields and reports unknown refs independently; plain import skips missing, forbidden and incompatible values. Accepted fields share one apply.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
         a: doc([
-          list(FIELDS),
-          { path: 'forms.setValue', times: 1, value: { changedWidgets: [] } },
-          { path: 'forms.setValue', times: 1, error: { name: 'EngineError', message: 'invalid value', code: 'InvalidArg' } },
-          { path: 'forms.setValue', value: { changedWidgets: [] } },
+          list(FORM),
+          apply(valueSet(1, GRACE, [ROWS[0]!])),
+          apply(valuesAnswer(2, [NAME, combobox(3, 'colour', 'g')], [ROWS[0]!, ROWS[2]!])),
         ]),
-        b: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }),
+        b: doc([list(FORM)], gate),
       },
     },
-    ...UNSNAPSHOTTED,
+    snapshot: ['form::a', 'form::b'],
     steps: [
       ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
-      call('setValues', [[
-        { ref: ref(1), value: { type: 'text', value: 'Grace' } },
-        { ref: ref(2), value: { type: 'toggle', state: 'Yes' } },
-      ]]),
-      call('importValues', [{ name: { type: 'text', value: 'Ada' }, colour: { type: 'choice', values: ['g'] } }]),
-      call('setValues', [[]]),
-      call('setValues', [[{ ref: ref(1), value: { type: 'text', value: 'x' } }]], 'b'),
-      call('importValues', [{ name: { type: 'text', value: 'x' } }], 'b'),
-    ],
-  },
-  {
-    name: 'values-keyed-by-integer-like-names',
-    covers:
-      "exportValues and importValues follow JavaScript object key order: integer-like names ('2', '10') first in ascending numeric order, then the rest in insertion order, whatever the field order.",
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([text(1, 'b', 'x'), text(2, '10', 'y'), text(3, '2', 'z'), text(4, 'a', 'w'), text(5, '02', 'v')]),
-          { path: 'forms.setValue', value: { changedWidgets: [] } },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('exportValues'),
-      call('importValues', [
-        {
-          b: { type: 'text', value: 'B' },
-          10: { type: 'text', value: 'Ten' },
-          2: { type: 'text', value: 'Two' },
-          a: { type: 'text', value: 'A' },
-          '02': { type: 'text', value: 'Zero-two' },
-        },
+      open('b'),
+      call('setValues', [
+        [
+          { ref: ref(1), value: v('Grace') },
+          { ref: ref(404), value: v('missing') },
+        ],
       ]),
+      call('importValues', [{ name: 'Ada', colour: 'g', absent: 'x', agree: ['bad'] }]),
+      call('setValues', [[]]),
+      call('setValues', [[{ ref: ref(1), value: v('x') }]], 'b'),
+      call('importValues', [{ name: 'x' }], 'b'),
+      call('exportValues'),
     ],
   },
-  {
-    name: 'reset-all',
-    covers:
-      'resetAll resets every resettable field (buttons and signatures skipped), a listed subset by object number or name, or its complement with exclude, through the one reset batch; it answers the refs it resolved from the current snapshot.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([...FIELDS, pushbutton(12, 'go')]),
-          { path: 'forms.applyEffects', value: effectsOk(1) },
+  scenario(
+    'values-keyed-by-integer-like-names',
+    'Plain import/export follow JavaScript integer-like property ordering; the actual apply operation order records that ordering.',
+    [
+      call('exportValues'),
+      call('importValues', [{ b: 'B', 10: 'Ten', 2: 'Two', a: 'A', '02': 'Zero-two' }]),
+      call('exportValues'),
+    ],
+    snapshot(INTEGER_FIELDS),
+    [
+      apply(
+        valuesAnswer(1, [
+          text(3, '2', 'Two'),
+          text(2, '10', 'Ten'),
+          text(1, 'b', 'B'),
+          text(4, 'a', 'A'),
+          text(5, '02', 'Zero-two'),
         ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('resetAll'),
-      call('resetAll', [{ fields: [ref(1), fqn('agree')] }]),
-      call('resetAll', [{ fields: [ref(1)], exclude: true }]),
-      call('resetAll', [{ fields: [] }]),
+      ),
     ],
-  },
+  ),
+  scenario(
+    'reset-all',
+    'Current reset() selects every fillable resettable field, or explicit refs. Host action exclusion preserves ISO target selection; empty include selects none.',
+    [
+      call('reset'),
+      call('reset', [[ref(1), fqn('agree')]]),
+      call('resetFormAction', [[{ kind: 'objectNumber', objectNumber: 1 }], true]),
+      call('reset', [[]]),
+      call('getValue', [ref(1)]),
+    ],
+    snapshot([...FIELDS, pushbutton(12, 'go')], ROWS),
+    [
+      apply(resetAnswer(1, RESET_FIELDS, RESET_ROWS)),
+      apply(resetAnswer(2, [], [], false)),
+      apply(resetAnswer(3, [], [], false)),
+    ],
+  ),
   {
     name: 'reset-all-failures',
     covers:
-      "A failed or rejected reset entry makes resetAll report its fields as failed 'operation-failed' and the rest as applied; without doc.forms.fill it rejects permission-denied before any call; before the snapshot lands it reads one itself.",
+      'Explicit denied reset rejects locally; reset waits for the snapshot. Current atomic engine refusal rejects the entire change and the next reset succeeds.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
         a: doc([
-          list(FIELDS, { defer: 'first', times: 1 }),
-          list(FIELDS),
-          {
-            path: 'forms.applyEffects',
-            times: 1,
-            value: {
-              results: [{ index: 0, status: 'failed', fields: [NAME], changedWidgets: [] }, { index: 1, status: 'applied', fields: [AGREE], changedWidgets: [] }],
-              changedWidgets: [],
-              meta: null,
-            },
-          },
-          {
-            path: 'forms.applyEffects',
-            times: 1,
-            value: { results: [{ index: 0, status: 'rejected', fields: [AGREE], changedWidgets: [] }], changedWidgets: [], meta: null },
-          },
-          { path: 'forms.applyEffects', value: effectsOk(1) },
+          list(FORM, { defer: 'first' }),
+          refused('reset atomic refusal'),
+          apply(resetAnswer(2, RESET_FIELDS, RESET_ROWS)),
         ]),
-        b: doc([list(FIELDS)], { security: { allows: ['doc.forms.read'] } }),
+        b: doc([list(FORM)], gate),
       },
     },
-    ...UNSNAPSHOTTED,
+    snapshot: ['form::a', 'form::b'],
     steps: [
       ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
-      call('resetAll', [], 'b'),
-      call('resetAll'),
-      settle('first', snapshot(FIELDS)),
-      call('resetAll'),
-      call('resetAll'),
+      open('b'),
+      call('reset', [[ref(1)]], 'b'),
+      call('reset'),
+      settle('first', FORM),
+      call('getValue', [ref(1)]),
+      call('reset'),
+      call('getValue', [ref(1)]),
     ],
   },
-  {
-    name: 'confirmed-change-events',
-    covers:
-      'Every form event with an origin is announced before it is folded: a value change with its field, a created field, an updated, attached or detached one as updated, a deleted one by object number with no field; each carries the origin, whose sub becomes the actorId. onResynced fires when a read lands. document.versioned and signature.completed re-read too. A throwing listener is reported to console.error and the rest still run; an unsubscribed one hears nothing.',
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('onValueChanged', [fnSpec('valueChanged.bad', { throws: { message: 'listener broke' } })]),
+  scenario(
+    'confirmed-change-events',
+    'Current facts announce value/create/update/widget/remove/delete with exact origins; refresh alone announces resync. Unrelated version facts do not synthesize form writes.',
+    [
+      call('onValueChanged', [{ $fn: 'valueChanged.bad', throws: { message: 'listener broke' } }]),
       call('onValueChanged', [fnSpec('valueChanged')]),
       call('onFieldCreated', [fnSpec('fieldCreated')]),
       call('onFieldUpdated', [fnSpec('fieldUpdated')]),
       call('onFieldDeleted', [fnSpec('fieldDeleted')]),
       call('onValidationRejected', [fnSpec('validationRejected')]),
       call('onResynced', [fnSpec('resynced')]),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote', actor: 'u2' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'local' }, field: AGREE, changedWidgets: [] }),
-      emit({ type: 'form.valueChanged', origin: { kind: 'remote', sub: 'u9', sessionId: 's9' }, field: NAME, changedWidgets: [] }),
-      emit({ type: 'form.fieldCreated', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
-      emit({ type: 'form.fieldUpdated', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
-      emit({ type: 'form.widgetAttached', origin: { kind: 'local' }, field: COLOUR, changedWidgets: [] }),
-      emit({ type: 'form.widgetDetached', origin: { kind: 'remote' }, field: COLOUR, changedWidgets: [] }),
-      emit({ type: 'form.fieldDeleted', origin: { kind: 'local' }, deletedFieldObjectNumber: 3, removedWidgets: [] }),
-      emit({ type: 'form.repaired', origin: { kind: 'local' } }),
-      emit({ type: 'document.versioned', version: 2 }),
-      emit({ type: 'signature.completed' }),
-    ],
-  },
-  {
-    name: 'an-unsubscribed-listener-hears-nothing',
-    covers: 'The unsubscribe an event hook returns detaches that listener.',
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(FIELDS)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('onResynced', [fnSpec('resynced')]),
-      { op: 'call', target: { ref: 0 } },
+      emit(valueFact(GRACE, [ROWS[0]!])),
+      emit({ ...valueFact(AGREE, [ROWS[1]!]), origin: LOCAL }),
+      ...EVENT_TYPES.map((type) => emit(fieldAnswer(type, 1, COLOUR, [ROWS[2]!]).events[0]!)),
+      emit(deleteAnswer(1, COLOUR, [ROWS[2]!]).events[0]!),
       call('refresh'),
+      call('getSnapshot'),
     ],
-  },
+    FORM,
+  ),
+  scenario(
+    'an-unsubscribed-listener-hears-nothing',
+    'An event hook returns a callable unsubscribe; detaching it prevents the subsequent refreshed snapshot callback.',
+    [call('onResynced', [fnSpec('resynced')]), { op: 'call', target: { ref: 0 } }, call('refresh')],
+    FORM,
+  ),
 ];
-
-function aIndex(pon: number, index: number) {
-  return { kind: 'index', page: pr(pon), index, revision: 1 };
-}
-
-export const suites: Suite[] = [
+export const suites: ScenarioSuite[] = [
   {
     kind: 'scenario',
     file: 'plugins/form-fill.json',
-    describes: 'packages/plugin/form without actions or annotation: hydration, geometry, the fill projection, value writes, reset, interchange, the twins and the reactive effect.',
-    cases: [...cases, ...v3Cases],
+    describes:
+      'Current form fill, mirror geometry, values/defaults, authority, interchange, events and lifecycle.',
+    cases,
   },
 ];

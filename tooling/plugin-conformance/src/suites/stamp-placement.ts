@@ -1,477 +1,622 @@
-/**
- * `packages/plugin/stamp`: placement. armAsset delegates to the target
- * document's annotation plugin (the real interaction, annotation and form
- * plugins run beside stamp); with scripting enabled, a form-backed PDF asset
- * is first evaluated on a detached copy through the form plugin's standalone
- * scripting controller, over the scripted sandbox, then flattened. Replayed
- * by `crates/plugins/stamp/tests/conformance.rs`.
- */
-import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
-import type { ScenarioCase } from '../scenario';
+/** Current placement through annotation stamps and the actions-owned detached script realm. */
+import type { ScenarioCase, Step } from '../scenario';
 import type { Suite } from '../vectors';
-
-import { hydrate } from './annotation-fixtures';
-import { effectsOk, js, list, ref, text, tree } from './form-fixtures';
+import type { PageFlattenResult, PageImageResult } from '@embedpdf/engine-core/runtime';
+import type { ScriptOutput } from '../../../../packages/core/acrojs/src/index';
+import { canonical } from '../canonical';
 import {
-  PDF,
-  PLACEMENT,
   STAMP,
+  PDF,
   assetDoc,
-  assetPage,
   bytes,
   destroy,
   engineError,
-  openDoc,
+  image,
   opens,
   pdf,
   png,
-  settle,
   stamp,
   start,
-  str,
-  type StampScriptingSpec,
-  type StampSpec,
-  withWorkshop,
-  WORKSHOP_PAGE,
-} from './stamp-fixtures';
-
-/** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins how a dynamic stamp is evaluated and armed: the copy's engine calls, the observers' callbacks and the arm's settlement. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-const ONE = [assetPage(0, 100)];
-const TWO = [assetPage(0, 100), assetPage(1, 101)];
-
-const IDENTITY = { user_id: 'alex', group_id: 'EmbedPDF', display_name: 'Alex Morgan' };
-
-/** The target document the kernel opens: annotation hydration and an empty
- *  form snapshot for the plugins beside stamp. */
-const target = (over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({
-  pages: [assetPage(0, 1, 600, 800)],
-  security: { allows: '*', identity: IDENTITY },
-  responses: [hydrate(), list([])],
-  ...over,
+  settle,
+} from './stamp-current-fixtures';
+import {
+  openDoc,
+  namedEngine,
+  ONE,
+  TWO,
+  appendDoc,
+  seedDoc,
+  fn,
+  write,
+  created,
+} from './stamp-mutation-fixtures';
+import { materialize, refused } from './annotation-live-fixtures';
+import {
+  assetPage,
+  PLACEMENT,
+  target,
+  dynamicDoc,
+  scripting,
+  DATE,
+  annotation,
+  observers,
+  setValue,
+  pr,
+} from './stamp-placement-fixtures';
+const ID = 'stamp-lib-0-1:Stamp1';
+const arm = (assetId = ID, options: { targetWidth?: number; documentId?: string } = {}): Step =>
+  stamp('armAsset', [assetId, { documentId: 'a', ...options }]);
+const armed = annotation('getArmedStamp');
+const read = stamp('getArmedAsset', ['a']);
+const boot: Step[] = [start, openDoc(), stamp('importLibrary', [PDF])];
+const output = (over: Partial<ScriptOutput> = {}) => ({ output: over });
+const budget = (maxEffects: number) => ({
+  maxExecutionMs: 50,
+  maxMemoryBytes: 16777216,
+  maxStackBytes: 524288,
+  maxEffects,
+  maxOutputBytes: 1048576,
 });
-
-const ev = { rc: true, value: null, change: '', selStart: 0, selEnd: 0 };
-const out = (over: Record<string, unknown> = {}) => ({ output: over });
-const setValue = (n: number, value: string) => ({ kind: 'setValue', ref: ref(n), value: { type: 'text', value } });
-
-/** One field with a widget on `pon`, a boot script that sets it, and an
- *  engine that applies the effect. */
-const DATE = (pon = 100) => text(1, 'date', '', {}, [[201, pon]]);
-const BOOT_SCRIPTS: ResponseSpec = {
-  path: 'actions.read',
-  value: { nameTreeScripts: [{ name: 'stamp', action: tree(js('this.getField("date").value = util.printd(...);')) }], openAction: null, openDestination: null },
-};
-
-interface DynamicOptions {
-  readonly pages?: typeof ONE;
-  readonly fields?: unknown[];
-  readonly responses?: ResponseSpec[];
-  readonly lacks?: string[];
-  readonly flatten?: unknown;
-}
-
-/** The detached copy armAsset evaluates: the library's pages, a form
- *  snapshot, the boot scripts, and answers for the apply, flatten, extract
- *  and render that follow. */
-const dynamicDoc = (o: DynamicOptions = {}): FakeDocumentSpec => {
-  const pages = o.pages ?? ONE;
-  return {
-    services: ['actions', 'pieceInfo', 'page.pieceInfo'],
-    ...(o.lacks ? { lacks: o.lacks } : {}),
-    pages,
-    responses: [
-      ...(o.responses ?? []),
-      { path: 'pages.list', value: { pageCount: pages.length, pages } },
-      list(o.fields ?? [DATE()]),
-      BOOT_SCRIPTS,
-      { path: 'forms.applyEffects', value: effectsOk(1) },
-      {
-        path: 'pages.flatten',
-        value: o.flatten ?? { results: pages.map((p) => ({ page: p.ref, status: 'flattened' })) },
-      },
-      ...pages.map((p) => ({ path: 'pages.extract', args: [[{ kind: 'objectNumber', pageObjectNumber: p.ref.pageObjectNumber }]], value: pdf(`flat-${p.ref.pageObjectNumber}`) })),
-      { path: 'page.render.image', value: { contentType: 'image/png', source: { kind: 'bytes', bytes: bytes('flat-preview') } } },
-    ],
-  };
-};
-
-const BOOT_SETS = { builds: [{ boot: [out({ formEffects: [setValue(1, '2026-07-15')] })] }] };
-const scripting = (over: Partial<StampScriptingSpec> = {}): StampSpec => ({
-  scripting: { enabled: true, sandbox: BOOT_SETS, ...over },
+const alert = (message: string): ScriptOutput['uiEffects'][number] => ({
+  kind: 'alert',
+  message,
+  icon: 0,
 });
-
-const arm = (assetId: string, opts?: unknown, doc = 'a') => stamp('armAsset', opts === undefined ? [doc, assetId] : [doc, assetId, opts]);
-
+const diagnostic = { code: 'unsupported-api' as const, message: 'app.viewerVersion' };
+const canonicalEngine = (copy = dynamicDoc()) =>
+  namedEngine({ a: target(), lib: assetDoc(ONE), copy }, ['a', 'lib', 'copy']);
 const staticCases: ScenarioCase[] = [
   {
     name: 'arm-delegates-to-the-annotation-plugin',
     covers:
-      "armAsset hands the target document's annotation plugin the asset's placement bytes, its preview as a payload, its intrinsic size and the target width; disarm disarms that document's stamp.",
+      'Current armAsset forwards bytes, intrinsic aspect, target width and identifier; disarm drops both public reads and the interaction tool arm.',
     plugins: PLACEMENT(),
-    engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
-    snapshot: ['stamp', 'annotation::a', 'interaction::a'],
+    engine: namedEngine({ a: target(), lib: assetDoc(ONE) }, ['a', 'lib']),
     steps: [
-      start,
-      openDoc('a'),
-      stamp('importLibraryPdf', [PDF]),
-      arm('stamp-lib-0-1:Stamp1', { targetWidth: 120 }),
+      ...boot,
+      { op: 'call', target: { token: 'stamp' }, method: 'onArmChanged', args: [fn('armChanged')] },
+      arm(ID, { targetWidth: 120 }),
+      armed,
+      read,
       stamp('disarm', ['a']),
-      arm('stamp-lib-0-1:Stamp1'),
+      armed,
+      read,
+      arm(),
+      armed,
+      read,
     ],
   },
   {
     name: 'the-target-width-sizes-the-ghost-and-a-template-ghost-is-cached',
     covers:
-      "The target width armAsset passes sizes the stamp tool's hover ghost. A template (not materialized) asset's ghost render is cached under its id, so arming it again and asking for the same width opens no second copy.",
+      'Current hover image ghost follows page-space point and intrinsic aspect; two arms share one source-byte render in a width bucket.',
     plugins: PLACEMENT(),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), ghost: assetDoc(ONE) }, responses: opens('a', 'lib', 'ghost') },
+    engine: namedEngine({ a: target(), lib: assetDoc(ONE), ghost: assetDoc(ONE) }, [
+      'a',
+      'lib',
+      'ghost',
+    ]),
     steps: [
-      start,
-      openDoc('a'),
-      stamp('importLibraryPdf', [PDF]),
-      arm('stamp-lib-0-1:Stamp1', { targetWidth: 120 }),
-      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'hoverGhostAt', args: ['stamp', { kind: 'objectNumber', pageObjectNumber: 1 }, { x: 300, y: 400 }] },
-      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'getToolGhost', args: [{ kind: 'objectNumber', pageObjectNumber: 1 }] },
-      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'getArmedStampPreview', args: [200] },
+      ...boot,
+      arm(ID, { targetWidth: 120 }),
+      annotation('hoverGhostAt', ['stamp', pr(1), { x: 300, y: 400 }]),
+      annotation('getImageGhost', [pr(1)]),
+      annotation('renderArmedStampPreview', [200]),
       stamp('disarm', ['a']),
-      arm('stamp-lib-0-1:Stamp1'),
-      { op: 'call', target: { token: 'annotation', doc: 'a' }, method: 'getArmedStampPreview', args: [200] },
+      arm(),
+      annotation('renderArmedStampPreview', [200]),
     ],
   },
   {
     name: 'a-raster-asset-arms-with-its-own-preview',
-    covers: 'A loose raster asset arms with its bytes and itself as the preview; a PDF asset with no preview arms without one.',
+    covers:
+      'A raster asset becomes a canonical PDF page with a rendered thumbnail; its placement aspect and rendered ghost survive. A PDF import whose preview render refuses leaves the raster arm and existing resources intact.',
     plugins: PLACEMENT(),
-    engine: { documents: { a: target() }, responses: opens('a') },
-    snapshot: ['annotation::a'],
+    engine: namedEngine(
+      {
+        a: target(),
+        seed: seedDoc('stamp-lib-0-0', 'Logo'),
+        append: appendDoc([assetPage(0, 3, 612, 792)], 'Logo', {
+          raster: true,
+          size: { width: 100, height: 50 },
+        }),
+        ghost: assetDoc(ONE),
+        pdf: assetDoc(ONE, {
+          catalog: { Id: { type: 'string', value: 'pdf' } },
+          catalogWrites: [{ id: 'pdf' }],
+          responses: [{ path: 'page.render.image', error: engineError('Io', 'no thumbnail') }],
+        }),
+      },
+      ['a', 'seed', 'append', 'ghost', 'pdf'],
+    ),
     steps: [
       start,
-      openDoc('a'),
-      stamp('addAsset', [{ name: 'Logo', source: png(100, 50) }]),
-      stamp('addAsset', [{ name: 'Sig', source: PDF, size: { width: 150, height: 60 } }]),
+      openDoc(),
+      stamp('createAsset', [{ name: 'Logo', source: png(100, 50) }]),
       arm('stamp-lib-0-0:Logo', { targetWidth: 50 }),
-      arm('stamp-lib-0-3:Sig', {}),
+      armed,
+      annotation('renderArmedStampPreview', [50]),
+      stamp('getAssetPreview', ['stamp-lib-0-0:Logo']),
+      stamp('importLibrary', [PDF]),
+      arm('pdf:Stamp1'),
+      armed,
+      stamp('getAssetPreview', ['pdf:Stamp1']),
     ],
   },
   {
     name: 'arming-what-is-not-there',
     covers:
-      "An unknown asset rejects with NotFound before anything else; a document with no annotation plugin, or one that is not open, rejects (arm) or throws (disarm) with the kernel's missing-capability error.",
+      'Unknown assets reject not-found; missing annotation capability and closed document reject permission-denied. Disarm is safely inert.',
     plugins: STAMP(),
-    engine: { documents: { a: target({ responses: [] }) }, responses: opens('a') },
-    snapshot: ['stamp'],
+    engine: namedEngine({ a: target({ responses: [] }), lib: assetDoc(ONE) }, ['a', 'lib']),
     steps: [
-      start,
-      openDoc('a'),
+      ...boot,
       arm('nope'),
-      stamp('addAsset', [{ name: 'Logo', source: png() }]),
-      arm('stamp-lib-0-0:Logo'),
-      arm('stamp-lib-0-0:Logo', undefined, 'elsewhere'),
+      arm(),
+      arm(ID, { documentId: 'elsewhere' }),
       stamp('disarm', ['a']),
       stamp('disarm', ['elsewhere']),
+      read,
     ],
   },
 ];
-
 const skipped: ScenarioCase[] = [
   {
     name: 'scripting-off-arms-the-template',
-    covers: 'With scripting disabled, or enabled on a host with no sandbox, a PDF asset arms its template bytes and no copy is opened.',
-    plugins: PLACEMENT({ scripting: { enabled: false, sandbox: BOOT_SETS } }),
-    engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+    covers:
+      'The dynamic setting false prevents detached copies even under an enabled actions scripting host.',
+    plugins: PLACEMENT({ assetEngine: 'instance', dynamic: false }, scripting()),
+    engine: namedEngine({ a: target(), lib: assetDoc(ONE) }, ['a', 'lib']),
+    steps: [...boot, arm(), armed],
   },
   {
     name: 'no-sandbox-host',
-    covers: 'A host with scripting enabled but no sandbox evaluates nothing: the Rust port has no scripting options to build, and the TypeScript runs as with scripting disabled.',
-    plugins: PLACEMENT({ scripting: { enabled: true, sandbox: null } }),
-    engine: { documents: { a: target(), lib: assetDoc(ONE) }, responses: opens('a', 'lib') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+    covers:
+      'Without an actions host the template arms unchanged. Enabled actions with no injected sandbox uses current default QuickJS and is separately deferred to D.',
+    plugins: PLACEMENT(),
+    engine: namedEngine({ a: target(), lib: assetDoc(ONE) }, ['a', 'lib']),
+    steps: [...boot, arm(), armed],
   },
   {
     name: 'a-raster-asset-is-never-evaluated',
-    covers: 'With scripting enabled, a raster asset still arms as is, without a target check.',
-    plugins: PLACEMENT(scripting()),
-    engine: { documents: { a: target() }, responses: opens('a') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('addAsset', [{ name: 'Logo', source: png() }]), arm('stamp-lib-0-0:Logo')],
+    covers:
+      'Canonical raster assets can carry forms now; a raster-authored page with no selected-page field opens/closes a copy and arms without creating a script realm.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
+        a: target(),
+        seed: seedDoc('stamp-lib-0-0', 'Logo'),
+        append: appendDoc([assetPage(0, 3, 612, 792)], 'Logo', {
+          raster: true,
+          size: { width: 100, height: 50 },
+        }),
+        copy: dynamicDoc({
+          pages: [assetPage(0, 3, 612, 792), assetPage(1, 900, 100, 50)],
+          fields: [],
+          selected: 900,
+        }),
+      },
+      ['a', 'seed', 'append', 'copy'],
+    ),
+    steps: [
+      start,
+      openDoc(),
+      stamp('createAsset', [{ name: 'Logo', source: png(100, 50) }]),
+      arm('stamp-lib-0-0:Logo'),
+      armed,
+    ],
   },
   {
     name: 'a-stamp-without-fields-on-its-page-arms-the-template',
     covers:
-      'A copy whose form has no widget on the selected page is closed again and the template bytes arm; a field on another page does not count.',
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
-        a: target(),
-        lib: assetDoc(TWO),
-        copy: dynamicDoc({ pages: TWO, fields: [DATE(101)] }),
-      },
-      responses: opens('a', 'lib', 'copy'),
-    },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+      'A field on another page does not count: close the copy and arm unchanged reusable bytes.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      { a: target(), lib: assetDoc(TWO), copy: dynamicDoc({ pages: TWO, fields: [DATE(101)] }) },
+      ['a', 'lib', 'copy'],
+    ),
+    steps: [...boot, arm(), armed],
   },
 ];
-
 const dynamic: ScenarioCase[] = [
   {
     name: 'materializes-a-dynamic-stamp',
     covers:
-      "With scripting enabled, a canonical asset's whole library PDF opens as a detached copy under the target's identity; the standalone controller boots and recalculates it against the target document with the configured clock, offset and seed; the page is flattened for display, extracted and rendered without annotations, and that page and preview arm. The library and template bytes stay as they were.",
+      'The detached copy uses target identity/time/seed, current native form ops, flatten and extraction; the canonical library and page cache remain unchanged.',
     plugins: PLACEMENT(
+      undefined,
       scripting({
         now: { $fn: 'now', returns: 1784107800000 },
         utcOffsetMinutes: { $fn: 'offset', returns: 180 },
         randomSeed: { $fn: 'seed', returns: 7 },
       }),
     ),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    snapshot: ['stamp', 'annotation::a'],
+    engine: namedEngine(
+      { a: target(), lib: assetDoc(ONE), copy: dynamicDoc(), ghost: assetDoc(ONE) },
+      ['a', 'lib', 'copy', 'ghost'],
+    ),
     steps: [
-      start,
-      openDoc('a'),
-      stamp('importLibraryPdf', [PDF]),
-      arm('stamp-lib-0-1:Stamp1', { targetWidth: 80 }),
-      stamp('libraryBytes', ['stamp-lib-0-1']),
-      stamp('assetBytes', ['stamp-lib-0-1:Stamp1']),
+      ...boot,
+      ...observers(),
+      arm(ID, { targetWidth: 80 }),
+      armed,
+      annotation('renderArmedStampPreview', [64]),
+      stamp('exportLibrary', ['stamp-lib-0-1']),
+      stamp('readAssetBytes', [ID]),
     ],
   },
   {
     name: 'a-loose-dynamic-stamp',
     covers:
-      'A PDF asset added without a library gets a library of its own (a blank seed, then the page appended, both on the workshop document) and evaluates from that library\'s canonical bytes, selecting its page. A target without an identity opens the copy without one. (v2 kept such an asset loose and evaluated its own bytes, refusing a two-page PDF; v3 has no loose assets.)',
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
+      'A PDF createAsset produces a canonical single-asset library, then evaluates the selected appended page; identityless target uses default identity.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
         a: target({ security: { allows: '*' } }),
-        copy: dynamicDoc({ pages: [assetPage(0, 3, 612, 792), assetPage(1, WORKSHOP_PAGE)], fields: [DATE(WORKSHOP_PAGE)] }),
+        seed: seedDoc('stamp-lib-0-0', 'Dynamic'),
+        append: appendDoc([assetPage(0, 3, 612, 792)], 'Dynamic', { number: 900 }),
+        copy: dynamicDoc({
+          pages: [assetPage(0, 3, 612, 792), assetPage(1, 900, 300, 120)],
+          fields: [DATE(900)],
+          selected: 900,
+        }),
       },
-      responses: opens('a', 'workshop', 'workshop', 'copy'),
-    },
-    ...UNSNAPSHOTTED,
+      ['a', 'seed', 'append', 'copy'],
+    ),
     steps: [
       start,
-      openDoc('a'),
-      stamp('addAsset', [{ name: 'Dynamic', source: PDF, size: { width: 200, height: 80 } }]),
+      openDoc(),
+      stamp('createAsset', [{ name: 'Dynamic', source: PDF, size: { width: 200, height: 80 } }]),
       arm('stamp-lib-0-0:Dynamic'),
+      armed,
+      stamp('readAssetBytes', ['stamp-lib-0-0:Dynamic']),
     ],
   },
   {
     name: 'dynamic-stamp-refusals',
     covers:
-      "A target that is not open rejects with NotFound before any copy; a canonical page missing from the copy rejects with InvalidArg naming it; an engine without pages.flatten or pages.extract rejects with NotImplemented. Each copy is closed.",
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
+      'Closed target permission, absent canonical page, required flatten Unsupported and extract Io each refuse precisely, close the detached copy and leave no arm.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
         a: target(),
         lib: assetDoc(ONE),
-        moved: dynamicDoc({ pages: [assetPage(0, 300)] }),
-        noFlatten: dynamicDoc({ lacks: ['pages.flatten'] }),
-        noExtract: dynamicDoc({ lacks: ['pages.extract'] }),
+        moved: dynamicDoc({ pages: [{ ...ONE[0], ref: pr(300) }] }),
+        noFlatten: dynamicDoc({
+          responses: [
+            { path: 'pages.flatten', error: engineError('Unsupported', 'flatten unavailable') },
+          ],
+        }),
+        noExtract: dynamicDoc({
+          responses: [{ path: 'pages.extract', error: engineError('Io', 'extract unavailable') }],
+        }),
       },
-      responses: opens('a', 'lib', 'moved', 'noFlatten', 'noExtract'),
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      start,
-      openDoc('a'),
-      stamp('importLibraryPdf', [PDF]),
-      arm('stamp-lib-0-1:Stamp1', undefined, 'closed'),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-    ],
+      ['a', 'lib', 'moved', 'noFlatten', 'noExtract'],
+    ),
+    steps: [...boot, arm(ID, { documentId: 'closed' }), arm(), arm(), arm(), armed, read],
   },
   {
     name: 'a-failed-boot-script-is-a-diagnostic',
     covers:
-      "A boot script that throws does not fail the recalculation: its UI effects and diagnostics (the failure among them) reach the observers, onError is not called, and the stamp still materializes.",
+      'A boot exception is surfaced as a continuing diagnostic without a script-failed event, while accepted recalculate still arms.',
     plugins: PLACEMENT(
+      undefined,
       scripting({
         sandbox: {
           builds: [
             {
               boot: [
-                out({
-                  uiEffects: [{ kind: 'alert', message: 'Stamp expired', icon: 0 }],
-                  diagnostics: [{ code: 'unsupported-api', message: 'app.viewerVersion' }],
+                output({
+                  uiEffects: [alert('Stamp expired')],
+                  diagnostics: [diagnostic],
                   error: { kind: 'exception', message: 'boom' },
                 }),
               ],
             },
           ],
         },
-        onUiEffect: { $fn: 'onUiEffect' },
-        onDiagnostic: { $fn: 'onDiagnostic' },
-        onError: { $fn: 'onError' },
       }),
     ),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+    engine: canonicalEngine(),
+    steps: [...boot, ...observers(), arm(), armed],
   },
   {
     name: 'a-failed-recalculation-fails-the-arm',
     covers:
-      "A recalculation that fails (here over its effect budget) surfaces its effects, diagnostics and error to the observers, then rejects with Unknown naming the script error; the controller is disposed, the copy closed, and nothing arms.",
+      'Aggregate effect budget failure surfaces exact diagnostics/UI/error, rejects operation-failed, disposes realm and closes copy without arming.',
     plugins: PLACEMENT(
+      undefined,
       scripting({
         sandbox: {
           builds: [
             {
               boot: [
-                out({
-                  formEffects: [setValue(1, 'x')],
-                  uiEffects: [{ kind: 'alert', message: 'Stamp expired', icon: 0 }],
-                  diagnostics: [{ code: 'unsupported-api', message: 'app.viewerVersion' }],
+                output({
+                  formEffects: [setValue('x')],
+                  uiEffects: [alert('Stamp expired')],
+                  diagnostics: [diagnostic],
                 }),
               ],
             },
           ],
         },
-        budget: { maxExecutionMs: 50, maxMemoryBytes: 16777216, maxStackBytes: 524288, maxEffects: 1, maxOutputBytes: 1048576 },
-        onUiEffect: { $fn: 'onUiEffect' },
-        onDiagnostic: { $fn: 'onDiagnostic' },
-        onError: { $fn: 'onError' },
+        budget: budget(1),
       }),
     ),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    snapshot: ['annotation::a'],
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+    engine: canonicalEngine(),
+    steps: [...boot, ...observers(), arm(), armed, read],
   },
   {
     name: 'an-error-observer-that-throws',
-    covers: 'An onError observer that throws is reported to console.error; the failed recalculation still rejects the arm.',
-    plugins: PLACEMENT(
-      scripting({
-        budget: { maxExecutionMs: 50, maxMemoryBytes: 16777216, maxStackBytes: 524288, maxEffects: 0, maxOutputBytes: 1048576 },
-        onError: { $fn: 'onError', throws: { name: 'TypeError', message: 'observer is not ready' } },
-      }),
-    ),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+    covers:
+      'A throwing script-failed listener is isolated by the kernel report channel; the current arm still rejects its own budget failure.',
+    plugins: PLACEMENT(undefined, scripting({ budget: budget(0) })),
+    engine: canonicalEngine(),
+    steps: [...boot, ...observers('error'), arm(), armed],
   },
   {
     name: 'observers-see-a-successful-run',
     covers:
-      'A successful run surfaces its UI effects and diagnostics too; an observer that throws is reported to console.error and stops the rest, and the arm still goes ahead.',
+      'Current actions UI adapter and event hooks surface accepted script outputs. A throwing UI adapter rejects the arm and finally closes the copy.',
     plugins: PLACEMENT(
+      undefined,
       scripting({
         sandbox: {
           builds: [
             {
               boot: [
-                out({
-                  formEffects: [setValue(1, 'x')],
-                  uiEffects: [
-                    { kind: 'alert', message: 'one', icon: 0 },
-                    { kind: 'alert', message: 'two', icon: 0 },
-                  ],
-                  diagnostics: [{ code: 'unsupported-api', message: 'app.viewerVersion' }],
+                output({
+                  formEffects: [setValue('x')],
+                  uiEffects: [alert('one'), alert('two')],
+                  diagnostics: [diagnostic],
                 }),
               ],
             },
           ],
         },
-        onUiEffect: { $fn: 'onUiEffect', seq: [{}, { throws: { name: 'Error', message: 'observer broke' } }] },
-        onDiagnostic: { $fn: 'onDiagnostic' },
       }),
     ),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1')],
+    engine: canonicalEngine(dynamicDoc({ formValue: 'x' })),
+    steps: [...boot, ...observers('ui'), arm(), armed],
   },
   {
     name: 'a-flatten-that-fails-or-skips',
-    covers: 'A flatten result that failed or was skipped rejects with Unknown naming its page as the template literal prints it, whatever the engine put there; the copy is closed.',
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
+    covers:
+      'Current flatten is all-or-nothing: engine refusal rejects the arm; typed unchanged is a successful no-op and still materializes.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
         a: target(),
         lib: assetDoc(ONE),
-        failed: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: 100 }, status: 'failed' }] } }),
-        skipped: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: 100 }, status: 'skipped' }] } }),
-        text: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: 'p100' }, status: 'failed' }] } }),
-        nil: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: null }, status: 'failed' }] } }),
-        flag: dynamicDoc({ flatten: { results: [{ page: { kind: 'objectNumber', pageObjectNumber: true }, status: 'failed' }] } }),
-        none: dynamicDoc({ flatten: { results: [{ page: {}, status: 'failed' }] } }),
+        failed: dynamicDoc({
+          responses: [{ path: 'pages.flatten', error: engineError('Refused', 'flatten failed') }],
+        }),
+        unchanged: dynamicDoc({
+          flatten: {
+            pages: [pr(100)],
+            usage: 'display',
+            results: [{ page: pr(100), status: 'unchanged' }],
+            meta: {
+              affectedPages: [pr(100)],
+              cacheDelta: null,
+              opId: 'flatten-unchanged',
+              undoable: false,
+            },
+          } satisfies PageFlattenResult,
+        }),
       },
-      responses: opens('a', 'lib', 'failed', 'skipped', 'text', 'nil', 'flag', 'none'),
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      start,
-      openDoc('a'),
-      stamp('importLibraryPdf', [PDF]),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-      arm('stamp-lib-0-1:Stamp1'),
-    ],
+      ['a', 'lib', 'failed', 'unchanged'],
+    ),
+    steps: [...boot, arm(), armed, arm(), armed],
   },
   {
     name: 'a-failed-copy-close-fails-the-arm',
-    covers: "A copy whose close rejects fails the arm with that error even after a successful evaluation; a URL-sourced render of the flattened page rejects with NotImplemented.",
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
+    covers:
+      'Copy close Io overrides a successful materialization. A well-typed URL-only image has no source bytes and rejects unsupported after close.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
         a: target(),
         lib: assetDoc(ONE),
-        copy: dynamicDoc({ responses: [{ path: 'close', error: engineError('Unknown', 'close failed') }] }),
-        url: dynamicDoc({ responses: [{ path: 'page.render.image', value: { contentType: 'image/png', source: { kind: 'url', url: 'https://x' } } }] }),
+        copy: dynamicDoc({
+          responses: [{ path: 'close', error: engineError('Io', 'close failed') }],
+        }),
+        url: dynamicDoc({
+          responses: [
+            {
+              path: 'page.render.image',
+              value: {
+                ...image(100),
+                source: { kind: 'url', url: 'https://x' },
+              } satisfies PageImageResult,
+            },
+          ],
+        }),
       },
-      responses: opens('a', 'lib', 'copy', 'url'),
-    },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), arm('stamp-lib-0-1:Stamp1')],
+      ['a', 'lib', 'copy', 'url'],
+    ),
+    steps: [...boot, arm(), arm(), armed],
   },
   {
     name: 'a-library-without-canonical-bytes',
     covers:
-      "When the library's save answered nothing, a dynamic asset evaluates from its own extracted page. An asset whose extraction answered nothing opens an empty copy, and when that copy has no field on its page it arms no bytes, which the annotation plugin refuses.",
-    plugins: PLACEMENT(scripting()),
-    engine: {
-      documents: {
+      'Explicit malformed download/extract replies exercise current fallback: evaluate extracted page when canonical bytes absent; invalid missing placement bytes reject by the current binary resolver.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
         a: target(),
-        lib: assetDoc(TWO, { responses: [{ path: 'download' }, { path: 'pages.extract', args: [[101]] }] }),
+        lib: assetDoc(TWO, {
+          responses: [{ path: 'download' }, { path: 'pages.extract', args: [[pr(101)]] }],
+        }),
         copy: dynamicDoc({ pages: TWO }),
       },
-      responses: opens('a', 'lib', 'copy', 'copy'),
-    },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), stamp('disarm', ['a']), arm('stamp-lib-0-1:Stamp2')],
+      ['a', 'lib', 'copy', 'copy'],
+    ),
+    steps: [...boot, arm(), armed, stamp('disarm', ['a']), arm('stamp-lib-0-1:Stamp2'), armed],
   },
   {
     name: 'teardown-destroys-a-factory-engine-once',
-    covers: 'A materialization through a factory engine uses the memoized engine, and teardown destroys it.',
-    plugins: PLACEMENT({ ...scripting(), assetEngine: 'factory' }),
-    engine: { documents: { a: target(), lib: assetDoc(ONE), copy: dynamicDoc() }, responses: opens('a', 'lib', 'copy') },
-    ...UNSNAPSHOTTED,
-    steps: [start, openDoc('a'), stamp('importLibraryPdf', [PDF]), arm('stamp-lib-0-1:Stamp1'), destroy],
+    covers:
+      'The lazily-created local engine is memoized across library and detached-copy opens and destroyed exactly once.',
+    plugins: PLACEMENT({ assetEngine: 'factory' }, scripting()),
+    engine: canonicalEngine(),
+    steps: [...boot, arm(), armed, destroy],
   },
 ];
 
-/** Every case can create and extend libraries: the workshop document
- *  answers the opens a case does not name (see stamp-fixtures.ts). */
-const workshop = (cases: ScenarioCase[]): ScenarioCase[] =>
-  cases.map((c) => ({ ...c, engine: withWorkshop(c.engine as never) }));
+const dynamicPlaced = materialize(10001, {
+  subtype: 'stamp',
+  box: { x: 60, y: 80, width: 80, height: 40 },
+  name: 'Stamp1',
+  subject: 'Stamp1',
+  fit: 'contain',
+});
+const batchPlaced = materialize(
+  10003,
+  {
+    subtype: 'stamp',
+    box: { x: 170, y: 185, width: 60, height: 30 },
+    name: 'Stamp1',
+    subject: 'Stamp1',
+    fit: 'contain',
+  },
+  2,
+);
+const pickerPlaced = materialize(10001, {
+  subtype: 'stamp',
+  box: { x: 50, y: 75, width: 100, height: 50 },
+  fit: 'contain',
+});
+const added: ScenarioCase[] = [
+  {
+    name: 'dynamic-placement-writes-materialized-bytes-and-batch-facts',
+    covers:
+      'Direct and batch placement use each fresh detached materialization as annotation appearance resources; one refused page does not suppress the later successful page or its fact and public readback.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
+        a: target({
+          pages: [assetPage(0, 1, 600, 800), assetPage(1, 2, 500, 700)],
+          responses: [
+            ...target().responses!,
+            write(1, [{ item: created(dynamicPlaced) }]),
+            refused('page locked'),
+            write(3, [{ item: created(batchPlaced) }]),
+          ],
+        }),
+        lib: assetDoc(ONE),
+        copy1: dynamicDoc(),
+        copy2: dynamicDoc(),
+        copy3: dynamicDoc(),
+      },
+      ['a', 'lib', 'copy1', 'copy2', 'copy3'],
+    ),
+    steps: [
+      ...boot,
+      annotation('onCreated', [fn('annotationCreated')]),
+      annotation('onWriteFailed', [fn('annotationWriteFailed')]),
+      stamp('placeAsset', [
+        ID,
+        { page: pr(1), center: { x: 100, y: 100 }, targetWidth: 80 },
+        { documentId: 'a' },
+      ]),
+      stamp('placeAssetOnPages', [
+        ID,
+        'all',
+        { center: { x: 200, y: 200 }, targetWidth: 60 },
+        { documentId: 'a' },
+      ]),
+      stamp('placeAssetOnPages', [
+        ID,
+        [pr(1), pr(999)],
+        { center: { x: 20, y: 20 } },
+        { documentId: 'a' },
+      ]),
+      annotation('list'),
+      stamp('readAssetBytes', [ID]),
+      stamp('exportLibrary', ['stamp-lib-0-1']),
+    ],
+  },
+  {
+    name: 'file-picker-places-cancels-and-expires-the-click',
+    covers:
+      'The current prompt provider receives the typed page-space request; picked PNG bytes create one stamp, cancel creates none, and a delayed result after a tool change expires without a write.',
+    plugins: PLACEMENT(),
+    engine: namedEngine(
+      {
+        a: target({
+          responses: [...target().responses!, write(1, [{ item: created(pickerPlaced) }])],
+        }),
+      },
+      ['a'],
+    ),
+    steps: [
+      start,
+      openDoc(),
+      {
+        op: 'call',
+        target: { token: 'interaction', doc: 'a' },
+        method: 'activateTool',
+        args: ['stamp'],
+      },
+      annotation('setFilePickerProvider', [
+        {
+          $fn: 'filePicker',
+          seq: [
+            { resolves: { data: png(100, 50), name: 'picked.png' } },
+            { resolves: null },
+            { defer: 'picked' },
+          ],
+        },
+      ]),
+      annotation('requestStampAt', [pr(1), { x: 100, y: 100 }]),
+      annotation('requestStampAt', [pr(1), { x: 200, y: 200 }]),
+      annotation('requestStampAt', [pr(1), { x: 300, y: 300 }]),
+      {
+        op: 'call',
+        target: { token: 'interaction', doc: 'a' },
+        method: 'activateTool',
+        args: ['pan'],
+      },
+      settle('picked', { data: png(100, 50), name: 'late.png' }),
+      annotation('list'),
+    ],
+  },
+  {
+    name: 'permission-refusal-recovers-on-an-authorized-document',
+    covers:
+      'An open read-only document refuses arm/place before asset copies; an independently authorized document can subsequently arm and disarm the same asset.',
+    plugins: PLACEMENT(undefined, scripting()),
+    engine: namedEngine(
+      {
+        a: target({ security: { allows: ['doc.annotate.read', 'doc.forms.read'] } }),
+        b: target(),
+        lib: assetDoc(ONE),
+        copy: dynamicDoc(),
+      },
+      ['a', 'lib', 'b', 'copy'],
+    ),
+    steps: [
+      ...boot,
+      stamp('canPlace', ['a']),
+      arm(),
+      stamp('placeAsset', [ID, { page: pr(1), center: { x: 100, y: 100 } }, { documentId: 'a' }]),
+      openDoc('b'),
+      stamp('canPlace', ['b']),
+      arm(ID, { documentId: 'b' }),
+      annotation('getArmedStamp', [], 'b'),
+      stamp('getArmedAsset', ['b']),
+      stamp('disarm', ['b']),
+      annotation('getArmedStamp', [], 'b'),
+    ],
+  },
+];
 
 export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/stamp-placement.json',
-    describes: 'packages/plugin/stamp: armAsset and disarm through the annotation plugin, and dynamic stamps through form scripting.',
-    cases: workshop([...staticCases, ...skipped, ...dynamic]),
+    describes: 'Current annotation placement, ghosts and detached actions/form scripting.',
+    cases: [...staticCases, ...skipped, ...dynamic, ...added],
   },
 ];

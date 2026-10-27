@@ -5,15 +5,16 @@ use epdf_ffi::{
     Subscription, ViewerError,
 };
 use epdf_kernel::Unsubscribe;
+use serde_json::Value;
 
 use super::{
-    AnnotationBatchResult, AnnotationChangedEvent, AnnotationCreateBatchResult,
-    AnnotationCreateFailure, AnnotationDeletedEvent, AnnotationEvent, AnnotationEventListener,
-    AnnotationFilter, AnnotationHydration, AnnotationPatch, AnnotationRecord,
-    AnnotationResyncedPages, AnnotationThreadChange, CreateAnnotationInput, annotations_out, open,
-    plugin_error_info, ref_out, refs_out,
+    AnnotationChangedEvent, AnnotationDeletedEvent, AnnotationEvent, AnnotationEventListener,
+    AnnotationFilter, AnnotationRecord, AnnotationResyncedPages, AnnotationThreadChange, draft_out,
+    geometry_point, object_of, open, page_json, page_out, plugin_error_info_of, record_out,
+    records_out, ref_json, ref_out, refs_json, refs_out,
 };
 use crate::AnnotationCapability;
+use crate::write::crud::CreateOptions;
 
 #[derive(uniffi::Object)]
 pub struct AnnotationHandle {
@@ -70,7 +71,8 @@ impl AnnotationHandle {
     ) -> Result<Option<AnnotationRecord>, ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?.get(&annotation_ref.into()).map(AnnotationRecord::try_from).transpose()
+                let c = open(c)?;
+                c.get(&ref_json(&annotation_ref)?).map(|dto| record_out(c, &dto)).transpose()
             })
             .await
     }
@@ -81,195 +83,110 @@ impl AnnotationHandle {
     ) -> Result<Vec<AnnotationRecord>, ViewerError> {
         self.cap
             .call(move |c| {
-                let filter = filter.map(crate::AnnotationFilter::from);
-                annotations_out(open(c)?.list(filter.as_ref()))
+                let c = open(c)?;
+                let filter = filter.map(crate::read::annotations::AnnotationFilter::from);
+                records_out(c, &c.list(filter.as_ref()))
             })
             .await
     }
 
     pub async fn selected(&self) -> Result<Vec<AnnotationRecord>, ViewerError> {
-        self.cap.call(|c| annotations_out(open(c)?.list_selected())).await
+        self.cap
+            .call(|c| {
+                let c = open(c)?;
+                records_out(c, &c.list_selected())
+            })
+            .await
     }
 
-    /// The topmost annotation under a page-space point.
+    /// `getAt(page, point)`: the topmost annotation under a page-space point.
     pub async fn hit_test_at(
         &self,
         page: PageRef,
         point: Point,
-    ) -> Result<Option<AnnotationRef>, ViewerError> {
+    ) -> Result<Option<AnnotationRecord>, ViewerError> {
         self.cap
-            .call(move |c| open(c)?.hit_test_at(page.into(), point.into()).map(ref_out).transpose())
+            .call(move |c| {
+                let c = open(c)?;
+                c.annotation_at(&page_json(page), geometry_point(point))
+                    .map(|dto| record_out(c, &dto))
+                    .transpose()
+            })
             .await
     }
 
-    /// `getStatus()`, the `ResourceStatus` metadata, form and signature
-    /// report: `Loading`, `Ready` once hydration completed, `Forbidden` or
-    /// `Error`. Annotation hydration starts with the document, so it is
-    /// never `Idle`.
+    /// Whether a change of this annotation is still on its way to the engine.
+    pub async fn is_pending(&self, annotation_ref: AnnotationRef) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.is_pending(&ref_json(&annotation_ref)?))).await
+    }
+
+    /// `getStatus()`: the records mirror's status, as metadata, form and
+    /// signature report it.
     pub async fn status(&self) -> Result<ResourceStatus, ViewerError> {
         self.cap
             .call(|c| {
-                Ok(match open(c)?.get_status() {
+                Ok(match open(c)?.records.get_status().as_str() {
                     "ready" => ResourceStatus::Ready,
                     "forbidden" => ResourceStatus::Forbidden,
                     "error" => ResourceStatus::Error,
+                    "idle" => ResourceStatus::Idle,
                     _ => ResourceStatus::Loading,
                 })
             })
             .await
     }
 
-    pub async fn hydration(&self) -> Result<AnnotationHydration, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_hydration().into())).await
-    }
-
-    /// Start hydration if it has not run. Returns before it finishes;
-    /// `refresh` waits.
-    pub async fn ensure_hydrated(&self) -> Result<(), ViewerError> {
-        self.cap
-            .call(|c| {
-                open(c)?.ensure_hydrated();
-                Ok(())
-            })
-            .await
-    }
-
     /// Re-read every annotation from the engine and wait for it.
     pub async fn refresh(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
-        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.refresh()), |()| ()).await
+        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.records.refresh()), |()| ()).await
     }
 
-    pub async fn reload_page(
-        &self,
-        page: PageRef,
-        cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.reload_page(page.into())),
-                |()| (),
-            )
-            .await
+    /// `whenSynced()`: every load and page re-read in flight has settled.
+    pub async fn when_synced(&self, cancel: Arc<CancelToken>) -> Result<(), ViewerError> {
+        self.cap.call_promise_cancellable(cancel, |c| Ok(open(c)?.records.settled()), |()| ()).await
     }
 
-    /// Resolves with the created annotation's ref once the engine confirmed it.
+    /// `create(page, fields, resources, { tool, select })`: resolves with the
+    /// created annotation's ref once the engine confirmed it. `fields_json`
+    /// is the engine's field bag for the subtype (`{"subtype": "square",
+    /// "box": …}`).
     pub async fn create(
         &self,
-        input: CreateAnnotationInput,
+        page: PageRef,
+        fields_json: String,
+        tool: Option<String>,
+        select: Option<bool>,
         cancel: Arc<CancelToken>,
     ) -> Result<AnnotationRef, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.create(input.try_into()?)),
-                |r| ref_out(r).map_err(ViewerError::from),
-            )
-            .await?
-    }
-
-    pub async fn create_many(
-        &self,
-        inputs: Vec<CreateAnnotationInput>,
-        cancel: Arc<CancelToken>,
-    ) -> Result<AnnotationCreateBatchResult, ViewerError> {
-        // The plugin answers a failed entry with the input JSON it got, so
-        // each failure is matched back to its position here, the first
-        // unclaimed equal input winning when two inputs are the same.
-        let inputs = inputs
-            .into_iter()
-            .map(|i| Ok(create_input_json(&crate::CreateAnnotationInput::try_from(i)?)))
-            .collect::<Result<Vec<_>, epdf_kernel::Error>>()?;
-        let sent = inputs.clone();
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.create_many(inputs)),
-                move |batch| {
-                    let applied =
-                        batch.applied.into_iter().map(ref_out).collect::<Result<Vec<_>, _>>()?;
-                    let mut claimed = vec![false; sent.len()];
-                    let mut failed = Vec::new();
-                    for (entry, e) in batch.failed {
-                        let index = (0..sent.len())
-                            .find(|&i| !claimed[i] && sent[i] == entry)
-                            .ok_or_else(|| {
-                                super::invalid(format!(
-                                    "a failed create matches no input it was given: {entry}"
-                                ))
-                            })?;
-                        claimed[index] = true;
-                        failed.push(AnnotationCreateFailure {
-                            index: index as u32,
-                            error: plugin_error_info(&e),
-                        });
-                    }
-                    Ok::<_, ViewerError>(AnnotationCreateBatchResult { applied, failed })
+                move |c| {
+                    let fields = object_of(&fields_json)?;
+                    let options =
+                        CreateOptions { signal: None, tool, select: select.unwrap_or(false) };
+                    Ok(open(c)?.create(&page_json(page), &fields, None, options))
                 },
+                |created: Value| ref_out(&created["annotation"]["ref"]).map_err(ViewerError::from),
             )
             .await?
     }
 
+    /// `update(ref, patch)`: `patch_json` is the engine's field bag.
     pub async fn update(
         &self,
         annotation_ref: AnnotationRef,
-        patch: AnnotationPatch,
+        patch_json: String,
         cancel: Arc<CancelToken>,
     ) -> Result<(), ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.update(annotation_ref.into(), patch.try_into()?)),
-                |()| (),
-            )
-            .await
-    }
-
-    /// One patch applied to every ref, best effort per ref.
-    pub async fn update_many(
-        &self,
-        refs: Vec<AnnotationRef>,
-        patch: AnnotationPatch,
-        cancel: Arc<CancelToken>,
-    ) -> Result<AnnotationBatchResult, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    let refs = refs.into_iter().map(Into::into).collect();
-                    Ok(open(c)?.update_many(refs, patch.try_into()?))
+                    let patch = object_of(&patch_json)?;
+                    Ok(open(c)?.update(&ref_json(&annotation_ref)?, &patch, None, None))
                 },
-                |b| AnnotationBatchResult::try_from(b).map_err(ViewerError::from),
-            )
-            .await?
-    }
-
-    pub async fn set_rotation(
-        &self,
-        annotation_ref: AnnotationRef,
-        degrees: f64,
-        cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.set_rotation(annotation_ref.into(), degrees)),
-                |()| (),
-            )
-            .await
-    }
-
-    pub async fn rotate_by(
-        &self,
-        annotation_ref: AnnotationRef,
-        delta: f64,
-        cancel: Arc<CancelToken>,
-    ) -> Result<(), ViewerError> {
-        self.cap
-            .call_promise_cancellable(
-                cancel,
-                move |c| Ok(open(c)?.rotate_by(annotation_ref.into(), delta)),
-                |()| (),
+                |_: Value| (),
             )
             .await
     }
@@ -282,24 +199,31 @@ impl AnnotationHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.delete(annotation_ref.into())),
+                move |c| Ok(open(c)?.delete(&ref_json(&annotation_ref)?, None)),
                 |()| (),
             )
             .await
     }
 
-    pub async fn delete_many(
+    /// `reorder(refs, position)`: `position_json` is `"front"`, `"back"`,
+    /// `"forward"`, `"backward"` or `{ "above": ref }` / `{ "below": ref }`.
+    pub async fn reorder(
         &self,
         refs: Vec<AnnotationRef>,
+        position_json: String,
         cancel: Arc<CancelToken>,
-    ) -> Result<AnnotationBatchResult, ViewerError> {
+    ) -> Result<(), ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.delete_many(refs.into_iter().map(Into::into).collect())),
-                |b| AnnotationBatchResult::try_from(b).map_err(ViewerError::from),
+                move |c| {
+                    let position: Value = serde_json::from_str(&position_json)
+                        .map_err(|e| super::invalid(format!("a position is not JSON: {e}")))?;
+                    Ok(open(c)?.reorder(&refs_json(&refs)?, &position, None))
+                },
+                |()| (),
             )
-            .await?
+            .await
     }
 
     pub async fn can_read(&self) -> Result<bool, ViewerError> {
@@ -310,12 +234,12 @@ impl AnnotationHandle {
         self.cap.call(|c| Ok(open(c)?.can_create())).await
     }
 
-    pub async fn can_edit(&self, annotation_ref: AnnotationRef) -> Result<bool, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.can_edit(&annotation_ref.into()))).await
+    pub async fn can_update(&self, annotation_ref: AnnotationRef) -> Result<bool, ViewerError> {
+        self.cap.call(move |c| Ok(open(c)?.can_update(&ref_json(&annotation_ref)?))).await
     }
 
     pub async fn can_delete(&self, annotation_ref: AnnotationRef) -> Result<bool, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.can_delete(&annotation_ref.into()))).await
+        self.cap.call(move |c| Ok(open(c)?.can_delete(&ref_json(&annotation_ref)?))).await
     }
 
     /// Every hook in one registration. An event that does not decode is
@@ -324,83 +248,118 @@ impl AnnotationHandle {
         let (subscription, slot) = Subscription::pending(self.post.clone());
         self.cap.fire(move |c| {
             let ending = listener.clone();
+            let cap = c.clone();
             slot.fill_until_end(
                 c.lifetime(),
                 || {
+                    let events = &cap.events;
                     let l = listener.clone();
-                    let resynced = c.on_resynced(move |e| {
-                        let pages = match &e.pages {
-                            crate::ResyncedPages::All => AnnotationResyncedPages::All,
-                            crate::ResyncedPages::Pages(p) => AnnotationResyncedPages::Pages {
-                                pages: p.iter().map(|p| (*p).into()).collect(),
+                    let resynced = events.resynced.on(move |e| {
+                        let pages = match e.get("pages") {
+                            Some(Value::Array(pages)) => AnnotationResyncedPages::Pages {
+                                pages: pages.iter().map(page_out).collect::<Result<_, _>>()?,
                             },
+                            _ => AnnotationResyncedPages::All,
                         };
                         l.on_event(AnnotationEvent::Resynced { pages });
                         Ok(())
                     });
-                    let l = listener.clone();
-                    let created = c.on_created(move |e| {
+                    let (l, k) = (listener.clone(), cap.clone());
+                    let created = events.created.on(move |e| {
+                        let annotation =
+                            record_out(&k, e.get("annotation").unwrap_or(&Value::Null))?;
                         l.on_event(AnnotationEvent::Created {
-                            event: AnnotationChangedEvent::try_from(e)?,
+                            event: AnnotationChangedEvent { annotation },
                         });
                         Ok(())
                     });
-                    let l = listener.clone();
-                    let updated = c.on_updated(move |e| {
+                    let (l, k) = (listener.clone(), cap.clone());
+                    let updated = events.updated.on(move |e| {
+                        let annotation =
+                            record_out(&k, e.get("annotation").unwrap_or(&Value::Null))?;
                         l.on_event(AnnotationEvent::Updated {
-                            event: AnnotationChangedEvent::try_from(e)?,
+                            event: AnnotationChangedEvent { annotation },
                         });
                         Ok(())
                     });
                     let l = listener.clone();
-                    let deleted = c.on_deleted(move |e| {
+                    let deleted = events.deleted.on(move |e| {
                         l.on_event(AnnotationEvent::Deleted {
                             event: AnnotationDeletedEvent {
-                                annotation_ref: ref_out(e.ref_.clone())?,
-                                page: e.page.into(),
+                                refs: refs_out(e.get("refs").unwrap_or(&Value::Null))?,
+                                page: page_out(e.get("page").unwrap_or(&Value::Null))?,
                             },
                         });
                         Ok(())
                     });
                     let l = listener.clone();
-                    let selection = c.on_selection_changed(move |e| {
+                    let reordered = events.reordered.on(move |e| {
+                        l.on_event(AnnotationEvent::Reordered {
+                            page: page_out(e.get("page").unwrap_or(&Value::Null))?,
+                            order: refs_out(e.get("order").unwrap_or(&Value::Null))?,
+                        });
+                        Ok(())
+                    });
+                    let l = listener.clone();
+                    let selection = events.selection_changed.on(move |e| {
                         l.on_event(AnnotationEvent::SelectionChanged {
-                            refs: refs_out(e.refs.clone())?,
-                            previous_refs: refs_out(e.previous_refs.clone())?,
+                            refs: refs_out(e.get("refs").unwrap_or(&Value::Null))?,
+                            previous_refs: refs_out(e.get("previousRefs").unwrap_or(&Value::Null))?,
                         });
                         Ok(())
                     });
                     let l = listener.clone();
-                    let draft = c.on_draft_changed(move |e| {
+                    let draft = events.draft_changed.on(move |e| {
                         l.on_event(AnnotationEvent::DraftChanged {
-                            draft: e.draft.clone().map(Into::into),
+                            draft: draft_out(e.get("draft").unwrap_or(&Value::Null))?,
                         });
                         Ok(())
                     });
                     let l = listener.clone();
-                    let editing = c.on_editing_changed(move |e| {
-                        l.on_event(AnnotationEvent::EditingChanged {
-                            annotation_ref: e.ref_.clone().map(ref_out).transpose()?,
-                        });
+                    let editing = events.editing_changed.on(move |e| {
+                        let annotation_ref = match e.get("ref") {
+                            None | Some(Value::Null) => None,
+                            Some(r) => Some(ref_out(r)?),
+                        };
+                        l.on_event(AnnotationEvent::EditingChanged { annotation_ref });
                         Ok(())
                     });
                     let l = listener.clone();
-                    let thread = c.comments().on_thread_changed(move |e| {
-                        let change = match e.change {
-                            crate::ThreadChange::Reply => AnnotationThreadChange::Reply,
-                            crate::ThreadChange::Text => AnnotationThreadChange::Text,
-                            crate::ThreadChange::Status => AnnotationThreadChange::Status,
-                            crate::ThreadChange::Marked => AnnotationThreadChange::Marked,
-                            crate::ThreadChange::Deleted => AnnotationThreadChange::Deleted,
+                    let hover = events.hover_changed.on(move |e| {
+                        let annotation_ref = match e.get("ref") {
+                            None | Some(Value::Null) => None,
+                            Some(r) => Some(ref_out(r)?),
+                        };
+                        l.on_event(AnnotationEvent::HoverChanged { annotation_ref });
+                        Ok(())
+                    });
+                    let l = listener.clone();
+                    let thread = events.thread_changed.on(move |e| {
+                        let change = match e.get("change").and_then(Value::as_str) {
+                            Some("reply") => AnnotationThreadChange::Reply,
+                            Some("text") => AnnotationThreadChange::Text,
+                            Some("status") => AnnotationThreadChange::Status,
+                            Some("marked") => AnnotationThreadChange::Marked,
+                            _ => AnnotationThreadChange::Deleted,
                         };
                         l.on_event(AnnotationEvent::ThreadChanged {
-                            root_ref: ref_out(e.root_ref.clone())?,
+                            root_ref: ref_out(e.get("rootRef").unwrap_or(&Value::Null))?,
                             change,
                         });
                         Ok(())
                     });
-                    let offs =
-                        [resynced, created, updated, deleted, selection, draft, editing, thread];
+                    let l = listener.clone();
+                    let failed = events.write_failed.on(move |e| {
+                        l.on_event(AnnotationEvent::WriteFailed {
+                            refs: refs_out(e.get("refs").unwrap_or(&Value::Null))?,
+                            error: plugin_error_info_of(e.get("error").unwrap_or(&Value::Null)),
+                        });
+                        Ok(())
+                    });
+                    let offs = [
+                        resynced, created, updated, deleted, reordered, selection, draft, editing,
+                        hover, thread, failed,
+                    ];
                     Unsubscribe::new(move || offs.iter().for_each(Unsubscribe::call))
                 },
                 move || ending.on_end(),
@@ -408,43 +367,4 @@ impl AnnotationHandle {
         });
         subscription
     }
-}
-
-/// `createMany` takes JSON inputs (`crud.rs` `create_many(Vec<Value>)`); the
-/// input's fields serialize back to the shape `CreateAnnotationInput`
-/// deserializes from.
-fn create_input_json(input: &crate::CreateAnnotationInput) -> serde_json::Value {
-    let mut out = serde_json::json!({ "page": input.page, "subtype": input.subtype });
-    let map = out.as_object_mut().expect("an object");
-    if let Some(tool) = &input.tool {
-        map.insert("tool".into(), tool.clone().into());
-    }
-    if let Some(props) = &input.props {
-        map.insert("props".into(), serde_json::to_value(props).expect("a props patch"));
-    }
-    if let Some(flags) = &input.flags {
-        map.insert("flags".into(), serde_json::to_value(flags).expect("flags"));
-    }
-    if let Some(select) = input.select {
-        map.insert("select".into(), select.into());
-    }
-    if let Some(bounds) = &input.bounds {
-        map.insert("bounds".into(), bounds.clone());
-    }
-    if let Some(rotation) = input.rotation {
-        map.insert("rotation".into(), rotation.into());
-    }
-    for (key, value) in [
-        ("from", input.from.map(|p| serde_json::to_value(p).expect("a point"))),
-        ("to", input.to.map(|p| serde_json::to_value(p).expect("a point"))),
-        ("vertices", input.vertices.as_ref().map(|v| serde_json::to_value(v).expect("points"))),
-        ("strokes", input.strokes.as_ref().map(|s| serde_json::to_value(s).expect("strokes"))),
-        ("quads", input.quads.as_ref().map(|q| serde_json::to_value(q).expect("quads"))),
-        ("callout", input.callout.map(|c| serde_json::to_value(c).expect("a callout"))),
-    ] {
-        if let Some(value) = value {
-            map.insert(key.into(), value);
-        }
-    }
-    out
 }

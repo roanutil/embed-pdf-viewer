@@ -1,21 +1,31 @@
-//! `registry.ts`: definitions plus their pre-parsed shortcuts, in a `Map`'s
-//! iteration order (by insertion; replacing a definition keeps its place,
-//! and an id deleted and registered again moves to the end).
+//! `registry.ts`: a command definition with its shortcuts parsed once, and
+//! the commands the settings define. [`CommandRegistry`] is a JavaScript
+//! `Map` by id: iteration is by insertion, setting an id that's there keeps
+//! its place, and an id deleted and set again moves to the end.
 
 use std::rc::Rc;
 
 use epdf_kernel::Error;
-use epdf_kernel::error::{code, plugin_error};
 use epdf_ui_core::shortcuts::{ParsedShortcut, parse_shortcut};
 
-use crate::contract::{CommandDef, RegisterCommandOptions, Shortcut};
+use crate::contract::{CommandDef, CommandFamily, CommandItem, Shortcut};
 
-/// A registered command. The remover `registerCommand` returns deletes an
-/// id only while this very entry is still registered under it.
+/// `RegisteredCommand`.
 pub struct RegisteredCommand {
-    pub def: CommandDef,
+    pub def: Rc<CommandDef>,
     pub shortcuts: Vec<String>,
     pub parsed: Vec<ParsedShortcut>,
+}
+
+/// `registeredCommand(definition)`: an unparsable shortcut throws.
+pub fn registered_command(def: Rc<CommandDef>) -> Result<Rc<RegisteredCommand>, Error> {
+    let shortcuts = match &def.shortcut {
+        None => Vec::new(),
+        Some(Shortcut::One(s)) => vec![s.clone()],
+        Some(Shortcut::Many(list)) => list.clone(),
+    };
+    let parsed = shortcuts.iter().map(|s| parse_shortcut(s)).collect::<Result<Vec<_>, _>>()?;
+    Ok(Rc::new(RegisteredCommand { def, shortcuts, parsed }))
 }
 
 /// `Map<string, RegisteredCommand>`.
@@ -37,8 +47,8 @@ impl CommandRegistry {
         self.entries.iter().find(|(k, _)| k == id).map(|(_, e)| e.clone())
     }
 
-    /// `set`: an existing id keeps its place.
-    fn set(&mut self, id: String, entry: Rc<RegisteredCommand>) {
+    /// `set`: an id that's there keeps its place.
+    pub fn set(&mut self, id: String, entry: Rc<RegisteredCommand>) {
         match self.entries.iter_mut().find(|(k, _)| *k == id) {
             Some(slot) => slot.1 = entry,
             None => self.entries.push((id, entry)),
@@ -56,36 +66,38 @@ impl CommandRegistry {
     }
 
     /// Entries in iteration order.
-    pub fn entries(&self) -> Vec<(String, Rc<RegisteredCommand>)> {
-        self.entries.clone()
+    pub fn values(&self) -> impl Iterator<Item = &Rc<RegisteredCommand>> {
+        self.entries.iter().map(|(_, e)| e)
+    }
+
+    pub fn len(&self) -> usize {
+        self.entries.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.entries.is_empty()
     }
 }
 
-/// `registerCommand(registry, def, options)`: a duplicate id throws
-/// `conflict` unless `replace`, and an unparsable shortcut throws before
-/// anything is registered.
-pub fn register_command(
-    registry: &mut CommandRegistry,
-    def: CommandDef,
-    options: RegisterCommandOptions,
-) -> Result<Rc<RegisteredCommand>, Error> {
-    if registry.has(&def.id) && !options.replace {
-        return Err(plugin_error(
-            code::CONFLICT,
-            "commands",
-            format!("duplicate command '{}'", def.id),
-            None,
-            None,
-        ));
+/// `ConfiguredCommands`: the commands the settings define, by id (a later
+/// id replaces an earlier one, in the earlier one's place), and their
+/// families.
+#[derive(Default)]
+pub struct ConfiguredCommands {
+    pub commands: CommandRegistry,
+    pub families: Vec<Rc<CommandFamily>>,
+}
+
+/// `configuredCommands(items)`: an unparsable shortcut throws.
+pub fn configured_commands(items: &[CommandItem]) -> Result<ConfiguredCommands, Error> {
+    let mut configured = ConfiguredCommands::default();
+    for item in items {
+        match item {
+            CommandItem::Family(family) => configured.families.push(family.clone()),
+            CommandItem::Command(def) => {
+                configured.commands.set(def.id.clone(), registered_command(def.clone())?)
+            }
+        }
     }
-    let shortcuts = match &def.shortcut {
-        None => Vec::new(),
-        Some(Shortcut::One(s)) => vec![s.clone()],
-        Some(Shortcut::Many(list)) => list.clone(),
-    };
-    let parsed = shortcuts.iter().map(|s| parse_shortcut(s)).collect::<Result<Vec<_>, _>>()?;
-    let id = def.id.clone();
-    let entry = Rc::new(RegisteredCommand { def, shortcuts, parsed });
-    registry.set(id, entry.clone());
-    Ok(entry)
+    Ok(configured)
 }

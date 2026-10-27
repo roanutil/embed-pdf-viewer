@@ -9,7 +9,7 @@
 //!   pnpm --filter @embedpdf/tooling-engine-conformance run render
 
 use epdf_engine::features::render::geometry::{
-    RenderViewport, device_size, display_rect_to_device_matrix, pdf_rect_to_display_rect,
+    RenderViewport, device_size, page_rect_of_display_rect, pdf_rect_to_display_rect, render_matrix,
 };
 use epdf_engine::geom::{PdfRect, PdfRotation};
 use serde::Deserialize;
@@ -99,7 +99,10 @@ fn the_display_flip_agrees_with_typescript() {
     // every size and every matrix wrong for a reason neither would name.
     let file = load();
     for case in &file.cases {
-        let actual = pdf_rect_to_display_rect((&case.rect).into(), case.page_height);
+        // The vectors place the rect on a page box at the origin, as the
+        // generator's own `pdfRectToDisplayRect(rect, pageHeight)` does.
+        let page = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: case.page_height };
+        let actual = pdf_rect_to_display_rect((&case.rect).into(), page);
         let expected: PdfRect = (&case.display_rect).into();
         assert_eq!(actual, expected, "{}: {}", case.name, case.covers);
     }
@@ -124,8 +127,10 @@ fn device_sizes_agree_with_typescript() {
 fn device_matrices_agree_with_typescript() {
     let file = load();
     for case in &file.cases {
-        let matrix = display_rect_to_device_matrix(
-            (&case.display_rect).into(),
+        // `renderMatrix` over the display rect as a page-space box, which is
+        // what the rasterizer draws with (771342379).
+        let matrix = render_matrix(
+            page_rect_of_display_rect((&case.display_rect).into()),
             rotation(case.rotation),
             case.size.width,
             case.size.height,
@@ -172,19 +177,17 @@ fn a_region_with_no_area_is_refused_rather_than_rendered_empty() {
 
     // The matrix would divide by zero, and a caller asking for a zero-area
     // region has a bug worth naming.
+    let page = PdfRect { left: -306.0, bottom: -396.0, right: 306.0, top: 396.0 };
     for rect in [
         PdfRect { left: 10.0, bottom: 10.0, right: 10.0, top: 20.0 },
         PdfRect { left: 10.0, bottom: 10.0, right: 20.0, top: 10.0 },
     ] {
-        let refused =
-            resolve_target(RenderTarget::Rect { rect }, 612.0, 792.0).expect_err("zero area");
+        let refused = resolve_target(RenderTarget::Rect { rect }, page).expect_err("zero area");
         assert_eq!(refused.code, EngineErrorCode::InvalidArg);
     }
-    // And a whole-page target is the page box.
-    assert_eq!(
-        resolve_target(RenderTarget::Page, 612.0, 792.0).expect("page"),
-        PdfRect { left: 0.0, bottom: 0.0, right: 612.0, top: 792.0 },
-    );
+    // And a whole-page target is the page's display box, wherever the file
+    // put its origin (`resolveTarget`).
+    assert_eq!(resolve_target(RenderTarget::Page, page).expect("page"), page);
 }
 
 #[test]
@@ -194,8 +197,22 @@ fn an_inverted_rect_is_normalized_rather_than_refused() {
     // A caller that wrote its corners the other way round meant the same
     // region, and normalizing is what the TypeScript does.
     let inverted = PdfRect { left: 200.0, bottom: 300.0, right: 100.0, top: 150.0 };
+    let page = PdfRect { left: 0.0, bottom: 0.0, right: 612.0, top: 792.0 };
     assert_eq!(
-        resolve_target(RenderTarget::Rect { rect: inverted }, 612.0, 792.0).expect("normalized"),
+        resolve_target(RenderTarget::Rect { rect: inverted }, page).expect("normalized"),
         PdfRect { left: 100.0, bottom: 150.0, right: 200.0, top: 300.0 },
     );
+}
+
+#[test]
+fn a_rect_is_placed_on_a_page_box_that_does_not_start_at_the_origin() {
+    // `pdfRectToDisplayRect(rect, page)`: display space starts at the page
+    // box's top-left, so a box at a negative origin moves the rect with it.
+    let page = PdfRect { left: -306.0, bottom: -396.0, right: 306.0, top: 396.0 };
+    let rect = PdfRect { left: -206.0, bottom: 196.0, right: -106.0, top: 296.0 };
+    let display = pdf_rect_to_display_rect(rect, page);
+    assert_eq!(display, PdfRect { left: 100.0, right: 200.0, bottom: 100.0, top: 200.0 });
+    // And the matrix draws exactly that area onto the pixels.
+    let matrix = render_matrix(page_rect_of_display_rect(display), PdfRotation::None, 200, 200);
+    assert_eq!(matrix.to_array(), [2.0, 0.0, 0.0, 2.0, -200.0, -200.0]);
 }

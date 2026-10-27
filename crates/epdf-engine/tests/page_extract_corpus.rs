@@ -139,7 +139,10 @@ fn an_extract_reopens_as_the_document_the_typescript_engine_produced() {
             case.name,
         );
 
-        let bytes = extract_pages(&mut source, &numbers, &CancelToken::never())
+        // The pages the TypeScript engine was sent, as it sent them.
+        let sent: Vec<PageObjectNumber> =
+            case.sources.iter().map(|page| page.object_number()).collect();
+        let bytes = extract_pages(&mut source, &sent, None, &CancelToken::never())
             .unwrap_or_else(|e| panic!("{}: extract: {e}", case.name));
         let mine = describe(&bytes);
 
@@ -168,7 +171,7 @@ fn the_callers_order_reaches_the_output() {
 
     let mut source = session(case);
     let numbers = source_object_numbers(&mut source, case);
-    let bytes = extract_pages(&mut source, &numbers, &CancelToken::never()).expect("extract");
+    let bytes = extract_pages(&mut source, &numbers, None, &CancelToken::never()).expect("extract");
     let mine = describe(&bytes);
 
     // Text is what identifies a page here: the three are the same size and
@@ -193,7 +196,7 @@ fn rotation_survives_the_copy() {
 
     let mut source = session(case);
     let numbers = source_object_numbers(&mut source, case);
-    let bytes = extract_pages(&mut source, &numbers, &CancelToken::never()).expect("extract");
+    let bytes = extract_pages(&mut source, &numbers, None, &CancelToken::never()).expect("extract");
     let mine = describe(&bytes);
 
     assert_eq!(

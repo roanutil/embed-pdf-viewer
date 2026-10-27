@@ -1,0 +1,18 @@
+{
+  "base": "bd8ca8b11dc3c63c88f89b1b069b599d5f9198b0",
+  "changedCurrentOccurrences": [
+    "a-slow-transition-is-never-split"
+  ],
+  "unchangedCurrentOccurrences": 41,
+  "immutableAuthorities": {
+    "tooling/plugin-conformance/historical/task-12b2c4/original-actions.ts.txt": true,
+    "tooling/plugin-conformance/historical/task-12b2c4/original-inputs.json": true,
+    "tooling/plugin-conformance/historical/task-12b2c4/original-runtime.json": true,
+    "tooling/plugin-conformance/historical/task-12b2c4/default-vm-pending-reproduction.json": true,
+    "tooling/plugin-conformance/historical/task-12b2c2/current-inputs-runtime.json": true,
+    "tooling/plugin-conformance/historical/task-12b2c3/current-inputs-runtime.json": true,
+    "tooling/plugin-conformance/historical/task-12b2c2/link-runtime.json": true
+  },
+  "originalOccurrences": 42,
+  "aggregateOriginals": 160
+}

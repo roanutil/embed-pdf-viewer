@@ -25,6 +25,8 @@
 
 use unicode_normalization::UnicodeNormalization;
 
+use crate::features::text::TextRange;
+
 /// Bump on any semantic change, so a stored pre-folded corpus is rebuilt
 /// rather than silently compared against differently folded needles.
 pub const SEARCH_FOLD_VERSION: u32 = 1;
@@ -197,14 +199,8 @@ pub fn fold_text(original: &str, options: FoldOptions) -> FoldedText {
     FoldedText { folded, map, original: original.to_string() }
 }
 
-/// A half-open match range, in the original text's UTF-16 code units.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct OriginalRange {
-    pub start: u32,
-    pub length: u32,
-}
-
-/// Translate a match found in folded space back to the original.
+/// Translate a match found in folded space back to a range of the original
+/// text, in UTF-16 code units (`toOriginalRange`).
 ///
 /// The range covers whole original code points: a hit on either half of a
 /// ligature spans the whole ligature, and a hit ending on a collapsed space
@@ -214,14 +210,14 @@ pub fn to_original_range(
     folded: &FoldedText,
     folded_start: usize,
     folded_length: usize,
-) -> Option<OriginalRange> {
+) -> Option<TextRange> {
     if folded_length == 0 {
         return None;
     }
     let start = *folded.map.get(folded_start)?;
     let last_original = *folded.map.get(folded_start + folded_length - 1)?;
     let end = last_original + code_point_len_utf16_at(&folded.original, last_original);
-    Some(OriginalRange { start, length: end - start })
+    Some(TextRange { start, count: end - start })
 }
 
 /// The UTF-16 length of the code point starting at a UTF-16 index.
@@ -240,4 +236,36 @@ fn code_point_len_utf16_at(text: &str, utf16_index: u32) -> u32 {
         }
     }
     1
+}
+
+#[cfg(test)]
+mod tests {
+    //! `toOriginalRange` in `packages/engine/core/test/search/fold.test.ts`.
+
+    use super::*;
+
+    fn original(text: &str, start: usize, length: usize) -> Option<TextRange> {
+        to_original_range(&fold_text(text, FoldOptions::default()), start, length)
+    }
+
+    #[test]
+    fn maps_a_folded_range_back_to_original_code_units() {
+        assert_eq!(original("Hello World", 6, 5), Some(TextRange { start: 6, count: 5 }));
+    }
+
+    #[test]
+    fn a_hit_inside_a_ligature_covers_the_whole_original_char() {
+        assert_eq!(original("\u{FB01}le", 0, 2), Some(TextRange { start: 0, count: 1 }));
+        assert_eq!(original("\u{FB01}le", 0, 4), Some(TextRange { start: 0, count: 3 }));
+    }
+
+    #[test]
+    fn a_range_across_collapsed_whitespace_spans_the_raw_whitespace() {
+        assert_eq!(original("hello\n   world", 0, 11), Some(TextRange { start: 0, count: 14 }));
+    }
+
+    #[test]
+    fn never_splits_a_surrogate_pair() {
+        assert_eq!(original("\u{1F600}", 0, 1), Some(TextRange { start: 0, count: 2 }));
+    }
 }

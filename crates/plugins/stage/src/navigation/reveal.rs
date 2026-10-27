@@ -1,81 +1,80 @@
-//! `navigation/reveal.ts`: reveals. A bare reveal is not navigation:
-//! minimal visibility, cursor untouched (in paged flow revealing a page is
-//! navigating to it). A positioned reveal (rect, anchor or zoom) is an
-//! arrival: the cursor is set up front, the camera lands per the anchor
-//! policy, and a resolved zoom becomes the zoom intent.
+//! `navigation/reveal.ts`: reveals and destinations. A bare reveal is not
+//! navigation: minimal visibility, cursor untouched (in paged flow
+//! revealing a page is navigating to it). A positioned reveal (rect, anchor
+//! or zoom: a search hit) is an arrival: the cursor is set up front, the
+//! camera lands per the anchor policy, and a resolved zoom becomes the zoom
+//! intent. A destination is a positioned reveal of the spot it names.
 
+use crate::destination::reveal_of_destination;
+use crate::model::{CameraObject, patch_settings, set_cursor};
 use crate::prelude::*;
 
 #[derive(Clone, Copy)]
 struct RevealPlacement {
-    camera: Camera,
+    camera: CameraObject,
     bounds: Rect,
     zoom_changed: bool,
 }
 
 impl StageCapability {
-    /// One axis of a positioned-reveal camera.
+    /// One axis of a positioned-reveal camera. `None` is 'nearest' (move
+    /// only when the target is outside the padded view), unless the zoom
+    /// just changed: then the slack-axis rule (center) applies. 'keep' never
+    /// moves the axis.
     #[allow(clippy::too_many_arguments)]
-    pub(crate) fn reveal_axis(
+    fn reveal_axis(
         &self,
-        a: Option<RevealAnchorValue>,
-        cam_pos: f64,
-        rect_pos: f64,
+        anchor: Option<RevealAnchorValue>,
+        camera_position: f64,
+        rect_position: f64,
         rect_extent: f64,
-        vp_extent: f64,
+        viewport_extent: f64,
         zoom: f64,
         zoom_changed: bool,
     ) -> f64 {
-        let mut a = a;
-        if a == Some(RevealAnchorValue::Word(RevealWord::Keep)) {
-            return cam_pos;
+        let mut anchor = anchor;
+        if anchor == Some(RevealAnchorValue::Word(RevealWord::Keep)) {
+            return camera_position;
         }
-        let p = self.pad();
-        if a.is_none() {
+        let inset = self.padding();
+        if anchor.is_none() {
             if !zoom_changed {
-                let lo = cam_pos + p / zoom;
-                let hi = cam_pos + (vp_extent - p) / zoom;
-                if rect_pos >= lo && rect_pos + rect_extent <= hi {
-                    return cam_pos;
+                let low = camera_position + inset / zoom;
+                let high = camera_position + (viewport_extent - inset) / zoom;
+                if rect_position >= low && rect_position + rect_extent <= high {
+                    return camera_position; // already visible
                 }
-                if rect_extent > hi - lo || rect_pos < lo {
-                    return rect_pos - p / zoom;
+                if rect_extent > high - low || rect_position < low {
+                    return rect_position - inset / zoom;
                 }
-                return rect_pos + rect_extent - (vp_extent - p) / zoom;
+                return rect_position + rect_extent - (viewport_extent - inset) / zoom;
             }
-            a = Some(RevealAnchorValue::Word(RevealWord::Center));
+            anchor = Some(RevealAnchorValue::Word(RevealWord::Center));
         }
-        match a {
-            Some(RevealAnchorValue::Word(RevealWord::Start)) => rect_pos - p / zoom,
+        match anchor {
+            Some(RevealAnchorValue::Word(RevealWord::Start)) => rect_position - inset / zoom,
             Some(RevealAnchorValue::Word(RevealWord::End)) => {
-                rect_pos + rect_extent - (vp_extent - p) / zoom
+                rect_position + rect_extent - (viewport_extent - inset) / zoom
             }
             other => {
-                let f = match other {
+                let fraction = match other {
                     Some(RevealAnchorValue::Fraction(f)) => js::min(1.0, js::max(0.0, f)),
                     _ => 0.5,
                 };
-                rect_pos + rect_extent / 2.0 - (vp_extent * f) / zoom
+                rect_position + rect_extent / 2.0 - (viewport_extent * fraction) / zoom
             }
         }
     }
-}
 
-// ── the area's api ────────────────────────────────────────────────────────────
-
-impl StageCapability {
-    /// `reveal` by display index, clamped into range. Bare: minimal
-    /// movement, cursor untouched. Positioned (rect, zoom or anchor set):
-    /// the target lands at the anchor, optionally re-zooming, and the
-    /// cursor follows.
-    pub fn reveal_index(&self, page_index: isize, opts: Option<RevealOptions>) {
+    pub(crate) fn reveal_at(&self, page_index: isize, options: Option<RevealOptions>) {
         self.mark_cause(MotionCause::Programmatic);
-        let page_count = self.page_count_now();
+        let page_count = self.page_count();
         if page_count == 0 {
             return;
         }
         let target = page_index.clamp(0, page_count as isize - 1) as usize;
-        let positioned = opts.is_some_and(|o| {
+        // `rect: null` means "no rect", the same as absent.
+        let positioned = options.is_some_and(|o| {
             o.rect.is_some()
                 || o.anchor.is_some()
                 || o.zoom.is_some_and(|z| z != RevealZoom::Word(RevealZoomWord::Keep))
@@ -85,135 +84,186 @@ impl StageCapability {
         };
 
         if !positioned {
+            // A bare reveal is not navigation: minimal visibility, cursor
+            // untouched.
             if self.paged() {
+                // The page is not in the one-item slice: revealing it is
+                // navigating to it.
                 self.go_to_target(
                     target as isize,
-                    opts.map(|o| GoToOptions { behavior: o.behavior, ..Default::default() }),
+                    options.map(|o| GoToOptions { behavior: o.behavior, ..Default::default() }),
                 );
                 return;
             }
-            let scene = self.build_scene();
-            if scene.item_count == 0 {
+            let current = self.build_scene();
+            if current.item_count == 0 {
                 return;
             }
-            let page = Self::page_rect_of(&scene.items[self.item_index_of_page(target)], target);
-            // Reveal the outer box: the pageFrame bands belong to the page.
-            let m = self.world_page_frame();
-            let bx = Rect {
-                x: page.x - m.left,
-                y: page.y - m.top,
-                width: page.width + m.left + m.right,
-                height: page.height + m.top + m.bottom,
+            let Some(item) = current.items.get(self.item_index_of_page(target)) else { return };
+            let page = Self::page_rect_of(item, target);
+            // Reveal the outer box: pageFrame chrome belongs to the page.
+            let frame = self.world_page_frame();
+            let outer = Rect {
+                x: page.x - frame.left,
+                y: page.y - frame.top,
+                width: page.width + frame.left + frame.right,
+                height: page.height + frame.top + frame.bottom,
             };
-            let camera = sc::reveal_camera(self.cam(), bx, self.vp(), self.pad());
-            let current = self.cam();
-            if camera.x == current.x && camera.y == current.y {
-                return;
+            let next = sc::reveal_camera(self.camera(), outer, self.viewport(), self.padding());
+            let now = self.camera();
+            if next.x == now.x && next.y == now.y {
+                return; // already visible
             }
-            self.cancel_anim();
-            if behavior_of(opts) == ScrollBehaviorKind::Smooth {
-                self.animate_to(camera, self.scene_rect(), None);
+            self.cancel_animation();
+            let next = CameraObject::zoom_xy(next);
+            if behavior_of(options) == ScrollBehaviorKind::Smooth {
+                self.animate_to(next, self.scene_rect(), None);
             } else {
-                self.set_cam(camera, self.scene_rect());
+                self.write_camera(next, self.scene_rect());
             }
             return;
         }
 
-        let opts = opts.unwrap_or_default();
-        self.cancel_anim();
-        if target != self.st().cursor {
-            self.dispatch(StageAction::Cursor { cursor: target });
-        }
+        // A positioned reveal is an arrival at a rect or point: the cursor
+        // is intent, set up front.
+        let options = options.unwrap_or_default();
+        self.cancel_animation();
+        self.update(|s| set_cursor(s, target));
 
         let place = || -> Option<RevealPlacement> {
-            let scene = self.build_scene();
-            if scene.item_count == 0 {
+            let current = self.build_scene();
+            if current.item_count == 0 {
                 return None;
             }
             let item = if self.paged() {
-                &scene.items[0]
+                &current.items[0]
             } else {
-                &scene.items[self.item_index_of_page(target)]
+                current.items.get(self.item_index_of_page(target))?
             };
-            let world = match opts.rect {
+            let world = match options.rect {
                 Some(rect) => Self::world_rect_for_content(item, target, rect),
                 None => Self::page_rect_of(item, target),
             };
-            let zd = opts.zoom.unwrap_or(RevealZoom::Word(RevealZoomWord::Keep));
-            let avail_w = js::max(1.0, self.vp().width - 2.0 * self.pad());
-            let avail_h = js::max(1.0, self.vp().height - 2.0 * self.pad());
-            let mut zoom = match zd {
+            let directive = options.zoom.unwrap_or(RevealZoom::Word(RevealZoomWord::Keep));
+            let available_width = js::max(1.0, self.viewport().width - 2.0 * self.padding());
+            let available_height = js::max(1.0, self.viewport().height - 2.0 * self.padding());
+            let mut zoom = match directive {
                 RevealZoom::Level { level } => level,
                 RevealZoom::Word(RevealZoomWord::Fit) => {
-                    js::min(avail_w / world.width, avail_h / world.height)
+                    js::min(available_width / world.width, available_height / world.height)
                 }
-                RevealZoom::Word(RevealZoomWord::FitWidth) => avail_w / world.width,
-                RevealZoom::Word(RevealZoomWord::FitHeight) => avail_h / world.height,
-                RevealZoom::Word(RevealZoomWord::Keep) => self.cam().zoom,
+                RevealZoom::Word(RevealZoomWord::FitWidth) => available_width / world.width,
+                RevealZoom::Word(RevealZoomWord::FitHeight) => available_height / world.height,
+                RevealZoom::Word(RevealZoomWord::Keep) => self.camera().zoom,
             };
-            // A degenerate target with a fit directive pans only.
+            // A degenerate target (a point with a fit directive) only pans.
             if !zoom.is_finite() || zoom <= 0.0 {
-                zoom = self.cam().zoom;
+                zoom = self.camera().zoom;
             }
-            let zoom_changed = zd != RevealZoom::Word(RevealZoomWord::Keep);
-            let a = opts.anchor.unwrap_or_default();
-            let c = self.cam();
-            let v = self.vp();
+            let zoom_changed = directive != RevealZoom::Word(RevealZoomWord::Keep);
+            let anchor = options.anchor.unwrap_or_default();
+            let camera = self.camera();
+            let size = self.viewport();
             Some(RevealPlacement {
-                camera: Camera {
+                camera: CameraObject::xy_zoom(Camera {
                     x: self.reveal_axis(
-                        a.x,
-                        c.x,
+                        anchor.x,
+                        camera.x,
                         world.x,
                         world.width,
-                        v.width,
+                        size.width,
                         zoom,
                         zoom_changed,
                     ),
                     y: self.reveal_axis(
-                        a.y,
-                        c.y,
+                        anchor.y,
+                        camera.y,
                         world.y,
                         world.height,
-                        v.height,
+                        size.height,
                         zoom,
                         zoom_changed,
                     ),
                     zoom,
-                },
+                }),
                 bounds: self.bounds_for(item),
                 zoom_changed,
             })
         };
 
         let Some(first) = place() else { return };
+        // A resolved zoom becomes the zoom intent.
         if first.zoom_changed {
-            self.dispatch(StageAction::Patch {
-                patch: PartialSettings::zoom(ZoomSpec::Level { level: first.camera.zoom }),
+            let level = first.camera.camera.zoom;
+            self.update(|s| {
+                patch_settings(s, &StageSettingsPatch::zoom(ZoomSpec::Level { level }))
             });
         }
-        if behavior_of(Some(opts)) == ScrollBehaviorKind::Smooth {
-            let p = place().unwrap_or(first);
-            self.animate_to(p.camera, p.bounds, None);
+        if behavior_of(Some(options)) == ScrollBehaviorKind::Smooth {
+            // If the zoom patch re-wrapped the scene, recompute once.
+            let landing = place().unwrap_or(first);
+            self.animate_to(landing.camera, landing.bounds, None);
         } else {
             self.stabilized(|| {
-                if let Some(p) = place() {
-                    self.set_cam(p.camera, p.bounds);
+                if let Some(landing) = place() {
+                    self.write_camera(landing.camera, landing.bounds);
                 }
             });
         }
     }
 
-    /// Bring a page, or a page-space rect on it, into view. A page the
-    /// document does not have is a no-op.
-    pub fn reveal(&self, page: PageRef, opts: Option<RevealOptions>) {
-        if let Some(index) = self.index_of_page(page) {
-            self.reveal_index(index as isize, opts);
+    fn when_placed_reveal(
+        &self,
+        options: Option<RevealOptions>,
+        run: impl Fn(&StageCapability, Option<RevealOptions>) + 'static,
+    ) {
+        self.when_placed(
+            options,
+            |options| RevealOptions {
+                behavior: Some(ScrollBehaviorKind::Instant),
+                ..options.unwrap_or_default()
+            },
+            run,
+        );
+    }
+}
+
+// ── the area's api ──
+
+impl StageCapability {
+    /// Bring a page (its ref or its display index), or a spot on it, into
+    /// view. Bare, it scrolls only when the page is off screen and leaves
+    /// the current page alone; with `rect`, `zoom` or `anchor` it lands on
+    /// that spot and the current page follows.
+    pub fn reveal(&self, page: impl Into<PageTarget>, options: Option<RevealOptions>) {
+        if let Some(index) = self.index_of_target(page.into()) {
+            self.when_placed_reveal(options, move |stage, go| stage.reveal_at(index, go));
         }
     }
 
-    /// Sugar: a positioned reveal of a page-space rect.
-    pub fn reveal_rect(&self, page: PageRef, rect: Rect, opts: Option<RevealOptions>) {
-        self.reveal(page, Some(RevealOptions { rect: Some(rect), ..opts.unwrap_or_default() }));
+    /// Go where a destination says. It may change the zoom, as the
+    /// destination asks. A destination on a page the document does not have
+    /// is a no-op.
+    pub fn go_to_destination(
+        &self,
+        destination: &PageDestination,
+        options: Option<GoToDestinationOptions>,
+    ) {
+        let Some(layout) = self.get_page(PageTarget::Ref(destination.page())) else { return };
+        let Some(size) =
+            layout.get("size").and_then(|size| serde_json::from_value::<Size>(size.clone()).ok())
+        else {
+            return;
+        };
+        let Some(index) = layout
+            .get("index")
+            .and_then(serde_json::Value::as_f64)
+            .filter(|index| *index >= 0.0 && index.fract() == 0.0)
+        else {
+            return;
+        };
+        let spot = reveal_of_destination(destination, size);
+        let spot = RevealOptions { behavior: options.and_then(|o| o.behavior), ..spot };
+        self.when_placed_reveal(Some(spot), move |stage, go| stage.reveal_at(index as isize, go));
     }
 }

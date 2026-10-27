@@ -14,7 +14,7 @@ import { canonical, canonicalError, isThenable, snapshotHooks } from './canonica
 import { runScenario, type ScenarioCase } from './scenario';
 
 /** Bump when the envelope or the trace changes shape. */
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const vectorsRoot = join(packageRoot, 'vectors');

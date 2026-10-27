@@ -168,13 +168,14 @@ impl Annotation<'_> {
 
     /// `/CA`, from a 0..=1 opacity.
     ///
-    /// The rounding is here rather than at the call site because the native
-    /// entry point takes a byte and every caller would otherwise repeat it,
-    /// which is how two callers end up rounding differently.
+    /// Passed through as given: the fork stores it (1 removes `/CA`) and
+    /// refuses one outside 0..=1 with `false`, which is the answer upstream's
+    /// `setAnnotOpacity` gets and reports. A caller's schema check refuses
+    /// such a value first.
     pub fn set_opacity(&self, opacity: f64) -> bool {
-        let alpha = (opacity * 255.0).round().clamp(0.0, 255.0) as u32;
+        let opacity = opacity as f32;
         // SAFETY: the handle is live.
-        unsafe { pdfium_sys::EPDFAnnot_SetOpacity(self.as_raw(), alpha) != 0 }
+        unsafe { pdfium_sys::EPDFAnnot_SetOpacity(self.as_raw(), opacity) != 0 }
     }
 
     /// The raw `/F` word.
@@ -329,6 +330,24 @@ impl Annotation<'_> {
         }
     }
 
+    /// A widget's `/MK /R`, degrees counterclockwise, a multiple of 90; 0
+    /// removes it (`EPDFAnnot_SetMKRotation`). The appearance is not drawn
+    /// again.
+    pub fn set_mk_rotation(&self, degrees: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetMKRotation(self.as_raw(), degrees) != 0 }
+    }
+
+    /// A widget's `/MK` caption `which` (`EPDF_MK_TEXT_*`), or none
+    /// (`EPDFAnnot_SetMKText`). The appearance is not drawn again.
+    pub fn set_mk_text(&self, which: i32, text: Option<&str>) -> bool {
+        let wide: Option<Vec<u16>> =
+            text.map(|text| text.encode_utf16().chain(std::iter::once(0)).collect());
+        let pointer = wide.as_ref().map_or(std::ptr::null(), |w| w.as_ptr());
+        // SAFETY: the handle is live and the string outlives the call.
+        unsafe { pdfium_sys::EPDFAnnot_SetMKText(self.as_raw(), which, pointer) != 0 }
+    }
+
     /// Remove one `/MK` colour entry.
     pub fn clear_mk_color(&self, which: i32) -> bool {
         // SAFETY: the handle is live.
@@ -430,15 +449,6 @@ impl Annotation<'_> {
     pub fn clear_border_effect(&self) -> bool {
         // SAFETY: the handle is live.
         unsafe { pdfium_sys::EPDFAnnot_ClearBorderEffect(self.as_raw()) != 0 }
-    }
-
-    /// `/RD`, in the `[left, bottom, right, top]` order PDFium takes.
-    pub fn set_rectangle_differences(&self, left: f32, bottom: f32, right: f32, top: f32) -> bool {
-        // SAFETY: the handle is live.
-        unsafe {
-            pdfium_sys::EPDFAnnot_SetRectangleDifferences(self.as_raw(), left, bottom, right, top)
-                != 0
-        }
     }
 
     /// Remove `/RD`.
@@ -557,6 +567,152 @@ impl Annotation<'_> {
                         != 0
                 }
             }
+        }
+    }
+}
+
+impl crate::Document {
+    /// Create an annotation of `subtype_code` at the end of a page's
+    /// `/Annots`, without loading the page (`EPDFPage_CreateAnnotRaw`).
+    ///
+    /// The annotation is an indirect object: `object_number` is the number it
+    /// gets, or 0 for the next free one. `None` when the page is out of range,
+    /// the subtype is refused, or a number other objects have was asked for.
+    pub fn create_annotation_raw(
+        &self,
+        page_index: u32,
+        subtype_code: i32,
+        object_number: u32,
+    ) -> Option<Annotation<'_>> {
+        let page_index = i32::try_from(page_index).ok()?;
+        // SAFETY: the document handle is live for the borrow this returns.
+        let handle = unsafe {
+            pdfium_sys::EPDFPage_CreateAnnotRaw(
+                self.as_raw(),
+                page_index,
+                subtype_code,
+                std::os::raw::c_ulong::from(object_number),
+            )
+        };
+        // SAFETY: a non-null result is an annotation handle the caller owns.
+        unsafe { Annotation::from_raw_owned(handle) }
+    }
+
+    /// Remove the annotation at `index` of a page's `/Annots`, without
+    /// loading the page (`EPDFPage_RemoveAnnotRaw`).
+    pub fn remove_annotation_raw(&self, page_index: u32, index: u32) -> bool {
+        let (Ok(page_index), Ok(index)) = (i32::try_from(page_index), i32::try_from(index)) else {
+            return false;
+        };
+        // SAFETY: the document handle is live.
+        unsafe { pdfium_sys::EPDFPage_RemoveAnnotRaw(self.as_raw(), page_index, index) != 0 }
+    }
+}
+
+impl Annotation<'_> {
+    /// Acrobat's `/Rotate`, in PDF degrees (counterclockwise). 0 removes it.
+    pub fn set_rotate(&self, degrees: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetRotate(self.as_raw(), degrees) != 0 }
+    }
+
+    /// `/Border [h v w]`: a link's, written `[0 0 0]` so it draws none.
+    pub fn set_border(&self, horizontal_radius: f32, vertical_radius: f32, width: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::FPDFAnnot_SetBorder(
+                self.as_raw(),
+                horizontal_radius,
+                vertical_radius,
+                width,
+            ) != 0
+        }
+    }
+
+    /// A boolean entry, such as `/Open`.
+    pub fn set_boolean_value(&self, key: &str, value: bool) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: the handle is live and the key outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetBooleanValue(self.as_raw(), key.as_ptr(), i32::from(value))
+                != 0
+        })
+    }
+
+    /// One `/EMBD_Metadata` string entry.
+    pub fn set_embed_metadata_string(&self, key: &str, value: &str) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        let value = wide(value);
+        // SAFETY: the handle is live and both strings outlive the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetEmbedMetadataString(
+                self.as_raw(),
+                key.as_ptr(),
+                value.as_ptr(),
+            ) != 0
+        })
+    }
+
+    /// Point `key` (`/IRT`, `/Popup`, `/Parent`) at another annotation of
+    /// the same document, which must be an indirect object.
+    pub fn set_linked_annotation(
+        &self,
+        key: &str,
+        linked: &Annotation<'_>,
+    ) -> Result<bool, PdfiumError> {
+        let key = c_key(key)?;
+        // SAFETY: both handles are live and the key outlives the call.
+        Ok(unsafe {
+            pdfium_sys::EPDFAnnot_SetLinkedAnnot(self.as_raw(), key.as_ptr(), linked.as_raw()) != 0
+        })
+    }
+
+    /// `/RT`, as an `FPDF_ANNOT_REPLY_TYPE` code.
+    pub fn set_reply_type(&self, code: i32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe { pdfium_sys::EPDFAnnot_SetReplyType(self.as_raw(), code as _) != 0 }
+    }
+}
+
+impl Annotation<'_> {
+    /// A line's caption flag, position and offset (`/Cap`, `/CP`, `/CO`,
+    /// `EPDFAnnot_SetLineCaption`): `top` puts it above the line, and an
+    /// offset of `None` is the normal position. `offset` is `(along,
+    /// perpendicular)` in the line's own axes, not a page point.
+    pub fn set_line_caption(&self, enabled: bool, top: bool, offset: Option<(f32, f32)>) -> bool {
+        let offset = offset
+            .map(|(along, perpendicular)| pdfium_sys::EPDF_CAPTION_OFFSET { along, perpendicular });
+        let offset = offset.as_ref().map_or(std::ptr::null(), std::ptr::from_ref);
+        // SAFETY: the handle is live; the offset is null or a local that
+        // outlives the call.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetLineCaption(
+                self.as_raw(),
+                i32::from(enabled),
+                u32::from(top) as _,
+                offset,
+            ) != 0
+        }
+    }
+
+    /// A polygon's or polyline's caption flag and centre
+    /// (`EPDFAnnot_SetShapeCaption`): a centre of `None` places it
+    /// automatically. The setter writes the whole caption.
+    pub fn set_shape_caption(&self, enabled: bool, center: Option<crate::PointF>) -> bool {
+        let center = center.map(|c| pdfium_sys::FS_POINTF { x: c.x, y: c.y });
+        let center = center.as_ref().map_or(std::ptr::null(), std::ptr::from_ref);
+        // SAFETY: the handle is live; the centre is null or a local that
+        // outlives the call.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetShapeCaption(self.as_raw(), i32::from(enabled), center) != 0
+        }
+    }
+
+    /// A line's `/LL`, `/LLE` and `/LLO` (`EPDFAnnot_SetLineLeader`).
+    pub fn set_line_leader(&self, length: f32, extension: f32, offset: f32) -> bool {
+        // SAFETY: the handle is live.
+        unsafe {
+            pdfium_sys::EPDFAnnot_SetLineLeader(self.as_raw(), length, extension, offset) != 0
         }
     }
 }

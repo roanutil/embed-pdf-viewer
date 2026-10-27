@@ -37,7 +37,7 @@ struct StageReaderDragLagTests {
   /// and how long the event loop's refreshes (one per `cameraChanged`) keep
   /// writing the camera after that.
   @Test func a120HzDragKeepsUp() async throws {
-    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig(frames: false)))
+    let viewer = try PDFViewer(ViewerConfig(render: RenderConfig(), stage: StageConfig()))
     try await viewer.start()
     let url = try #require(Bundle.module.url(forResource: "report", withExtension: "pdf", subdirectory: "Fixtures"))
     let document = try await viewer.open(try Data(contentsOf: url))

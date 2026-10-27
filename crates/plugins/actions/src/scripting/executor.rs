@@ -23,10 +23,10 @@ use crate::contract::{
     ActionUiContext, ScriptPhase,
 };
 use crate::host_contract::{
-    AnnotCommitEntry, AnnotCommitStatus, ScriptRealmKind, ScriptSurfaceResult,
+    AnnotCommitEntry, AnnotCommitStatus, FormCommitStatus, ScriptRealmKind, ScriptSurfaceResult,
 };
 use crate::services::ports::ExecutorKind;
-use crate::services::{Diagnose, get, str_of};
+use crate::services::{Diagnose, DiagnosticPlace, get, str_of};
 use crate::submit::intent::intent_of_submit_effect;
 
 impl ActionsCapability {
@@ -59,17 +59,11 @@ impl ActionsCapability {
                 )),
                 Some(sink) => {
                     let result = sink(output.form_effects.clone())?.await?;
-                    if let Some(bad) = result
-                        .results
-                        .iter()
-                        .find(|e| e.status == "failed" || e.status == "rejected")
-                    {
-                        let why = bad
-                            .error
-                            .as_ref()
-                            .and_then(|e| e.message.clone())
-                            .unwrap_or_else(|| bad.status.clone());
-                        failure = Some(format!("form effect {}: {why}", num(bad.index)));
+                    if result.status == FormCommitStatus::Failed {
+                        failure = Some(format!(
+                            "form effects: {}",
+                            result.error.unwrap_or_else(|| "failed".into())
+                        ));
                     }
                 }
             }
@@ -92,7 +86,7 @@ impl ActionsCapability {
                         let by_number = str_of(&effect.annot_ref, "kind") == "objectNumber";
                         AnnotCommitEntry {
                             annot_object_number: if by_number {
-                                get(&effect.annot_ref, "annotObjectNumber")
+                                get(&effect.annot_ref, "objectNumber")
                                     .and_then(Value::as_f64)
                                     .unwrap_or(f64::NAN)
                             } else {
@@ -148,23 +142,19 @@ impl ActionsCapability {
         let Some(host) = self.0.script_host.clone() else {
             return Ok(ActionExecutorResult::Inert { reason: "no document".into() });
         };
-        let node_cap = self
-            .0
-            .config
-            .javascript
-            .as_ref()
-            .and_then(|js| js.max_script_nodes_per_dispatch)
-            .unwrap_or(16.0);
+        let node_cap = self.0.environment.max_script_nodes_per_dispatch.unwrap_or(16.0);
         if self.0.script_nodes.get() >= node_cap {
             return Ok(ActionExecutorResult::Inert {
                 reason: format!("dispatch script budget exhausted ({} JS nodes)", num(node_cap)),
             });
         }
         self.0.script_nodes.set(self.0.script_nodes.get() + 1.0);
-        let pon = match &action_ctx.source {
-            ActionSource::Widget { page, .. }
-            | ActionSource::Page { page }
-            | ActionSource::Annotation { page, .. } => Some(page.page_object_number),
+        let source = action_ctx.source.clone();
+        let pon = match &source {
+            ActionSource::Widget { page, .. } | ActionSource::Page { page } => {
+                Some(page.page_object_number)
+            }
+            ActionSource::Annotation { page, .. } => Some(page.page_object_number),
             ActionSource::Link { page, .. } => {
                 page.map(|p| p.page_object_number).or_else(|| self.first_pon())
             }
@@ -175,7 +165,8 @@ impl ActionsCapability {
                 reason: "no page to anchor the world on".into(),
             });
         };
-        let diagnose = self.emitter();
+        let diagnose =
+            self.reporter(DiagnosticPlace::of(Some("javascript".into()), source.clone()));
         // Print and submit effects are external: they run after the
         // transaction releases, still inside this queued dispatch.
         let pending_external: Rc<RefCell<Vec<(ScriptUiEffect, ScriptPhase)>>> = Rc::default();
@@ -201,7 +192,8 @@ impl ActionsCapability {
             }
         };
         let script = str_of(&node, "script").to_string();
-        let (this, ctx2, diagnose2) = (self.clone(), action_ctx.clone(), diagnose.clone());
+        let (this, ctx2, diagnose2, source2) =
+            (self.clone(), action_ctx.clone(), diagnose.clone(), source.clone());
         let outcome = host
             .transaction(move |txn: ScriptTransaction| {
                 Ok(Promise::spawn(async move {
@@ -227,6 +219,7 @@ impl ActionsCapability {
                             origin: ctx2.origin,
                             phase: ScriptPhase::Boot,
                             realm: ScriptRealmKind::Document,
+                            source: Some(source2.clone()),
                         })?;
                         if !boot.form_effects.is_empty() || !boot.annot_effects.is_empty() {
                             built = rt::returned(this.clone().script_world_for(pon)).await?;
@@ -243,6 +236,7 @@ impl ActionsCapability {
                         origin: ctx2.origin,
                         phase: ScriptPhase::User,
                         realm: ScriptRealmKind::Document,
+                        source: Some(source2),
                     })?;
                     if let Some(error) = &output.error {
                         return Ok(ActionExecutorResult::Failed { error: error.message.clone() });

@@ -1,0 +1,1 @@
+src/suites/metadata.ts(27,291): error TS2741: Property 'namedPages' is missing in type '{ pageCount: number; pages: PageLayout<PageCoordinates>[]; }' but required in type 'PageListSnapshot<PageCoordinates>'.

@@ -96,7 +96,7 @@ pub struct PdfPageInfo {
 /// A rendered page. RGBA8, straight alpha, owned bytes.
 ///
 /// The buffer contract in
-/// `.agents/skills/embedpdf-conventions/references/engine-lifecycle.md`:
+/// `docs/conventions/engine-lifecycle.md`:
 /// stride is explicit because it may exceed `width * 4`, and callers must
 /// address rows by it. The bytes are a copy the caller owns, so the image
 /// outlives the document, which the plan requires of the platform facades.

@@ -13,13 +13,16 @@ epdf-kernel = { path = "../epdf-kernel" }
 plugin-conformance = { path = "../plugin-conformance" }
 epdf-plugin-actions = { path = "../plugins/actions" }
 epdf-plugin-annotation = { path = "../plugins/annotation" }
+epdf-plugin-attachment = { path = "../plugins/attachment" }
 epdf-plugin-commands = { path = "../plugins/commands" }
 epdf-plugin-form = { path = "../plugins/form" }
+epdf-plugin-history = { path = "../plugins/history" }
 epdf-plugin-i18n = { path = "../plugins/i18n" }
 epdf-plugin-interaction = { path = "../plugins/interaction" }
 epdf-plugin-link = { path = "../plugins/link" }
 epdf-plugin-measurement = { path = "../plugins/measurement" }
 epdf-plugin-metadata = { path = "../plugins/metadata" }
+epdf-plugin-outline = { path = "../plugins/outline" }
 epdf-plugin-page-edit = { path = "../plugins/page-edit" }
 epdf-plugin-redaction = { path = "../plugins/redaction" }
 epdf-plugin-render = { path = "../plugins/render" }

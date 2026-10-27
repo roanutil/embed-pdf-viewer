@@ -1,157 +1,55 @@
-//! `measurement-shape.ts`: the polyline perimeter and polygon area captions,
-//! and the dispatch between them and the distance layout.
+//! `measurement-shape.ts`: a perimeter's or area's caption: its readout, its
+//! automatic place, its layout, and dragging it.
 
-use serde::{Deserialize, Serialize};
-
-use crate::geometry::{geom_rotation, point_in_poly, rotate_point, selection_quad, union_rect};
+use crate::engine::measure::{DimensionInput, Readout, measurement_readout};
+use crate::geometry::{geom_rotation, selection_quad};
 use crate::js;
-use crate::measure::{DimensionInput, PdfMeasurement, Readout, Unavailable, measurement_readout};
 use crate::measurement::{
-    DISTANCE_CAPTION_SIZE, DistanceCaptionLayout, DistanceLayout, MeasurementAppearance,
+    CaptionLayout, DISTANCE_CAPTION_SIZE, DistanceLayout, MeasurementAppearance,
     distance_caption_width, distance_layout, distance_selection_quad, move_distance_caption,
 };
-use crate::types::{Geom, PdfPoint, PdfRect, Point, Quad, Rect, Style};
-
-/// `ShapeMeasurementAppearance['intent']`.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-pub enum ShapeIntent {
-    PolyLineDimension,
-    PolygonDimension,
-}
-
-/// `ShapeDimensionCaption`: an absolute PDF centre, or automatic.
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ShapeDimensionCaption {
-    pub enabled: bool,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub center: Option<PdfPoint>,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ShapeMeasurementAppearance {
-    pub intent: ShapeIntent,
-    #[serde(default)]
-    pub measure: Option<PdfMeasurement>,
-    pub caption: ShapeDimensionCaption,
-    pub crop: PdfRect,
-    pub text: String,
-}
-
-impl ShapeMeasurementAppearance {
-    pub fn is_polygon(&self) -> bool {
-        self.intent == ShapeIntent::PolygonDimension
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ShapeMeasurementLayout {
-    pub caption: Option<DistanceCaptionLayout>,
-    pub selection_points: Vec<Point>,
-    pub visual_bounds: Rect,
-}
-
-/// `DistanceLayout | ShapeMeasurementLayout`.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum MeasurementLayout {
-    Distance(Box<DistanceLayout>),
-    Shape(ShapeMeasurementLayout),
-}
-
-impl MeasurementLayout {
-    pub fn caption(&self) -> Option<&DistanceCaptionLayout> {
-        match self {
-            MeasurementLayout::Distance(d) => d.caption.as_ref(),
-            MeasurementLayout::Shape(s) => s.caption.as_ref(),
-        }
-    }
-
-    pub fn visual_bounds(&self) -> Rect {
-        match self {
-            MeasurementLayout::Distance(d) => d.visual_bounds,
-            MeasurementLayout::Shape(s) => s.visual_bounds,
-        }
-    }
-}
+use crate::object::Nullable;
+use crate::rect::{point_in_poly, rotate_point, union_rect};
+use crate::shapes::points::{drawn_point_of, drawn_vertices_of, upright_point_of};
+use crate::types::{Point, Rect, Shape, Style};
 
 const ORIGIN: Point = Point { x: 0.0, y: 0.0 };
 
-/// The caption centre in content space, when the appearance pins one.
-pub fn shape_caption_point(appearance: &ShapeMeasurementAppearance) -> Option<Point> {
-    let crop = appearance.crop;
-    appearance.caption.center.map(|c| Point { x: c.x - crop.left, y: crop.top - c.y })
+/// A perimeter's or area's caption layout (`ShapeMeasurementLayout`).
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShapeMeasurementLayout {
+    pub caption: Option<CaptionLayout>,
+    pub visual_bounds: Rect,
+    pub selection_points: Vec<Point>,
 }
 
-/// The appearance with its caption pinned at a content-space centre.
-pub fn with_shape_caption_point(
-    appearance: &ShapeMeasurementAppearance,
-    center: Point,
-) -> ShapeMeasurementAppearance {
-    let crop = appearance.crop;
-    let pdf = PdfPoint { x: center.x + crop.left, y: crop.top - center.y };
-    ShapeMeasurementAppearance {
-        caption: ShapeDimensionCaption { center: Some(pdf), ..appearance.caption },
-        ..appearance.clone()
-    }
-}
-
-/// A pinned shape caption carried through a content-space transform; a
-/// distance or an automatic caption is left as it is.
-pub fn transform_measurement_caption(
-    appearance: Option<&MeasurementAppearance>,
-    transform: impl Fn(Point) -> Point,
-) -> Option<MeasurementAppearance> {
-    let shape = match appearance? {
-        MeasurementAppearance::Shape(s) => s,
-        distance => return Some(distance.clone()),
-    };
-    Some(MeasurementAppearance::Shape(match shape_caption_point(shape) {
-        Some(center) => with_shape_caption_point(shape, transform(center)),
-        None => shape.clone(),
-    }))
-}
-
-/// The engine readout of a shape measurement.
-pub fn shape_measurement_readout(geom: &Geom, appearance: &ShapeMeasurementAppearance) -> Readout {
-    let crop = appearance.crop;
-    let vertices = match geom {
-        Geom::Poly { points, .. } => {
-            points.iter().map(|p| PdfPoint { x: p.x + crop.left, y: crop.top - p.y }).collect()
-        }
+/// `shapeMeasurementReadout(geometry, appearance)`.
+pub fn shape_measurement_readout(geometry: &Shape, appearance: &MeasurementAppearance) -> Readout {
+    let vertices = match geometry {
+        Shape::Poly(p) => p.vertices.clone(),
         _ => Vec::new(),
     };
-    let (subtype, intent) = if appearance.is_polygon() {
-        ("polygon", "PolygonDimension")
-    } else {
-        ("polyline", "PolyLineDimension")
-    };
-    measurement_readout(&DimensionInput {
-        subtype,
-        intent,
-        measure: appearance.measure.as_ref(),
+    let input = DimensionInput {
+        subtype: if appearance.intent() == "polygon-dimension" { "polygon" } else { "polyline" },
+        intent: Some(appearance.intent()),
+        measure: appearance.measure(),
         line_points: None,
         vertices,
-    })
+    };
+    measurement_readout(&input)
 }
 
-/// The caption text: the readout's label, an em dash for a shape it
-/// cannot measure, else the stored text.
-pub fn shape_measurement_label(geom: &Geom, appearance: &ShapeMeasurementAppearance) -> String {
-    let readout = shape_measurement_readout(geom, appearance);
-    if let Some(r) = readout.readout() {
-        return r.label.clone();
-    }
-    if readout.unavailable() == Some(Unavailable::InvalidGeometry) {
-        "—".into()
-    } else {
-        appearance.text.clone()
+/// `shapeMeasurementLabel(geometry, appearance)`.
+pub fn shape_measurement_label(geometry: &Shape, appearance: &MeasurementAppearance) -> String {
+    let readout = shape_measurement_readout(geometry, appearance);
+    match readout {
+        Readout::Readout { label, .. } => label,
+        Readout::Unavailable("invalid-geometry") => "—".into(),
+        Readout::Unavailable(_) => appearance.contents().unwrap_or("").into(),
     }
 }
 
-/// The native shape-caption anchor: an open path's half-length point, lifted
-/// above the line; a closed one's centroid, or the middle of the widest span
-/// through the bounds' centre when the centroid falls outside.
+/// `automaticShapeCaptionCenter(points, closed)`.
 pub fn automatic_shape_caption_center(points: &[Point], closed: bool) -> Point {
     if points.is_empty() {
         return ORIGIN;
@@ -159,9 +57,9 @@ pub fn automatic_shape_caption_center(points: &[Point], closed: bool) -> Point {
     if !closed {
         let lengths: Vec<f64> =
             points.windows(2).map(|w| js::hypot(w[1].x - w[0].x, w[1].y - w[0].y)).collect();
-        let mut remaining = lengths.iter().fold(0.0, |sum, l| sum + l) / 2.0;
-        for (i, &length) in lengths.iter().enumerate() {
-            if length > 0.0 && remaining <= length {
+        let mut remaining = lengths.iter().sum::<f64>() / 2.0;
+        for (i, length) in lengths.iter().enumerate() {
+            if *length > 0.0 && remaining <= *length {
                 let fraction = remaining / length;
                 return Point {
                     x: points[i].x + fraction * (points[i + 1].x - points[i].x),
@@ -174,39 +72,39 @@ pub fn automatic_shape_caption_center(points: &[Point], closed: bool) -> Point {
         }
         return points[0];
     }
-
     let origin = points[0];
-    let n = points.len();
-    let (mut area, mut x, mut y) = (0.0, 0.0, 0.0);
-    for i in 0..n {
-        let a = Point { x: points[i].x - origin.x, y: points[i].y - origin.y };
-        let next = points[(i + 1) % n];
-        let b = Point { x: next.x - origin.x, y: next.y - origin.y };
-        let cross = a.x * b.y - b.x * a.y;
+    let mut area = 0.0;
+    let mut moment_x = 0.0;
+    let mut moment_y = 0.0;
+    for i in 0..points.len() {
+        let start = Point { x: points[i].x - origin.x, y: points[i].y - origin.y };
+        let next = points[(i + 1) % points.len()];
+        let end = Point { x: next.x - origin.x, y: next.y - origin.y };
+        let cross = start.x * end.y - end.x * start.y;
         area += cross;
-        x += (a.x + b.x) * cross;
-        y += (a.y + b.y) * cross;
+        moment_x += (start.x + end.x) * cross;
+        moment_y += (start.y + end.y) * cross;
     }
     if area.abs() > 1e-8 {
-        let center = Point { x: origin.x + x / (3.0 * area), y: origin.y + y / (3.0 * area) };
+        let center =
+            Point { x: origin.x + moment_x / (3.0 * area), y: origin.y + moment_y / (3.0 * area) };
         if point_in_poly(center, points) {
             return center;
         }
     }
-
     let bounds = union_rect(points);
     let mut fallback =
         Point { x: bounds.x + bounds.width / 2.0, y: bounds.y + bounds.height / 2.0 };
     let mut intersections: Vec<f64> = Vec::new();
-    for i in 0..n {
-        let a = points[i];
-        let b = points[(i + 1) % n];
-        if (a.y > fallback.y) != (b.y > fallback.y) {
-            intersections.push(a.x + ((fallback.y - a.y) * (b.x - a.x)) / (b.y - a.y));
+    for i in 0..points.len() {
+        let start = points[i];
+        let end = points[(i + 1) % points.len()];
+        if (start.y > fallback.y) != (end.y > fallback.y) {
+            intersections
+                .push(start.x + ((fallback.y - start.y) * (end.x - start.x)) / (end.y - start.y));
         }
     }
-    // V8's sort: a NaN crossing makes `a - b` NaN, which is no total order.
-    crate::js::sort_by(&mut intersections, |a, b| a - b);
+    js::sort_by(&mut intersections, |l, r| l - r);
     let mut widest = -1.0;
     let mut i = 1;
     while i < intersections.len() {
@@ -220,25 +118,24 @@ pub fn automatic_shape_caption_center(points: &[Point], closed: bool) -> Point {
     fallback
 }
 
-/// A shape measurement's caption box, selection points and visual bounds,
-/// `None` for anything but a poly with points.
+/// `shapeMeasurementLayout(geometry, appearance, style)`.
 pub fn shape_measurement_layout(
-    geom: &Geom,
-    appearance: &ShapeMeasurementAppearance,
+    geometry: &Shape,
+    appearance: &MeasurementAppearance,
     style: &Style,
 ) -> Option<ShapeMeasurementLayout> {
-    let Geom::Poly { points, closed, .. } = geom else {
-        return None;
-    };
-    if points.is_empty() {
+    let Shape::Poly(poly) = geometry else { return None };
+    if poly.vertices.is_empty() {
         return None;
     }
-    let angle = geom_rotation(geom);
-    let local: Vec<Point> = points.iter().map(|p| rotate_point(*p, ORIGIN, -angle)).collect();
-    let center = shape_caption_point(appearance).unwrap_or_else(|| {
-        rotate_point(automatic_shape_caption_center(&local, *closed), ORIGIN, angle)
-    });
-    let text = shape_measurement_label(geom, appearance);
+    let angle = geom_rotation(geometry);
+    let local: Vec<Point> =
+        drawn_vertices_of(geometry).iter().map(|p| rotate_point(*p, ORIGIN, -angle)).collect();
+    let center = match &poly.caption_center {
+        Some(Nullable::Value(c)) => drawn_point_of(geometry, *c),
+        _ => rotate_point(automatic_shape_caption_center(&local, poly.closed), ORIGIN, angle),
+    };
+    let text = shape_measurement_label(geometry, appearance);
     let width = distance_caption_width(&text);
     let height = DISTANCE_CAPTION_SIZE;
     let along = rotate_point(Point { x: 1.0, y: 0.0 }, ORIGIN, angle);
@@ -247,94 +144,115 @@ pub fn shape_measurement_layout(
         x: center.x + x * along.x + y * normal.x,
         y: center.y + x * along.y + y * normal.y,
     };
-    let caption = (appearance.caption.enabled && !text.is_empty()).then(|| DistanceCaptionLayout {
+    let caption = (appearance.caption_enabled() && !text.is_empty()).then(|| CaptionLayout {
+        text: text.clone(),
+        center,
+        along,
+        normal,
+        width,
+        height,
         bounds: [
             corner(-width / 2.0, -height / 2.0),
             corner(width / 2.0, -height / 2.0),
             corner(width / 2.0, height / 2.0),
             corner(-width / 2.0, height / 2.0),
         ],
-        text,
-        center,
-        along,
-        normal,
-        width,
-        height,
     });
-    let mut selection_points: Vec<Point> =
-        selection_quad(geom, style.stroke_width, Some(&style.border)).to_vec();
+    let mut selection_points = selection_quad(geometry, style.stroke()).to_vec();
     if let Some(c) = &caption {
-        selection_points.extend(c.bounds);
+        selection_points.extend(c.bounds.iter().copied());
     }
-    Some(ShapeMeasurementLayout {
-        caption,
-        visual_bounds: union_rect(&selection_points),
-        selection_points,
-    })
+    let visual_bounds = union_rect(&selection_points);
+    Some(ShapeMeasurementLayout { caption, visual_bounds, selection_points })
 }
 
-/// The layout for either kind of measurement.
+/// A distance's or a shape's measurement layout (`measurementLayout`).
+#[derive(Clone, Debug, PartialEq)]
+pub enum MeasurementLayout {
+    Distance(Box<DistanceLayout>),
+    Shape(ShapeMeasurementLayout),
+}
+
+impl MeasurementLayout {
+    pub fn caption(&self) -> Option<&CaptionLayout> {
+        match self {
+            MeasurementLayout::Distance(d) => d.caption.as_ref(),
+            MeasurementLayout::Shape(s) => s.caption.as_ref(),
+        }
+    }
+    pub fn visual_bounds(&self) -> Rect {
+        match self {
+            MeasurementLayout::Distance(d) => d.visual_bounds,
+            MeasurementLayout::Shape(s) => s.visual_bounds,
+        }
+    }
+}
+
+/// `measurementLayout(geometry, appearance, style)`.
 pub fn measurement_layout(
-    geom: &Geom,
+    geometry: &Shape,
     appearance: &MeasurementAppearance,
     style: &Style,
 ) -> Option<MeasurementLayout> {
-    match appearance {
-        MeasurementAppearance::Distance(d) => distance_layout(geom, d, style.stroke_width)
-            .map(|l| MeasurementLayout::Distance(Box::new(l))),
-        MeasurementAppearance::Shape(s) => {
-            shape_measurement_layout(geom, s, style).map(MeasurementLayout::Shape)
-        }
+    if appearance.is_distance() {
+        distance_layout(geometry, appearance, style.stroke_width)
+            .map(|d| MeasurementLayout::Distance(Box::new(d)))
+    } else {
+        shape_measurement_layout(geometry, appearance, style).map(MeasurementLayout::Shape)
     }
 }
 
-/// The oriented selection quad of a measured annotation, caption included.
+/// `measurementSelectionQuad(geometry, appearance, style)`.
 pub fn measurement_selection_quad(
-    geom: &Geom,
+    geometry: &Shape,
     appearance: &MeasurementAppearance,
     style: &Style,
-) -> Quad {
-    let shape = match appearance {
-        MeasurementAppearance::Distance(d) => {
-            return distance_selection_quad(geom, d, style.stroke_width);
-        }
-        MeasurementAppearance::Shape(s) => s,
+) -> [Point; 4] {
+    if appearance.is_distance() {
+        return distance_selection_quad(geometry, appearance, style.stroke_width);
+    }
+    let Some(layout) = shape_measurement_layout(geometry, appearance, style) else {
+        return selection_quad(geometry, style.stroke());
     };
-    let Some(layout) = shape_measurement_layout(geom, shape, style) else {
-        return selection_quad(geom, style.stroke_width, Some(&style.border));
-    };
-    let angle = geom_rotation(geom);
-    let local: Vec<Point> =
-        layout.selection_points.iter().map(|p| rotate_point(*p, ORIGIN, -angle)).collect();
-    let b = union_rect(&local);
+    let angle = geom_rotation(geometry);
+    let bounds = union_rect(
+        &layout
+            .selection_points
+            .iter()
+            .map(|p| rotate_point(*p, ORIGIN, -angle))
+            .collect::<Vec<_>>(),
+    );
     [
-        Point { x: b.x, y: b.y },
-        Point { x: b.x + b.width, y: b.y },
-        Point { x: b.x + b.width, y: b.y + b.height },
-        Point { x: b.x, y: b.y + b.height },
+        Point { x: bounds.x, y: bounds.y },
+        Point { x: bounds.x + bounds.width, y: bounds.y },
+        Point { x: bounds.x + bounds.width, y: bounds.y + bounds.height },
+        Point { x: bounds.x, y: bounds.y + bounds.height },
     ]
     .map(|p| rotate_point(p, ORIGIN, angle))
 }
 
-/// The appearance with its caption moved by a content-space delta; a shape
-/// caption becomes pinned where it was dragged.
+/// `moveMeasurementCaption(geometry, appearance, delta, style)`: a
+/// distance's caption offset changes, a perimeter's or area's caption
+/// center (its shape's).
 pub fn move_measurement_caption(
-    geom: &Geom,
+    geometry: &Shape,
     appearance: &MeasurementAppearance,
     delta: Point,
     style: &Style,
-) -> MeasurementAppearance {
-    let shape = match appearance {
-        MeasurementAppearance::Distance(d) => {
-            return MeasurementAppearance::Distance(move_distance_caption(geom, d, delta));
-        }
-        MeasurementAppearance::Shape(s) => s,
-    };
-    match shape_measurement_layout(geom, shape, style).and_then(|l| l.caption) {
-        Some(c) => MeasurementAppearance::Shape(with_shape_caption_point(
-            shape,
-            Point { x: c.center.x + delta.x, y: c.center.y + delta.y },
-        )),
-        None => appearance.clone(),
+) -> (Shape, MeasurementAppearance) {
+    if appearance.is_distance() {
+        return (geometry.clone(), move_distance_caption(geometry, appearance, delta));
     }
+    let center = shape_measurement_layout(geometry, appearance, style)
+        .and_then(|l| l.caption)
+        .map(|c| c.center);
+    let (Some(center), Shape::Poly(poly)) = (center, geometry) else {
+        return (geometry.clone(), appearance.clone());
+    };
+    let moved = Point { x: center.x + delta.x, y: center.y + delta.y };
+    let mut next = poly.clone();
+    // `{ ...geometry, captionCenter }`: a center the shape didn't have prints last.
+    next.seal();
+    next.caption_center = Some(Nullable::Value(upright_point_of(geometry, moved)));
+    (Shape::Poly(next), appearance.clone())
 }

@@ -2,65 +2,79 @@
 //! over a field is signed, drawn, or handed to the chrome by mode; a free
 //! placement is a stamp (one placement law, the stamp plugin's).
 
+use std::rc::Rc;
+
 use epdf_kernel::error::{code, plugin_error};
-use epdf_kernel::js::to_value;
 use epdf_kernel::rt::Promise;
-use epdf_plugin_annotation::StampToolInput;
+use epdf_plugin_annotation::write::stamps::StampInput;
+use epdf_plugin_stamp::StampDocumentOptions;
 use serde_json::Value;
 
 use crate::contract::*;
 use crate::controller::SignatureCapability;
-use crate::model::SignatureAction;
-use crate::read::signatures::any_signed;
-use crate::services::store::same_ref;
+use crate::js::strict_eq;
+use crate::model::{has_signed_field, same_field_ref, set_target};
+use crate::services::errors::verb;
+
+fn ref_of(placed: &Value) -> Value {
+    placed
+        .get("annotation")
+        .and_then(|a| a.get("ref"))
+        .cloned()
+        .unwrap_or_else(epdf_kernel::undefined)
+}
 
 impl SignatureCapability {
-    /// `setTarget(field)`: name the field the next picked mark goes to;
-    /// null clears. The same ref again is no change.
-    pub fn set_target(&self, field: Option<Value>) {
-        let current = self.state().target.clone();
-        let unchanged = match (&current, &field) {
-            (None, None) => true,
-            (Some(current), Some(field)) => same_ref(current, field),
-            _ => false,
-        };
-        if unchanged {
-            return;
+    /// `sameField(left, right)`: one field, whether a ref names it by
+    /// object number or by name.
+    fn same_field(&self, left: &Value, right: &Value) -> bool {
+        if same_field_ref(left, right) {
+            return true;
         }
-        self.dispatch(SignatureAction::Target { field: field.clone() });
-        self.0
-            .events
-            .target_changed
-            .emit(&SignatureTargetChangedEvent { field: field.unwrap_or(Value::Null) });
+        let Some(signature) = self.get_signature(left) else { return false };
+        let other = self.get_signature(right);
+        strict_eq(signature.get("index"), other.as_ref().and_then(|o| o.get("index")))
     }
 
-    /// `clearIfTarget(field)`: a field just signed or filled is no longer
-    /// the target.
+    /// `clearIfTarget(field)`: a field that was just signed or filled is no
+    /// longer the target.
     pub(crate) fn clear_if_target(&self, field: &Value) {
         let current = self.state().target.clone();
-        if current.is_some_and(|c| same_ref(&c, field)) {
-            self.set_target(None);
+        if current.is_some_and(|current| self.same_field(&current, field)) {
+            self.update_state(|s| set_target(s, None));
         }
     }
 
-    /// `requestInspection(field)`: ask the host UI to show a signed field's
-    /// facts.
+    /// `setTarget(field)`: make a field the target, where the next mark the
+    /// person picks goes; `None` clears. Fires `onTargetChanged`.
+    pub fn set_target(&self, field: Option<Value>) {
+        self.update_state(|s| set_target(s, field.map(Rc::new)));
+    }
+
+    /// `requestInspection(field)`: ask the UI to show a signed field's
+    /// details. Fires `onInspectionRequested`.
     pub fn request_inspection(&self, field: Value) {
         self.0.events.inspection_requested.emit(&SignatureInspectionRequestedEvent { field });
     }
 
-    /// `placeMark(mark, target)`: into a field by mode, or a free
-    /// placement as a stamp.
-    pub fn place_mark(&self, mark: Mark, target: PlaceTarget) -> Promise<PlaceMarkResult> {
+    /// `placeMark(mark, target, options)`: what a click with an armed mark
+    /// does. In a field, sign, fill or ask by mode; anywhere else, place it
+    /// as a stamp.
+    pub fn place_mark(
+        &self,
+        mark: Mark,
+        target: PlaceTarget,
+        options: OperationOptions,
+    ) -> Promise<PlaceMarkResult> {
         let this = self.clone();
-        Promise::spawn(async move {
+        verb(Promise::spawn(async move {
             let field = match target {
                 PlaceTarget::Free(placement) => {
-                    // A stamp, as in Preview: one placement law, the stamp
-                    // plugin's.
-                    let annotation = match &mark {
+                    // Free placement: a stamp, as in Preview; one placement
+                    // law, the stamp plugin's.
+                    let placed = match &mark {
                         Mark::Asset { asset_id } => {
-                            let Some(library) = this.stamp()? else {
+                            let Some(library) = this.stamp() else {
                                 return Err(plugin_error(
                                     code::UNSUPPORTED,
                                     "signature",
@@ -69,29 +83,44 @@ impl SignatureCapability {
                                     None,
                                 ));
                             };
-                            let placed =
-                                library.place_asset(&this.document_id()?, asset_id, placement);
-                            placed.await?
+                            let document_id = this.document_id()?;
+                            library
+                                .place_asset(
+                                    asset_id,
+                                    placement,
+                                    StampDocumentOptions {
+                                        document_id: Some(document_id),
+                                        signal: options.signal.clone(),
+                                    },
+                                )
+                                .await?
                         }
                         Mark::Source { source } => {
-                            let input = StampToolInput {
-                                source: source.clone(),
-                                ..StampToolInput::default()
+                            let Some(annotations) = this.annotation() else {
+                                return Err(plugin_error(
+                                    code::UNSUPPORTED,
+                                    "signature",
+                                    "no annotation plugin to place a mark",
+                                    None,
+                                    None,
+                                ));
                             };
-                            this.annotation()?.place_stamp(input, placement).await?
+                            let input = StampInput::read(&serde_json::json!({ "source": source }));
+                            annotations
+                                .stamps_place(input, &placement, options.signal.clone())
+                                .await?
                         }
                     };
-                    return Ok(PlaceMarkResult::Placed { annotation: to_value(&annotation) });
+                    return Ok(PlaceMarkResult::Placed { annotation: ref_of(&placed) });
                 }
                 PlaceTarget::Field(field) => field,
             };
             match this.get_mode() {
                 SignatureMode::Sign => {
                     // The first signature is the one that can certify: when
-                    // the config allows a certification, let the chrome offer
-                    // the choice instead of sealing a plain approval.
-                    if this.config().allow_certify == Some(true)
-                        && !any_signed(this.state().snapshot.as_ref())
+                    // the settings allow a certification, let the chrome
+                    // offer the choice instead of sealing a plain approval.
+                    if this.settings().allow_certify && !has_signed_field(this.snapshot().as_ref())
                     {
                         this.0
                             .events
@@ -99,11 +128,12 @@ impl SignatureCapability {
                             .emit(&SignatureSignRequestedEvent { field: field.clone(), mark });
                         return Ok(PlaceMarkResult::Requested { field });
                     }
-                    let result = this.sign(SignFieldInput::new(field.clone(), mark)).await?;
+                    let result =
+                        this.sign_raw(SignFieldInput::new(field.clone(), mark), options).await?;
                     Ok(PlaceMarkResult::Signed { field, result })
                 }
                 SignatureMode::Visual => {
-                    this.fill_field(field.clone(), mark).await?;
+                    this.fill_field_raw(field.clone(), mark, options).await?;
                     Ok(PlaceMarkResult::Filled { field })
                 }
                 SignatureMode::Ask => {
@@ -114,6 +144,6 @@ impl SignatureCapability {
                     Ok(PlaceMarkResult::Requested { field })
                 }
             }
-        })
+        }))
     }
 }

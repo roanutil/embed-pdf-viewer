@@ -26,8 +26,30 @@
  */
 import {
   AbortablePromise,
+  createTextLayout,
+  type PageGeometrySnapshot,
   PermissionDenied,
+  passwordPromptFromState,
+  checkCapability,
+  checkCollab,
+  checkFieldAction,
+  checkSetGroup,
+  collabTargetOf,
+  fieldRightsOf,
+  type AnnotationOwner,
+  type Identity,
+  decodePdfBits,
+  expandRawScope,
+  type DocCapability,
+  type DocumentSecurityState,
+  type DocumentUnlockResult,
+  LOCAL_ENGINE_BRAND,
+  type PageRef,
+  type PageLayout,
+  type DocumentEvent,
   type DocumentHandle,
+  type LocalDocumentHandle,
+  type LocalPageHandle,
   type Engine,
 } from '@embedpdf/engine-core/runtime';
 
@@ -46,48 +68,52 @@ export interface ResponseSpec {
   readonly args?: readonly unknown[];
   readonly times?: number;
   readonly value?: unknown;
+  /** Confirmed events published in order before this successful call settles. */
+  readonly events?: readonly DocumentEvent[];
   readonly error?: ErrorSpec;
   readonly defer?: string;
 }
 
 export interface SecuritySpec {
-  /** Capabilities `allows()` answers true for; `'*'` is every capability. */
   readonly allows?: readonly string[] | '*';
-  readonly allowsAnnotationCreate?: boolean;
-  /** `allowsAnnotationMutation(action, target)`; keyed `update` / `delete`. */
-  readonly allowsAnnotationMutation?: { readonly update?: boolean; readonly delete?: boolean };
-  readonly allowsAnnotationGroupAssignment?: boolean;
-  readonly effectiveScope?: readonly string[];
+  readonly allowsAnnotation?: Partial<
+    Record<'create' | 'update' | 'delete' | 'set-group', boolean>
+  >;
+  readonly allowsField?: Partial<Record<'fill' | 'sign' | 'set-group', boolean>>;
+  readonly scope?: readonly string[];
+  /** Raw scope fixture: use the shipping resolver against the current security bits.
+   * Explicit allows overrides still take precedence. */
+  readonly rawScope?: readonly string[];
   readonly identity?: unknown;
-  readonly current?: unknown;
-  /** `passwordPrompt`; `{state: 'required'}` parks an open as locked. */
+  readonly state?: unknown;
   readonly passwordPrompt?: unknown;
 }
 
 export interface FakeDocumentSpec {
   /** The handle's id; defaults to the table key. */
   readonly id?: string;
-  /** Optional services present on this handle: `render`, `actions`,
-   *  `attachments`, `pieceInfo`, `redaction`, `downloadLayer`, `page.pieceInfo`,
-   *  `page.measure`, `signatures`, `fonts`, `version`, and the optional member
-   *  `forms.submit`. */
+  /** Local extensions exposed individually for targeted handle fixtures, and
+   *  the optional shared member `forms.submit`. Shared services always exist. */
   readonly services?: readonly string[];
-  /** Optional members present by default that this handle lacks:
-   *  `forms.applyEffects`, `forms.setSignatureAppearance`, `pages.flatten`,
-   *  `pages.extract` and `page.annotations.downloadFile`, which the contract
-   *  makes optional and every shipped engine implements. */
+  /** Members intentionally absent from a malformed handle fixture. This does
+   *  not make required members optional in the shipping engine contract. */
   readonly lacks?: readonly string[];
-  readonly capabilities?: unknown;
+  /** Marks a local document and exposes its local-only services. */
+  readonly local?: boolean;
+  /** Explicit reserved numbers, consumed by objectNumbers.take(). */
+  readonly objectNumbers?: readonly number[];
   readonly security?: SecuritySpec;
   /** The page registry (`PageLayout`s, each with its `ref`). `pages.list` answers
-   *  from it unless the table says otherwise, and `page(ref)` refuses a ref
-   *  whose object number is not in it. */
+   *  from it unless the table says otherwise. Page service calls refuse a ref
+   *  whose object number is not in the current registry. */
   readonly pages?: readonly unknown[];
+  readonly namedPages?: readonly unknown[];
   readonly responses?: readonly ResponseSpec[];
 }
 
 export interface FakeEngineSpec {
   readonly documents?: Readonly<Record<string, FakeDocumentSpec>>;
+  readonly canOpenFiles?: boolean;
   /** Table for engine-level calls: `open`, `destroy`. `open` answers
    *  `{"$document": key}` to hand out a handle. Absent: `open` hands out the
    *  document whose key is the input's `id`. */
@@ -103,6 +129,102 @@ export interface FakeEngineSpec {
 export type EngineLogEntry =
   | { doc: string | null; path: string; pon?: number; args: unknown[] }
   | { abort: number; reason: unknown };
+
+type TableServices = {
+  pages: LocalDocumentHandle['pages'];
+  metadata: LocalDocumentHandle['metadata'];
+  'metadata.custom': LocalDocumentHandle['metadata']['custom'];
+  annotations: LocalDocumentHandle['annotations'];
+  forms: LocalDocumentHandle['forms'];
+  search: LocalDocumentHandle['search'];
+  outline: LocalDocumentHandle['outline'];
+  actions: LocalDocumentHandle['actions'];
+  attachments: LocalDocumentHandle['attachments'];
+  redaction: LocalDocumentHandle['redaction'];
+  signatures: LocalDocumentHandle['signatures'];
+  'page.annotations': LocalPageHandle['annotations'];
+  'page.forms': LocalPageHandle['forms'];
+  'page.text': LocalPageHandle['text'];
+  'page.render': LocalPageHandle['render'];
+  'page.measure': LocalPageHandle['measure'];
+  pieceInfo: LocalDocumentHandle['pieceInfo'];
+  'page.pieceInfo': LocalPageHandle['pieceInfo'];
+  fonts: LocalDocumentHandle['fonts'];
+};
+
+/** Only shipping service members exist; table answers cannot revive a removed method. */
+const SERVICE_MEMBERS = {
+  pages: {
+    list: true,
+    reorder: true,
+    rotate: true,
+    delete: true,
+    setName: true,
+    removeName: true,
+    flatten: true,
+    extract: true,
+    insert: true,
+    insertBlank: true,
+  },
+  metadata: { get: true, update: true, custom: true },
+  'metadata.custom': { get: true, update: true },
+  annotations: { list: true, export: true, import: true },
+  forms: {
+    list: true,
+    get: true,
+    setValue: true,
+    reset: true,
+    submit: true,
+    export: true,
+    import: true,
+    importValues: true,
+    create: true,
+    update: true,
+    setSignatureAppearance: true,
+    delete: true,
+    addWidget: true,
+    removeWidget: true,
+    deleteWidget: true,
+    updateWidget: true,
+    reorderWidgets: true,
+    reorderCalculations: true,
+    repair: true,
+  },
+  search: { query: true },
+  outline: { get: true, create: true, update: true, move: true, delete: true },
+  actions: { get: true },
+  attachments: { list: true, download: true, create: true, delete: true },
+  redaction: { apply: true },
+  signatures: {
+    list: true,
+    getContents: true,
+    getDigest: true,
+    downloadRevision: true,
+    analyze: true,
+    prepare: true,
+    complete: true,
+    cancel: true,
+  },
+  'page.annotations': {
+    list: true,
+    renderAppearances: true,
+    downloadResource: true,
+    create: true,
+    update: true,
+    delete: true,
+    reorder: true,
+    flatten: true,
+    exportAppearance: true,
+    renderAppearancesRaw: true,
+  },
+  'page.forms': { renderAppearances: true, renderAppearancesRaw: true },
+  'page.text': { get: true, slice: true, layout: true },
+  'page.render': { image: true, raw: true },
+  'page.measure': { listViewports: true, setScale: true },
+  pieceInfo: { get: true, update: true, list: true, delete: true },
+  'page.pieceInfo': { get: true, update: true, list: true, delete: true },
+  fonts: { setEmbeddingPolicy: true, setTypographicFeatures: true },
+} satisfies { [Path in keyof TableServices]: { [Member in keyof TableServices[Path]]-?: true } };
 
 interface Pending {
   readonly label: string;
@@ -146,14 +268,23 @@ export function makeEngineError(spec: ErrorSpec): Error {
 export function createFakeEngine(
   spec: FakeEngineSpec,
   decode: (value: unknown) => unknown,
+  report: (error: unknown) => void = console.error,
 ): FakeEngine {
   const log: EngineLogEntry[] = [];
   const unmatched: string[] = [];
   const pending: Pending[] = [];
-  const handles = new Map<string, { listeners: Set<(event: unknown) => void> }>();
+  const handles = new Map<
+    string,
+    { listeners: Set<(event: DocumentEvent) => void>; publish(event: DocumentEvent): void }
+  >();
   const consumed = new Map<ResponseSpec, number>();
 
-  function match(table: readonly ResponseSpec[] | undefined, path: string, pon: number | undefined, args: unknown[]) {
+  function match(
+    table: readonly ResponseSpec[] | undefined,
+    path: string,
+    pon: number | undefined,
+    args: unknown[],
+  ) {
     const key = canonicalKey(args);
     for (const entry of table ?? []) {
       if (entry.path !== path) continue;
@@ -177,11 +308,19 @@ export function createFakeEngine(
     rawArgs: unknown[],
     fallback?: () => unknown,
     map: (value: unknown) => unknown = (value) => value,
+    validate?: () => void,
+    publish?: (event: DocumentEvent) => void,
   ): AbortablePromise<unknown> {
     const args = rawArgs.map((arg) => canonical(arg));
     const index = log.length;
     log.push(pon === undefined ? { doc, path, args } : { doc, path, pon, args });
     const executor = (resolve: (value: unknown) => void, reject: (error: unknown) => void) => {
+      try {
+        validate?.();
+      } catch (error) {
+        reject(error);
+        return;
+      }
       const entry = match(table, path, pon, args);
       if (!entry) {
         if (fallback) {
@@ -192,23 +331,43 @@ export function createFakeEngine(
           }
           return;
         }
-        unmatched.push(`${doc ?? 'engine'}: ${path}${pon === undefined ? '' : `@${pon}`} ${JSON.stringify(args)}`);
+        unmatched.push(
+          `${doc ?? 'engine'}: ${path}${pon === undefined ? '' : `@${pon}`} ${JSON.stringify(args)}`,
+        );
         reject(makeError({ name: 'FakeEngineUnmatched', message: `no response for ${path}` }));
         return;
       }
+      const succeed = (value: unknown) => {
+        try {
+          const result = map(value);
+          for (const event of entry.events ?? []) {
+            if (!publish)
+              throw new Error(
+                '[fake-engine] an engine-level response cannot publish document events',
+              );
+            publish(decode(event) as DocumentEvent);
+          }
+          resolve(result);
+        } catch (error) {
+          reject(error);
+        }
+      };
       if (entry.defer !== undefined) {
-        pending.push({ label: entry.defer, engine: true, resolve: (value) => resolve(map(value)), reject });
+        pending.push({ label: entry.defer, engine: true, resolve: succeed, reject });
         return;
       }
       if (entry.error) reject(makeEngineError(entry.error));
-      else resolve(map(decode(entry.value)));
+      else succeed(decode(entry.value));
     };
     // A plain-promise engine is what the kernel's race exists for: a call
     // nobody can abort, whose late result still has to be released.
     if (spec.plainPromises) return new Promise<unknown>(executor) as AbortablePromise<unknown>;
     return new AbortablePromise<unknown>((resolve, reject, _progress, signal) => {
       signal.addEventListener('abort', () => {
-        log.push({ abort: index, reason: canonical((signal.reason as { reason?: unknown })?.reason) });
+        log.push({
+          abort: index,
+          reason: canonical((signal.reason as { reason?: unknown })?.reason),
+        });
       });
       executor(resolve, reject);
     });
@@ -217,16 +376,49 @@ export function createFakeEngine(
   function service(
     doc: string,
     table: readonly ResponseSpec[] | undefined,
-    prefix: string,
+    prefix: keyof TableServices,
     pon?: number,
     absent: ReadonlySet<string> = new Set(),
+    validate?: () => void,
+    publish?: (event: DocumentEvent) => void,
   ): unknown {
+    const custom =
+      prefix === 'metadata'
+        ? service(doc, table, 'metadata.custom', undefined, undefined, undefined, publish)
+        : undefined;
     return new Proxy(
       {},
       {
         get: (_target, member) => {
-          if (typeof member !== 'string' || member === 'then' || absent.has(member)) return undefined;
-          return (...args: unknown[]) => call(doc, table, `${prefix}.${member}`, pon, args);
+          if (member === 'custom' && custom) return custom;
+          if (
+            typeof member !== 'string' ||
+            !Object.hasOwn(SERVICE_MEMBERS[prefix], member) ||
+            absent.has(member)
+          )
+            return undefined;
+          return (...args: unknown[]) =>
+            call(
+              doc,
+              table,
+              `${prefix}.${member}`,
+              pon,
+              args,
+              undefined,
+              prefix === 'page.text' && member === 'layout'
+                ? (value) => {
+                    if (!value || typeof value !== 'object' || !('$textLayout' in value))
+                      throw new Error(
+                        '[fake-engine] page.text.layout needs a $textLayout geometry fixture',
+                      );
+                    return createTextLayout(
+                      (value as { $textLayout: PageGeometrySnapshot }).$textLayout,
+                    );
+                  }
+                : undefined,
+              validate,
+              publish,
+            );
         },
       },
     );
@@ -240,94 +432,300 @@ export function createFakeEngine(
     const lacks = new Set(document.lacks ?? []);
     const formsAbsent = new Set<string>();
     if (!services.has('forms.submit')) formsAbsent.add('submit');
-    // Every other `forms.*` member is present unless `lacks` names it
-    // (`forms.applyEffects`, `forms.setSignatureAppearance`).
+    // Required methods can be removed explicitly to exercise malformed handles.
     for (const member of lacks) if (member.startsWith('forms.')) formsAbsent.add(member.slice(6));
-    const pageAnnotationsAbsent = new Set<string>();
-    if (lacks.has('page.annotations.downloadFile')) pageAnnotationsAbsent.add('downloadFile');
+    const pageAnnotationsAbsent = new Set<string>(document.local ? [] : ['renderAppearancesRaw']);
+    for (const member of lacks)
+      if (member.startsWith('page.annotations.'))
+        pageAnnotationsAbsent.add(member.slice('page.annotations.'.length));
     const table = document.responses;
     const security = document.security ?? {};
-    const listeners = new Set<(event: unknown) => void>();
-    handles.set(id, { listeners });
-    const pages = (document.pages ?? []) as { ref: { pageObjectNumber: number }; index: number }[];
+    const listeners = new Set<(event: DocumentEvent) => void>();
+    let pages = decode(document.pages ?? []) as PageLayout[];
+    let namedPages = decode(document.namedPages ?? []);
+    let lastServerId: number | null = null;
+    const publish = (event: DocumentEvent) => {
+      if ('layout' in event) {
+        pages = event.layout.pages ?? [];
+        namedPages = event.layout.namedPages ?? [];
+      }
+      if ('origin' in event && event.origin.serverId !== null) {
+        lastServerId = Math.max(lastServerId ?? 0, event.origin.serverId);
+      }
+      for (const listener of [...listeners]) {
+        try {
+          listener(event);
+        } catch (error) {
+          report(error);
+        }
+      }
+    };
+    handles.set(id, { listeners, publish });
+    // Every method owns this open's event stream, including calls retained across a reopen.
+    const callForHandle: typeof call = (doc, table, path, pon, args, fallback, map, validate) =>
+      call(doc, table, path, pon, args, fallback, map, validate, publish);
+    const serviceForHandle: typeof service = (doc, table, prefix, pon, absent, validate) =>
+      service(doc, table, prefix, pon, absent, validate, publish);
+    const numbers = [...(document.objectNumbers ?? [])];
+    let nextNumber = Math.max(0, ...pages.map((page) => page.ref.objectNumber), ...numbers) + 1;
+    const lostListeners = new Set<Parameters<DocumentHandle['objectNumbers']['onLost']>[0]>();
+    let currentSecurityState = decode(
+      security.state ?? {
+        encryption: { state: 'none', requiresPassword: false },
+        permissions: {
+          known: true,
+          bits: null,
+          allAllowed: true,
+          openedAs: 'none',
+          securityHandlerRevision: null,
+          canUpgradeToOwner: false,
+        },
+        access: { required: false, reasons: [] },
+      },
+    ) as DocumentSecurityState;
+    let currentPasswordPrompt = decode(
+      security.passwordPrompt ?? passwordPromptFromState(currentSecurityState),
+    );
+    const identity = decode(security.identity ?? {}) as Identity;
+    const currentBits = () => decodePdfBits(currentSecurityState.permissions.bits);
     const allows = (capability: string) =>
-      security.allows === '*' || (security.allows ?? []).includes(capability);
+      security.allows !== undefined
+        ? security.allows === '*' || security.allows.includes(capability)
+        : security.rawScope !== undefined &&
+          checkCapability(capability as DocCapability, security.rawScope, currentBits());
 
     const handle: Record<string, unknown> = {
       id,
-      capabilities: decode(document.capabilities ?? {}),
       security: {
-        current: decode(security.current ?? null),
-        effectiveScope: security.effectiveScope ?? [],
+        get state() {
+          return currentSecurityState;
+        },
+        get passwordPrompt() {
+          return currentPasswordPrompt;
+        },
+        get scope() {
+          return security.rawScope === undefined
+            ? decode(security.scope ?? [])
+            : [...expandRawScope(security.rawScope, currentBits())].sort();
+        },
         identity: decode(security.identity ?? null),
-        passwordPrompt: decode(security.passwordPrompt ?? { state: 'none' }),
         allows,
-        allowsAnnotationCreate: () => security.allowsAnnotationCreate ?? allows('doc.annotate.create'),
-        allowsAnnotationMutation: (action: 'update' | 'delete') =>
-          security.allowsAnnotationMutation?.[action] ?? allows('doc.annotate.modify'),
-        allowsAnnotationGroupAssignment: () => security.allowsAnnotationGroupAssignment ?? false,
-        unlock: (...args: unknown[]) => call(id, table, 'security.unlock', undefined, args),
+        allowsAnnotation: (
+          action: 'create' | 'update' | 'delete' | 'set-group',
+          target?: AnnotationOwner | { groupId: string },
+        ) => {
+          const configured = security.allowsAnnotation?.[action];
+          if (configured !== undefined) return configured;
+          if (security.rawScope !== undefined) {
+            if (action === 'set-group')
+              return checkSetGroup(
+                'annotations',
+                (target as { groupId: string }).groupId,
+                identity.groupId,
+                security.rawScope,
+              );
+            if (
+              action !== 'create' &&
+              (target as AnnotationOwner | undefined)?.subtype === 'widget'
+            )
+              return allows('doc.forms.modify');
+            return checkCollab(
+              action,
+              action === 'create' ? identity : collabTargetOf(target ?? {}),
+              security.rawScope,
+              identity,
+              currentBits(),
+            );
+          }
+          return action === 'set-group'
+            ? false
+            : allows(action === 'create' ? 'doc.annotate.create' : 'doc.annotate.modify');
+        },
+        allowsField: (
+          action: 'fill' | 'sign' | 'set-group',
+          target?: { groupId: string | null },
+        ) => {
+          const configured = security.allowsField?.[action];
+          if (configured !== undefined) return configured;
+          if (security.rawScope !== undefined)
+            return action === 'set-group'
+              ? checkSetGroup('fields', target?.groupId ?? '', identity.groupId, security.rawScope)
+              : checkFieldAction(action, target?.groupId ?? null, security.rawScope, currentBits());
+          return action === 'set-group'
+            ? false
+            : allows(action === 'fill' ? 'doc.forms.fill' : 'doc.sign');
+        },
+        fieldRights: () =>
+          security.rawScope !== undefined
+            ? fieldRightsOf(security.rawScope, currentBits(), null, identity.groupId)
+            : {
+                fill: { all: allows('doc.forms.fill') },
+                sign: { all: allows('doc.sign') },
+                setGroup: { all: false, groups: [] },
+              },
+        unlock: (...args: unknown[]) =>
+          callForHandle(id, table, 'security.unlock', undefined, args, undefined, (value) => {
+            const result = value as DocumentUnlockResult;
+            currentSecurityState = result.security;
+            currentPasswordPrompt = passwordPromptFromState(currentSecurityState);
+            return result;
+          }),
       },
-      metadata: service(id, table, 'metadata'),
-      annotations: service(id, table, 'annotations'),
+      metadata: serviceForHandle(id, table, 'metadata'),
+      annotations: serviceForHandle(id, table, 'annotations'),
       // `forms.submit` is optional in the contract (a submit-capable home):
       // present only when `services` lists it, so `typeof submit` can be false.
-      // `forms.applyEffects` is optional too, but present unless `lacks` names it.
-      forms: service(id, table, 'forms', undefined, formsAbsent),
-      search: service(id, table, 'search'),
+      forms: serviceForHandle(id, table, 'forms', undefined, formsAbsent),
+      search: serviceForHandle(id, table, 'search'),
+      outline: serviceForHandle(id, table, 'outline'),
+      actions: serviceForHandle(id, table, 'actions'),
+      attachments: serviceForHandle(id, table, 'attachments'),
+      redaction: serviceForHandle(id, table, 'redaction'),
+      signatures: serviceForHandle(id, table, 'signatures'),
+      render: {
+        getPolicy: () =>
+          callForHandle(id, table, 'render.getPolicy', undefined, [], () => ({
+            kind: 'continuous',
+          })),
+      },
+      objectNumbers: {
+        take: () => numbers.shift() ?? null,
+        get held() {
+          return numbers.length;
+        },
+        reserve: (count: number) =>
+          callForHandle(
+            id,
+            table,
+            'objectNumbers.reserve',
+            undefined,
+            [count],
+            () => undefined,
+            () => {
+              while (numbers.length < count) numbers.push(nextNumber++);
+            },
+            () => {
+              if (!Number.isInteger(count) || count < 1)
+                throw makeError({
+                  name: 'EngineError',
+                  code: 'InvalidArg',
+                  message: `cannot reserve ${count} object numbers`,
+                });
+            },
+          ),
+        onLost: (listener: Parameters<DocumentHandle['objectNumbers']['onLost']>[0]) => {
+          lostListeners.add(listener);
+          return () => {
+            lostListeners.delete(listener);
+          };
+        },
+      },
+      apply: (...args: unknown[]) => callForHandle(id, table, 'apply', undefined, args),
+      with: () => handle,
+      setWorkingSet: () => {},
       pages: new Proxy(
         {},
         {
           get: (_target, member) => {
-            if (typeof member !== 'string' || member === 'then' || lacks.has(`pages.${member}`)) return undefined;
+            if (
+              typeof member !== 'string' ||
+              !Object.hasOwn(SERVICE_MEMBERS.pages, member) ||
+              lacks.has(`pages.${member}`)
+            )
+              return undefined;
             return (...args: unknown[]) =>
-              call(id, table, `pages.${member}`, undefined, args, member === 'list'
-                ? () => ({ pageCount: pages.length, pages: decode(pages) })
-                : undefined);
+              callForHandle(
+                id,
+                table,
+                `pages.${member}`,
+                undefined,
+                args,
+                member === 'list'
+                  ? () => ({
+                      pageCount: pages.length,
+                      pages: decode(pages),
+                      namedPages: decode(namedPages),
+                    })
+                  : undefined,
+              );
           },
         },
       ),
       events: {
-        subscribe: (listener: (event: unknown) => void) => {
+        subscribe: (listener: (event: DocumentEvent) => void) => {
           listeners.add(listener);
           return () => void listeners.delete(listener);
         },
-        lastServerId: () => null,
+        on: (type: DocumentEvent['type'], listener: (event: DocumentEvent) => void) => {
+          const filtered = (event: DocumentEvent) => {
+            if (event.type === type) listener(event);
+          };
+          listeners.add(filtered);
+          return () => {
+            listeners.delete(filtered);
+          };
+        },
+        lastServerId: () => lastServerId,
       },
-      page: (ref: { pageObjectNumber: number }) => {
-        const pon = ref.pageObjectNumber;
-        const page = pages.find((p) => p.ref.pageObjectNumber === pon);
-        if (!page) {
-          throw makeError({ name: 'EngineError', message: `no page ${pon}`, code: 'NotFound' });
-        }
-        const pageHandle: Record<string, unknown> = {
-          ref: { kind: 'objectNumber', pageObjectNumber: pon },
-          pageIndex: page.index,
-          annotations: service(id, table, 'page.annotations', pon, pageAnnotationsAbsent),
-          text: service(id, table, 'page.text', pon),
-          geometry: service(id, table, 'page.geometry', pon),
-          render: service(id, table, 'page.render', pon),
+      page: (ref: PageRef) => {
+        const pon = ref.objectNumber;
+        const validate = () => {
+          if (!pages.some((page) => page.ref.objectNumber === pon)) {
+            throw makeError({ name: 'EngineError', message: `no page ${pon}`, code: 'NotFound' });
+          }
         };
-        if (services.has('page.pieceInfo')) pageHandle.pieceInfo = service(id, table, 'page.pieceInfo', pon);
-        if (services.has('page.measure')) pageHandle.measure = service(id, table, 'page.measure', pon);
+        const pageHandle: Record<string | symbol, unknown> = { ref: { ...ref } };
+        for (const name of ['annotations', 'forms', 'text', 'render', 'measure'] as const) {
+          pageHandle[name] = serviceForHandle(
+            id,
+            table,
+            `page.${name}`,
+            pon,
+            name === 'annotations'
+              ? pageAnnotationsAbsent
+              : !document.local && (name === 'render' || name === 'forms')
+                ? new Set(['raw', 'renderAppearancesRaw'])
+                : undefined,
+            validate,
+          );
+        }
+        if (document.local || services.has('page.pieceInfo'))
+          pageHandle.pieceInfo = serviceForHandle(
+            id,
+            table,
+            'page.pieceInfo',
+            pon,
+            undefined,
+            validate,
+          );
+        if (document.local) pageHandle[LOCAL_ENGINE_BRAND] = true;
         return pageHandle;
       },
-      download: (...args: unknown[]) => call(id, table, 'download', undefined, args),
-      close: (...args: unknown[]) => call(id, table, 'close', undefined, args, () => undefined),
+      download: (...args: unknown[]) => callForHandle(id, table, 'download', undefined, args),
+      close: (...args: unknown[]) =>
+        callForHandle(id, table, 'close', undefined, args, () => undefined),
     };
-    for (const optional of ['render', 'actions', 'attachments', 'pieceInfo', 'redaction', 'signatures', 'fonts']) {
-      if (services.has(optional)) handle[optional] = service(id, table, optional);
+    for (const optional of ['pieceInfo', 'fonts'] as const) {
+      if (document.local || services.has(optional))
+        handle[optional] = serviceForHandle(id, table, optional);
     }
-    if (services.has('version')) {
-      handle.version = (...args: unknown[]) => call(id, table, 'version', undefined, args);
+    if (document.local || services.has('version')) {
+      handle.version = (...args: unknown[]) => callForHandle(id, table, 'version', undefined, args);
     }
-    if (services.has('downloadLayer')) {
-      handle.downloadLayer = (...args: unknown[]) => call(id, table, 'downloadLayer', undefined, args);
+    if (document.local || services.has('downloadLayer')) {
+      handle.downloadLayer = (...args: unknown[]) =>
+        callForHandle(id, table, 'downloadLayer', undefined, args);
+    }
+    if (document.local) {
+      Object.defineProperty(handle, LOCAL_ENGINE_BRAND, { value: true });
+      handle.downloadToFile = (...args: unknown[]) =>
+        callForHandle(id, table, 'downloadToFile', undefined, args);
     }
     return handle as unknown as DocumentHandle;
   }
 
   const engine = {
+    canOpenFiles: spec.canOpenFiles ?? true,
     open: (input: unknown, options?: unknown) => {
       const args = options === undefined ? [input] : [input, options];
       const inputId = (input as { id?: unknown } | null)?.id;
@@ -338,7 +736,8 @@ export function createFakeEngine(
         undefined,
         args,
         () => {
-          if (typeof inputId === 'string' && spec.documents?.[inputId]) return { $document: inputId };
+          if (typeof inputId === 'string' && spec.documents?.[inputId])
+            return { $document: inputId };
           if (spec.defaultDocument !== undefined) return { $document: spec.defaultDocument };
           throw makeError({ name: 'FakeEngineUnmatched', message: 'no document for open' });
         },
@@ -358,14 +757,14 @@ export function createFakeEngine(
     emit(doc, event) {
       const handle = handles.get(doc);
       if (!handle) throw new Error(`[fake-engine] emit to unopened document "${doc}"`);
-      const live = decode(event);
-      for (const listener of [...handle.listeners]) listener(live);
+      handle.publish(decode(event) as DocumentEvent);
     },
     settle(label, outcome) {
       const index = pending.findIndex((p) => p.label === label);
       if (index < 0) return false;
       const [entry] = pending.splice(index, 1);
-      if (outcome.error) entry.reject(entry.engine ? makeEngineError(outcome.error) : makeError(outcome.error));
+      if (outcome.error)
+        entry.reject(entry.engine ? makeEngineError(outcome.error) : makeError(outcome.error));
       else entry.resolve(decode(outcome.value));
       return true;
     },

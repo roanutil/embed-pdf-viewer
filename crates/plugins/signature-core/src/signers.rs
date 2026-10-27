@@ -22,6 +22,7 @@ use crate::cms::{RawAlgorithm, RawSigner, cms_ecdsa_signature, pss_params};
 use crate::der;
 use crate::oids::{self, Digest};
 use crate::sign::{CmsSignRequest, CmsSigner};
+use crate::timestamp::{BuildTimestampTokenInput, build_timestamp_token};
 
 /// A WebCrypto `CryptoKey`: what JavaScript can see of it, and the host's
 /// handle to the key itself.
@@ -352,6 +353,57 @@ pub async fn create_test_signer(
     let signer =
         web_crypto_signer(crypto, keys.private_key.clone(), vec![certificate.clone()], Some(hash))?;
     Ok(TestSigner { signer, certificate, private_key: keys.private_key })
+}
+
+/// `TestTimestampAuthority`: a CMS key that answers with an RFC 3161 token.
+#[derive(Clone)]
+pub struct TestTimestampAuthority {
+    pub signer: CmsSigner,
+    /// DER of the authority's self-signed certificate.
+    pub certificate: Vec<u8>,
+}
+
+/// `createTestTimestampAuthority`: a throwaway RFC 3161 timestamp authority
+/// for tests and demos. It stamps whatever digest it is given with the
+/// current time, signed by a fresh self-signed key. The key for a
+/// `sign(doc, { kind: 'timestamp', ... })`; never use it to stamp a real
+/// document.
+pub async fn create_test_timestamp_authority(
+    crypto: Rc<dyn WebCrypto>,
+    common_name: Option<String>,
+) -> Result<TestTimestampAuthority, Error> {
+    let authority = create_test_signer(
+        crypto.clone(),
+        Some(common_name.unwrap_or_else(|| "EmbedPDF test timestamp authority".into())),
+        None,
+        None,
+    )
+    .await?;
+    let raw = authority.signer.clone();
+    let sign = Rc::new(move |request: CmsSignRequest| {
+        let crypto = crypto.clone();
+        let raw = raw.clone();
+        Promise::spawn(async move {
+            let Some(hash) = Digest::from_name(&request.algorithm) else {
+                return Err(Error::new(format!(
+                    "digest is {} bytes; {} needs undefined",
+                    request.digest.len(),
+                    request.algorithm
+                )));
+            };
+            build_timestamp_token(
+                &*crypto,
+                BuildTimestampTokenInput {
+                    digest: request.digest,
+                    hash,
+                    authority: raw,
+                    gen_time: None,
+                },
+            )
+            .await
+        })
+    });
+    Ok(TestTimestampAuthority { signer: CmsSigner { sign }, certificate: authority.certificate })
 }
 
 /// `PersonalKeyRecord`.

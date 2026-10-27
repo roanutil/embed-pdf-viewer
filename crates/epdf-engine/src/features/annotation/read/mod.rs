@@ -3,11 +3,12 @@
 //! G7. The half of the port that touches a document, as opposed to the pure
 //! tables in [`super::vocabulary`] and its neighbours.
 //!
-//! Ported so far: the base shell every annotation carries, and the
-//! `unsupported` fallback. Every subtype therefore reads as a correct shell
-//! with no subtype-specific fields, which is a state the wire format already
-//! has a name for. [`registry::FALLS_BACK_TO_UNSUPPORTED`] lists what is left,
-//! and a test asserts that list rather than leaving it to a comment.
+//! Two generations live here until the writes move. [`list`], [`kinds`],
+//! [`record`] and [`turn`] read upstream's record (`annotations.list`,
+//! `forms.list`'s widget rows). [`page`], [`dto`], [`registry`] and the
+//! per-kind modules beside them read the shape this branch's wire had before
+//! the catch-up: the annotation writes answer with it (Tasks 8.14 to 8.16)
+//! and the viewer host hands it to the kernel (Task 13).
 
 pub mod base;
 pub mod caret;
@@ -17,8 +18,11 @@ pub mod file_attachment;
 pub mod free_text;
 pub mod identity;
 pub mod ink_line;
+pub mod kinds;
 pub mod link;
+pub mod list;
 pub mod page;
+pub mod record;
 pub mod redact;
 pub mod registry;
 pub mod relationship;
@@ -28,6 +32,7 @@ pub mod style;
 pub mod text;
 pub mod text_markup;
 pub mod transform;
+pub mod turn;
 pub mod unsupported;
 pub mod vertex;
 pub mod widget;

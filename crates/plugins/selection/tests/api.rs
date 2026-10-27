@@ -1,60 +1,23 @@
 //! The typed API beyond what the vectors reach: the capability as the
 //! target of a handle drag (the TypeScript passes the capability where a
-//! `SelectionHandleTarget` is expected; here that is a trait impl).
+//! `SelectionHandleTarget` is expected; here that is a trait impl), and a
+//! search hit's span selecting with no casts.
+
+mod common;
 
 use std::cell::Cell;
 use std::rc::Rc;
 
-use epdf_geometry::{Point, TextQuad};
+use epdf_geometry::{Point, Quad};
 use epdf_kernel::geometry::PageRef;
-use epdf_kernel::kernel::OpenSource;
-use epdf_kernel::{Kernel, KernelOptions, OpenOptions, rt};
-use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
+use epdf_kernel::rt;
 use epdf_plugin_selection::*;
-use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
-use serde_json::json;
+
+use common::{BOTH, kernel, selection};
 
 const PAGE: PageRef = PageRef { page_object_number: 1 };
 
-/// Page 1 with "abc" at x 50..68, y-up 738..750 (content y 50..62).
-fn kernel() -> Kernel {
-    rt::reset();
-    let box_ = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
-    let glyph = |left: f64| json!({ "looseBox": { "left": left, "bottom": 738, "right": left + 6.0, "top": 750 }, "flags": 0 });
-    let fake = FakeEngine::new(json!({
-        "documents": { "a": {
-            "pages": [{
-                "index": 0, "ref": { "kind": "objectNumber", "pageObjectNumber": 1 }, "label": null,
-                "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
-                "boxes": { "media": box_, "crop": box_ }
-            }],
-            "security": { "allows": ["doc.text.select"] },
-            "responses": [{ "path": "page.geometry.read", "value": { "runs": [{
-                "rect": { "left": 50, "bottom": 738, "right": 68, "top": 750 },
-                "charStart": 0,
-                "glyphs": [glyph(50.0), glyph(56.0), glyph(62.0)]
-            }] } }]
-        } }
-    }));
-    let kernel = Kernel::new(
-        Rc::new(AsEngine(fake)),
-        vec![
-            interaction_plugin(InteractionConfig::default()),
-            selection_plugin(SelectionConfig::default()),
-        ],
-        KernelOptions { report: None, on_dispatch: None, release_closed_sessions: false },
-    )
-    .unwrap();
-    let _ = kernel.start();
-    rt::run_until_stalled();
-    let _ = kernel
-        .documents()
-        .open(OpenSource::Input(json!({ "kind": "bytes", "id": "a" })), OpenOptions::default());
-    rt::run_until_stalled();
-    kernel
-}
-
-/// Overlay px are content px shifted by (100, 0).
+/// Overlay px are page px shifted by (100, 0).
 struct Shifted;
 
 impl SelectionHandleView for Shifted {
@@ -71,8 +34,8 @@ impl SelectionHandleView for Shifted {
 
 #[test]
 fn a_handle_drag_drives_the_capability() {
-    let kernel = kernel();
-    let selection = kernel.capability(&SELECTION, Some("a")).unwrap();
+    let (kernel, _) = kernel(1, BOTH, Vec::new());
+    let selection = selection(&kernel);
     let _ = selection.ensure_loaded(PAGE);
     rt::run_until_stalled();
     let commits = Rc::new(Cell::new(0));
@@ -83,28 +46,51 @@ fn a_handle_drag_drives_the_capability() {
     });
 
     // The opposite endpoint is glyph 0's cell; drag toward glyph 2.
-    let cell = TextQuad {
-        upper_start: Point { x: 50.0, y: 50.0 },
-        upper_end: Point { x: 56.0, y: 50.0 },
-        lower_start: Point { x: 50.0, y: 62.0 },
-        lower_end: Point { x: 56.0, y: 62.0 },
+    let cell = Quad {
+        upper_left: Point { x: 50.0, y: 50.0 },
+        upper_right: Point { x: 56.0, y: 50.0 },
+        lower_left: Point { x: 50.0, y: 62.0 },
+        lower_right: Point { x: 56.0, y: 62.0 },
     };
     let opposite = SelectionHandleEndpoint { page: PAGE, glyph_quad: cell, advance: 1 };
     let session =
         create_selection_handle_drag(Rc::new(selection.clone()), Rc::new(Shifted), &opposite, PAGE);
     session.move_to(Point { x: 165.0, y: 56.0 });
-    assert!(selection.is_gesture_active());
+    assert!(selection.is_selecting());
     let range = selection.get_snapshot().range.unwrap();
     assert_eq!((range.start.index, range.end.index), (0, 3));
     session.end();
-    assert!(!selection.is_gesture_active());
+    assert!(!selection.is_selecting());
     assert_eq!(commits.get(), 1);
 }
 
 #[test]
+fn an_armed_handle_extends_from_the_opposite_end() {
+    let (kernel, _) = kernel(1, BOTH, Vec::new());
+    let selection = selection(&kernel);
+    let _ = selection.ensure_loaded(PAGE);
+    rt::run_until_stalled();
+    selection.select(SelectionRangeInput::Span { page: PAGE, start: 0, count: 2 }).unwrap();
+    let endpoints = selection_handle_endpoints_of(&selection.get_snapshot()).expect("two ends");
+    let armed = arm_selection_handle(
+        Rc::new(selection.clone()),
+        Rc::new(Shifted),
+        &endpoints,
+        HandleRole::End,
+    )
+    .expect("the end handle is laid out");
+    // The end handle's bar is glyph 1's trailing edge, x 62, y 50..62.
+    assert_eq!(armed.base, Point { x: 162.0, y: 56.0 });
+    armed.drag.move_to(Point { x: 165.0, y: 56.0 });
+    armed.drag.end();
+    let range = selection.get_range().unwrap();
+    assert_eq!((range.start.index, range.end.index), (0, 3));
+}
+
+#[test]
 fn a_search_hits_float_span_selects_without_casts() {
-    let kernel = kernel();
-    let selection = kernel.capability(&SELECTION, Some("a")).unwrap();
+    let (kernel, _) = kernel(1, BOTH, Vec::new());
+    let selection = selection(&kernel);
     let _ = selection.ensure_loaded(PAGE);
     rt::run_until_stalled();
     let (char_start, char_count) = (1.0_f64, 2.0_f64); // a SearchHit's fields
@@ -114,5 +100,78 @@ fn a_search_hits_float_span_selects_without_casts() {
     assert_eq!(
         SelectionRangeInput::span(PAGE, f64::NAN, 1e300),
         SelectionRangeInput::Span { page: PAGE, start: 0, count: i64::MAX }
+    );
+}
+
+#[test]
+fn settings_change_for_every_document_and_reset_to_the_registered_ones() {
+    let (kernel, _) = kernel(1, BOTH, Vec::new());
+    let selection = selection(&kernel);
+    assert_eq!(selection.get_settings(), selection_defaults());
+    let seen = Rc::new(Cell::new(0));
+    let s = seen.clone();
+    let _off = selection.on_settings_changed(move |event| {
+        assert_eq!(event.changed, vec!["dragThreshold".to_string()]);
+        s.set(s.get() + 1);
+        Ok(())
+    });
+    selection.update_settings(&SelectionConfig { drag_threshold: Some(9.0), ..Default::default() });
+    assert_eq!(selection.get_settings().drag_threshold, 9.0);
+    selection.update_settings(&SelectionConfig { drag_threshold: Some(9.0), ..Default::default() });
+    assert_eq!(seen.get(), 1, "a change that changes nothing fires nothing");
+    selection.reset_settings();
+    assert_eq!(selection.get_settings(), selection_defaults());
+}
+
+#[test]
+fn a_malformed_setting_reads_as_its_default_and_is_reported() {
+    use std::cell::RefCell;
+
+    use epdf_kernel::{Kernel, KernelOptions, OpenOptions, kernel::OpenSource};
+    use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
+    use plugin_conformance::fake_engine::{AsEngine, FakeEngine};
+    use serde_json::json;
+
+    rt::reset();
+    let reports = Rc::new(RefCell::new(Vec::<String>::new()));
+    let sink = reports.clone();
+    let fake = FakeEngine::new(json!({ "documents": { "a": {
+        "pages": [common::page_row(0, 1)], "security": { "allows": BOTH }, "responses": []
+    } } }));
+    let kernel = Kernel::new(
+        Rc::new(AsEngine(fake)),
+        vec![
+            interaction_plugin(InteractionConfig::default()),
+            selection_plugin(SelectionConfig::default()),
+        ],
+        KernelOptions {
+            report: Some(Rc::new(move |e| sink.borrow_mut().push(e.message.clone()))),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let _ = kernel.start();
+    rt::run_until_stalled();
+    let _ = kernel.documents().open(
+        OpenSource::Input(json!({ "kind": "bytes", "id": "a", "bytes": { "$bytes": "" } })),
+        OpenOptions::default(),
+    );
+    rt::run_until_stalled();
+    let selection = selection(&kernel);
+    let seen = Rc::new(Cell::new(0.0));
+    let s = seen.clone();
+    let _off = selection.on_settings_changed(move |event| {
+        s.set(event.settings.drag_threshold);
+        Ok(())
+    });
+    // A host writing JSON straight into the store, past the typed API.
+    let store = kernel.settings_of(SELECTION.any()).unwrap();
+    store.update_settings(&json!({ "dragThreshold": "far", "color": "red" }));
+    assert_eq!(selection.get_settings().drag_threshold, 4.0, "the default");
+    assert_eq!(selection.get_settings().color.as_deref(), Some("red"), "the rest still reads");
+    assert_eq!(seen.get(), 4.0, "the listener still hears the change");
+    assert!(
+        reports.borrow().iter().any(|m| m.starts_with("[selection] malformed settings")),
+        "{reports:?}"
     );
 }

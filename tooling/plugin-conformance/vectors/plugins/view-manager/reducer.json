@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
-  "describes": "packages/plugin/view-manager: viewManagerReducer and initialViewManagerState (`same` is reference identity).",
+  "describes": "packages/plugin/view-manager: named model transitions, generated pane ids and ordered document partition.",
   "cases": [
     {
       "name": "initial-state",
@@ -18,7 +18,7 @@
     },
     {
       "name": "create",
-      "fn": "viewManagerReducer",
+      "fn": "createPane",
       "args": [
         {
           "panes": {
@@ -51,102 +51,80 @@
           ],
           "focusedPaneId": "pane-2",
           "seq": 3
-        },
-        {
-          "type": "CREATE_PANE",
-          "pane": {
-            "id": "pane-4",
-            "documentIds": [],
-            "activeDocumentId": null
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-4": {
-                "id": "pane-4",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3",
-              "pane-4"
-            ],
-            "focusedPaneId": "pane-4",
-            "seq": 4
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-4": {
+              "id": "pane-4",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3",
+            "pane-4"
+          ],
+          "focusedPaneId": "pane-4",
+          "seq": 4
         }
       }
     },
     {
       "name": "create-on-empty",
-      "fn": "viewManagerReducer",
+      "fn": "createPane",
       "args": [
         {
           "panes": {},
           "order": [],
           "focusedPaneId": null,
           "seq": 0
-        },
-        {
-          "type": "CREATE_PANE",
-          "pane": {
-            "id": "pane-1",
-            "documentIds": [],
-            "activeDocumentId": null
-          }
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
-            },
-            "order": [
-              "pane-1"
-            ],
-            "focusedPaneId": "pane-1",
-            "seq": 1
-          }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1"
+          ],
+          "focusedPaneId": "pane-1",
+          "seq": 1
         }
       }
     },
     {
       "name": "remove-unknown-is-ignored",
-      "fn": "viewManagerReducer",
+      "fn": "removePane",
       "args": [
         {
           "panes": {
@@ -180,52 +158,46 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_PANE",
-          "id": "nope"
-        }
+        "nope"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-focused-focuses-the-last",
-      "fn": "viewManagerReducer",
+      "fn": "removePane",
       "args": [
         {
           "panes": {
@@ -259,44 +231,38 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_PANE",
-          "id": "pane-2"
-        }
+        "pane-2"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-3",
-            "seq": 3
-          }
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-3",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-unfocused-keeps-focus",
-      "fn": "viewManagerReducer",
+      "fn": "removePane",
       "args": [
         {
           "panes": {
@@ -330,42 +296,36 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_PANE",
-          "id": "pane-1"
-        }
+        "pane-1"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
             },
-            "order": [
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-the-only-view",
-      "fn": "viewManagerReducer",
+      "fn": "removePane",
       "args": [
         {
           "panes": {
@@ -383,26 +343,20 @@
           "focusedPaneId": "pane-1",
           "seq": 1
         },
-        {
-          "type": "REMOVE_PANE",
-          "id": "pane-1"
-        }
+        "pane-1"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {},
-            "order": [],
-            "focusedPaneId": null,
-            "seq": 1
-          }
+          "panes": {},
+          "order": [],
+          "focusedPaneId": null,
+          "seq": 1
         }
       }
     },
     {
       "name": "reorder",
-      "fn": "viewManagerReducer",
+      "fn": "movePane",
       "args": [
         {
           "panes": {
@@ -436,56 +390,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REORDER_PANES",
+        "pane-3",
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
           "order": [
             "pane-3",
             "pane-1",
             "pane-2"
-          ]
-        }
-      ],
-      "outcome": {
-        "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
-            },
-            "order": [
-              "pane-3",
-              "pane-1",
-              "pane-2"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "set-focused",
-      "fn": "viewManagerReducer",
+      "fn": "setFocusedPane",
       "args": [
         {
           "panes": {
@@ -519,52 +464,46 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_FOCUSED",
-          "id": "pane-3"
-        }
+        "pane-3"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-3",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-3",
+          "seq": 3
         }
       }
     },
     {
       "name": "set-focused-null",
-      "fn": "viewManagerReducer",
+      "fn": "setFocusedPane",
       "args": [
         {
           "panes": {
@@ -598,52 +537,46 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_FOCUSED",
-          "id": null
-        }
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": null,
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": null,
+          "seq": 3
         }
       }
     },
     {
-      "name": "set-focused-same-is-a-new-state",
-      "fn": "viewManagerReducer",
+      "name": "set-focused-same-is-ignored",
+      "fn": "setFocusedPane",
       "args": [
         {
           "panes": {
@@ -677,52 +610,46 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_FOCUSED",
-          "id": "pane-2"
-        }
+        "pane-2"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "set-active",
-      "fn": "viewManagerReducer",
+      "fn": "setActiveDocument",
       "args": [
         {
           "panes": {
@@ -756,53 +683,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_ACTIVE_DOC",
-          "paneId": "pane-1",
-          "documentId": "c"
-        }
+        "pane-1",
+        "c"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "c"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "c"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "set-active-null",
-      "fn": "viewManagerReducer",
+      "fn": "setActiveDocument",
       "args": [
         {
           "panes": {
@@ -836,53 +757,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_ACTIVE_DOC",
-          "paneId": "pane-1",
-          "documentId": null
-        }
+        "pane-1",
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": null
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": null
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "set-active-unknown-view",
-      "fn": "viewManagerReducer",
+      "fn": "setActiveDocument",
       "args": [
         {
           "panes": {
@@ -916,53 +831,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_ACTIVE_DOC",
-          "paneId": "nope",
-          "documentId": "a"
-        }
+        "nope",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "set-active-foreign-document",
-      "fn": "viewManagerReducer",
+      "fn": "setActiveDocument",
       "args": [
         {
           "panes": {
@@ -996,53 +905,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "SET_ACTIVE_DOC",
-          "paneId": "pane-1",
-          "documentId": "d"
-        }
+        "pane-1",
+        "d"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-appends",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1076,54 +979,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e"
-        }
+        "pane-1",
+        "e"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c",
-                  "e"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c",
+                "e"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-at-index",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1157,55 +1054,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": 1
-        }
+        "pane-1",
+        "e",
+        1
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "e",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "e",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-at-zero",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1239,55 +1130,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": 0
-        }
+        "pane-1",
+        "e",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "e",
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "e",
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-negative-clamps",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1321,55 +1206,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": -4
-        }
+        "pane-1",
+        "e",
+        -4
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "e",
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "e",
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-past-the-end-clamps",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1403,55 +1282,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": 99
-        }
+        "pane-1",
+        "e",
+        99
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c",
-                  "e"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c",
+                "e"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-fractional-truncates",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1485,55 +1358,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": 2.9
-        }
+        "pane-1",
+        "e",
+        2.9
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "e",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "e",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-nan-lands-first",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1567,57 +1434,51 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
+        "pane-1",
+        "e",
         {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": {
-            "$number": "NaN"
-          }
+          "$number": "NaN"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "e",
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "e",
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-infinity-appends",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1651,57 +1512,51 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
+        "pane-1",
+        "e",
         {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": {
-            "$number": "Infinity"
-          }
+          "$number": "Infinity"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c",
-                  "e"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c",
+                "e"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-negative-infinity-lands-first",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1735,57 +1590,51 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
+        "pane-1",
+        "e",
         {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "e",
-          "index": {
-            "$number": "-Infinity"
-          }
+          "$number": "-Infinity"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "e",
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "e",
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-to-empty-activates",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1819,55 +1668,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-3",
-          "documentId": "e"
-        }
+        "pane-3",
+        "e"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [
-                  "e"
-                ],
-                "activeDocumentId": "e"
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [
+                "e"
+              ],
+              "activeDocumentId": "e"
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-present-is-ignored",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1901,53 +1744,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "a"
-        }
+        "pane-1",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-unknown-view-is-ignored",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -1981,53 +1818,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "nope",
-          "documentId": "e"
-        }
+        "nope",
+        "e"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-moves-from-its-holder",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -2061,53 +1892,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-1",
-          "documentId": "d",
-          "index": 0
-        }
+        "pane-1",
+        "d",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "d",
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "d",
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "add-moves-into-an-empty-pane",
-      "fn": "viewManagerReducer",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -2141,54 +1966,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "pane-3",
-          "documentId": "b"
-        }
+        "pane-3",
+        "b"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "c"
-                ],
-                "activeDocumentId": "c"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "c"
+              ],
+              "activeDocumentId": "c"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [
+                "b"
+              ],
+              "activeDocumentId": "b"
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
-      "name": "add-takes-the-first-holder-in-property-order",
-      "fn": "viewManagerReducer",
+      "name": "add-takes-the-first-holder-in-pane-order",
+      "fn": "addDocument",
       "args": [
         {
           "panes": {
@@ -2221,53 +2040,47 @@
           "focusedPaneId": "0",
           "seq": 3
         },
-        {
-          "type": "ADD_DOC",
-          "paneId": "b",
-          "documentId": "x"
-        }
+        "b",
+        "x"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "0": {
-                "id": "0",
-                "documentIds": [
-                  "y"
-                ],
-                "activeDocumentId": "y"
-              },
-              "1": {
-                "id": "1",
-                "documentIds": [
-                  "x"
-                ],
-                "activeDocumentId": "x"
-              },
-              "b": {
-                "id": "b",
-                "documentIds": [
-                  "x"
-                ],
-                "activeDocumentId": "x"
-              }
+          "panes": {
+            "0": {
+              "id": "0",
+              "documentIds": [
+                "y"
+              ],
+              "activeDocumentId": "y"
             },
-            "order": [
-              "0",
-              "1",
-              "b"
-            ],
-            "focusedPaneId": "0",
-            "seq": 3
-          }
+            "1": {
+              "id": "1",
+              "documentIds": [
+                "x"
+              ],
+              "activeDocumentId": "x"
+            },
+            "b": {
+              "id": "b",
+              "documentIds": [
+                "x"
+              ],
+              "activeDocumentId": "x"
+            }
+          },
+          "order": [
+            "0",
+            "1",
+            "b"
+          ],
+          "focusedPaneId": "0",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-doc-inactive",
-      "fn": "viewManagerReducer",
+      "fn": "removeDocument",
       "args": [
         {
           "panes": {
@@ -2301,52 +2114,46 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_DOC",
-          "paneId": "pane-1",
-          "documentId": "a"
-        }
+        "pane-1",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-doc-active-picks-the-next",
-      "fn": "viewManagerReducer",
+      "fn": "removeDocument",
       "args": [
         {
           "panes": {
@@ -2380,52 +2187,46 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_DOC",
-          "paneId": "pane-1",
-          "documentId": "b"
-        }
+        "pane-1",
+        "b"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "c"
-                ],
-                "activeDocumentId": "c"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "c"
+              ],
+              "activeDocumentId": "c"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-doc-active-last-picks-the-previous",
-      "fn": "viewManagerReducer",
+      "fn": "removeDocument",
       "args": [
         {
           "panes": {
@@ -2445,38 +2246,32 @@
           "focusedPaneId": "pane-1",
           "seq": 1
         },
-        {
-          "type": "REMOVE_DOC",
-          "paneId": "pane-1",
-          "documentId": "c"
-        }
+        "pane-1",
+        "c"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              }
-            },
-            "order": [
-              "pane-1"
-            ],
-            "focusedPaneId": "pane-1",
-            "seq": 1
-          }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "b"
+            }
+          },
+          "order": [
+            "pane-1"
+          ],
+          "focusedPaneId": "pane-1",
+          "seq": 1
         }
       }
     },
     {
       "name": "remove-doc-only-leaves-null",
-      "fn": "viewManagerReducer",
+      "fn": "removeDocument",
       "args": [
         {
           "panes": {
@@ -2510,51 +2305,45 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_DOC",
-          "paneId": "pane-2",
-          "documentId": "d"
-        }
+        "pane-2",
+        "d"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
-      "name": "remove-doc-absent-is-a-new-state",
-      "fn": "viewManagerReducer",
+      "name": "remove-doc-absent-is-ignored",
+      "fn": "removeDocument",
       "args": [
         {
           "panes": {
@@ -2588,53 +2377,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_DOC",
-          "paneId": "pane-1",
-          "documentId": "zzz"
-        }
+        "pane-1",
+        "zzz"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "remove-doc-unknown-view",
-      "fn": "viewManagerReducer",
+      "fn": "removeDocument",
       "args": [
         {
           "panes": {
@@ -2668,53 +2451,47 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "REMOVE_DOC",
-          "paneId": "nope",
-          "documentId": "a"
-        }
+        "nope",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-within",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentWithin",
       "args": [
         {
           "panes": {
@@ -2748,54 +2525,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_WITHIN",
-          "paneId": "pane-1",
-          "documentId": "a",
-          "toIndex": 2
-        }
+        "pane-1",
+        "a",
+        2
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "b",
-                  "c",
-                  "a"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "b",
+                "c",
+                "a"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-within-to-front",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentWithin",
       "args": [
         {
           "panes": {
@@ -2829,54 +2600,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_WITHIN",
-          "paneId": "pane-1",
-          "documentId": "c",
-          "toIndex": 0
-        }
+        "pane-1",
+        "c",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "c",
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "c",
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-within-clamps",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentWithin",
       "args": [
         {
           "panes": {
@@ -2910,54 +2675,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_WITHIN",
-          "paneId": "pane-1",
-          "documentId": "a",
-          "toIndex": 50
-        }
+        "pane-1",
+        "a",
+        50
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "b",
-                  "c",
-                  "a"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "b",
+                "c",
+                "a"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-within-nan",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentWithin",
       "args": [
         {
           "panes": {
@@ -2991,56 +2750,50 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
+        "pane-1",
+        "c",
         {
-          "type": "MOVE_DOC_WITHIN",
-          "paneId": "pane-1",
-          "documentId": "c",
-          "toIndex": {
-            "$number": "NaN"
-          }
+          "$number": "NaN"
         }
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "c",
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "c",
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-within-absent",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentWithin",
       "args": [
         {
           "panes": {
@@ -3074,54 +2827,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_WITHIN",
-          "paneId": "pane-1",
-          "documentId": "d",
-          "toIndex": 0
-        }
+        "pane-1",
+        "d",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-within-unknown-view",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentWithin",
       "args": [
         {
           "panes": {
@@ -3155,54 +2902,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_WITHIN",
-          "paneId": "nope",
-          "documentId": "a",
-          "toIndex": 0
-        }
+        "nope",
+        "a",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3236,54 +2977,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-1",
-          "toPaneId": "pane-2",
-          "documentId": "b"
-        }
+        "pane-1",
+        "pane-2",
+        "b"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "c"
-                ],
-                "activeDocumentId": "c"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d",
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "c"
+              ],
+              "activeDocumentId": "c"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d",
+                "b"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-at-index",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3317,55 +3052,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-1",
-          "toPaneId": "pane-2",
-          "documentId": "a",
-          "toIndex": 0
-        }
+        "pane-1",
+        "pane-2",
+        "a",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "a",
-                  "d"
-                ],
-                "activeDocumentId": "a"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "a",
+                "d"
+              ],
+              "activeDocumentId": "a"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-into-empty",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3399,55 +3128,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-2",
-          "toPaneId": "pane-3",
-          "documentId": "d",
-          "toIndex": 5
-        }
+        "pane-2",
+        "pane-3",
+        "d",
+        5
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-3",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-3",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-same-view",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3481,54 +3204,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-1",
-          "toPaneId": "pane-1",
-          "documentId": "a"
-        }
+        "pane-1",
+        "pane-1",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "b",
-                  "c",
-                  "a"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "b",
+                "c",
+                "a"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-same-view-at-index",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3562,55 +3279,49 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-1",
-          "toPaneId": "pane-1",
-          "documentId": "c",
-          "toIndex": 0
-        }
+        "pane-1",
+        "pane-1",
+        "c",
+        0
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "c",
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "c",
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-unknown-from",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3644,54 +3355,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "nope",
-          "toPaneId": "pane-1",
-          "documentId": "a"
-        }
+        "nope",
+        "pane-1",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-unknown-to",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3725,54 +3430,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-1",
-          "toPaneId": "nope",
-          "documentId": "a"
-        }
+        "pane-1",
+        "nope",
+        "a"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "move-between-absent-document",
-      "fn": "viewManagerReducer",
+      "fn": "moveDocumentBetween",
       "args": [
         {
           "panes": {
@@ -3806,54 +3505,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "MOVE_DOC_BETWEEN",
-          "fromPaneId": "pane-1",
-          "toPaneId": "pane-2",
-          "documentId": "d"
-        }
+        "pane-1",
+        "pane-2",
+        "d"
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-prunes-closed",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -3887,54 +3580,48 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "d"
-          ],
-          "preferPaneId": "pane-2"
-        }
+        [
+          "a",
+          "d"
+        ],
+        "pane-2"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a"
-                ],
-                "activeDocumentId": "a"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a"
+              ],
+              "activeDocumentId": "a"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-prunes-the-active",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -3968,56 +3655,50 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "c",
-            "d"
-          ],
-          "preferPaneId": null
-        }
+        [
+          "a",
+          "c",
+          "d"
+        ],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "c"
-                ],
-                "activeDocumentId": "a"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "c"
+              ],
+              "activeDocumentId": "a"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-assigns-to-preferred",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4051,63 +3732,57 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "b",
-            "c",
-            "d",
-            "x",
-            "y"
-          ],
-          "preferPaneId": "pane-3"
-        }
+        [
+          "a",
+          "b",
+          "c",
+          "d",
+          "x",
+          "y"
+        ],
+        "pane-3"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [
-                  "x",
-                  "y"
-                ],
-                "activeDocumentId": "x"
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [
+                "x",
+                "y"
+              ],
+              "activeDocumentId": "x"
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-assigns-to-focused",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4141,60 +3816,54 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "x",
-            "a",
-            "b",
-            "c",
-            "d"
-          ],
-          "preferPaneId": "nope"
-        }
+        [
+          "x",
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        "nope"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d",
-                  "x"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d",
+                "x"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-assigns-to-first",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4228,60 +3897,54 @@
           "focusedPaneId": "gone",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "b",
-            "c",
-            "d",
-            "x"
-          ],
-          "preferPaneId": null
-        }
+        [
+          "a",
+          "b",
+          "c",
+          "d",
+          "x"
+        ],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c",
-                  "x"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c",
+                "x"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "gone",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "gone",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-assigns-to-first-no-focus",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4315,51 +3978,45 @@
           "focusedPaneId": null,
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "x"
-          ],
-          "preferPaneId": ""
-        }
+        [
+          "x"
+        ],
+        ""
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "x"
-                ],
-                "activeDocumentId": "x"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "x"
+              ],
+              "activeDocumentId": "x"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": null,
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": null,
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-creates-a-default-pane",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {},
@@ -4367,41 +4024,35 @@
           "focusedPaneId": null,
           "seq": 0
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "b"
-          ],
-          "preferPaneId": null
-        }
+        [
+          "a",
+          "b"
+        ],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "a"
-              }
-            },
-            "order": [
-              "pane-1"
-            ],
-            "focusedPaneId": "pane-1",
-            "seq": 1
-          }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "a"
+            }
+          },
+          "order": [
+            "pane-1"
+          ],
+          "focusedPaneId": "pane-1",
+          "seq": 1
         }
       }
     },
     {
       "name": "reconcile-creates-and-keeps-a-stale-focus",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {},
@@ -4409,39 +4060,33 @@
           "focusedPaneId": "x",
           "seq": 4
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a"
-          ],
-          "preferPaneId": "x"
-        }
+        [
+          "a"
+        ],
+        "x"
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-5": {
-                "id": "pane-5",
-                "documentIds": [
-                  "a"
-                ],
-                "activeDocumentId": "a"
-              }
-            },
-            "order": [
-              "pane-5"
-            ],
-            "focusedPaneId": "x",
-            "seq": 5
-          }
+          "panes": {
+            "pane-5": {
+              "id": "pane-5",
+              "documentIds": [
+                "a"
+              ],
+              "activeDocumentId": "a"
+            }
+          },
+          "order": [
+            "pane-5"
+          ],
+          "focusedPaneId": "x",
+          "seq": 5
         }
       }
     },
     {
       "name": "reconcile-nothing-open",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4475,47 +4120,41 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [],
-          "preferPaneId": null
-        }
+        [],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [],
-                "activeDocumentId": null
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [],
+              "activeDocumentId": null
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
       "name": "reconcile-nothing-open-no-views",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {},
@@ -4523,27 +4162,21 @@
           "focusedPaneId": null,
           "seq": 0
         },
-        {
-          "type": "RECONCILE",
-          "open": [],
-          "preferPaneId": null
-        }
+        [],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {},
-            "order": [],
-            "focusedPaneId": null,
-            "seq": 0
-          }
+          "panes": {},
+          "order": [],
+          "focusedPaneId": null,
+          "seq": 0
         }
       }
     },
     {
       "name": "reconcile-empty-active-is-replaced",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4562,41 +4195,35 @@
           "focusedPaneId": "pane-1",
           "seq": 1
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "b"
-          ],
-          "preferPaneId": null
-        }
+        [
+          "a",
+          "b"
+        ],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "a"
-              }
-            },
-            "order": [
-              "pane-1"
-            ],
-            "focusedPaneId": "pane-1",
-            "seq": 1
-          }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "a"
+            }
+          },
+          "order": [
+            "pane-1"
+          ],
+          "focusedPaneId": "pane-1",
+          "seq": 1
         }
       }
     },
     {
       "name": "reconcile-duplicate-assignments",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4623,49 +4250,43 @@
           "focusedPaneId": "pane-1",
           "seq": 2
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "b"
-          ],
-          "preferPaneId": null
-        }
+        [
+          "a",
+          "b"
+        ],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a"
-                ],
-                "activeDocumentId": "a"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "a",
-                  "b"
-                ],
-                "activeDocumentId": "b"
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a"
+              ],
+              "activeDocumentId": "a"
             },
-            "order": [
-              "pane-1",
-              "pane-2"
-            ],
-            "focusedPaneId": "pane-1",
-            "seq": 2
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "a",
+                "b"
+              ],
+              "activeDocumentId": "b"
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2"
+          ],
+          "focusedPaneId": "pane-1",
+          "seq": 2
         }
       }
     },
     {
       "name": "reconcile-keeps-other-members",
-      "fn": "viewManagerReducer",
+      "fn": "reconcile",
       "args": [
         {
           "panes": {
@@ -4699,58 +4320,330 @@
           "focusedPaneId": "pane-2",
           "seq": 3
         },
-        {
-          "type": "RECONCILE",
-          "open": [
-            "a",
-            "b",
-            "c",
-            "d"
-          ],
-          "preferPaneId": null
-        }
+        [
+          "a",
+          "b",
+          "c",
+          "d"
+        ],
+        null
       ],
       "outcome": {
         "returned": {
-          "same": false,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
         }
       }
     },
     {
-      "name": "unknown-action-is-ignored",
-      "fn": "viewManagerReducer",
+      "name": "next-pane-id",
+      "fn": "nextPaneId",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      ],
+      "outcome": {
+        "returned": "pane-4"
+      }
+    },
+    {
+      "name": "create-at-front",
+      "fn": "createPane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-4": {
+              "id": "pane-4",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-4",
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-4",
+          "seq": 4
+        }
+      }
+    },
+    {
+      "name": "create-at-fraction",
+      "fn": "createPane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        1.9
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-4": {
+              "id": "pane-4",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-4",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-4",
+          "seq": 4
+        }
+      }
+    },
+    {
+      "name": "create-at-negative",
+      "fn": "createPane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        -9
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-4": {
+              "id": "pane-4",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-4",
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-4",
+          "seq": 4
+        }
+      }
+    },
+    {
+      "name": "create-at-infinity",
+      "fn": "createPane",
       "args": [
         {
           "panes": {
@@ -4785,44 +4678,982 @@
           "seq": 3
         },
         {
-          "type": "NOPE"
+          "$number": "Infinity"
         }
       ],
       "outcome": {
         "returned": {
-          "same": true,
-          "next": {
-            "panes": {
-              "pane-1": {
-                "id": "pane-1",
-                "documentIds": [
-                  "a",
-                  "b",
-                  "c"
-                ],
-                "activeDocumentId": "b"
-              },
-              "pane-2": {
-                "id": "pane-2",
-                "documentIds": [
-                  "d"
-                ],
-                "activeDocumentId": "d"
-              },
-              "pane-3": {
-                "id": "pane-3",
-                "documentIds": [],
-                "activeDocumentId": null
-              }
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
             },
-            "order": [
-              "pane-1",
-              "pane-2",
-              "pane-3"
-            ],
-            "focusedPaneId": "pane-2",
-            "seq": 3
-          }
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-4": {
+              "id": "pane-4",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3",
+            "pane-4"
+          ],
+          "focusedPaneId": "pane-4",
+          "seq": 4
+        }
+      }
+    },
+    {
+      "name": "create-at-nan",
+      "fn": "createPane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "pane-4": {
+              "id": "pane-4",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-4",
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-4",
+          "seq": 4
+        }
+      }
+    },
+    {
+      "name": "create-sequence-survives-removal",
+      "fn": "createPane",
+      "args": [
+        {
+          "panes": {},
+          "order": [],
+          "focusedPaneId": null,
+          "seq": 8
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-9": {
+              "id": "pane-9",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-9"
+          ],
+          "focusedPaneId": "pane-9",
+          "seq": 9
+        }
+      }
+    },
+    {
+      "name": "move-pane-negative",
+      "fn": "movePane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "pane-2",
+        -1
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-2",
+            "pane-1",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "move-pane-infinity",
+      "fn": "movePane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "pane-1",
+        {
+          "$number": "Infinity"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-2",
+            "pane-3",
+            "pane-1"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "move-pane-fractional",
+      "fn": "movePane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "pane-3",
+        1.9
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-3",
+            "pane-2"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "move-pane-nan",
+      "fn": "movePane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "pane-3",
+        {
+          "$number": "NaN"
+        }
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-3",
+            "pane-1",
+            "pane-2"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "move-pane-unknown",
+      "fn": "movePane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "unknown",
+        0
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "move-pane-same-index",
+      "fn": "movePane",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "pane-2",
+        1
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "rename-active",
+      "fn": "renameDocument",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "b",
+        "real"
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "real",
+                "c"
+              ],
+              "activeDocumentId": "real"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "rename-inactive",
+      "fn": "renameDocument",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "a",
+        "real"
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "real",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "rename-absent",
+      "fn": "renameDocument",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "absent",
+        "real"
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        }
+      }
+    },
+    {
+      "name": "pane-of-document",
+      "fn": "paneOfDocument",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "d"
+      ],
+      "outcome": {
+        "returned": "pane-2"
+      }
+    },
+    {
+      "name": "pane-of-absent-document",
+      "fn": "paneOfDocument",
+      "args": [
+        {
+          "panes": {
+            "pane-1": {
+              "id": "pane-1",
+              "documentIds": [
+                "a",
+                "b",
+                "c"
+              ],
+              "activeDocumentId": "b"
+            },
+            "pane-2": {
+              "id": "pane-2",
+              "documentIds": [
+                "d"
+              ],
+              "activeDocumentId": "d"
+            },
+            "pane-3": {
+              "id": "pane-3",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "pane-1",
+            "pane-2",
+            "pane-3"
+          ],
+          "focusedPaneId": "pane-2",
+          "seq": 3
+        },
+        "absent"
+      ],
+      "outcome": {
+        "returned": null
+      }
+    },
+    {
+      "name": "holder-follows-pane-order-not-property-order",
+      "fn": "addDocument",
+      "args": [
+        {
+          "panes": {
+            "0": {
+              "id": "0",
+              "documentIds": [
+                "x",
+                "y"
+              ],
+              "activeDocumentId": "x"
+            },
+            "1": {
+              "id": "1",
+              "documentIds": [
+                "x"
+              ],
+              "activeDocumentId": "x"
+            },
+            "b": {
+              "id": "b",
+              "documentIds": [],
+              "activeDocumentId": null
+            }
+          },
+          "order": [
+            "1",
+            "0",
+            "b"
+          ],
+          "focusedPaneId": "0",
+          "seq": 3
+        },
+        "b",
+        "x"
+      ],
+      "outcome": {
+        "returned": {
+          "panes": {
+            "0": {
+              "id": "0",
+              "documentIds": [
+                "x",
+                "y"
+              ],
+              "activeDocumentId": "x"
+            },
+            "1": {
+              "id": "1",
+              "documentIds": [],
+              "activeDocumentId": null
+            },
+            "b": {
+              "id": "b",
+              "documentIds": [
+                "x"
+              ],
+              "activeDocumentId": "x"
+            }
+          },
+          "order": [
+            "1",
+            "0",
+            "b"
+          ],
+          "focusedPaneId": "0",
+          "seq": 3
         }
       }
     }

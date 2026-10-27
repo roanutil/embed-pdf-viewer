@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/geometry: Mat2D compose, invert, apply*, builders and matrixToCss.",
   "cases": [
@@ -1970,19 +1970,19 @@
           0
         ],
         {
-          "p1": {
+          "upperLeft": {
             "x": 0,
             "y": 200
           },
-          "p2": {
+          "upperRight": {
             "x": 100,
             "y": 200
           },
-          "p3": {
+          "lowerLeft": {
             "x": 100,
             "y": 0
           },
-          "p4": {
+          "lowerRight": {
             "x": 0,
             "y": 0
           }
@@ -1990,19 +1990,19 @@
       ],
       "outcome": {
         "returned": {
-          "p1": {
+          "upperLeft": {
             "x": 0,
             "y": 0
           },
-          "p2": {
+          "upperRight": {
             "x": 0,
             "y": 100
           },
-          "p3": {
+          "lowerLeft": {
             "x": 200,
             "y": 100
           },
-          "p4": {
+          "lowerRight": {
             "x": 200,
             "y": 0
           }
@@ -2022,19 +2022,19 @@
           0
         ],
         {
-          "p1": {
+          "upperLeft": {
             "x": 0,
             "y": 0
           },
-          "p2": {
+          "upperRight": {
             "x": 10,
             "y": 0
           },
-          "p3": {
+          "lowerLeft": {
             "x": 10,
             "y": 10
           },
-          "p4": {
+          "lowerRight": {
             "x": 0,
             "y": 10
           }
@@ -2042,19 +2042,19 @@
       ],
       "outcome": {
         "returned": {
-          "p1": {
+          "upperLeft": {
             "x": 0,
             "y": 0
           },
-          "p2": {
+          "upperRight": {
             "x": 10,
             "y": 0
           },
-          "p3": {
+          "lowerLeft": {
             "x": 15,
             "y": 10
           },
-          "p4": {
+          "lowerRight": {
             "x": 5,
             "y": 10
           }
@@ -2074,19 +2074,19 @@
           13
         ],
         {
-          "p1": {
+          "upperLeft": {
             "x": 1,
             "y": 2
           },
-          "p2": {
+          "upperRight": {
             "x": 3,
             "y": 4
           },
-          "p3": {
+          "lowerLeft": {
             "x": 5,
             "y": 6
           },
-          "p4": {
+          "lowerRight": {
             "x": 7,
             "y": 8
           }
@@ -2094,19 +2094,19 @@
       ],
       "outcome": {
         "returned": {
-          "p1": {
+          "upperLeft": {
             "x": 23,
             "y": 30
           },
-          "p2": {
+          "upperRight": {
             "x": 37,
             "y": 50
           },
-          "p3": {
+          "lowerLeft": {
             "x": 51,
             "y": 70
           },
-          "p4": {
+          "lowerRight": {
             "x": 65,
             "y": 90
           }

@@ -21,8 +21,10 @@
 use std::collections::BTreeSet;
 
 use epdf_engine::auth::scope::{
-    CollabAction, CollabTarget, DocCapability, IdentityClaims, PdfBits, check_capability,
-    check_collab, check_set_group, decode_pdf_bits, expanded_capabilities, parse_all, parse_scope,
+    CollabAction, CollabEntity, CollabTarget, DocCapability, FieldGroupRight, FieldWriteAction,
+    IdentityClaims, PdfBits, check_any_field_action, check_capability, check_collab,
+    check_field_action, check_set_group, decode_pdf_bits, expanded_capabilities, field_rights_of,
+    parse_all, parse_scope,
 };
 use serde::Deserialize;
 
@@ -99,7 +101,9 @@ fn shape_difference(
     expected: &serde_json::Value,
     actual: &epdf_engine::auth::scope::ParsedScope,
 ) -> Option<String> {
-    use epdf_engine::auth::scope::{CollabActionPattern, CollabFilter, ParsedScope};
+    use epdf_engine::auth::scope::{
+        CollabActionPattern, CollabFilter, FieldActionPattern, FieldFilter, ParsedScope,
+    };
 
     let kind = expected.get("kind").and_then(|v| v.as_str()).unwrap_or("");
     match (kind, actual) {
@@ -111,6 +115,33 @@ fn shape_difference(
         ("capability", ParsedScope::Capability(name)) => {
             let want = expected.get("name").and_then(|v| v.as_str()).unwrap_or("");
             (want != name.as_str()).then(|| format!("capability {want} vs {name}"))
+        }
+        ("collab", ParsedScope::FieldCollab { action, filter }) => {
+            let want_entity = expected.get("entity").and_then(|v| v.as_str()).unwrap_or("");
+            if want_entity != "fields" {
+                return Some(format!("entity {want_entity} vs fields"));
+            }
+            let want_action = expected.get("action").and_then(|v| v.as_str()).unwrap_or("");
+            let got_action = match action {
+                FieldActionPattern::Any => "*",
+                FieldActionPattern::One(a) => a.as_str(),
+            };
+            if want_action != got_action {
+                return Some(format!("action {want_action} vs {got_action}"));
+            }
+            let want_filter = expected.get("filter")?;
+            let want_kind = want_filter.get("kind").and_then(|v| v.as_str()).unwrap_or("");
+            let want_value = want_filter.get("groupId").and_then(|v| v.as_str());
+            let (got_kind, got_value) = match filter {
+                FieldFilter::All => ("all", None),
+                FieldFilter::Group(v) => ("group", Some(v.as_str())),
+            };
+            if want_kind != got_kind || want_value != got_value {
+                return Some(format!(
+                    "filter {want_kind}={want_value:?} vs {got_kind}={got_value:?}"
+                ));
+            }
+            None
         }
         ("collab", ParsedScope::Collab { entity: _, action, filter }) => {
             let want_entity = expected.get("entity").and_then(|v| v.as_str()).unwrap_or("");
@@ -223,6 +254,14 @@ struct PerBits {
     collab: Option<Vec<Probe>>,
     #[serde(default, rename = "setGroup")]
     set_group: Option<Vec<Probe>>,
+    #[serde(default)]
+    fields: Option<Vec<Probe>>,
+    #[serde(default, rename = "anyField")]
+    any_field: Option<Vec<Probe>>,
+    #[serde(default, rename = "fieldRights")]
+    field_rights: Option<serde_json::Value>,
+    #[serde(default, rename = "fieldSetGroup")]
+    field_set_group: Option<Vec<Probe>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -302,9 +341,13 @@ fn resolution_agrees_with_typescript() {
             }
             checked += 1;
 
-            let granted: Vec<&str> = DocCapability::ALL
+            // Over the vector's own list, as the generator filters its
+            // `ALL_CAPABILITIES`; the closed-set test pins that list to ours.
+            let granted: Vec<&str> = file
+                .capabilities
                 .iter()
-                .filter(|c| check_capability(**c, &parsed, bits))
+                .map(|name| DocCapability::parse(name).expect("a capability Rust has"))
+                .filter(|c| check_capability(*c, &parsed, bits))
                 .map(|c| c.as_str())
                 .collect();
             let want_granted: Vec<&str> = per.granted.iter().map(String::as_str).collect();
@@ -330,12 +373,63 @@ fn resolution_agrees_with_typescript() {
 
             for probe in per.set_group.iter().flatten() {
                 let (new_group, caller_default) = parse_set_group_probe(&probe.probe);
-                let allowed = check_set_group(new_group, caller_default, &parsed);
+                let allowed =
+                    check_set_group(CollabEntity::Annotations, new_group, caller_default, &parsed);
                 if allowed != probe.allowed {
                     failures.push(format!(
                         "{where_}: setGroup {} was {allowed}, TypeScript said {}",
                         probe.probe, probe.allowed,
                     ));
+                }
+                checked += 1;
+            }
+
+            for probe in per.field_set_group.iter().flatten() {
+                let (new_group, caller_default) = parse_set_group_probe(&probe.probe);
+                let allowed =
+                    check_set_group(CollabEntity::Fields, new_group, caller_default, &parsed);
+                if allowed != probe.allowed {
+                    failures.push(format!(
+                        "{where_}: fieldSetGroup {} was {allowed}, TypeScript said {}",
+                        probe.probe, probe.allowed,
+                    ));
+                }
+                checked += 1;
+            }
+
+            for probe in per.fields.iter().flatten() {
+                let (action, group) = probe.probe.split_once(':').expect("probe is action:group");
+                let group = (group != "-").then_some(group);
+                let allowed = check_field_action(write_action(action), group, &parsed, bits);
+                if allowed != probe.allowed {
+                    failures.push(format!(
+                        "{where_}: field {} was {allowed}, TypeScript said {}",
+                        probe.probe, probe.allowed,
+                    ));
+                }
+                checked += 1;
+            }
+
+            for probe in per.any_field.iter().flatten() {
+                let allowed = check_any_field_action(write_action(&probe.probe), &parsed, bits);
+                if allowed != probe.allowed {
+                    failures.push(format!(
+                        "{where_}: anyField {} was {allowed}, TypeScript said {}",
+                        probe.probe, probe.allowed,
+                    ));
+                }
+                checked += 1;
+            }
+
+            if let Some(want) = &per.field_rights {
+                let rights = field_rights_of(&parsed, bits, identity.group_id.as_deref());
+                let got = serde_json::json!({
+                    "fill": group_right_json(&rights.fill),
+                    "sign": group_right_json(&rights.sign),
+                    "setGroup": group_right_json(&rights.set_group),
+                });
+                if &got != want {
+                    failures.push(format!("{where_}: fieldRights {got}, TypeScript said {want}"));
                 }
                 checked += 1;
             }
@@ -346,6 +440,23 @@ fn resolution_agrees_with_typescript() {
     // A generator that emitted an empty `results` for every case would make
     // the loop above pass without comparing anything.
     assert!(checked >= 400, "only {checked} comparisons ran; the corpus is not doing its job");
+}
+
+fn write_action(name: &str) -> FieldWriteAction {
+    match name {
+        "fill" => FieldWriteAction::Fill,
+        "sign" => FieldWriteAction::Sign,
+        other => panic!("unknown field action {other}"),
+    }
+}
+
+/// `FieldGroupRight` as TypeScript spells it, written out for the same
+/// reason as `shape_difference`.
+fn group_right_json(right: &FieldGroupRight) -> serde_json::Value {
+    match right {
+        FieldGroupRight::All => serde_json::json!({ "all": true }),
+        FieldGroupRight::Groups(groups) => serde_json::json!({ "all": false, "groups": groups }),
+    }
 }
 
 /// `"update:u2/finance"` back into an action and a target.

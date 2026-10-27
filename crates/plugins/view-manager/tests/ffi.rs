@@ -55,7 +55,7 @@ fn open_b(thread: &KernelThread<TestKernel>) -> String {
             OpenSource::Input(json!({ "kind": "bytes", "id": "b", "bytes": { "$bytes": "" } })),
             OpenOptions::default(),
         );
-        settle(&opened).unwrap().as_str().unwrap().to_string()
+        settle(&opened).unwrap()["document"]["id"].as_str().unwrap().to_string()
     }))
     .unwrap()
 }
@@ -87,7 +87,7 @@ fn splitting_moves_the_document_and_says_so_in_order() {
     let b = open_b(&thread);
     let events = Arc::new(Events::default());
     let _sub = vm.subscribe(events.clone());
-    let pane = block_on(vm.split_pane(b.clone())).unwrap();
+    let pane = block_on(vm.split_pane(b.clone(), None)).unwrap();
     assert_eq!(pane, "pane-2");
     assert_eq!(block_on(vm.pane_order()).unwrap(), ["pane-1", "pane-2"]);
     assert_eq!(block_on(vm.pane(pane.clone())).unwrap().unwrap().document_ids, [b.as_str()]);
@@ -113,7 +113,7 @@ fn splitting_moves_the_document_and_says_so_in_order() {
 fn removing_a_pane_hands_its_documents_on() {
     let (thread, vm) = handle();
     let b = open_b(&thread);
-    let pane = block_on(vm.split_pane(b.clone())).unwrap();
+    let pane = block_on(vm.split_pane(b.clone(), None)).unwrap();
     block_on(vm.remove_pane(pane, Some("pane-1".into()))).unwrap();
     let panes = block_on(vm.panes()).unwrap();
     assert_eq!(panes.len(), 1);

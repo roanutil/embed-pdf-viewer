@@ -3,28 +3,32 @@
 //! table. It mirrors the shims in
 //! `tooling/plugin-conformance/src/suites/signature-plugin.ts`:
 //!
-//! - `console.error` from this plugin logs as the callback of that name
-//!   (`SignatureHost::console_error`);
-//! - `config.signer` is `{kind: 'cms' | 'raw', answer, ...}`, whose `sign`
-//!   logs as `signer.sign`, and `thunk: true` wraps it in a function that
-//!   logs `signer.resolve`; `config.trust` is `{anchors}`, logged as
-//!   `trust.anchors`; a per-call signer is a `$fn` or a port object in the
-//!   call's arguments;
-//! - `config.shape` builds the api with `createSignatureCapability` or
-//!   `createSignatureController`, without a config.
+//! - `console.error` lines starting `[signature]` log as the callback of
+//!   that name while a signature factory is current (the plugin writes them
+//!   through [`crate::console`]; the sink is put back when the case's kernel
+//!   is dropped);
+//! - `config.signer` is the `key` setting, `{kind: 'cms' | 'raw', answer,
+//!   ...}`, whose `sign` logs as `signer.sign`; `thunk: true` wraps it in a
+//!   function that logs `signer.resolve`. `config.trust` is `{anchors}`,
+//!   logged as `trust.anchors`. A per-call key is a `$fn` or a port object
+//!   in the call's arguments;
+//! - `config.shape: 'controller'` builds `signature.plugin.ts`'s definition
+//!   over `createSignatureController` with no registered settings;
+//! - the `signature-annotation` factory is the suite's probe over the
+//!   annotation plugin's `stamps.arm` and `stamps.isArmed`.
 
 use std::any::Any;
 use std::rc::Rc;
+use std::sync::LazyLock;
 
 use epdf_kernel::bytes::Bytes;
-use epdf_kernel::js::{from_value, to_value};
-use epdf_kernel::plugin::ConnectFn;
+use epdf_kernel::js::to_value;
 use epdf_kernel::rt::Promise;
-use epdf_kernel::{AnyPlugin, AnyToken, Error, Unsubscribe, define, is_undefined, undefined};
-use epdf_plugin_annotation::{ANNOTATION, StampPlacement};
-use epdf_plugin_form::FORM;
-use epdf_plugin_interaction::INTERACTION;
-use epdf_plugin_stamp::STAMP;
+use epdf_kernel::{
+    AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined, undefined,
+};
+use epdf_plugin_annotation::write::stamps::StampInput;
+use epdf_plugin_annotation::{ANNOTATION, AnnotationCapability};
 use epdf_signature_core::{
     CmsSignRequest, CmsSigner, Digest, RawAlgorithm, RawSigner, SignerPort, TrustPort,
     ValidationTime,
@@ -34,22 +38,24 @@ use serde::Serialize;
 use serde_json::{Value, json};
 
 use crate::contract::*;
-use crate::controller::{
-    SignatureCapability, create_signature_capability, create_signature_controller,
-};
-use crate::model::{SignatureAction, SignatureState};
-use crate::sync::hydration::ValidateRequest;
+use crate::controller::SignatureCapability;
+use crate::model::{SignatureState, set_busy, set_target, set_verdicts};
+use crate::services::settings::PortTable;
 use crate::{
-    blank_page_pdf, initial_signature_state, is_target, same_ref, signature_plugin,
-    signature_reducer,
+    blank_page_pdf, initial_signature_state, same_field_ref, signature_plugin,
+    signature_plugin_with,
 };
 
 /// The adapter.
 pub struct Signature;
 
-/// The composed api's member order (`composeApi` over the controller's
-/// slices).
+/// The composed api's member order (`composeApi` over the settings, the
+/// areas' slices, then the authority twins and the events).
 pub const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "getSnapshot",
     "getStatus",
     "listSignatures",
@@ -72,19 +78,20 @@ pub const MEMBERS: &[&str] = &[
     "sign",
     "prepareSignature",
     "completeSignature",
-    "abortPending",
+    "cancelPending",
     "fillField",
     "clearField",
     "placeMark",
     "canSign",
     "canFill",
     "canCertify",
+    "canReadRevision",
     "onSigned",
     "onFilled",
     "onCleared",
     "onValidated",
     "onProtectionChanged",
-    "onInvalidating",
+    "onInvalidationPredicted",
     "onTargetChanged",
     "onSignRequested",
     "onInspectionRequested",
@@ -108,6 +115,26 @@ fn answer(answer: Answer) -> Promise<Value> {
         Answer::Throws(error) => Promise::rejected(error),
         Answer::Promise(promise) => promise,
     }
+}
+
+// ── the console ───────────────────────────────────────────────────────────────
+
+/// The case's console sink, put back as it was when the case's kernel
+/// (which holds the plugin, and with it this guard) is dropped.
+struct ConsoleGuard(Option<crate::console::ConsoleSink>);
+
+impl Drop for ConsoleGuard {
+    fn drop(&mut self) {
+        crate::console::set_sink(self.0.take());
+    }
+}
+
+fn install_console(h: &Harness) -> Rc<ConsoleGuard> {
+    let log = h.clone();
+    let previous = crate::console::set_sink(Some(Rc::new(move |message: &str, error: &Error| {
+        log.log("console.error", vec![json!(message), error.to_canonical()]);
+    })));
+    Rc::new(ConsoleGuard(previous))
 }
 
 // ── ports ─────────────────────────────────────────────────────────────────────
@@ -140,13 +167,13 @@ fn port_from(sign: Callback, value: &Value) -> Result<SignerPort, Error> {
     }))
 }
 
-/// A signer in a call's arguments: a port object whose `sign` is a `$fn`,
-/// or a `$fn` that answers one.
-fn call_signer(value: &Value, h: &Harness) -> Result<SignerSource, Error> {
+/// A key in a call's arguments: a port object whose `sign` is a `$fn`, or
+/// a `$fn` that answers one.
+fn call_key(value: &Value, h: &Harness) -> Result<SignatureKey, Error> {
     if value.get("$fn").is_some() {
         let resolve = h.callback(value);
         let h = h.clone();
-        return Ok(SignerSource::Thunk(Rc::new(move || {
+        return Ok(SignatureKey::Thunk(Rc::new(move || {
             let h = h.clone();
             answer(resolve.call(Vec::new())).map(move |port| {
                 let sign = h.callback(port.get("sign").unwrap_or(&Value::Null));
@@ -154,11 +181,11 @@ fn call_signer(value: &Value, h: &Harness) -> Result<SignerSource, Error> {
             })
         })));
     }
-    port_from(h.callback(value.get("sign").unwrap_or(&Value::Null)), value).map(SignerSource::Port)
+    port_from(h.callback(value.get("sign").unwrap_or(&Value::Null)), value).map(SignatureKey::port)
 }
 
 /// `config.signer`: `{kind, answer, ...}`, `thunk` for a function.
-fn config_signer(spec: &Value, h: &Harness) -> Result<SignerSource, Error> {
+fn config_key(spec: &Value, h: &Harness) -> Result<SignatureKey, Error> {
     let mut sign = json!({ "$fn": "signer.sign" });
     if let (Some(Value::Object(answer)), Value::Object(out)) = (spec.get("answer"), &mut sign) {
         for (k, v) in answer {
@@ -167,10 +194,10 @@ fn config_signer(spec: &Value, h: &Harness) -> Result<SignerSource, Error> {
     }
     let port = port_from(h.callback(&sign), spec)?;
     if spec.get("thunk").and_then(Value::as_bool) != Some(true) {
-        return Ok(SignerSource::Port(port));
+        return Ok(SignatureKey::port(port));
     }
     let h = h.clone();
-    Ok(SignerSource::Thunk(Rc::new(move || {
+    Ok(SignatureKey::Thunk(Rc::new(move || {
         h.log("signer.resolve", Vec::new());
         Promise::resolved(port.clone())
     })))
@@ -185,22 +212,8 @@ impl TrustPort for ScriptedTrust {
     }
 }
 
-fn host(h: &Harness) -> SignatureHost {
-    let h = h.clone();
-    SignatureHost {
-        console_error: Some(Rc::new(move |message: &str, error: &Error| {
-            h.log("console.error", vec![json!(message), error.to_canonical()]);
-        })),
-    }
-}
-
+/// `configOf(spec, env)`: only the settings the spec names.
 fn config_of(spec: &Value, h: &Harness) -> Result<SignatureConfig, Error> {
-    let mode = match spec.get("mode").and_then(Value::as_str) {
-        Some("sign") => Some(SignatureMode::Sign),
-        Some("visual") => Some(SignatureMode::Visual),
-        Some("ask") => Some(SignatureMode::Ask),
-        _ => None,
-    };
     let trust = present(spec.get("trust")).map(|t| {
         let mut anchors = json!({ "$fn": "trust.anchors" });
         if let (Some(Value::Object(answer)), Value::Object(out)) = (t.get("anchors"), &mut anchors)
@@ -209,14 +222,13 @@ fn config_of(spec: &Value, h: &Harness) -> Result<SignatureConfig, Error> {
                 out.insert(k.clone(), v.clone());
             }
         }
-        Rc::new(ScriptedTrust(h.callback(&anchors))) as Rc<dyn TrustPort>
+        Some(Rc::new(ScriptedTrust(h.callback(&anchors))) as Rc<dyn TrustPort>)
     });
     Ok(SignatureConfig {
-        mode,
-        signer: present(spec.get("signer")).map(|s| config_signer(s, h)).transpose()?,
-        trust,
+        mode: defined(spec.get("mode")).map(|m| m.as_str().and_then(SignatureMode::from_name)),
         allow_certify: spec.get("allowCertify").and_then(Value::as_bool),
-        host: host(h),
+        key: present(spec.get("signer")).map(|s| config_key(s, h)).transpose()?.map(Some),
+        trust,
     })
 }
 
@@ -239,9 +251,9 @@ fn sign_input(value: &Value, h: &Harness) -> Result<SignFieldInput, Error> {
     Ok(SignFieldInput {
         field: value.get("field").cloned().unwrap_or_else(undefined),
         mark: mark_of(value.get("mark")),
-        signer: present(value.get("signer")).map(|s| call_signer(s, h)).transpose()?,
-        attribution: defined(value.get("attribution")),
-        appearance: present(value.get("appearance")).cloned(),
+        key: present(value.get("key")).map(|k| call_key(k, h)).transpose()?,
+        signer: defined(value.get("signer")),
+        appearance: defined(value.get("appearance")),
         certify: defined(value.get("certify")),
         lock: defined(value.get("lock")),
     })
@@ -251,8 +263,8 @@ fn prepare_input(value: &Value) -> PrepareSignatureInput {
     PrepareSignatureInput {
         field: value.get("field").cloned().unwrap_or_else(undefined),
         mark: mark_of(value.get("mark")),
-        appearance: present(value.get("appearance")).cloned(),
-        attribution: defined(value.get("attribution")),
+        appearance: defined(value.get("appearance")),
+        signer: defined(value.get("signer")),
         certify: defined(value.get("certify")),
         lock: defined(value.get("lock")),
         sub_filter: defined(value.get("subFilter")),
@@ -260,17 +272,18 @@ fn prepare_input(value: &Value) -> PrepareSignatureInput {
     }
 }
 
-fn validate_request(value: Option<&Value>) -> ValidateRequest {
-    let Some(opts) = present(value) else { return ValidateRequest::default() };
+fn validate_options(value: Option<&Value>) -> SignatureValidateOptions {
+    let Some(opts) = present(value) else { return SignatureValidateOptions::default() };
     let at = present(opts.get("at")).map(|at| match at.get("kind").and_then(Value::as_str) {
         Some("timestamp") => ValidationTime::Timestamp {
             gen_time: at.get("genTime").and_then(Value::as_f64).unwrap_or(f64::NAN),
         },
         _ => ValidationTime::Now,
     });
-    ValidateRequest {
+    SignatureValidateOptions {
         at,
         until: present(opts.get("until")).and_then(Value::as_str).map(str::to_string),
+        signal: None,
     }
 }
 
@@ -306,6 +319,10 @@ fn value_promise<T: Clone + 'static>(
     Outcome::Promise(promise.map(move |v| Ok(map(&v))))
 }
 
+fn none() -> OperationOptions {
+    OperationOptions::default()
+}
+
 fn call_signature(
     cap: &SignatureCapability,
     method: &str,
@@ -315,29 +332,32 @@ fn call_signature(
     let arg = |i: usize| args.get(i).filter(|v| !is_undefined(v));
     let field = || arg(0).cloned().unwrap_or_else(undefined);
     Ok(match method {
+        "getSettings" => Outcome::Returned((*cap.settings_json()).clone()),
+        "resetSettings" => {
+            cap.reset_settings();
+            Outcome::undefined()
+        }
         "getSnapshot" => Outcome::Returned(optional(cap.get_snapshot())),
-        "getStatus" => Outcome::Returned(to_value(&cap.get_status())),
-        "listSignatures" => Outcome::Returned(Value::Array(cap.list_signatures())),
-        "listUnsignedFields" => Outcome::Returned(Value::Array(cap.list_unsigned_fields())),
+        "getStatus" => Outcome::Returned(json!(cap.get_status().as_str())),
+        "listSignatures" => Outcome::Returned(Value::Array((*cap.list_signatures()).clone())),
+        "listUnsignedFields" => {
+            Outcome::Returned(Value::Array((*cap.list_unsigned_fields()).clone()))
+        }
         "getSignature" => Outcome::Returned(optional(cap.get_signature(&field()))),
-        "listVerdicts" => Outcome::Returned(optional(cap.list_verdicts())),
+        "listVerdicts" => {
+            Outcome::Returned(cap.list_verdicts().map_or(Value::Null, |v| (*v).clone()))
+        }
         "getVerdict" => Outcome::Returned(optional(cap.get_verdict(&field()))),
         "getProtection" => Outcome::Returned(optional(cap.get_protection())),
-        "getPending" => Outcome::Returned(optional(cap.get_pending().map(|p| to_value(&p)))),
+        "getPending" => Outcome::Returned(cap.get_pending_json()),
         "isBusy" => Outcome::Returned(json!(cap.is_busy())),
-        "getMode" => Outcome::Returned(to_value(&cap.get_mode())),
+        "getMode" => Outcome::Returned(json!(cap.get_mode().as_str())),
         "getTarget" => Outcome::Returned(optional(cap.get_target())),
-        "refresh" => value_promise(cap.refresh(), |s| s.clone().unwrap_or(Value::Null)),
-        "validate" => Outcome::Promise(cap.validate(validate_request(arg(0)))),
-        "validateField" => Outcome::Promise(cap.validate_field(field(), validate_request(arg(1)))),
-        "analyzeChanges" => match cap.analyze_changes(field()) {
-            Ok(promise) => Outcome::Promise(promise),
-            Err(error) => Outcome::Threw(error),
-        },
-        "readRevision" => match cap.read_revision(&field()) {
-            Ok(promise) => Outcome::Promise(promise),
-            Err(error) => Outcome::Threw(error),
-        },
+        "refresh" => value_promise(cap.refresh(none()), |s| s.clone().unwrap_or(Value::Null)),
+        "validate" => value_promise(cap.validate(validate_options(arg(0))), |v| (**v).clone()),
+        "validateField" => Outcome::Promise(cap.validate_field(field(), validate_options(arg(1)))),
+        "analyzeChanges" => Outcome::Promise(cap.analyze_changes(field(), none())),
+        "readRevision" => Outcome::Promise(cap.read_revision(field(), none())),
         "setTarget" => {
             cap.set_target(present(arg(0)).cloned());
             Outcome::undefined()
@@ -346,36 +366,53 @@ fn call_signature(
             cap.request_inspection(field());
             Outcome::undefined()
         }
-        "sign" => Outcome::Promise(cap.sign(sign_input(&field(), h)?)),
-        "prepareSignature" => Outcome::Promise(cap.prepare_signature(prepare_input(&field()))),
-        "completeSignature" => {
-            let id = arg(0).and_then(Value::as_str).unwrap_or_default().to_string();
-            Outcome::Promise(cap.complete_signature(id, arg(1).map(bytes).unwrap_or_default()))
+        "sign" => Outcome::Promise(cap.sign(sign_input(&field(), h)?, none())),
+        "prepareSignature" => {
+            Outcome::Promise(cap.prepare_signature(prepare_input(&field()), none()))
         }
-        "abortPending" => Outcome::promise_unit(cap.abort_pending()),
+        "completeSignature" => {
+            let id = arg(0).map(|v| crate::js::template(Some(v))).unwrap_or_default();
+            Outcome::Promise(cap.complete_signature(
+                id,
+                arg(1).map(bytes).unwrap_or_default(),
+                none(),
+            ))
+        }
+        "cancelPending" => Outcome::promise_unit(cap.cancel_pending(none())),
         "fillField" => {
             let mark = mark_of(arg(1)).ok_or_else(|| Error::new("[signature harness] no mark"))?;
-            Outcome::promise_unit(cap.fill_field(field(), mark))
+            Outcome::promise_unit(cap.fill_field(field(), mark, none()))
         }
-        "clearField" => Outcome::promise_unit(cap.clear_field(field())),
+        "clearField" => Outcome::promise_unit(cap.clear_field(field(), none())),
         "placeMark" => {
             let mark = mark_of(arg(0)).ok_or_else(|| Error::new("[signature harness] no mark"))?;
             let target = arg(1).cloned().unwrap_or(Value::Null);
             let target = match target.get("field") {
                 Some(field) => PlaceTarget::Field(field.clone()),
-                None => PlaceTarget::Free(from_value::<StampPlacement>(&target)?),
+                None => PlaceTarget::Free(target),
             };
-            value_promise(cap.place_mark(mark, target), PlaceMarkResult::to_json)
+            value_promise(cap.place_mark(mark, target, none()), PlaceMarkResult::to_json)
         }
-        "canSign" => Outcome::Returned(json!(cap.can_sign())),
-        "canFill" => Outcome::Returned(json!(cap.can_fill())),
+        "canSign" => Outcome::Returned(json!(cap.can_sign(&field()))),
+        "canFill" => Outcome::Returned(json!(cap.can_fill(&field()))),
         "canCertify" => Outcome::Returned(json!(cap.can_certify())),
+        "canReadRevision" => Outcome::Returned(json!(cap.can_read_revision())),
+        "onSettingsChanged" => {
+            let callback = h.callback(arg(0).unwrap_or(&Value::Null));
+            let off = cap.on_settings_changed_json(move |settings, changed| {
+                match callback.call(vec![json!({ "settings": settings, "changed": changed })]) {
+                    Answer::Throws(error) => Err(error),
+                    _ => Ok(()),
+                }
+            });
+            unsubscribe_ref(h, off)
+        }
         "onSigned" => hook(h, arg(0), |f| cap.on_signed(f)),
         "onFilled" => hook(h, arg(0), |f| cap.on_filled(f)),
         "onCleared" => hook(h, arg(0), |f| cap.on_cleared(f)),
         "onValidated" => hook(h, arg(0), |f| cap.on_validated(f)),
         "onProtectionChanged" => hook(h, arg(0), |f| cap.on_protection_changed(f)),
-        "onInvalidating" => hook(h, arg(0), |f| cap.on_invalidating(f)),
+        "onInvalidationPredicted" => hook(h, arg(0), |f| cap.on_invalidation_predicted(f)),
         "onTargetChanged" => hook(h, arg(0), |f| cap.on_target_changed(f)),
         "onSignRequested" => hook(h, arg(0), |f| cap.on_sign_requested(f)),
         "onInspectionRequested" => hook(h, arg(0), |f| cap.on_inspection_requested(f)),
@@ -383,40 +420,58 @@ fn call_signature(
     })
 }
 
+// ── the annotation probe ──────────────────────────────────────────────────────
+
+/// The suite's `signature-annotation` probe: `stamps.arm` and
+/// `stamps.isArmed` over the document's annotation plugin.
+#[derive(Clone)]
+pub struct AnnotationProbe(AnnotationCapability);
+
+/// The probe's token (`env.token('signature-annotation')`).
+pub static ANNOTATION_PROBE: LazyLock<Token<AnnotationProbe>> =
+    LazyLock::new(|| Token::new("signature-annotation"));
+
+fn annotation_probe() -> AnyPlugin {
+    define::<Value, Value>("signature-annotation")
+        .document_scoped()
+        .requires(ANNOTATION.any())
+        .create(&ANNOTATION_PROBE, |cx| Ok((AnnotationProbe(cx.get(&ANNOTATION)?), None)))
+        .build()
+}
+
+fn call_probe(probe: &AnnotationProbe, method: &str, args: &[Value]) -> Outcome {
+    match method {
+        "arm" => {
+            let input = StampInput::read(args.first().unwrap_or(&Value::Null));
+            Outcome::promise_unit(probe.0.stamps_arm(input, None))
+        }
+        "isArmed" => Outcome::Returned(json!(probe.0.stamps_is_armed())),
+        other => Outcome::Threw(Error::new(format!("[scenario] \"{other}\" is not a function"))),
+    }
+}
+
 impl HarnessPlugin for Signature {
     fn factories(&self) -> Vec<&'static str> {
-        vec!["signature"]
+        vec!["signature", "signature-annotation"]
     }
 
-    fn build(&self, _factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
-        let shape = config.get("shape").and_then(Value::as_str).map(str::to_string);
-        let Some(shape) = shape else {
-            return Ok(signature_plugin(config_of(config, h)?));
+    fn build(&self, factory: &str, config: &Value, h: &Harness) -> Result<AnyPlugin, Error> {
+        if factory == "signature-annotation" {
+            return Ok(annotation_probe());
+        }
+        let console = install_console(h);
+        let plugin = match present(Some(config)) {
+            None => signature_plugin(SignatureConfig::default()),
+            Some(spec) if spec.get("shape").is_none() => signature_plugin(config_of(spec, h)?),
+            // `signature.plugin.ts`'s definition over the unit-test shape:
+            // the settings from the definition, none registered.
+            Some(_) => signature_plugin_with(Rc::new(PortTable::default()), None),
         };
-        // `signature.plugin.ts`'s definition over the unit-test shapes, with
-        // no config (only the host the console shim needs).
-        let config = SignatureConfig { host: host(h), ..SignatureConfig::default() };
-        Ok(define::<SignatureState, SignatureAction>("signature")
-            .document_scoped()
-            .requires(FORM.any())
-            .optional(INTERACTION.any())
-            .optional(STAMP.any())
-            .optional(ANNOTATION.any())
-            .initial_state(initial_signature_state)
-            .reduce(signature_reducer)
-            .create(&SIGNATURE, move |cx| {
-                if shape == "capability" {
-                    Ok((create_signature_capability(cx, config.clone())?, None))
-                } else {
-                    let (api, connect) = create_signature_controller(cx, config.clone())?;
-                    Ok((api, Some(connect as ConnectFn)))
-                }
-            })
-            .build())
+        Ok(keep_alive(plugin, console))
     }
 
     fn tokens(&self) -> Vec<AnyToken> {
-        vec![SIGNATURE.any().clone()]
+        vec![SIGNATURE.any().clone(), ANNOTATION_PROBE.any().clone()]
     }
 
     fn call(
@@ -426,6 +481,9 @@ impl HarnessPlugin for Signature {
         args: Vec<Value>,
         h: &Harness,
     ) -> Option<Outcome> {
+        if let Some(probe) = capability.downcast_ref::<AnnotationProbe>() {
+            return Some(call_probe(probe, method, &args));
+        }
         let cap = capability.downcast_ref::<SignatureCapability>()?;
         Some(call_signature(cap, method, &args, h).unwrap_or_else(Outcome::Threw))
     }
@@ -436,21 +494,47 @@ impl HarnessPlugin for Signature {
     }
 }
 
+/// The plugin, holding `guard` for as long as the kernel holds it.
+fn keep_alive(plugin: AnyPlugin, guard: Rc<ConsoleGuard>) -> AnyPlugin {
+    let mut def = Rc::try_unwrap(plugin).unwrap_or_else(|_| unreachable!("a fresh plugin"));
+    if let Some(create) = def.create.take() {
+        def.create = Some(Rc::new(move |cx| {
+            let _held = &guard;
+            create(cx)
+        }));
+    }
+    Rc::new(def)
+}
+
 // ── functions ─────────────────────────────────────────────────────────────────
 
 fn initial_signature_state_fn(_: &[Value]) -> Result<Value, Error> {
     Ok(to_value(&initial_signature_state()))
 }
 
-/// `{changed: next !== state, state: next}`. An action outside the union is
-/// the reducer's `return state`.
-fn signature_reducer_fn(a: &[Value]) -> Result<Value, Error> {
-    let state: SignatureState = from_value(&a[0])?;
-    let next = match from_value::<SignatureAction>(&a[1]) {
-        Ok(action) => signature_reducer(&state, &action),
-        Err(_) => None,
-    };
-    Ok(json!({ "changed": next.is_some(), "state": to_value(next.as_ref().unwrap_or(&state)) }))
+fn state_arg(value: &Value) -> Result<Rc<SignatureState>, Error> {
+    SignatureState::from_json(value).map(Rc::new)
+}
+
+fn member(value: Option<&Value>) -> Option<Rc<Value>> {
+    value.filter(|v| !v.is_null() && !is_undefined(v)).cloned().map(Rc::new)
+}
+
+fn set_verdicts_fn(a: &[Value]) -> Result<Value, Error> {
+    Ok(to_value(&*set_verdicts(&state_arg(&a[0])?, member(a.get(1)))))
+}
+
+fn set_busy_fn(a: &[Value]) -> Result<Value, Error> {
+    let busy = a.get(1).is_some_and(crate::js::truthy);
+    Ok(to_value(&*set_busy(&state_arg(&a[0])?, busy)))
+}
+
+/// The suite's `setTarget(target, field)`: the transition from a state
+/// whose target is `target`, and whether it changed.
+fn set_target_fn(a: &[Value]) -> Result<Value, Error> {
+    let before = Rc::new(SignatureState { target: member(a.first()), ..initial_signature_state() });
+    let state = set_target(&before, member(a.get(1)));
+    Ok(json!({ "changed": !Rc::ptr_eq(&state, &before), "state": to_value(&*state) }))
 }
 
 fn blank_page_pdf_fn(_: &[Value]) -> Result<Value, Error> {
@@ -461,22 +545,19 @@ fn mark_role_of_fn(a: &[Value]) -> Result<Value, Error> {
     Ok(to_value(&mark_role_of(a[0].get("name").and_then(Value::as_str).unwrap_or_default())))
 }
 
-fn is_target_fn(a: &[Value]) -> Result<Value, Error> {
-    Ok(json!(is_target(present(a.first()), &a[1])))
-}
-
 fn same_ref_fn(a: &[Value]) -> Result<Value, Error> {
-    Ok(json!(same_ref(&a[0], &a[1])))
+    Ok(json!(same_field_ref(&a[0], &a[1])))
 }
 
 /// The pure functions, by the names the vectors use.
 pub fn functions() -> FunctionTable {
     vec![
         ("initialSignatureState", initial_signature_state_fn),
-        ("signatureReducer", signature_reducer_fn),
+        ("setVerdicts", set_verdicts_fn),
+        ("setBusy", set_busy_fn),
+        ("setTarget", set_target_fn),
         ("blankPagePdf", blank_page_pdf_fn),
         ("markRoleOf", mark_role_of_fn),
-        ("isTarget", is_target_fn),
         ("sameRef", same_ref_fn),
     ]
 }

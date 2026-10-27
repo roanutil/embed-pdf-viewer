@@ -1,89 +1,19 @@
 //! The JavaScript semantics this port reproduces beyond `epdf_geometry::js`:
-//! `Number.prototype.toFixed`, `Number(string)`, the three states of an
-//! optional nullable member (absent, `null`, a value), `Object.entries`
-//! order for a numeric-keyed record, a `Set` of ids, and the names every
-//! plain object inherits from `Object.prototype`.
+//! `Number(string)`, `Object.entries` order for a numeric-keyed record, a
+//! `Set` of ids, the names every plain object inherits from
+//! `Object.prototype`, and V8's `Array.prototype.sort`.
+//! `Number.prototype.toFixed` is `epdf_geometry::js::to_fixed`.
 
-use std::fmt;
-use std::marker::PhantomData;
+use serde_json::Value;
 
-use serde::de::{MapAccess, SeqAccess, Visitor};
-use serde::ser::{SerializeMap, SerializeSeq};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+pub use epdf_geometry::js::{
+    hypot, max, max_of, min, min_of, number_to_string, round, sign, to_fixed,
+};
 
-pub use epdf_geometry::js::{hypot, max, max_of, min, min_of, number_to_string, round, sign};
+use crate::json;
+use crate::object::{Json, JsonError};
 
 // ── numbers ─────────────────────────────────────────────────────────────────
-
-/// `x` as `m * 2^e` with an integer mantissa, for a positive finite `x`.
-fn decompose(x: f64) -> (u64, i32) {
-    let bits = x.to_bits();
-    let exponent = ((bits >> 52) & 0x7ff) as i32;
-    let fraction = bits & ((1u64 << 52) - 1);
-    if exponent == 0 { (fraction, -1074) } else { (fraction | (1u64 << 52), exponent - 1075) }
-}
-
-/// Whether `x * 10^digits` lies exactly halfway between two integers, for a
-/// positive finite `x`: `2 * x * 10^digits` is then an odd integer.
-fn exact_tie(x: f64, digits: u32) -> bool {
-    let (m, e) = decompose(x);
-    let t = u128::from(m) * 5u128.pow(digits);
-    // 2 * x * 10^digits = t * 2^(e + 1 + digits)
-    let shift = e + 1 + digits as i32;
-    match shift {
-        s if s > 0 => false,
-        0 => t % 2 == 1,
-        s => t != 0 && t.trailing_zeros() == (-s) as u32,
-    }
-}
-
-/// `Number.prototype.toFixed(digits)`. The decimal is the exact value of the
-/// double rounded half up (away from zero, on the magnitude); Rust's `{:.N}`
-/// breaks an exact tie to even, so a tie is written out one digit longer
-/// (exactly, ending in 5) and rounded up by hand. Magnitudes of `1e21` and more print as `Number#toString` does.
-pub fn to_fixed(x: f64, digits: u32) -> String {
-    if x.is_nan() {
-        return "NaN".into();
-    }
-    if x.abs() >= 1e21 {
-        return number_to_string(x);
-    }
-    let negative = x < 0.0;
-    let y = x.abs();
-    let precision = digits as usize;
-    let body = if y != 0.0 && exact_tie(y, digits) {
-        round_up_tie(&format!("{:.*}", precision + 1, y))
-    } else {
-        format!("{:.*}", precision, y)
-    };
-    if negative { format!("-{body}") } else { body }
-}
-
-/// Drop the trailing `5` of an exact decimal and add one in the last place
-/// kept: `0.03125` to `0.0313`, `2.5` to `3`, `9.95` to `10.0`.
-fn round_up_tie(exact: &str) -> String {
-    let mut digits: Vec<u8> = exact[..exact.len() - 1].bytes().collect();
-    if digits.last() == Some(&b'.') {
-        digits.pop();
-    }
-    let mut i = digits.len();
-    loop {
-        if i == 0 {
-            digits.insert(0, b'1');
-            break;
-        }
-        i -= 1;
-        match digits[i] {
-            b'.' => continue,
-            b'9' => digits[i] = b'0',
-            d => {
-                digits[i] = d + 1;
-                break;
-            }
-        }
-    }
-    String::from_utf8(digits).unwrap_or_default()
-}
 
 /// `Number(x.toFixed(digits))`: `x` rounded to `digits` decimals the way the
 /// TypeScript's `Number(n.toFixed(d))` idiom does.
@@ -113,8 +43,7 @@ fn radix_digits(s: &str, radix: u32) -> f64 {
     s.chars().fold(0.0, |acc, c| acc * f64::from(radix) + f64::from(c.to_digit(radix).unwrap_or(0)))
 }
 
-/// Whether `s` is a `StrUnsignedDecimalLiteral` without `Infinity`:
-/// `digits [. digits?] | . digits`, then an optional exponent.
+/// Whether `s` is a `StrUnsignedDecimalLiteral` without `Infinity`.
 fn is_decimal(s: &str) -> bool {
     let b = s.as_bytes();
     let mut i = 0;
@@ -143,10 +72,7 @@ fn is_decimal(s: &str) -> bool {
     i == b.len()
 }
 
-/// `Number(string)` (ECMAScript `StringToNumber`): whitespace-trimmed, empty
-/// is `0`, `0x`/`0o`/`0b` integers, a signed decimal or `Infinity`, and NaN
-/// for anything else. Rust's `parse::<f64>` also takes `inf`, `nan` and
-/// `infinity`, which JavaScript does not.
+/// `Number(string)` (ECMAScript `StringToNumber`).
 pub fn string_to_number(s: &str) -> f64 {
     let t = s.trim_matches(is_js_space);
     if t.is_empty() {
@@ -189,9 +115,7 @@ pub fn utf16_len(s: &str) -> usize {
     s.encode_utf16().count()
 }
 
-/// The names every plain object inherits from `Object.prototype`, so a
-/// lookup `table[key]` finds a function (or the prototype) instead of
-/// `undefined`.
+/// The names every plain object inherits from `Object.prototype`.
 pub fn is_prototype_key(key: &str) -> bool {
     matches!(
         key,
@@ -210,64 +134,10 @@ pub fn is_prototype_key(key: &str) -> bool {
     )
 }
 
-// ── three-state members ─────────────────────────────────────────────────────
-
-/// An optional member whose value may also be `null`: `interiorColor` in a
-/// patch, `link`. Absent (`undefined`) leaves a value alone, `null` clears
-/// it, a value sets it. Use with `#[serde(default, skip_serializing_if =
-/// "Nullable::is_undefined")]`.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub enum Nullable<T> {
-    #[default]
-    Undefined,
-    Null,
-    Value(T),
-}
-
-impl<T> Nullable<T> {
-    pub fn is_undefined(&self) -> bool {
-        matches!(self, Nullable::Undefined)
-    }
-
-    pub fn is_null(&self) -> bool {
-        matches!(self, Nullable::Null)
-    }
-
-    /// `value ?? null`: undefined and null both read as `None`.
-    pub fn as_option(&self) -> Option<&T> {
-        match self {
-            Nullable::Value(v) => Some(v),
-            _ => None,
-        }
-    }
-
-    pub fn from_option(value: Option<T>) -> Self {
-        value.map_or(Nullable::Null, Nullable::Value)
-    }
-}
-
-impl<T: Serialize> Serialize for Nullable<T> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match self {
-            Nullable::Value(v) => serializer.serialize_some(v),
-            // A member that is present and undefined is skipped by the
-            // container; elsewhere it prints as null, the closest JSON has.
-            _ => serializer.serialize_none(),
-        }
-    }
-}
-
-impl<'de, T: Deserialize<'de>> Deserialize<'de> for Nullable<T> {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        Ok(Option::<T>::deserialize(deserializer)?.map_or(Nullable::Null, Nullable::Value))
-    }
-}
-
 // ── records and sets ────────────────────────────────────────────────────────
 
-/// A string-keyed plain object iterated as `for...in` / `Object.keys` does:
-/// integer-like keys first in ascending numeric order, then the rest in
-/// insertion order. Assigning an existing key keeps its position.
+/// A string-keyed plain object iterated as `Object.keys` does: integer-like
+/// keys first in ascending numeric order, then the rest in insertion order.
 #[derive(Clone, Debug, PartialEq)]
 pub struct Record<V> {
     entries: Vec<(String, V)>,
@@ -279,8 +149,7 @@ impl<V> Default for Record<V> {
     }
 }
 
-/// The key as an array index (a canonical numeric string below 2^32 - 1),
-/// which JavaScript orders before every other key.
+/// The key as an array index (a canonical numeric string below 2^32 - 1).
 pub fn array_index(key: &str) -> Option<u32> {
     if key == "0" {
         return Some(0);
@@ -343,33 +212,17 @@ impl<K: Into<String>, V> FromIterator<(K, V)> for Record<V> {
     }
 }
 
-impl<V: Serialize> Serialize for Record<V> {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        let mut map = serializer.serialize_map(Some(self.entries.len()))?;
-        for (k, v) in &self.entries {
-            map.serialize_entry(k, v)?;
+impl<V: Json> Json for Record<V> {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        let map = value.and_then(Value::as_object).ok_or_else(|| JsonError::new("not a record"))?;
+        let mut record = Record::new();
+        for (k, v) in map {
+            record.insert(k.clone(), V::read(v).map_err(|e| e.at(k))?);
         }
-        map.end()
+        Ok(record)
     }
-}
-
-impl<'de, V: Deserialize<'de>> Deserialize<'de> for Record<V> {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct RecordVisitor<V>(PhantomData<V>);
-        impl<'de, V: Deserialize<'de>> Visitor<'de> for RecordVisitor<V> {
-            type Value = Record<V>;
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("an object")
-            }
-            fn visit_map<A: MapAccess<'de>>(self, mut access: A) -> Result<Record<V>, A::Error> {
-                let mut record = Record::new();
-                while let Some((k, v)) = access.next_entry::<String, V>()? {
-                    record.insert(k, v);
-                }
-                Ok(record)
-            }
-        }
-        deserializer.deserialize_map(RecordVisitor(PhantomData))
+    fn to_json(&self) -> Option<Value> {
+        Some(Value::Object(self.entries.iter().map(|(k, v)| (k.clone(), v.json())).collect()))
     }
 }
 
@@ -381,6 +234,15 @@ pub struct IdSet(pub Vec<String>);
 impl IdSet {
     pub fn has(&self, id: &str) -> bool {
         self.0.iter().any(|x| x == id)
+    }
+
+    /// Read a set (`{"$set": [...]}`) or an array of ids.
+    pub fn of_value(value: &Value) -> IdSet {
+        let items = value.get("$set").unwrap_or(value);
+        items
+            .as_array()
+            .map(|items| items.iter().filter_map(Value::as_str).map(str::to_string).collect())
+            .unwrap_or_default()
     }
 }
 
@@ -396,51 +258,20 @@ impl FromIterator<String> for IdSet {
     }
 }
 
-impl Serialize for IdSet {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        struct Items<'a>(&'a [String]);
-        impl Serialize for Items<'_> {
-            fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-                let mut seq = serializer.serialize_seq(Some(self.0.len()))?;
-                for id in self.0 {
-                    seq.serialize_element(id)?;
-                }
-                seq.end()
-            }
+impl Json for IdSet {
+    fn from_json(value: Option<&Value>) -> Result<Self, JsonError> {
+        match value.filter(|v| !json::undefined(Some(v))) {
+            Some(v) => Ok(IdSet::of_value(v)),
+            None => Err(JsonError::new("missing")),
         }
-        let mut map = serializer.serialize_map(Some(1))?;
-        map.serialize_entry("$set", &Items(&self.0))?;
-        map.end()
     }
-}
-
-impl<'de> Deserialize<'de> for IdSet {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        struct SetVisitor;
-        impl<'de> Visitor<'de> for SetVisitor {
-            type Value = IdSet;
-            fn expecting(&self, f: &mut fmt::Formatter) -> fmt::Result {
-                f.write_str("a set of ids")
-            }
-            fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<IdSet, A::Error> {
-                let mut ids = Vec::new();
-                while let Some(id) = seq.next_element::<String>()? {
-                    ids.push(id);
-                }
-                Ok(ids.into_iter().collect())
-            }
-            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<IdSet, A::Error> {
-                let mut ids = IdSet::default();
-                while let Some(key) = map.next_key::<String>()? {
-                    let items: Vec<String> = map.next_value()?;
-                    if key == "$set" {
-                        ids = items.into_iter().collect();
-                    }
-                }
-                Ok(ids)
-            }
-        }
-        deserializer.deserialize_any(SetVisitor)
+    fn to_json(&self) -> Option<Value> {
+        let mut map = serde_json::Map::new();
+        map.insert(
+            "$set".into(),
+            Value::Array(self.0.iter().cloned().map(Value::String).collect()),
+        );
+        Some(Value::Object(map))
     }
 }
 
@@ -1094,8 +925,8 @@ mod tests {
 
     #[test]
     fn id_set_reads_a_set_or_an_array() {
-        let set: IdSet = serde_json::from_value(serde_json::json!({"$set": ["a", "b"]})).unwrap();
-        let array: IdSet = serde_json::from_value(serde_json::json!(["a", "b", "a"])).unwrap();
+        let set = IdSet::of_value(&serde_json::json!({"$set": ["a", "b"]}));
+        let array = IdSet::of_value(&serde_json::json!(["a", "b", "a"]));
         assert_eq!(set, array);
         assert!(array.has("b") && !array.has("c"));
     }

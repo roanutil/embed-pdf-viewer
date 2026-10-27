@@ -8,7 +8,7 @@
 //! The rest is here.
 //!
 //! The written contract these assert against is
-//! `.agents/skills/embedpdf-conventions/references/engine-lifecycle.md`.
+//! `docs/conventions/engine-lifecycle.md`.
 
 use epdf_engine::error::EngineErrorCode;
 use epdf_engine::identity::PageObjectNumber;
@@ -63,7 +63,7 @@ fn opening_twice_is_refused_rather_than_leaking_the_first_document() {
     );
     // And the first document is still the one that is open.
     assert_eq!(session.page_count().expect("still open"), 14);
-    assert_eq!(session.kind(), Some(OpenKind::FatMemory));
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
 }
 
 #[test]
@@ -110,6 +110,9 @@ fn unlocking_consumes_the_parked_bytes() {
     assert!(session.is_open());
     assert!(!session.is_locked());
     assert_eq!(session.page_count().expect("open"), 1);
+    // The unlock loads the way the open would have: a layer over the bytes.
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
+    assert!(session.last_object_number().expect("open").is_some_and(|last| last > 0));
 }
 
 #[test]
@@ -202,7 +205,7 @@ fn a_token_does_not_validate_against_another_session() {
     let second = opened();
     assert_eq!(
         second.validate_revision(&token).expect_err("foreign token").code,
-        EngineErrorCode::InvalidReference,
+        EngineErrorCode::InvalidArg,
     );
     // And it still validates against the session that minted it.
     first.validate_revision(&token).expect("own token");
@@ -226,7 +229,7 @@ fn overlapping_acquires_share_one_page_and_release_together() {
 
     let first = session.acquire_page(page).expect("first");
     let second = session.acquire_page(page).expect("second");
-    assert!(std::rc::Rc::ptr_eq(&first, &second), "the second acquire reloaded");
+    assert!(std::rc::Rc::ptr_eq(first.shared(), second.shared()), "the second acquire reloaded");
     assert_eq!(session.held_page_count(), 1);
 
     drop(first);
@@ -261,6 +264,62 @@ fn close_does_not_invalidate_a_page_somebody_is_still_holding() {
 
     assert_eq!(session.held_page_count(), 0, "the session forgot the page");
     assert!(held.view().width() > 0.0, "the holder can still read it");
+}
+
+/// report.pdf's page index 12 paints an image through a tiling pattern, so
+/// its first render reads image streams out of the base's bytes.
+const PATTERN_PAGE: usize = 12;
+
+/// Page index 12 of report.pdf rendered from a plain document.
+fn plain_pattern_page() -> Vec<u8> {
+    let plain =
+        pdfium::Document::from_bytes(pdfium::Library::acquire(), &report(), None).expect("open");
+    render_view(&plain.page(PATTERN_PAGE as u32).expect("page"))
+}
+
+fn render_view(page: &pdfium::PageView<'_>) -> Vec<u8> {
+    let identity = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+    page.render_rgba_with_matrix(306, 396, identity, true, pdfium::RenderFlags::default())
+        .expect("render")
+        .bgra
+}
+
+#[test]
+fn a_page_held_past_close_reads_through_its_base() {
+    // The layer document holds its base, so a page held past close still
+    // reads the base's bytes: its first render, after the close, decodes
+    // images the base has never handed out.
+    let mut session = opened();
+    let page = session.all_records().expect("records")[PATTERN_PAGE].page_object_number;
+    let held = session.acquire_page(page).expect("acquire");
+
+    session.close();
+
+    assert!(render_view(held.view()) == plain_pattern_page(), "the held page renders as it is");
+}
+
+#[test]
+fn a_page_held_past_close_keeps_a_registry_layers_base_alive() {
+    // `open.layerMemBase`: the registry and the session both let go of the
+    // base, and a held page still reads through it.
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    let page = session.all_records().expect("records")[PATTERN_PAGE].page_object_number;
+    let held = session.acquire_page(page).expect("acquire");
+
+    session.close();
+    registry.release_all();
+
+    assert!(render_view(held.view()) == plain_pattern_page(), "the held page renders as it is");
 }
 
 #[test]
@@ -552,4 +611,107 @@ fn a_layer_session_cannot_be_opened_twice() {
             .code,
         EngineErrorCode::InvalidArg,
     );
+}
+
+#[test]
+fn a_layer_opens_from_its_raw_delta_and_not_its_artifact_against_another_base() {
+    use epdf_engine::cancel::CancelToken;
+    use epdf_engine::features::save::{LayerArtifactKind, save_layer_to_buffer};
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+    use epdf_engine::session::document::LayerOpenSource;
+
+    // `LayerOpenSource`: a raw delta names no base, an artifact names its
+    // own and is refused against any other.
+    let registry = BaseDocumentRegistry::new();
+    let mut session = DocumentSession::new();
+    session
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    let cancel = CancelToken::never();
+    // An empty layer has no delta to write.
+    let patch: epdf_engine::dto::MetadataPatch =
+        serde_json::from_value(serde_json::json!({ "title": "Layered" })).expect("a patch");
+    epdf_engine::features::metadata_write::update_metadata(
+        session.document().expect("open").document(),
+        &patch,
+        &cancel,
+    )
+    .expect("a write");
+    let delta = save_layer_to_buffer(&session, LayerArtifactKind::Delta, &cancel).expect("delta");
+    let artifact =
+        save_layer_to_buffer(&session, LayerArtifactKind::Artifact, &cancel).expect("artifact");
+
+    let mut from_delta = DocumentSession::new();
+    from_delta
+        .open_layer_from(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            &LayerOpenSource::RawDelta(delta),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("a delta opens");
+    let read = epdf_engine::features::metadata::read_metadata(
+        from_delta.document().expect("open").document(),
+        &cancel,
+    )
+    .expect("read");
+    assert_eq!(serde_json::to_value(&read).unwrap()["title"], "Layered");
+
+    let other = bytes("tooling/engine-conformance/fixtures/annotation_kinds.pdf");
+    let mut elsewhere = DocumentSession::new();
+    let refused = elsewhere
+        .open_layer_from(
+            registry.acquire_memory("other", &other, None).expect("base"),
+            &LayerOpenSource::Artifact(artifact),
+            SessionAuthority::unrestricted(),
+        )
+        .expect_err("an artifact of another base");
+    assert_eq!(refused.code, EngineErrorCode::MalformedPdf);
+}
+
+#[test]
+fn a_session_opened_from_bytes_reserves_numbers_past_the_file() {
+    use epdf_engine::identity::ObjectNumberRange;
+
+    // `openBytesAsLayer`: the bytes open as a fresh layer over a private
+    // base, so the session has the file's last object number and hands out
+    // numbers past it (`DocumentSession.reserveObjectNumbers`).
+    let mut session = opened();
+    assert_eq!(session.kind(), Some(OpenKind::Layer));
+    let last = session.last_object_number().expect("open").expect("a layer has one");
+    assert!(last > 0, "a fresh layer starts at its file's last object number");
+    let range = session.reserve_object_numbers(4).expect("reserve");
+    assert_eq!(range, ObjectNumberRange { first: last + 1, count: 4 });
+    assert_eq!(session.last_object_number().unwrap(), Some(last + 4));
+    assert!((last + 1..=last + 4).all(|n| session.holds_object_number(n)));
+    assert!(!session.holds_object_number(last));
+
+    // A raise never lowers, and outlives what it was for.
+    session.raise_last_object_number(last).expect("raise");
+    assert_eq!(session.last_object_number().unwrap(), Some(last + 4));
+    session.raise_last_object_number(last + 10).expect("raise");
+    assert_eq!(session.last_object_number().unwrap(), Some(last + 10));
+    assert_eq!(session.reserve_object_numbers(1).expect("reserve").first, last + 11);
+}
+
+#[test]
+fn a_session_opened_from_bytes_persists_no_artifact_and_a_layer_does() {
+    use epdf_engine::session::authority::SessionAuthority;
+    use epdf_engine::session::base_registry::BaseDocumentRegistry;
+
+    // `persistLayerArtifact`: false for `openBytesAsLayer`, whose caller
+    // holds the document, true for a layer opened over a shared base.
+    assert!(!opened().persists_layer_artifact());
+    let registry = BaseDocumentRegistry::new();
+    let mut layer = DocumentSession::new();
+    layer
+        .open_layer(
+            registry.acquire_memory("report", &report(), None).expect("base"),
+            SessionAuthority::unrestricted(),
+        )
+        .expect("open");
+    assert!(layer.persists_layer_artifact());
 }

@@ -2,29 +2,33 @@
 //! event enum. Every method hops to the kernel thread through
 //! `KernelBound`.
 //!
-//! The plugin keeps a measure and engine errors as JSON (`PageScale.error`,
-//! `RecalibrationReport.scale`), so the records here decode them. A value
-//! that does not decode is an `invalid-state` error: the record and the
-//! engine disagree, and a default would hide it.
+//! Compiled and tested since Task 13.33. Since Task 13.22
+//! the plugin carries measures, viewports, readouts and re-measurement
+//! reports as the engine's records (JSON), so the records here decode them.
+//! A value that does not decode is an `invalid-state` error: the record and
+//! the engine disagree, and a default would hide it. Annotation refs cross
+//! as JSON strings (`annotation_json`), as the link and annotation handles
+//! carry them since 13.17.
 
+use std::rc::Rc;
 use std::sync::Arc;
 
-use epdf_annotation_core::measure as core;
-use epdf_ffi::{
-    AnnotationRef, CancelToken, KernelBound, KernelPost, PageRef, Point, Subscription, ViewerError,
-};
+use epdf_ffi::{CancelToken, KernelBound, KernelPost, PageRef, Point, Subscription, ViewerError};
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{
     CalibrateInput, CalibrateOptions, CreateMeasurementInput as CoreCreate, DefaultScale,
-    KnownDistance, MeasurementCapability, PageTarget, ScaleChangeOptions, ScalePreset,
+    KnownLength, MeasurementCapability, OperationOptions, PageInput, PageTarget,
+    ScaleChangeOptions, ScalePreset,
 };
 
 // ── measures ────────────────────────────────────────────────────────────────
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+#[serde(rename_all = "lowercase")]
 pub enum MeasureFraction {
     Decimal,
     Fraction,
@@ -32,176 +36,87 @@ pub enum MeasureFraction {
     Truncate,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, uniffi::Enum)]
+#[serde(rename_all = "lowercase")]
 pub enum MeasureLabelPosition {
     Suffix,
     Prefix,
 }
 
 /// One ISO 32000 number format (`/NumberFormat`).
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, uniffi::Record)]
+#[serde(rename_all = "camelCase")]
 pub struct PdfNumberFormat {
     pub unit: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub conversion: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub fraction: Option<MeasureFraction>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub precision: Option<f64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub fixed: Option<bool>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub thousands: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub decimal: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub prefix_spacing: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub suffix_spacing: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub label_position: Option<MeasureLabelPosition>,
 }
 
-/// A `/Measure` dictionary. `subtype` is `RL` for a rectilinear measure
-/// (the only kind EmbedPDF writes); any other subtype is foreign and has
-/// no format lists.
-#[derive(Clone, Debug, PartialEq, uniffi::Record)]
+/// A point of a measure's `origin`, as the engine writes it.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize, uniffi::Record)]
+pub struct MeasureOrigin {
+    pub x: f64,
+    pub y: f64,
+}
+
+/// A `/Measure` dictionary. `subtype` is `rectilinear` for the only kind
+/// EmbedPDF writes; any other subtype (`geospatial`) is foreign and has no
+/// format lists.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, uniffi::Record)]
 pub struct PdfMeasurement {
     pub subtype: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub ratio: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub x: Option<Vec<PdfNumberFormat>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub y: Option<Vec<PdfNumberFormat>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub distance: Option<Vec<PdfNumberFormat>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub area: Option<Vec<PdfNumberFormat>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub angle: Option<Vec<PdfNumberFormat>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub slope: Option<Vec<PdfNumberFormat>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
-    pub origin: Option<Point>,
+    pub origin: Option<MeasureOrigin>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     #[uniffi(default = None)]
     pub cyx: Option<f64>,
-}
-
-impl From<core::MeasureFraction> for MeasureFraction {
-    fn from(f: core::MeasureFraction) -> Self {
-        match f {
-            core::MeasureFraction::Decimal => MeasureFraction::Decimal,
-            core::MeasureFraction::Fraction => MeasureFraction::Fraction,
-            core::MeasureFraction::Round => MeasureFraction::Round,
-            core::MeasureFraction::Truncate => MeasureFraction::Truncate,
-        }
-    }
-}
-
-impl From<MeasureFraction> for core::MeasureFraction {
-    fn from(f: MeasureFraction) -> Self {
-        match f {
-            MeasureFraction::Decimal => core::MeasureFraction::Decimal,
-            MeasureFraction::Fraction => core::MeasureFraction::Fraction,
-            MeasureFraction::Round => core::MeasureFraction::Round,
-            MeasureFraction::Truncate => core::MeasureFraction::Truncate,
-        }
-    }
-}
-
-impl From<core::LabelPosition> for MeasureLabelPosition {
-    fn from(p: core::LabelPosition) -> Self {
-        match p {
-            core::LabelPosition::Suffix => MeasureLabelPosition::Suffix,
-            core::LabelPosition::Prefix => MeasureLabelPosition::Prefix,
-        }
-    }
-}
-
-impl From<MeasureLabelPosition> for core::LabelPosition {
-    fn from(p: MeasureLabelPosition) -> Self {
-        match p {
-            MeasureLabelPosition::Suffix => core::LabelPosition::Suffix,
-            MeasureLabelPosition::Prefix => core::LabelPosition::Prefix,
-        }
-    }
-}
-
-impl From<core::PdfNumberFormat> for PdfNumberFormat {
-    fn from(f: core::PdfNumberFormat) -> Self {
-        PdfNumberFormat {
-            unit: f.unit,
-            conversion: f.conversion,
-            fraction: f.fraction.map(Into::into),
-            precision: f.precision,
-            fixed: f.fixed,
-            thousands: f.thousands,
-            decimal: f.decimal,
-            prefix_spacing: f.prefix_spacing,
-            suffix_spacing: f.suffix_spacing,
-            label_position: f.label_position.map(Into::into),
-        }
-    }
-}
-
-impl From<PdfNumberFormat> for core::PdfNumberFormat {
-    fn from(f: PdfNumberFormat) -> Self {
-        core::PdfNumberFormat {
-            unit: f.unit,
-            conversion: f.conversion,
-            fraction: f.fraction.map(Into::into),
-            precision: f.precision,
-            fixed: f.fixed,
-            thousands: f.thousands,
-            decimal: f.decimal,
-            prefix_spacing: f.prefix_spacing,
-            suffix_spacing: f.suffix_spacing,
-            label_position: f.label_position.map(Into::into),
-        }
-    }
-}
-
-fn formats_in(list: Option<Vec<core::PdfNumberFormat>>) -> Option<Vec<PdfNumberFormat>> {
-    list.map(|l| l.into_iter().map(Into::into).collect())
-}
-
-fn formats_out(list: Option<Vec<PdfNumberFormat>>) -> Option<Vec<core::PdfNumberFormat>> {
-    list.map(|l| l.into_iter().map(Into::into).collect())
-}
-
-impl From<core::PdfMeasurement> for PdfMeasurement {
-    fn from(m: core::PdfMeasurement) -> Self {
-        PdfMeasurement {
-            subtype: m.subtype,
-            ratio: m.ratio,
-            x: formats_in(m.x),
-            y: formats_in(m.y),
-            distance: formats_in(m.distance),
-            area: formats_in(m.area),
-            angle: formats_in(m.angle),
-            slope: formats_in(m.slope),
-            origin: m.origin.map(|p| Point { x: p.x, y: p.y }),
-            cyx: m.cyx,
-        }
-    }
-}
-
-impl From<PdfMeasurement> for core::PdfMeasurement {
-    fn from(m: PdfMeasurement) -> Self {
-        core::PdfMeasurement {
-            subtype: m.subtype,
-            ratio: m.ratio,
-            x: formats_out(m.x),
-            y: formats_out(m.y),
-            distance: formats_out(m.distance),
-            area: formats_out(m.area),
-            angle: formats_out(m.angle),
-            slope: formats_out(m.slope),
-            origin: m.origin.map(|p| epdf_annotation_core::PdfPoint { x: p.x, y: p.y }),
-            cyx: m.cyx,
-        }
-    }
 }
 
 fn invalid_state(what: &str, e: impl std::fmt::Display) -> Error {
@@ -213,9 +128,13 @@ fn decode_measure(value: &Value) -> Result<Option<PdfMeasurement>, Error> {
     if value.is_null() {
         return Ok(None);
     }
-    serde_json::from_value::<core::PdfMeasurement>(value.clone())
-        .map(|m| Some(m.into()))
+    serde_json::from_value::<PdfMeasurement>(value.clone())
+        .map(Some)
         .map_err(|e| invalid_state("a measure", e))
+}
+
+fn measure_json(measure: &PdfMeasurement) -> Result<Value, Error> {
+    serde_json::to_value(measure).map_err(|e| invalid_state("a measure", e))
 }
 
 // ── config ──────────────────────────────────────────────────────────────────
@@ -241,19 +160,25 @@ pub struct MeasurementConfig {
     pub presets: Option<Vec<ScalePreset>>,
 }
 
-impl From<MeasurementConfig> for crate::MeasurementConfig {
-    fn from(config: MeasurementConfig) -> Self {
-        crate::MeasurementConfig {
-            default_scale: config.default_scale.map(|s| match s {
-                MeasurementDefaultScale::Metric => DefaultScale::Metric,
-                MeasurementDefaultScale::Imperial => DefaultScale::Imperial,
-                MeasurementDefaultScale::Measure { measure } => {
-                    DefaultScale::Measure(Box::new(measure.into()))
-                }
-            }),
+impl TryFrom<MeasurementConfig> for crate::MeasurementConfig {
+    type Error = Error;
+
+    fn try_from(config: MeasurementConfig) -> Result<Self, Error> {
+        Ok(crate::MeasurementConfig {
+            default_scale: config
+                .default_scale
+                .map(|s| {
+                    Ok::<_, Error>(match s {
+                        MeasurementDefaultScale::Metric => DefaultScale::Metric,
+                        MeasurementDefaultScale::Imperial => DefaultScale::Imperial,
+                        MeasurementDefaultScale::Measure { measure } => {
+                            DefaultScale::Measure(measure_json(&measure)?)
+                        }
+                    })
+                })
+                .transpose()?,
             presets: config.presets,
-            host: crate::MeasurementHost::default(),
-        }
+        })
     }
 }
 
@@ -266,27 +191,57 @@ pub enum MeasurementPageTarget {
     All,
 }
 
-fn core_page(page: PageRef) -> epdf_annotation_core::PageRef {
-    epdf_annotation_core::PageRef::new(page.page_object_number)
+fn core_page(page: PageRef) -> epdf_kernel::geometry::PageRef {
+    epdf_kernel::geometry::PageRef::new(page.page_object_number)
 }
 
-fn ffi_page(page: epdf_annotation_core::PageRef) -> PageRef {
+fn page_input(page: PageRef) -> PageInput {
+    PageInput::Ref(core_page(page))
+}
+
+fn ffi_page(page: epdf_kernel::geometry::PageRef) -> PageRef {
     PageRef { page_object_number: page.page_object_number }
 }
 
-fn core_point(p: Point) -> epdf_annotation_core::Point {
-    epdf_annotation_core::Point { x: p.x, y: p.y }
+fn page_of_json(value: Option<&Value>) -> Result<PageRef, Error> {
+    value
+        .and_then(epdf_kernel::geometry::PageRef::from_json)
+        .map(ffi_page)
+        .ok_or_else(|| invalid_state("a page ref", value.cloned().unwrap_or(Value::Null)))
+}
+
+fn core_point(p: Point) -> epdf_kernel::geometry::Point {
+    epdf_kernel::geometry::Point { x: p.x, y: p.y }
+}
+
+fn ffi_point(p: epdf_kernel::geometry::Point) -> Point {
+    Point { x: p.x, y: p.y }
 }
 
 impl From<MeasurementPageTarget> for PageTarget {
     fn from(t: MeasurementPageTarget) -> Self {
         match t {
-            MeasurementPageTarget::Page { page } => PageTarget::Page(core_page(page)),
+            MeasurementPageTarget::Page { page } => PageTarget::Page(page_input(page)),
             MeasurementPageTarget::Pages { pages } => {
-                PageTarget::Pages(pages.into_iter().map(core_page).collect())
+                PageTarget::Pages(pages.into_iter().map(page_input).collect())
             }
             MeasurementPageTarget::All => PageTarget::All,
         }
+    }
+}
+
+/// `ScaleChangeOptions` without the signal, which the handle's
+/// `CancelToken` carries.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, uniffi::Record)]
+pub struct MeasurementScaleChangeOptions {
+    /// Re-measure the pages' measurement annotations. `None` is true.
+    #[uniffi(default = None)]
+    pub recalculate: Option<bool>,
+}
+
+impl From<MeasurementScaleChangeOptions> for ScaleChangeOptions {
+    fn from(options: MeasurementScaleChangeOptions) -> Self {
+        ScaleChangeOptions { signal: None, recalculate: options.recalculate }
     }
 }
 
@@ -330,16 +285,16 @@ pub struct MeasurementPageScale {
     pub error: Option<MeasurementErrorInfo>,
 }
 
-impl TryFrom<crate::PageScale> for MeasurementPageScale {
+impl TryFrom<&crate::PageScale> for MeasurementPageScale {
     type Error = Error;
 
-    fn try_from(s: crate::PageScale) -> Result<Self, Error> {
+    fn try_from(s: &crate::PageScale) -> Result<Self, Error> {
         Ok(MeasurementPageScale {
-            measure: s.measure.map(Into::into),
+            measure: decode_measure(&s.measure)?,
             source: match s.source {
-                crate::ScaleSource::Owned => MeasurementScaleSource::Owned,
-                crate::ScaleSource::Foreign => MeasurementScaleSource::Foreign,
-                crate::ScaleSource::Default => MeasurementScaleSource::Default,
+                "owned" => MeasurementScaleSource::Owned,
+                "foreign" => MeasurementScaleSource::Foreign,
+                _ => MeasurementScaleSource::Default,
             },
             ready: s.ready,
             persistent: s.persistent,
@@ -382,35 +337,37 @@ pub enum MeasurementReading {
     Unavailable { reason: MeasurementUnavailable },
 }
 
-impl From<core::Readout> for MeasurementReading {
-    fn from(r: core::Readout) -> Self {
-        match r {
-            core::Readout::Readout(r) => MeasurementReading::Value {
-                readout: MeasurementReadout {
-                    kind: match r.kind {
-                        core::ReadoutKind::Distance => MeasurementReadoutKind::Distance,
-                        core::ReadoutKind::Perimeter => MeasurementReadoutKind::Perimeter,
-                        core::ReadoutKind::Area => MeasurementReadoutKind::Area,
-                    },
-                    label: r.label,
-                    value: r.value,
-                    perimeter: r.perimeter,
-                },
-            },
-            core::Readout::Unavailable { unavailable } => MeasurementReading::Unavailable {
-                reason: match unavailable {
-                    core::Unavailable::NotDimension => MeasurementUnavailable::NotDimension,
-                    core::Unavailable::NoMeasure => MeasurementUnavailable::NoMeasure,
-                    core::Unavailable::ForeignMeasure => MeasurementUnavailable::ForeignMeasure,
-                    core::Unavailable::NoScale => MeasurementUnavailable::NoScale,
-                    core::Unavailable::NoDistanceFormat => MeasurementUnavailable::NoDistanceFormat,
-                    core::Unavailable::NoAreaFormat => MeasurementUnavailable::NoAreaFormat,
-                    core::Unavailable::InvalidFormat => MeasurementUnavailable::InvalidFormat,
-                    core::Unavailable::InvalidGeometry => MeasurementUnavailable::InvalidGeometry,
-                },
-            },
-        }
+/// A readout as the plugin answers it: `{ kind, value, label, perimeter? }`
+/// or `{ unavailable }`.
+fn decode_reading(value: &Value) -> Result<MeasurementReading, Error> {
+    if let Some(reason) = value.get("unavailable").and_then(Value::as_str) {
+        let reason = match reason {
+            "not-dimension" => MeasurementUnavailable::NotDimension,
+            "no-measure" => MeasurementUnavailable::NoMeasure,
+            "foreign-measure" => MeasurementUnavailable::ForeignMeasure,
+            "no-scale" => MeasurementUnavailable::NoScale,
+            "no-distance-format" => MeasurementUnavailable::NoDistanceFormat,
+            "no-area-format" => MeasurementUnavailable::NoAreaFormat,
+            "invalid-format" => MeasurementUnavailable::InvalidFormat,
+            "invalid-geometry" => MeasurementUnavailable::InvalidGeometry,
+            other => return Err(invalid_state("a readout", other)),
+        };
+        return Ok(MeasurementReading::Unavailable { reason });
     }
+    let kind = match value.get("kind").and_then(Value::as_str) {
+        Some("distance") => MeasurementReadoutKind::Distance,
+        Some("perimeter") => MeasurementReadoutKind::Perimeter,
+        Some("area") => MeasurementReadoutKind::Area,
+        _ => return Err(invalid_state("a readout", value)),
+    };
+    Ok(MeasurementReading::Value {
+        readout: MeasurementReadout {
+            kind,
+            label: value.get("label").and_then(Value::as_str).unwrap_or_default().into(),
+            value: value.get("value").and_then(Value::as_f64).unwrap_or(f64::NAN),
+            perimeter: value.get("perimeter").and_then(Value::as_str).map(str::to_string),
+        },
+    })
 }
 
 // ── calibration and creation ────────────────────────────────────────────────
@@ -430,8 +387,8 @@ impl From<crate::CalibrationRequest> for MeasurementCalibrationRequest {
     fn from(r: crate::CalibrationRequest) -> Self {
         MeasurementCalibrationRequest {
             page: ffi_page(r.page),
-            from: Point { x: r.from.x, y: r.from.y },
-            to: Point { x: r.to.x, y: r.to.y },
+            from: ffi_point(r.from),
+            to: ffi_point(r.to),
             user_space_length: r.user_space_length,
         }
     }
@@ -487,13 +444,15 @@ pub enum ScaleSkipReason {
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ScaleSkippedAnnotation {
-    pub annotation: AnnotationRef,
+    /// The `AnnotationRef` record.
+    pub annotation_json: String,
     pub reason: ScaleSkipReason,
 }
 
 #[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ScaleFailedAnnotation {
-    pub annotation: AnnotationRef,
+    /// The `AnnotationRef` record.
+    pub annotation_json: String,
     pub error: MeasurementErrorInfo,
 }
 
@@ -503,7 +462,8 @@ pub struct ScaleRecalibration {
     pub page: PageRef,
     pub scale: Option<PdfMeasurement>,
     pub error: Option<MeasurementErrorInfo>,
-    pub updated: Vec<AnnotationRef>,
+    /// The `AnnotationRef` records re-measured.
+    pub updated_json: Vec<String>,
     pub skipped: Vec<ScaleSkippedAnnotation>,
     pub failed: Vec<ScaleFailedAnnotation>,
 }
@@ -522,46 +482,52 @@ pub enum ScaleChangeReport {
     },
 }
 
-impl TryFrom<crate::ScaleChangeReport> for ScaleChangeReport {
+fn list<'a>(report: &'a Value, key: &str) -> &'a [Value] {
+    report.get(key).and_then(Value::as_array).map(Vec::as_slice).unwrap_or(&[])
+}
+
+fn ref_json(value: Option<&Value>) -> String {
+    value.cloned().unwrap_or(Value::Null).to_string()
+}
+
+impl TryFrom<&crate::ScaleChangeReport> for ScaleChangeReport {
     type Error = Error;
 
-    fn try_from(r: crate::ScaleChangeReport) -> Result<Self, Error> {
-        use epdf_plugin_annotation::SkipReason;
+    fn try_from(r: &crate::ScaleChangeReport) -> Result<Self, Error> {
         Ok(match r {
             crate::ScaleChangeReport::ScaleError { page, scale_error } => {
                 ScaleChangeReport::ScaleFailed {
-                    page: ffi_page(page),
-                    error: decode_error(&scale_error)?,
+                    page: ffi_page(*page),
+                    error: decode_error(scale_error)?,
                 }
             }
             crate::ScaleChangeReport::Recalibrated(r) => ScaleChangeReport::Recalibrated {
                 report: ScaleRecalibration {
-                    page: ffi_page(r.page),
-                    scale: decode_measure(&r.scale)?,
-                    error: r.error.as_ref().map(decode_error).transpose()?,
-                    updated: r.updated.iter().map(ffi_ref).collect::<Result<_, Error>>()?,
-                    skipped: r
-                        .skipped
+                    page: page_of_json(r.get("page"))?,
+                    scale: decode_measure(r.get("scale").unwrap_or(&Value::Null))?,
+                    error: r.get("error").map(decode_error).transpose()?,
+                    updated_json: list(r, "updated").iter().map(Value::to_string).collect(),
+                    skipped: list(r, "skipped")
                         .iter()
-                        .map(|(annotation, reason)| {
+                        .map(|entry| {
                             Ok(ScaleSkippedAnnotation {
-                                annotation: ffi_ref(annotation)?,
-                                reason: match reason {
-                                    SkipReason::NoAuthority => ScaleSkipReason::NoAuthority,
-                                    SkipReason::Locked => ScaleSkipReason::Locked,
-                                    SkipReason::ForeignMeasure => ScaleSkipReason::ForeignMeasure,
-                                    SkipReason::Unavailable => ScaleSkipReason::Unavailable,
+                                annotation_json: ref_json(entry.get("ref")),
+                                reason: match entry.get("reason").and_then(Value::as_str) {
+                                    Some("no-authority") => ScaleSkipReason::NoAuthority,
+                                    Some("locked") => ScaleSkipReason::Locked,
+                                    Some("foreign-measure") => ScaleSkipReason::ForeignMeasure,
+                                    Some("unavailable") => ScaleSkipReason::Unavailable,
+                                    _ => return Err(invalid_state("a skip reason", entry)),
                                 },
                             })
                         })
                         .collect::<Result<_, Error>>()?,
-                    failed: r
-                        .failed
+                    failed: list(r, "failed")
                         .iter()
-                        .map(|(annotation, error)| {
+                        .map(|entry| {
                             Ok(ScaleFailedAnnotation {
-                                annotation: ffi_ref(annotation)?,
-                                error: decode_error(error)?,
+                                annotation_json: ref_json(entry.get("ref")),
+                                error: decode_error(entry.get("error").unwrap_or(&Value::Null))?,
                             })
                         })
                         .collect::<Result<_, Error>>()?,
@@ -571,14 +537,8 @@ impl TryFrom<crate::ScaleChangeReport> for ScaleChangeReport {
     }
 }
 
-/// A plugin annotation ref as the ffi's; a ref whose numbers aren't whole
-/// is `invalid-state`.
-fn ffi_ref(r: &epdf_annotation_core::AnnotationRef) -> Result<AnnotationRef, Error> {
-    AnnotationRef::try_from(r)
-}
-
-fn reports(list: Vec<crate::ScaleChangeReport>) -> Result<Vec<ScaleChangeReport>, ViewerError> {
-    list.into_iter().map(ScaleChangeReport::try_from).collect::<Result<_, _>>().map_err(Into::into)
+fn reports(list: Rc<Vec<crate::ScaleChangeReport>>) -> Result<Vec<ScaleChangeReport>, ViewerError> {
+    list.iter().map(ScaleChangeReport::try_from).collect::<Result<_, _>>().map_err(Into::into)
 }
 
 // ── events ──────────────────────────────────────────────────────────────────
@@ -632,14 +592,19 @@ impl MeasurementHandle {
 
 #[uniffi::export]
 impl MeasurementHandle {
-    /// Whether this caller may measure `page` (`doc.annotations.read`).
+    /// Whether this caller may measure `page`: `annotations:create`, and the
+    /// page's scale has loaded.
     pub async fn can_measure(&self, page: PageRef) -> Result<bool, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.can_measure(&core_page(page)))).await
+        self.cap.call(move |c| open(c)?.can_measure(page_input(page))).await
     }
 
     /// `ready` is false until the page's viewports load (`ensure_loaded`).
     pub async fn page_scale(&self, page: PageRef) -> Result<MeasurementPageScale, ViewerError> {
-        self.cap.call(move |c| open(c)?.get_page_scale(&core_page(page)).try_into()).await
+        self.cap
+            .call(move |c| {
+                MeasurementPageScale::try_from(&*open(c)?.get_page_scale(page_input(page))?)
+            })
+            .await
     }
 
     pub async fn is_busy(&self) -> Result<bool, ViewerError> {
@@ -650,13 +615,13 @@ impl MeasurementHandle {
     pub async fn last_reports(&self) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call(|c| {
-                open(c)?.list_last_reports().into_iter().map(ScaleChangeReport::try_from).collect()
+                open(c)?.list_last_reports().iter().map(ScaleChangeReport::try_from).collect()
             })
             .await
     }
 
     pub async fn presets(&self) -> Result<Vec<ScalePreset>, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.list_presets())).await
+        self.cap.call(|c| open(c)?.list_presets()).await
     }
 
     pub async fn units(&self) -> Result<Vec<String>, ViewerError> {
@@ -664,21 +629,26 @@ impl MeasurementHandle {
     }
 
     pub async fn area_units(&self) -> Result<Vec<String>, ViewerError> {
+        self.cap.call(|c| Ok(open(c)?.list_area_units())).await
+    }
+
+    /// A measurement annotation's value in its own scale. `annotation_json`
+    /// is the `AnnotationRef` record.
+    pub async fn readout(
+        &self,
+        annotation_json: String,
+    ) -> Result<MeasurementReading, ViewerError> {
         self.cap
-            .call(|c| Ok(open(c)?.list_area_units().into_iter().map(String::from).collect()))
+            .call(move |c| {
+                let reference: Value = serde_json::from_str(&annotation_json).map_err(|e| {
+                    plugin_error(code::INVALID_INPUT, "measurement", e.to_string(), None, None)
+                })?;
+                decode_reading(&open(c)?.get_readout(&reference))
+            })
             .await
     }
 
-    /// A measurement annotation's value in its own scale.
-    pub async fn readout(
-        &self,
-        annotation: AnnotationRef,
-    ) -> Result<MeasurementReading, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.get_readout(&annotation.into()).into())).await
-    }
-
-    /// A distance in the page's scale, with no annotation. `not-found` for
-    /// a page not in the document.
+    /// A distance in the page's scale, with no annotation.
     pub async fn measure_distance(
         &self,
         page: PageRef,
@@ -687,9 +657,11 @@ impl MeasurementHandle {
     ) -> Result<MeasurementReading, ViewerError> {
         self.cap
             .call(move |c| {
-                Ok(open(c)?
-                    .measure_distance(&core_page(page), core_point(from), core_point(to))?
-                    .into())
+                decode_reading(&open(c)?.measure_distance(
+                    page_input(page),
+                    core_point(from),
+                    core_point(to),
+                )?)
             })
             .await
     }
@@ -702,7 +674,7 @@ impl MeasurementHandle {
         self.cap
             .call(move |c| {
                 let vertices: Vec<_> = vertices.into_iter().map(core_point).collect();
-                Ok(open(c)?.measure_area(&core_page(page), &vertices)?.into())
+                decode_reading(&open(c)?.measure_area(page_input(page), &vertices)?)
             })
             .await
     }
@@ -720,17 +692,13 @@ impl MeasurementHandle {
         &self,
         pages: MeasurementPageTarget,
         measure: PdfMeasurement,
-        options: ScaleChangeOptions,
+        options: MeasurementScaleChangeOptions,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| {
-                    let measure = serde_json::to_value(core::PdfMeasurement::from(measure))
-                        .map_err(|e| Error::new(e.to_string()))?;
-                    Ok(open(c)?.set_scale(pages.into(), measure, options))
-                },
+                move |c| Ok(open(c)?.set_scale(pages, measure_json(&measure)?, options.into())),
                 reports,
             )
             .await?
@@ -748,13 +716,16 @@ impl MeasurementHandle {
                 cancel,
                 move |c| {
                     let input = CalibrateInput {
-                        page: core_page(input.page),
+                        page: page_input(input.page),
                         from: core_point(input.from),
                         to: core_point(input.to),
-                        distance: KnownDistance { value: input.value, unit: input.unit },
+                        distance: KnownLength { value: input.value, unit: input.unit },
                     };
                     let options = CalibrateOptions {
-                        recalculate: options.recalculate,
+                        change: ScaleChangeOptions {
+                            signal: None,
+                            recalculate: options.recalculate,
+                        },
                         apply_to: options.apply_to.map(Into::into),
                     };
                     Ok(open(c)?.calibrate(input, options))
@@ -768,13 +739,13 @@ impl MeasurementHandle {
         &self,
         pages: MeasurementPageTarget,
         unit: String,
-        options: ScaleChangeOptions,
+        options: MeasurementScaleChangeOptions,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.set_unit(pages.into(), &unit, options)),
+                move |c| Ok(open(c)?.set_unit(pages, &unit, options.into())),
                 reports,
             )
             .await?
@@ -784,13 +755,13 @@ impl MeasurementHandle {
         &self,
         pages: MeasurementPageTarget,
         unit: String,
-        options: ScaleChangeOptions,
+        options: MeasurementScaleChangeOptions,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.set_area_unit(pages.into(), &unit, options)),
+                move |c| Ok(open(c)?.set_area_unit(pages, &unit, options.into())),
                 reports,
             )
             .await?
@@ -800,13 +771,13 @@ impl MeasurementHandle {
         &self,
         pages: MeasurementPageTarget,
         precision: f64,
-        options: ScaleChangeOptions,
+        options: MeasurementScaleChangeOptions,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.set_precision(pages.into(), precision, options)),
+                move |c| Ok(open(c)?.set_precision(pages, precision, options.into())),
                 reports,
             )
             .await?
@@ -817,13 +788,13 @@ impl MeasurementHandle {
         &self,
         pages: MeasurementPageTarget,
         preset_id: String,
-        options: ScaleChangeOptions,
+        options: MeasurementScaleChangeOptions,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.set_preset(pages.into(), &preset_id, options)),
+                move |c| Ok(open(c)?.set_preset(pages, &preset_id, options.into())),
                 reports,
             )
             .await?
@@ -834,13 +805,13 @@ impl MeasurementHandle {
     pub async fn clear_scale(
         &self,
         pages: MeasurementPageTarget,
-        options: ScaleChangeOptions,
+        options: MeasurementScaleChangeOptions,
         cancel: Arc<CancelToken>,
     ) -> Result<Vec<ScaleChangeReport>, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.clear_scale(pages.into(), options)),
+                move |c| Ok(open(c)?.clear_scale(pages, options.into())),
                 reports,
             )
             .await?
@@ -862,11 +833,12 @@ impl MeasurementHandle {
     }
 
     /// Create a measurement annotation through the annotation plugin.
+    /// Resolves the new annotation's `AnnotationRef` record.
     pub async fn create_measurement(
         &self,
         input: CreateMeasurementInput,
         cancel: Arc<CancelToken>,
-    ) -> Result<AnnotationRef, ViewerError> {
+    ) -> Result<String, ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
@@ -877,15 +849,15 @@ impl MeasurementHandle {
                             MeasurementKind::Perimeter => crate::MeasurementKind::Perimeter,
                             MeasurementKind::Area => crate::MeasurementKind::Area,
                         },
-                        page: core_page(input.page),
+                        page: page_input(input.page),
                         points: input.points.into_iter().map(core_point).collect(),
                         tool: input.tool,
                     };
-                    Ok(open(c)?.create_measurement(input))
+                    Ok(open(c)?.create_measurement(input, OperationOptions::default()))
                 },
-                |r| ffi_ref(&r).map_err(ViewerError::from),
+                |created: Value| ref_json(created.get("annotation").and_then(|a| a.get("ref"))),
             )
-            .await?
+            .await
     }
 
     pub async fn can_calibrate(&self) -> Result<bool, ViewerError> {
@@ -901,7 +873,7 @@ impl MeasurementHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| open(c)?.ensure_loaded(&core_page(page)),
+                move |c| Ok(open(c)?.ensure_loaded(page_input(page), OperationOptions::default())),
                 |()| (),
             )
             .await
@@ -919,7 +891,7 @@ impl MeasurementHandle {
                 || {
                     let l = listener.clone();
                     let scale = c.on_scale_changed(move |e| {
-                        let report = ScaleChangeReport::try_from(e.report.clone())?;
+                        let report = ScaleChangeReport::try_from(&e.report)?;
                         l.on_event(MeasurementEvent::ScaleChanged {
                             page: ffi_page(e.page),
                             report,

@@ -1,0 +1,69 @@
+src/suites/actions.ts(156,5): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/actions.ts(156,18): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/actions.ts(192,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/actions.ts(192,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/annotation-fixtures.ts(102,5): error TS2352: Conversion of type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' to type 'AnyPlugin' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'create' is missing in type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' but required in type 'PluginDef<any, any, any>'.
+src/suites/annotation-fixtures.ts(118,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/annotation-fixtures.ts(118,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/commands.ts(91,55): error TS2339: Property 'core' does not exist on type 'CommandContext'.
+src/suites/form-fixtures.ts(118,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/form-fixtures.ts(118,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/form-fixtures.ts(130,64): error TS2339: Property 'read' does not exist on type 'DocumentActionsService'.
+src/suites/form-fixtures.ts(131,63): error TS7031: Binding element 'action' implicitly has an 'any' type.
+src/suites/form-fixtures.ts(136,13): error TS2353: Object literal may only specify known properties, and 'doc' does not exist in type 'FormScriptingControllerOptions'.
+src/suites/form-fixtures.ts(138,36): error TS18047: 'port' is possibly 'null'.
+src/suites/form-fixtures.ts(139,21): error TS18047: 'port' is possibly 'null'.
+src/suites/form-fixtures.ts(144,57): error TS2554: Expected 3 arguments, but got 2.
+src/suites/form-fixtures.ts(145,60): error TS2554: Expected 3 arguments, but got 2.
+src/suites/form-fixtures.ts(146,38): error TS2554: Expected 1 arguments, but got 0.
+src/suites/form-fixtures.ts(164,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/form-fixtures.ts(164,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/i18n.ts(79,14): error TS2540: Cannot assign to 'loaders' because it is a read-only property.
+src/suites/i18n.ts(80,59): error TS2542: Index signature in type 'DeepPartial<Readonly<Record<string, LocaleLoader>>>' only permits reading.
+src/suites/i18n.ts(107,3): error TS2353: Object literal may only specify known properties, and 'dir' does not exist in type 'Locale'.
+src/suites/i18n.ts(110,49): error TS2353: Object literal may only specify known properties, and 'dir' does not exist in type 'Locale'.
+src/suites/i18n.ts(111,52): error TS2353: Object literal may only specify known properties, and 'dir' does not exist in type 'Locale'.
+src/suites/i18n.ts(117,3): error TS2353: Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'I18nState'.
+src/suites/i18n.ts(184,27): error TS2353: Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'.
+src/suites/i18n.ts(189,27): error TS2353: Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'.
+src/suites/i18n.ts(195,77): error TS2353: Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'.
+src/suites/i18n.ts(197,27): error TS2353: Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'Partial<I18nState>'.
+src/suites/i18n.ts(311,3): error TS2353: Object literal may only specify known properties, and 'fallbackLocale' does not exist in type 'I18nState'.
+src/suites/i18n.ts(322,35): error TS2345: Argument of type 'I18nState' is not assignable to parameter of type 'TranslationSources'.
+  Property 'fallbackLocale' is missing in type 'I18nState' but required in type 'TranslationSources'.
+src/suites/link.ts(62,17): error TS2339: Property 'origin' does not exist on type 'LinkActivatedEvent'.
+src/suites/render-pure.ts(289,9): error TS2353: Object literal may only specify known properties, and 'fadeMs' does not exist in type 'DeepPartial<TilesOptions>'.
+src/suites/render-pure.ts(419,3): error TS2561: Object literal may only specify known properties, but 'annotatedEpochs' does not exist in type 'RenderState'. Did you mean to write 'annotationEpochs'?
+src/suites/render.ts(89,5): error TS2352: Conversion of type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' to type 'AnyPlugin' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'create' is missing in type '{ id: string; token: CapabilityToken<{ abort(name: string): void; }>; capability: () => { abort: (name: string) => void; }; }' but required in type 'PluginDef<any, any, any>'.
+src/suites/render.ts(714,32): error TS2353: Object literal may only specify known properties, and 'fadeMs' does not exist in type 'DeepPartial<TilesOptions>'.
+src/suites/shell.ts(64,5): error TS2741: Property 'focusRequest' is missing in type '{ open: true; exclusive: string; }' but required in type 'SurfaceRecord'.
+src/suites/shell.ts(65,5): error TS2741: Property 'focusRequest' is missing in type '{ open: true; exclusive: string; props: { tab: number; }; }' but required in type 'SurfaceRecord'.
+src/suites/shell.ts(66,5): error TS2741: Property 'focusRequest' is missing in type '{ open: false; exclusive: string; }' but required in type 'SurfaceRecord'.
+src/suites/shell.ts(67,5): error TS2741: Property 'focusRequest' is missing in type '{ open: true; }' but required in type 'SurfaceRecord'.
+src/suites/shell.ts(68,5): error TS2741: Property 'focusRequest' is missing in type '{ open: true; exclusive: string; }' but required in type 'SurfaceRecord'.
+src/suites/shell.ts(108,21): error TS2741: Property 'focusRequest' is missing in type '{ open: false; exclusive: string; }' but required in type 'SurfaceRecord'.
+src/suites/signature-core.ts(236,5): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/signature-core.ts(236,18): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/signature-plugin.ts(161,82): error TS2339: Property 'signer' does not exist on type 'Partial<SignatureSettings>'.
+src/suites/stamp-fixtures.ts(154,28): error TS2322: Type 'Engine' is not assignable to type '(() => LocalEngine | Promise<LocalEngine>) | DeepPartial<LocalEngine> | null | undefined'.
+  Type 'Engine' is not assignable to type 'DeepPartial<LocalEngine>'.
+    The types of 'open(...).then' are incompatible between these types.
+      Type '<TResult1 = DocumentHandle, TResult2 = never>(onfulfilled?: ((value: DocumentHandle) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | ... 1 more ... | undefined) => Promise<...>' is not assignable to type '<TResult1 = LocalDocumentHandle, TResult2 = never>(onfulfilled?: ((value: LocalDocumentHandle) => TResult1 | PromiseLike<TResult1>) | null | undefined, onrejected?: ((reason: any) => TResult2 | PromiseLike<...>) | ... 1 more ... | undefined) => Promise<...>'.
+        Types of parameters 'onfulfilled' and 'onfulfilled' are incompatible.
+          Types of parameters 'value' and 'value' are incompatible.
+            Type 'DocumentHandle' is missing the following properties from type 'LocalDocumentHandle': fonts, pieceInfo, downloadToFile, version, downloadLayer
+src/suites/stamp-fixtures.ts(155,3): error TS2322: Type '() => Engine | Promise<Engine>' is not assignable to type '(() => LocalEngine | Promise<LocalEngine>) | DeepPartial<LocalEngine> | null | undefined'.
+  Type '() => Engine | Promise<Engine>' is not assignable to type '() => LocalEngine | Promise<LocalEngine>'.
+    Type 'Engine | Promise<Engine>' is not assignable to type 'LocalEngine | Promise<LocalEngine>'.
+      Type 'Engine' is not assignable to type 'LocalEngine | Promise<LocalEngine>'.
+        Type 'Engine' is missing the following properties from type 'LocalEngine': warmup, fonts
+src/suites/stamp-fixtures.ts(188,7): error TS2353: Object literal may only specify known properties, and 'effects' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/stamp-fixtures.ts(188,17): error TS7006: Parameter 'ctx' implicitly has an 'any' type.
+src/suites/stamp-fixtures.ts(196,23): error TS7006: Parameter 'message' implicitly has an 'any' type.
+src/suites/stamp-fixtures.ts(196,32): error TS7006: Parameter 'opts' implicitly has an 'any' type.
+src/suites/stamp-fixtures.ts(230,27): error TS2740: Type '{ api: StampCapability; }' is missing the following properties from type 'StampCapability': listLibraries, getLibrary, listAssets, getAsset, and 34 more.
+src/suites/stamp-fixtures.ts(230,77): error TS2554: Expected 1 arguments, but got 2.
+src/suites/stamp-fixtures.ts(262,7): error TS2353: Object literal may only specify known properties, and 'capability' does not exist in type 'PluginDef<any, any, any>'.
+src/suites/stamp-fixtures.ts(262,20): error TS7006: Parameter 'ctx' implicitly has an 'any' type.

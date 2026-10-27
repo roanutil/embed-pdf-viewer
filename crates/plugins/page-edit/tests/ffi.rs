@@ -1,4 +1,6 @@
 #![cfg(feature = "uniffi")]
+//! The uniffi handle over the current page-edit contract. Migrated by hand
+//! in Task 13.19 against the change-queue wire (`apply` with page ops).
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -13,75 +15,102 @@ use futures::executor::block_on;
 use plugin_conformance::test_kernel::{DOCUMENT, Reply, TestKernel, TestSpec};
 use serde_json::{Value, json};
 
-fn page(pon: u32, index: u32, rotation: u32) -> Value {
+/// A current `PageLayout`, 612 by 792 points.
+fn page(pon: u32, index: usize, rotation: u32) -> Value {
+    let b = json!({ "x": 0, "y": 0, "width": 612.0, "height": 792.0 });
     json!({
-        "ref": { "kind": "objectNumber", "pageObjectNumber": pon },
-        "pageObjectNumber": pon, "index": index, "rotation": rotation,
-        "size": { "width": 612.0, "height": 792.0 }
+        "index": index,
+        "ref": { "kind": "objectNumber", "objectNumber": pon },
+        "label": null,
+        "size": { "width": 612.0, "height": 792.0 },
+        "rotation": rotation,
+        "userUnit": 1,
+        "tabOrder": null,
+        "boxes": { "media": b, "crop": b, "bleed": b, "trim": b, "art": b },
+        "pdfCropBox": { "left": 0, "bottom": 0, "right": 612.0, "top": 792.0 },
     })
 }
 
-/// Three pages, 10, 11 and 12. `pages.rotate` and `pages.delete` apply to
-/// a shared layout, publish the event a real engine publishes, and answer
-/// `{layout}`. `pages.insertBlank` appends page 20.
-fn spec(allows: Value) -> TestSpec {
-    let layout = Rc::new(RefCell::new(vec![page(10, 0, 0), page(11, 1, 0), page(12, 2, 0)]));
-    let answer = |kind: &str, pages: &[Value], inserted: Option<Vec<u32>>| {
-        let layout = json!({ "pageCount": pages.len(), "pages": pages });
-        let mut value = json!({ "layout": layout.clone(), "cache": null });
-        if let Some(inserted) = inserted {
-            value["insertedPages"] = inserted
-                .iter()
-                .map(|p| json!({ "kind": "objectNumber", "pageObjectNumber": p }))
-                .collect();
-        }
-        Reply { value, events: vec![json!({ "type": kind, "layout": layout })] }
+fn pon(page: &Value) -> u64 {
+    page["ref"]["objectNumber"].as_u64().unwrap()
+}
+
+fn pons(op: &Value) -> Vec<u64> {
+    op["pages"].as_array().unwrap().iter().map(|r| r["objectNumber"].as_u64().unwrap()).collect()
+}
+
+const META: fn(&[Value]) -> Value = |args| json!({ "affectedPages": [], "cacheDelta": null, "opId": args[1]["opId"], "undoable": true });
+
+/// What the engine answers one page op and the fact it publishes first.
+fn applied(args: &[Value], op: &Value, pages: &[Value], inserted: Option<Vec<u32>>) -> Reply {
+    let fact_type = match op["type"].as_str().unwrap() {
+        "pages.rotate" => "pages.rotated",
+        "pages.reorder" => "pages.reordered",
+        "pages.delete" => "pages.deleted",
+        _ => "pages.inserted",
     };
-    let pons = |args: &[Value]| -> Vec<u64> {
-        args[0]
-            .as_array()
-            .unwrap()
-            .iter()
-            .map(|r| r["pageObjectNumber"].as_u64().unwrap())
-            .collect()
-    };
-    let (rotated, deleted, inserted) = (layout.clone(), layout.clone(), layout);
+    let mut item = op.clone();
+    item["layout"] = json!({ "pageCount": pages.len(), "pages": pages, "namedPages": [] });
+    item["meta"] = META(args);
+    if let Some(inserted) = inserted {
+        item["insertedPages"] =
+            inserted.iter().map(|p| json!({ "kind": "objectNumber", "objectNumber": p })).collect();
+    }
+    let mut fact = item.clone();
+    fact["type"] = json!(fact_type);
+    fact["origin"] =
+        json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null });
+    Reply { value: json!({ "items": [item], "meta": META(args) }), events: vec![fact] }
+}
+
+/// Three pages, 10, 11 and 12, and no responders yet. The first responder
+/// for a path answers it.
+fn engine(allows: Value) -> TestSpec {
     TestSpec::new(json!({
         "documents": { DOCUMENT: {
             "id": DOCUMENT, "security": { "allows": allows },
             "pages": [page(10, 0, 0), page(11, 1, 0), page(12, 2, 0)]
         } }
     }))
-    .respond("pages.rotate", move |args| {
-        let targets = pons(args);
-        let rotation = args[1].as_f64().unwrap() as u32;
-        let mut pages = rotated.borrow_mut();
-        for p in pages.iter_mut() {
-            if targets.contains(&p["pageObjectNumber"].as_u64().unwrap()) {
-                p["rotation"] = json!(rotation);
+    .respond("pages.extract", |_| Ok(Reply::value(json!({ "$bytes": "JVBERi0=" }))))
+}
+
+/// [`engine`], whose `apply` runs each change's one page op on a shared
+/// layout, publishes the fact a real engine publishes and answers the
+/// change. An inserted blank page is page 20.
+fn spec(allows: Value) -> TestSpec {
+    let layout = Rc::new(RefCell::new(vec![page(10, 0, 0), page(11, 1, 0), page(12, 2, 0)]));
+    engine(allows).respond("apply", move |args| {
+        let op = args[0]["ops"][0].clone();
+        let targets = || pons(&op);
+        let mut pages = layout.borrow_mut();
+        let mut inserted = None;
+        match op["type"].as_str().unwrap() {
+            "pages.rotate" => {
+                for p in pages.iter_mut().filter(|p| targets().contains(&pon(p))) {
+                    p["rotation"] = op["rotation"].clone();
+                }
             }
+            "pages.delete" => pages.retain(|p| !targets().contains(&pon(p))),
+            "pages.reorder" => {
+                let (mut moved, mut kept): (Vec<_>, Vec<_>) =
+                    pages.drain(..).partition(|p| targets().contains(&pon(p)));
+                assert_eq!(op["position"], json!("end"), "the test engine moves to the end only");
+                kept.append(&mut moved);
+                *pages = kept;
+            }
+            "pages.insertBlank" => {
+                let index = pages.len();
+                pages.push(page(20, index, 0));
+                inserted = Some(vec![20]);
+            }
+            other => panic!("unexpected op {other}"),
         }
-        Ok(answer("pages.rotated", &pages, None))
-    })
-    .respond("pages.delete", move |args| {
-        let targets = pons(args);
-        let mut pages = deleted.borrow_mut();
-        if targets.len() >= pages.len() {
-            return Err(epdf_kernel::Error::engine("InvalidArg", "cannot delete every page"));
-        }
-        pages.retain(|p| !targets.contains(&p["pageObjectNumber"].as_u64().unwrap()));
         for (i, p) in pages.iter_mut().enumerate() {
             p["index"] = json!(i);
         }
-        Ok(answer("pages.deleted", &pages, None))
+        Ok(applied(args, &op, &pages, inserted))
     })
-    .respond("pages.insertBlank", move |_| {
-        let mut pages = inserted.borrow_mut();
-        let index = pages.len() as u32;
-        pages.push(page(20, index, 0));
-        Ok(answer("pages.inserted", &pages, Some(vec![20])))
-    })
-    .respond("pages.extract", |_| Ok(Reply::value(json!({ "$bytes": "JVBERi0=" }))))
 }
 
 fn handle_over(
@@ -190,34 +219,40 @@ fn extract_answers_the_pdf_bytes() {
     assert_eq!(block_on(edit.extract(vec![P10], token())).unwrap(), b"%PDF-".to_vec());
 }
 
-/// The destination `pages.move` was sent for `pages` moved to `End`.
-fn end_destination(pages: Vec<PageRef>) -> f64 {
-    let (sent_tx, sent) = std::sync::mpsc::channel::<f64>();
-    let (_thread, edit) = handle_over(move || {
-        spec(json!("*")).respond("pages.move", move |args| {
-            sent_tx.send(args[1].as_f64().unwrap()).unwrap();
-            let pages = json!([page(11, 0, 0), page(12, 1, 0), page(10, 2, 0)]);
-            Ok(Reply::value(json!({ "layout": { "pageCount": 3, "pages": pages }, "cache": null })))
-        })
-    });
-    block_on(edit.move_pages(pages, PageEditPlacement::End, token())).unwrap();
-    sent.recv().unwrap()
-}
-
+/// Was `end_moves_the_block_after_the_pages_left_behind`, which checked the
+/// index the pre-13.19 port computed for `End` (the engine counted it once
+/// the moved pages were detached). `End` is now the engine's own `'end'`
+/// position (`controller.ts:69`), and an unknown page refuses the move
+/// (`refsOf`, `controller.ts:62-65`) instead of not counting.
 #[test]
 fn end_moves_the_block_after_the_pages_left_behind() {
-    // Three pages: the engine counts the destination once the moved pages
-    // are detached, so one page moving lands at 2, not at 3 (refused).
-    assert_eq!(end_destination(vec![P10]), 2.0);
-    // A page named twice moves once; an unknown page doesn't count.
+    let (_thread, edit) = handle();
+    let layout = block_on(edit.move_pages(vec![P10], PageEditPlacement::End, token())).unwrap();
+    let pons: Vec<u32> = layout.pages.iter().map(|p| p.page.page_object_number).collect();
+    assert_eq!(pons, [11, 12, 10]);
+    // A page named twice moves once. `refsOf` keeps both refs
+    // (`controller.ts:64`), so that is now the engine's doing, as this test
+    // engine's partition does it.
+    let layout =
+        block_on(edit.move_pages(vec![P10, P10, P11], PageEditPlacement::End, token())).unwrap();
+    let pons: Vec<u32> = layout.pages.iter().map(|p| p.page.page_object_number).collect();
+    assert_eq!(pons, [12, 11, 10]);
     let unknown = PageRef { page_object_number: 99 };
-    assert_eq!(end_destination(vec![P10, P10, P11, unknown]), 1.0);
+    let error =
+        block_on(edit.move_pages(vec![P10, unknown], PageEditPlacement::End, token())).unwrap_err();
+    assert_eq!(code(&error), Some("not-found"), "{error:?}");
 }
 
 #[test]
 fn a_layout_the_record_cannot_hold_is_invalid_state() {
     let (_thread, edit) = handle_over(|| {
-        spec(json!("*")).respond("pages.move", |_| Ok(Reply::value(json!({ "layout": {} }))))
+        engine(json!("*")).respond("apply", |args| {
+            let op = args[0]["ops"][0].clone();
+            // A page without a size: the registry takes it, the record can't.
+            let pages =
+                [json!({ "index": 0, "ref": { "kind": "objectNumber", "objectNumber": 10 } })];
+            Ok(applied(args, &op, &pages, None))
+        })
     });
     let error = block_on(edit.move_pages(vec![P10], PageEditPlacement::End, token())).unwrap_err();
     assert_eq!(code(&error), Some("invalid-state"), "{error:?}");

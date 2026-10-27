@@ -183,9 +183,41 @@ fn compose_api_script(args: &[Value]) -> Result<Value, Error> {
     Ok(Value::Array(api.into_iter().map(|(k, v)| json!([k, v])).collect()))
 }
 
+fn state_value(value: &Value) -> epdf_kernel::state::StateValue {
+    use epdf_kernel::state::StateValue as V;
+    if epdf_kernel::is_undefined(value) {
+        return V::Undefined;
+    }
+    if let Some(number) = value.get("$number").and_then(Value::as_str) {
+        return V::Number(match number {
+            "NaN" => f64::NAN,
+            "Infinity" => f64::INFINITY,
+            "-Infinity" => f64::NEG_INFINITY,
+            _ => number.parse().unwrap_or(f64::NAN),
+        });
+    }
+    match value {
+        Value::Null => V::Null,
+        Value::Bool(b) => V::Bool(*b),
+        Value::Number(n) => V::Number(n.as_f64().unwrap()),
+        Value::String(s) => V::String(s.clone()),
+        Value::Array(items) => V::array(items.iter().map(state_value).collect()),
+        Value::Object(fields) => {
+            V::object(fields.iter().map(|(k, v)| (k.clone(), state_value(v))).collect())
+        }
+    }
+}
+
 #[test]
 fn the_kernel_helpers_match_the_typescript() {
     let functions: FunctionTable = vec![
+        ("shallowEqual", |a| {
+            Ok(json!(epdf_kernel::state::shallow_equal(&state_value(&a[0]), &state_value(&a[1]))))
+        }),
+        ("shallowEqualItself", |a| {
+            let v = state_value(&a[0]);
+            Ok(json!(epdf_kernel::state::shallow_equal(&v, &v)))
+        }),
         ("docInfoEquals", |a| Ok(json!(doc_info_equals(&info(&a[0])?, &info(&a[1])?)))),
         ("docInfoListEquals", |a| Ok(json!(doc_info_list_equals(&infos(&a[0])?, &infos(&a[1])?)))),
         ("docInfoListEqualsItself", |a| {
@@ -458,4 +490,23 @@ fn a_ready_document_drops_its_source_and_keeps_its_host_hold() {
     rt::run_until_stalled();
     assert_eq!(*released.borrow(), vec![host]);
     set_host_releaser(None);
+}
+
+#[test]
+fn current_vector_schema_is_supported() {
+    assert_eq!(plugin_conformance::SCHEMA_VERSION, 2);
+}
+
+#[test]
+fn shallow_equality_preserves_primitive_and_nested_identity() {
+    use epdf_kernel::state::{StateValue as V, shallow_equal};
+    let child = V::object(vec![("x".into(), V::Number(1.0))]);
+    let a = V::object(vec![("child".into(), child.clone())]);
+    let b = V::object(vec![("child".into(), child)]);
+    let c = V::object(vec![("child".into(), V::object(vec![("x".into(), V::Number(1.0))]))]);
+    assert!(shallow_equal(&a, &b));
+    assert!(!shallow_equal(&a, &c));
+    assert!(shallow_equal(&V::Number(f64::NAN), &V::Number(f64::NAN)));
+    assert!(!shallow_equal(&V::Number(0.0), &V::Number(-0.0)));
+    assert!(!shallow_equal(&V::object(vec![]), &V::array(vec![])));
 }

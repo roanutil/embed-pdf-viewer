@@ -33,7 +33,7 @@ public typealias SignatureChangeAnalysis = EmbedPDFBindings.SignatureChangeAnaly
 public typealias SignatureChangeFinding = EmbedPDFBindings.SignatureChangeFinding
 public typealias SignatureFindingVerdict = EmbedPDFBindings.SignatureFindingVerdict
 public typealias SignatureMark = EmbedPDFBindings.SignatureMark
-public typealias SignatureAttribution = EmbedPDFBindings.SignatureAttribution
+public typealias SignatureSignerInput = EmbedPDFBindings.SignatureSignerInput
 public typealias SignatureSignInput = EmbedPDFBindings.SignatureSignInput
 public typealias SignaturePrepareInput = EmbedPDFBindings.SignaturePrepareInput
 public typealias SignaturePrepared = EmbedPDFBindings.SignaturePrepared
@@ -130,14 +130,16 @@ public struct SignatureCapability: Sendable {
     try await bridged { try await handle.target() }
   }
 
-  /// `doc.sign` is granted and a signer is set.
-  public func canSign() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canSign() }
+  /// Whether signing `field` is allowed: `doc.sign`, or `fields:sign` for
+  /// its group. `false` for a field the form doesn't have.
+  public func canSign(_ field: FormFieldRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canSign(field: field) }
   }
 
-  /// `doc.forms.fill` is granted.
-  public func canFill() async throws(PDFError) -> Bool {
-    try await bridged { try await handle.canFill() }
+  /// Whether drawing a mark into `field` is allowed: `doc.forms.fill`, or
+  /// `fields:fill` for its group.
+  public func canFill(_ field: FormFieldRef) async throws(PDFError) -> Bool {
+    try await bridged { try await handle.canFill(field: field) }
   }
 
   /// The config allows certifying and `doc.sign.certify` is granted.
@@ -212,9 +214,9 @@ public struct SignatureCapability: Sendable {
     }
   }
 
-  /// Cancel the parked signing, if any.
-  public func abortPending() async throws(PDFError) {
-    try await bridgedCancellable { token in try await handle.abortPending(cancel: token) }
+  /// Give up the parked signing, if any.
+  public func cancelPending() async throws(PDFError) {
+    try await bridgedCancellable { token in try await handle.cancelPending(cancel: token) }
   }
 
   /// Draw `mark` into an unsigned field without sealing it.

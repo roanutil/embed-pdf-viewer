@@ -5,13 +5,31 @@
 //! Downstream crates whose vectors drive the hub (selection, annotation,
 //! form, stage) register [`Interaction`] next to their own adapter, and may
 //! use the JSON bridges here ([`sample_from_json`], [`sample_json`],
-//! [`tool_json`], [`ScriptedHandler`]).
+//! [`tool_from_json`], [`tool_json`], [`page_ref_json`],
+//! [`ScriptedHandler`]).
+//!
+//! The TypeScript hands the objects a vector gives it straight through: a
+//! handler's sample is the object `dispatchPointer` received, a listed
+//! tool is the object `registerTool` received, a gesture's page is the
+//! sample's `page.ref`. So this adapter prints what the vector gave,
+//! member order and members the contract no longer names included
+//! (`touchDirect`), rather than a re-serialized typed value:
+//!
+//! - a sample dispatched from a vector is printed from its JSON while the
+//!   dispatch runs ([`with_vector_sample`]);
+//! - a tool built from a vector keeps its JSON beside it ([`tool_json`]);
+//! - a page ref the kernel can't read (a vector's `{kind, pageObjectNumber}`,
+//!   which has no `objectNumber`) becomes a stand-in [`PageRef`] that names
+//!   no page and prints as it was given ([`page_ref_from_json`]). The
+//!   TypeScript reads `ref.objectNumber` of such a ref as `undefined`, so it
+//!   matches no page either.
 
 use std::any::Any;
 use std::cell::RefCell;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 use epdf_geometry::Point;
+use epdf_kernel::geometry::PageRef;
 use epdf_kernel::{AnyPlugin, AnyToken, Error, is_undefined, undefined};
 use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
@@ -21,12 +39,8 @@ use crate::feedback::{
     FEEDBACK, Feedback, FeedbackPluginOptions, ImpactWeight, NotifyKind, PlatformFeedback,
     feedback_plugin,
 };
-use crate::model::{InteractionAction, InteractionState};
-use crate::{
-    InteractionCapability, builtin_tools, initial_interaction_state, interaction_plugin,
-    reduce_interaction,
-};
-use epdf_kernel::geometry::PageRef;
+use crate::model::{self, InteractionState};
+use crate::{InteractionCapability, builtin_tools, initial_interaction_state, interaction_plugin};
 
 // ── JavaScript values ─────────────────────────────────────────────────────────
 
@@ -77,48 +91,167 @@ fn opt_str(value: Option<&Value>) -> Option<String> {
     value.filter(|v| !is_undefined(v)).and_then(Value::as_str).map(str::to_string)
 }
 
+fn present(value: Option<&Value>) -> Option<&Value> {
+    value.filter(|v| !v.is_null() && !is_undefined(v))
+}
+
+/// A function member as the canonical form prints it.
+fn function_json() -> Value {
+    json!({ "$function": true })
+}
+
+thread_local! {
+    /// The page refs a vector gave that name no page, by stand-in.
+    static STAND_INS: RefCell<Vec<Value>> = const { RefCell::new(Vec::new()) };
+    /// The JSON of each tool built from a vector.
+    static TOOL_SPELLINGS: RefCell<Vec<(Weak<Tool>, Value)>> = const { RefCell::new(Vec::new()) };
+    /// The JSON of the samples being dispatched, innermost last.
+    static VECTOR_SAMPLES: RefCell<Vec<Value>> = const { RefCell::new(Vec::new()) };
+}
+
+// ── page refs ─────────────────────────────────────────────────────────────────
+
+/// A page ref from a vector. One the kernel can't read gets a stand-in
+/// numbered down from `u32::MAX`, which no page of a fixture has.
+///
+/// Stand-ins match only a ref spelled the same. In the TypeScript every
+/// such ref matches every other one (`undefined === undefined`), so a
+/// tool's own gesture that starts on `pageObjectNumber: 1` and moves over
+/// `pageObjectNumber: 2` with no projection gets the page-2 point there and
+/// the last event here. No vector does that today; Task 14's fix of the
+/// generator's refs (`suites/interaction.ts:88`) removes the stand-ins.
+pub fn page_ref_from_json(value: &Value) -> PageRef {
+    if let Some(page) = PageRef::from_json(value) {
+        return page;
+    }
+    STAND_INS.with(|stand_ins| {
+        let mut stand_ins = stand_ins.borrow_mut();
+        let index = match stand_ins.iter().position(|v| v == value) {
+            Some(index) => index,
+            None => {
+                stand_ins.push(value.clone());
+                stand_ins.len() - 1
+            }
+        };
+        PageRef::new(u32::MAX - index as u32)
+    })
+}
+
+/// A page ref as the TypeScript prints it: a stand-in as its vector gave it.
+pub fn page_ref_json(page: PageRef) -> Value {
+    let index = (u32::MAX - page.page_object_number) as usize;
+    STAND_INS
+        .with(|stand_ins| stand_ins.borrow().get(index).cloned())
+        .unwrap_or_else(|| page.to_json())
+}
+
 // ── tools ─────────────────────────────────────────────────────────────────────
 
-/// A tool as the TypeScript prints it: `enables` is a `Set`.
+/// A tool as the TypeScript prints it: as its vector gave it, else in the
+/// built-in tools' member order. `enables` is a `Set`.
 pub fn tool_json(tool: &Tool) -> Value {
+    let spelled = TOOL_SPELLINGS.with(|spellings| {
+        spellings.borrow().iter().find_map(|(weak, json)| {
+            (std::ptr::eq(weak.as_ptr(), tool) && weak.strong_count() > 0).then(|| json.clone())
+        })
+    });
+    if let Some(json) = spelled {
+        return json;
+    }
     let mut out = Map::new();
     out.insert("id".into(), json!(tool.id));
     out.insert("cursor".into(), json!(tool.cursor));
+    if let Some(touch) = tool.touch {
+        out.insert("touch".into(), serde_json::to_value(touch).unwrap());
+    }
     if let Some(gap) = &tool.gap_cursor {
         out.insert("gapCursor".into(), json!(gap));
     }
     out.insert("enables".into(), json!({ "$set": tool.enables }));
-    if let Some(touch) = tool.touch_direct {
-        out.insert("touchDirect".into(), json!(touch));
+    for (name, present) in [
+        ("onPointerDown", tool.on_pointer_down.is_some()),
+        ("onPointerMove", tool.on_pointer_move.is_some()),
+        ("onPointerUp", tool.on_pointer_up.is_some()),
+        ("onHover", tool.on_hover.is_some()),
+    ] {
+        if present {
+            out.insert(name.into(), function_json());
+        }
     }
     Value::Object(out)
 }
 
-/// A tool from a vector: `enables` is `{"$set": [...]}` (or a plain list).
-pub fn tool_from_json(value: &Value) -> Tool {
-    let tags = value.get("enables").map(|e| e.get("$set").unwrap_or(e));
-    let tags: Vec<&str> =
-        tags.and_then(Value::as_array).into_iter().flatten().filter_map(Value::as_str).collect();
-    let mut tool = Tool::new(
-        value.get("id").and_then(Value::as_str).unwrap_or_default(),
-        value.get("cursor").and_then(Value::as_str).unwrap_or_default(),
-        tags,
-    );
-    tool.gap_cursor = opt_str(value.get("gapCursor"));
-    tool.touch_direct = value.get("touchDirect").and_then(Value::as_bool);
+/// A `ToolPointerEvent` as the TypeScript prints it.
+pub fn tool_pointer_event_json(event: &ToolPointerEvent) -> Value {
+    json!({
+        "page": page_ref_json(event.page),
+        "point": event.point,
+        "modifiers": event.modifiers,
+        "pointerType": event.pointer_type,
+    })
+}
+
+/// A tool from a vector: `enables` is `{"$set": [...]}` (or a plain list),
+/// and its `$fn` pointer members become scripted callbacks when a harness
+/// is given. The tool keeps the vector's JSON for [`tool_json`], with
+/// `enables` as the `Set` it decodes to; a tool given without `enables` is
+/// stored with an empty one added last, as `addTool` stores it.
+pub fn tool_from_json(value: &Value, h: Option<&Harness>) -> Rc<Tool> {
+    let mut tool = crate::plain_tool(value).unwrap_or_default();
+    let callback = |name: &str| {
+        let spec = value.get(name).filter(|v| v.get("$fn").is_some())?;
+        h.map(|h| h.callback(spec))
+    };
+    if let Some(down) = callback("onPointerDown") {
+        tool.on_pointer_down = Some(Rc::new(move |event| {
+            matches!(
+                down.call(vec![tool_pointer_event_json(event)]),
+                Answer::Returns(Value::Bool(true))
+            )
+        }));
+    }
+    for (name, slot) in [
+        ("onPointerMove", &mut tool.on_pointer_move),
+        ("onPointerUp", &mut tool.on_pointer_up),
+        ("onHover", &mut tool.on_hover),
+    ] {
+        if let Some(callback) = callback(name) {
+            *slot = Some(Rc::new(move |event| {
+                callback.call(vec![tool_pointer_event_json(event)]);
+            }));
+        }
+    }
+    let tool = Rc::new(tool);
+    let mut spelling = value.as_object().cloned().unwrap_or_default();
+    for member in spelling.values_mut() {
+        if member.get("$fn").is_some() {
+            *member = function_json();
+        }
+    }
+    spelling.insert("enables".into(), json!({ "$set": tool.enables }));
+    TOOL_SPELLINGS.with(|spellings| {
+        let mut spellings = spellings.borrow_mut();
+        spellings.retain(|(weak, _)| weak.strong_count() > 0);
+        spellings.push((Rc::downgrade(&tool), Value::Object(spelling)));
+    });
     tool
 }
 
 /// An `InteractionConfig` from a vector; `undefined` or `null` is `{}`.
-pub fn config_from_json(value: &Value) -> InteractionConfig {
+pub fn config_from_json(value: &Value, h: Option<&Harness>) -> InteractionConfig {
     InteractionConfig {
         default_tool: opt_str(value.get("defaultTool")),
-        tools: value
-            .get("tools")
+        tools: present(value.get("tools"))
             .and_then(Value::as_array)
-            .map(|tools| tools.iter().map(tool_from_json).collect())
-            .unwrap_or_default(),
+            .map(|tools| tools.iter().map(|t| tool_from_json(t, h)).collect()),
     }
+}
+
+fn settings_json(settings: &InteractionSettings) -> Value {
+    json!({
+        "defaultTool": settings.default_tool,
+        "tools": settings.tools.iter().map(|t| tool_json(t)).collect::<Vec<_>>(),
+    })
 }
 
 // ── samples ───────────────────────────────────────────────────────────────────
@@ -126,6 +259,17 @@ pub fn config_from_json(value: &Value) -> InteractionConfig {
 fn decode<T: serde::de::DeserializeOwned>(value: &Value, what: &str) -> Result<T, Error> {
     plugin_conformance::js::from_value(value)
         .map_err(|e| Error::new(format!("[harness] {what}: {}", e.message)))
+}
+
+fn page_hit_from_json(value: &Value) -> Result<PageHit, Error> {
+    let member = |name: &str| present(value.get(name));
+    Ok(PageHit {
+        page: page_ref_from_json(value.get("ref").unwrap_or(&Value::Null)),
+        point: decode(value.get("point").unwrap_or(&Value::Null), "page.point")?,
+        scale: member("scale").and_then(number),
+        rotation: member("rotation").map(|r| decode(r, "page.rotation")).transpose()?,
+        zoom: member("zoom").and_then(number),
+    })
 }
 
 /// A sample from a vector. A `$fn` `project` member becomes a scripted
@@ -137,11 +281,7 @@ pub fn sample_from_json(
 ) -> Result<PointerSample, Error> {
     let phase: Phase = decode(value.get("phase").unwrap_or(&Value::Null), "phase")?;
     let viewport: Point = decode(value.get("viewport").unwrap_or(&Value::Null), "viewport")?;
-    let page = match value.get("page") {
-        None | Some(Value::Null) => None,
-        Some(page) if is_undefined(page) => None,
-        Some(page) => Some(decode::<PageHit>(page, "page")?),
-    };
+    let page = present(value.get("page")).map(page_hit_from_json).transpose()?;
     let modifiers = match value.get("modifiers") {
         Some(m) => decode(m, "modifiers")?,
         None => Modifiers::default(),
@@ -149,7 +289,7 @@ pub fn sample_from_json(
     let project = match (value.get("project"), h) {
         (Some(spec), Some(h)) if spec.get("$fn").is_some() => {
             let callback = h.callback(spec);
-            let f: Project = Rc::new(move |page| match callback.call(vec![page.to_json()]) {
+            let f: Project = Rc::new(move |page| match callback.call(vec![page_ref_json(page)]) {
                 Answer::Returns(v) => decode::<Point>(&v, "project").ok(),
                 _ => None,
             });
@@ -170,7 +310,23 @@ pub fn sample_from_json(
     })
 }
 
-/// A sample as the TypeScript prints it in a callback's arguments.
+/// Run `f` with `raw` as the vector's JSON of the sample being dispatched,
+/// so scripted handlers print the object the TypeScript passed through.
+pub fn with_vector_sample<R>(raw: &Value, f: impl FnOnce() -> R) -> R {
+    struct Pop;
+    impl Drop for Pop {
+        fn drop(&mut self) {
+            VECTOR_SAMPLES.with(|samples| samples.borrow_mut().pop());
+        }
+    }
+    VECTOR_SAMPLES.with(|samples| samples.borrow_mut().push(raw.clone()));
+    let _pop = Pop;
+    f()
+}
+
+/// A sample as the TypeScript prints it in a callback's arguments: the
+/// vector's JSON while one is being dispatched, else its members in the
+/// order the generator writes them.
 pub fn sample_json(sample: &PointerSample) -> Value {
     sample_members(sample, true)
 }
@@ -179,13 +335,20 @@ pub fn sample_json(sample: &PointerSample) -> Value {
 /// host gets no `project` at all: a placeholder would be non-nullish, and
 /// `samplePointOn` does `s.project?.(page) ?? ...`.
 fn sample_members(sample: &PointerSample, with_project: bool) -> Value {
+    if let Some(Value::Object(mut raw)) = VECTOR_SAMPLES.with(|s| s.borrow().last().cloned()) {
+        if raw.contains_key("project") {
+            if with_project {
+                raw.insert("project".into(), function_json());
+            } else {
+                raw.shift_remove("project");
+            }
+        }
+        return Value::Object(raw);
+    }
     let mut out = Map::new();
     out.insert("phase".into(), serde_json::to_value(sample.phase).unwrap());
     out.insert("viewport".into(), serde_json::to_value(sample.viewport).unwrap());
     out.insert("modifiers".into(), serde_json::to_value(sample.modifiers).unwrap());
-    if let Some(page) = &sample.page {
-        out.insert("page".into(), serde_json::to_value(page).unwrap());
-    }
     if let Some(clicks) = sample.click_count {
         out.insert("clickCount".into(), json!(clicks));
     }
@@ -199,9 +362,23 @@ fn sample_members(sample: &PointerSample, with_project: bool) -> Value {
         out.insert("source".into(), json!(source));
     }
     if with_project && sample.project.is_some() {
-        out.insert("project".into(), json!({ "$function": true }));
+        out.insert("project".into(), function_json());
+    }
+    if let Some(page) = &sample.page {
+        let mut hit = serde_json::to_value(page).unwrap();
+        hit["ref"] = page_ref_json(page.page);
+        out.insert("page".into(), hit);
     }
     Value::Object(out)
+}
+
+/// A gesture event as the TypeScript prints it.
+pub fn gesture_json(event: &GestureEvent) -> Value {
+    json!({
+        "toolId": event.tool_id,
+        "page": event.page.map_or(Value::Null, page_ref_json),
+        "pointerType": event.pointer_type,
+    })
 }
 
 // ── scripted handlers ─────────────────────────────────────────────────────────
@@ -292,15 +469,19 @@ impl InteractionHandler for ScriptedHandler {
 
 pub struct Interaction;
 
-/// The TypeScript object literal's member order.
+/// The TypeScript object literal's member order: the settings calls spread
+/// first, then the public members, then the host ones.
 const MEMBERS: &[&str] = &[
+    "getSettings",
+    "updateSettings",
+    "resetSettings",
+    "onSettingsChanged",
     "getActiveTool",
     "getActiveToolId",
     "getDefaultToolId",
     "listTools",
     "getTool",
     "hasTool",
-    "activeToolEnables",
     "activateTool",
     "activateDefaultTool",
     "pushTool",
@@ -311,9 +492,11 @@ const MEMBERS: &[&str] = &[
     "onGestureStarted",
     "onGestureEnded",
     "onGestureCancelled",
+    "activeToolEnables",
     "registerHandler",
     "claimCursor",
     "getCursor",
+    "hasCursorClaim",
     "onCursorChanged",
     "wouldClaimTouch",
     "dispatchPointer",
@@ -369,23 +552,13 @@ fn not_a_function(method: &str) -> Outcome {
     Outcome::Threw(Error::new(format!("[scenario] \"{method}\" is not a function")))
 }
 
-/// A `ToolChangedEvent` as the TypeScript prints it; an absent payload is
-/// an `undefined` member, which the canonical form drops.
+/// A `ToolChangedEvent` as the TypeScript prints it.
 pub fn tool_changed_json(event: &ToolChangedEvent) -> Value {
-    let mut out = Map::new();
-    out.insert("toolId".into(), json!(event.tool_id));
-    out.insert("previousToolId".into(), json!(event.previous_tool_id));
-    out.insert("tool".into(), tool_json(&event.tool));
-    if let Some(payload) = &event.payload {
-        out.insert("payload".into(), payload.clone());
-    }
-    Value::Object(out)
+    serde_json::to_value(event).unwrap()
 }
 
-fn activate_options(value: Option<&Value>) -> Option<ActivateToolOptions> {
-    value.map(|o| ActivateToolOptions {
-        payload: o.get("payload").filter(|p| !is_undefined(p)).cloned(),
-    })
+fn settings_changed_json(event: &InteractionSettingsChanged) -> Value {
+    json!({ "settings": settings_json(&event.settings), "changed": event.changed })
 }
 
 /// Subscribe a scripted callback to an event hook; the unsubscribe is a ref.
@@ -419,41 +592,51 @@ fn call_interaction(
     args: &[Value],
     h: &Harness,
 ) -> Outcome {
-    let sample = |i: usize| sample_from_json(arg(args, i).unwrap_or(&Value::Null), Some(h), None);
-    let gesture_json: fn(&GestureEvent) -> Value = |e| serde_json::to_value(e).unwrap();
+    let raw = |i: usize| arg(args, i).cloned().unwrap_or(Value::Null);
+    let sample = |i: usize| sample_from_json(&raw(i), Some(h), None);
     match method {
+        "getSettings" => Outcome::Returned(settings_json(&cap.get_settings())),
+        "updateSettings" => {
+            cap.update_settings(&config_from_json(&raw(0), Some(h)));
+            Outcome::undefined()
+        }
+        "resetSettings" => {
+            cap.reset_settings();
+            Outcome::undefined()
+        }
+        "onSettingsChanged" => {
+            listen(h, arg(args, 0), settings_changed_json, |f| cap.on_settings_changed(f))
+        }
         "getActiveTool" => Outcome::Returned(tool_json(&cap.get_active_tool())),
         "getActiveToolId" => Outcome::Returned(json!(cap.get_active_tool_id())),
         "getDefaultToolId" => Outcome::Returned(json!(cap.get_default_tool_id())),
         "listTools" => {
-            Outcome::Returned(Value::Array(cap.list_tools().iter().map(tool_json).collect()))
+            Outcome::Returned(Value::Array(cap.list_tools().iter().map(|t| tool_json(t)).collect()))
         }
         "getTool" => Outcome::Returned(
             cap.get_tool(&str_arg(args, 0)).map_or(Value::Null, |t| tool_json(&t)),
         ),
         "hasTool" => Outcome::Returned(json!(cap.has_tool(&str_arg(args, 0)))),
         "activeToolEnables" => Outcome::Returned(json!(cap.active_tool_enables(&str_arg(args, 0)))),
-        "activateTool" => {
-            unit(cap.activate_tool(&str_arg(args, 0), activate_options(arg(args, 1))))
-        }
+        "activateTool" => unit(cap.activate_tool(&str_arg(args, 0))),
         "activateDefaultTool" => unit(cap.activate_default_tool()),
-        "pushTool" => unit(cap.push_tool(&str_arg(args, 0), activate_options(arg(args, 1)))),
+        "pushTool" => unit(cap.push_tool(&str_arg(args, 0))),
         "popTool" => unit(cap.pop_tool()),
         "setToolCursor" => {
-            let skin = arg(args, 1).and_then(Value::as_object).map(|skin| {
-                skin.iter()
+            let cursors = present(arg(args, 1)).and_then(Value::as_object).map(|cursors| {
+                cursors
+                    .iter()
                     .filter_map(|(k, v)| v.as_str().map(|v| (k.clone(), v.to_string())))
                     .collect()
             });
-            cap.set_tool_cursor(&str_arg(args, 0), skin);
+            cap.set_tool_cursor(&str_arg(args, 0), cursors);
             Outcome::undefined()
         }
         "registerTool" => {
             let replace = arg(args, 1).and_then(|o| o.get("replace")).is_some_and(truthy);
-            match cap.register_tool(
-                tool_from_json(arg(args, 0).unwrap_or(&Value::Null)),
-                RegisterToolOptions { replace },
-            ) {
+            match cap
+                .register_tool(tool_from_json(&raw(0), Some(h)), RegisterToolOptions { replace })
+            {
                 Ok(unregister) => unregister_ref(h, unregister),
                 Err(error) => Outcome::Threw(error),
             }
@@ -465,7 +648,7 @@ fn call_interaction(
             listen(h, arg(args, 0), gesture_json, |f| cap.on_gesture_cancelled(f))
         }
         "registerHandler" => {
-            let handler = ScriptedHandler::from_json(arg(args, 0).unwrap_or(&Value::Null), h);
+            let handler = ScriptedHandler::from_json(&raw(0), h);
             let source = opt_str(arg(args, 1).and_then(|o| o.get("source")));
             unregister_ref(
                 h,
@@ -479,6 +662,7 @@ fn call_interaction(
             Outcome::undefined()
         }
         "getCursor" => Outcome::Returned(json!(cap.get_cursor())),
+        "hasCursorClaim" => Outcome::Returned(json!(cap.has_cursor_claim())),
         "onCursorChanged" => listen(
             h,
             arg(args, 0),
@@ -486,12 +670,14 @@ fn call_interaction(
             |f| cap.on_cursor_changed(f),
         ),
         "wouldClaimTouch" => match sample(0) {
-            Ok(sample) => Outcome::Returned(json!(cap.would_claim_touch(&sample))),
+            Ok(sample) => Outcome::Returned(json!(
+                with_vector_sample(&raw(0), || cap.would_claim_touch(&sample))
+            )),
             Err(error) => Outcome::Threw(error),
         },
         "dispatchPointer" => match sample(0) {
             Ok(sample) => {
-                cap.dispatch_pointer(&sample);
+                with_vector_sample(&raw(0), || cap.dispatch_pointer(&sample));
                 Outcome::undefined()
             }
             Err(error) => Outcome::Threw(error),
@@ -526,7 +712,7 @@ impl HarnessPlugin for Interaction {
                     wants.then(|| Rc::new(LoggingFeedback(h.clone())) as Rc<dyn PlatformFeedback>);
                 Ok(feedback_plugin(FeedbackPluginOptions { provider }))
             }
-            _ => Ok(interaction_plugin(config_from_json(config))),
+            _ => Ok(interaction_plugin(config_from_json(config, Some(h)))),
         }
     }
 
@@ -563,8 +749,8 @@ fn value_arg(args: &[Value], i: usize) -> Value {
     args.get(i).cloned().unwrap_or(Value::Null)
 }
 
-/// The generator's `withProject`: `projects` maps a pon to what `project`
-/// answers; a missing key is `undefined`.
+/// The generator's `withProject`: `projects` maps a page's object number to
+/// what `project` answers; a missing key is `undefined`.
 fn sample_point_on_fn(args: &[Value]) -> Result<Value, Error> {
     let sample = value_arg(args, 0);
     let project: Option<Project> = sample.get("projects").cloned().map(|table| {
@@ -581,19 +767,41 @@ fn sample_point_on_fn(args: &[Value]) -> Result<Value, Error> {
 }
 
 fn builtin_tools_fn(_: &[Value]) -> Result<Value, Error> {
-    Ok(Value::Array(builtin_tools().iter().map(tool_json).collect()))
+    Ok(Value::Array(builtin_tools().iter().map(|t| tool_json(t)).collect()))
 }
 
-fn initial_state_fn(args: &[Value]) -> Result<Value, Error> {
-    let config = config_from_json(&value_arg(args, 0));
-    Ok(serde_json::to_value(initial_interaction_state(&config)).unwrap())
+/// Upstream's state no longer takes the config; the generator passes one
+/// the function ignores.
+fn initial_state_fn(_: &[Value]) -> Result<Value, Error> {
+    Ok(serde_json::to_value(initial_interaction_state()).unwrap())
 }
 
+/// The generator's `reduceInteraction`: one pure transition per action
+/// type. The TypeScript transitions spread the state they're given, so the
+/// answer keeps the input's members (a `defaultToolId` the state no longer
+/// has included) in their places, with the transition's writes over them.
 fn reducer_fn(args: &[Value]) -> Result<Value, Error> {
-    let state: InteractionState = decode(&value_arg(args, 0), "state")?;
-    let action: InteractionAction = decode(&value_arg(args, 1), "action")?;
-    let next = reduce_interaction(&state, &action).unwrap_or(state);
-    Ok(serde_json::to_value(next).unwrap())
+    let input = value_arg(args, 0);
+    let action = value_arg(args, 1);
+    let state = Rc::new(decode::<InteractionState>(&input, "state")?);
+    let text = |name: &str| action.get(name).and_then(Value::as_str).unwrap_or_default();
+    let next = match text("type") {
+        "SET_TOOL" => model::activate_tool(&state, text("toolId")),
+        "PUSH_TOOL" => model::push_tool(&state, text("toolId")),
+        "POP_TOOL" => model::pop_tool(&state),
+        "SET_CURSOR" => model::set_cursor(&state, text("cursor")),
+        _ => state.clone(),
+    };
+    if Rc::ptr_eq(&next, &state) {
+        return Ok(input);
+    }
+    let mut out = input.as_object().cloned().unwrap_or_default();
+    if let Value::Object(written) = serde_json::to_value(&*next).unwrap() {
+        for (key, value) in written {
+            out.insert(key, value);
+        }
+    }
+    Ok(Value::Object(out))
 }
 
 /// `plugins/interaction-functions.json`, by the generator's names.
@@ -661,5 +869,19 @@ mod unregister_ref_tests {
         call_ref(&h, &value);
 
         assert_eq!(calls.get(), 1, "the live path drops the Unregister after its first call");
+    }
+
+    /// A vector's page ref without `objectNumber` reads as a page no real
+    /// ref names, the same one each time, and prints as it was given.
+    #[test]
+    fn an_unreadable_page_ref_names_no_page_and_prints_as_given() {
+        let stale = json!({ "kind": "objectNumber", "pageObjectNumber": 3 });
+        let page = page_ref_from_json(&stale);
+        assert_eq!(page, page_ref_from_json(&stale));
+        assert_ne!(page, PageRef::new(3));
+        assert_eq!(page_ref_json(page), stale);
+        let current = json!({ "kind": "objectNumber", "objectNumber": 3 });
+        assert_eq!(page_ref_from_json(&current), PageRef::new(3));
+        assert_eq!(page_ref_json(PageRef::new(3)), current);
     }
 }

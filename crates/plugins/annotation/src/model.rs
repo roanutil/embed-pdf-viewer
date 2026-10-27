@@ -1,166 +1,257 @@
-//! `model.ts`: the slice holds the core model, the hydration status, the
-//! chrome settings, the tool ghost, the stamp arm epoch and the editor's
-//! text selection. The pure `update` runs in the store service; the reducer
-//! only stores.
+//! `model.ts`: the plugin's state and its transitions.
+//!
+//! Three kinds of data make up what the user sees, and each has one owner:
+//! the engine's records (the records mirror, `sync/records.rs`), this
+//! session's changes the engine hasn't answered (the kernel's change queue,
+//! which the mirror predicts) and the session (selection, gestures,
+//! settings), produced by the core's `update`. The view (`read/view.rs`)
+//! composes the session with the records as the mirror shows them.
+//!
+//! The state is held as an `Rc`, and every transition returns the same `Rc`
+//! when nothing changes: the kernel publishes a state change by identity,
+//! as the TypeScript does.
 
 use std::rc::Rc;
 
-use epdf_annotation_core::{Model, SnapSettings, initial_model};
+use epdf_annotation_core::types::{EditableKinds, Id, Point, Session, SnapSettings};
+use epdf_annotation_core::update::initial_model;
+use indexmap::IndexMap;
 use serde::Serialize;
+use serde_json::{Map, Value};
 
-use crate::contract::*;
+use crate::js::{Object, num};
+use crate::rich_text::TextSelection;
 
-/// `AnnotationState`. The model and chrome sit behind `Rc` so the memoized
-/// selectors can key on identity, as the TypeScript's `===` does.
-#[derive(Clone, Debug, PartialEq, Serialize)]
-#[serde(rename_all = "camelCase")]
+/// `GhostPointer`: where the active tool's ghost is.
+#[derive(Clone, Debug, PartialEq)]
+pub struct GhostPointer {
+    pub tool_id: String,
+    pub page: Value,
+    pub point: Point,
+    /// The page's display rotation at the pointer.
+    pub display_rotation: Option<f64>,
+    /// The page's zoom at the pointer.
+    pub zoom: Option<f64>,
+}
+
+impl GhostPointer {
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        out.insert("toolId".into(), Value::String(self.tool_id.clone()));
+        out.insert("page".into(), self.page.clone());
+        out.insert("point".into(), point_json(self.point));
+        if let Some(r) = self.display_rotation {
+            out.insert("displayRotation".into(), num(r));
+        }
+        if let Some(z) = self.zoom {
+            out.insert("zoom".into(), num(z));
+        }
+        Value::Object(out)
+    }
+}
+
+/// `ForeignPlacement`: a sibling plugin's placement gesture with one of this
+/// plugin's tools.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ForeignPlacement {
+    pub tool_id: String,
+    pub page: Value,
+    pub from: Point,
+    pub to: Point,
+}
+
+impl ForeignPlacement {
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        out.insert("toolId".into(), Value::String(self.tool_id.clone()));
+        out.insert("page".into(), self.page.clone());
+        out.insert("from".into(), point_json(self.from));
+        out.insert("to".into(), point_json(self.to));
+        Value::Object(out)
+    }
+}
+
+pub fn point_json(p: Point) -> Value {
+    let mut out = Map::new();
+    out.insert("x".into(), num(p.x));
+    out.insert("y".into(), num(p.y));
+    Value::Object(out)
+}
+
+/// `AnnotationState`.
+#[derive(Clone, Debug)]
 pub struct AnnotationState {
-    pub model: Rc<Model>,
-    pub hydration: AnnotationHydration,
-    pub chrome: Rc<ChromeSettings>,
-    pub tool_ghost: Option<Rc<ToolGhost>>,
-    pub stamp_arm_epoch: f64,
+    /// The core's session: selection, hover, the gesture in progress, tool settings.
+    pub session: Session,
+    /// Records this session renders from their description instead of the
+    /// engine's raster: the ones it edited or created, in the order they
+    /// joined (a JavaScript object's insertion order).
+    pub vector: Rc<IndexMap<Id, ()>>,
+    /// Where the active tool's ghost is.
+    pub ghost_at: Option<Rc<GhostPointer>>,
+    /// A sibling plugin's placement in progress with one of this plugin's tools.
+    pub placing: Option<Rc<ForeignPlacement>>,
+    /// The text editor's selection inside the annotation being edited.
     pub text_selection: Option<Rc<TextSelection>>,
 }
 
-/// The hydration error makes one variant large; actions are transient.
-#[allow(clippy::large_enum_variant)]
-#[derive(Clone, Debug, Serialize)]
-#[serde(tag = "type")]
-pub enum AnnotationAction {
-    #[serde(rename = "SET_MODEL")]
-    SetModel { model: Rc<Model> },
-    #[serde(rename = "SET_HYDRATION")]
-    SetHydration { hydration: AnnotationHydration },
-    #[serde(rename = "SET_CHROME")]
-    SetChrome { patch: ChromeSettingsPatch },
-    #[serde(rename = "SET_TOOL_GHOST")]
-    SetToolGhost { ghost: Option<Rc<ToolGhost>> },
-    #[serde(rename = "SET_TEXT_SELECTION")]
-    SetTextSelection { selection: Option<Rc<TextSelection>> },
-    #[serde(rename = "STAMP_ARM_CHANGED")]
-    StampArmChanged,
-}
+impl AnnotationState {
+    pub fn to_json(&self) -> Value {
+        let mut out = Map::new();
+        out.insert("session".into(), Value::Object(self.session.to_object()));
+        let vector: Object = self.vector.keys().map(|k| (k.clone(), Value::Bool(true))).collect();
+        out.insert("vector".into(), Value::Object(vector));
+        out.insert("ghostAt".into(), self.ghost_at.as_ref().map_or(Value::Null, |g| g.to_json()));
+        out.insert("placing".into(), self.placing.as_ref().map_or(Value::Null, |p| p.to_json()));
+        out.insert(
+            "textSelection".into(),
+            self.text_selection.as_ref().map_or(Value::Null, |t| t.to_json()),
+        );
+        Value::Object(out)
+    }
 
-/// `DEFAULT_CHROME`.
-pub fn default_chrome() -> ChromeSettings {
-    ChromeSettings {
-        accent: "#3858e9".into(),
-        outline: ChromeOutline { style: StrokeStyle::Solid, width: 1.0, color: None },
-        handles: ChromeHandles { size: 8.0, hit_size: 24.0, fill: "#ffffff".into(), stroke: None },
-        knob: ChromeKnob {
-            size: 10.0,
-            hit_size: 24.0,
-            offset: 32.0,
-            stalk: true,
-            fill: "#ffffff".into(),
-            stroke: None,
-        },
-        guides: ChromeGuides {
-            enabled: true,
-            style: StrokeStyle::Solid,
-            width: 1.0,
-            axis_color: None,
-            axis_opacity: 0.35,
-            indicator_color: None,
-            indicator_opacity: 0.8,
-        },
+    /// Whether this record renders live.
+    pub fn is_vector(&self, id: &str) -> bool {
+        self.vector.contains_key(id)
     }
 }
 
-/// `mergeChrome(base, patch)`: one level per piece.
-pub fn merge_chrome(base: &ChromeSettings, patch: &ChromeSettingsPatch) -> ChromeSettings {
-    let o = patch.outline.clone().unwrap_or_default();
-    let h = patch.handles.clone().unwrap_or_default();
-    let k = patch.knob.clone().unwrap_or_default();
-    let g = patch.guides.clone().unwrap_or_default();
-    ChromeSettings {
-        accent: patch.accent.clone().unwrap_or_else(|| base.accent.clone()),
-        outline: ChromeOutline {
-            style: o.style.unwrap_or(base.outline.style),
-            width: o.width.unwrap_or(base.outline.width),
-            color: o.color.or_else(|| base.outline.color.clone()),
-        },
-        handles: ChromeHandles {
-            size: h.size.unwrap_or(base.handles.size),
-            hit_size: h.hit_size.unwrap_or(base.handles.hit_size),
-            fill: h.fill.unwrap_or_else(|| base.handles.fill.clone()),
-            stroke: h.stroke.or_else(|| base.handles.stroke.clone()),
-        },
-        knob: ChromeKnob {
-            size: k.size.unwrap_or(base.knob.size),
-            hit_size: k.hit_size.unwrap_or(base.knob.hit_size),
-            offset: k.offset.unwrap_or(base.knob.offset),
-            stalk: k.stalk.unwrap_or(base.knob.stalk),
-            fill: k.fill.unwrap_or_else(|| base.knob.fill.clone()),
-            stroke: k.stroke.or_else(|| base.knob.stroke.clone()),
-        },
-        guides: ChromeGuides {
-            enabled: g.enabled.unwrap_or(base.guides.enabled),
-            style: g.style.unwrap_or(base.guides.style),
-            width: g.width.unwrap_or(base.guides.width),
-            axis_color: g.axis_color.or_else(|| base.guides.axis_color.clone()),
-            axis_opacity: g.axis_opacity.unwrap_or(base.guides.axis_opacity),
-            indicator_color: g.indicator_color.or_else(|| base.guides.indicator_color.clone()),
-            indicator_opacity: g.indicator_opacity.unwrap_or(base.guides.indicator_opacity),
-        },
+impl Serialize for AnnotationState {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_json().serialize(serializer)
     }
 }
 
-/// `{ ...initialModel.snap, ...config.snap }`.
-fn snap_over(base: &SnapSettings, patch: &epdf_annotation_core::SnapSettingsPatch) -> SnapSettings {
-    SnapSettings {
-        guides: patch.guides.unwrap_or(base.guides),
-        guide_threshold: patch.guide_threshold.unwrap_or(base.guide_threshold),
-        rotation: patch.rotation.unwrap_or(base.rotation),
-        rotation_angles: patch
-            .rotation_angles
-            .clone()
-            .unwrap_or_else(|| base.rotation_angles.clone()),
-        rotation_threshold: patch.rotation_threshold.unwrap_or(base.rotation_threshold),
-    }
-}
-
-/// `initialAnnotationState(config)`.
-pub fn initial_annotation_state(config: &AnnotationConfig) -> AnnotationState {
-    let base = initial_model();
-    let snap = match &config.snap {
-        Some(patch) => snap_over(&base.snap, patch),
-        None => base.snap.clone(),
-    };
+/// `initialAnnotationState()`. The session's snapping and editable rule come
+/// from the settings (`with_snap`, `with_editable`).
+pub fn initial_annotation_state() -> AnnotationState {
     AnnotationState {
-        model: Rc::new(Model { snap, ..base }),
-        hydration: AnnotationHydration::Loading,
-        chrome: Rc::new(merge_chrome(
-            &default_chrome(),
-            &config.chrome.clone().unwrap_or_default(),
-        )),
-        tool_ghost: None,
-        stamp_arm_epoch: 0.0,
+        session: initial_model().session(),
+        vector: Rc::new(IndexMap::new()),
+        ghost_at: None,
+        placing: None,
         text_selection: None,
     }
 }
 
-/// `annotationReducer`. Every action replaces the state.
-pub fn annotation_reducer(
-    state: &AnnotationState,
-    action: &AnnotationAction,
-) -> Option<AnnotationState> {
-    let mut next = state.clone();
-    match action {
-        AnnotationAction::SetModel { model } => next.model = model.clone(),
-        AnnotationAction::SetHydration { hydration } => next.hydration = hydration.clone(),
-        AnnotationAction::SetChrome { patch } => {
-            next.chrome = Rc::new(merge_chrome(&state.chrome, patch));
-        }
-        AnnotationAction::SetToolGhost { ghost } => next.tool_ghost = ghost.clone(),
-        AnnotationAction::SetTextSelection { selection } => {
-            next.text_selection = selection.clone();
-        }
-        AnnotationAction::StampArmChanged => {
-            next.stamp_arm_epoch = state.stamp_arm_epoch + 1.0;
-            next.tool_ghost = None;
-        }
+type State = Rc<AnnotationState>;
+
+fn with(state: &State, change: impl FnOnce(&mut AnnotationState)) -> State {
+    let mut next = (**state).clone();
+    change(&mut next);
+    Rc::new(next)
+}
+
+/// `withSnap(state, snap)`: the session snaps as the settings say.
+pub fn with_snap(state: &State, snap: &Rc<SnapSettings>) -> State {
+    if Rc::ptr_eq(&state.session.snap, snap) {
+        return state.clone();
     }
-    Some(next)
+    with(state, |s| s.session.snap = snap.clone())
+}
+
+/// `withEditable(state, editable)`: a boolean rule compares by value, a list by identity.
+pub fn with_editable(state: &State, editable: &Rc<EditableKinds>) -> State {
+    let same = match (&*state.session.editable, &**editable) {
+        (EditableKinds::All(a), EditableKinds::All(b)) => a == b,
+        _ => Rc::ptr_eq(&state.session.editable, editable),
+    };
+    if same {
+        return state.clone();
+    }
+    with(state, |s| s.session.editable = editable.clone())
+}
+
+/// `withSession(state, session, vector)`: record one message's session; the
+/// records it changed and drew live render live from now on.
+pub fn with_session(state: &State, session: &Session, vector: &[Id]) -> State {
+    let next = if state.session.same(session) {
+        state.clone()
+    } else {
+        with(state, |s| s.session = session.clone())
+    };
+    prefer_vector(&next, vector)
+}
+
+/// `withObjectNumbers(state, numbers)`: the session holds these numbers too.
+pub fn with_object_numbers(state: &State, numbers: &[f64]) -> State {
+    if numbers.is_empty() {
+        return state.clone();
+    }
+    with(state, |s| {
+        let mut all = (*s.session.object_numbers).clone();
+        all.extend_from_slice(numbers);
+        s.session.object_numbers = Rc::new(all);
+    })
+}
+
+/// `withoutObjectNumbers(state, lost)`.
+pub fn without_object_numbers(state: &State, lost: &[f64]) -> State {
+    let kept: Vec<f64> =
+        state.session.object_numbers.iter().copied().filter(|n| !lost.contains(n)).collect();
+    if kept.len() == state.session.object_numbers.len() {
+        return state.clone();
+    }
+    with(state, |s| s.session.object_numbers = Rc::new(kept))
+}
+
+/// `preferVector(state, ids)`: render these records live from their description.
+pub fn prefer_vector(state: &State, ids: &[Id]) -> State {
+    let added: Vec<&Id> = ids.iter().filter(|id| !state.vector.contains_key(*id)).collect();
+    if added.is_empty() {
+        return state.clone();
+    }
+    with(state, |s| {
+        let mut vector = (*s.vector).clone();
+        for id in added {
+            vector.insert(id.clone(), ());
+        }
+        s.vector = Rc::new(vector);
+    })
+}
+
+/// `preferBaked(state, ids)`: render these records from the engine's raster again.
+pub fn prefer_baked(state: &State, ids: &[Id]) -> State {
+    if !ids.iter().any(|id| state.vector.contains_key(id)) {
+        return state.clone();
+    }
+    with(state, |s| {
+        let mut vector = (*s.vector).clone();
+        for id in ids {
+            vector.shift_remove(id);
+        }
+        s.vector = Rc::new(vector);
+    })
+}
+
+/// `setGhostAt(state, ghostAt)`, by identity.
+pub fn set_ghost_at(state: &State, ghost_at: Option<Rc<GhostPointer>>) -> State {
+    if opt_ptr_eq(&state.ghost_at, &ghost_at) {
+        return state.clone();
+    }
+    with(state, |s| s.ghost_at = ghost_at)
+}
+
+/// `setPlacing(state, placing)`, by identity.
+pub fn set_placing(state: &State, placing: Option<Rc<ForeignPlacement>>) -> State {
+    if opt_ptr_eq(&state.placing, &placing) {
+        return state.clone();
+    }
+    with(state, |s| s.placing = placing)
+}
+
+/// `setTextSelection(state, textSelection)`, by identity.
+pub fn set_text_selection(state: &State, selection: Option<Rc<TextSelection>>) -> State {
+    if opt_ptr_eq(&state.text_selection, &selection) {
+        return state.clone();
+    }
+    with(state, |s| s.text_selection = selection)
+}
+
+fn opt_ptr_eq<T>(a: &Option<Rc<T>>, b: &Option<Rc<T>>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+        (None, None) => true,
+        _ => false,
+    }
 }

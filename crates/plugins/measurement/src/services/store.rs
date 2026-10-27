@@ -1,204 +1,166 @@
-//! `services/store.ts` and `services/siblings.ts`: slice reads, the page
-//! registry, page and PDF point conversion, the liveness and authority
-//! guards, the page-target expansion, and the two sibling planes.
+//! `services/store.ts`: the page registry, the calibrate twin and the
+//! page-target expansion, with the kernel's `ctx.getPage`/`ctx.pageOf`
+//! lookups they rest on.
+//!
+//! The lookups go through an index built once per page registry: a linear
+//! scan per call made the per-page work at open O(pages²) (the M22 pattern
+//! in `docs/research/rust-plugins-branch-review.md`).
 
-use std::cell::{Cell, RefCell};
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_annotation_core::{PageRef, PdfPoint, PdfRect, Point};
-use epdf_kernel::Error;
-use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::{code, plugin_error};
-use epdf_plugin_annotation::{ANNOTATION, AnnotationCapability};
-use epdf_plugin_interaction::{INTERACTION, InteractionCapability};
+use epdf_kernel::geometry::PageRef;
+use epdf_kernel::{ControllerContext, Error};
 use serde_json::Value;
 
-use crate::contract::{LOADING, MeasurementConfig, PageScale, PageTarget};
-use crate::controller::MeasurementContext;
-use crate::model::MeasurementState;
-use crate::services::events::{MeasurementEvents, create_events};
+use crate::contract::{PageInput, PageTarget, SCALE_PERMISSION};
+use crate::model::PageSize;
 
-/// What this plugin reads from a page's layout row.
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct PageMeta {
-    pub crop: PdfRect,
-    pub user_unit: f64,
+pub(crate) const CAPABILITY: &str = "measurement";
+
+/// One row of the document's page registry (`PageInfo`), shared with the
+/// kernel rather than copied.
+#[derive(Clone, Debug)]
+pub struct PageRow {
+    pages: Rc<Value>,
+    index: usize,
 }
 
-impl PageMeta {
-    fn of(layout: &Value) -> PageMeta {
-        let crop = layout
-            .get("boxes")
-            .and_then(|b| b.get("crop"))
-            .and_then(|c| serde_json::from_value(c.clone()).ok())
-            .unwrap_or_default();
-        // `userUnit = 1` is a default parameter: absence reads 1.
-        let user_unit = match layout.get("userUnit") {
-            None => 1.0,
-            Some(u) => u.as_f64().unwrap_or(f64::NAN),
-        };
-        PageMeta { crop, user_unit }
+impl PageRow {
+    pub fn row(&self) -> &Value {
+        &self.pages[self.index]
+    }
+
+    /// `layout.ref`.
+    pub fn page(&self) -> PageRef {
+        self.row().get("ref").and_then(PageRef::from_json).expect("an indexed row has a page ref")
+    }
+
+    /// `layout.size`.
+    pub fn size(&self) -> PageSize {
+        PageSize::of(self.row().get("size").unwrap_or(&Value::Null))
+    }
+
+    /// `layout.userUnit`: `None` when absent, `NaN` when not a number.
+    pub fn user_unit(&self) -> Option<f64> {
+        match self.row().get("userUnit") {
+            None => None,
+            Some(value) if epdf_kernel::is_undefined(value) => None,
+            Some(value) => Some(value.as_f64().unwrap_or(f64::NAN)),
+        }
+    }
+
+    /// `layout?.userUnit ?? 1`.
+    pub fn user_unit_or_one(&self) -> f64 {
+        match self.row().get("userUnit") {
+            None | Some(Value::Null) => 1.0,
+            Some(value) if epdf_kernel::is_undefined(value) => 1.0,
+            Some(value) => value.as_f64().unwrap_or(f64::NAN),
+        }
     }
 }
 
-pub(crate) fn kernel_page(page: &PageRef) -> epdf_kernel::geometry::PageRef {
-    epdf_kernel::geometry::PageRef::new(page.page_object_number)
+type Index = Rc<HashMap<PageRef, usize>>;
+
+/// The page registry of the bound document, indexed by page ref.
+pub struct Registry {
+    cx: ControllerContext,
+    index: RefCell<Option<(Rc<Value>, Index)>>,
 }
 
-/// The services, built once by the controller.
-pub struct Services {
-    pub cx: MeasurementContext,
-    pub config: MeasurementConfig,
-    pub events: MeasurementEvents,
-    disposed: Rc<Cell<bool>>,
-    pub annotation: AnnotationCapability,
-    pub interaction: InteractionCapability,
-    /// Page ref to its row in `pages`, for the registry it was built from.
-    /// Holding that `Rc` keeps its address from being reused.
-    index: RefCell<Option<(Rc<Value>, Rc<HashMap<epdf_kernel::geometry::PageRef, usize>>)>>,
-}
-
-impl Services {
-    /// `createServices(ctx)`: events, then the store (whose cleanup marks it
-    /// disposed), then the siblings.
-    pub fn new(cx: MeasurementContext, config: MeasurementConfig) -> Result<Services, Error> {
-        let events = create_events(&cx, &config.host);
-        let disposed = Rc::new(Cell::new(false));
-        let flag = disposed.clone();
-        cx.defer(Box::new(move || {
-            flag.set(true);
-            Ok(None)
-        }));
-        let annotation = cx.get(&ANNOTATION)?;
-        let interaction = cx.get(&INTERACTION)?;
-        Ok(Services {
-            cx,
-            config,
-            events,
-            disposed,
-            annotation,
-            interaction,
-            index: RefCell::new(None),
-        })
+impl Registry {
+    pub fn new(cx: ControllerContext) -> Registry {
+        Registry { cx, index: RefCell::new(None) }
     }
 
-    pub fn state(&self) -> Rc<MeasurementState> {
-        self.cx.state()
+    /// `ctx.document()?.pages`: the registry the store holds, else the one
+    /// staged during bring-up.
+    pub fn pages(&self) -> Option<Rc<Value>> {
+        let core = self.cx.core();
+        if let Some(meta) = self.cx.document_id().and_then(|id| core.documents.get(id)) {
+            return Some(meta.pages.clone());
+        }
+        self.cx.document().map(|meta| meta.pages)
     }
 
-    /// The document's layout rows, shared with the kernel rather than copied.
-    /// A new `Rc` means a new registry.
-    pub(crate) fn layouts(&self) -> Rc<Value> {
-        self.cx.document().map_or_else(|| Rc::new(Value::Null), |d| d.pages)
-    }
-
-    /// Every page of the document, in order.
-    pub fn page_refs(&self) -> Vec<PageRef> {
-        let layouts = self.layouts();
-        layouts
+    /// The pages in order, as refs (`ctx.document()?.pages ?? []`).
+    pub fn refs(&self) -> Vec<PageRef> {
+        let Some(pages) = self.pages() else { return Vec::new() };
+        pages
             .as_array()
             .into_iter()
             .flatten()
-            .filter_map(|l| serde_json::from_value(l.get("ref")?.clone()).ok())
+            .filter_map(|row| row.get("ref").and_then(PageRef::from_json))
             .collect()
     }
 
-    /// `meta(page)`: the page's layout, when it is in the document. The
-    /// first row naming the page, as a linear scan would find it, through an
-    /// index built once per registry: a scan per call made the per-page
-    /// reconcile at open O(pages²).
-    pub fn meta(&self, page: &PageRef) -> Option<PageMeta> {
-        let layouts = self.layouts();
-        let rows = layouts.as_array()?;
-        let cached = match &*self.index.borrow() {
-            Some((pages, index)) if Rc::ptr_eq(pages, &layouts) => Some(index.clone()),
-            _ => None,
-        };
-        let index = cached.unwrap_or_else(|| {
-            let mut index = HashMap::with_capacity(rows.len());
-            for (i, row) in rows.iter().enumerate() {
-                if let Some(r) = row.get("ref").and_then(epdf_kernel::geometry::PageRef::from_json)
-                {
-                    index.entry(r).or_insert(i);
-                }
-            }
-            let index = Rc::new(index);
-            *self.index.borrow_mut() = Some((layouts.clone(), index.clone()));
-            index
-        });
-        index.get(&kernel_page(page)).map(|&i| PageMeta::of(&rows[i]))
-    }
-
-    /// `requireMeta(page)`.
-    pub fn require_meta(&self, page: &PageRef) -> Result<PageMeta, Error> {
-        self.meta(page).ok_or_else(|| not_found("no such page"))
-    }
-
-    pub fn is_disposed(&self) -> bool {
-        self.disposed.get()
-    }
-
-    /// `live()`: the document handle, or `not-ready` once disposed.
-    pub fn live(&self) -> Result<Rc<dyn DocumentHandle>, Error> {
-        match self.cx.doc() {
-            Ok(doc) if !self.disposed.get() => Ok(doc),
-            _ => Err(plugin_error(code::NOT_READY, "measurement", "document not open", None, None)),
+    fn index_of(&self, pages: &Rc<Value>) -> Index {
+        if let Some((built, index)) = &*self.index.borrow()
+            && Rc::ptr_eq(built, pages)
+        {
+            return index.clone();
         }
+        let mut index = HashMap::new();
+        for (i, row) in pages.as_array().into_iter().flatten().enumerate() {
+            if let Some(page) = row.get("ref").and_then(PageRef::from_json) {
+                index.entry(page).or_insert(i);
+            }
+        }
+        let index = Rc::new(index);
+        *self.index.borrow_mut() = Some((pages.clone(), index.clone()));
+        index
+    }
+
+    /// `ctx.getPage(page)`: the page's row, or `None` for a page that isn't
+    /// there. An index reads `pages[index]`.
+    pub fn find(&self, page: PageInput) -> Option<PageRow> {
+        let pages = self.pages()?;
+        let len = pages.as_array()?.len();
+        let index = match page {
+            PageInput::Ref(page) => *self.index_of(&pages).get(&page)?,
+            PageInput::Index(i) if i >= 0.0 && i.fract() == 0.0 && i < len as f64 => i as usize,
+            PageInput::Index(_) => return None,
+        };
+        Some(PageRow { pages, index })
+    }
+
+    /// `ctx.pageOf(page)`: `not-found` for a page that isn't there.
+    pub fn page_of(&self, page: PageInput) -> Result<PageRow, Error> {
+        self.find(page).ok_or_else(|| {
+            let message = match page {
+                PageInput::Ref(page) => {
+                    format!("page {} is not in this document", page.page_object_number)
+                }
+                PageInput::Index(index) => format!(
+                    "there is no page {} in this document",
+                    epdf_kernel::js::number_to_string(index)
+                ),
+            };
+            plugin_error(code::NOT_FOUND, CAPABILITY, message, None, None)
+        })
+    }
+
+    /// `ctx.assertPageRef(ref)`.
+    pub fn assert_page_ref(&self, page: PageRef) -> Result<(), Error> {
+        self.page_of(PageInput::Ref(page)).map(|_| ())
     }
 
     /// `canCalibrate()`: may write a page scale (`doc.annotate.modify`).
     pub fn can_calibrate(&self) -> bool {
-        self.cx.doc().is_ok_and(|doc| doc.security().allows("doc.annotate.modify"))
+        self.cx.allows(SCALE_PERMISSION)
     }
 
-    /// `assertAllowed()`.
-    pub fn assert_allowed(&self) -> Result<(), Error> {
-        self.live()?;
-        if !self.can_calibrate() {
-            return Err(plugin_error(
-                code::PERMISSION_DENIED,
-                "measurement",
-                "changing a scale requires doc.annotate.modify",
-                None,
-                None,
-            ));
-        }
-        Ok(())
-    }
-
-    /// `targets(pages)`.
-    pub fn targets(&self, pages: &PageTarget) -> Vec<PageRef> {
+    /// `targets(pages)`: the pages a verb changes, each resolved; a page that
+    /// isn't there refuses the whole call.
+    pub fn targets(&self, pages: &PageTarget) -> Result<Vec<PageRef>, Error> {
         match pages {
-            PageTarget::All => self.page_refs(),
-            PageTarget::Pages(pages) => pages.clone(),
-            PageTarget::Page(page) => vec![*page],
+            PageTarget::All => Ok(self.refs()),
+            PageTarget::Page(page) => Ok(vec![self.page_of(*page)?.page()]),
+            PageTarget::Pages(list) => {
+                list.iter().map(|page| self.page_of(*page).map(|row| row.page())).collect()
+            }
         }
     }
-
-    /// Page space to PDF user space, through the kernel's page geometry.
-    pub fn to_pdf(&self, page: &PageRef, point: Point) -> Result<PdfPoint, Error> {
-        let space = self.cx.for_page(kernel_page(page))?;
-        let p = space.page_to_pdf(epdf_kernel::geometry::Point { x: point.x, y: point.y });
-        Ok(PdfPoint { x: p.x, y: p.y })
-    }
-
-    /// PDF user space to page space.
-    pub fn to_page(&self, page: &PageRef, point: PdfPoint) -> Result<Point, Error> {
-        let space = self.cx.for_page(kernel_page(page))?;
-        let p = space.pdf_to_page(epdf_kernel::geometry::Point { x: point.x, y: point.y });
-        Ok(Point { x: p.x, y: p.y })
-    }
-
-    /// `scaleOf(page)`: the page's scale, or the loading scale.
-    pub fn scale_of(&self, page: &PageRef) -> PageScale {
-        self.state()
-            .pages
-            .get(&page.page_object_number)
-            .map_or(LOADING, |entry| entry.scale.clone())
-    }
-}
-
-pub(crate) fn not_found(message: &str) -> Error {
-    plugin_error(code::NOT_FOUND, "measurement", message, None, None)
 }

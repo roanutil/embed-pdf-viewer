@@ -1,17 +1,18 @@
-use epdf_annotation_core as core;
-use epdf_annotation_core::js::Nullable;
-use epdf_ffi::{
-    AnnotationBorder, AnnotationPropKey, AnnotationPropsPatch, AnnotationRef, PageRef,
-    PdfDestination, PdfLinkTarget,
-};
+//! Annotation refs and link targets against the engine's records. The old
+//! `AnnotationProps` projection is gone with the TypeScript type it mirrored
+//! (current fields are per kind: `packages/engine/core/src/annotation/kinds/shared-fields.ts`).
+
+use epdf_ffi::{AnnotationRef, PageRef, PdfDestination, PdfLinkTarget};
+use serde_json::json;
 
 #[test]
 fn an_object_number_ref_round_trips() {
-    let core = core::AnnotationRef::ObjectNumber {
-        page: core::PageRef::new(4),
-        annot_object_number: 17.0,
-    };
-    let ffi = AnnotationRef::try_from(core.clone()).unwrap();
+    let engine = json!({
+        "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "objectNumber": 4 },
+        "objectNumber": 17,
+    });
+    let ffi = AnnotationRef::from_json(&engine).unwrap();
     assert_eq!(
         ffi,
         AnnotationRef::ObjectNumber {
@@ -19,68 +20,48 @@ fn an_object_number_ref_round_trips() {
             annot_object_number: 17
         }
     );
-    assert_eq!(core::AnnotationRef::from(ffi), core);
+    assert_eq!(ffi.to_json(), engine);
+}
+
+#[test]
+fn a_base_index_ref_round_trips() {
+    let engine = json!({
+        "kind": "baseIndex",
+        "page": { "kind": "objectNumber", "objectNumber": 4 },
+        "baseIndex": 2,
+    });
+    let ffi = AnnotationRef::from_json(&engine).unwrap();
+    assert_eq!(ffi, AnnotationRef::Index { page: PageRef { page_object_number: 4 }, index: 2 });
+    assert_eq!(ffi.page(), PageRef { page_object_number: 4 });
+    assert_eq!(ffi.to_json(), engine);
 }
 
 #[test]
 fn a_fractional_object_number_is_refused() {
-    let core =
-        core::AnnotationRef::ObjectNumber { page: core::PageRef::new(4), annot_object_number: 1.5 };
-    assert!(AnnotationRef::try_from(core).is_err());
+    let engine = json!({
+        "kind": "objectNumber",
+        "page": { "kind": "objectNumber", "objectNumber": 4 },
+        "objectNumber": 1.5,
+    });
+    assert!(AnnotationRef::from_json(&engine).is_err());
+    // A ref kind the engine no longer writes (`nm`) is refused too.
+    let nm =
+        json!({ "kind": "nm", "page": { "kind": "objectNumber", "objectNumber": 4 }, "nm": "a" });
+    assert!(AnnotationRef::from_json(&nm).is_err());
 }
 
 #[test]
-fn a_props_patch_clears_through_its_clear_list() {
-    let patch = AnnotationPropsPatch {
-        color: Some("#ff0000".into()),
-        clear: vec![AnnotationPropKey::InteriorColor, AnnotationPropKey::Link],
-        ..Default::default()
-    };
-    let core = core::AnnotationPropsPatch::try_from(patch).unwrap();
-    assert_eq!(core.color.as_deref(), Some("#ff0000"));
-    assert_eq!(core.interior_color, Nullable::Null);
-    assert_eq!(core.link, Nullable::Null);
-    assert_eq!(core.keys(), ["color", "interiorColor", "link"]);
-}
-
-#[test]
-fn a_patch_that_sets_and_clears_one_key_is_refused() {
-    let patch = AnnotationPropsPatch {
-        interior_color: Some("#000000".into()),
-        clear: vec![AnnotationPropKey::InteriorColor],
-        ..Default::default()
-    };
-    let error = core::AnnotationPropsPatch::try_from(patch).unwrap_err();
-    assert_eq!(error.code(), Some("invalid-input"));
-}
-
-#[test]
-fn clearing_a_key_that_has_no_null_state_is_refused() {
-    let patch =
-        AnnotationPropsPatch { clear: vec![AnnotationPropKey::Color], ..Default::default() };
-    let error = core::AnnotationPropsPatch::try_from(patch).unwrap_err();
-    assert_eq!(error.code(), Some("invalid-input"));
-}
-
-#[test]
-fn a_dashed_border_round_trips() {
-    let core = core::Border::Dashed { dash: vec![3.0, 2.0] };
-    let ffi = AnnotationBorder::from(core.clone());
-    assert_eq!(ffi, AnnotationBorder::Dashed { dash: vec![3.0, 2.0] });
-    assert_eq!(core::Border::from(ffi), core);
-}
-
-#[test]
-fn a_goto_link_keeps_its_page_and_drops_undefined_coordinates() {
-    let core = core::PdfLinkTarget::Goto {
-        destination: core::PdfDestination::Xyz {
-            page: core::PageRef::new(9),
-            left: Nullable::Value(72.0),
-            top: Nullable::Undefined,
-            zoom: Nullable::Null,
+fn a_goto_link_keeps_its_page_and_drops_absent_and_null_coordinates() {
+    let engine = json!({
+        "kind": "goto",
+        "destination": {
+            "kind": "xyz",
+            "page": { "kind": "objectNumber", "objectNumber": 9 },
+            "left": 72,
+            "zoom": null,
         },
-    };
-    let ffi = PdfLinkTarget::from(core);
+    });
+    let ffi = PdfLinkTarget::from_json(&engine).unwrap();
     assert_eq!(
         ffi,
         PdfLinkTarget::Goto {

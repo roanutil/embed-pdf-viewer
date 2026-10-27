@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/core/stage: anchors captured from and restored to scenes built by the layouts.",
   "cases": [

@@ -89,11 +89,11 @@ It has to. The release names a commit, and that commit can't contain its own che
 | stage | `StageCapability`, `StageReaderView` (EmbedPDFUI) | `stage: StageConfig()` | `2026-10-06-swift-plugins/02-stage.md` |
 | selection | `SelectionCapability` | `interaction: true, selection: true` | `2026-10-06-swift-plugins/03-selection.md` |
 | link | `LinkCapability` | `interaction: true, link: true` | `2026-10-06-swift-plugins/04-link.md` |
-| annotation | `AnnotationCapability`, `AnnotationFilePicker` | `interaction: true, annotation: AnnotationConfig()` | `2026-10-06-swift-plugins/05-annotation.md` |
+| annotation | `AnnotationCapability`, `AnnotationFilePicker` | `interaction: true, annotation: ""` | `2026-10-06-swift-plugins/05-annotation.md` |
 | form | `FormCapability` | `interaction: true, form: FormConfig()` | `2026-10-06-swift-plugins/06-form.md` |
-| redaction | `RedactionCapability` | `interaction: true, annotation: AnnotationConfig(), redaction: RedactionConfig()` | `2026-10-06-swift-plugins/07-redaction.md` |
-| measurement | `MeasurementCapability` | `interaction: true, annotation: AnnotationConfig(), measurement: MeasurementConfig()` | `2026-10-06-swift-plugins/08-measurement.md` |
-| stamp | `StampCapability`, `FileStampLibraryStore` | `stamp: StampConfig()` (with `interaction: true, annotation: AnnotationConfig()` to place) | `2026-10-06-swift-plugins/09-stamp.md` |
+| redaction | `RedactionCapability` | `interaction: true, annotation: "", redaction: RedactionConfig()` | `2026-10-06-swift-plugins/07-redaction.md` |
+| measurement | `MeasurementCapability` | `interaction: true, annotation: "", measurement: MeasurementConfig()` | `2026-10-06-swift-plugins/08-measurement.md` |
+| stamp | `StampCapability`, `FileStampLibraryStore` | `stamp: StampConfig()` (with `interaction: true, annotation: ""` to place) | `2026-10-06-swift-plugins/09-stamp.md` |
 | page-edit | `PageEditCapability` | `pageEdit: true` | `2026-10-06-swift-plugins/10-page-edit.md` |
 | view-manager | `ViewManagerCapability` | `viewManager: true` | `2026-10-06-swift-plugins/11-view-manager.md` |
 | shell | `ShellCapability` | `shell: true` | `2026-10-06-swift-plugins/12-shell.md` |

@@ -52,7 +52,8 @@ onCaseEnd(() => {
   currentLog = null;
 });
 const originalConsole = { warn: console.warn, debug: console.debug };
-console.warn = (...args: unknown[]) => (currentLog ? currentLog('console.warn', args) : originalConsole.warn(...args));
+console.warn = (...args: unknown[]) =>
+  currentLog ? currentLog('console.warn', args) : originalConsole.warn(...args);
 console.debug = (...args: unknown[]) =>
   currentLog ? currentLog('console.debug', args) : originalConsole.debug(...args);
 
@@ -89,14 +90,14 @@ registerPlugin('signals', {
     ({
       id: 'render-test/signals',
       token: SignalsToken,
-      capability: () => ({ abort: (name: string) => controllerNamed(name).abort() }),
+      create: () => ({ api: { abort: (name: string) => controllerNamed(name).abort() } }),
     }) as AnyPlugin,
   tokens: [SignalsToken],
 });
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
-const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+const pr = (pon: number) => ({ kind: 'objectNumber', objectNumber: pon });
 const LOCAL = { kind: 'local', sessionId: 's1', sub: null };
 const widget = (annotObjectNumber: number, pon: number) => ({
   ref: { kind: 'objectNumber', page: pr(pon), annotObjectNumber },
@@ -127,13 +128,14 @@ const LATTICE_TILES = {
 const imageCalls = (n = 160): ResponseSpec[] =>
   Array.from({ length: n }, (_, i) => ({ path: 'page.render.image', times: 1, defer: `r${i}` }));
 
-function doc(opts: { policy?: unknown; allows?: readonly string[] | '*'; responses?: ResponseSpec[]; pages?: unknown[] } = {}): FakeDocumentSpec {
+function doc(opts: { policy?: unknown; allows?: readonly string[] | '*'; responses?: ResponseSpec[]; pages?: unknown[];
+  } = {}): FakeDocumentSpec {
   const responses: ResponseSpec[] = [];
-  if (opts.policy !== undefined) responses.push({ path: 'render.policy', value: opts.policy });
+  if (opts.policy !== undefined) responses.push({ path: 'render.getPolicy', value: opts.policy });
   responses.push(...(opts.responses ?? []), ...imageCalls());
   return {
     services: opts.policy !== undefined ? ['render'] : [],
-    security: { allows: opts.allows ?? ['doc.render'] },
+    security: { allows: opts.allows ?? ['doc.render', 'doc.annotate.read', 'doc.forms.read'] },
     pages: opts.pages ?? PAGES,
     responses,
   };
@@ -657,15 +659,20 @@ const capabilityCases: ScenarioCase[] = [
     steps: [
       start,
       open(),
-      emit({ type: 'annotation.created', page: pr(22), origin: LOCAL }),
-      emit({ type: 'annotation.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
-      emit({ type: 'annotation.deleted', page: pr(11), origin: LOCAL }),
-      emit({ type: 'annotation.moved', page: pr(33), origin: LOCAL }),
-      emit({ type: 'form.valueChanged', changedWidgets: [widget(5, 11), widget(6, 33)], origin: LOCAL }),
-      emit({ type: 'form.effectsApplied', changedWidgets: [], origin: LOCAL }),
-      emit({ type: 'form.fieldDeleted', removedWidgets: [widget(5, 22)], origin: LOCAL }),
-      emit({ type: 'form.fieldCreated', field: { widgets: [widget(5, 11)] }, origin: LOCAL }),
-      emit({ type: 'form.widgetDetached', field: { widgets: [] }, origin: LOCAL }),
+      emit({ type: 'annotations.created', page: pr(22), origin: LOCAL }),
+      emit({ type: 'annotations.updated', page: pr(22), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'annotations.deleted', page: pr(11), origin: LOCAL }),
+      emit({ type: 'annotations.reordered', page: pr(33), origin: LOCAL }),
+      emit({ type: 'forms.valueSet',
+        meta: { changedWidgets: [widget(5, 11), widget(6, 33)] }, origin: LOCAL }),
+      emit({ type: 'forms.updated', meta: { changedWidgets: [] }, origin: LOCAL }),
+      emit({ type: 'forms.deleted', meta: { changedWidgets: [widget(5, 22)] }, origin: LOCAL }),
+      emit({ type: 'forms.created',
+        meta: { changedWidgets: [widget(5, 11)] },
+        widgets: [], origin: LOCAL }),
+      emit({ type: 'forms.widgetRemoved',
+        meta: { changedWidgets: [] },
+        widgets: [], origin: LOCAL }),
       emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }, { page: pr(22), status: 'skipped' }, { page: pr(33), status: 'applied' }], origin: LOCAL }),
       emit({ type: 'redaction.applied', results: [{ page: pr(22), status: 'failed' }], origin: LOCAL }),
       emit({ type: 'metadata.updated', metadata: {}, origin: LOCAL }),
@@ -675,8 +682,8 @@ const capabilityCases: ScenarioCase[] = [
         origin: LOCAL,
         layout: { pageCount: 2, pages: [layout(11, 0, 612, 792), layout(33, 1, 300, 300)] },
       }),
-      emit({ type: 'form.imported', origin: LOCAL }),
-      emit({ type: 'form.repaired', origin: LOCAL }),
+      emit({ type: 'forms.repaired', origin: LOCAL }),
+      emit({ type: 'forms.repaired', origin: LOCAL }),
       cap('renderEpoch', 11),
       cap('renderEpoch', 11, false),
       close(),
@@ -711,7 +718,7 @@ const capabilityCases: ScenarioCase[] = [
   {
     name: 'paint-settings-resolve',
     covers: 'paintSettings reports the resolved fade and tile switch.',
-    plugins: render({ tiles: { fadeMs: 120 } }),
+    plugins: render({ tiles: { settleMs: 120 } }),
     engine: { documents: { a: doc() } },
     ...UNSNAPSHOTTED,
     steps: [start, open(), cap('paintSettings')],
@@ -872,15 +879,17 @@ const capabilityCases: ScenarioCase[] = [
       v3('onRenderFailed', { $fn: 'failed', returns: null }),
       cap('invalidate', { pons: [22], scope: 'annotations' }),
       cap('invalidate'),
-      emit({ type: 'annotation.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
-      emit({ type: 'form.imported' }),
+      emit({ type: 'annotations.created', page: pr(33), origin: { kind: 'remote', sessionId: 'x', sub: 'alice', ts: 1, serverId: 7 } }),
+      emit({ type: 'forms.repaired' }),
       // A falsy origin is no origin; any other value goes through originOf. (A non-empty string
       // would too, but originOf reads its `sub`, String.prototype.sub, as the actor.)
-      emit({ type: 'form.imported', origin: '' }),
-      emit({ type: 'form.imported', origin: 0 }),
-      emit({ type: 'form.imported', origin: 7 }),
-      emit({ type: 'form.valueChanged', changedWidgets: [{ ...widget(5, 11), page: null }, widget(6, 33)], origin: LOCAL }),
-      emit({ type: 'form.valueChanged', changedWidgets: [{ ...widget(5, 11), page: null }], origin: LOCAL }),
+      emit({ type: 'forms.repaired', origin: '' }),
+      emit({ type: 'forms.repaired', origin: 0 }),
+      emit({ type: 'forms.repaired', origin: 7 }),
+      emit({ type: 'forms.valueSet',
+        meta: { changedWidgets: [{ ...widget(5, 11), page: null }, widget(6, 33)] }, origin: LOCAL }),
+      emit({ type: 'forms.valueSet',
+        meta: { changedWidgets: [{ ...widget(5, 11), page: null }] }, origin: LOCAL }),
       emit({ type: 'redaction.applied', results: [{ page: pr(11), status: 'applied' }], origin: { ...LOCAL, sub: 'bob' } }),
       cap('renderPage', 11, { scale: 0.5 }),
       v3('renderPage', pr(22), { width: 40 }),
@@ -1383,7 +1392,7 @@ const tileCases: ScenarioCase[] = [
   ),
   tileCase(
     'close-with-tiles-in-flight',
-    'Closing the document does not stop the tile manager: an armed settle timer still fires and fetches through the retained handle, late answers still wake, and a plan after close is empty.',
+    'Closing the document cancels the tile manager and its settle timer; retained demand handles return an empty plan.',
     debug({ prefetch: { margin: 0 } }),
     doc(),
     (v) => [
@@ -1392,7 +1401,6 @@ const tileCases: ScenarioCase[] = [
       ...v.plan('stage', 11, demand(5200)),
       close(),
       advance(200),
-      settle('r4'),
       advance(16),
       ...v.plan('stage', 11, DEEP),
     ],

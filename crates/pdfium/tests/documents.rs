@@ -1,7 +1,7 @@
 //! The `pdfium` layer against real files. Everything here runs on one thread
 //! by construction: `Library` is `!Send`, and each test acquires its own.
 
-use pdfium::{Document, Library, PdfiumError};
+use pdfium::{Document, Library, PageBoxType, PdfiumError};
 
 #[test]
 fn opens_a_document_and_reads_its_pages() {
@@ -137,4 +137,105 @@ fn closing_a_document_leaves_the_library_usable() {
         .expect("open");
         assert!(doc.page_count() > 0);
     }
+}
+
+#[test]
+fn the_written_boxes_match_the_loaded_page_and_refuse_past_the_end() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
+        .expect("open report.pdf");
+    // report.pdf writes a media box and no crop box, so the loaded page's
+    // size is its media box's and the raw crop read is absent.
+    let media = doc.written_page_box_by_index(0, PageBoxType::Media).expect("a media box");
+    let page = doc.page(0).expect("load page 0");
+    assert!(
+        (media.right - media.left - page.width()).abs() < 0.01,
+        "{media:?} vs {}",
+        page.width()
+    );
+    assert!(
+        (media.top - media.bottom - page.height()).abs() < 0.01,
+        "{media:?} vs {}",
+        page.height()
+    );
+    assert_eq!(doc.written_page_box_by_index(0, PageBoxType::Crop), None);
+    let bounds = page.bounding_box().expect("the loaded page has a display box");
+    assert_eq!(
+        (bounds.left, bounds.bottom, bounds.right, bounds.top),
+        (media.left, media.bottom, media.right, media.top)
+    );
+    assert_eq!(doc.written_page_box_by_index(doc.page_count(), PageBoxType::Media), None);
+}
+
+#[test]
+fn an_unrotated_page_reads_its_rotate_as_zero() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
+        .expect("open report.pdf");
+    assert_eq!(doc.page_rotate_by_index(0), Some(0));
+    assert_eq!(doc.page_rotate_by_index(doc.page_count()), None);
+}
+
+#[test]
+fn applying_no_redaction_marks_is_refused_rather_than_applying_all() {
+    let lib = Library::acquire();
+    let doc = Document::from_bytes(lib, &test_support::fixture(test_support::REPORT), None)
+        .expect("open report.pdf");
+    let page = doc.page(0).expect("load page 0");
+    let before = page.annotation_count();
+    assert_eq!(page.apply_redaction_marks(&[]), None);
+    assert_eq!(page.annotation_count(), before);
+}
+
+#[test]
+fn a_layer_hands_out_object_numbers_and_a_plain_document_has_none() {
+    let bytes = test_support::fixture(test_support::REPORT);
+    let base = std::rc::Rc::new(
+        pdfium::BaseDocument::from_bytes(Library::acquire(), &bytes, None).expect("base"),
+    );
+    let layer = base.open_layer().expect("fresh layer");
+    let last = layer.layer_last_object_number();
+    assert!(last > 0, "a layer starts at its base's last object number");
+    assert!(layer.raise_layer_last_object_number(last + 10));
+    assert_eq!(layer.layer_last_object_number(), last + 10);
+    // Never lowered.
+    assert!(layer.raise_layer_last_object_number(last));
+    assert_eq!(layer.layer_last_object_number(), last + 10);
+
+    let plain = Document::from_bytes(Library::acquire(), &bytes, None).expect("open");
+    assert_eq!(plain.layer_last_object_number(), 0);
+    assert!(!plain.raise_layer_last_object_number(10));
+}
+
+/// report.pdf's page index 12 is its first page that paints an image through a
+/// tiling pattern. A fresh layer used to share the base's parsed pattern, whose
+/// images belong to the base; the layer page's image cache refused them and
+/// PDFium read the entry it never started (task 8.29's SIGSEGV). A layer page
+/// renders as the plain document's does.
+#[test]
+fn a_fresh_layer_renders_an_image_drawn_through_a_tiling_pattern() {
+    let bytes = test_support::fixture(test_support::REPORT);
+    let identity = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
+    let base = std::rc::Rc::new(
+        pdfium::BaseDocument::from_bytes(Library::acquire(), &bytes, None).expect("base"),
+    );
+    let layer = base.open_layer().expect("fresh layer");
+    let from_layer = layer
+        .document()
+        .page(12)
+        .expect("load page 12 of the layer")
+        .render_rgba_with_matrix(612, 792, identity, true, pdfium::RenderFlags::default())
+        .expect("render the layer's page");
+    assert!(
+        from_layer.bgra.as_chunks::<4>().0.iter().any(|pixel| pixel[..3] != [255, 255, 255]),
+        "the layer's page draws something"
+    );
+
+    let plain = Document::from_bytes(Library::acquire(), &bytes, None).expect("open");
+    let from_plain = plain
+        .page(12)
+        .expect("load page 12")
+        .render_rgba_with_matrix(612, 792, identity, true, pdfium::RenderFlags::default())
+        .expect("render the plain page");
+    assert!(from_layer.bgra == from_plain.bgra, "the layer's page renders as the plain page");
 }

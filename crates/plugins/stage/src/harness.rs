@@ -4,37 +4,33 @@
 //!
 //! It mirrors the shims in `tooling/plugin-conformance/src/suites/`:
 //!
-//! - `stage-plugin.ts`: a config with `frames: true` gets [`FrameScheduler`]
-//!   (16 ms timers on the runtime clock, handles from 1); `lens: name`
-//!   registers the plugin under id `name` with a token of that name; a
-//!   responsive rule's `when` may be a `$fn` spec, a scripted predicate
-//!   that logs the box; and the `stage-scroll` factory registers the scroll
-//!   handler with the hub, scoped to the lens. On a live harness,
-//!   `scheduler: {raf, caf}` gets [`LiveScheduler`] instead.
+//! - `stage-plugin.ts`: `lens: name` registers the plugin under id `name`
+//!   with a token of that name; a responsive rule's `when` may be a `$fn`
+//!   spec, a scripted predicate that logs the box; and the `stage-scroll`
+//!   factory registers the scroll handler with the hub at connect, scoped
+//!   to the lens. A case's `clock: {frames: true}` gives the kernel the
+//!   scenario clock's 16 ms frames (`plugin-conformance`); the plugin reads
+//!   them through `ctx.clock`.
 //! - `stage-pure.ts`: `resolveResponsive` rules may carry `when:
-//!   {"$returns": v}`, the predicate `() => v`; `stageReducer` reports
+//!   {"$returns": v}`, the predicate `() => v`; the named transitions report
 //!   `{state, same}`; `constants` prints the registry and motion constants.
 
 use std::any::Any;
-use std::cell::{Cell, RefCell};
-use std::collections::HashMap;
 use std::rc::Rc;
 
 use epdf_geometry::{PageRotation, Point, Rect, Size};
 use epdf_kernel::geometry::PageRef;
-use epdf_kernel::rt::{self, TimerId};
 use epdf_kernel::{
     AnyPlugin, AnyToken, Error, Token, Unsubscribe, define, is_undefined, undefined,
 };
 use epdf_plugin_interaction::harness::{answer_truthy, truthy};
 use epdf_plugin_interaction::{INTERACTION, RegisterHandlerOptions};
-use epdf_stage_core::{Camera, ZoomSpec};
+use epdf_stage_core::ZoomSpec;
 use plugin_conformance::js::{arg, from_value, to_value};
-use plugin_conformance::{Answer, Callback, FunctionTable, Harness, HarnessPlugin, Outcome};
+use plugin_conformance::{Answer, FunctionTable, Harness, HarnessPlugin, Outcome};
 use serde_json::{Map, Value, json};
 
-use crate::destination::{PageLayout, PdfDestination, destination_to_reveal};
-use crate::model::{initial_stage_state, stage_reducer};
+use crate::model::{self, CameraObject, CameraOrder, StageState};
 use crate::motion::*;
 use crate::responsive::{box_of, eq_setting, matches_query, merge_settings, resolve_responsive};
 use crate::settings::{
@@ -42,84 +38,7 @@ use crate::settings::{
 };
 use crate::*;
 
-// ── the frame seam ────────────────────────────────────────────────────────────
-
-/// Frames as 16 ms timers on the runtime clock, stamped with `rt::now()`:
-/// the generator's `frames()` scheduler over `@sinonjs/fake-timers`.
-#[derive(Default)]
-pub struct FrameScheduler {
-    next: Cell<u64>,
-    timers: Rc<RefCell<HashMap<u64, TimerId>>>,
-}
-
-impl Scheduler for FrameScheduler {
-    fn raf(&self, callback: Box<dyn FnOnce(f64)>) -> u64 {
-        let id = self.next.get() + 1;
-        self.next.set(id);
-        let timers = self.timers.clone();
-        let timer = rt::set_timeout(16.0, move || {
-            timers.borrow_mut().remove(&id);
-            callback(rt::now());
-        });
-        self.timers.borrow_mut().insert(id, timer);
-        id
-    }
-
-    fn caf(&self, handle: u64) {
-        let timer = self.timers.borrow_mut().remove(&handle);
-        if let Some(timer) = timer {
-            rt::clear_timer(timer);
-        }
-    }
-}
-
-/// A live host's frames: `scheduler: {raf, caf}` in the config, each a
-/// `$fn` the host answers (`requestAnimationFrame` and
-/// `cancelAnimationFrame` in a browser). `raf` receives the frame callback
-/// as a ref the host calls with the frame's timestamp, and answers the
-/// handle. Only a live harness reads it; a vector's config never has one.
-pub struct LiveScheduler {
-    h: Harness,
-    raf: Callback,
-    caf: Callback,
-}
-
-impl LiveScheduler {
-    fn from_config(config: &Value, h: &Harness) -> Option<LiveScheduler> {
-        if !h.is_live() {
-            return None;
-        }
-        let scheduler = config.get("scheduler")?;
-        let (raf, caf) = (scheduler.get("raf")?, scheduler.get("caf")?);
-        (raf.get("$fn").is_some() && caf.get("$fn").is_some()).then(|| LiveScheduler {
-            h: h.clone(),
-            raf: h.callback(raf),
-            caf: h.callback(caf),
-        })
-    }
-}
-
-impl Scheduler for LiveScheduler {
-    fn raf(&self, callback: Box<dyn FnOnce(f64)>) -> u64 {
-        let callback = RefCell::new(Some(callback));
-        let frame = self.h.register_fn(Rc::new(move |args: Vec<Value>| {
-            if let Some(callback) = callback.borrow_mut().take() {
-                callback(args.first().and_then(Value::as_f64).unwrap_or_else(rt::now));
-            }
-            Outcome::undefined()
-        }));
-        match self.raf.call(vec![frame]) {
-            Answer::Returns(handle) => handle.as_f64().map_or(0, |handle| handle as u64),
-            Answer::Throws(_) | Answer::Promise(_) => 0,
-        }
-    }
-
-    fn caf(&self, handle: u64) {
-        let _ = self.caf.call(vec![json!(handle)]);
-    }
-}
-
-// ── decoding ──────────────────────────────────────────────────────────────────
+// ── decoding ──
 
 fn present(args: &[Value], i: usize) -> Option<&Value> {
     args.get(i).filter(|v| !is_undefined(v))
@@ -178,16 +97,12 @@ fn rule_json(rule: &ResponsiveRule) -> Value {
     Value::Object(out)
 }
 
-/// The generator's `StagePluginOptions` from a vector's config.
+/// The generator's `StagePluginOptions` from a vector's config: the
+/// settings, `lens`, and the rules. `frames` is the case clock's.
 fn stage_options(config: &Value, h: &Harness) -> Result<StagePluginOptions, Error> {
     let config = if is_undefined(config) || config.is_null() { json!({}) } else { config.clone() };
-    let settings: PartialSettings = from_value(&config)?;
+    let settings: StageSettingsPatch = from_value(&config)?;
     let lens = config.get("lens").and_then(Value::as_str);
-    let scheduler: Option<Rc<dyn Scheduler>> = match LiveScheduler::from_config(&config, h) {
-        Some(live) => Some(Rc::new(live)),
-        None => (config.get("frames").and_then(Value::as_bool) == Some(true))
-            .then(|| Rc::new(FrameScheduler::default()) as Rc<dyn Scheduler>),
-    };
     let responsive = match config.get("responsive") {
         None => None,
         Some(v) if is_undefined(v) => None,
@@ -196,7 +111,7 @@ fn stage_options(config: &Value, h: &Harness) -> Result<StagePluginOptions, Erro
     Ok(StagePluginOptions {
         id: lens.map(str::to_string),
         token: lens.map(|name| lens_token(h, name)),
-        config: StageConfig { settings, scheduler, responsive },
+        config: StageConfig { settings, responsive },
     })
 }
 
@@ -204,7 +119,20 @@ fn lens_token(h: &Harness, name: &str) -> Token<StageCapability> {
     Token::from_any(h.token(name, None))
 }
 
-// ── printing ──────────────────────────────────────────────────────────────────
+/// A page argument, `PageRef | number`. An object that is not a ref names
+/// no page: every page verb then answers as for a page the document lacks.
+fn page_arg(args: &[Value], i: usize) -> PageTarget {
+    let no_page = PageTarget::Ref(PageRef::new(u32::MAX));
+    match present(args, i) {
+        Some(value) if value.is_number() || value.get("$number").is_some() => {
+            from_value::<f64>(value).map_or(no_page, PageTarget::Index)
+        }
+        Some(value) => PageRef::from_json(value).map_or(no_page, PageTarget::Ref),
+        None => no_page,
+    }
+}
+
+// ── printing ──
 
 /// A laid-out page as the TypeScript prints it: the transform's six
 /// methods are functions, registered as refs in member order. A live
@@ -232,17 +160,17 @@ fn visible_page_json(h: &Harness, page: &VisiblePage) -> Value {
     let members = [
         ("toPixels", point_fn(epdf_geometry::PageTransform::to_pixels)),
         ("fromPixels", point_fn(epdf_geometry::PageTransform::from_pixels)),
-        ("contentToView", point_fn(epdf_geometry::PageTransform::content_to_view)),
-        ("contentToViewRect", rect_fn(epdf_geometry::PageTransform::content_to_view_rect)),
-        ("viewToContent", point_fn(epdf_geometry::PageTransform::view_to_content)),
-        ("viewToContentRect", rect_fn(epdf_geometry::PageTransform::view_to_content_rect)),
+        ("pageToView", point_fn(epdf_geometry::PageTransform::page_to_view)),
+        ("pageToViewRect", rect_fn(epdf_geometry::PageTransform::page_to_view_rect)),
+        ("viewToPage", point_fn(epdf_geometry::PageTransform::view_to_page)),
+        ("viewToPageRect", rect_fn(epdf_geometry::PageTransform::view_to_page_rect)),
     ];
     if let Some(t) = out.get_mut("transform").and_then(Value::as_object_mut) {
         for (name, value) in members {
             t.insert(name.into(), value);
         }
-        // `cssMatrix` follows the six methods in `createPageTransform`'s
-        // literal (`packages/core/geometry/src/index.ts`).
+        // `cssMatrix` follows the six methods in `pageTransform`'s literal
+        // (`packages/core/geometry/src/index.ts`).
         if let Some(css) = t.shift_remove("cssMatrix") {
             t.insert("cssMatrix".into(), css);
         }
@@ -273,7 +201,7 @@ fn not_a_function(method: &str) -> Outcome {
 }
 
 /// The capability's member order: `composeApi` over the areas' slices, in
-/// the order `controller.ts` lists them, then the six hooks.
+/// the order `controller.ts` lists them, then the six events.
 const MEMBERS: &[&str] = &[
     // read/pages
     "getCamera",
@@ -283,6 +211,7 @@ const MEMBERS: &[&str] = &[
     "isPageVisible",
     "getCurrentPageIndex",
     "getCurrentPage",
+    "getPageCount",
     "listCurrentItemPages",
     "getPageFrame",
     "getPageAt",
@@ -296,6 +225,7 @@ const MEMBERS: &[&str] = &[
     "getZoomLevel",
     "getZoomMode",
     "getViewpoint",
+    "getCurrentDestination",
     // camera/animation
     "fling",
     "isMoving",
@@ -309,7 +239,6 @@ const MEMBERS: &[&str] = &[
     "beginGesture",
     "endGesture",
     // navigation/arrive
-    "goToPageIndex",
     "goToPage",
     "goToFirstPage",
     "goToLastPage",
@@ -320,8 +249,7 @@ const MEMBERS: &[&str] = &[
     "resetView",
     // navigation/reveal
     "reveal",
-    "revealRect",
-    "revealIndex",
+    "goToDestination",
     // settings/settings
     "getSettings",
     "resetSettings",
@@ -329,10 +257,6 @@ const MEMBERS: &[&str] = &[
     "setResponsiveRules",
     "matchesRule",
     "listActiveRules",
-    "setFlow",
-    "setLayout",
-    "setSpread",
-    "setSizing",
     "applyViewState",
     // navigation/zoom
     "doubleTapZoom",
@@ -354,7 +278,7 @@ const MEMBERS: &[&str] = &[
     "getLensId",
     "provideInitialView",
     "placeInitial",
-    // the hooks
+    // the events
     "onPageChanged",
     "onZoomChanged",
     "onCameraChanged",
@@ -363,23 +287,7 @@ const MEMBERS: &[&str] = &[
     "onViewportChanged",
 ];
 
-fn index_arg(args: &[Value], i: usize) -> Result<isize, Error> {
-    let n: f64 = arg(args, i)?;
-    Ok(n as isize)
-}
-
-/// A `PageRef` argument. Anything else names no page: every page verb
-/// then answers as it does for a page the document lacks.
-fn page_arg(args: &[Value], i: usize) -> PageRef {
-    present(args, i).and_then(PageRef::from_json).unwrap_or(PageRef::new(u32::MAX))
-}
-
-/// A registry row as JavaScript reads it: `undefined` members absent.
-fn page_info_json(page: Option<PageInfo>) -> Value {
-    page.map_or(Value::Null, |p| without_undefined(&p))
-}
-
-/// Subscribe a scripted listener to one hook; the outcome is the
+/// Subscribe a scripted listener to one event; the outcome is the
 /// unsubscribe, as a ref.
 fn hook<E: serde::Serialize + 'static>(
     h: &Harness,
@@ -387,12 +295,9 @@ fn hook<E: serde::Serialize + 'static>(
     subscribe: impl FnOnce(Box<dyn Fn(&E) -> Result<(), Error>>) -> Unsubscribe,
 ) -> Outcome {
     let callback = h.callback(spec.unwrap_or(&Value::Null));
-    let off = subscribe(Box::new(move |event: &E| {
-        let event = without_undefined(&to_value(event));
-        match callback.call(vec![event]) {
-            Answer::Throws(error) => Err(error),
-            _ => Ok(()),
-        }
+    let off = subscribe(Box::new(move |event: &E| match callback.call(vec![to_value(event)]) {
+        Answer::Throws(error) => Err(error),
+        _ => Ok(()),
     }));
     unsubscribe_ref(h, off)
 }
@@ -402,6 +307,12 @@ fn unsubscribe_ref(h: &Harness, off: Unsubscribe) -> Outcome {
         off.call();
         Outcome::undefined()
     })))
+}
+
+/// The camera as the state holds it: its object literal's member order.
+fn camera_json(cap: &StageCapability) -> Value {
+    let state = cap.st();
+    to_value(&state.camera_order().view(&state.camera))
 }
 
 fn call_stage(
@@ -414,7 +325,7 @@ fn call_stage(
     let unit = Outcome::undefined;
     Ok(match method {
         // read/pages
-        "getCamera" => r(to_value(&cap.get_camera())),
+        "getCamera" => r(camera_json(cap)),
         "getViewportSize" => r(to_value(&cap.get_viewport_size())),
         "getScrollMetrics" => r(to_value(&cap.get_scroll_metrics())),
         "listVisiblePages" => r(Value::Array(
@@ -422,9 +333,13 @@ fn call_stage(
         )),
         "isPageVisible" => r(json!(cap.is_page_visible(page_arg(args, 0)))),
         "getCurrentPageIndex" => r(json!(cap.get_current_page_index())),
-        "getCurrentPage" => r(page_info_json(cap.get_current_page())),
+        "getCurrentPage" => r(option_json(cap.get_current_page())),
+        "getPageCount" => r(json!(cap.get_page_count())),
         "listCurrentItemPages" => r(Value::Array(
-            cap.list_current_item_pages().into_iter().map(|p| page_info_json(Some(p))).collect(),
+            cap.list_current_item_pages()
+                .iter()
+                .map(crate::services::scene::without_undefined)
+                .collect(),
         )),
         "getPageFrame" => r(cap
             .get_page_frame(page_arg(args, 0))
@@ -442,6 +357,7 @@ fn call_stage(
         "getZoomLevel" => r(to_value(&cap.get_zoom_level())),
         "getZoomMode" => r(to_value(&cap.get_zoom_mode())),
         "getViewpoint" => returned(cap.get_viewpoint()),
+        "getCurrentDestination" => r(option_json(cap.get_current_destination())),
         // camera/animation
         "fling" => done(cap.fling(arg(args, 0)?, arg(args, 1)?)),
         "isMoving" => r(json!(cap.is_moving())),
@@ -450,7 +366,11 @@ fn call_stage(
             unit()
         }
         // camera/gestures
-        "setCamera" => done(cap.set_camera(arg::<Camera>(args, 0)?)),
+        "setCamera" => {
+            let camera = arg(args, 0)?;
+            let order = CameraOrder::of_json(present(args, 0).unwrap_or(&Value::Null));
+            done(cap.set_camera_object(CameraObject::new(camera, order)))
+        }
         "panBy" => done(cap.pan_by(arg(args, 0)?, arg(args, 1)?)),
         "scrollTo" => done(cap.scroll_to(arg(args, 0)?)),
         "scrollBy" => done(cap.scroll_by(arg(args, 0)?)),
@@ -461,10 +381,6 @@ fn call_stage(
         }
         "endGesture" => done(cap.end_gesture()),
         // navigation/arrive
-        "goToPageIndex" => {
-            cap.go_to_page_index(index_arg(args, 0)?, opt(args, 1)?);
-            unit()
-        }
         "goToPage" => {
             cap.go_to_page(page_arg(args, 0), opt(args, 1)?);
             unit()
@@ -496,12 +412,9 @@ fn call_stage(
             cap.reveal(page_arg(args, 0), opt(args, 1)?);
             unit()
         }
-        "revealRect" => {
-            cap.reveal_rect(page_arg(args, 0), arg(args, 1)?, opt(args, 2)?);
-            unit()
-        }
-        "revealIndex" => {
-            cap.reveal_index(index_arg(args, 0)?, opt(args, 1)?);
+        "goToDestination" => {
+            let destination: PageDestination = arg(args, 0)?;
+            cap.go_to_destination(&destination, opt(args, 1)?);
             unit()
         }
         // settings/settings
@@ -514,12 +427,8 @@ fn call_stage(
         )?)),
         "matchesRule" => r(json!(cap.matches_rule(&arg::<String>(args, 0)?))),
         "listActiveRules" => r(json!(cap.list_active_rules())),
-        "setFlow" => done(cap.set_flow(arg(args, 0)?)),
-        "setLayout" => done(cap.set_layout(arg(args, 0)?)),
-        "setSpread" => done(cap.set_spread(arg(args, 0)?)),
-        "setSizing" => done(cap.set_sizing(arg(args, 0)?)),
         "applyViewState" => {
-            cap.apply_view_state(arg(args, 0)?);
+            cap.apply_view_state(arg::<StageViewPatch>(args, 0)?);
             unit()
         }
         // navigation/zoom
@@ -547,7 +456,7 @@ fn call_stage(
             let priority: f64 = arg(args, 0)?;
             let callback = h.callback(present(args, 1).unwrap_or(&Value::Null));
             let off = cap.provide_initial_view(priority, move || match callback.call(Vec::new()) {
-                Answer::Returns(v) if truthy(&v) => from_value(&v).ok(),
+                Answer::Returns(v) if truthy(&v) => from_value::<StageViewPatch>(&v).ok(),
                 _ => None,
             });
             unsubscribe_ref(h, off)
@@ -556,7 +465,7 @@ fn call_stage(
             cap.place_initial();
             unit()
         }
-        // the hooks
+        // the events
         "onPageChanged" => {
             let cap = cap.clone();
             hook(h, present(args, 0), move |f| cap.on_page_changed(f))
@@ -585,6 +494,10 @@ fn call_stage(
     })
 }
 
+/// The `stage-scroll` factory's api: nothing.
+#[derive(Clone)]
+struct ScrollBinding;
+
 pub struct Stage;
 
 impl HarnessPlugin for Stage {
@@ -598,24 +511,29 @@ impl HarnessPlugin for Stage {
             let token = lens.map_or_else(|| STAGE.clone(), |name| lens_token(h, name));
             let pan_fallback = config.get("panFallback").and_then(Value::as_bool);
             let requires = token.clone();
+            let binding: Token<ScrollBinding> = Token::new("stage-scroll");
             return Ok(define::<Value, Value>("stage-scroll")
                 .document_scoped()
                 .requires(requires.any())
                 .requires(INTERACTION.any())
-                .init(move |ctx| {
-                    let stage = ctx.get(&token)?;
-                    let hub = ctx.get(&INTERACTION)?;
-                    let handler = create_scroll_handler(
-                        stage.clone(),
-                        hub.clone(),
-                        ScrollHandlerOptions { pan_fallback },
-                    );
-                    let off = hub.register_handler(
-                        handler,
-                        RegisterHandlerOptions { source: Some(stage.get_lens_id()) },
-                    );
-                    ctx.cleanup_fn(move || off.call());
-                    Ok(None)
+                .create(&binding, move |cx| {
+                    let token = token.clone();
+                    let connect = move || {
+                        let stage = cx.get(&token)?;
+                        let hub = cx.get(&INTERACTION)?;
+                        let handler = create_scroll_handler(
+                            stage.clone(),
+                            hub.clone(),
+                            ScrollHandlerOptions { pan_fallback },
+                        );
+                        let off = hub.register_handler(
+                            handler,
+                            RegisterHandlerOptions { source: Some(stage.get_lens_id()) },
+                        );
+                        cx.cleanup_fn(move || off.call());
+                        Ok(())
+                    };
+                    Ok((ScrollBinding, Some(Rc::new(connect) as epdf_kernel::plugin::ConnectFn)))
                 })
                 .build());
         }
@@ -638,12 +556,15 @@ impl HarnessPlugin for Stage {
     }
 
     fn members(&self, capability: &Rc<dyn Any>) -> Option<Vec<&'static str>> {
+        if capability.downcast_ref::<ScrollBinding>().is_some() {
+            return Some(Vec::new());
+        }
         capability.downcast_ref::<StageCapability>()?;
         Some(MEMBERS.to_vec())
     }
 }
 
-// ── function suites ───────────────────────────────────────────────────────────
+// ── function suites ──
 
 fn value(args: &[Value], i: usize) -> Value {
     args.get(i).cloned().unwrap_or_else(undefined)
@@ -700,26 +621,42 @@ fn constants() -> Value {
     })
 }
 
+fn state_arg(args: &[Value], i: usize) -> Result<Rc<StageState>, Error> {
+    let value = present(args, i).cloned().unwrap_or(Value::Null);
+    let json: model::StateJson = from_value(&value)?;
+    Ok(Rc::new(StageState::from_decoded(json, CameraOrder::of_json(&value["camera"]))))
+}
+
+/// `{state, same}`, `same` being `next === state`.
+fn observed(state: &Rc<StageState>, next: Rc<StageState>) -> Value {
+    json!({ "state": to_value(&*next), "same": Rc::ptr_eq(state, &next) })
+}
+
+/// `revealOfDestination`'s object literal orders: `{rect, anchor, zoom}`
+/// for `xyz`, `{rect, zoom, anchor}` for the rest.
+fn reveal_json(destination: &PageDestination, options: &RevealOptions) -> Value {
+    let mut out = Map::new();
+    let order: &[&str] = if matches!(destination, PageDestination::Xyz { .. }) {
+        &["rect", "anchor", "zoom"]
+    } else {
+        &["rect", "zoom", "anchor"]
+    };
+    let full = to_value(options);
+    for key in order {
+        if let Some(value) = full.get(*key) {
+            out.insert((*key).into(), value.clone());
+        }
+    }
+    Value::Object(out)
+}
+
 /// The TypeScript names of the pure functions.
 pub fn functions() -> FunctionTable {
     vec![
-        ("destinationToReveal", |a| {
-            let dest: PdfDestination = arg(a, 0)?;
-            let layout: PageLayout = arg(a, 1)?;
-            let bbox: Option<Rect> = opt(a, 2)?;
-            let mut out = destination_to_reveal(&dest, &layout, bbox)
-                .map(|r| to_value(&r))
-                .map_err(|e| Error::new(e.to_string()))?;
-            // `destination.ts` builds the /XYZ options as `{ rect, anchor,
-            // zoom }` and the other kinds as `{ rect, zoom, anchor }`, the
-            // struct's order.
-            if matches!(dest, PdfDestination::Xyz { .. })
-                && let Some(options) = out.get_mut("options").and_then(Value::as_object_mut)
-                && let Some(zoom) = options.shift_remove("zoom")
-            {
-                options.insert("zoom".into(), zoom);
-            }
-            Ok(out)
+        ("revealOfDestination", |a| {
+            let destination: PageDestination = arg(a, 0)?;
+            let size: Size = arg(a, 1)?;
+            Ok(reveal_json(&destination, &reveal_of_destination(&destination, size)))
         }),
         ("settingsEqual", |a| {
             let x: StageSettings = arg(a, 0)?;
@@ -743,7 +680,7 @@ pub fn functions() -> FunctionTable {
         }),
         ("mergeSettings", |a| {
             let into: StageSettings = arg(a, 0)?;
-            let patch: PartialSettings = arg(a, 1)?;
+            let patch: StageSettingsPatch = arg(a, 1)?;
             Ok(to_value(&merge_settings(&into, &patch)))
         }),
         ("eqSetting", |a| Ok(json!(eq_setting_json(&value(a, 0), &value(a, 1))))),
@@ -755,16 +692,49 @@ pub fn functions() -> FunctionTable {
             Ok(json!({ "effective": to_value(&resolved.effective), "active": resolved.active }))
         }),
         ("initialStageState", |a| {
-            let overrides: PartialSettings = arg(a, 0)?;
+            let overrides: StageSettingsPatch = arg(a, 0)?;
             Ok(to_value(&initial_stage_state(&overrides)))
         }),
-        ("stageReducer", |a| {
-            let state: StageState = arg(a, 0)?;
-            let action: StageAction = arg(a, 1)?;
-            Ok(match stage_reducer(&state, &action) {
-                Some(next) => json!({ "state": to_value(&next), "same": false }),
-                None => json!({ "state": to_value(&state), "same": true }),
-            })
+        ("setCamera", |a| {
+            let state = state_arg(a, 0)?;
+            let camera = CameraObject::new(
+                arg(a, 1)?,
+                CameraOrder::of_json(present(a, 1).unwrap_or(&Value::Null)),
+            );
+            Ok(observed(&state, model::set_camera(&state, camera)))
+        }),
+        ("setCameraResting", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::set_camera_resting(&state, arg(a, 1)?)))
+        }),
+        ("markPlaced", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::mark_placed(&state)))
+        }),
+        ("setViewport", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::set_viewport(&state, arg(a, 1)?)))
+        }),
+        ("setDpr", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::set_dpr(&state, arg(a, 1)?)))
+        }),
+        ("setCursor", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::set_cursor(&state, arg(a, 1)?)))
+        }),
+        ("setMotionCause", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::set_motion_cause(&state, arg(a, 1)?)))
+        }),
+        ("patchSettings", |a| {
+            let state = state_arg(a, 0)?;
+            let patch: StageSettingsPatch = arg(a, 1)?;
+            Ok(observed(&state, model::patch_settings(&state, &patch)))
+        }),
+        ("setActiveRules", |a| {
+            let state = state_arg(a, 0)?;
+            Ok(observed(&state, model::set_active_rules(&state, arg(a, 1)?)))
         }),
     ]
 }

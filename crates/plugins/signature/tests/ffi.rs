@@ -1,10 +1,14 @@
 #![cfg(feature = "uniffi")]
+//! Migrated by hand to the Task 13.25 plugin: the engine's current ref
+//! spelling, the
+//! `cancelPending` and per-field `can_sign`/`can_fill` verbs, and
+//! `SignatureEvent::InvalidationPredicted`.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use epdf_ffi::{CancelToken, FormFieldRef, KernelThread, ResourceStatus, ViewerError};
-use epdf_plugin_form::{FormConfig, form_plugin};
+use epdf_plugin_form::form_plugin;
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use epdf_plugin_signature::ffi::{
     SignatureCoverage, SignatureEvent, SignatureEventListener, SignatureHandle, SignatureMode,
@@ -29,22 +33,22 @@ impl SignatureEventListener for Events {
 }
 
 fn field(n: u32) -> Value {
-    json!({ "kind": "objectNumber", "fieldObjectNumber": n })
+    json!({ "kind": "objectNumber", "objectNumber": n })
 }
 
 fn page() -> Value {
-    json!({ "kind": "objectNumber", "pageObjectNumber": 1 })
+    json!({ "kind": "objectNumber", "objectNumber": 1 })
 }
 
 /// One signed field (12) over revision 0 of two, one unsigned (14).
 fn snapshot() -> Value {
     let signer = json!({ "name": "Ana", "reason": null, "location": null, "contactInfo": null,
-                         "claimedTime": "D:20260901120000Z" });
+                         "signedAt": "2026-09-01T12:00:00Z" });
     let base = |n: u32, signed: bool| {
         json!({
             "index": if n == 12 { 0 } else { 1 }, "field": field(n), "fieldName": format!("Sig{n}"),
-            "widget": { "ref": { "kind": "objectNumber", "page": page(), "annotObjectNumber": n + 1 },
-                        "annotObjectNumber": n + 1, "page": page() },
+            "widget": { "ref": { "kind": "objectNumber", "page": page(), "objectNumber": n + 1 },
+                        "objectNumber": n + 1, "page": page() },
             "signed": signed, "kind": "signature",
             "filter": if signed { json!("Adobe.PPKLite") } else { Value::Null },
             "subFilter": if signed { json!("ETSI.CAdES.detached") } else { Value::Null },
@@ -83,8 +87,28 @@ fn spec() -> TestSpec {
     spec_listing(snapshot())
 }
 
+/// The form's one signature field, 14 (widget 15), as `forms.list` answers
+/// it.
+fn form_field_14() -> Value {
+    json!({
+        "ref": field(14), "name": "Sig14", "origin": "acroform", "readOnly": false,
+        "required": false, "noExport": false, "alternateName": null, "mappingName": null,
+        "valueEntry": { "kind": "none" }, "defaultValueEntry": { "kind": "none" },
+        "groupId": null, "createdBy": null, "createdAt": null, "filledBy": null,
+        "filledByName": null, "filledAt": null, "importedBy": null,
+        "widgets": [{ "ref": { "kind": "objectNumber", "page": page(), "objectNumber": 15 },
+                      "objectNumber": 15, "page": page() }],
+        "family": "signature"
+    })
+}
+
 /// `spec()`, with `signatures.list` answering `listed`.
 fn spec_listing(listed: Value) -> TestSpec {
+    spec_with(listed, json!("*"))
+}
+
+/// `spec_listing`, the session granted `allows` (`"*"` for everything).
+fn spec_with(listed: Value, allows: Value) -> TestSpec {
     let bx = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
     TestSpec::new(json!({
         "documents": { "a": {
@@ -92,7 +116,7 @@ fn spec_listing(listed: Value) -> TestSpec {
             "pages": [{ "index": 0, "ref": page(), "label": null,
                         "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
                         "boxes": { "media": bx, "crop": bx } }],
-            "security": { "allows": "*" },
+            "security": { "allows": allows },
             "services": ["signatures"]
         } }
     }))
@@ -100,10 +124,10 @@ fn spec_listing(listed: Value) -> TestSpec {
     .respond("signatures.contents", |_| Ok(Reply::value(json!({ "$bytes": "MAA=" }))))
     .respond("signatures.digest", |_| Ok(Reply::value(json!({ "$bytes": "AA==" }))))
     .respond("signatures.analyze", |_| Ok(Reply::value(analysis())))
-    .respond("signatures.revisionBytes", |_| Ok(Reply::value(json!({ "$bytes": "JVBERi0=" }))))
+    .respond("signatures.downloadRevision", |_| Ok(Reply::value(json!({ "$bytes": "JVBERi0=" }))))
     .respond("forms.list", |_| {
         Ok(Reply::value(json!({ "formKind": "acroform", "needsAppearances": false,
-                                "calculationOrder": [], "fields": [] })))
+                                "calculationOrder": [], "fields": [form_field_14()] })))
     })
 }
 
@@ -117,7 +141,7 @@ fn handle_with(
         TestKernel::open(
             vec![
                 interaction_plugin(InteractionConfig::default()),
-                form_plugin(FormConfig::default()),
+                form_plugin(None),
                 signature_plugin(config()),
             ],
             spec(),
@@ -202,11 +226,16 @@ fn analyze_changes_decodes_the_analysis() {
 }
 
 #[test]
-fn mode_defaults_to_visual_without_a_signer() {
-    let (_thread, s) = handle();
+fn mode_defaults_to_visual_without_a_key() {
+    // Filling granted, signing not: `canSign` and `canFill` read the
+    // session's grants for the form's field 14 (`services/authority.ts`).
+    let grants =
+        || spec_with(snapshot(), json!(["doc.forms.read", "doc.forms.fill", "doc.download"]));
+    let (_thread, s) = handle_with(SignatureConfig::default, grants);
     assert_eq!(block_on(s.mode()).unwrap(), SignatureMode::Visual);
-    assert!(!block_on(s.can_sign()).unwrap());
-    assert!(block_on(s.can_fill()).unwrap());
+    let field = FormFieldRef::ObjectNumber { field_object_number: 14 };
+    assert!(!block_on(s.can_sign(field.clone())).unwrap());
+    assert!(block_on(s.can_fill(field)).unwrap());
     assert!(!block_on(s.can_certify()).unwrap());
     assert!(!block_on(s.is_busy()).unwrap());
     assert_eq!(block_on(s.pending()).unwrap(), None);
@@ -268,7 +297,7 @@ fn closing_the_document_ends_its_subscriptions() {
 
 use epdf_plugin_signature::ffi::{
     SignatureDigest, SignatureKeyAlgorithm, SignatureMark, SignatureSignCompletion,
-    SignatureSignInput, SignatureSigner,
+    SignatureSignInput, SignatureSigner, SignatureSignerInput,
 };
 use rsa::pkcs8::DecodePrivateKey;
 use rsa::{Pkcs1v15Sign, RsaPrivateKey};
@@ -341,33 +370,68 @@ fn signed_14() -> Value {
     s
 }
 
+thread_local! {
+    /// The input `signatures.prepare` was last sent, on the kernel thread.
+    static PREPARE_INPUT: std::cell::RefCell<Value> = const { std::cell::RefCell::new(Value::Null) };
+}
+
 /// `spec()` plus prepare and complete responders that record the CMS.
 fn signing_spec(cms: Arc<Mutex<Option<Value>>>) -> TestSpec {
     spec()
-        .respond("signatures.prepare", |_| {
-            Ok(Reply::value(json!({
+        .respond("signatures.prepare", |args| {
+            PREPARE_INPUT.with(|p| *p.borrow_mut() = args.first().cloned().unwrap_or(Value::Null));
+            let prepared = json!({
                 "signingId": "s1", "digest": { "$bytes": "AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=" },
                 "algorithm": "sha256", "byteRange": [0, 100, 200, 50], "contentsSize": 8192,
                 "subFilter": "ETSI.CAdES.detached",
                 "expectedVersion": { "baseSha256": "x", "editsVersion": 0 }, "expiresAt": null
-            })))
+            });
+            // The engine publishes the parked signing before it answers;
+            // the plugin's mirror folds it (`model.ts:143-144`).
+            let mut event = prepared.clone();
+            event["type"] = json!("signatures.prepared");
+            event["field"] = field(14);
+            event["origin"] = origin();
+            Ok(Reply { value: prepared, events: vec![event] })
         })
         .respond("signatures.complete", move |args| {
             *cms.lock().unwrap() = args.first().and_then(|a| a.get("cms")).cloned();
-            Ok(Reply::value(json!({
+            let completed = json!({
                 "status": "completed", "signature": signed_14(),
                 "version": { "sha256": "y", "byteLength": 500 },
                 "previous": { "baseSha256": "x", "editsVersion": 0 },
-                "protection": snapshot()["protection"].clone()
-            })))
+                "protection": snapshot()["protection"].clone(),
+                "meta": { "affectedPages": [], "cacheDelta": null, "opId": "s1", "undoable": false }
+            });
+            // The completion clears the parked signing and fires `onSigned`
+            // through the mirror (`model.ts:147-148`, `sync/signatures.ts:69-75`).
+            let mut event = completed.clone();
+            event["type"] = json!("signatures.completed");
+            event["signingId"] = json!("s1");
+            event["origin"] = origin();
+            Ok(Reply { value: completed, events: vec![event] })
         })
-        .respond("signatures.abort", |_| Ok(Reply::value(json!({ "status": "aborted" }))))
+        // A cancel that discards the parked candidate publishes its notice,
+        // as the engine's host does; the mirror clears `pending` on it
+        // (`model.ts:145-146`).
+        .respond("signatures.cancel", |args| {
+            let signing_id = args.first().cloned().unwrap_or(Value::Null);
+            let event = json!({
+                "type": "signatures.cancelled", "signingId": signing_id, "origin": origin()
+            });
+            Ok(Reply { value: json!({ "status": "cancelled" }), events: vec![event] })
+        })
+}
+
+/// A local session's event origin.
+fn origin() -> Value {
+    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null })
 }
 
 fn unsigned_input(s: &SignatureHandle) -> SignatureSignInput {
     block_on(s.refresh(CancelToken::new())).unwrap();
     let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
-    SignatureSignInput { field, mark: None, attribution: None, certify: None, lock: None }
+    SignatureSignInput { field, mark: None, signer: None, certify: None, lock: None }
 }
 
 #[test]
@@ -409,13 +473,17 @@ fn signing_without_a_signer_is_invalid_input() {
 
 #[test]
 fn a_two_phase_signing_parks_then_completes() {
-    let (_thread, s) = handle_with(SignatureConfig::default, || signing_spec(Arc::default()));
+    let (thread, s) = handle_with(SignatureConfig::default, || signing_spec(Arc::default()));
     let input = unsigned_input(&s);
     let prepared = block_on(s.prepare_signature(
         epdf_plugin_signature::ffi::SignaturePrepareInput {
             field: input.field.clone(),
             mark: None,
-            attribution: None,
+            signer: Some(SignatureSignerInput {
+                name: Some("Ada".into()),
+                reason: Some("Approved".into()),
+                ..Default::default()
+            }),
             certify: None,
             lock: None,
             sub_filter: None,
@@ -425,6 +493,9 @@ fn a_two_phase_signing_parks_then_completes() {
     ))
     .unwrap();
     assert_eq!(prepared.digest.len(), 32);
+    // The signer's facts go to the engine as the input's `signer`.
+    let sent = block_on(thread.call(|_| PREPARE_INPUT.with(|p| p.borrow().clone()))).unwrap();
+    assert_eq!(sent["signer"], json!({ "name": "Ada", "reason": "Approved" }), "{sent}");
     assert_eq!(block_on(s.pending()).unwrap().map(|p| p.signing_id), Some("s1".to_string()));
     let done =
         block_on(s.complete_signature("s1".into(), vec![0x30, 0], CancelToken::new())).unwrap();

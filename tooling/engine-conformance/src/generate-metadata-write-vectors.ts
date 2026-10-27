@@ -17,7 +17,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { createLocalEngine } from '../../../packages/engine/main/src/index';
+import type { createLocalEngine } from '../../../packages/engine/main/src/index';
+
+import { createRecordingEngine } from './recording-engine';
 
 const packageRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(packageRoot, '../..');
@@ -114,16 +116,24 @@ const CASES: readonly UpdateCase[] = [
     covers:
       'A custom key named Title, which would overwrite the structured field and be read back as the title. Skipped rather than refused: the caller used the wrong door and the right one is next to it.',
     patch: { custom: { Title: 'shadow' } },
+    // `metadata.custom.update` refuses this key where `metadata.update` used
+    // to skip it (a4b8259f7, "Custom metadata keys are an object of their
+    // own").
+    refused: true,
   },
   {
     name: 'custom-key-with-a-slash',
     covers: 'A key a caller wrote as a PDF name. Skipped on the same terms.',
     patch: { custom: { '/Leading': 'x' } },
+    // Refused since a4b8259f7, as above.
+    refused: true,
   },
   {
     name: 'custom-key-outside-ascii',
     covers: 'A key with a character a PDF name cannot hold.',
     patch: { custom: { 'Café': 'x' } },
+    // Refused since a4b8259f7, as above.
+    refused: true,
   },
   {
     name: 'empty-patch',
@@ -132,15 +142,55 @@ const CASES: readonly UpdateCase[] = [
   },
 ];
 
+type OpenedDocument = Awaited<ReturnType<ReturnType<typeof createLocalEngine>['open']>>;
+
+/**
+ * Sends a case's patch the way the engine now takes it. The cases keep their
+ * old spelling, translated here:
+ *
+ * - `created` and `modified` are `createdAt` and `modifiedAt` since
+ *   fd175ba50 ("One date type IsoDateTime").
+ * - `custom` is no longer part of `metadata.update`: the Info dict's other
+ *   keys are `metadata.custom`, written by `metadata.custom.update`, since
+ *   a4b8259f7 ("Custom metadata keys are an object of their own").
+ *
+ * The case records the custom keys back under `custom`, where the vector has
+ * always carried them, re-read after the write so a case that only touches
+ * one side still records both. A patch with both kinds of key is two
+ * writes, standard first, so a refused custom key can leave the standard
+ * write done: a refused case records the refusal and the metadata as it
+ * stands afterwards, so that shows. `request` holds both wire requests then.
+ */
+async function update(
+  doc: OpenedDocument,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const { custom, created, modified, ...standard } = patch;
+  const metadataPatch: Record<string, unknown> = { ...standard };
+  if (created !== undefined) metadataPatch.createdAt = created;
+  if (modified !== undefined) metadataPatch.modifiedAt = modified;
+  // A patch of nothing but custom keys sends no standard-field write, as
+  // `metadata.update` would have changed none.
+  if (Object.keys(metadataPatch).length > 0 || custom === undefined) {
+    await doc.metadata.update(metadataPatch as never);
+  }
+  if (custom !== undefined) {
+    await doc.metadata.custom.update(custom as Record<string, string | null>);
+  }
+}
+
+/** The Info dict as it stands, the custom keys back under `custom`. */
+async function readBack(doc: OpenedDocument): Promise<Record<string, unknown>> {
+  return { ...(await doc.metadata.get()), custom: await doc.metadata.custom.get() };
+}
+
 async function readCase(entry: UpdateCase): Promise<unknown> {
   const bytes = new Uint8Array(await readFile(join(repoRoot, FIXTURE)));
-  const engine = createLocalEngine({
-    runtime: {
-      prefer: 'wasm',
-      wasm: {
-        print: (message: string) => process.stderr.write(`${message}\n`),
-        printErr: (message: string) => process.stderr.write(`${message}\n`),
-      },
+  const { engine, capture } = createRecordingEngine({
+    prefer: 'wasm',
+    wasm: {
+      print: (message: string) => process.stderr.write(`${message}\n`),
+      printErr: (message: string) => process.stderr.write(`${message}\n`),
     },
   });
   try {
@@ -149,19 +199,17 @@ async function readCase(entry: UpdateCase): Promise<unknown> {
       { scope: ['*'] },
     );
     try {
-      const run = () => doc.metadata.update(entry.patch as never);
+      // `request` is the wire request the case's old spelling became (two
+      // when the patch has both kinds of key), which the Rust runner
+      // replays (see `recording-engine.ts`).
+      const sent = await capture(() => update(doc, entry.patch));
       if (entry.refused) {
-        let code: string | null = null;
-        try {
-          await run();
-        } catch (error) {
-          code = String((error as { code?: unknown })?.code ?? 'unknown');
-        }
-        if (code === null) throw new Error(`${entry.name}: expected a refusal`);
-        return { ...entry, refusedWith: code };
+        if (sent.ok) throw new Error(`${entry.name}: expected a refusal`);
+        const code = String((sent.error as { code?: unknown })?.code ?? 'unknown');
+        return { ...entry, request: sent.request, refusedWith: code, metadata: await readBack(doc) };
       }
-      const result = (await run()) as Record<string, unknown>;
-      return { ...entry, metadata: result.metadata };
+      if (!sent.ok) throw sent.error;
+      return { ...entry, request: sent.request, metadata: await readBack(doc) };
     } finally {
       await doc.close();
     }

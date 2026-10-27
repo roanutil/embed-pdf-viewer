@@ -1,137 +1,156 @@
 # epdf-plugin-form
 
-`packages/plugin/form` in Rust at the v3 contract: the field plane over the engine's `forms.*`
-services, the fill projection, value writes and their batch doors, reset, interchange, field design
-with the draw-to-place handler, ISO field selection, and the K/V/C/F scripting transaction. All 217
-cases in five vector files replay identically (`cargo test -p epdf-plugin-form`):
+`packages/plugin/form` in Rust, re-ported in Task 13.18 onto the current kernel: the fields mirror,
+the change queue, registered settings and the K/V/C/F pipeline over the actions plugin's realm. All
+221 cases in six vector files replay identically (`cargo test -p epdf-plugin-form`). No member-order
+allowances and no outcome exceptions are used for these files. The last case to pass,
+`form-design.json` `placement-refused-by-the-engine`, needed the kernel's `to_plugin_error` to pass
+a `PermissionDenied`'s `details` through whole, as `packages/core/main/src/errors.ts:131` does
+(`1ff58faa4` and `526059c29`, pinned by `a_permission_refusal_keeps_its_details_whole` in
+`crates/epdf-kernel`).
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/form-core.json` | function | 100 | `core/model.ts` (with `widgetAt`), `core/fill-items.ts`, the reducer, the tool table, `fieldRef`, `resolveFieldSelection` and `buildSubmitEntries` |
-| `vectors/plugins/form-fill.json` | scenario | 31 | hydration, `getStatus` and `refresh`, widget geometry, the fused fill projection, the field reads, typed and batch writes, `reset` and `resetAll`, interchange, the twins, the six confirmed-change events |
-| `vectors/plugins/form-design.json` | scenario | 28 | tool and behavior registration with and without the annotation plugin, `createField` and the other design verbs, the hit test, the place handler as `PointerSample` sequences |
-| `vectors/plugins/form-actions.json` | scenario | 13 | the `reset-form` executor, the submit resolver, the script commit sink, widget activation, the widget event feed |
-| `vectors/plugins/form-scripting.json` | scenario | 45 | the standalone controller over a detached realm, and the capability over the actions plugin's realm |
+| `vectors/plugins/form-core.json` | function | 99 | `FieldIndex` and its folds, `predictFormOp`, `undoLookOf`, the fill projection, the hit test, the palette table, ISO field selection and the submit dataset |
+| `vectors/plugins/form-scripting.json` | scenario | 46 | the K/V/C/F controller over a detached realm, its budgets and fault ladder, and the plugin's fills, resets and activation through scripts |
+| `vectors/plugins/form-fill.json` | scenario | 31 | the mirror's load and folds, values, resets, batches, interchange, authority, events and close |
+| `vectors/plugins/form-design.json` | scenario | 29 | the palette and its place handler, the design verbs, lending to the annotation plugin, the hit test |
+| `vectors/plugins/form-actions.json` | scenario | 13 | the reset-form executor, the commit sink, the submit resolver, activation and the widget event feed |
+| `vectors/plugins/form-core-lifecycle.json` | scenario | 3 | the mirror's status, a confirmed and a refused fill, a field the session may not fill |
 
-The scenario registry runs the real interaction, actions and annotation adapters beside this one.
+`tests/conformance.rs` also pins the six files at 221 cases. `tests/behavior.rs` asserts what the
+replay holds only implicitly: a whole reset reports only the fields it moved (refs 1, 3 and 4 of
+`reset-all`), a palette placement keeps the tool's look while the create is held, the three
+placement paths (form-only success, the awaited refusal that is logged, the form-only early
+return), lost object numbers, and the painter drawing a text field, a checkbox and a listbox, which
+no vector does. `tests/sharing.rs` is M21. `tests/budget.rs` is H4. `tests/engine_cross_check.rs`
+holds `engine.rs` to `epdf-engine` on native hosts: `field_after_value`, `field_after_reset`,
+`form_field_after`, `default_entry_of_draft`, `fit_widget_to_family`, `reordered_list` and
+`reorder_part`, refusals compared by message.
 
-## Shape
+## Layout
 
-The files follow the TypeScript package. `controller.rs` is the composition root; each area is an
-`impl` block on the one `FormCapability`, one file per TypeScript file under `services/`, `read/`,
-`sync/`, `write/`, `scripting/` and `tools/`, and their private state sits in `Core`. `form_plugin`
-declares `create`: the controller is built during bring-up and `connect` subscribes to the document
-events, starts hydration and wires the hub.
+The modules follow `packages/plugin/form/src` file for file. `controller.rs` builds the one `Core`
+behind `FormCapability`, which is the public lens and the host lens. `connect.rs` wires the hub, the
+annotation plugin and the actions plugin. `sync/` is the fields mirror and the prediction,
+`services/` the events, fill rights, the scripting seam, object numbers, formatted
+texts, pictures and looks, `read/` the reads, `write/` the verbs, `tools/` the palette and its
+handler, `scripting/` the K/V/C/F pipeline. `engine.rs` is a pure copy of the engine-core rules the
+plugin calls (`forms/predict.ts`, `forms/write.ts`, `forms/widgets.ts`, list positions, ref keys),
+since `epdf-engine` links PDFium and this crate builds for wasm32 (Ruling13.15).
 
-The public surface is the v3 contract in snake case. Fields are addressed by a `FormFieldRef`
-(`contract::field_ref` builds one) and pages by the kernel's `PageRef`: `get_snapshot`,
-`list_fields`, `get_value`, `export_values`, `list_widgets`, `get_widget_at`, `set_value`,
-`set_value_raw`, `set_values`, `import_values`, `reset`, `reset_all`, `create_field`,
-`attach_widget`, `detach_widget`, the twins and the six `on_*` hooks. The host lens
-(`list_fill_items`, `get_fill_item`, `ensure_loaded`, `get_page_box`, `notify_widget_event`,
-`reset_form_action`, `resolve_submit_dataset`, `commit_script_form_effects`) is on the same type,
-as the TypeScript's two lenses share one token. `FormHostCapability` is an alias.
+Engine records stay `serde_json::Value`. The snapshot (`model::Snapshot`) holds its `fields` and
+`widgets` apart, one `Rc` per item. The kernel's mirror holds JSON and copies each value it writes,
+so the `fields` mirror's value is a token, `{ "$fieldIndex": n }`, naming a `FieldIndex` that
+`services/index_cache.rs` keeps: the 256 used last and the confirmed one. The store never shows the
+token. The mirror's `to_json` (`MirrorSpec::to_json`, `640a17350`) prints the whole index when the
+store is dumped, `snapshot`, `byKey`, `byName`, `byWidget`, `rowByWidget` and `pictureVersions` in
+that order, as `signature.json` and `stamp-*.json` dump `form::a/mirror/fields`
+(`the_fields_mirror_cell_dumps_the_whole_field_index` holds it to `signature.json`
+`reads-over-the-snapshot`). The index's records (`byKey`, `byWidget` and so on) are kept
+as JavaScript objects order them, integer-like keys first, so they print and iterate as the
+TypeScript's do.
 
-The scripting controller no longer builds a realm. `create_form_scripting_controller` takes a
-`TransactionPort` and a budget: the capability hands it the actions plugin's `script_realm`, and a
-host evaluating a document that is not displayed (stamp's asset documents) mints one with
-`create_detached_script_realm`. `FormScriptingOptions` and the sandbox factory are gone with the
-standalone realm. `services::scripting::commit_surface` is public so a detached-realm owner can
-surface a result through the actions port.
+## What differs from the TypeScript
 
-Engine DTOs (snapshots, fields, effects, action trees, refs) stay `serde_json::Value`. Fill items
-are typed; members copied from the field DTO stay JSON so an absent one prints as absent.
+H4 stays. The transaction's time budget runs on `rt::monotonic_now`, where the TypeScript reads
+`Date.now()`. A real host runs a whole K/V/C/F chain inside one drain, where the virtual clock stands
+still, so a budget on it never runs out. `tests/budget.rs` burns 30 ms of wall time per run and gets
+two runs out of the default 50 ms.
 
-## Host inputs
+A5 stays. `importValues` and `exportValues` order names as a plain object does, integer-like names
+first (`form-fill.json` `values-keyed-by-integer-like-names` replays it). A6 is gone with the
+code it named: placement names fields with `nextFieldName` over a `HashSet`.
 
-`console.warn('[form] form snapshot failed to load', err)`, `console.error('[form] createField
-failed:', err)` and `console.error('[form] event listener failed:', err)` go to
-`FormHost::console_warn` and `console_error` on `FormConfig`. The vectors log each as a callback.
-`Date.now()`, for the transaction's execution budget, is `rt::now()`.
+M21 is kept. A fold, a prediction or a fill replaces one field or widget row and shares every other
+one, as the TypeScript's spreads do: an upsert copies pointers, and the mirror's token makes the
+kernel's copy on write a few bytes. The whole snapshot is put together as one value only for
+`getSnapshot`, the scripts and `onResynced`, once per snapshot. `tests/sharing.rs` counts those
+copies with `model::snapshot_copies` and holds them at none across 50 folds and predictions on
+5,000 fields and 15 live fills, folds and reads, each under a 120 s hang ceiling. It also pins
+`listWidgets`' reference stability (`the_fill_projection_is_reference_stable`). The cost: a
+scripted fill still puts the form together once per new view, for the realm.
 
-## Where the port has to be careful
+`listWidgets` is memoized as `memoByKey` does, by page, on the view, the fill rights key and
+`fillable`. Since Task 14.5 (M36) the other identity memos are too: `getValue` and `getWidgets` per
+field key with `maxEntries: 1024`, `exportValues` on the view, `validate` on the view, the document
+and the rights key, and `getSelectedField` on the view and the annotation plugin's selection list.
+Each holds its inputs' `Rc`s and compares them with `Rc::ptr_eq`, the document's record included
+(`ControllerContext::document_rc`). `list(None)` returns a new `Vec` of the shared fields where the
+TypeScript returns the snapshot's array itself. The reads hand out the fields and rows the form holds
+(`Rc<Value>`), as the TypeScript's do; `tests/sharing.rs` pins the identity and counts the memos'
+computations (`reads_share_the_form_and_keep_their_answers`).
 
-Turn counts are behaviour, and each `await` is mirrored with `src/promise.rs`. `refresh` is the
-TypeScript's `do { await readSnapshot() } while (refreshAgain)` inside a `.finally`, whose derived
-promise settles two turns after its callback; every call during a run shares that promise and
-queues one more read. `write`, `reset` and `resetAll` are `async` functions that return the queue's
-promise, so they cost the adoption turns.
+Five Rust-only console lines and errors have no TypeScript counterpart. A token the cache no longer
+holds, which the confirmed value's pin and the view's recency should make impossible, is logged as
+`[form] the fields mirror named a form it no longer keeps:` and shows the confirmed form, in a read
+and in a store dump alike (`services/index_cache.rs`). A widget row or field the
+painter can no longer decode is logged as `[form] the painter could not read a widget:` and not
+drawn (`services/looks.rs`); the TypeScript has no decode step. A `surface` that throws inside
+`fill_soon`'s failure path is logged as `[form] surfacing a fill failure threw:`
+(`write/fill.rs`), where the TypeScript raises an unhandled rejection. A widget picture that does
+not serialise rejects the lend's `renderAppearances` (`write/lending.rs`). A widget ref with no
+`page` makes the activation verbs throw a `TypeError` (`write/activation.rs` `page_of_ref`), where
+the TypeScript passes `undefined` on as the action source's page; `epdf-plugin-actions` types that
+page as a `PageRef`, so it can't carry one. Valid refs always name a page.
 
-Keystroke splicing counts UTF-16 code units, and output budget bytes are the UTF-8 length of
-`JSON.stringify(output)`, printed the way `Number#toString` prints numbers.
+The write queue is the kernel's `SerialQueue` (`ctx.serial_queue("writes")`), whose `run_with` and
+`idle()` are `serial-queue.ts`'s `{ signal }` option and `idle()`.
 
-`sameAnnotationRef` compares an index ref's `revision` with `===`. A revision object read from JSON
-is never identical to another, so the Rust treats an object revision as unequal.
+The palette's form-only early return is kept as the TypeScript has it. With no annotation plugin a
+field the view already shows ends the placement before `created` is awaited, so an engine refusal of
+that create reaches no console line. The TypeScript raises an unhandled rejection there; Rust has no
+such channel, and nothing catches the refusal on the plugin's behalf.
+`a_form_only_placement_refusal_ends_before_it_is_awaited` pins it. Task 14 kept it: the TypeScript edge is the user's to fix.
 
-## Coverage
+The form pipeline's script print still skips the `print` policy row, as
+`packages/plugin/actions/src/scripting/surface.ts:120` does. The form surfaces its results through
+`ActionsCapability::surface_script_commit` (`services/scripting.rs`); Task 14 kept
+it as the TypeScript has it.
 
-Across the whole corpus the generators reach 3,431 of the package's 3,460 statements and 879 of
-its 927 branches (`vectors/coverage.json`). The 29 statements left:
+Default QuickJS execution has no Rust counterpart. With JavaScript on and no sandbox factory the
+actions plugin rejects every sandbox build (`NO_DEFAULT_SANDBOX`), so the form's scripts fail where
+the TypeScript would load QuickJS. No vector runs that configuration. It is the separate loader gap
+Task 14 left it open.
 
-- `controller.ts` 85 to 91: `createFormCapability`, the unit-test door that builds and connects a
-  controller outside the plugin. Nothing in the plugin calls it.
-- `form.plugin.ts` 137 to 147, 164 and 165: the sink and the executor when `ctx.tryGet(FormToken)`
-  finds no form capability. Both are registered only while the plugin lives.
-- `write/activation.ts` 27 to 31: `sameAnnotationRef`'s `nm` and `index` arms. `activateWidget`
-  finds the field by the widget's object number, so a ref of another kind rejects `not-found`
-  first, and a listed candidate of another kind fails the kind check on line 23.
-- `scripting/controller.ts` 142 and 143: a target with no script view. The overlay is built from
-  the snapshot the target was found in.
-- `scripting/overlay.ts` 94: `formValueFromScriptValue` for a pushbutton or signature, which every
-  path refuses first.
-- `tools/handlers.ts` 126: a click placement that is not a box. Every palette policy is a box.
+`flags.raw` is gone with the TypeScript. `DoNotSpellCheck` and `Sort` are not derived from anything
+in its place.
 
-The unreached branches are the `if (!doc)` and `ctx.doc?` arms (the plugin is document-scoped), the
-`String(error)` arm of every `error instanceof Error ? ... : String(error)` (the fake engine and the
-scripted sandbox only throw `Error`s), `this.transactionBudget ?? DEFAULT_SCRIPT_BUDGET` (a realm
-port always carries a budget), `getActiveTool()?.enables ... ?? false` (there is always an active
-tool), `result.effectsResult?.results ?? []` in `resetAll` (a failed reset always carries its
-effects result), the handler's guards against a move or up without a captured gesture, the
-`sameAnnotationRef` arms above, and a design verb's widget without a page.
+## Wasm
 
-## Pinned TypeScript behaviour
+`epdf-web` builds this crate for wasm32, so it depends on no PDFium: `cargo tree -p epdf-web --target
+wasm32-unknown-unknown -e normal -i pdfium-sys` prints nothing. The painter path (`services/looks.rs`)
+brings in `epdf-form-core` and `epdf-fonts`. Task 13.18 split the font programs out of the metrics
+table in `epdf-fonts` (Ruling13.5(b)): they are decoded at build time into a table of their own,
+which a build that never loads a program drops. A release wasm32 probe that only reads metrics went
+from 461,992 to 34,554 bytes; one that also loads a program went from 467,202 to 358,996.
 
-`importValues` addresses each field as `{kind: 'fqn', name}`. With scripting on, the transaction
-matches fields by `refKey`, so a field that has an object number never matches its own name and
-the write fails "Form field 'fqn:email' no longer exists" (`form-scripting`,
-`batch-writes-count-rejections`). Without scripting the engine resolves the name and the write
-lands.
+## The ffi
 
-`activateWidget` takes the widget alone and can only resolve an object-number ref; an `nm` or
-`index` widget ref rejects `not-found`.
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task
+13.33. Refs are written there in the engine's current spelling. The handle follows the current verbs: `set_text`, `set_checked`, `set_choice`,
+`reset_all`, `attach_widget`, `detach_widget`, `export_data` and `import_data` are gone, and
+`add_widget`, `remove_widget`, `export` and `import` (bundles as JSON) replace them.
 
-## Where the port differs in shape
+## Migrating from the pre-13.18 API
 
-A few malformed DTOs make the TypeScript throw a `TypeError` where the Rust carries on, and no
-vector sends one: a snapshot without `calculationOrder` (read as empty), a form event whose `origin`
-is `null` (ignored), a field without `flags` (not read-only). `writeDone` past the end of the field
-list pads with `null`s, which JSON prints as the TypeScript prints its holes.
+| Old | New |
+|---|---|
+| `form_plugin(FormConfig { validation, host })` | `form_plugin(Option<Value>)`, the registered settings over `form_defaults()`; console output goes through `console::set_sink` |
+| `Model`, `Msg`, `update`, `FormState`, `form_reducer` | `model::FieldIndex` and its functions; the session state is `{}` |
+| `get_field`, `list_fields`, `list_fill_items`, `get_fill_item` | `get`, `list`, `list_widgets`; no fill item lookup by number |
+| `set_text`, `set_checked`, `set_choice`, `set_value_raw` | `set_value(ref, value, signal)` with `{ value }`, `{ checked }` or `{ selectedValues }` |
+| `reset(ref)`, `reset_all(options)` | `reset(Option<Vec<Value>>, signal)` |
+| `create_field`, `update_field`, `delete_field`, `detach_widget`, `attach_widget` | `create(draft)`, `update`, `delete`, `remove_widget`, `add_widget(ref, placement)` |
+| `export_data`, `import_data` | `export(selection)`, `import(bundle, options)` |
+| `FormScriptingController::new` with `doc`; `commit(ref, value)` writing to the engine | `FormScriptingController::new` with `document`, `transaction`, `budget`; `commit(form, ref, value)` returns a `FormScriptResult` and writes nothing |
+| `services::scripting::commit_surface` (stamp) | `ActionsCapability::surface_script_commit` with the result's UI effects, diagnostics and error |
+| `get_widget_at(PageRef, x, y)` (signature) | `get_widget_at(&Value, x, y)`, the page as a ref or an index |
+| `refresh()` (signature) | `refresh(signal)` |
 
-## Mutation testing
-
-`scripts/mutants.sh -p epdf-plugin-form --test-package epdf-plugin-form --file <file>`, file by
-file over every module but `harness.rs`, catches 521 of 530 viable mutants (519 caught, 2 timeouts;
-186 unviable). The run itself, at `afb842b48`, caught 499 and missed 29. Cases added afterwards
-kill 20 of those 29, and the counts above include them: 13 through new or reshaped vectors in
-`form-core`, `form-fill`, `form-design` and `form-scripting`, 7 through unit tests. Of those 7, 3
-are the fill projection's `Rc` identity (`tests/api.rs`), which JSON cannot show, and 4 are
-`value::f64_of` and `value::string_to_number` (the `value.rs` tests), which nothing in the crate
-calls. Each kill was confirmed by applying the mutant by hand and watching `cargo test` fail, not
-by a second run. The 2 timeouts are `+=` to `*=` in `auto_name` (`write/fields.rs:55`, a loop that
-never ends) and deleting `!` in `refresh` (`sync/hydration.rs:53`). The other 9 are equivalent or
-unreachable:
-
-| File | Line | Mutant | Why no case kills it |
-|---|---|---|---|
-| `core/model.rs` | 59 | `initial_model` to `Default::default()` | Equivalent. It is `Model::default()`. |
-| `model.rs` | 33 | `initial_form_state` to `Default::default()` | Equivalent. `ResourceStatus` defaults to `Idle` and `Rc<Model>` to the default model, the value the function builds. |
-| `field_selection.rs` | 86 | `&&` to `\|\|` in `explicit_include` | Equivalent. `explicit` also needs `listed(field)`, and no selected field is listed unless the targets are an include list: with no targets nothing is listed, and in exclude mode the selection is exactly the unlisted fields. |
-| `field_selection.rs` | 92 | `&&` to `\|\|` in `explicit` | Equivalent, for the same reason: in include mode every selected field is listed, otherwise none is. |
-| `lib.rs` | 107 | `defer` to `()` | Unobservable. It unregisters the commit sink, the submit resolver and the `reset-form` executor from the actions plugin at document close, and the actions plugin is document-scoped too, so its registries close with the same document. |
-| `write/activation.rs` | 41 | `==` to `!=` on either `Some("index")` (2 mutants) | Unreachable. `activateWidget` finds the field through `widgetObjectOf`, which reads 0 for any ref that is not an object number, and 0 is never indexed, so an index ref rejects `not-found` before any page read. |
-| `write/activation.rs` | 41 | the first `&&` to `\|\|` | Equivalent. The arm runs only after `eq("kind")`, so both kinds are the same and `l == index \|\| r == index` equals `l == index && r == index`. |
-| `write/activation.rs` | 150 | `&&` to `\|\|` in `no_tree` | Equivalent. The dispatcher answers a non-`inert` status with no steps only from its catch arm, which always pushes a `trigger-failed` diagnostic, so `diagnostics.is_empty()` decides either way. |
-
-The case `a-kindless-address-matches-no-candidate` (`form-scripting`) sends the one address that
-reaches the last arm of `same_annotation_ref` without being an index ref, an off-contract
-`{ page, annotObjectNumber }` with no kind, and kills the other two `&&` mutants on line 41.
+Known call sites: `crates/plugins/signature` (`controller.rs`, `lib.rs`, `harness.rs`,
+`tools/armed_mark.rs`, `services/siblings.rs`, `read/signatures.rs`, `write/fill.rs`,
+`tests/ffi.rs`), `crates/plugins/stamp` (`write/placement.rs`, `tests/conformance.rs`),
+`crates/epdf-web` (`src/adapters.rs`) and `crates/epdf-viewer-host` (`session.rs`, `lib.rs`,
+`api.rs`, `tests/viewer_host.rs`). None of them compiles at this commit for reasons that predate
+this task.

@@ -1,12 +1,9 @@
 use std::sync::Arc;
 
-use epdf_ffi::{
-    AnnotationRef, CancelToken, KernelBound, PdfLinkTarget, PluginErrorInfo, ViewerError,
-};
-use serde::Deserialize;
+use epdf_ffi::{AnnotationRef, CancelToken, KernelBound, PluginErrorInfo, ViewerError};
 use serde_json::Value;
 
-use super::{decode, open, plugin_error_info, ref_out, refs_out};
+use super::{open, plugin_error_info_of, ref_json, ref_out, refs_out};
 use crate::AnnotationCapability;
 
 /// Comment threads and the links attached to annotations.
@@ -24,25 +21,13 @@ pub struct AnnotationComment {
     pub modified_at: Option<String>,
 }
 
-#[derive(Deserialize)]
-struct CommentDto {
-    #[serde(rename = "ref")]
-    ref_: epdf_annotation_core::AnnotationRef,
-    #[serde(default)]
-    author: Option<String>,
-    #[serde(default)]
-    contents: Option<String>,
-    #[serde(default)]
-    modified: Option<String>,
-}
-
 fn comment(dto: &Value) -> Result<AnnotationComment, epdf_kernel::Error> {
-    let dto: CommentDto = decode(dto.clone())?;
+    let s = |k: &str| dto.get(k).and_then(Value::as_str).map(str::to_string);
     Ok(AnnotationComment {
-        annotation_ref: ref_out(dto.ref_)?,
-        author: dto.author,
-        contents: dto.contents,
-        modified_at: dto.modified,
+        annotation_ref: ref_out(dto.get("ref").unwrap_or(&Value::Null))?,
+        author: s("author"),
+        contents: s("contents"),
+        modified_at: s("modifiedAt"),
     })
 }
 
@@ -55,17 +40,27 @@ pub struct AnnotationCommentThread {
     pub marked_by: Vec<String>,
 }
 
-impl TryFrom<crate::CommentThread> for AnnotationCommentThread {
-    type Error = epdf_kernel::Error;
-
-    fn try_from(t: crate::CommentThread) -> Result<Self, Self::Error> {
-        Ok(AnnotationCommentThread {
-            root: comment(&t.root)?,
-            replies: t.replies.iter().map(comment).collect::<Result<_, _>>()?,
-            status: t.review.last_change.map(|s| s.state),
-            marked_by: t.review.marked_by,
-        })
-    }
+fn thread(t: &Value) -> Result<AnnotationCommentThread, epdf_kernel::Error> {
+    let review = t.get("review").unwrap_or(&Value::Null);
+    Ok(AnnotationCommentThread {
+        root: comment(t.get("root").unwrap_or(&Value::Null))?,
+        replies: t
+            .get("replies")
+            .and_then(Value::as_array)
+            .map(|r| r.iter().map(comment).collect::<Result<_, _>>())
+            .transpose()?
+            .unwrap_or_default(),
+        status: review
+            .get("lastChange")
+            .and_then(|c| c.get("state"))
+            .and_then(Value::as_str)
+            .map(str::to_string),
+        marked_by: review
+            .get("markedBy")
+            .and_then(Value::as_array)
+            .map(|m| m.iter().filter_map(Value::as_str).map(str::to_string).collect())
+            .unwrap_or_default(),
+    })
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Record)]
@@ -116,12 +111,10 @@ impl AnnotationThreadsHandle {
     pub async fn threads(&self) -> Result<Vec<AnnotationCommentThread>, ViewerError> {
         self.cap
             .call(|c| {
-                open(c)?
-                    .comments()
-                    .list_threads()
-                    .into_iter()
-                    .map(TryInto::try_into)
-                    .collect::<Result<_, _>>()
+                let all = open(c)?.comments_list_threads();
+                all.as_array()
+                    .map(|t| t.iter().map(thread).collect())
+                    .unwrap_or_else(|| Ok(Vec::new()))
             })
             .await
     }
@@ -133,11 +126,8 @@ impl AnnotationThreadsHandle {
     ) -> Result<Option<AnnotationCommentThread>, ViewerError> {
         self.cap
             .call(move |c| {
-                open(c)?
-                    .comments()
-                    .get_thread(&annotation_ref.into())
-                    .map(TryInto::try_into)
-                    .transpose()
+                let t = open(c)?.comments_get_thread(&ref_json(&annotation_ref)?);
+                if t.is_null() { Ok(None) } else { thread(&t).map(Some) }
             })
             .await
     }
@@ -151,8 +141,8 @@ impl AnnotationThreadsHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.comments().reply(annotation_ref.into(), text)),
-                |r| ref_out(r).map_err(ViewerError::from),
+                move |c| Ok(open(c)?.comments_reply(&ref_json(&annotation_ref)?, &text, None)),
+                |made: Value| ref_out(&made["annotation"]["ref"]).map_err(ViewerError::from),
             )
             .await?
     }
@@ -166,7 +156,7 @@ impl AnnotationThreadsHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.comments().set_text(annotation_ref.into(), text)),
+                move |c| Ok(open(c)?.comments_set_text(&ref_json(&annotation_ref)?, &text, None)),
                 |()| (),
             )
             .await
@@ -182,9 +172,11 @@ impl AnnotationThreadsHandle {
             .call_promise_cancellable(
                 cancel,
                 move |c| {
-                    Ok(open(c)?
-                        .comments()
-                        .set_status(annotation_ref.into(), status.as_str().into()))
+                    Ok(open(c)?.comments_set_status(
+                        &ref_json(&annotation_ref)?,
+                        status.as_str(),
+                        None,
+                    ))
                 },
                 |()| (),
             )
@@ -200,7 +192,9 @@ impl AnnotationThreadsHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.comments().set_marked(annotation_ref.into(), marked)),
+                move |c| {
+                    Ok(open(c)?.comments_set_marked(&ref_json(&annotation_ref)?, marked, None))
+                },
                 |()| (),
             )
             .await
@@ -214,7 +208,7 @@ impl AnnotationThreadsHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.comments().delete(annotation_ref.into())),
+                move |c| Ok(open(c)?.comments_delete(&ref_json(&annotation_ref)?, None)),
                 |()| (),
             )
             .await
@@ -228,64 +222,82 @@ impl AnnotationThreadsHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.comments().delete_thread(annotation_ref.into())),
-                |r| {
-                    Ok::<_, ViewerError>(AnnotationThreadDeleteResult {
-                        deleted: refs_out(r.deleted)?,
-                        failed: r
-                            .failed
-                            .into_iter()
-                            .map(|f| {
-                                Ok(AnnotationThreadDeleteFailure {
-                                    annotation_ref: ref_out(f.ref_)?,
-                                    error: plugin_error_info(&f.error),
+                move |c| Ok(open(c)?.comments_delete_thread(&ref_json(&annotation_ref)?, None)),
+                |r: Value| {
+                    let failed = r
+                        .get("failed")
+                        .and_then(Value::as_array)
+                        .map(|list| {
+                            list.iter()
+                                .map(|f| {
+                                    Ok(AnnotationThreadDeleteFailure {
+                                        annotation_ref: ref_out(
+                                            f.get("ref").unwrap_or(&Value::Null),
+                                        )?,
+                                        error: plugin_error_info_of(
+                                            f.get("error").unwrap_or(&Value::Null),
+                                        ),
+                                    })
                                 })
-                            })
-                            .collect::<Result<_, epdf_kernel::Error>>()?,
+                                .collect::<Result<Vec<_>, epdf_kernel::Error>>()
+                        })
+                        .transpose()?
+                        .unwrap_or_default();
+                    Ok::<_, ViewerError>(AnnotationThreadDeleteResult {
+                        deleted: refs_out(r.get("deleted").unwrap_or(&Value::Null))?,
+                        failed,
                     })
                 },
             )
             .await?
     }
 
+    /// What this session may do to a comment (`comments.can*`).
     pub async fn permissions(
         &self,
         annotation_ref: AnnotationRef,
     ) -> Result<AnnotationCommentPermissions, ViewerError> {
         self.cap
             .call(move |c| {
-                let p = open(c)?.comments().get_permissions(&annotation_ref.into());
+                let c = open(c)?;
+                let r = ref_json(&annotation_ref)?;
                 Ok(AnnotationCommentPermissions {
-                    can_reply: p.can_reply,
-                    can_edit_text: p.can_edit_text,
-                    can_delete: p.can_delete,
-                    can_set_status: p.can_set_status,
-                    can_delete_thread: p.can_delete_thread,
+                    can_reply: c.can_create(),
+                    can_edit_text: c.comments_can_set_text(&r),
+                    can_delete: c.can_delete(&r),
+                    can_set_status: c.can_create(),
+                    can_delete_thread: c.comments_can_delete_thread(&r),
                 })
             })
             .await
     }
 
-    /// The link attached to an annotation (a shape that acts as a link).
-    pub async fn link(
-        &self,
-        annotation_ref: AnnotationRef,
-    ) -> Result<Option<PdfLinkTarget>, ViewerError> {
+    /// `links.get(ref)`: the link attached to an annotation, as the engine's
+    /// `LinkTarget` JSON, or `None`.
+    pub async fn link(&self, annotation_ref: AnnotationRef) -> Result<Option<String>, ViewerError> {
         self.cap
-            .call(move |c| Ok(open(c)?.links().get(&annotation_ref.into()).map(Into::into)))
+            .call(move |c| {
+                let target = open(c)?.links_get(&ref_json(&annotation_ref)?);
+                Ok((!target.is_null()).then(|| target.to_string()))
+            })
             .await
     }
 
+    /// `links.set(ref, target)`: `target_json` is the engine's `LinkTarget`.
     pub async fn set_link(
         &self,
         annotation_ref: AnnotationRef,
-        target: PdfLinkTarget,
+        target_json: String,
         cancel: Arc<CancelToken>,
     ) -> Result<(), ViewerError> {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.links().set(&annotation_ref.into(), target.into())),
+                move |c| {
+                    let target: Value = serde_json::from_str(&target_json)
+                        .map_err(|e| super::invalid(format!("a link target is not JSON: {e}")))?;
+                    Ok(open(c)?.links_set(&ref_json(&annotation_ref)?, target, None))
+                },
                 |()| (),
             )
             .await
@@ -299,7 +311,7 @@ impl AnnotationThreadsHandle {
         self.cap
             .call_promise_cancellable(
                 cancel,
-                move |c| Ok(open(c)?.links().clear(&annotation_ref.into())),
+                move |c| Ok(open(c)?.links_clear(&ref_json(&annotation_ref)?, None)),
                 |()| (),
             )
             .await

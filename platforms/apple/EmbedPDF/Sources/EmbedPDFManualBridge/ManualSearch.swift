@@ -194,22 +194,29 @@ extension SearchHit {
         let s = segments[i]
         decoded.append(
           TextSegment(
-            quad: TextQuad(
-              upperStart: Point(s.quad.upper_start), upperEnd: Point(s.quad.upper_end),
-              lowerStart: Point(s.quad.lower_start), lowerEnd: Point(s.quad.lower_end)),
+            // The bridge keeps the old field names for the engine's quad
+            // corners: start is left and end is right.
+            quad: Quad(
+              upperLeft: Point(s.quad.upper_start), upperRight: Point(s.quad.upper_end),
+              lowerLeft: Point(s.quad.lower_start), lowerRight: Point(s.quad.lower_end)),
             rect: Rect(s.rect), advance: s.advance))
       }
     }
     var snippet: SearchSnippet?
     if h.has_snippet != 0 {
+      // One text, the match at UTF-16 offsets, as the bridge joins it.
       let bytes = UnsafeBufferPointer(start: h.snippet_text, count: h.snippet_len)
+      let text = Array(String(decoding: bytes, as: UTF8.self).utf16)
+      let start = min(Int(h.snippet_match_start), text.count)
+      let end = min(start + Int(h.snippet_match_length), text.count)
       snippet = SearchSnippet(
-        text: String(decoding: bytes, as: UTF8.self), matchStart: h.snippet_match_start,
-        matchLength: h.snippet_match_length)
+        before: String(decoding: text[..<start], as: UTF16.self),
+        matched: String(decoding: text[start..<end], as: UTF16.self),
+        after: String(decoding: text[end...], as: UTF16.self))
     }
     self.init(
       page: PageRef(pageObjectNumber: h.page_object_number), pageIndex: h.page_index,
-      charStart: h.char_start, charCount: h.char_count, segments: decoded,
+      start: h.char_start, count: h.char_count, segments: decoded,
       bounds: h.has_bounds != 0 ? Rect(h.bounds) : nil, snippet: snippet)
   }
 }

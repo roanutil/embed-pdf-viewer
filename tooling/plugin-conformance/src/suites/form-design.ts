@@ -1,547 +1,711 @@
-/**
- * `packages/plugin/form` design mode: `init`'s tool and behavior
- * registration (with and without the annotation plugin), placeField and the
- * other field-design verbs, and the draw-to-place handler driven as
- * `PointerSample` sequences through `interaction.dispatch`. Replayed by
- * `crates/plugins/form/tests/conformance.rs`.
- */
-import type { ResponseSpec } from '../fake-engine';
-import type { ScenarioCase } from '../scenario';
-import type { Suite } from '../vectors';
-
+/** Current form design: direct drafts/ops, form-owned widgets lent to annotation, and real pointer placement. */
+import type {
+  FormFieldDraft,
+  FormFieldPatch,
+  WidgetPlacement,
+  WidgetAppearance,
+} from '@embedpdf/engine-core/runtime';
+import type { ScenarioCase, Step } from '../scenario';
+import type { ScenarioSuite } from '../vectors';
 import {
-  FORM_ONLY,
-  SNAP,
-  anno,
-  annotations,
-  boot,
+  scenario,
   call,
-  checkbox,
-  doc,
-  fnSpec,
-  ix,
-  list,
-  pointer,
-  probe,
-  radio,
-  sample,
-  settle,
   text,
-  tool,
-  widgetAnnot,
+  checkbox,
+  radio,
+  combobox,
+  listbox,
+  signature,
+  row,
+  placed,
+  ref,
+  objRef,
   pr,
-  v3Widget,
-} from './form-fixtures';
-
-/** Why some cases record no state; see `ScenarioCase` in `../scenario`. */
-const UNSNAPSHOTTED = {
-  snapshot: 'none',
-  reason: "Pins field placement, widget hit testing and the place handler, through call outcomes, settled fields and engine calls. Its dispatched actions are compared; the state they build is not.",
-} as const;
-const UNSNAPSHOTTED_INIT = {
-  snapshot: 'none',
-  reason: "Pins what init registers, read back through the hub's tool list and the annotation registry's call outcomes. Its dispatched actions are compared; the state they build is not.",
-} as const;
-
-const HYDRATE: ResponseSpec = { path: 'annotations.listRawAll', value: { pages: [] } };
-const WITH_ANNOTATION = [{ factory: 'interaction' }, { factory: 'annotation' }, { factory: 'form' }];
-const WITH_PROBE = [...WITH_ANNOTATION, { factory: 'form-probe' }];
-
-const EXISTING = text(1, 'text_1', 'taken');
-const created = (field: unknown) => ({ path: 'forms.createField', value: { field } });
-const placed = (n: number, name: string, pon = 1) => text(n, name, '', {}, [[n + 100, pon]]);
-const input = (over: Record<string, unknown> = {}) => ({
+  snapshot,
+  list,
+  apply,
+  fieldAnswer,
+  deleteAnswer,
+  refused,
+  FORM_ONLY,
+  WITH_ANNOTATION,
+  doc,
+  boot,
+  settle,
+  ix,
+  anno,
+  tool,
+  sample,
+  open,
+  fnSpec,
+} from './form-live-fixtures';
+const BOX = { x: 10, y: 20, width: 100, height: 24 };
+const place = (page = 1, rect = BOX): WidgetPlacement => ({ page: pr(page), rect });
+const draft = (name = 'text_1', widgets = [place()]): FormFieldDraft => ({
   family: 'text',
-  pageObjectNumber: 1,
-  box: { x: 10, y: 20, width: 100, height: 24 },
-  ...over,
+  name,
+  widgets,
 });
-
-const initCases: ScenarioCase[] = [
-  {
-    name: 'init-without-annotation',
-    covers:
-      "Without the annotation plugin init registers form-fill, form-edit and the five palette tools as plain hub tools enabling 'form-place' and 'annotation-edit', plus the place handler.",
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list([])]) } },
-    ...UNSNAPSHOTTED_INIT,
-    steps: [...boot, ix('tools')],
-  },
-  {
-    name: 'init-with-annotation',
-    covers:
-      "With the annotation plugin the palette tools join its registry (subtype, click policy, defaults) and a 'form-widgets' behavior is engaged for widget subtypes exactly while the active tool enables 'form-fill'.",
-    plugins: WITH_PROBE,
-    engine: { documents: { a: doc([list([]), HYDRATE]) } },
-    ...UNSNAPSHOTTED_INIT,
-    steps: [
-      ...boot,
-      ix('tools'),
-      anno('tool', ['form-text']),
-      anno('tool', ['form-listbox']),
-      anno('currentDefaults', ['form-checkbox']),
-      probe('behaviorFor', ['widget']),
-      probe('behaviorFor', ['widget-text']),
-      probe('behaviorFor', ['square']),
-      tool('form-edit'),
-      probe('behaviorFor', ['widget']),
-      tool('form-fill'),
-      probe('behaviorFor', ['widget-toggle']),
-      tool('pan'),
-      probe('behaviorFor', ['widget']),
-    ],
-  },
+const NEW = text(10001, 'text_1', '', {}, [placed(10002)]);
+const NEW_ROW = row(10002, NEW.ref, 1, BOX);
+const NEW2 = text(10003, 'text_2', '', {}, [placed(10004)]);
+const NEW_ROW2 = row(10004, NEW2.ref, 1, BOX);
+const PALETTE_CHROME: WidgetAppearance = {
+  color: '#6b7280',
+  interiorColor: '#ffffff',
+  strokeWidth: 1,
+};
+const PALETTE_TEXT: WidgetAppearance = { ...PALETTE_CHROME, fontSize: 12 };
+const EXISTING = text(1, 'text_1', 'taken');
+const PATCH: FormFieldPatch = { name: 'renamed' };
+const pointer = (
+  phase: string,
+  x: number,
+  y: number,
+  over: Record<string, unknown> = {},
+  page = 1,
+): Step => ix('dispatchPointer', [sample(phase, x, y, over, page)]);
+const gap = (phase: string): Step =>
+  ix('dispatchPointer', [
+    {
+      phase,
+      viewport: { x: 900, y: 900 },
+      modifiers: { shift: false, alt: false, ctrl: false, meta: false },
+    },
+  ]);
+const click = (x = 100, y = 100): Step[] => [pointer('down', x, y), pointer('up', x, y)];
+const HIT_FIELDS = [
+  text(1, 'big', '', {}, [placed(101)]),
+  text(2, 'small', '', {}, [placed(102)]),
+  text(3, 'unplaced', '', {}, [placed(103, null)]),
 ];
-
-const designCases: ScenarioCase[] = [
-  {
-    name: 'place-a-text-field',
-    covers:
-      'placeField converts the content box to a PDF rect on the page crop, auto-names against the current snapshot, sends the draft (appearance only when given), re-reads, clears that page’s geometry, and returns the field and its widget on the page.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([EXISTING, text(2, 'text_2', '')]),
-          annotations(1, [widgetAnnot(1, 101)]),
-          { path: 'forms.createField', times: 1, value: { field: placed(30, 'text_3') } },
-          { path: 'forms.createField', value: { field: placed(31, 'text_3', 2) } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('ensureGeom', [1]),
-      call('placeField', [input()]),
-      call('placeField', [input({ pageObjectNumber: 2, appearance: { backgroundColor: '#ffffff', borderWidth: 1 } })]),
+const HIT_ROWS = [
+  row(101, ref(1), 1, { x: 0, y: 0, width: 300, height: 300 }),
+  row(102, ref(2), 1, { x: 10, y: 10, width: 50, height: 90 }),
+  row(150, null, 1, { x: 400, y: 600, width: 200, height: 200 }),
+];
+const LIVE_FIELDS = [201, 202, 203, 204, 205, 206].map((n) =>
+  text(n - 200, 'live' + n, '', {}, [placed(n)]),
+);
+const LIVE_ROWS = [
+  row(201, ref(1), 1, { x: 99, y: 300, width: 2, height: 200 }),
+  row(202, ref(2), 1, { x: 85, y: 385, width: 30, height: 30 }),
+  row(203, ref(3), 1, { x: 280, y: 395, width: 40, height: 10 }),
+  row(204, ref(4), 1, { x: 285, y: 385, width: 30, height: 30 }),
+  row(205, ref(5), 1, { x: 490, y: 390, width: 20, height: 20 }),
+  row(206, ref(6), 1, { x: 495, y: 395, width: 20, height: 20 }),
+];
+const SPREAD = text(7, 'spread', 'v', {}, [
+  placed(107),
+  placed(108, 2),
+  placed(109),
+  placed(110, null),
+]);
+const SPREAD_ROWS = [row(107, SPREAD.ref), row(108, SPREAD.ref, 2), row(109, SPREAD.ref)];
+const PAIR = text(7, 'pair', 'v', {}, [placed(107), placed(108, null)]);
+const DETACHED = text(7, 'pair', 'v', {}, [placed(108, null)]);
+const RADIO = radio(10001, 'radio_1', [
+  { ...placed(10002), onState: 'Choice1', exportValue: 'Choice1', checked: false },
+]);
+const COMBO = combobox(10003, 'combobox_1', '', {
+  widgets: [placed(10004)],
+  options: [
+    { label: 'Option 1', value: 'Option 1', selected: false },
+    { label: 'Option 2', value: 'Option 2', selected: false },
+  ],
+});
+const LIST = listbox(10005, 'listbox_1', [], { widgets: [placed(10006)], options: COMBO.options });
+const CHECK = checkbox(10007, 'checkbox_1', false, {
+  widgets: [{ ...placed(10008), onState: 'Yes', exportValue: 'Yes', checked: false }],
+});
+const cases: ScenarioCase[] = [
+  scenario(
+    'init-without-annotation',
+    'Current connect registers fill/edit and all seven palette tools on the actual interaction hub.',
+    [ix('listTools')],
+  ),
+  scenario(
+    'init-with-annotation',
+    'Palette tools join annotation.tools; widgets lend in design mode and return to form fill mode.',
+    [
+      ix('listTools'),
+      anno('tools.get', ['form-text']),
+      anno('tools.get', ['form-listbox']),
+      anno('tools.getDefaults', ['form-checkbox']),
+      anno('listPageItems', [pr(1)]),
+      tool('form-edit'),
+      anno('listPageItems', [pr(1)]),
+      call('getSelectedField'),
+      tool('form-fill'),
+      anno('listPageItems', [pr(1)]),
+      tool('pan'),
+      anno('listPageItems', [pr(1)]),
     ],
-  },
-  {
-    name: 'place-each-family',
-    covers:
-      "A radio draft carries one widget with onState 'option1'; combobox and listbox drafts carry two starter options; checkbox takes the plain widget. A widget on another page is reported as null.",
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([]),
-          { path: 'forms.createField', times: 1, value: { field: radio(40, 'radio_1', [v3Widget({ annotObjectNumber: 140, pageObjectNumber: 1, onState: 'option1', checked: false })]) } },
-          { path: 'forms.createField', times: 1, value: { field: placed(41, 'combobox_1') } },
-          { path: 'forms.createField', times: 1, value: { field: placed(42, 'listbox_1') } },
-          { path: 'forms.createField', value: { field: checkbox(43, 'checkbox_1', false, {}, [v3Widget({ annotObjectNumber: 143, pageObjectNumber: 2, onState: 'Yes' })]) } },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('placeField', [input({ family: 'radio' })]),
-      call('placeField', [input({ family: 'combobox' })]),
-      call('placeField', [input({ family: 'listbox' })]),
-      call('placeField', [input({ family: 'checkbox' })]),
+    snapshot([EXISTING], [row(101, ref(1))]),
+    [],
+    {},
+    true,
+  ),
+  scenario(
+    'place-a-text-field',
+    'Current create accepts page-space drafts and explicit names. The handler owns auto-naming; engine answers fold without geometry reloads.',
+    [
+      call('create', [draft('text_3')]),
+      call('get', [ref(10001)]),
+      call('create', [
+        draft('text_4', [{ page: pr(2), rect: BOX, interiorColor: '#ffffff', strokeWidth: 1 }]),
+      ]),
+      call('getWidgets', [ref(10003)]),
     ],
-  },
+    snapshot([EXISTING, text(2, 'text_2')]),
+    [
+      apply(fieldAnswer('forms.create', 1, { ...NEW, name: 'text_3' }, [NEW_ROW])),
+      apply(
+        fieldAnswer('forms.create', 2, { ...NEW2, name: 'text_4', widgets: [placed(10004, 2)] }, [
+          row(10004, ref(10003), 2, BOX, { interiorColor: '#ffffff', strokeWidth: 1 }),
+        ]),
+      ),
+    ],
+  ),
+  scenario(
+    'place-each-family',
+    'Current direct drafts retain radio exportValue and complete choice options, and return complete family-specific fields/widgets.',
+    [
+      call('create', [
+        {
+          family: 'radio',
+          name: 'radio_1',
+          widgets: [{ ...place(), exportValue: 'Choice1' }],
+        } satisfies FormFieldDraft,
+      ]),
+      call('create', [
+        {
+          family: 'combobox',
+          name: 'combobox_1',
+          widgets: [place()],
+          options: [
+            { label: 'Option 1', value: 'Option 1' },
+            { label: 'Option 2', value: 'Option 2' },
+          ],
+        } satisfies FormFieldDraft,
+      ]),
+      call('create', [
+        {
+          family: 'listbox',
+          name: 'listbox_1',
+          widgets: [place()],
+          options: [
+            { label: 'Option 1', value: 'Option 1' },
+            { label: 'Option 2', value: 'Option 2' },
+          ],
+        } satisfies FormFieldDraft,
+      ]),
+      call('create', [
+        { family: 'checkbox', name: 'checkbox_1', widgets: [place()] } satisfies FormFieldDraft,
+      ]),
+      call('list'),
+    ],
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer('forms.create', 1, RADIO, [
+          row(10002, RADIO.ref, 1, BOX, { fieldFamily: 'radio' }),
+        ]),
+      ),
+      apply(
+        fieldAnswer('forms.create', 2, COMBO, [
+          row(10004, COMBO.ref, 1, BOX, { fieldFamily: 'combobox' }),
+        ]),
+      ),
+      apply(
+        fieldAnswer('forms.create', 3, LIST, [
+          row(10006, LIST.ref, 1, BOX, { fieldFamily: 'listbox' }),
+        ]),
+      ),
+      apply(
+        fieldAnswer('forms.create', 4, CHECK, [
+          row(10008, CHECK.ref, 1, BOX, { fieldFamily: 'checkbox' }),
+        ]),
+      ),
+    ],
+  ),
   {
     name: 'placement-before-the-snapshot',
-    covers: 'Placing before the first snapshot lands names against an empty form.',
+    covers:
+      'The actual handler names against the current view while the first list is pending; create shows after confirmation and remains after the snapshot loads.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
-        a: doc([list([EXISTING], { defer: 'list' }), { path: 'forms.createField', value: { field: placed(50, 'text_1') } }]),
+        a: doc([
+          list(snapshot([EXISTING]), { defer: 'list' }),
+          apply(
+            fieldAnswer('forms.create', 1, NEW, [
+              row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
+            ]),
+          ),
+        ]),
       },
     },
-    ...UNSNAPSHOTTED,
+    snapshot: ['form::a'],
     steps: [
       ...boot,
-      call('placeField', [input()]),
-      settle('list', { formKind: 'acroform', needsAppearances: false, fields: [EXISTING], calculationOrder: [] }),
-      settle('list', { formKind: 'acroform', needsAppearances: false, fields: [EXISTING], calculationOrder: [] }),
+      tool('form-text'),
+      ...click(),
+      call('get', [ref(10001)]),
+      settle(
+        'list',
+        snapshot(
+          [EXISTING, NEW],
+          [row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT)],
+        ),
+      ),
+      call('list'),
     ],
   },
-  {
-    name: 'placement-is-page-bound',
-    covers:
-      'An overshooting box is intersected with the page; a box under one point in either axis after that rejects (exactly one point is enough), as does a page the document does not have; neither reaches the engine.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([list([]), { path: 'forms.createField', value: { field: placed(50, 'text_1') } }]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('placeField', [input({ box: { x: -30, y: 790, width: 700, height: 40 } })]),
-      call('placeField', [input({ box: { x: 10, y: 10, width: 0.5, height: 30 } })]),
-      call('placeField', [input({ box: { x: 700, y: 10, width: 30, height: 30 } })]),
-      call('placeField', [input({ pageObjectNumber: 99 })]),
-      call('placeField', [input({ box: { x: 10, y: 10, width: 30, height: 0.25 } })]),
-      call('placeField', [input({ box: { x: 599, y: 799, width: 5, height: 5 } })]),
+  scenario(
+    'placement-is-page-bound',
+    'Actual gesture placement clamps overshoots, ignores degenerate drags and unknown pages, and permits one-point geometry.',
+    [
+      tool('form-text'),
+      pointer('down', -30, 790),
+      pointer('up', 700, 830),
+      pointer('down', 10, 10),
+      pointer('up', 100, 10.5),
+      pointer('down', 700, 10),
+      pointer('up', 730, 40),
+      pointer('down', 10, 10, {}, 99),
+      pointer('up', 100, 40, {}, 99),
+      pointer('down', 599, 799),
+      pointer('up', 604, 804),
+      call('list'),
     ],
-  },
-  {
-    name: 'placement-refused-by-the-engine',
-    covers: 'A createField refusal rejects placeField and changes nothing; the queue carries on.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([]),
-          { path: 'forms.createField', times: 1, error: { name: 'PermissionDenied', message: 'permission denied: doc.forms.modify', required: 'doc.forms.modify' } },
-          { path: 'forms.createField', value: { field: placed(50, 'text_1') } },
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer('forms.create', 1, NEW, [
+          row(10002, NEW.ref, 1, { x: 0, y: 790, width: 600, height: 10 }, PALETTE_TEXT),
         ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('placeField', [input()]), call('placeField', [input()])],
-  },
-  {
-    name: 'placement-reloads-the-annotation-page',
-    covers: 'With the annotation plugin placeField awaits the page reload before resolving, so the widget is selectable.',
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list([]),
-          HYDRATE,
-          { path: 'forms.createField', value: { field: placed(60, 'text_1') } },
-          annotations(1, [widgetAnnot(1, 160)], { defer: 'reload' }),
+      ),
+      apply(
+        fieldAnswer('forms.create', 2, NEW2, [
+          row(10004, NEW2.ref, 1, { x: 599, y: 799, width: 1, height: 1 }, PALETTE_TEXT),
         ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('placeField', [input()]), settle('reload', { annotations: [widgetAnnot(1, 160)] }), anno('get', [{ kind: 'objectNumber', page: pr(1), annotObjectNumber: 160 }])],
-  },
-  {
-    name: 'page-box',
-    covers: "pageBox is the page's content box {0, 0, w, h}, or null for a page the document does not have.",
-    plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list([])]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('pageBox', [1]), call('pageBox', [2]), call('pageBox', [99])],
-  },
-  {
-    name: 'update-field',
-    covers: 'updateField sends the patch against the key’s ref and re-reads; a refusal rejects.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([EXISTING]),
-          { path: 'forms.updateField', times: 1, value: { field: { ...EXISTING, name: 'renamed' } } },
-          { path: 'forms.updateField', error: { name: 'EngineError', message: 'family mismatch', code: 'InvalidArg' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('updateField', ['obj:1', { family: 'text', name: 'renamed' }]), call('updateField', ['fqn:a.b', { family: 'checkbox' }])],
-  },
-  {
-    name: 'delete-field',
-    covers:
-      "deleteField deletes by ref, re-reads, clears the geometry of each page the field's widgets were on (once each, direct widgets skipped) and nudges the annotation plane there; an unknown key still deletes, with no pages.",
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list([text(7, 'spread', 'v', {}, [[107, 1], [108, 2], [109, 1], [0, 0]])], { times: 1 }),
-          list([]),
-          HYDRATE,
-          annotations(1, [widgetAnnot(1, 107)]),
-          annotations(2, []),
-          { path: 'forms.deleteField', value: { deleted: true } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('ensureGeom', [1]), call('ensureGeom', [2]), call('deleteField', ['obj:7']), call('deleteField', ['obj:404'])],
-  },
-  {
-    name: 'queued-verbs-interleave-with-page-reloads',
-    covers:
-      'The annotation reloads a delete nudges run unawaited beside the next queued verb: their page reads and model updates interleave with the update, turn for turn.',
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list([text(7, 'spread', 'v', {}, [[107, 1], [108, 2]]), text(8, 'other', 'o')]),
-          HYDRATE,
-          annotations(1, [widgetAnnot(1, 107)]),
-          annotations(2, [widgetAnnot(2, 108)]),
-          { path: 'forms.deleteField', defer: 'delete' },
-          { path: 'forms.updateField', value: { field: text(8, 'renamed', 'o') } },
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('deleteField', ['obj:7']), call('updateField', ['obj:8', { family: 'text', name: 'renamed' }]), settle('delete', { deleted: true })],
-  },
-  {
-    name: 'delete-field-without-annotation',
-    covers: 'Without the annotation plugin there is no plane to nudge; a refusal rejects.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([
-          list([text(7, 'spread', 'v', {}, [[107, 1]])]),
-          { path: 'forms.deleteField', times: 1, value: { deleted: true } },
-          { path: 'forms.deleteField', error: { name: 'EngineError', message: 'gone', code: 'NotFound' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [...boot, call('deleteField', ['obj:7']), call('deleteField', ['obj:7'])],
-  },
-  {
-    name: 'detach-widget',
-    covers:
-      "detachWidget sends the widget's page with its object number, re-reads, then clears and nudges that page; an unknown widget detaches with page 0 and touches no page, and so does a direct widget.",
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list([text(7, 'pair', 'v', {}, [[107, 1], [108, 0]])]),
-          HYDRATE,
-          annotations(1, [widgetAnnot(1, 107)]),
-          { path: 'forms.detachWidget', times: 3, value: { field: text(7, 'pair', 'v', {}, []) } },
-          { path: 'forms.detachWidget', error: { name: 'EngineError', message: 'not attached', code: 'InvalidArg' } },
-        ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('ensureGeom', [1]),
-      call('detachWidget', ['obj:7', 107]),
-      call('detachWidget', ['obj:7', 999]),
-      call('detachWidget', ['obj:7', 108]),
-      call('detachWidget', ['obj:404', 1]),
+      ),
     ],
-  },
-];
-
-const HIT_ANNOTS = [
-  widgetAnnot(1, 101, { left: 0, bottom: 500, right: 300, top: 800 }),
-  widgetAnnot(1, 102, { left: 10, bottom: 700, right: 60, top: 790 }),
-  widgetAnnot(1, 150, { left: 400, bottom: 0, right: 600, top: 200 }),
-  { ...widgetAnnot(1, 103), subtype: 'square', color: { r: 1, g: 2, b: 3 }, interiorColor: null, opacity: 1, cloudyIntensity: null, rectDifferences: null },
-];
-const HIT_FIELDS = [text(1, 'big', '', {}, [[101, 1]]), text(2, 'small', '', {}, [[102, 1]]), text(3, 'boxy', '', {}, [[103, 1]])];
-
-// Page 1 is 600 x 800, so a content y is 800 minus the PDF y.
-const LIVE_ANNOTS = [
-  widgetAnnot(1, 201, { left: 99, bottom: 300, right: 101, top: 500 }),
-  widgetAnnot(1, 202, { left: 85, bottom: 385, right: 115, top: 415 }),
-  widgetAnnot(1, 203, { left: 280, bottom: 395, right: 320, top: 405 }),
-  widgetAnnot(1, 204, { left: 285, bottom: 385, right: 315, top: 415 }),
-  widgetAnnot(1, 205, { left: 490, bottom: 390, right: 510, top: 410 }),
-  widgetAnnot(1, 206, { left: 495, bottom: 385, right: 515, top: 405 }),
-];
-const LIVE_FIELDS = [201, 202, 203, 204, 205, 206].map((n) => text(n - 200, `live${n}`, '', {}, [[n, 1]]));
-
-const v3DesignCases: ScenarioCase[] = [
-  {
-    name: 'widget-hit-test',
-    covers:
-      "getWidgetAt kicks the page's geometry read and, until it lands, asks the annotation plane's live boxes: the smallest widget with a field under the point wins, a widget no field owns and a non-widget annotation are skipped. Once the geometry lands the model answers; a page without either answers null.",
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list(HIT_FIELDS),
-          { path: 'annotations.listRawAll', value: { pages: [{ pageState: { page: pr(1) }, annotations: HIT_ANNOTS }] } },
-          annotations(1, HIT_ANNOTS, { defer: 'geom' }),
-          annotations(2, []),
-        ]),
+  ),
+  scenario(
+    'placement-refused-by-the-engine',
+    'A current create refusal rejects without confirmation; the next create succeeds with its own allocated refs.',
+    [call('create', [draft()]), call('list'), call('create', [draft()]), call('list')],
+    snapshot([]),
+    [
+      {
+        path: 'apply',
+        times: 1,
+        error: {
+          name: 'PermissionDenied',
+          code: 'Forbidden',
+          message: 'permission denied: doc.forms.modify',
+          details: { required: 'doc.forms.modify' },
+        },
       },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+      apply(fieldAnswer('forms.create', 2, { ...NEW2, name: 'text_1' }, [NEW_ROW2])),
+    ],
+  ),
+  scenario(
+    'placement-reloads-the-annotation-page',
+    'Current confirmed widget rows are lent directly to annotation in design mode; selection needs no extra annotation read.',
+    [
+      tool('form-edit'),
+      call('create', [draft()]),
+      anno('get', [objRef(10002)]),
+      anno('selection.set', [[objRef(10002)]]),
+      anno('selection.list'),
+      call('getSelectedField'),
+    ],
+    snapshot([]),
+    [apply(fieldAnswer('forms.create', 1, NEW, [NEW_ROW]))],
+    {},
+    true,
+  ),
+  scenario(
+    'page-box',
+    'The host page box is in current page-space coordinates; unknown pages return null.',
+    [call('getPageBox', [pr(1)]), call('getPageBox', [pr(2)]), call('getPageBox', [pr(99)])],
+  ),
+  scenario(
+    'update-field',
+    'Current update stages a patch against an actual field ref and folds the answer; a named engine family refusal rejects.',
+    [
+      call('update', [ref(1), PATCH]),
+      call('get', [ref(1)]),
+      call('update', [{ kind: 'fqn', name: 'a.b' }, { readOnly: true } satisfies FormFieldPatch]),
+    ],
+    snapshot([EXISTING]),
+    [
+      apply(fieldAnswer('forms.update', 1, { ...EXISTING, name: 'renamed' })),
+      refused('family mismatch', 'InvalidArg'),
+    ],
+  ),
+  scenario(
+    'delete-field',
+    'Deleting a spread field removes its widgets on both pages from form and annotation lending. Unknown ref deletion is an explicit engine not-found refusal.',
+    [
+      tool('form-edit'),
+      anno('listPageItems', [pr(1)]),
+      call('delete', [ref(7)]),
+      call('get', [ref(7)]),
+      call('listWidgets', [pr(1)]),
+      call('listWidgets', [pr(2)]),
+      anno('listPageItems', [pr(1)]),
+      call('delete', [ref(404)]),
+    ],
+    snapshot([SPREAD], SPREAD_ROWS),
+    [apply(deleteAnswer(1, SPREAD, SPREAD_ROWS)), refused('unknown field', 'NotFound')],
+    {},
+    true,
+  ),
+  scenario(
+    'queued-verbs-interleave-with-page-reloads',
+    'Current structural ops overlap without old page reloads; a confirmed update remains while a prior delete awaits its answer.',
+    [
+      tool('form-edit'),
+      call('delete', [ref(7)]),
+      call('update', [ref(8), PATCH]),
+      call('get', [ref(8)]),
+      settle('delete', deleteAnswer(1, SPREAD, SPREAD_ROWS).value),
+      call('get', [ref(7)]),
+      anno('listPageItems', [pr(1)]),
+    ],
+    snapshot([SPREAD, text(8, 'other', 'o')], SPREAD_ROWS),
+    [
+      apply(deleteAnswer(1, SPREAD, SPREAD_ROWS), { defer: 'delete' }),
+      apply(fieldAnswer('forms.update', 2, text(8, 'renamed', 'o'))),
+    ],
+    {},
+    true,
+  ),
+  scenario(
+    'delete-field-without-annotation',
+    'Direct delete works with no annotation plugin; a later engine not-found refusal is preserved.',
+    [call('delete', [ref(7)]), call('list'), call('delete', [ref(7)])],
+    snapshot([SPREAD], SPREAD_ROWS),
+    [apply(deleteAnswer(1, SPREAD, SPREAD_ROWS)), refused('gone', 'NotFound')],
+  ),
+  scenario(
+    'detach-widget',
+    'Current removeWidget takes field and annotation refs; detached rows remain on the page with field:null and are no longer projected as fields.',
+    [
+      tool('form-edit'),
+      call('removeWidget', [ref(7), objRef(107)]),
+      call('get', [ref(7)]),
+      call('getFieldForWidget', [objRef(107)]),
+      call('getWidget', [objRef(107)]),
+      call('removeWidget', [ref(7), objRef(999)]),
+      call('removeWidget', [ref(404), objRef(1)]),
+    ],
+    snapshot([PAIR], [row(107, PAIR.ref)]),
+    [
+      apply(fieldAnswer('forms.removeWidget', 1, DETACHED, [row(107, null)])),
+      refused('not attached', 'InvalidArg'),
+      refused('unknown field', 'NotFound'),
+    ],
+    {},
+    true,
+  ),
+  scenario(
+    'widget-hit-test',
+    'Current model hit test returns the smallest owned widget; unowned widgets and unknown pages return null before and after ensureLoaded.',
+    [
       call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
       call('getWidgetAt', [pr(1), { x: 200, y: 200 }]),
       call('getWidgetAt', [pr(1), { x: 500, y: 700 }]),
       call('getWidgetAt', [pr(1), { x: 590, y: 20 }]),
-      settle('geom', { annotations: HIT_ANNOTS }),
+      call('ensureLoaded', [pr(1)]),
       call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
-      call('getWidgetAt', [pr(1), { x: 500, y: 700 }]),
       call('getWidgetAt', [pr(2), { x: 1, y: 1 }]),
     ],
-  },
-  {
-    name: 'widget-hit-test-live-boxes-compare-areas',
-    covers:
-      'The live-box fallback compares areas, not perimeters or aspect ratios: a 2 x 200 widget beats a 30 x 30 one and a 40 x 10 widget beats a 30 x 30 one; between equal areas the first listed wins.',
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list(LIVE_FIELDS),
-          { path: 'annotations.listRawAll', value: { pages: [{ pageState: { page: pr(1) }, annotations: LIVE_ANNOTS }] } },
-          annotations(1, LIVE_ANNOTS, { defer: 'geom' }),
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    snapshot(HIT_FIELDS, HIT_ROWS),
+    [],
+    {},
+    true,
+  ),
+  scenario(
+    'widget-hit-test-live-boxes-compare-areas',
+    'Current snapshot hit test compares area and preserves first-listed ties; removed live fallback has the same surviving geometric owner.',
+    [
       call('getWidgetAt', [pr(1), { x: 100, y: 400 }]),
       call('getWidgetAt', [pr(1), { x: 300, y: 400 }]),
       call('getWidgetAt', [pr(1), { x: 500, y: 400 }]),
     ],
-  },
+    snapshot(LIVE_FIELDS, LIVE_ROWS),
+    [],
+    {},
+    true,
+  ),
   {
     name: 'widget-hit-test-without-annotation',
-    covers: 'Without the annotation plugin a page whose geometry has not landed answers null.',
+    covers:
+      'Before the current form snapshot lands no widget can hit; after it lands the model hits without annotation.',
     plugins: FORM_ONLY,
-    engine: { documents: { a: doc([list(HIT_FIELDS), annotations(1, HIT_ANNOTS)]) } },
-    ...UNSNAPSHOTTED,
-    steps: [...boot, call('getWidgetAt', [pr(1), { x: 20, y: 20 }]), call('getWidgetAt', [pr(1), { x: 20, y: 20 }])],
+    engine: { documents: { a: doc([list(snapshot(HIT_FIELDS, HIT_ROWS), { defer: 'hit' })]) } },
+    snapshot: ['form::a'],
+    steps: [
+      ...boot,
+      call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
+      settle('hit', snapshot(HIT_FIELDS, HIT_ROWS)),
+      call('getWidgetAt', [pr(1), { x: 20, y: 20 }]),
+    ],
   },
-  {
-    name: 'attach-widget',
-    covers: "attachWidget links an annotation to the field by ref, re-reads, then clears and nudges the widget's page; a refusal rejects.",
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list([text(7, 'pair', 'v', {}, [[107, 1]])]),
-          HYDRATE,
-          annotations(1, [widgetAnnot(1, 107)]),
-          { path: 'forms.attachWidget', times: 1, value: { field: text(7, 'pair', 'v', {}, [[107, 1], [150, 1]]) } },
-          { path: 'forms.attachWidget', error: { name: 'EngineError', message: 'already attached', code: 'InvalidArg' } },
+  scenario(
+    'attach-widget',
+    'Current addWidget creates another placement on the field, allocates its real ref and inherits look; a refused follow-up is explicit.',
+    [
+      tool('form-edit'),
+      call('addWidget', [ref(7), { page: pr(1), rect: BOX } satisfies WidgetPlacement]),
+      call('getWidgets', [ref(7)]),
+      anno('get', [objRef(10001)]),
+      call('addWidget', [ref(7), { page: pr(1), rect: BOX } satisfies WidgetPlacement]),
+    ],
+    snapshot([PAIR], [row(107, PAIR.ref)]),
+    [
+      apply(
+        fieldAnswer('forms.addWidget', 1, { ...PAIR, widgets: [...PAIR.widgets, placed(10001)] }, [
+          row(10001, PAIR.ref, 1, BOX),
         ]),
-      },
-    },
-    snapshot: SNAP,
-    steps: [
-      ...boot,
-      call('ensureGeom', [1]),
-      call('attachWidget', [{ kind: 'objectNumber', fieldObjectNumber: 7 }, { kind: 'objectNumber', page: pr(1), annotObjectNumber: 150 }]),
-      call('attachWidget', [{ kind: 'fqn', name: 'pair' }, { kind: 'objectNumber', page: pr(1), annotObjectNumber: 150 }]),
+      ),
+      refused('cannot add widget', 'InvalidArg'),
     ],
-  },
-  {
-    name: 'place-with-a-name-and-options',
-    covers: 'An explicit name skips auto-naming, and a choice field takes the options given instead of the two starters.',
-    plugins: FORM_ONLY,
-    engine: {
-      documents: {
-        a: doc([list([]), { path: 'forms.createField', value: { field: placed(44, 'my.choice') } }]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
-      call('placeField', [input({ family: 'combobox', name: 'my.choice', options: [{ label: 'A', value: 'a' }] })]),
-      call('placeField', [input({ family: 'signature' })]),
+    {},
+    true,
+  ),
+  scenario(
+    'place-with-a-name-and-options',
+    'Current explicit create supports custom choice names/options and signature fields without a stale placeField door.',
+    [
+      call('create', [
+        {
+          family: 'combobox',
+          name: 'my.choice',
+          widgets: [place()],
+          options: [{ label: 'A', value: 'a' }],
+        } satisfies FormFieldDraft,
+      ]),
+      call('create', [
+        { family: 'signature', name: 'signature_1', widgets: [place()] } satisfies FormFieldDraft,
+      ]),
+      call('list'),
     ],
-  },
-];
-
-// ── the place handler ─────────────────────────────────────────────────────────
-
-const PLACE_ENGINE = (extra: ResponseSpec[] = [], over = {}) => ({
-  documents: {
-    a: doc(
-      [
-        list([]),
-        HYDRATE,
-        ...extra,
-        { path: 'forms.createField', value: { field: placed(70, 'text_1') } },
-        annotations(1, [widgetAnnot(1, 170)]),
-      ],
-      over,
-    ),
-  },
-});
-const gap = (phase: string, over: Record<string, unknown> = {}) =>
-  ix('dispatch', [{ phase, viewport: { x: 900, y: 900 }, modifiers: { shift: false, alt: false, ctrl: false, meta: false }, ...over }]);
-
-const handlerCases: ScenarioCase[] = [
-  {
-    name: 'a-click-places-the-tool-default',
-    covers:
-      "A click (under the drag threshold in both axes) places the tool's click size centred on the down point through the shared placement layer, styled from the tool's live defaults, and selects the new widget.",
-    plugins: WITH_ANNOTATION,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [...boot, tool('form-text'), pointer('down', 100, 100), pointer('up', 101, 101), anno('getSelection'), ix('activeToolId')],
-  },
-  {
-    name: 'a-click-near-the-edge-is-clamped',
-    covers: 'The click box is kept on the page by the shared placement layer.',
-    plugins: WITH_ANNOTATION,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [...boot, tool('form-listbox'), pointer('down', 595, 5), pointer('up', 595, 5)],
-  },
-  {
-    name: 'a-thin-drag-is-a-drag',
-    covers: "Without the annotation plugin a 100 x 2 drag commits as the dragged rect, styled from the table's static defaults; nothing is selected.",
-    plugins: FORM_ONLY,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [...boot, tool('form-text'), pointer('down', 50, 50), pointer('move', 150, 52), pointer('up', 150, 52)],
-  },
-  {
-    name: 'the-home-page-tracks-through-the-projection',
-    covers:
-      'Moves over another page project back onto the home page; the up sample is final; a move that projects nowhere is ignored; an up over a gap falls back to the last resolved point.',
-    plugins: FORM_ONLY,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer(
+          'forms.create',
+          1,
+          combobox(10001, 'my.choice', '', {
+            widgets: [placed(10002)],
+            options: [{ label: 'A', value: 'a', selected: false }],
+          }),
+          [row(10002, ref(10001), 1, BOX, { fieldFamily: 'combobox' })],
+        ),
+      ),
+      apply(
+        fieldAnswer(
+          'forms.create',
+          2,
+          signature(10003, 'signature_1', { widgets: [placed(10004)] }),
+          [row(10004, ref(10003), 1, BOX, { fieldFamily: 'signature' })],
+        ),
+      ),
+    ],
+  ),
+  scenario(
+    'a-click-places-the-tool-default',
+    'A real pointer click creates the default text tool draft and selects the final allocated widget in design mode.',
+    [
+      tool('form-text'),
+      pointer('down', 100, 100),
+      pointer('up', 101, 101),
+      anno('selection.list'),
+      call('getSelectedField'),
+      ix('getActiveToolId'),
+    ],
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer('forms.create', 1, NEW, [
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
+        ]),
+      ),
+    ],
+    {},
+    true,
+  ),
+  scenario(
+    'a-click-near-the-edge-is-clamped',
+    'The real listbox tool click clamps its standard size to the page edge.',
+    [tool('form-listbox'), ...click(595, 5), call('list')],
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer(
+          'forms.create',
+          1,
+          listbox(10001, 'listbox_1', [], { widgets: [placed(10002)], options: COMBO.options }),
+          [
+            row(
+              10002,
+              ref(10001),
+              1,
+              { x: 460, y: 0, width: 140, height: 72 },
+              { ...PALETTE_TEXT, fieldFamily: 'listbox' },
+            ),
+          ],
+        ),
+      ),
+    ],
+    {},
+    true,
+  ),
+  scenario(
+    'a-thin-drag-is-a-drag',
+    'Without annotation a 100 by 2 drag commits its exact page-space rectangle and the tool static look.',
+    [
+      tool('form-text'),
+      pointer('down', 50, 50),
+      pointer('move', 150, 52),
+      pointer('up', 150, 52),
+      call('list'),
+    ],
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer('forms.create', 1, NEW, [
+          row(10002, NEW.ref, 1, { x: 50, y: 50, width: 100, height: 2 }, PALETTE_TEXT),
+        ]),
+      ),
+    ],
+  ),
+  scenario(
+    'the-home-page-tracks-through-the-projection',
+    'Cross-page moves use the serialized projection callable, null projections are ignored, and gap releases use the last resolved home-page point.',
+    [
       tool('form-checkbox'),
       pointer('down', 10, 10),
-      ix('dispatch', [sample('move', 1, 1, { project: fnSpec('project', { returns: { x: 90, y: 40 } }) }, 2)]),
-      ix('dispatch', [sample('move', 1, 1, { project: fnSpec('project', { returns: null }) }, 2)]),
-      ix('dispatch', [{ ...sample('up', 0, 0), page: undefined, project: fnSpec('project', { returns: { x: 110, y: 60 } }) }]),
+      ix('dispatchPointer', [
+        sample('move', 1, 1, { project: { $fn: 'project', returns: { x: 90, y: 40 } } }, 2),
+      ]),
+      ix('dispatchPointer', [
+        sample('move', 1, 1, { project: { $fn: 'project', returns: null } }, 2),
+      ]),
+      ix('dispatchPointer', [
+        {
+          ...sample('up', 0, 0),
+          page: undefined,
+          project: { $fn: 'project', returns: { x: 110, y: 60 } },
+        },
+      ]),
       pointer('down', 10, 10),
       pointer('move', 60, 40),
       gap('up'),
+      call('list'),
     ],
-  },
-  {
-    name: 'the-live-preview',
-    covers:
-      "With the annotation plugin a move past the drag threshold previews the dragged box through the placement ghost, a move back under it clears the preview, and the up clears it.",
-    plugins: WITH_ANNOTATION,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer(
+          'forms.create',
+          1,
+          checkbox(10001, 'checkbox_1', false, {
+            widgets: [{ ...placed(10002), onState: 'Yes', exportValue: 'Yes', checked: false }],
+          }),
+          [
+            row(
+              10002,
+              ref(10001),
+              1,
+              { x: 10, y: 10, width: 100, height: 50 },
+              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
+            ),
+          ],
+        ),
+      ),
+      apply(
+        fieldAnswer(
+          'forms.create',
+          2,
+          checkbox(10003, 'checkbox_2', false, {
+            widgets: [{ ...placed(10004), onState: 'Yes', exportValue: 'Yes', checked: false }],
+          }),
+          [
+            row(
+              10004,
+              ref(10003),
+              1,
+              { x: 10, y: 10, width: 50, height: 30 },
+              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
+            ),
+          ],
+        ),
+      ),
+    ],
+  ),
+  scenario(
+    'the-live-preview',
+    'The real form placement handler updates annotation page items past the shared drag threshold and clears its preview on release.',
+    [
       tool('form-checkbox'),
       pointer('down', 10, 10),
       pointer('move', 11, 11),
-      anno('toolGhost', [1]),
+      anno('listPageItems', [pr(1)]),
       pointer('move', 60, 40),
-      anno('toolGhost', [1]),
+      anno('listPageItems', [pr(1)]),
       pointer('move', 12, 12),
-      anno('toolGhost', [1]),
+      anno('listPageItems', [pr(1)]),
       pointer('move', 60, 40),
       pointer('up', 60, 40),
-      anno('toolGhost', [1]),
+      anno('listPageItems', [pr(1)]),
     ],
-  },
-  {
-    name: 'the-click-threshold-is-strict',
-    covers: 'A drag exactly the drag threshold wide (or tall) is a drag, not a click: here a degenerate one, which placeField refuses.',
-    plugins: FORM_ONLY,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [...boot, tool('form-text'), pointer('down', 50, 50), pointer('up', 53, 50), pointer('down', 50, 50), pointer('up', 50, 53)],
-  },
-  {
-    name: 'the-handler-outranks-lower-priorities',
-    covers: "At priority 95 the place handler takes a down before an eligible handler of priority 50 is asked; the gesture starts under the id 'form-place'.",
-    plugins: FORM_ONLY,
-    engine: PLACE_ENGINE(),
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer(
+          'forms.create',
+          1,
+          checkbox(10001, 'checkbox_1', false, {
+            widgets: [{ ...placed(10002), onState: 'Yes', exportValue: 'Yes', checked: false }],
+          }),
+          [
+            row(
+              10002,
+              ref(10001),
+              1,
+              { x: 10, y: 10, width: 50, height: 30 },
+              { ...PALETTE_CHROME, fieldFamily: 'checkbox' },
+            ),
+          ],
+        ),
+      ),
+    ],
+    {},
+    true,
+  ),
+  scenario(
+    'the-click-threshold-is-strict',
+    'Exactly three points is a drag; degenerate dimensions produce no placement or engine call.',
+    [
+      tool('form-text'),
+      pointer('down', 50, 50),
+      pointer('up', 53, 50),
+      pointer('down', 50, 50),
+      pointer('up', 50, 53),
+      call('list'),
+    ],
+  ),
+  scenario(
+    'the-handler-outranks-lower-priorities',
+    'The actual priority95 form handler captures before a priority50 observer and reports form-place in gesture events.',
+    [
       ix('registerHandler', [
         {
           id: 'low',
@@ -553,99 +717,116 @@ const handlerCases: ScenarioCase[] = [
       ]),
       ix('onGestureStarted', [fnSpec('gestureStarted')]),
       tool('form-text'),
-      pointer('down', 100, 100),
-      pointer('up', 100, 100),
+      ...click(),
+      ix('getActiveToolId'),
     ],
-  },
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer('forms.create', 1, NEW, [
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
+        ]),
+      ),
+    ],
+  ),
   {
     name: 'the-handler-declines',
     covers:
-      'No capture off a page, under a tool the palette does not know (even one enabling form-place), without the design grant, or under a palette id re-registered without form-place; the gesture falls through to other handlers.',
+      'The real handler declines gaps, unknown palette tools, missing design authority and a replacement tool without form-place.',
     plugins: FORM_ONLY,
     engine: {
       documents: {
-        a: doc([list([])]),
-        b: doc([list([])], { security: { allows: ['doc.forms.read', 'doc.forms.fill'] } }),
+        a: doc([list(snapshot([]))]),
+        b: doc([list(snapshot([]))], {
+          security: { allows: ['doc.forms.read', 'doc.forms.fill'] },
+        }),
       },
     },
-    ...UNSNAPSHOTTED,
+    snapshot: ['form::a', 'form::b'],
     steps: [
       ...boot,
-      { op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id: 'b', bytes: { $bytes: '' } }] },
+      open('b'),
       tool('form-text'),
       gap('down'),
       gap('up'),
-      ix('registerTool', [{ id: 'custom-place', cursor: 'crosshair', enables: { $set: ['form-place'] } }]),
+      ix('registerTool', [
+        { id: 'custom-place', cursor: 'crosshair', enables: { $set: ['form-place'] } },
+      ]),
       tool('custom-place'),
-      pointer('down', 10, 10),
-      pointer('up', 10, 10),
+      ...click(10, 10),
       ix('activateTool', ['form-text'], 'b'),
-      ix('dispatch', [sample('down', 10, 10)], 'b'),
-      ix('dispatch', [sample('up', 10, 10)], 'b'),
-      ix('registerTool', [{ id: 'form-text', cursor: 'crosshair', enables: { $set: [] } }, { replace: true }]),
+      ix('dispatchPointer', [sample('down', 10, 10)], 'b'),
+      ix('dispatchPointer', [sample('up', 10, 10)], 'b'),
+      ix('registerTool', [
+        { id: 'form-text', cursor: 'crosshair', enables: { $set: [] } },
+        { replace: true },
+      ]),
       tool('form-text'),
-      pointer('down', 10, 10),
-      pointer('up', 10, 10),
+      ...click(10, 10),
     ],
   },
-  {
-    name: 'auto-select-waits-for-a-stable-world',
-    covers:
-      'No selection when the tool changed while the engine wrote, when the engine reported no widget on the page, or when the widget has no object number.',
-    plugins: WITH_ANNOTATION,
-    engine: {
-      documents: {
-        a: doc([
-          list([]),
-          HYDRATE,
-          { path: 'forms.createField', times: 1, defer: 'slow' },
-          { path: 'forms.createField', times: 1, value: { field: placed(71, 'text_1', 2) } },
-          { path: 'forms.createField', value: { field: text(72, 'text_1', '', {}, [[0, 1]]) } },
-          annotations(1, []),
-        ]),
-      },
-    },
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+  scenario(
+    'auto-select-waits-for-a-stable-world',
+    'Reserved object numbers make pending selection immediate; switching tools clears it. The next two immediate engine answers publish another-page/no-widget facts synchronously during stage/apply before form.get, so those authored outcomes stay unselected.',
+    [
       tool('form-text'),
-      pointer('down', 100, 100),
-      pointer('up', 100, 100),
+      ...click(),
       tool('pointer'),
-      settle('slow', { field: placed(70, 'text_1') }),
+      settle(
+        'slow',
+        fieldAnswer('forms.create', 1, NEW, [
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
+        ]).value,
+      ),
+      anno('selection.list'),
       tool('form-text'),
-      pointer('down', 100, 100),
-      pointer('up', 100, 100),
-      pointer('down', 100, 100),
-      pointer('up', 100, 100),
-      anno('getSelection'),
+      ...click(300, 300),
+      anno('selection.list'),
+      ...click(500, 500),
+      anno('selection.list'),
     ],
-  },
-  {
-    name: 'a-failed-placement-is-logged',
-    covers: "A placeField rejection is contained and reported to console.error: a drag that is thin in one axis after clamping, a click on a page the document does not have, an engine refusal.",
-    plugins: FORM_ONLY,
-    engine: PLACE_ENGINE([{ path: 'forms.createField', times: 1, error: { name: 'EngineError', message: 'refused', code: 'Refused' } }]),
-    ...UNSNAPSHOTTED,
-    steps: [
-      ...boot,
+    snapshot([]),
+    [
+      apply(
+        fieldAnswer('forms.create', 1, NEW, [
+          row(10002, NEW.ref, 1, { x: 20, y: 88, width: 160, height: 24 }, PALETTE_TEXT),
+        ]),
+        { defer: 'slow' },
+      ),
+      apply(
+        fieldAnswer('forms.create', 2, { ...NEW2, widgets: [placed(10004, 2)] }, [
+          row(10004, NEW2.ref, 2, BOX, PALETTE_TEXT),
+        ]),
+      ),
+      apply(fieldAnswer('forms.create', 3, text(10005, 'text_3', '', {}, []))),
+    ],
+    {},
+    true,
+  ),
+  scenario(
+    'a-failed-placement-is-logged',
+    'The current handler silently skips too-thin clamped geometry and unknown pages, and contains an exact engine refusal via console.error.',
+    [
       tool('form-text'),
       pointer('down', 50, 50),
       pointer('up', 150, 50.5),
       pointer('down', 50, 50, {}, 99),
       pointer('up', 50, 50, {}, 99),
-      pointer('down', 50, 50),
-      pointer('up', 50, 50),
+      ...click(50, 50),
+      call('list'),
     ],
-  },
+    snapshot([]),
+    [refused('intended placement refusal')],
+    {},
+    true,
+  ),
 ];
-
-export const suites: Suite[] = [
+export const suites: ScenarioSuite[] = [
   {
     kind: 'scenario',
     file: 'plugins/form-design.json',
-    describes: 'packages/plugin/form design mode: tool and behavior registration, placeField and the design verbs, and the draw-to-place handler.',
-    cases: [...initCases, ...designCases, ...v3DesignCases, ...handlerCases],
+    describes:
+      'Current form tools, direct design verbs, widget lending, page-space hits and pointer placement.',
+    cases,
   },
 ];
-

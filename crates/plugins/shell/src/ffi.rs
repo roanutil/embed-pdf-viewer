@@ -5,6 +5,9 @@
 //! (`SurfaceProps`), with no schema to mirror. It crosses as `props_json`,
 //! the object as JSON text, and anything that is not an object is refused
 //! with `invalid-input` before the plugin sees it.
+//!
+//! Migrated by hand to the 13.28 port (named transitions, `focusRequest`,
+//! per-kind surface events); compiled and tested since Task 13.33.
 
 use std::sync::Arc;
 
@@ -14,16 +17,34 @@ use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::store::Unsubscribe;
 use serde_json::Value;
 
-use crate::contract::{MenuEvent, OpenSurfaceOptions, SurfaceEvent, SurfaceProps, SurfaceState};
+use crate::contract::{
+    MenuClosedEvent, MenuOpenedEvent, OpenSurfaceOptions, SurfaceClosedEvent, SurfaceOpenedEvent,
+    SurfaceProps, SurfaceState,
+};
 use crate::controller::ShellCapability;
-use crate::model::SurfaceRecord;
+use crate::model::SnapshotSurface;
 use crate::record::JsRecord;
 
-/// A surface's open flag, exclusivity tag and props. Also one entry of a
-/// [`ShellSnapshot`]. A name the plugin finds on `Object.prototype`
-/// (`toString`) has no flag there; it reads as closed here.
-#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+/// A surface's open flag, exclusivity tag, props and focus request. A name
+/// the plugin finds on `Object.prototype` (`toString`) has no flag there;
+/// it reads as closed here. Not `Eq`, because `focus_request` is an `f64`
+/// (the JavaScript number).
+#[derive(Clone, Debug, PartialEq, uniffi::Record)]
 pub struct ShellSurface {
+    pub id: String,
+    pub open: bool,
+    pub exclusive: Option<String>,
+    /// A JSON object, or `None` when the surface has no props.
+    pub props_json: Option<String>,
+    /// How many opens asked for focus since the surface opened; 0 once it
+    /// closes. A rise is the moment to move the cursor into the surface.
+    pub focus_request: f64,
+}
+
+/// One surface of a [`ShellSnapshot`]: no focus request, which is a moment
+/// and not state to keep.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct ShellSnapshotSurface {
     pub id: String,
     pub open: bool,
     pub exclusive: Option<String>,
@@ -39,21 +60,31 @@ pub struct ShellOpenOptions {
     /// A JSON object.
     #[uniffi(default = None)]
     pub props_json: Option<String>,
+    /// Raise the surface's `focus_request`, also when it is open already.
+    #[uniffi(default = false)]
+    pub focus: bool,
 }
 
-/// Everything the shell holds for one document, for persist and restore.
-/// Surfaces are in JavaScript property order (integer-like ids first),
-/// closed ones included; menus are in opening order, last is topmost.
+/// Everything the shell holds for one document but the focus requests, for
+/// persist and restore. Surfaces are in JavaScript property order
+/// (integer-like ids first), closed ones included; menus are in opening
+/// order, last is topmost.
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct ShellSnapshot {
-    pub surfaces: Vec<ShellSurface>,
+    pub surfaces: Vec<ShellSnapshotSurface>,
     pub open_menus: Vec<String>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
-pub struct ShellSurfaceEvent {
+pub struct ShellSurfaceOpenedEvent {
     pub id: String,
+    /// The props it was opened with.
     pub props_json: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct ShellSurfaceClosedEvent {
+    pub id: String,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
@@ -63,8 +94,8 @@ pub struct ShellMenuEvent {
 
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Enum)]
 pub enum ShellEvent {
-    SurfaceOpened { event: ShellSurfaceEvent },
-    SurfaceClosed { event: ShellSurfaceEvent },
+    SurfaceOpened { event: ShellSurfaceOpenedEvent },
+    SurfaceClosed { event: ShellSurfaceClosedEvent },
     MenuOpened { event: ShellMenuEvent },
     MenuClosed { event: ShellMenuEvent },
 }
@@ -97,13 +128,14 @@ fn optional_props(json: Option<&str>) -> Result<Option<SurfaceProps>, Error> {
     json.map(props_from_json).transpose()
 }
 
-impl From<SurfaceState> for ShellSurface {
-    fn from(state: SurfaceState) -> Self {
+impl From<&SurfaceState> for ShellSurface {
+    fn from(state: &SurfaceState) -> Self {
         ShellSurface {
-            id: state.id,
-            open: state.open.unwrap_or(false),
-            exclusive: state.exclusive,
-            props_json: state.props.as_ref().map(props_to_json),
+            id: state.id.clone(),
+            open: state.open(),
+            exclusive: state.exclusive().map(str::to_string),
+            props_json: state.props().map(props_to_json),
+            focus_request: state.focus_request(),
         }
     }
 }
@@ -115,24 +147,25 @@ impl TryFrom<ShellOpenOptions> for OpenSurfaceOptions {
         Ok(OpenSurfaceOptions {
             exclusive: options.exclusive,
             props: optional_props(options.props_json.as_deref())?,
+            focus: options.focus,
         })
     }
 }
 
-impl From<crate::ShellSnapshot> for ShellSnapshot {
-    fn from(snapshot: crate::ShellSnapshot) -> Self {
+impl From<&crate::ShellSnapshot> for ShellSnapshot {
+    fn from(snapshot: &crate::ShellSnapshot) -> Self {
         ShellSnapshot {
             surfaces: snapshot
                 .surfaces
                 .iter()
-                .map(|(id, record)| ShellSurface {
+                .map(|(id, surface)| ShellSnapshotSurface {
                     id: id.to_string(),
-                    open: record.open,
-                    exclusive: record.exclusive.clone(),
-                    props_json: record.props.as_ref().map(props_to_json),
+                    open: surface.open,
+                    exclusive: surface.exclusive.clone(),
+                    props_json: surface.props.as_ref().map(props_to_json),
                 })
                 .collect(),
-            open_menus: snapshot.open_menus,
+            open_menus: (*snapshot.open_menus).clone(),
         }
     }
 }
@@ -146,24 +179,36 @@ impl TryFrom<ShellSnapshot> for crate::ShellSnapshot {
             .into_iter()
             .map(|s| {
                 let props = optional_props(s.props_json.as_deref())?;
-                Ok((s.id, SurfaceRecord { open: s.open, exclusive: s.exclusive, props }))
+                Ok((s.id, SnapshotSurface::new(s.open, s.exclusive, props)))
             })
-            .collect::<Result<JsRecord<SurfaceRecord>, Error>>()?;
-        Ok(crate::ShellSnapshot { surfaces, open_menus: snapshot.open_menus })
+            .collect::<Result<JsRecord<SnapshotSurface>, Error>>()?;
+        Ok(crate::ShellSnapshot { surfaces, open_menus: std::rc::Rc::new(snapshot.open_menus) })
     }
 }
 
-impl From<&SurfaceEvent> for ShellSurfaceEvent {
-    fn from(event: &SurfaceEvent) -> Self {
-        ShellSurfaceEvent {
+impl From<&SurfaceOpenedEvent> for ShellSurfaceOpenedEvent {
+    fn from(event: &SurfaceOpenedEvent) -> Self {
+        ShellSurfaceOpenedEvent {
             id: event.id.clone(),
             props_json: event.props.as_ref().map(props_to_json),
         }
     }
 }
 
-impl From<&MenuEvent> for ShellMenuEvent {
-    fn from(event: &MenuEvent) -> Self {
+impl From<&SurfaceClosedEvent> for ShellSurfaceClosedEvent {
+    fn from(event: &SurfaceClosedEvent) -> Self {
+        ShellSurfaceClosedEvent { id: event.id.clone() }
+    }
+}
+
+impl From<&MenuOpenedEvent> for ShellMenuEvent {
+    fn from(event: &MenuOpenedEvent) -> Self {
+        ShellMenuEvent { id: event.id.clone() }
+    }
+}
+
+impl From<&MenuClosedEvent> for ShellMenuEvent {
+    fn from(event: &MenuClosedEvent) -> Self {
         ShellMenuEvent { id: event.id.clone() }
     }
 }
@@ -203,13 +248,13 @@ impl ShellHandle {
 
     /// `None` for a surface never opened.
     pub async fn surface(&self, id: String) -> Result<Option<ShellSurface>, ViewerError> {
-        self.cap.call(move |c| Ok(open(c)?.get_surface(&id).map(Into::into))).await
+        self.cap.call(move |c| Ok(open(c)?.get_surface(&id).map(|s| (&*s).into()))).await
     }
 
     /// Open surfaces, in JavaScript property order (`listOpenSurfaces`).
     pub async fn open_surfaces(&self) -> Result<Vec<ShellSurface>, ViewerError> {
         self.cap
-            .call(|c| Ok(open(c)?.list_open_surfaces().into_iter().map(Into::into).collect()))
+            .call(|c| Ok(open(c)?.list_open_surfaces().iter().map(|s| (&**s).into()).collect()))
             .await
     }
 
@@ -275,7 +320,7 @@ impl ShellHandle {
 
     /// In opening order; the last is topmost (`listOpenMenus`).
     pub async fn open_menus(&self) -> Result<Vec<String>, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.list_open_menus())).await
+        self.cap.call(|c| Ok((*open(c)?.list_open_menus()).clone())).await
     }
 
     pub async fn open_menu(&self, id: String) -> Result<(), ViewerError> {
@@ -296,7 +341,7 @@ impl ShellHandle {
 
     /// `getSnapshot`.
     pub async fn snapshot(&self) -> Result<ShellSnapshot, ViewerError> {
-        self.cap.call(|c| Ok(open(c)?.get_snapshot().into())).await
+        self.cap.call(|c| Ok((&*open(c)?.get_snapshot()).into())).await
     }
 
     /// Replace the state with `snapshot`. A surface whose props aren't a
@@ -305,7 +350,7 @@ impl ShellHandle {
         self.cap
             .call(move |c| {
                 let snapshot = crate::ShellSnapshot::try_from(snapshot)?;
-                open(c)?.apply_snapshot(snapshot);
+                open(c)?.apply_snapshot(&snapshot);
                 Ok(())
             })
             .await

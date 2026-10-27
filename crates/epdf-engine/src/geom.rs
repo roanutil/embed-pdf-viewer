@@ -76,6 +76,33 @@ pub struct PdfQuad {
     pub p4: PdfPoint,
 }
 
+/// A quad in the file's coordinates as upstream's wire spells it
+/// (`PdfQuad` in `geometry/primitives.ts`): the corners named in the quad's
+/// own upright frame, which is the [`PdfQuad`] slot order (`p1` upper-left
+/// to `p4` lower-right). The text geometry answers it; the other quads in
+/// the file's coordinates still answer `p1` to `p4` until their families
+/// move to page space.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NamedPdfQuad {
+    pub upper_left: PdfPoint,
+    pub upper_right: PdfPoint,
+    pub lower_left: PdfPoint,
+    pub lower_right: PdfPoint,
+}
+
+impl From<PdfQuad> for NamedPdfQuad {
+    fn from(q: PdfQuad) -> Self {
+        Self { upper_left: q.p1, upper_right: q.p2, lower_left: q.p3, lower_right: q.p4 }
+    }
+}
+
+impl From<NamedPdfQuad> for PdfQuad {
+    fn from(q: NamedPdfQuad) -> Self {
+        Self { p1: q.upper_left, p2: q.upper_right, p3: q.lower_left, p4: q.lower_right }
+    }
+}
+
 /// Named corners of a quad, y-up. Valid only for upright quads.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PdfQuadCorners {
@@ -231,6 +258,352 @@ pub fn pdf_quad_from_corners(c: PdfQuadCorners) -> PdfQuad {
     PdfQuad { p1: c.top_left, p2: c.top_right, p3: c.bottom_left, p4: c.bottom_right }
 }
 
+/// The area two normalized rects share, or `None` when they share none
+/// (`pdfRectIntersection`). Touching edges share no area.
+pub fn pdf_rect_intersection(rect: PdfRect, other: PdfRect) -> Option<PdfRect> {
+    let left = rect.left.max(other.left);
+    let right = rect.right.min(other.right);
+    let bottom = rect.bottom.max(other.bottom);
+    let top = rect.top.min(other.top);
+    (left < right && bottom < top).then_some(PdfRect { left, bottom, right, top })
+}
+
+// ── page space ──
+//
+// `geometry/pageSpace.ts`. Where things are on a page as you see it: x runs
+// right from the left edge of the page's visible box, y runs down from its
+// top edge, in PDF units, on the page as stored. A page's own turn
+// (`/Rotate`) never changes a number. The conversions live in
+// `crate::page_space`; these are the shapes.
+
+/// A point in page space: x from the visible page's left edge, y down from
+/// its top edge (`PagePoint`).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PagePoint {
+    pub x: f64,
+    pub y: f64,
+}
+
+/// A box in page space: `x, y` is its top-left corner. Upstream's
+/// `PageBox`.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PageRect {
+    pub x: f64,
+    pub y: f64,
+    pub width: f64,
+    pub height: f64,
+}
+
+/// A quad in page space, its corners named in the text's own frame
+/// (`PageQuad`). The flip into page space keeps the names.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PageQuad {
+    pub upper_left: PagePoint,
+    pub upper_right: PagePoint,
+    pub lower_left: PagePoint,
+    pub lower_right: PagePoint,
+}
+
+// ── page boxes ──
+//
+// `geometry/pageBoxes.ts`.
+
+/// A page's boxes as its dictionary writes them (ISO 32000-1 Table 30): the
+/// media and crop boxes as inherited through the page tree, the bleed, trim
+/// and art boxes the page's own, each normalized. A box that is absent,
+/// empty or not four numbers is `None` (`WrittenPageBoxes`).
+#[derive(Debug, Clone, Copy, PartialEq, Default)]
+pub struct WrittenPageBoxes {
+    pub media: Option<PdfRect>,
+    pub crop: Option<PdfRect>,
+    pub bleed: Option<PdfRect>,
+    pub trim: Option<PdfRect>,
+    pub art: Option<PdfRect>,
+}
+
+/// The five PDF page boundary boxes (`PageBoxes<C>`), in the file's
+/// coordinates as [`page_boxes_of`] makes them (`B` = [`PdfRect`]) or in page
+/// space (`B` = [`PageRect`]). `crop` is the visible page.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PageBoxes<B = PdfRect> {
+    pub media: B,
+    pub crop: B,
+    pub bleed: B,
+    pub trim: B,
+    pub art: B,
+}
+
+/// The media box of a page that has none, which the file needs: US Letter
+/// (`DEFAULT_MEDIA_BOX`).
+pub const DEFAULT_MEDIA_BOX: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 612.0, top: 792.0 };
+
+/// A box that shares nothing with the media box: no size, at the origin.
+const EMPTY_BOX: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: 0.0 };
+
+/// The page's five boxes as ISO 32000-1 §14.11.2 defines them
+/// (`pageBoxesOf`): the crop box defaults to the media box and the other
+/// three to the crop box, and each is cut to the part it shares with the
+/// media box.
+///
+/// For broken files, which the standard doesn't cover, this does what
+/// Acrobat does: a page without a media box is US Letter, and a box that
+/// shares nothing with the media box is empty, so a crop box off the page
+/// leaves a page with no size.
+pub fn page_boxes_of(written: WrittenPageBoxes) -> PageBoxes {
+    let media = written.media.unwrap_or(DEFAULT_MEDIA_BOX);
+    let within = |rect: PdfRect| pdf_rect_intersection(rect, media).unwrap_or(EMPTY_BOX);
+    let crop = within(written.crop.unwrap_or(media));
+    PageBoxes {
+        media,
+        crop,
+        bleed: within(written.bleed.unwrap_or(crop)),
+        trim: within(written.trim.unwrap_or(crop)),
+        art: within(written.art.unwrap_or(crop)),
+    }
+}
+
+/// A page's turn from its `/Rotate`, degrees clockwise (`pageRotationOf`).
+/// ISO 32000-1 Table 30 allows multiples of 90; a negative one or one past
+/// 360 is the same turn. A value that isn't a multiple of 90, which the file
+/// shouldn't hold, is no turn, as Acrobat reads it.
+pub fn page_rotation_of(written: i32) -> PdfRotation {
+    if written % 90 != 0 {
+        return PdfRotation::None;
+    }
+    match written.rem_euclid(360) {
+        90 => PdfRotation::Clockwise90,
+        180 => PdfRotation::Clockwise180,
+        270 => PdfRotation::Clockwise270,
+        _ => PdfRotation::None,
+    }
+}
+
+// ── turning points ──
+//
+// `geometry/pointTurn.ts`. Turning points about a middle, in PDF user space
+// (y up).
+
+/// A turn: degrees clockwise, as the page shows it, about `center`
+/// (`PdfPointTurn`).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub struct PdfPointTurn {
+    pub degrees: f64,
+    pub center: PdfPoint,
+}
+
+/// The box around `points`; a zero box at the origin when there are none
+/// (`pdfPointsBounds`).
+pub fn pdf_points_bounds(points: &[PdfPoint]) -> PdfRect {
+    if points.is_empty() {
+        return EMPTY_BOX;
+    }
+    points.iter().fold(
+        PdfRect {
+            left: f64::INFINITY,
+            bottom: f64::INFINITY,
+            right: f64::NEG_INFINITY,
+            top: f64::NEG_INFINITY,
+        },
+        |b, p| PdfRect {
+            left: b.left.min(p.x),
+            bottom: b.bottom.min(p.y),
+            right: b.right.max(p.x),
+            top: b.top.max(p.y),
+        },
+    )
+}
+
+/// `point` turned by `turn`; a negative angle turns it back
+/// (`pdfPointTurned`).
+pub fn pdf_point_turned(point: PdfPoint, turn: PdfPointTurn) -> PdfPoint {
+    let radians = turn.degrees * std::f64::consts::PI / 180.0;
+    let (sin, cos) = radians.sin_cos();
+    let dx = point.x - turn.center.x;
+    let dy = point.y - turn.center.y;
+    // Clockwise on the page is negative in y-up space.
+    PdfPoint { x: turn.center.x + dx * cos + dy * sin, y: turn.center.y - dx * sin + dy * cos }
+}
+
+/// `point` turned back by `turn` (`pdfPointUnturned`).
+pub fn pdf_point_unturned(point: PdfPoint, turn: PdfPointTurn) -> PdfPoint {
+    pdf_point_turned(point, PdfPointTurn { degrees: -turn.degrees, center: turn.center })
+}
+
+fn middle_of(rect: PdfRect) -> PdfPoint {
+    PdfPoint { x: (rect.left + rect.right) / 2.0, y: (rect.bottom + rect.top) / 2.0 }
+}
+
+/// The turn that draws upright `points`: `degrees` about the middle of their
+/// box (`pdfTurnOfUpright`).
+pub fn pdf_turn_of_upright(points: &[PdfPoint], degrees: f64) -> PdfPointTurn {
+    PdfPointTurn { degrees, center: middle_of(pdf_points_bounds(points)) }
+}
+
+/// The turn drawn `points` were made with: `degrees` about the middle of the
+/// box around the upright points they came from (`pdfTurnOfDrawn`). Turned
+/// back about the origin, the points are the upright ones moved, and turning
+/// their middle forward again about the origin gives that middle.
+pub fn pdf_turn_of_drawn(points: &[PdfPoint], degrees: f64) -> PdfPointTurn {
+    let origin = PdfPoint { x: 0.0, y: 0.0 };
+    let back: Vec<PdfPoint> = points
+        .iter()
+        .map(|&p| pdf_point_turned(p, PdfPointTurn { degrees: -degrees, center: origin }))
+        .collect();
+    let middle = middle_of(pdf_points_bounds(&back));
+    PdfPointTurn {
+        degrees,
+        center: pdf_point_turned(middle, PdfPointTurn { degrees, center: origin }),
+    }
+}
+
+/// `QUAD_EPSILON` (`geometry/convert.ts`).
+const QUAD_EPSILON: f64 = 1e-6;
+
+fn is_finite_point(point: PdfPoint) -> bool {
+    point.x.is_finite() && point.y.is_finite()
+}
+
+/// Whether four points, read as upper-left, upper-right, lower-left,
+/// lower-right, make a quad (`isZigzagQuad`).
+fn is_zigzag_quad([ul, ur, ll, lr]: [PdfPoint; 4]) -> bool {
+    if ![ul, ur, ll, lr].into_iter().all(is_finite_point) {
+        return false;
+    }
+    let edge = |from: PdfPoint, to: PdfPoint| PdfPoint { x: to.x - from.x, y: to.y - from.y };
+    let upper = edge(ul, ur);
+    let lower = edge(ll, lr);
+    let left = edge(ul, ll);
+    let right = edge(ur, lr);
+    let lengths = [upper, lower, left, right].map(|e| e.x.hypot(e.y));
+    if lengths.iter().any(|length| *length <= QUAD_EPSILON) {
+        return false;
+    }
+    // Opposite edges run the same way: a crossed or reversed order fails here.
+    if upper.x * lower.x + upper.y * lower.y <= 0.0 {
+        return false;
+    }
+    if left.x * right.x + left.y * right.y <= 0.0 {
+        return false;
+    }
+    // Both ends have area and turn the same way.
+    let left_area = upper.x * left.y - upper.y * left.x;
+    let right_area = lower.x * right.y - lower.y * right.x;
+    if left_area.abs() <= QUAD_EPSILON * lengths[0] * lengths[2] {
+        return false;
+    }
+    if right_area.abs() <= QUAD_EPSILON * lengths[1] * lengths[3] {
+        return false;
+    }
+    left_area.signum() == right_area.signum()
+}
+
+/// Name the corners of a `/QuadPoints` entry, given in the file's order
+/// (`normalizePdfQuad`): Acrobat's order (upper-left, upper-right,
+/// lower-left, lower-right) is kept, the ring order some writers use is
+/// repaired, and anything else is named from its shape, the edge highest on
+/// the page being the upper one and its end with the smaller x the left.
+pub fn normalize_pdf_quad(points: [PdfPoint; 4]) -> NamedPdfQuad {
+    let [first, second, third, fourth] = points;
+    if is_zigzag_quad(points) {
+        return NamedPdfQuad {
+            upper_left: first,
+            upper_right: second,
+            lower_left: third,
+            lower_right: fourth,
+        };
+    }
+    if is_zigzag_quad([first, second, fourth, third]) {
+        return NamedPdfQuad {
+            upper_left: first,
+            upper_right: second,
+            lower_left: fourth,
+            lower_right: third,
+        };
+    }
+
+    let finite = points.map(|p| if is_finite_point(p) { p } else { PdfPoint { x: 0.0, y: 0.0 } });
+    let cx = finite.iter().map(|p| p.x).sum::<f64>() / 4.0;
+    let cy = finite.iter().map(|p| p.y).sum::<f64>() / 4.0;
+    let mut ring = finite;
+    // `Array.prototype.sort` is stable, as `sort_by` is.
+    ring.sort_by(|a, b| {
+        let angle = |p: &PdfPoint| (p.y - cy).atan2(p.x - cx);
+        angle(a).partial_cmp(&angle(b)).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    let mut upper = 0;
+    for i in 1..4 {
+        if ring[i].y + ring[(i + 1) % 4].y > ring[upper].y + ring[(upper + 1) % 4].y {
+            upper = i;
+        }
+    }
+    // Round the ring: upper ends, then lower ends back.
+    let upper_ends = [ring[upper], ring[(upper + 1) % 4]];
+    let lower_ends = [ring[(upper + 3) % 4], ring[(upper + 2) % 4]];
+    if upper_ends[0].x <= upper_ends[1].x {
+        NamedPdfQuad {
+            upper_left: upper_ends[0],
+            upper_right: upper_ends[1],
+            lower_left: lower_ends[0],
+            lower_right: lower_ends[1],
+        }
+    } else {
+        NamedPdfQuad {
+            upper_left: upper_ends[1],
+            upper_right: upper_ends[0],
+            lower_left: lower_ends[1],
+            lower_right: lower_ends[0],
+        }
+    }
+}
+
+/// Whether two rects are the same within what a file's numbers hold
+/// (`isSamePdfRect`): Acrobat writes three decimals, and a rect the engine
+/// writes is floats.
+pub fn is_same_pdf_rect(rect: PdfRect, other: PdfRect) -> bool {
+    let size = (rect.right - rect.left)
+        .max(rect.top - rect.bottom)
+        .max(other.right - other.left)
+        .max(other.top - other.bottom);
+    let tolerance = 0.01 + 1e-4 * size;
+    (rect.left - other.left).abs() <= tolerance
+        && (rect.bottom - other.bottom).abs() <= tolerance
+        && (rect.right - other.right).abs() <= tolerance
+        && (rect.top - other.top).abs() <= tolerance
+}
+
+/// The upright box around `rect` turned by `degrees` about its middle,
+/// either way (`pdfRectTurnedBounds`). A quarter turn is exact: the sides
+/// swap.
+pub fn pdf_rect_turned_bounds(rect: PdfRect, degrees: f64) -> PdfRect {
+    let turn = ((degrees % 360.0) + 360.0) % 360.0;
+    if turn % 90.0 == 0.0 {
+        if turn == 0.0 || turn == 180.0 {
+            return rect;
+        }
+        let x = (rect.left + rect.right) / 2.0;
+        let y = (rect.bottom + rect.top) / 2.0;
+        let half_width = (rect.top - rect.bottom) / 2.0;
+        let half_height = (rect.right - rect.left) / 2.0;
+        return PdfRect {
+            left: x - half_width,
+            bottom: y - half_height,
+            right: x + half_width,
+            top: y + half_height,
+        };
+    }
+    let radians = degrees * std::f64::consts::PI / 180.0;
+    let cos = radians.cos().abs();
+    let sin = radians.sin().abs();
+    let width = rect.right - rect.left;
+    let height = rect.top - rect.bottom;
+    let half_across = (width * cos + height * sin) / 2.0;
+    let half_up = (width * sin + height * cos) / 2.0;
+    let x = (rect.left + rect.right) / 2.0;
+    let y = (rect.bottom + rect.top) / 2.0;
+    PdfRect { left: x - half_across, bottom: y - half_up, right: x + half_across, top: y + half_up }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -313,5 +686,92 @@ mod tests {
         }
         assert!(PdfRotation::try_from(45).is_err());
         assert_eq!(serde_json::to_value(PdfRotation::Clockwise90).unwrap(), serde_json::json!(90));
+    }
+
+    #[test]
+    fn a_page_without_boxes_is_letter_and_every_box_defaults_to_the_one_above_it() {
+        let boxes = page_boxes_of(WrittenPageBoxes::default());
+        assert_eq!(boxes.media, DEFAULT_MEDIA_BOX);
+        for b in [boxes.crop, boxes.bleed, boxes.trim, boxes.art] {
+            assert_eq!(b, DEFAULT_MEDIA_BOX);
+        }
+
+        let crop = rect(10.0, 20.0, 300.0, 400.0);
+        let trim = rect(15.0, 25.0, 200.0, 300.0);
+        let boxes = page_boxes_of(WrittenPageBoxes {
+            media: Some(rect(0.0, 0.0, 612.0, 792.0)),
+            crop: Some(crop),
+            trim: Some(trim),
+            ..WrittenPageBoxes::default()
+        });
+        assert_eq!((boxes.crop, boxes.bleed, boxes.trim, boxes.art), (crop, crop, trim, crop));
+    }
+
+    #[test]
+    fn every_box_is_cut_to_the_media_box_and_one_off_it_is_empty() {
+        let boxes = page_boxes_of(WrittenPageBoxes {
+            media: Some(rect(0.0, 0.0, 612.0, 792.0)),
+            crop: Some(rect(-10.0, -10.0, 700.0, 800.0)),
+            art: Some(rect(700.0, 100.0, 800.0, 200.0)),
+            ..WrittenPageBoxes::default()
+        });
+        assert_eq!(boxes.crop, rect(0.0, 0.0, 612.0, 792.0));
+        assert_eq!(boxes.art, rect(0.0, 0.0, 0.0, 0.0));
+
+        // A crop box off the page leaves a page with no size, and the boxes
+        // that default to it are empty too.
+        let boxes = page_boxes_of(WrittenPageBoxes {
+            media: Some(rect(0.0, 0.0, 612.0, 792.0)),
+            crop: Some(rect(612.0, 0.0, 700.0, 792.0)),
+            ..WrittenPageBoxes::default()
+        });
+        assert_eq!(boxes.crop, rect(0.0, 0.0, 0.0, 0.0));
+        assert_eq!(boxes.bleed, rect(0.0, 0.0, 0.0, 0.0));
+    }
+
+    #[test]
+    fn a_rotate_that_is_not_a_quarter_turn_is_no_turn() {
+        let cases = [
+            (0, 0),
+            (90, 90),
+            (180, 180),
+            (270, 270),
+            (360, 0),
+            (450, 90),
+            (-90, 270),
+            (-180, 180),
+            (-270, 90),
+            (-360, 0),
+            // Where the old fork's reduction truncated to 0 and 90.
+            (45, 0),
+            (100, 0),
+            (-45, 0),
+        ];
+        for (written, degrees) in cases {
+            assert_eq!(page_rotation_of(written).degrees(), degrees, "/Rotate {written}");
+        }
+    }
+
+    #[test]
+    fn two_rects_that_only_touch_share_nothing() {
+        let a = rect(0.0, 0.0, 10.0, 10.0);
+        assert_eq!(
+            pdf_rect_intersection(a, rect(5.0, 5.0, 20.0, 20.0)),
+            Some(rect(5.0, 5.0, 10.0, 10.0))
+        );
+        assert_eq!(pdf_rect_intersection(a, rect(10.0, 0.0, 20.0, 10.0)), None);
+        assert_eq!(pdf_rect_intersection(a, rect(0.0, 20.0, 10.0, 30.0)), None);
+    }
+
+    #[test]
+    fn a_turn_is_clockwise_on_the_page_and_turns_back() {
+        let origin = point(0.0, 0.0);
+        let turn = PdfPointTurn { degrees: 90.0, center: origin };
+        let turned = pdf_point_turned(point(10.0, 0.0), turn);
+        // Right of the middle turns to below it, which is y down in y-up space.
+        assert!((turned.x - 0.0).abs() < 1e-9 && (turned.y + 10.0).abs() < 1e-9, "{turned:?}");
+        let back = pdf_point_unturned(turned, turn);
+        assert!((back.x - 10.0).abs() < 1e-9 && back.y.abs() < 1e-9, "{back:?}");
+        assert_eq!(pdf_points_bounds(&[]), rect(0.0, 0.0, 0.0, 0.0));
     }
 }

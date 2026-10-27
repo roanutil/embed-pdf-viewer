@@ -1,37 +1,17 @@
-//! `dispatch/triggers.ts`: the config gates, annotation identity, the
-//! page-lifecycle tree cache (the fan-out's read amplifier) and ISO Table
-//! 197's page-step order.
+//! `dispatch/triggers.ts`: the `triggers` setting, the per-page cache of
+//! annotations bearing page-lifecycle trees (the fan-out's read amplifier)
+//! and ISO 32000-2 Table 197's page-step order.
 
-use std::rc::Rc;
-
-use epdf_kernel::Error;
 use epdf_kernel::geometry::PageRef;
+use epdf_kernel::rt::Promise;
 use serde_json::Value;
 
 use crate::ActionsCapability;
 use crate::contract::{ActionSource, ActionTrigger, PageEventKind};
-use crate::services::{get, same_number, str_of, truthy};
+use crate::services::{get, str_of, truthy};
 
-/// `sameRef(left, right)`: two annotation refs name the same annotation.
-pub fn same_ref(left: &Value, right: &Value) -> bool {
-    let page_of = |v: &Value| get(v, "page").and_then(|p| get(p, "pageObjectNumber")).cloned();
-    match (str_of(left, "kind"), str_of(right, "kind")) {
-        ("objectNumber", "objectNumber") => {
-            same_number(get(left, "annotObjectNumber"), get(right, "annotObjectNumber"))
-        }
-        ("nm", "nm") => {
-            same_number(page_of(left).as_ref(), page_of(right).as_ref())
-                && get(left, "nm") == get(right, "nm")
-        }
-        ("index", "index") => {
-            same_number(page_of(left).as_ref(), page_of(right).as_ref())
-                && same_number(get(left, "index"), get(right, "index"))
-        }
-        _ => false,
-    }
-}
-
-/// An annotation bearing page-lifecycle trees (PO/PC/PV/PI).
+/// An annotation that carries at least one page-lifecycle tree (/PO, /PC,
+/// /PV, /PI), as read.
 #[derive(Clone)]
 pub(crate) struct LifecycleAnnot {
     pub(crate) annotation_ref: Value,
@@ -40,78 +20,160 @@ pub(crate) struct LifecycleAnnot {
 
 const LIFECYCLE_KEYS: [&str; 4] = ["pageOpen", "pageClose", "pageVisible", "pageInvisible"];
 
-impl ActionsCapability {
-    /// `triggerEnabled(trigger)`: `activate` is never gated.
-    pub(crate) fn trigger_enabled(&self, trigger: &ActionTrigger) -> bool {
-        let gates = self.0.config.triggers.as_ref();
-        match trigger {
-            ActionTrigger::Activate { .. } => true,
-            ActionTrigger::Annotation { .. } => gates.and_then(|g| g.annotation) != Some(false),
-            ActionTrigger::Page { .. } => gates.and_then(|g| g.page) != Some(false),
-            ActionTrigger::Document { .. } => gates.and_then(|g| g.document) != Some(false),
+/// Per page, the pending or settled read of its lifecycle-bearing
+/// annotations, in insertion order (`Map<PageObjectNumber, Promise>`).
+#[derive(Default)]
+pub(crate) struct LifecycleReads(Vec<(u32, Promise<Vec<LifecycleAnnot>>)>);
+
+impl LifecycleReads {
+    fn get(&self, pon: u32) -> Option<Promise<Vec<LifecycleAnnot>>> {
+        self.0.iter().find(|(p, _)| *p == pon).map(|(_, read)| read.clone())
+    }
+
+    fn set(&mut self, pon: u32, read: Promise<Vec<LifecycleAnnot>>) {
+        match self.0.iter_mut().find(|(p, _)| *p == pon) {
+            Some(entry) => entry.1 = read,
+            None => self.0.push((pon, read)),
         }
     }
 
-    /// The cache is invalidated wholesale on any `annotation.*` document
-    /// event and on `stream.desynced` (gap events never arrive).
-    pub(crate) fn subscribe_lifecycle_cache(&self) {
-        let Ok(doc) = self.doc() else { return };
-        let weak = self.weak();
-        let unsubscribe = doc.subscribe(Rc::new(move |event: &Value| {
-            let kind = str_of(event, "type");
-            if (kind.starts_with("annotation.") || kind == "stream.desynced")
-                && let Some(this) = ActionsCapability::upgrade(&weak)
-            {
-                this.0.lifecycle_cache.borrow_mut().clear();
-            }
-        }));
-        self.0.cx.listen(unsubscribe);
-    }
-
-    /// `lifecycleTreesFor(pon)`: the page's annotations that bear a
-    /// page-lifecycle tree, read once per page until invalidated.
-    pub(crate) async fn lifecycle_trees_for(self, pon: u32) -> Result<Vec<LifecycleAnnot>, Error> {
-        let hit =
-            self.0.lifecycle_cache.borrow().iter().find(|(p, _)| *p == pon).map(|(_, v)| v.clone());
-        if let Some(hit) = hit {
-            return Ok(hit);
-        }
-        let doc = self.doc()?;
-        doc.page_index(pon)?;
-        let listed = doc.call("page.annotations.list", Some(pon), Vec::new()).await?;
-        let bearing: Vec<LifecycleAnnot> = get(&listed, "annotations")
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|a| {
-                let actions = get(a, "actions");
-                truthy(actions)
-                    && LIFECYCLE_KEYS.iter().any(|key| {
-                        truthy(actions.and_then(|x| get(x, key)).and_then(|t| get(t, "root")))
-                    })
-            })
-            .map(|a| LifecycleAnnot {
-                annotation_ref: get(&a, "ref").cloned().unwrap_or(Value::Null),
-                actions: get(&a, "actions").cloned().unwrap_or(Value::Null),
-            })
-            .collect();
-        let mut cache = self.0.lifecycle_cache.borrow_mut();
-        cache.retain(|(p, _)| *p != pon);
-        cache.push((pon, bearing.clone()));
-        Ok(bearing)
+    fn delete(&mut self, pon: u32) {
+        self.0.retain(|(p, _)| *p != pon);
     }
 }
 
-/// `planPageSteps(event, pon, pageActions, lifecycle)`: ISO order, PO after
-/// the page O and PC before the page C. Rootless trees are skipped.
+/// The pages whose annotations an event changes: those pages, every page
+/// (`All`: a redaction, a skipped stretch of the stream, new document
+/// bytes), or none.
+enum AnnotationPages {
+    None,
+    All,
+    Pages(Vec<u32>),
+}
+
+fn page_number(page: &Value) -> Option<u32> {
+    PageRef::from_json(page).map(|p| p.page_object_number)
+}
+
+fn annotation_pages_of(event: &Value) -> AnnotationPages {
+    match str_of(event, "type") {
+        "annotations.created"
+        | "annotations.updated"
+        | "annotations.deleted"
+        | "annotations.reordered"
+        | "annotations.flattened"
+        | "forms.widgetsReordered" => {
+            AnnotationPages::Pages(get(event, "page").and_then(page_number).into_iter().collect())
+        }
+        // A form write can add, move or remove widgets, which carry page
+        // actions too.
+        "forms.created"
+        | "forms.deleted"
+        | "forms.widgetAdded"
+        | "forms.widgetRemoved"
+        | "forms.widgetDeleted"
+        | "forms.widgetRestored"
+        | "forms.widgetUpdated"
+        | "forms.restored"
+        | "forms.repaired" => AnnotationPages::All,
+        "pages.flattened" => AnnotationPages::Pages(
+            get(event, "pages")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .filter_map(page_number)
+                .collect(),
+        ),
+        "redaction.applied" | "stream.desynced" | "document.versioned" => AnnotationPages::All,
+        _ => AnnotationPages::None,
+    }
+}
+
+impl ActionsCapability {
+    /// `triggerEnabled(trigger)`: `activate` is never gated.
+    pub(crate) fn trigger_enabled(&self, trigger: &ActionTrigger) -> bool {
+        let triggers = self.settings_now().triggers;
+        match trigger {
+            ActionTrigger::Activate { .. } => true,
+            ActionTrigger::Annotation { .. } => triggers.annotation,
+            ActionTrigger::Page { .. } => triggers.page,
+            ActionTrigger::Document { .. } => triggers.document,
+        }
+    }
+
+    /// `lifecycleAnnotationsOf(page)`. Reads start only inside the queued
+    /// operation that needs them, so a trigger sees every change made by the
+    /// operations queued before it. Holding the promise lets concurrent
+    /// readers share one read; dropping it on invalidation means a read in
+    /// flight when its page changed is never reused.
+    pub(crate) fn lifecycle_annotations_of(&self, page: PageRef) -> Promise<Vec<LifecycleAnnot>> {
+        let key = page.page_object_number;
+        if let Some(cached) = self.0.lifecycle_reads.borrow().get(key) {
+            return cached;
+        }
+        let read = Promise::spawn(self.clone().read_page_annotations(page, None)).map(
+            |annotations: Vec<Value>| {
+                Ok(annotations
+                    .into_iter()
+                    .filter(|annotation| {
+                        let actions = get(annotation, "actions");
+                        truthy(actions)
+                            && LIFECYCLE_KEYS.iter().any(|key| {
+                                truthy(
+                                    actions.and_then(|a| get(a, key)).and_then(|t| get(t, "root")),
+                                )
+                            })
+                    })
+                    .map(|annotation| LifecycleAnnot {
+                        annotation_ref: get(&annotation, "ref").cloned().unwrap_or(Value::Null),
+                        actions: get(&annotation, "actions").cloned().unwrap_or(Value::Null),
+                    })
+                    .collect())
+            },
+        );
+        self.0.lifecycle_reads.borrow_mut().set(key, read.clone());
+        // A failed read is not kept: the next trigger for the page reads again.
+        let (weak, own) = (self.weak(), read.clone());
+        let observed = read.clone();
+        epdf_kernel::rt::spawn(async move {
+            if observed.reaction().await.is_err()
+                && let Some(this) = ActionsCapability::upgrade(&weak)
+            {
+                let current =
+                    this.0.lifecycle_reads.borrow().get(key).is_some_and(|r| r.same(&own));
+                if current {
+                    this.0.lifecycle_reads.borrow_mut().delete(key);
+                }
+            }
+        });
+        read
+    }
+
+    /// `invalidate(event)`: forget the pages a confirmed document event
+    /// changed.
+    pub(crate) fn invalidate_lifecycle_reads(&self, event: &Value) {
+        let mut reads = self.0.lifecycle_reads.borrow_mut();
+        match annotation_pages_of(event) {
+            AnnotationPages::All => reads.0.clear(),
+            AnnotationPages::Pages(pages) => {
+                for pon in pages {
+                    reads.delete(pon);
+                }
+            }
+            AnnotationPages::None => {}
+        }
+    }
+}
+
+/// `planPageSteps(event, page, pageActions, lifecycle)`: ISO Table 197
+/// order, /PO after the page /O and /PC before the page /C. Rootless trees
+/// are skipped.
 pub(crate) fn plan_page_steps(
     event: PageEventKind,
-    pon: u32,
+    page: PageRef,
     page_actions: Option<&Value>,
     lifecycle: &[LifecycleAnnot],
 ) -> Vec<(ActionSource, Value)> {
-    let page = PageRef::new(pon);
     let annot_steps = |key: &str| -> Vec<(ActionSource, Value)> {
         lifecycle
             .iter()

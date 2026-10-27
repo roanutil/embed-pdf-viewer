@@ -1,97 +1,87 @@
 # epdf-plugin-link
 
-`packages/plugin/link` in Rust, on the v3 controller shape. All 27 cases replay identically
-(`cargo test -p epdf-plugin-link`):
+`packages/plugin/link` in Rust, ported to the current TypeScript (Task 13.21): `create()` builds the
+controller, the stand-alone source is a kernel page mirror, `connect` registers the `link-nav`
+behavior with the annotation plugin, and activation resolves to a page-space destination that the
+stage reveals. All 37 cases replay (`cargo test -p epdf-plugin-link`), with no member-order
+allowance:
 
 | File | Kind | Cases | Covers |
 |---|---|---|---|
-| `vectors/plugins/link.json` | scenario | 18 | the stand-alone source (per-page reads, joined in-flight loads, retries after a refused read, malformed lists, refetch on annotation events, `onLoaded`), the annotation-backed source, hit testing and lookup, `listAllLinks` and `isLoaded`, `resolve` and `getLabel`, the `link-nav` behavior and `isNavigationEngaged`, and `activate` and `activateAt` with no stage, with a stage, and through the action engine |
-| `vectors/plugins/link-functions.json` | function | 9 | `linkReducer` and `initialLinkState` |
+| `vectors/plugins/link.json` | scenario | 29 | the page-mirror source (stable `obj:n` and `base:page:n` ids, flat `hidden`/`noView`, grouped replies, refused reads and retries, joined reads, refetch on confirmed changes, page drops), the annotation-backed source, `link-nav`, activation with and without a stage and through the action engine, hit testing, labels and `resolve`, `listAllLinks`, `onLoaded` |
+| `vectors/plugins/link-functions.json` | function | 8 | `resolveLinkTarget` |
 
 The scenarios run the real interaction, annotation, actions and stage adapters beside this one, in
-the combinations a deployment ships: viewer-only, annotation-backed, with a stage, and all of them.
+the combinations a deployment ships.
 
-## The API
+`tests/behavior.rs` covers what the vectors don't print: a caller's cancel rejects that caller while
+the shared read lands for the others, a signal already aborted still lets the read fill the cache,
+`listAllLinks` cancelled midway keeps what landed, a close drops a read in flight quietly, `not-found`
+for a ref or an index, hidden and grouped links, destination activation with and without a stage,
+the website opener, and the turns a load takes, measured on the TypeScript.
 
-`link_plugin(LinkConfig)` builds the plugin, `LINK` is its token and `LinkCapability` its
-capability, which is also `LinkHostCapability`. The members are the TypeScript's in snake case:
-`list_links`, `get_link`, `get_link_at`, `list_all_links`, `ensure_loaded`, `is_loaded`, `resolve`,
-`activate`, `activate_at`, `get_label`, `on_activated`, `on_loaded` and `is_navigation_engaged`.
-`LinkNavBehavior` is the behavior `connect` registers with the annotation plugin, and
-`load_links_page` and `project_links` are the stand-alone source.
+## The public API
 
-`activate` and `activate_at` take a `LinkInput`, a bare `PdfLinkTarget` or a whole `Link`, where the
-TypeScript tests `'target' in value && 'bounds' in value`. `LinkActivateContext` keeps each member
-as present-or-absent JSON, because activation spreads the context over the link's own `activate`
-and `ref` and a present `null` wins (`activate-dispatches-through-actions`). `get_label` reads the
-target's `kind` as JSON, so any shape gets a label.
+`link_plugin()` builds the plugin, `LINK` is its token and `LinkCapability` its capability, which is
+also `LinkHostCapability`. The members are the TypeScript's in snake case: `list_links`, `get_link`,
+`get_link_at`, `list_all_links`, `ensure_loaded`, `is_loaded`, `get_status`, `resolve`, `activate`,
+`activate_at`, `get_label`, `on_activated`, `on_loaded`, `register_uri_opener` and
+`is_navigation_engaged`. `resolve_link_target` is the shared pure rule, `links_of` the stand-alone
+source and `pages_changed_by` the events that refetch a loaded page.
 
-`resolve`, `activate` and `activate_at` return `Err` where the TypeScript throws: a goto to a page
-whose `userUnit` is 0 (`Mat2D.invert: non-invertible matrix (det = 0)`). `activate` also errs on a
-`Link` whose `target` does not decode as a `PdfLinkTarget`.
+A link, its target, its destination and its `/A` tree are the engine's records as JSON (`Value`), as
+the annotation plugin carries them since Task 13.17. A page argument is `PageTarget`, a `PageRef` or a
+display index, as `PageRef | number`. `list_links` returns the page's list as an `Rc<Value>`, the
+mirror's own while the page is unchanged. `LinkActivateContext` keeps each member as present or
+absent, because activation spreads it over the link's own `activate` and `ref` and a present member
+wins whatever its value; its `stage` member is the view the link was followed in.
 
-## Host input and the harness shims
+## Migrating from the pre-13.21 API
 
-A throwing `onActivated` or `onLoaded` listener goes to `console.error('[link] event listener
-failed:', error)` and no longer escapes `activate`. That comes in as `LinkConfig::host`. The
-vectors log it as a `console.error` callback (`a-throwing-listener-throws-out-of-activate`, whose
-name predates v3).
+For the viewer host and `epdf-web` (Task 13.33).
 
-v2 took `onActivate` as config. The generator's `link` factory subscribes the scripted callback to
-`onActivated` as soon as the controller is built, before `connect`, and logs a dispatched
-activation's promise as `[promise]`. `harness.rs` does the same through the crate-private
-`build_link_plugin(config, on_created)`.
+| Old | New |
+|---|---|
+| `link_plugin(LinkConfig { host: LinkHost { console_error } })` | `link_plugin()`; a throwing listener goes to the kernel's report |
+| typed `Link` (`LinkNavItem`), `PdfLinkTarget`, `PdfDestination`, `HoverFlags` | `Value` records |
+| `LinkResolution::Reveal { page, page_index, options }` | `LinkResolution::Destination`; the reveal happens in `activate` through `go_to_destination` |
+| `resolve` and `activate` returning `Result` | infallible: page-space destinations need no inversion |
+| `LinkInput` | the input as `Value`, a link when it has `target` and `bounds` |
+| `LinkState`, `LinkAction`, `link_reducer`, `initial_link_state`, `load_links_page`, `project_links` | the kernel page mirror; `links_of` |
+| `LinkActivatedEvent.origin` | removed with the TypeScript's |
+| `ensure_loaded(&PageRef)`, `list_all_links()` | `ensure_loaded(page, OperationOptions)`, `list_all_links(OperationOptions)` |
+| `get_input_label` | `get_label`, which takes either |
+| ffi `PdfLinkTarget`, `PdfDestination` members, `LinkHandle::with_report` | `target_json`, `destination_json`, in page space: a host decodes them with `epdf_ffi::PageLinkTarget::from_json` and `epdf_ffi::PageDestination::from_json` (not the file-space `PdfLinkTarget`). Activation no longer fails, so there is no report |
+| ffi `all_links` skipping a link with no page | an `invalid-input` error |
 
-## Turn order
+`src/ffi.rs` and `tests/ffi.rs` were migrated by hand, and are compiled and tested since Task 13.33,
+when the viewer host moved to `link_plugin()` and `LinkHandle::new`.
 
-`loadLinksPage` awaits the engine read (the three turns of
-`epdf_plugin_annotation::promise::await_engine`), and `ensureLoaded` returns its `.then` derivative,
-one turn later. The refetch chains `.then` too. `listAllLinks` is `await Promise.all(...)`.
+## Where the port differs
 
-A list the loop throws on (not iterable, a `null` entry, a link without `flags`, `ref` or `rect`)
-rejects `ensureLoaded` with the JavaScript `TypeError` text (`viewer-only-malformed-lists`), and the
-rejected load stays in the in-flight map, as it does in the TypeScript.
+Kept Rust-only divergences, none reached by a vector:
 
-## Where the port differs in shape
+- A `goto` destination the stage's `PageDestination` cannot decode gets a bare reveal of its page,
+  which is what `goToDestination` does for an unknown `kind` (`revealOfDestination` has no spot for
+  it). For a known kind with a member the stage cannot read, the TypeScript places the camera from
+  that member; Rust reveals the page bare and sends the decode error to the kernel report
+  (`an_undecodable_destination_still_reveals_its_page`).
+- A context `page` that is not a `PageRef` is dropped from the action source, which the actions
+  plugin types; the TypeScript passes it through.
+- `get_label` of a `uri` or `name` that is not a string answers its JSON text, where the TypeScript
+  returns the value.
+- With the annotation plugin installed, `list_links` wraps the plugin's cached list in a fresh `Rc`,
+  so identity is per call there.
+- `links_of` gives an `objectNumber` ref with no number the id `undefined`, where `annotationKey`
+  builds `"obj:undefined"`, and a `baseIndex` ref with no page the same, where the TypeScript throws.
+- A `null` list snapshot fails `annotations is not iterable`, where the TypeScript throws
+  `Cannot read properties of null (reading 'annotations')`.
+- `get_link_at` treats a link with no `bounds` as a miss, where the TypeScript throws reading it.
+- `resolve` reads a destination with no `page` as a page the document doesn't have, where
+  `pageRefsEqual` would throw reading off `undefined`.
+- The harness's scripted `registerUriOpener` reads a throwing opener as a refusal, since `UriOpener`
+  answers a `bool`; the TypeScript's throw leaves `activate`. No vector registers one.
 
-The cache is a `BTreeMap<u32, Vec<Link>>`. The TypeScript's `Record<number, ...>` keys are strings;
-every page now arrives as a `PageRef`, so the keys never meet a string.
-
-`anno()` reads a `try_get` error as absence. The kernel only errs there when a capability's
-constructor threw, which fails the open before any link call can run.
-
-A malformed `ref` on an engine DTO still differs, and no vector feeds it: `Link.ref_` is a typed
-`AnnotationRef`, so a ref that does not decode is dropped where the TypeScript copies it verbatim.
-
-## Coverage
-
-The generators reach 460 of the package's 461 statements and 128 of its 132 branches
-(`vectors/coverage.json`). What is left cannot be reached from the public surface:
-
-- `controller.ts:121-122`, the `reported` arm of a `reveal` resolution. Only a `goto` resolves to a
-  reveal.
-- `controller.ts:174`, `listAllLinks` without a document. The plugin is document-scoped.
-- `controller.ts:190` and `link.plugin.ts:41`, the `?? false` after `getActiveTool()?.`. The hub's
-  `getActiveTool` always returns a tool, falling back to a neutral one for an unknown id.
-
-The function fixture `item()` in `suites/link.ts` still built v2 items with `rect`; it builds
-`bounds` now, so `link-functions.json` carries the v3 `Link` shape.
-
-## Mutation testing
-
-`scripts/mutants.sh -p epdf-plugin-link --test-package epdf-plugin-link --file <file>`, file by
-file over every module but `harness.rs`, catches 95 of 96 viable mutants (95 caught, 0 timeouts;
-34 unviable). Six of those are killed by two new cases, each checked by applying the mutant by
-hand:
-
-- `hit-testing-by-area` puts a tall, a square and a wide link over one corner. A point on the square
-  and the wide link kills both mutants of the area product in `get_link_at` (`controller.rs:117`):
-  the sum and the ratio both prefer the square. A point right of every link and one below every
-  link kill `b.x + b.width` and `b.y + b.height` to `*` in `contains` (`controller.rs:37`).
-- `activate-at-dispatches-with-the-page` runs `activateAt` with the actions plugin and listens to
-  `onExecuted`. Dropping the page from the context (`controller.rs:303`) drops it from the dispatch
-  source. With an empty context, `spread` as `Default::default()` (`contract.rs:131`) loses the
-  link's own tree, so the activation takes the classic path.
-
-The one survivor is `src/model.rs:42`, `initial_link_state` as `Default::default()`. The function
-body is `LinkState::default()` already.
+`loads_settle_on_the_typescripts_turns` pins the turns a load takes, measured on the TypeScript,
+including the three of the `.finally` that `page-mirror.ts:194` chains onto each load (kernel
+`6e678f93b`).

@@ -100,20 +100,13 @@ mod tests {
     fn stamps_version_and_variant_over_whatever_the_source_gave() {
         // All-ones input: the only nibbles that may differ from `f` are the
         // version nibble and the top two bits of the variant nibble.
-        assert_eq!(
-            uuid_v4_from_bytes([0xff; 16]),
-            "ffffffff-ffff-4fff-bfff-ffffffffffff"
-        );
-        assert_eq!(
-            uuid_v4_from_bytes([0x00; 16]),
-            "00000000-0000-4000-8000-000000000000"
-        );
+        assert_eq!(uuid_v4_from_bytes([0xff; 16]), "ffffffff-ffff-4fff-bfff-ffffffffffff");
+        assert_eq!(uuid_v4_from_bytes([0x00; 16]), "00000000-0000-4000-8000-000000000000");
     }
 
     #[test]
     fn a_seeded_source_repeats_exactly_for_the_same_seed() {
-        let first: Vec<String> =
-            (0..3).map(|_| SeededIdSource::new(7).next_uuid_v4()).collect();
+        let first: Vec<String> = (0..3).map(|_| SeededIdSource::new(7).next_uuid_v4()).collect();
         let source = SeededIdSource::new(7);
         let sequence: Vec<String> = (0..3).map(|_| source.next_uuid_v4()).collect();
 

@@ -65,7 +65,7 @@ impl BaseDocumentRegistry {
         // borrowed would poison every later acquire.
         let base = Rc::new(
             BaseDocument::from_bytes(Library::acquire(), bytes, password)
-                .map_err(|e| open_error(e, password.is_some()))?,
+                .map_err(|e| open_error(e, password_given(password)))?,
         );
 
         self.entries
@@ -99,7 +99,7 @@ impl BaseDocumentRegistry {
         })?;
         let base = Rc::new(
             BaseDocument::from_file_access(Library::acquire(), access, password)
-                .map_err(|e| open_error(e, password.is_some()))?,
+                .map_err(|e| open_error(e, password_given(password)))?,
         );
         self.entries
             .borrow_mut()
@@ -149,6 +149,12 @@ impl BaseDocumentRegistry {
     }
 }
 
+/// Whether a password was given, as `loadFailure` asks it (`password ?`):
+/// an empty one is none.
+pub(crate) fn password_given(password: Option<&str>) -> bool {
+    password.is_some_and(|p| !p.is_empty())
+}
+
 /// PDFium's open failure in the engine's vocabulary.
 ///
 /// Three answers, not one. A missing password means prompt, a wrong one means
@@ -158,15 +164,16 @@ fn open_error(error: PdfiumError, password_supplied: bool) -> EngineError {
     match error {
         PdfiumError::Password if password_supplied => EngineError::with_message(
             EngineErrorCode::DocPasswordIncorrect,
-            "incorrect base document password",
+            "incorrect document password",
         ),
         PdfiumError::Password => EngineError::with_message(
             EngineErrorCode::DocPasswordRequired,
-            "base document requires a password",
+            "document requires a password",
         ),
-        other => EngineError::with_message(
+        // `baseOpenError`'s words, whatever PDFium said.
+        _ => EngineError::with_message(
             EngineErrorCode::DocOpenFailed,
-            format!("failed to open base document: {other}"),
+            "failed to open base document",
         ),
     }
 }
@@ -307,6 +314,11 @@ mod tests {
         assert_eq!(
             registry.acquire_memory("a", &bytes, Some("wrong")).expect_err("wrong").code,
             EngineErrorCode::DocPasswordIncorrect,
+        );
+        // An empty password is none (`loadFailure`'s `password ?`).
+        assert_eq!(
+            registry.acquire_memory("a", &bytes, Some("")).expect_err("empty").code,
+            EngineErrorCode::DocPasswordRequired,
         );
         registry.acquire_memory("a", &bytes, Some("user")).expect("the right password");
         // A failed acquire leaves nothing registered.

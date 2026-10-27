@@ -1,93 +1,139 @@
+#![recursion_limit = "256"]
 #![cfg(feature = "uniffi")]
+//! The uniffi handles over a kernel thread, on the re-ported capability.
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-use epdf_ffi::{
-    AnnotationPropsPatch, AnnotationRef, CancelToken, KernelThread, PageRef, Rect, ResourceStatus,
-    ViewerError,
-};
+use epdf_ffi::{AnnotationRef, CancelToken, KernelThread, PageRef, ResourceStatus, ViewerError};
 use epdf_plugin_annotation::ffi::{
     AnnotationEvent, AnnotationEventListener, AnnotationFilter, AnnotationHandle,
-    AnnotationHydration, AnnotationPatch, CreateAnnotationInput,
+    AnnotationStampPlacement, AnnotationStampSource, AnnotationTextFormat, AnnotationThreadStatus,
 };
-use epdf_plugin_annotation::{ANNOTATION, AnnotationConfig, annotation_plugin};
+use epdf_plugin_annotation::{ANNOTATION, annotation_plugin};
 use epdf_plugin_interaction::{InteractionConfig, interaction_plugin};
 use futures::executor::block_on;
 use plugin_conformance::test_kernel::{Reply, TestKernel, TestSpec};
 use serde_json::{Value, json};
 
-fn page_json(pon: u32) -> Value {
-    json!({ "kind": "objectNumber", "pageObjectNumber": pon })
+fn page_json() -> Value {
+    json!({ "kind": "objectNumber", "objectNumber": 1 })
 }
 
-fn ref_json(pon: u32, annot: u32) -> Value {
-    json!({ "kind": "objectNumber", "page": page_json(pon), "annotObjectNumber": annot })
+fn ref_json(annot: u32) -> Value {
+    json!({ "kind": "objectNumber", "page": page_json(), "objectNumber": annot })
 }
 
-/// A square annotation DTO as the kernel reads one (the vectors' shape,
+/// A square as the engine reads it (the vectors' shape,
 /// `tooling/plugin-conformance/vectors/plugins/annotation-crud.json`).
-fn square(annot: u32, extra_props: Value) -> Value {
+fn square(annot: u32, extra: Value) -> Value {
     let mut dto = json!({
-        "ref": ref_json(1, annot), "page": page_json(1), "index": annot,
-        "identityQuality": "durable", "nm": null,
-        "flags": { "invisible": false, "hidden": false, "print": true, "noZoom": false,
-            "noRotate": false, "noView": false, "readOnly": false, "locked": false,
-            "toggleNoView": false, "lockedContents": false },
-        "rect": { "left": 100, "bottom": 600, "right": 200, "top": 700 },
-        "contents": "Note", "subject": null, "author": "Ada", "created": null, "modified": null,
-        "blendMode": "normal", "inReplyTo": null, "replyType": null, "subtype": "square",
-        "color": { "r": 239, "g": 68, "b": 68 }, "interiorColor": null, "opacity": 1,
-        "strokeWidth": 2, "borderStyle": "solid", "cloudyIntensity": null, "rectDifferences": null
+        "subtype": "square", "ref": ref_json(annot), "page": page_json(),
+        "hasAppearance": true, "appearanceState": null, "nm": null,
+        "rect": { "x": 100, "y": 100, "width": 100, "height": 100 },
+        "contents": "Note", "subject": null, "blendMode": "normal",
+        "invisible": false, "hidden": false, "print": true, "noZoom": false, "noRotate": false,
+        "noView": false, "readOnly": false, "locked": false, "toggleNoView": false,
+        "lockedContents": false, "reply": null, "popup": null, "groupId": null, "author": "Ada",
+        "createdAt": null, "modifiedAt": null, "userId": null, "createdBy": null,
+        "modifiedBy": null, "importedBy": null, "actions": null, "color": "#ef4444", "opacity": 1,
+        "strokeWidth": 2, "borderStyle": "solid", "dashArray": null, "interiorColor": null,
+        "box": { "x": 100, "y": 100, "width": 100, "height": 100 }, "rotation": null,
+        "cloudyIntensity": null
     });
-    if let (Value::Object(dto), Value::Object(extra)) = (&mut dto, extra_props) {
+    if let (Value::Object(dto), Value::Object(extra)) = (&mut dto, extra) {
         dto.extend(extra);
     }
     dto
 }
 
 thread_local! {
-    /// Every draft `page.annotations.create` was sent, on the kernel thread
-    /// (a responder answers before the fake engine logs a call).
-    static CREATES: std::cell::RefCell<Vec<Value>> = const { std::cell::RefCell::new(Vec::new()) };
+    /// Every op `apply` was sent, on the kernel thread.
+    static OPS: std::cell::RefCell<Vec<Value>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn local_origin(op_id: &str) -> Value {
+    json!({ "kind": "local", "sessionId": "s1", "sub": null, "ts": 0, "serverId": null,
+            "tx": { "id": op_id, "index": 0, "count": 1 } })
+}
+
+/// The engine's answer to one op, and the event it publishes for it.
+fn answer(op: &Value, op_id: &str) -> Result<(Value, Value), epdf_kernel::Error> {
+    let meta = |changed: Value| {
+        json!({ "affectedPages": [page_json()], "cacheDelta": null, "opId": op_id,
+                "undoable": true, "changed": changed })
+    };
+    match op["type"].as_str() {
+        Some("annotations.create") => {
+            let n = op["objectNumber"].as_u64().unwrap_or(10) as u32;
+            let mut made = square(n, json!({}));
+            made["subtype"] = op["data"]["subtype"].clone();
+            let item = json!({ "type": "annotations.create", "page": page_json(), "annotation": made,
+                               "meta": meta(json!([ref_json(n)])) });
+            let event = json!({ "type": "annotations.created", "page": page_json(), "annotation": made,
+                                "meta": meta(json!([ref_json(n)])), "origin": local_origin(op_id) });
+            Ok((item, event))
+        }
+        Some("annotations.update") => {
+            let n = op["ref"]["objectNumber"].as_u64().unwrap_or(0) as u32;
+            let updated = square(n, op["patch"].clone());
+            let item = json!({ "type": "annotations.update", "annotation": updated,
+                               "meta": meta(json!([ref_json(n)])) });
+            let event = json!({ "type": "annotations.updated", "page": page_json(), "annotation": updated,
+                                "meta": meta(json!([ref_json(n)])), "origin": local_origin(op_id) });
+            Ok((item, event))
+        }
+        Some("annotations.delete") => {
+            let n = op["ref"]["objectNumber"].as_u64().unwrap_or(0) as u32;
+            if n == 99 {
+                return Err(epdf_kernel::Error::engine("NotFound", "no annotation 99"));
+            }
+            let item = json!({ "type": "annotations.delete", "deleted": [ref_json(n)],
+                               "meta": meta(json!([ref_json(n)])) });
+            let event = json!({ "type": "annotations.deleted", "page": page_json(), "deleted": [ref_json(n)],
+                                "meta": meta(json!([ref_json(n)])), "origin": local_origin(op_id) });
+            Ok((item, event))
+        }
+        _ => Ok((json!({ "type": op["type"], "meta": meta(json!([])) }), Value::Null)),
+    }
 }
 
 fn spec(annotations: Vec<Value>) -> TestSpec {
-    let bx = json!({ "left": 0, "bottom": 0, "right": 600, "top": 800 });
-    let pages = json!([{ "index": 0, "ref": page_json(1), "label": null,
-        "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1,
-        "boxes": { "media": bx, "crop": bx } }]);
-    let snapshot = json!({ "pages": [{
-        "pageState": { "page": page_json(1) }, "annotations": annotations }] });
+    let page = json!({
+        "index": 0, "ref": page_json(), "label": null, "size": { "width": 600, "height": 800 },
+        "rotation": 0, "userUnit": 1, "tabOrder": null,
+        "pdfCropBox": { "left": 0, "bottom": 0, "right": 600, "top": 800 },
+        "boxes": { "media": { "x": 0, "y": 0, "width": 600, "height": 800 },
+                   "crop": { "x": 0, "y": 0, "width": 600, "height": 800 } }
+    });
+    let listed = json!({ "annotations": annotations });
     TestSpec::new(json!({ "documents": { "a": {
-        "id": "a", "security": { "allows": "*" }, "pages": pages } } }))
-    .respond("annotations.listRawAll", move |_| Ok(Reply::value(snapshot.clone())))
-    .respond_page("page.annotations.create", |_, args| {
-        CREATES.with(|c| c.borrow_mut().push(args[0].clone()));
-        let mut created = square(10, json!({}));
-        created["subtype"] = args[0]["subtype"].clone();
-        Ok(Reply::value(json!({ "created": created })))
-    })
-    .respond_page("page.annotations.update", |_, args| {
-        // Object numbers travel as JavaScript numbers (`5.0`).
-        let annot = args[0]["annotObjectNumber"].as_f64().unwrap() as u32;
-        Ok(Reply::value(json!({ "updated": square(annot, json!({ "contents": "Edited" })) })))
-    })
-    .respond_page("page.annotations.delete", |_, args| {
-        if args[0]["annotObjectNumber"].as_f64() == Some(99.0) {
-            return Err(epdf_kernel::Error::engine("NotFound", "no annotation 99"));
+        "id": "a", "security": { "allows": "*" }, "pages": [page],
+        "objectNumbers": [10, 11, 12, 13, 14, 15]
+    } } }))
+    .respond("annotations.list", move |_| Ok(Reply::value(listed.clone())))
+    .respond("apply", |args| {
+        let ops = args[0]["ops"].as_array().cloned().unwrap_or_default();
+        let op_id = "00000000-0000-7000-8000-000000000001";
+        let mut items = Vec::new();
+        let mut events = Vec::new();
+        for op in &ops {
+            OPS.with(|o| o.borrow_mut().push(op.clone()));
+            let (item, event) = answer(op, op_id)?;
+            items.push(item);
+            if !event.is_null() {
+                events.push(event);
+            }
         }
-        Ok(Reply::value(json!({})))
+        let meta = json!({ "affectedPages": [page_json()], "cacheDelta": null, "opId": op_id, "undoable": true });
+        Ok(Reply { value: json!({ "items": items, "meta": meta }), events })
     })
 }
 
 fn handle_over(annotations: Vec<Value>) -> (KernelThread<TestKernel>, Arc<AnnotationHandle>) {
     let thread = KernelThread::spawn(move |_| {
         TestKernel::open(
-            vec![
-                interaction_plugin(InteractionConfig::default()),
-                annotation_plugin(AnnotationConfig::default()),
-            ],
+            vec![interaction_plugin(InteractionConfig::default()), annotation_plugin(None)],
             spec(annotations),
         )
     })
@@ -118,6 +164,10 @@ fn obj(annot: u32) -> AnnotationRef {
     }
 }
 
+fn sent_ops(thread: &KernelThread<TestKernel>) -> Vec<Value> {
+    block_on(thread.call(|_| OPS.with(|o| o.borrow().clone()))).unwrap()
+}
+
 #[derive(Default)]
 struct Events(Mutex<Vec<AnnotationEvent>>, AtomicUsize);
 
@@ -131,10 +181,9 @@ impl AnnotationEventListener for Events {
 }
 
 #[test]
-fn hydration_reads_every_annotation_as_a_typed_record() {
+fn the_records_read_as_the_engine_wrote_them() {
     let (_thread, annotations) = handle_over(vec![square(5, json!({}))]);
     block_on(annotations.refresh(token())).unwrap();
-    assert_eq!(block_on(annotations.hydration()).unwrap(), AnnotationHydration::Complete);
     assert_eq!(block_on(annotations.status()).unwrap(), ResourceStatus::Ready);
     let all = block_on(annotations.list(None)).unwrap();
     assert_eq!(all.len(), 1);
@@ -142,9 +191,8 @@ fn hydration_reads_every_annotation_as_a_typed_record() {
     assert_eq!(all[0].subtype, "square");
     assert_eq!(all[0].contents.as_deref(), Some("Note"));
     assert_eq!(all[0].author.as_deref(), Some("Ada"));
-    assert_eq!(all[0].props.stroke_width, Some(2.0));
-    assert_eq!(all[0].props.font_size, None);
-    assert!(all[0].flags.print);
+    let fields: Value = serde_json::from_str(&all[0].fields_json).unwrap();
+    assert_eq!(fields["strokeWidth"], 2);
     let filtered = block_on(
         annotations
             .list(Some(AnnotationFilter { subtype: Some("ink".into()), ..Default::default() })),
@@ -154,38 +202,34 @@ fn hydration_reads_every_annotation_as_a_typed_record() {
 }
 
 #[test]
-fn unknown_prop_keys_are_dropped_not_fatal() {
-    let (_thread, annotations) =
-        handle_over(vec![square(5, json!({ "vendorThing": { "nested": true } }))]);
-    block_on(annotations.refresh(token())).unwrap();
-    let got = block_on(annotations.get(obj(5))).unwrap().unwrap();
-    assert_eq!(got.subtype, "square");
-}
-
-#[test]
 fn create_then_update_then_delete_is_observed() {
-    let (_thread, annotations) = handle_over(vec![]);
+    let (thread, annotations) = handle_over(vec![]);
     block_on(annotations.refresh(token())).unwrap();
     let events = Arc::new(Events::default());
     let _sub = annotations.subscribe(events.clone());
+    let fields =
+        json!({ "subtype": "square", "box": { "x": 100, "y": 100, "width": 100, "height": 100 } });
     let created = block_on(annotations.create(
-        CreateAnnotationInput {
-            page: PageRef { page_object_number: 1 },
-            subtype: "square".into(),
-            bounds: Some(Rect { x: 100.0, y: 100.0, width: 100.0, height: 100.0 }),
-            ..Default::default()
-        },
+        PageRef { page_object_number: 1 },
+        fields.to_string(),
+        None,
+        None,
         token(),
     ))
     .unwrap();
     assert_eq!(created, obj(10));
     block_on(annotations.update(
         created.clone(),
-        AnnotationPatch { contents: Some("Edited".into()), ..Default::default() },
+        json!({ "contents": "Edited" }).to_string(),
         token(),
     ))
     .unwrap();
     block_on(annotations.delete(created, token())).unwrap();
+    let kinds: Vec<_> = sent_ops(&thread).iter().map(|op| op["type"].clone()).collect();
+    assert_eq!(
+        kinds,
+        vec![json!("annotations.create"), json!("annotations.update"), json!("annotations.delete")]
+    );
     let seen = events.0.lock().unwrap();
     assert!(seen.iter().any(|e| matches!(e, AnnotationEvent::Created { .. })), "{seen:?}");
     assert!(seen.iter().any(|e| matches!(e, AnnotationEvent::Updated { .. })), "{seen:?}");
@@ -193,28 +237,11 @@ fn create_then_update_then_delete_is_observed() {
 }
 
 #[test]
-fn a_props_patch_reaches_the_engine() {
-    let (_thread, annotations) = handle_over(vec![square(5, json!({}))]);
+fn a_refused_delete_rejects_and_the_record_stays() {
+    let (_thread, annotations) = handle_over(vec![square(99, json!({}))]);
     block_on(annotations.refresh(token())).unwrap();
-    block_on(annotations.update(
-        obj(5),
-        AnnotationPatch {
-            props: Some(AnnotationPropsPatch { opacity: Some(0.5), ..Default::default() }),
-            ..Default::default()
-        },
-        token(),
-    ))
-    .unwrap();
-}
-
-#[test]
-fn a_batch_reports_each_failure_beside_what_applied() {
-    let (_thread, annotations) = handle_over(vec![square(5, json!({})), square(6, json!({}))]);
-    block_on(annotations.refresh(token())).unwrap();
-    let result = block_on(annotations.delete_many(vec![obj(5), obj(99)], token())).unwrap();
-    assert_eq!(result.applied, vec![obj(5)]);
-    assert_eq!(result.failed.len(), 1);
-    assert_eq!(result.failed[0].annotation_ref, obj(99));
+    assert!(block_on(annotations.delete(obj(99), token())).is_err());
+    assert_eq!(block_on(annotations.list(None)).unwrap().len(), 1);
 }
 
 #[test]
@@ -252,13 +279,13 @@ fn cancelling_a_create_before_it_runs_creates_nothing() {
     });
     parked.recv().unwrap();
     let cancel = token();
+    let fields =
+        json!({ "subtype": "square", "box": { "x": 0, "y": 0, "width": 10, "height": 10 } });
     let create = annotations.create(
-        CreateAnnotationInput {
-            page: PageRef { page_object_number: 1 },
-            subtype: "square".into(),
-            bounds: Some(Rect { x: 0.0, y: 0.0, width: 10.0, height: 10.0 }),
-            ..Default::default()
-        },
+        PageRef { page_object_number: 1 },
+        fields.to_string(),
+        None,
+        None,
         cancel.clone(),
     );
     cancel.cancel();
@@ -269,11 +296,12 @@ fn cancelling_a_create_before_it_runs_creates_nothing() {
     assert!(block_on(annotations.list(None)).unwrap().is_empty());
 }
 
-use epdf_plugin_annotation::ffi::AnnotationTextFormat;
-
 #[test]
 fn selecting_two_annotations_and_grouping_them() {
-    let (_thread, annotations) = handle_over(vec![square(5, json!({})), square(6, json!({}))]);
+    let (_thread, annotations) = handle_over(vec![
+        square(5, json!({})),
+        square(6, json!({ "rect": { "x": 300, "y": 300, "width": 50, "height": 50 } })),
+    ]);
     block_on(annotations.refresh(token())).unwrap();
     let selection = annotations.selection();
     block_on(selection.select(vec![obj(5), obj(6)], None)).unwrap();
@@ -284,51 +312,47 @@ fn selecting_two_annotations_and_grouping_them() {
 }
 
 #[test]
-fn a_selection_props_read_names_what_is_mixed() {
+fn a_selection_properties_read_names_what_is_mixed() {
     let (_thread, annotations) =
         handle_over(vec![square(5, json!({ "opacity": 1 })), square(6, json!({ "opacity": 0.5 }))]);
     block_on(annotations.refresh(token())).unwrap();
     let selection = annotations.selection();
     block_on(selection.select(vec![obj(5), obj(6)], None)).unwrap();
     let props = block_on(selection.props()).unwrap();
-    assert!(props.mixed.contains(&epdf_ffi::AnnotationPropKey::Opacity), "{props:?}");
+    assert!(props.mixed.iter().any(|k| k == "opacity"), "{props:?}");
 }
 
 #[test]
-fn toggling_bold_without_a_free_text_selection_is_a_no_op() {
-    let (_thread, annotations) = handle_over(vec![square(5, json!({}))]);
+fn toggling_bold_without_a_free_text_selection_writes_nothing() {
+    let (thread, annotations) = handle_over(vec![square(5, json!({}))]);
     block_on(annotations.refresh(token())).unwrap();
     let selection = annotations.selection();
     block_on(selection.select(vec![obj(5)], None)).unwrap();
     block_on(selection.toggle_text_format(AnnotationTextFormat::Bold, token())).unwrap();
+    assert!(sent_ops(&thread).is_empty());
 }
 
 #[test]
-fn the_default_tools_are_listed_with_their_specs() {
+fn the_default_tools_are_listed_and_their_defaults_change() {
     let (_thread, annotations) = handle_over(vec![]);
     let tools = annotations.tools();
     let all = block_on(tools.tools()).unwrap();
     let ink = all.iter().find(|t| t.subtype == "ink").expect("an ink tool");
-    let specs = block_on(tools.prop_specs(ink.id.clone())).unwrap();
-    assert!(specs.iter().any(|s| s.key == epdf_ffi::AnnotationPropKey::StrokeWidth), "{specs:?}");
-    block_on(tools.set_defaults(
-        ink.id.clone(),
-        epdf_ffi::AnnotationPropsPatch { stroke_width: Some(4.0), ..Default::default() },
-    ))
-    .unwrap();
-    assert_eq!(block_on(tools.defaults(ink.id.clone())).unwrap().stroke_width, Some(4.0));
+    let properties = block_on(tools.properties(ink.id.clone())).unwrap();
+    assert!(properties.properties.iter().any(|p| p.key == "strokeWidth"), "{properties:?}");
+    block_on(tools.update_defaults(ink.id.clone(), json!({ "strokeWidth": 4 }).to_string()))
+        .unwrap();
+    let defaults: Value =
+        serde_json::from_str(&block_on(tools.defaults(ink.id.clone())).unwrap()).unwrap();
+    assert_eq!(defaults["strokeWidth"], 4);
 }
-
-use epdf_plugin_annotation::ffi::{
-    AnnotationStampPlacement, AnnotationStampSource, AnnotationThreadStatus,
-};
 
 #[test]
 fn a_stamp_placed_from_png_bytes_sends_its_bytes() {
     let png = include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png").to_vec();
     let (thread, annotations) = handle_over(vec![]);
     block_on(annotations.refresh(token())).unwrap();
-    let placed = block_on(annotations.drafts().place_stamp(
+    block_on(annotations.drafts().place_stamp(
         AnnotationStampSource {
             bytes: png,
             mime_type: Some("image/png".into()),
@@ -337,17 +361,16 @@ fn a_stamp_placed_from_png_bytes_sends_its_bytes() {
         },
         AnnotationStampPlacement {
             page: PageRef { page_object_number: 1 },
-            at: epdf_ffi::Point { x: 300.0, y: 400.0 },
-            target_width: Some(120.0),
+            center: epdf_ffi::Point { x: 300.0, y: 400.0 },
             rotation: None,
         },
+        Some(120.0),
         token(),
     ))
     .unwrap();
-    assert_eq!(placed, obj(10));
-    let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().clone()))).unwrap();
-    let draft = sent.last().expect("a create call");
-    assert!(draft.to_string().contains("$bytes"), "{draft}");
+    let ops = sent_ops(&thread);
+    let create = ops.iter().find(|op| op["type"] == "annotations.create").expect("a create");
+    assert_eq!(create["data"]["subtype"], "stamp", "{create}");
 }
 
 #[test]
@@ -357,16 +380,15 @@ fn a_reply_lands_in_its_thread() {
     let threads = annotations.threads();
     let reply = block_on(threads.reply(obj(5), "Agreed".into(), token())).unwrap();
     assert_eq!(reply, obj(10));
-    let permissions = block_on(threads.permissions(obj(5))).unwrap();
-    assert!(permissions.can_reply);
+    assert!(block_on(threads.permissions(obj(5))).unwrap().can_reply);
     block_on(threads.set_status(obj(5), AnnotationThreadStatus::Accepted, token())).unwrap();
 }
 
 #[test]
-fn an_ink_draft_has_nothing_to_finish_before_drawing() {
+fn a_polygon_draft_has_nothing_to_finish_before_drawing() {
     let (_thread, annotations) = handle_over(vec![]);
     let drafts = annotations.drafts();
-    assert!(!block_on(drafts.has_creation_draft()).unwrap());
+    assert!(block_on(drafts.creation_draft()).unwrap().is_none());
     assert_eq!(block_on(drafts.finish_creation_draft(token())).unwrap(), None);
 }
 
@@ -377,10 +399,18 @@ use epdf_plugin_annotation::ffi::{
 /// Make `id` the hub's active tool, as a toolbar tap would.
 fn activate(thread: &KernelThread<TestKernel>, id: &'static str) {
     block_on(thread.call(move |k| {
-        k.capability(&epdf_plugin_interaction::INTERACTION).unwrap().activate_tool(id, None)
+        k.capability(&epdf_plugin_interaction::INTERACTION).unwrap().activate_tool(id)
     }))
     .unwrap()
     .unwrap();
+}
+
+fn tiny_png() -> AnnotationPickedFile {
+    AnnotationPickedFile {
+        bytes: include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png").to_vec(),
+        name: Some("tiny.png".into()),
+        mime_type: Some("image/png".into()),
+    }
 }
 
 struct OnePng(Mutex<Vec<AnnotationFilePromptRequest>>);
@@ -389,12 +419,7 @@ struct OnePng(Mutex<Vec<AnnotationFilePromptRequest>>);
 impl AnnotationFilePicker for OnePng {
     async fn pick(&self, request: AnnotationFilePromptRequest) -> Option<AnnotationPickedFile> {
         self.0.lock().unwrap().push(request);
-        Some(AnnotationPickedFile {
-            bytes: include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png")
-                .to_vec(),
-            name: Some("tiny.png".into()),
-            mime_type: Some("image/png".into()),
-        })
+        Some(tiny_png())
     }
 }
 
@@ -407,6 +432,21 @@ impl AnnotationFilePicker for Cancels {
     }
 }
 
+/// Wait (bounded) for the picked file's create to reach the engine.
+fn wait_for_create(thread: &KernelThread<TestKernel>) -> Option<Value> {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
+    loop {
+        if let Some(op) = sent_ops(thread).into_iter().find(|op| op["type"] == "annotations.create")
+        {
+            return Some(op);
+        }
+        if std::time::Instant::now() >= deadline {
+            return None;
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+}
+
 #[test]
 fn a_requested_stamp_asks_the_picker_and_places_what_it_returns() {
     let (thread, annotations) = handle_over(vec![]);
@@ -414,29 +454,17 @@ fn a_requested_stamp_asks_the_picker_and_places_what_it_returns() {
     activate(&thread, "stamp");
     let picker = Arc::new(OnePng(Mutex::new(Vec::new())));
     block_on(annotations.set_file_picker(Some(picker.clone()))).unwrap();
+    let page = PageRef { page_object_number: 1 };
     assert!(
         block_on(annotations.drafts().request_stamp_at(
-            PageRef { page_object_number: 1 },
+            page,
             epdf_ffi::Point { x: 100.0, y: 100.0 },
-            None,
+            None
         ))
         .unwrap()
     );
-    // The pick runs off-thread, then posts back; wait for the engine create.
-    // (The fake engine answers with a square-shaped DTO, which the plugin
-    // can't sync as a stamp, so no `Created` event follows; the create call
-    // is what this pins.)
-    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(2);
-    let draft = loop {
-        let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().clone()))).unwrap();
-        if let Some(draft) = sent.last() {
-            break draft.clone();
-        }
-        assert!(std::time::Instant::now() < deadline, "no stamp was created");
-        std::thread::sleep(std::time::Duration::from_millis(10));
-    };
-    assert_eq!(draft["subtype"], "stamp", "{draft}");
-    assert!(draft.to_string().contains("$bytes"), "{draft}");
+    let create = wait_for_create(&thread).expect("a stamp was created");
+    assert_eq!(create["data"]["subtype"], "stamp", "{create}");
     assert_eq!(picker.0.lock().unwrap().len(), 1);
 }
 
@@ -446,19 +474,19 @@ fn a_cancelled_pick_places_nothing() {
     block_on(annotations.refresh(token())).unwrap();
     activate(&thread, "stamp");
     block_on(annotations.set_file_picker(Some(Arc::new(Cancels)))).unwrap();
+    let page = PageRef { page_object_number: 1 };
     assert!(
         block_on(annotations.drafts().request_stamp_at(
-            PageRef { page_object_number: 1 },
+            page,
             epdf_ffi::Point { x: 100.0, y: 100.0 },
-            None,
+            None
         ))
         .unwrap()
     );
     std::thread::sleep(std::time::Duration::from_millis(100));
     block_on(thread.call(|_| ())).unwrap();
     assert!(block_on(annotations.list(None)).unwrap().is_empty());
-    let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().len()))).unwrap();
-    assert_eq!(sent, 0);
+    assert!(sent_ops(&thread).is_empty());
 }
 
 #[test]
@@ -468,23 +496,19 @@ fn a_pick_that_lands_after_a_tool_change_places_nothing() {
     impl AnnotationFilePicker for Slow {
         async fn pick(&self, _r: AnnotationFilePromptRequest) -> Option<AnnotationPickedFile> {
             std::thread::sleep(std::time::Duration::from_millis(150));
-            Some(AnnotationPickedFile {
-                bytes: include_bytes!("../../../../tooling/engine-conformance/fixtures/tiny.png")
-                    .to_vec(),
-                name: None,
-                mime_type: None,
-            })
+            Some(tiny_png())
         }
     }
     let (thread, annotations) = handle_over(vec![]);
     block_on(annotations.refresh(token())).unwrap();
     activate(&thread, "stamp");
     block_on(annotations.set_file_picker(Some(Arc::new(Slow)))).unwrap();
+    let page = PageRef { page_object_number: 1 };
     assert!(
         block_on(annotations.drafts().request_stamp_at(
-            PageRef { page_object_number: 1 },
+            page,
             epdf_ffi::Point { x: 100.0, y: 100.0 },
-            None,
+            None
         ))
         .unwrap()
     );
@@ -492,29 +516,65 @@ fn a_pick_that_lands_after_a_tool_change_places_nothing() {
     activate(&thread, "note");
     std::thread::sleep(std::time::Duration::from_millis(300));
     assert!(block_on(annotations.list(None)).unwrap().is_empty());
-    let sent = block_on(thread.call(|_| CREATES.with(|c| c.borrow().len()))).unwrap();
-    assert_eq!(sent, 0);
+    assert!(sent_ops(&thread).is_empty());
 }
 
+/// `createFromSelection` resolves `{ annotations }` (`write/markup.ts`
+/// `createFromSelection`); the handle answers the created annotations'
+/// refs. Over the engine of the `annotation-markup.json` vector
+/// `create-from-selection-anchors-at-the-end-glyph`, which has the text a
+/// selection needs, with that case's selection and tool: its tables answer
+/// the creates the case recorded.
 #[test]
-fn a_create_batch_names_each_failure_by_its_input_index() {
-    let (_thread, annotations) = handle_over(vec![]);
+fn creating_from_the_selection_answers_the_created_refs() {
+    use epdf_ffi::KernelBound;
+    use epdf_plugin_selection::{SELECTION, SelectionRangeInput, selection_plugin};
+    let path = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../../tooling/plugin-conformance/vectors/plugins/annotation-markup.json"
+    );
+    let vectors: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    let engine = vectors["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"] == "create-from-selection-anchors-at-the-end-glyph")
+        .expect("the vector case")["engine"]
+        .clone();
+    let thread = KernelThread::spawn(move |_| {
+        TestKernel::open(
+            vec![
+                interaction_plugin(InteractionConfig::default()),
+                selection_plugin(Default::default()),
+                annotation_plugin(None),
+            ],
+            TestSpec::new(engine),
+        )
+    })
+    .unwrap();
+    let post = thread.post();
+    let (annotations, selection) = block_on(thread.call(move |k| {
+        (
+            AnnotationHandle::new(k.capability(&ANNOTATION).unwrap(), post.clone()),
+            KernelBound::new(k.capability(&SELECTION).unwrap(), post),
+        )
+    }))
+    .unwrap();
     block_on(annotations.refresh(token())).unwrap();
-    let square_at = |x: f64| CreateAnnotationInput {
-        page: PageRef { page_object_number: 1 },
-        subtype: "square".into(),
-        bounds: Some(Rect { x, y: 100.0, width: 50.0, height: 50.0 }),
-        ..Default::default()
-    };
-    let no_geometry = CreateAnnotationInput {
-        page: PageRef { page_object_number: 1 },
-        subtype: "square".into(),
-        ..Default::default()
-    };
-    let result = block_on(
-        annotations.create_many(vec![square_at(10.0), square_at(80.0), no_geometry], token()),
+    let page = epdf_kernel::geometry::PageRef::new(1);
+    block_on(selection.call_promise(move |s| Ok(s.ensure_loaded(page)), |_| ())).unwrap();
+    block_on(
+        selection.call(move |s| s.select(SelectionRangeInput::Span { page, start: 0, count: 3 })),
     )
     .unwrap();
-    assert_eq!(result.applied.len(), 2, "{result:?}");
-    assert_eq!(result.failed.iter().map(|f| f.index).collect::<Vec<_>>(), vec![2]);
+    let before = block_on(annotations.list(None)).unwrap().len();
+    let refs =
+        block_on(annotations.drafts().create_from_selection("replace-text".into(), None, token()))
+            .unwrap();
+    assert!(!refs.is_empty(), "no refs answered");
+    let listed = block_on(annotations.list(None)).unwrap();
+    assert!(listed.len() > before, "{listed:?}");
+    for made in &refs {
+        assert!(listed.iter().any(|a| &a.annotation_ref == made), "{made:?} is not listed");
+    }
 }

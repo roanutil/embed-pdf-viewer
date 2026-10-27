@@ -5,7 +5,9 @@
 //!   reads it, refusals and all.
 //! - [`cms`]: verify its signature ([`cms::verify_cms_signature`]) and build
 //!   one around a raw signature ([`cms::build_detached_cms`]).
-//! - [`gate`]: the check between a signer's answer and `signatures.complete`.
+//! - [`gate`]: the check between a signer's answer and `signatures.complete`,
+//!   for a PDF signature's CMS or a document timestamp's RFC 3161 token.
+//! - [`timestamp`]: an RFC 3161 token's TSTInfo, read and built.
 //! - [`trust`]: certificate chains, validated as pkijs's chain engine does,
 //!   with [`policy`] for its certificate-policy and name-constraint half.
 //! - [`sign`] and [`verdict`]: `sign()` and `validateSignatures()` over a
@@ -16,6 +18,7 @@
 //! as are trust anchors ([`trust::TrustPort`]) and key storage
 //! ([`signers::PersonalKeyStore`]).
 
+pub mod asn1js;
 pub mod cert;
 pub mod cms;
 pub mod crypto;
@@ -26,6 +29,7 @@ pub mod parse;
 pub mod policy;
 pub mod sign;
 pub mod signers;
+pub mod timestamp;
 pub mod trust;
 pub mod verdict;
 
@@ -36,10 +40,12 @@ pub use cms::{
     BuildInput, Cryptography, Profile, RawAlgorithm, RawSigner, build_detached_cms,
     verify_cms_signature,
 };
-pub use gate::{Gate, Prepared, verify_for_completion};
+pub use gate::{CompletionProfile, Gate, Prepared, verify_for_completion};
 pub use oids::Digest;
-pub use parse::{ParseError, ParsedCms, parse_detached_cms};
-pub use sign::{CmsSignRequest, CmsSigner, SignerPort, profile_for, sign};
+pub use parse::{CmsContent, ParseError, ParsedCms, parse_detached_cms};
+pub use sign::{CmsSignRequest, CmsSigner, SignerPort, profile_for, sign, signing_refused};
+pub use signers::{TestTimestampAuthority, create_test_timestamp_authority};
+pub use timestamp::{TimestampInfo, build_timestamp_token, read_timestamp_info};
 pub use trust::{TrustPort, TrustStatus, TrustVerdict, ValidationTime, validate_chain};
 pub use verdict::{ValidateOptions, validate_signatures};
 

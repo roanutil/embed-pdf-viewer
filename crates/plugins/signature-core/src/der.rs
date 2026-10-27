@@ -139,15 +139,17 @@ impl Node {
 
 // ── reading ──────────────────────────────────────────────────────────────────
 
-/// How deep elements may nest. Real CMS stays near a dozen levels; asn1js has
-/// no cap but throws a RangeError when the JS stack runs out, which the
-/// callers turn into `malformed`. The cap keeps the recursion off the native
-/// or wasm stack's end, and bounds the `raw` copies to this many times the
-/// input.
-const MAX_DEPTH: usize = 64;
+/// How deep elements may nest: asn1js 3.0.10's own limit
+/// ([`crate::asn1js::MAX_DEPTH`]), past which it refuses the input. Real CMS
+/// stays near a dozen levels. The cap keeps the recursion off the native or
+/// wasm stack's end, and bounds the `raw` copies to this many times the
+/// input (H1).
+const MAX_DEPTH: usize = crate::asn1js::MAX_DEPTH;
 
-/// `asn1js.fromBER(bytes)`: the first element, or `None` where asn1js answers
-/// `offset: -1` (or would run out of stack).
+/// The first element of `bytes`, as asn1js reads its tree, or `None` where
+/// it cannot be read. Whether asn1js accepts the bytes at all is
+/// [`crate::asn1js::from_ber`]'s answer; a caller that must refuse what
+/// asn1js refuses asks that first.
 pub fn from_ber(bytes: &[u8]) -> Option<Node> {
     read(bytes, 0, 0).map(|(node, _)| node)
 }
@@ -191,6 +193,11 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
         }
         Some(n)
     };
+    // asn1js reads a constructed string of these types with a `HexBlock`:
+    // its content is bytes, never members (a definite one's body; an
+    // indefinite one's whole remaining input, end-of-contents included).
+    let bytes_block =
+        class == UNIVERSAL && constructed && matches!(tag, 10 | 12 | 18..=22 | 25..=30);
     match length {
         Some(n) => {
             let end = at.checked_add(n)?;
@@ -208,7 +215,7 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
                 return None;
             }
             let mut children = Vec::new();
-            if constructed {
+            if constructed && !bytes_block {
                 let mut cursor = 0;
                 while cursor < body.len() {
                     let (child, next) = read(body, cursor, depth + 1)?;
@@ -222,7 +229,7 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
                     constructed,
                     tag,
                     raw: bytes[start..end].to_vec(),
-                    content: if constructed { Vec::new() } else { body.to_vec() },
+                    content: if constructed && !bytes_block { Vec::new() } else { body.to_vec() },
                     children,
                 },
                 end,
@@ -231,6 +238,19 @@ fn read(bytes: &[u8], start: usize, depth: usize) -> Option<(Node, usize)> {
         None => {
             if !constructed {
                 return None;
+            }
+            if bytes_block {
+                return Some((
+                    Node {
+                        class,
+                        constructed,
+                        tag,
+                        raw: bytes[start..].to_vec(),
+                        content: bytes[at..].to_vec(),
+                        children: Vec::new(),
+                    },
+                    bytes.len(),
+                ));
             }
             let mut children = Vec::new();
             loop {
@@ -480,6 +500,188 @@ pub fn parse_generalized_time(text: &str) -> Option<f64> {
         .map(|f| format!("0.{f}").parse::<f64>().unwrap_or(0.0) * 1000.0)
         .unwrap_or(0.0);
     Some(base + fraction.floor())
+}
+
+/// `Date.UTC(year, month, day, hours, minutes, seconds, ms)`: a two-digit
+/// year is 19xx, every field may overflow into the next, and a time past
+/// ±8.64e15 ms is NaN.
+pub fn js_date_utc(fields: [f64; 7]) -> f64 {
+    if fields.iter().any(|f| !f.is_finite()) {
+        return f64::NAN;
+    }
+    let [year, month, day, hours, minutes, seconds, ms] = fields.map(f64::trunc);
+    let year = if (0.0..=99.0).contains(&year) { 1900.0 + year } else { year };
+    let year = year + (month / 12.0).floor();
+    let month = month.rem_euclid(12.0);
+    if year.abs() > 400_000.0 {
+        return f64::NAN;
+    }
+    let days = days_from_civil(year as i64, month as i64 + 1, 1) as f64 + day - 1.0;
+    let time =
+        days * 86_400_000.0 + hours * 3_600_000.0 + minutes * 60_000.0 + seconds * 1000.0 + ms;
+    if time.abs() > 8.64e15 { f64::NAN } else { time }
+}
+
+/// `Number(text)` for a text that starts `0.` (`0` before a fraction):
+/// trailing JavaScript white space is trimmed, and an exponent is allowed.
+fn js_fraction(text: &str) -> Option<f64> {
+    let text = text.trim_end_matches(['\t', '\n', '\u{b}', '\u{c}', '\r', ' ', '\u{a0}']);
+    let rest = text.strip_prefix("0.")?;
+    let (digits, exponent) = match rest.find(['e', 'E']) {
+        Some(at) => (&rest[..at], Some(&rest[at + 1..])),
+        None => (rest, None),
+    };
+    if !digits.bytes().all(|b| b.is_ascii_digit()) {
+        return None;
+    }
+    let mut number = format!("0.{digits}0");
+    if let Some(exponent) = exponent {
+        let unsigned = exponent.strip_prefix(['+', '-']).unwrap_or(exponent);
+        if unsigned.is_empty() || !unsigned.bytes().all(|b| b.is_ascii_digit()) {
+            return None;
+        }
+        number.push('e');
+        number.push_str(exponent);
+    }
+    number.parse().ok()
+}
+
+/// `parseInt(text, 10)`: leading white space, a sign, then the longest run
+/// of digits; `None` (NaN) without one.
+fn js_parse_int(text: &str) -> Option<f64> {
+    let text = text.trim_start_matches(['\t', '\n', '\u{b}', '\u{c}', '\r', ' ', '\u{a0}']);
+    let (sign, rest) = match text.strip_prefix('-') {
+        Some(rest) => (-1.0, rest),
+        None => (1.0, text.strip_prefix('+').unwrap_or(text)),
+    };
+    let digits: String = rest.chars().take_while(char::is_ascii_digit).collect();
+    if digits.is_empty() {
+        return None;
+    }
+    digits.parse::<f64>().ok().map(|n| sign * n)
+}
+
+/// asn1js 3.0.10 `GeneralizedTime.fromString` then `toDate()`, in epoch
+/// milliseconds (NaN for an Invalid Date), or `None` where `fromString`
+/// throws "Wrong input string for conversion". Each content octet is one
+/// character. Without a trailing `Z` asn1js builds the fields with the
+/// host's local-time `Date` constructor (taking the month as zero-based and
+/// the day as the weekday); this computes that for a host on UTC.
+pub fn asn1js_generalized_time(content: &[u8]) -> Option<f64> {
+    let input: String = content.iter().map(|&b| b as char).collect();
+    let last = input.chars().last()?;
+    let utc = last == 'Z';
+    let mut time = if utc { input[..input.len() - 1].to_string() } else { input.clone() };
+    let (mut hour_difference, mut minute_difference) = (0.0, 0.0);
+    if utc {
+        if time.contains(['+', '-']) {
+            return None;
+        }
+    } else {
+        // `new Number(lastCharacter)`: a digit, or white space (0).
+        if !(last.is_ascii_digit() || "\t\n\u{b}\u{c}\r \u{a0}".contains(last)) {
+            return None;
+        }
+        let (position, multiplier) = match time.find('+') {
+            Some(at) => (Some(at), 1.0),
+            None => (time.find('-'), -1.0),
+        };
+        if let Some(at) = position {
+            let difference: Vec<char> = time[at + 1..].chars().collect();
+            if difference.len() != 2 && difference.len() != 4 {
+                return None;
+            }
+            let part =
+                |range: std::ops::Range<usize>| -> String { difference[range].iter().collect() };
+            hour_difference = multiplier * js_parse_int(&part(0..2))?;
+            if difference.len() == 4 {
+                minute_difference = multiplier * js_parse_int(&part(2..4))?;
+            }
+            time.truncate(at);
+        }
+    }
+    let point = time.find('.').or_else(|| time.find(','));
+    let mut fraction = 0.0;
+    let date_time = match point {
+        Some(at) => {
+            fraction = js_fraction(&format!("0{}", &time[at..]))?;
+            &time[..at]
+        }
+        None => time.as_str(),
+    };
+    let chars: Vec<char> = date_time.chars().collect();
+    let (mut minute, mut second, mut millisecond) = (0.0, 0.0, 0.0);
+    let groups: &[usize] = match chars.len() {
+        8 if point.is_none() => &[4, 2, 2],
+        10 => {
+            if point.is_some() {
+                let mut f = 60.0 * fraction;
+                minute = f.floor();
+                f = 60.0 * (f - minute);
+                second = f.floor();
+                millisecond = (1000.0 * (f - second)).floor();
+            }
+            &[4, 2, 2, 2]
+        }
+        12 => {
+            if point.is_some() {
+                let f = 60.0 * fraction;
+                second = f.floor();
+                millisecond = (1000.0 * (f - second)).floor();
+            }
+            &[4, 2, 2, 2, 2]
+        }
+        14 => {
+            if point.is_some() {
+                millisecond = (1000.0 * fraction).floor();
+            }
+            &[4, 2, 2, 2, 2, 2]
+        }
+        _ => return None,
+    };
+    if !chars.iter().all(char::is_ascii_digit) {
+        return None;
+    }
+    let mut values = Vec::new();
+    let mut at = 0;
+    for width in groups {
+        values.push(chars[at..at + width].iter().collect::<String>().parse::<f64>().ok()?);
+        at += width;
+    }
+    let (year, month, day) = (values[0], values[1], values[2]);
+    let mut hour = 0.0;
+    if let Some(h) = values.get(3) {
+        hour = h + hour_difference;
+    }
+    if let Some(m) = values.get(4) {
+        minute = m + minute_difference;
+    }
+    if let Some(s) = values.get(5) {
+        second = *s;
+    }
+    let fields = if utc {
+        [year, month - 1.0, day, hour, minute, second, millisecond]
+    } else {
+        // `new Date(year, month, day, ...)` on UTC, read back with the
+        // UTC getters, `getUTCDay()` (the weekday) for the day.
+        let local = js_date_utc([year, month, day, hour, minute, second, millisecond]);
+        if local.is_nan() {
+            return Some(f64::NAN);
+        }
+        let days = (local / 86_400_000.0).floor();
+        let (y, mo, _, h, mi, s) = civil(local);
+        let weekday = (days + 4.0).rem_euclid(7.0);
+        [
+            y as f64,
+            (mo - 1) as f64 - 1.0,
+            weekday,
+            h as f64,
+            mi as f64,
+            s as f64,
+            local.rem_euclid(1000.0),
+        ]
+    };
+    Some(js_date_utc(fields))
 }
 
 /// `new asn1js.UTCTime({ valueDate })`. asn1js writes the year as `year - 1900`

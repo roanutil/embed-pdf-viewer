@@ -1,0 +1,13 @@
+(node:47219) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/vectors.ts:183
+      throw new Error(`[${suite.file}] ${scenario.name}: unanswered engine calls:\n  ${unmatched.join('\n  ')}`);
+            ^
+
+Error: [plugins/link.json] viewer-only-refetch-on-events: unanswered engine calls:
+  a: page.annotations.list@1 []
+    at renderSuite (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/vectors.ts:183:13)
+    at async emit (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/src/vectors.ts:201:22)
+    at async <anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/link-evidence.ts:73:3)
+
+Node.js v26.12.1

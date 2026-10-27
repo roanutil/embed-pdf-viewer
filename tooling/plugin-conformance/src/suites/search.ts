@@ -16,18 +16,29 @@
  */
 import { createCapabilityToken, type AnyPlugin } from '@embedpdf/core';
 
+import {
+  pageTextSegmentOf,
+  type PdfTextSegment,
+  type PdfCoordinates,
+} from '@embedpdf/engine-core/runtime';
+
 import { SearchToken, searchPlugin } from '../../../../packages/plugin/search/src/index';
-import type { SearchCapability, SearchConfig as SearchPluginConfig } from '../../../../packages/plugin/search/src/contract';
+import type {
+  SearchCapability,
+  SearchConfig as SearchPluginConfig,
+} from '../../../../packages/plugin/search/src/contract';
 
 import type { FakeDocumentSpec, ResponseSpec } from '../fake-engine';
 import { registerPlugin, type PluginSpec, type ScenarioCase, type Step } from '../scenario';
 import type { Suite } from '../vectors';
+import { confirmedEvent } from './current-event-fixtures';
 import { stageStep } from './stage-plugin';
 
 /** Why these cases record no state; see `ScenarioCase` in `../scenario`. */
 const UNSNAPSHOTTED = {
   snapshot: 'none',
-  reason: "Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its dispatched actions are compared; the state they build is not.",
+  reason:
+    'Pins permission reads, page reads and the order close races settle in, through call outcomes and settlements. Its committed stateChanges are compared; full snapshots are omitted.',
 } as const;
 
 // ── harness shims ─────────────────────────────────────────────────────────────
@@ -47,7 +58,10 @@ const withSignals = (capability: SearchCapability): SearchCapability => ({
   findAll: (query, opts) => {
     const spec = (opts as { signal?: { $abortSignal?: string } } | undefined)?.signal;
     if (spec?.$abortSignal === undefined) return capability.findAll(query, opts);
-    return capability.findAll(query, { ...opts, signal: controllerNamed(spec.$abortSignal).signal });
+    return capability.findAll(query, {
+      ...opts,
+      signal: controllerNamed(spec.$abortSignal).signal,
+    });
   },
   search: (query, opts) => {
     const spec = (opts as { signal?: { $abortSignal?: string } } | undefined)?.signal;
@@ -71,15 +85,21 @@ registerPlugin('search', {
   tokens: [SearchToken],
 });
 
-const SignalsToken = createCapabilityToken<{ abort(name: string, reason?: unknown): void }>('search-test/signals');
+const SignalsToken = createCapabilityToken<{ abort(name: string, reason?: unknown): void }>(
+  'search-test/signals',
+);
 registerPlugin('search-signals', {
   factory: () =>
     ({
       id: 'search-test/signals',
       token: SignalsToken,
-      capability: () => ({
-        abort: (name: string, reason?: unknown) =>
-          reason === undefined ? controllerNamed(name).abort() : controllerNamed(name).abort(reason),
+      create: () => ({
+        api: {
+          abort: (name: string, reason?: unknown) =>
+            reason === undefined
+              ? controllerNamed(name).abort()
+              : controllerNamed(name).abort(reason),
+        },
       }),
     }) as AnyPlugin,
   tokens: [SignalsToken],
@@ -87,13 +107,16 @@ registerPlugin('search-signals', {
 
 // ── fixtures ──────────────────────────────────────────────────────────────────
 
-const pr = (pon: number) => ({ kind: 'objectNumber', pageObjectNumber: pon });
+const pr = (pon: number): import('@embedpdf/engine-core/runtime').PageRef => ({
+  kind: 'objectNumber',
+  objectNumber: pon,
+});
 
 const layout = (
   pon: number,
   index: number,
   crop: { left: number; bottom: number; right: number; top: number },
-  rotation = 0,
+  rotation: import('@embedpdf/engine-core/runtime').PdfRotation = 0,
   userUnit = 1,
 ) => ({
   index,
@@ -102,7 +125,15 @@ const layout = (
   size: { width: crop.right - crop.left, height: crop.top - crop.bottom },
   rotation,
   userUnit,
-  boxes: { media: crop, crop },
+  boxes: {
+    media: { x: 0, y: 0, width: crop.right - crop.left, height: crop.top - crop.bottom },
+    crop: { x: 0, y: 0, width: crop.right - crop.left, height: crop.top - crop.bottom },
+    bleed: { x: 0, y: 0, width: crop.right - crop.left, height: crop.top - crop.bottom },
+    trim: { x: 0, y: 0, width: crop.right - crop.left, height: crop.top - crop.bottom },
+    art: { x: 0, y: 0, width: crop.right - crop.left, height: crop.top - crop.bottom },
+  },
+  pdfCropBox: crop,
+  tabOrder: null,
 });
 
 /** Three pages: plain, an offset crop turned 90° at userUnit 2, and a square. */
@@ -117,41 +148,82 @@ const pt = (x: number, y: number) => ({ x, y });
 
 /** An axis-aligned engine segment over a PDF rect. */
 const seg = (r: PdfRect, advance: 1 | -1 = 1) => ({
-  quad: { p1: pt(r.left, r.top), p2: pt(r.right, r.top), p3: pt(r.left, r.bottom), p4: pt(r.right, r.bottom) },
+  quad: {
+    upperLeft: pt(r.left, r.top),
+    upperRight: pt(r.right, r.top),
+    lowerLeft: pt(r.left, r.bottom),
+    lowerRight: pt(r.right, r.bottom),
+  },
   rect: r,
   advance,
 });
 
-const m = (pon: number, charStart: number, segments: unknown[] = [seg({ left: 10, bottom: 20, right: 50, top: 40 })], extra: Record<string, unknown> = {}) => ({
+const m = (
+  pon: number,
+  charStart: number,
+  segments: PdfTextSegment<PdfCoordinates>[] = [seg({ left: 10, bottom: 20, right: 50, top: 40 })],
+  extra: Record<string, unknown> = {},
+) => ({
   page: pr(pon),
-  charStart,
-  charCount: 4,
-  segments,
+  start: charStart,
+  count: 4,
+  segments: segments.map((segment) =>
+    pageTextSegmentOf(
+      segment,
+      PAGES.find((p) => p.ref.objectNumber === pon)?.pdfCropBox ?? PAGES[0].pdfCropBox,
+    ),
+  ),
   ...extra,
 });
 
-const slice = (matches: unknown[], nextCursor: string | null, scannedPages: number, totalPages = 3) => ({
+const slice = (
+  matches: unknown[],
+  nextCursor: string | null,
+  scannedPages: number,
+  totalPages = 3,
+) => ({
   matches,
   nextCursor,
-  scannedPages,
-  totalPages,
+  pagesSearched: scannedPages,
+  pageCount: totalPages,
 });
 
 const Q = { text: 'the' };
 const Q2 = { text: 'other', matchCase: true };
 
 /** A `search.query` request as the capability builds it. */
-const req = (query: unknown, mode: 'full' | 'rects', at: { cursor?: string; startPage?: number } = {}) => [
-  { query, mode, ...at, ...(at.startPage === undefined ? {} : { startPage: pr(at.startPage) }) },
+const req = (
+  query: unknown,
+  mode: 'full' | 'rects',
+  at: { cursor?: string; startPage?: number } = {},
+) => [
+  {
+    ...(query as Record<string, unknown>),
+    snippets: mode === 'full',
+    ...(at.cursor === undefined ? {} : { cursor: at.cursor }),
+    ...(at.startPage === undefined ? {} : { from: pr(at.startPage) }),
+  },
 ];
 
-const answer = (query: unknown, mode: 'full' | 'rects', at: { cursor?: string; startPage?: number }, value: unknown, times?: number): ResponseSpec => ({
+const answer = (
+  query: unknown,
+  mode: 'full' | 'rects',
+  at: { cursor?: string; startPage?: number },
+  value: unknown,
+  times?: number,
+): ResponseSpec => ({
   path: 'search.query',
   args: req(query, mode, at),
   value,
   ...(times === undefined ? {} : { times }),
 });
-const deferAt = (query: unknown, mode: 'full' | 'rects', at: { cursor?: string; startPage?: number }, label: string, times?: number): ResponseSpec => ({
+const deferAt = (
+  query: unknown,
+  mode: 'full' | 'rects',
+  at: { cursor?: string; startPage?: number },
+  label: string,
+  times?: number,
+): ResponseSpec => ({
   path: 'search.query',
   args: req(query, mode, at),
   defer: label,
@@ -170,12 +242,22 @@ const failAt = (
   ...(times === undefined ? {} : { times }),
 });
 
-const DENIED = { name: 'PermissionDenied', message: 'permission denied (local): doc.text.copy', required: 'doc.text.copy', context: 'local' };
+const DENIED = {
+  name: 'PermissionDenied',
+  code: 'Forbidden',
+  details: { required: 'doc.text.copy', context: 'local' },
+  message: 'permission denied (local): doc.text.copy',
+  required: 'doc.text.copy',
+  context: 'local',
+};
 const FORBIDDEN = { name: 'EngineError', message: 'forbidden', code: 'Forbidden' };
 const STALE = { name: 'EngineError', message: 'stale cursor', code: 'InvalidArg' };
 const BOOM = { name: 'EngineError', message: 'boom', code: 'Unknown' };
 
-const doc = (responses: ResponseSpec[], over: Partial<FakeDocumentSpec> = {}): FakeDocumentSpec => ({
+const doc = (
+  responses: ResponseSpec[],
+  over: Partial<FakeDocumentSpec> = {},
+): FakeDocumentSpec => ({
   security: { allows: ['doc.text.search', 'doc.text.copy'] },
   pages: PAGES,
   responses,
@@ -183,8 +265,18 @@ const doc = (responses: ResponseSpec[], over: Partial<FakeDocumentSpec> = {}): F
 });
 
 const start: Step = { op: 'call', target: 'kernel', method: 'start' };
-const open = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'open', args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }] });
-const close = (id = 'a'): Step => ({ op: 'call', target: 'documents', method: 'close', args: [id] });
+const open = (id = 'a'): Step => ({
+  op: 'call',
+  target: 'documents',
+  method: 'open',
+  args: [{ kind: 'bytes', id, bytes: { $bytes: '' } }],
+});
+const close = (id = 'a'): Step => ({
+  op: 'call',
+  target: 'documents',
+  method: 'close',
+  args: [id],
+});
 /** v2 search method → v3 name. `hitsForPage(pon)` is `listHits({page})`, and
  *  a search's `startPage` is a PageRef. */
 const RENAMED: Readonly<Record<string, string>> = {
@@ -203,23 +295,45 @@ const RENAMED: Readonly<Record<string, string>> = {
 };
 const s = (method: string, ...args: unknown[]): Step => {
   const target = { token: 'search', doc: 'a' };
-  if (method === 'hitsForPage') return { op: 'call', target, method: 'listHits', args: [{ page: pr(args[0] as number) }] };
-  if (method === 'search' && args[1] && typeof (args[1] as { startPage?: unknown }).startPage === 'number') {
-    const options = args[1] as { startPage: number };
-    return { op: 'call', target, method, args: [args[0], { ...options, startPage: pr(options.startPage) }] };
+  if (method === 'hitsForPage')
+    return { op: 'call', target, method: 'listHits', args: [{ page: pr(args[0] as number) }] };
+  if (
+    method === 'search' &&
+    args[1] &&
+    typeof (args[1] as { startPage?: unknown }).startPage === 'number'
+  ) {
+    const { startPage, ...options } = args[1] as { startPage: number };
+    return { op: 'call', target, method, args: [args[0], { ...options, from: pr(startPage) }] };
   }
   return { op: 'call', target, method: RENAMED[method] ?? method, args };
 };
 const st = (method: string, ...args: unknown[]): Step => stageStep('stage', 'a', method, args);
 const settle = (label: string, value: unknown): Step => ({ op: 'settle', label, value });
-const reject = (label: string, error: { name: string; message: string; [k: string]: unknown }): Step => ({ op: 'settle', label, error });
+const reject = (
+  label: string,
+  error: { name: string; message: string; [k: string]: unknown },
+): Step => ({ op: 'settle', label, error });
 const abortSignal = (name: string, reason?: unknown): Step => ({
   op: 'call',
   target: { token: 'search-test/signals' },
   method: 'abort',
   args: reason === undefined ? [name] : [name, reason],
 });
-const emit = (event: unknown): Step => ({ op: 'emit', doc: 'a', event });
+const emit = (input: unknown): Step => {
+  const event = input as {
+    type: Parameters<typeof confirmedEvent>[0] | 'pages.changed';
+    page?: import('@embedpdf/engine-core/runtime').PageRef;
+  };
+  return {
+    op: 'emit',
+    doc: 'a',
+    event: confirmedEvent(
+      event.type === 'pages.changed' ? 'pages.reordered' : event.type,
+      event.page ?? pr(11),
+      PAGES,
+    ),
+  };
+};
 const advance = (ms: number): Step => ({ op: 'advance', ms });
 const signal = (name: string) => ({ $abortSignal: name });
 
@@ -237,9 +351,14 @@ const reads: Step[] = [
   s('errorMessage'),
 ];
 
-const search = (config?: SearchPluginConfig): PluginSpec[] => [config === undefined ? { factory: 'search' } : { factory: 'search', config }];
+const search = (config?: SearchPluginConfig): PluginSpec[] => [
+  config === undefined ? { factory: 'search' } : { factory: 'search', config },
+];
 const withSignals_ = (): PluginSpec[] => [{ factory: 'search-signals' }, ...search()];
-const withStage = (config?: SearchPluginConfig): PluginSpec[] => [{ factory: 'stage', config: { viewUnitsPerPoint: 1 } }, ...search(config)];
+const withStage = (config?: SearchPluginConfig): PluginSpec[] => [
+  { factory: 'stage', config: { viewUnitsPerPoint: 1 } },
+  ...search(config),
+];
 
 const SNAPSHOT = ['search::a'];
 const STAGE_SNAPSHOT = ['search::a', 'stage::a'];
@@ -255,7 +374,8 @@ const CHAIN: ResponseSpec[] = [
 const sessionCases: ScenarioCase[] = [
   {
     name: 'initial-reads',
-    covers: 'Before any search every read answers the idle state: null query, no hits, -1 active, zero progress, no error; next/prev/goTo with no hits return null and dispatch nothing.',
+    covers:
+      'Before any search every read answers the idle state: null query, no hits, -1 active, zero progress, no error; next/prev/goTo with no hits return null and dispatch nothing.',
     plugins: search(),
     engine: { documents: { a: doc([]) } },
     snapshot: SNAPSHOT,
@@ -337,11 +457,19 @@ const sessionCases: ScenarioCase[] = [
       },
     },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', Q), s('search', Q2), settle('follow', slice([m(33, 1)], null, 3)), s('hits')],
+    steps: [
+      start,
+      open(),
+      s('search', Q),
+      s('search', Q2),
+      settle('follow', slice([m(33, 1)], null, 3)),
+      s('hits'),
+    ],
   },
   {
     name: 'a-completed-session-is-not-aborted',
-    covers: 'Searching again after completion aborts nothing: the finished loop cleared its in-flight handle.',
+    covers:
+      'Searching again after completion aborts nothing: the finished loop cleared its in-flight handle.',
     plugins: search(),
     engine: { documents: { a: doc([...CHAIN, answer(Q2, 'full', {}, slice([], null, 3))]) } },
     snapshot: SNAPSHOT,
@@ -354,33 +482,67 @@ const sessionCases: ScenarioCase[] = [
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 's1')]) } },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('clear'), s('search', Q), s('clear'), settle('s1', slice([m(11, 0)], null, 3)), ...reads],
+    steps: [
+      start,
+      open(),
+      s('clear'),
+      s('search', Q),
+      s('clear'),
+      settle('s1', slice([m(11, 0)], null, 3)),
+      ...reads,
+    ],
   },
   {
     name: 'empty-text-is-clear',
-    covers: 'search() with an empty text makes no engine call: it is clear(), aborting a running session with "cleared".',
+    covers:
+      'search() with an empty text makes no engine call: it is clear(), aborting a running session with "cleared".',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 's1')]) } },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', { text: '' }), s('search', Q), s('search', { text: '', matchCase: true }), s('status')],
+    steps: [
+      start,
+      open(),
+      s('search', { text: '' }),
+      s('search', Q),
+      s('search', { text: '', matchCase: true }),
+      s('status'),
+    ],
   },
   {
     name: 'query-flags-reach-the-engine',
-    covers: 'The stored query is the caller\'s SearchQuery verbatim, every flag included, and the request carries it unchanged.',
+    covers:
+      "The stored query is the caller's SearchQuery verbatim, every flag included, and the request carries it unchanged.",
     plugins: search(),
     engine: {
       documents: {
         a: doc([
-          answer({ text: 'caf', regex: true, matchCase: false, wholeWord: true, matchDiacritics: false }, 'full', {}, slice([], null, 3)),
+          answer(
+            { text: 'caf', regex: true, matchCase: false, wholeWord: true, matchDiacritics: false },
+            'full',
+            {},
+            slice([], null, 3),
+          ),
         ]),
       },
     },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', { text: 'caf', regex: true, matchCase: false, wholeWord: true, matchDiacritics: false }), s('query')],
+    steps: [
+      start,
+      open(),
+      s('search', {
+        text: 'caf',
+        regex: true,
+        matchCase: false,
+        wholeWord: true,
+        matchDiacritics: false,
+      }),
+      s('query'),
+    ],
   },
   {
     name: 'exec-start-page',
-    covers: 'exec.startPage seeds the first request; the cursor then owns position and startPage is not sent again.',
+    covers:
+      'exec.startPage seeds the first request; the cursor then owns position and startPage is not sent again.',
     plugins: search(),
     engine: {
       documents: {
@@ -421,25 +583,53 @@ const failureCases: ScenarioCase[] = [
     covers: 'The cloud refusal, EngineError Forbidden, degrades the same way.',
     plugins: search(),
     engine: {
-      documents: { a: doc([failAt(Q, 'full', {}, FORBIDDEN), answer(Q, 'rects', {}, slice([m(33, 2)], null, 3))]) },
+      documents: {
+        a: doc([
+          failAt(Q, 'full', {}, FORBIDDEN),
+          answer(Q, 'rects', {}, slice([m(33, 2)], null, 3)),
+        ]),
+      },
     },
     snapshot: SNAPSHOT,
     steps: [start, open(), s('search', Q), s('status')],
   },
   {
     name: 'denied-in-rects-is-an-error',
-    covers: 'Refused again in rects mode, the session enters error with the refusal\'s message.',
+    covers: "Refused again in rects mode, the session enters error with the refusal's message.",
     plugins: search(),
-    engine: { documents: { a: doc([failAt(Q, 'full', {}, DENIED), failAt(Q, 'rects', {}, { ...DENIED, message: 'permission denied (local): doc.text.search', required: 'doc.text.search' })]) } },
+    engine: {
+      documents: {
+        a: doc([
+          failAt(Q, 'full', {}, DENIED),
+          failAt(
+            Q,
+            'rects',
+            {},
+            {
+              ...DENIED,
+              message: 'permission denied (local): doc.text.search',
+              required: 'doc.text.search',
+              details: { required: 'doc.text.search', context: 'local' },
+            },
+          ),
+        ]),
+      },
+    },
     snapshot: SNAPSHOT,
     steps: [start, open(), s('search', Q), s('status'), s('errorMessage')],
   },
   {
     name: 'denied-mid-chain-is-an-error',
-    covers: 'A refusal on a cursor request does not degrade: position would be lost, so the session errors.',
+    covers:
+      'A refusal on a cursor request does not degrade: position would be lost, so the session errors.',
     plugins: search(),
     engine: {
-      documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0)], 'c1', 1)), failAt(Q, 'full', { cursor: 'c1' }, DENIED)]) },
+      documents: {
+        a: doc([
+          answer(Q, 'full', {}, slice([m(11, 0)], 'c1', 1)),
+          failAt(Q, 'full', { cursor: 'c1' }, DENIED),
+        ]),
+      },
     },
     snapshot: SNAPSHOT,
     steps: [start, open(), s('search', Q), s('hitCount'), s('errorMessage')],
@@ -468,7 +658,10 @@ const failureCases: ScenarioCase[] = [
     plugins: search(),
     engine: {
       documents: {
-        a: doc([answer(Q, 'full', {}, slice([m(11, 0)], 'c1', 1)), failAt(Q, 'full', { cursor: 'c1' }, STALE)]),
+        a: doc([
+          answer(Q, 'full', {}, slice([m(11, 0)], 'c1', 1)),
+          failAt(Q, 'full', { cursor: 'c1' }, STALE),
+        ]),
       },
     },
     snapshot: SNAPSHOT,
@@ -476,11 +669,19 @@ const failureCases: ScenarioCase[] = [
   },
   {
     name: 'invalid-query-is-an-error',
-    covers: 'An InvalidArg with no cursor (a bad regex, a regex with matchDiacritics) is not a stale cursor: the session errors at once.',
+    covers:
+      'An InvalidArg with no cursor (a bad regex, a regex with matchDiacritics) is not a stale cursor: the session errors at once.',
     plugins: search(),
     engine: {
       documents: {
-        a: doc([failAt({ text: '(', regex: true }, 'full', {}, { name: 'EngineError', message: 'invalid regex', code: 'InvalidArg' })]),
+        a: doc([
+          failAt(
+            { text: '(', regex: true },
+            'full',
+            {},
+            { name: 'EngineError', message: 'invalid regex', code: 'InvalidArg' },
+          ),
+        ]),
       },
     },
     snapshot: SNAPSHOT,
@@ -488,7 +689,8 @@ const failureCases: ScenarioCase[] = [
   },
   {
     name: 'engine-error-after-hits',
-    covers: 'A later slice failing keeps the hits already streamed and records the error message; a new search clears it.',
+    covers:
+      'A later slice failing keeps the hits already streamed and records the error message; a new search clears it.',
     plugins: search(),
     engine: {
       documents: {
@@ -500,19 +702,32 @@ const failureCases: ScenarioCase[] = [
       },
     },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', Q), reject('s2', BOOM), s('status'), s('hitCount'), s('errorMessage'), s('search', Q2), s('errorMessage')],
+    steps: [
+      start,
+      open(),
+      s('search', Q),
+      reject('s2', BOOM),
+      s('status'),
+      s('hitCount'),
+      s('errorMessage'),
+      s('search', Q2),
+      s('errorMessage'),
+    ],
   },
   {
     name: 'non-engine-errors-report-their-message',
     covers: 'Any Error the engine rejects with reaches ERROR as its message.',
     plugins: search(),
-    engine: { documents: { a: doc([failAt(Q, 'full', {}, { name: 'TypeError', message: 'worker gone' })]) } },
+    engine: {
+      documents: { a: doc([failAt(Q, 'full', {}, { name: 'TypeError', message: 'worker gone' })]) },
+    },
     snapshot: SNAPSHOT,
     steps: [start, open(), s('search', Q), s('errorMessage')],
   },
   {
     name: 'a-user-unit-of-zero-still-converts',
-    covers: 'Hits convert through the page space, which reads only the crop: a page with userUnit 0 converts like any other and the session completes.',
+    covers:
+      'Hits convert through the page space, which reads only the crop: a page with userUnit 0 converts like any other and the session completes.',
     plugins: search(),
     engine: {
       documents: {
@@ -539,7 +754,17 @@ const failureCases: ScenarioCase[] = [
       },
     },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('rerun'), s('search', Q), s('rerun'), s('status'), s('rerun'), s('status'), s('hits')],
+    steps: [
+      start,
+      open(),
+      s('rerun'),
+      s('search', Q),
+      s('rerun'),
+      s('status'),
+      s('rerun'),
+      s('status'),
+      s('hits'),
+    ],
   },
   {
     name: 'close-mid-search',
@@ -557,7 +782,7 @@ const geometryCases: ScenarioCase[] = [
   {
     name: 'hit-geometry',
     covers:
-      'Engine quads map from PDF space to content space through the page\'s crop (rotation and userUnit do not enter at zoom 1), rect is recomputed from the mapped quad, bounds is the union of segments, advance and snippet ride along; a match with no segments has no bounds, a null snippet is dropped, and a match on an unknown page is dropped (cached per slice).',
+      "Engine quads map from PDF space to content space through the page's crop (rotation and userUnit do not enter at zoom 1), rect is recomputed from the mapped quad, bounds is the union of segments, advance and snippet ride along; a match with no segments has no bounds, a null snippet is dropped, and a match on an unknown page is dropped (cached per slice).",
     plugins: search(),
     engine: {
       documents: {
@@ -568,12 +793,25 @@ const geometryCases: ScenarioCase[] = [
             {},
             slice(
               [
-                m(11, 0, [seg({ left: 10, bottom: 700, right: 90, top: 720 }), seg({ left: 10, bottom: 680, right: 40, top: 700 })], {
-                  snippet: { text: 'in the end', matchStart: 3, matchLength: 3 },
-                }),
+                m(
+                  11,
+                  0,
+                  [
+                    seg({ left: 10, bottom: 700, right: 90, top: 720 }),
+                    seg({ left: 10, bottom: 680, right: 40, top: 700 }),
+                  ],
+                  {
+                    snippet: { before: 'in ', match: 'the', after: ' end' },
+                  },
+                ),
                 m(22, 3, [
                   {
-                    quad: { p1: pt(50, 400), p2: pt(50, 300), p3: pt(30, 400), p4: pt(30, 300) },
+                    quad: {
+                      upperLeft: pt(50, 400),
+                      upperRight: pt(50, 300),
+                      lowerLeft: pt(30, 400),
+                      lowerRight: pt(30, 300),
+                    },
                     rect: { left: 30, bottom: 300, right: 50, top: 400 },
                     advance: -1,
                   },
@@ -583,7 +821,12 @@ const geometryCases: ScenarioCase[] = [
                 m(99, 5),
                 m(22, 9, [
                   {
-                    quad: { p1: pt(100.5, 200.25), p2: pt(140.75, 210), p3: pt(98, 190), p4: pt(138.125, 199.5) },
+                    quad: {
+                      upperLeft: pt(100.5, 200.25),
+                      upperRight: pt(140.75, 210),
+                      lowerLeft: pt(98, 190),
+                      lowerRight: pt(138.125, 199.5),
+                    },
                     rect: { left: 98, bottom: 190, right: 140.75, top: 210 },
                     advance: 1,
                   },
@@ -603,11 +846,18 @@ const geometryCases: ScenarioCase[] = [
 
 // ── the permission twin ───────────────────────────────────────────────────────
 
+const canSearchStep = (doc: string, ...args: Parameters<SearchCapability['canSearch']>): Step => ({
+  op: 'call',
+  target: { token: 'search', doc },
+  method: 'canSearch',
+  args,
+});
+
 const twinCases: ScenarioCase[] = [
   {
     name: 'can-search',
     covers:
-      "canSearch() and canSearch('rects') ask doc.text.search; canSearch('full') also needs doc.text.copy; copy alone finds nothing; the wildcard grants both.",
+      'canSearch() and canSearch({snippets:false}) ask doc.text.search; canSearch({snippets:true}) also needs doc.text.copy; copy alone finds nothing; the wildcard grants both.',
     plugins: search(),
     engine: {
       documents: {
@@ -625,20 +875,34 @@ const twinCases: ScenarioCase[] = [
       open('c'),
       open('d'),
       ...['a', 'b', 'c', 'd'].flatMap((id): Step[] => [
-        { op: 'call', target: { token: 'search', doc: id }, method: 'canSearch', args: [] },
-        { op: 'call', target: { token: 'search', doc: id }, method: 'canSearch', args: ['rects'] },
-        { op: 'call', target: { token: 'search', doc: id }, method: 'canSearch', args: ['full'] },
+        canSearchStep(id),
+        canSearchStep(id, { snippets: false }),
+        canSearchStep(id, { snippets: true }),
       ]),
     ],
   },
   {
     name: 'verbs-carry-no-gate',
-    covers: 'With search denied the verbs still ask the engine (the engine enforces; the error state reports).',
+    covers:
+      'With search denied the verbs still ask the engine (the engine enforces; the error state reports).',
     plugins: search(),
     engine: {
       documents: {
         a: doc(
-          [failAt(Q, 'full', {}, DENIED), failAt(Q, 'rects', {}, { ...DENIED, message: 'permission denied (local): doc.text.search', required: 'doc.text.search' })],
+          [
+            failAt(Q, 'full', {}, DENIED),
+            failAt(
+              Q,
+              'rects',
+              {},
+              {
+                ...DENIED,
+                message: 'permission denied (local): doc.text.search',
+                required: 'doc.text.search',
+                details: { required: 'doc.text.search', context: 'local' },
+              },
+            ),
+          ],
           { security: { allows: [] } },
         ),
       },
@@ -650,7 +914,9 @@ const twinCases: ScenarioCase[] = [
 
 // ── navigation ────────────────────────────────────────────────────────────────
 
-const FOUR: ResponseSpec[] = [answer(Q, 'full', {}, slice([m(11, 0), m(11, 9), m(22, 2), m(33, 5, [])], null, 3))];
+const FOUR: ResponseSpec[] = [
+  answer(Q, 'full', {}, slice([m(11, 0), m(11, 9), m(22, 2), m(33, 5, [])], null, 3)),
+];
 
 const navigationCases: ScenarioCase[] = [
   {
@@ -681,11 +947,20 @@ const navigationCases: ScenarioCase[] = [
   },
   {
     name: 'navigation-before-the-first-slice',
-    covers: 'While the first slice is in flight there are no hits: navigation returns null and dispatches nothing.',
+    covers:
+      'While the first slice is in flight there are no hits: navigation returns null and dispatches nothing.',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 's1')]) } },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', Q), s('next'), s('goTo', 0), settle('s1', slice([m(11, 0)], null, 3)), s('prev')],
+    steps: [
+      start,
+      open(),
+      s('search', Q),
+      s('next'),
+      s('goTo', 0),
+      settle('s1', slice([m(11, 0)], null, 3)),
+      s('prev'),
+    ],
   },
 ];
 
@@ -721,9 +996,12 @@ const stageCases: ScenarioCase[] = [
   },
   {
     name: 'no-pages-no-start-page',
-    covers: 'A Stage over a document with no pages has no current page to name, so the scan starts with no startPage.',
+    covers:
+      'A Stage over a document with no pages has no current page to name, so the scan starts with no startPage.',
     plugins: withStage(),
-    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([], null, 0, 0))], { pages: [] }) } },
+    engine: {
+      documents: { a: doc([answer(Q, 'full', {}, slice([], null, 0, 0))], { pages: [] }) },
+    },
     snapshot: SNAPSHOT,
     steps: [start, open(), s('search', Q), s('status')],
   },
@@ -732,16 +1010,38 @@ const stageCases: ScenarioCase[] = [
     covers:
       "next/prev/goTo reveal the hit's page at its bounds with the find-bar default arrival (anchor y 0.35, smooth); a hit with no segments reveals with no rect.",
     plugins: withStage(),
-    engine: { documents: { a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2), m(33, 5, [])], null, 3))]) } },
+    engine: {
+      documents: {
+        a: doc([
+          answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2), m(33, 5, [])], null, 3)),
+        ]),
+      },
+    },
     snapshot: STAGE_SNAPSHOT,
-    steps: [start, open(), st('setViewport', { width: 800, height: 600 }), s('search', Q), s('next'), s('next'), s('prev'), s('goTo', 0), st('currentPage')],
+    steps: [
+      start,
+      open(),
+      st('setViewport', { width: 800, height: 600 }),
+      s('search', Q),
+      s('next'),
+      s('next'),
+      s('prev'),
+      s('goTo', 0),
+      st('currentPage'),
+    ],
   },
   {
     name: 'reveal-options-merge',
     covers:
       'Arrival options merge per key: per-call over plugin config over the default. An explicit undefined anchor overrides the default away (a bare reveal when the hit has no rect); a null config anchor is a positioned reveal with no anchor axes.',
     plugins: withStage({ reveal: { anchor: { x: 'center', y: 'start' }, behavior: 'instant' } }),
-    engine: { documents: { a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2), m(33, 5, [])], null, 3))]) } },
+    engine: {
+      documents: {
+        a: doc([
+          answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2), m(33, 5, [])], null, 3)),
+        ]),
+      },
+    },
     snapshot: STAGE_SNAPSHOT,
     steps: [
       start,
@@ -758,11 +1058,23 @@ const stageCases: ScenarioCase[] = [
   },
   {
     name: 'reveal-config-anchor-null',
-    covers: 'A config anchor of null replaces the default: the reveal is positioned (anchor present) with neither axis set.',
+    covers:
+      'A config anchor of null replaces the default: the reveal is positioned (anchor present) with neither axis set.',
     plugins: withStage({ reveal: { anchor: null as never } }),
-    engine: { documents: { a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(33, 5, [])], null, 3))]) } },
+    engine: {
+      documents: {
+        a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(33, 5, [])], null, 3))]),
+      },
+    },
     snapshot: STAGE_SNAPSHOT,
-    steps: [start, open(), st('setViewport', { width: 800, height: 600 }), s('search', Q), s('next'), s('next')],
+    steps: [
+      start,
+      open(),
+      st('setViewport', { width: 800, height: 600 }),
+      s('search', Q),
+      s('next'),
+      s('next'),
+    ],
   },
 ];
 
@@ -799,21 +1111,43 @@ const effectCases: ScenarioCase[] = [
   },
   {
     name: 'rerun-after-clear-is-disarmed',
-    covers: 'A timer armed while searching still fires after clear(); rerun() then finds the session idle and does nothing.',
+    covers:
+      'A timer armed while searching still fires after clear(); rerun() then finds the session idle and does nothing.',
     plugins: search(),
     engine: { documents: { a: doc([deferAt(Q, 'full', {}, 's1')]) } },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', Q), emit({ type: 'metadata.updated' }), s('clear'), advance(250), emit({ type: 'metadata.updated' }), advance(250)],
+    steps: [
+      start,
+      open(),
+      s('search', Q),
+      emit({ type: 'metadata.updated' }),
+      s('clear'),
+      advance(250),
+      emit({ type: 'metadata.updated' }),
+      advance(250),
+    ],
   },
   {
     name: 'rerun-supersedes-a-running-scan',
     covers: 'A rerun during a scan aborts the in-flight slice as superseded and restarts.',
     plugins: search(),
     engine: {
-      documents: { a: doc([deferAt(Q, 'full', {}, 's1', 1), answer(Q, 'full', {}, slice([m(33, 0)], null, 3))]) },
+      documents: {
+        a: doc([
+          deferAt(Q, 'full', {}, 's1', 1),
+          answer(Q, 'full', {}, slice([m(33, 0)], null, 3)),
+        ]),
+      },
     },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', Q), emit({ type: 'annotations.updated' }), advance(250), s('status')],
+    steps: [
+      start,
+      open(),
+      s('search', Q),
+      emit({ type: 'annotations.updated' }),
+      advance(250),
+      s('status'),
+    ],
   },
   {
     name: 'close-disarms-the-timer',
@@ -821,7 +1155,14 @@ const effectCases: ScenarioCase[] = [
     plugins: search(),
     engine: { documents: { a: doc([answer(Q, 'full', {}, slice([], null, 3))]) } },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('search', Q), emit({ type: 'annotations.created' }), close(), advance(500)],
+    steps: [
+      start,
+      open(),
+      s('search', Q),
+      emit({ type: 'annotations.created' }),
+      close(),
+      advance(500),
+    ],
   },
   {
     name: 'close-with-no-timer',
@@ -847,21 +1188,37 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-pinned-mode',
-    covers: "An explicit mode is sent as is and never degrades: a pinned 'full' refused rejects with the refusal.",
+    covers:
+      "An explicit mode is sent as is and never degrades: a pinned 'full' refused rejects with the refusal.",
     plugins: search(),
     engine: {
       documents: {
-        a: doc([answer(Q, 'rects', {}, slice([m(11, 0)], null, 3)), failAt(Q2, 'full', {}, DENIED)]),
+        a: doc([
+          answer(Q, 'rects', {}, slice([m(11, 0)], null, 3)),
+          failAt(Q2, 'full', {}, DENIED),
+        ]),
       },
     },
     snapshot: SNAPSHOT,
-    steps: [start, open(), s('findAll', Q, { mode: 'rects' }), s('findAll', Q2, { mode: 'full' })],
+    steps: [
+      start,
+      open(),
+      s('findAll', Q, { snippets: false }),
+      s('findAll', Q2, { snippets: true }),
+    ],
   },
   {
     name: 'find-all-degrades',
     covers: "With no mode, findAll degrades 'full' to 'rects' on a refusal, as the session does.",
     plugins: search(),
-    engine: { documents: { a: doc([failAt(Q, 'full', {}, FORBIDDEN), answer(Q, 'rects', {}, slice([m(22, 0)], null, 3))]) } },
+    engine: {
+      documents: {
+        a: doc([
+          failAt(Q, 'full', {}, FORBIDDEN),
+          answer(Q, 'rects', {}, slice([m(22, 0)], null, 3)),
+        ]),
+      },
+    },
     snapshot: SNAPSHOT,
     steps: [start, open(), s('findAll', Q, {})],
   },
@@ -884,13 +1241,17 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-errors-reject',
-    covers: 'An engine error rejects findAll with its PluginError; a page with userUnit 0 still converts.',
+    covers:
+      'An engine error rejects findAll with its PluginError; a page with userUnit 0 still converts.',
     plugins: search(),
     engine: {
       documents: {
-        a: doc([failAt(Q, 'full', {}, BOOM), answer(Q2, 'full', {}, slice([m(44, 0)], null, 1, 1))], {
-          pages: [...PAGES, layout(44, 3, { left: 0, bottom: 0, right: 100, top: 100 }, 0, 0)],
-        }),
+        a: doc(
+          [failAt(Q, 'full', {}, BOOM), answer(Q2, 'full', {}, slice([m(44, 0)], null, 1, 1))],
+          {
+            pages: [...PAGES, layout(44, 3, { left: 0, bottom: 0, right: 100, top: 100 }, 0, 0)],
+          },
+        ),
       },
     },
     snapshot: SNAPSHOT,
@@ -898,11 +1259,16 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-is-independent-of-the-session',
-    covers: 'A findAll running beside the session neither supersedes it nor is superseded by it; both complete.',
+    covers:
+      'A findAll running beside the session neither supersedes it nor is superseded by it; both complete.',
     plugins: search(),
     engine: {
       documents: {
-        a: doc([deferAt(Q, 'full', {}, 'session', 1), deferAt(Q, 'full', {}, 'find', 1), answer(Q2, 'full', {}, slice([], null, 3))]),
+        a: doc([
+          deferAt(Q, 'full', {}, 'session', 1),
+          deferAt(Q, 'full', {}, 'find', 1),
+          answer(Q2, 'full', {}, slice([], null, 3)),
+        ]),
       },
     },
     snapshot: SNAPSHOT,
@@ -945,7 +1311,8 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-signal-already-aborted',
-    covers: 'A signal aborted before the call still sends the first request; when it lands, findAll rejects with the reason.',
+    covers:
+      'A signal aborted before the call still sends the first request; when it lands, findAll rejects with the reason.',
     plugins: withSignals_(),
     engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0)], 'c1', 1))]) } },
     snapshot: SNAPSHOT,
@@ -953,7 +1320,8 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-signal-after-resolution',
-    covers: 'Aborting after findAll resolved does nothing: the listener was removed and no slice is in flight.',
+    covers:
+      'Aborting after findAll resolved does nothing: the listener was removed and no slice is in flight.',
     plugins: withSignals_(),
     engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0)], null, 3))]) } },
     snapshot: SNAPSHOT,
@@ -961,7 +1329,8 @@ const findAllCases: ScenarioCase[] = [
   },
   {
     name: 'find-all-signal-on-an-error',
-    covers: 'A signal that never aborts leaves an engine error to reject findAll; aborting afterwards does nothing.',
+    covers:
+      'A signal that never aborts leaves an engine error to reject findAll; aborting afterwards does nothing.',
     plugins: withSignals_(),
     engine: { documents: { a: doc([failAt(Q, 'full', {}, BOOM)]) } },
     snapshot: SNAPSHOT,
@@ -972,9 +1341,22 @@ const findAllCases: ScenarioCase[] = [
 // ── the v3 surface: cancel, the events, and the reads with no v2 twin ─────────
 
 /** A call by its v3 name. */
-const v3 = (method: string, ...args: unknown[]): Step => ({ op: 'call', target: { token: 'search', doc: 'a' }, method, args });
+const v3 = (method: string, ...args: unknown[]): Step => ({
+  op: 'call',
+  target: { token: 'search', doc: 'a' },
+  method,
+  args,
+});
 const callRef = (ref: number): Step => ({ op: 'call', target: { ref } });
-const HOOKS = ['onStarted', 'onProgress', 'onCompleted', 'onCancelled', 'onFailed', 'onActiveHitChanged', 'onCleared'];
+const HOOKS = [
+  'onStarted',
+  'onProgressChanged',
+  'onCompleted',
+  'onCancelled',
+  'onFailed',
+  'onActiveHitChanged',
+  'onCleared',
+];
 /** A logging listener on every event; the unsubscribes are refs 0 to 6. */
 const listenAll: Step[] = HOOKS.map((hook) => v3(hook, { $fn: hook }));
 
@@ -986,16 +1368,43 @@ const v3Cases: ScenarioCase[] = [
     plugins: withSignals_(),
     engine: { documents: { a: doc(CHAIN) } },
     snapshot: SNAPSHOT,
-    steps: [start, open(), v3('onCancelled', { $fn: 'cancelled' }), s('search', Q), abortSignal('s1'), s('search', Q2, { signal: signal('s1') }), s('status'), s('hitCount')],
+    steps: [
+      start,
+      open(),
+      v3('onCancelled', { $fn: 'cancelled' }),
+      s('search', Q),
+      abortSignal('s1'),
+      s('search', Q2, { signal: signal('s1') }),
+      s('status'),
+      s('hitCount'),
+    ],
   },
   {
     name: 'cancel-keeps-the-hits',
     covers:
       'cancel() aborts the in-flight slice with reason "cancelled"; the run resolves cancelled with the hits found so far, the session dispatches CANCELLED and keeps them, and onCancelled reports the reason; cancel() with nothing running does nothing.',
     plugins: search(),
-    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0), m(22, 1)], 'c1', 1)), deferAt(Q, 'full', { cursor: 'c1' }, 's2')]) } },
+    engine: {
+      documents: {
+        a: doc([
+          answer(Q, 'full', {}, slice([m(11, 0), m(22, 1)], 'c1', 1)),
+          deferAt(Q, 'full', { cursor: 'c1' }, 's2'),
+        ]),
+      },
+    },
     snapshot: SNAPSHOT,
-    steps: [start, open(), v3('onCancelled', { $fn: 'cancelled' }), s('search', Q), v3('cancel'), s('status'), s('hitCount'), settle('s2', slice([m(33, 0)], null, 3)), v3('cancel'), s('hits')],
+    steps: [
+      start,
+      open(),
+      v3('onCancelled', { $fn: 'cancelled' }),
+      s('search', Q),
+      v3('cancel'),
+      s('status'),
+      s('hitCount'),
+      settle('s2', slice([m(33, 0)], null, 3)),
+      v3('cancel'),
+      s('hits'),
+    ],
   },
   {
     name: 'session-events',
@@ -1034,19 +1443,50 @@ const v3Cases: ScenarioCase[] = [
   {
     name: 'page-reads',
     covers:
-      'getHitCount with a page counts that page\'s bucket (0 for a page with none); listPagesWithHits names each page with hits once, in object-number order, and is empty before any hit.',
+      "getHitCount with a page counts that page's bucket (0 for a page with none); listPagesWithHits names each page with hits once, in object-number order, and is empty before any hit.",
     plugins: search(),
-    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(33, 0), m(11, 0), m(33, 4), m(22, 1)], null, 3))]) } },
+    engine: {
+      documents: {
+        a: doc([answer(Q, 'full', {}, slice([m(33, 0), m(11, 0), m(33, 4), m(22, 1)], null, 3))]),
+      },
+    },
     ...UNSNAPSHOTTED,
-    steps: [start, open(), v3('listPagesWithHits'), s('search', Q), v3('listPagesWithHits'), v3('getHitCount', pr(33)), v3('getHitCount', pr(99)), v3('getHitCount'), v3('listHits', {})],
+    steps: [
+      start,
+      open(),
+      v3('listPagesWithHits'),
+      s('search', Q),
+      v3('listPagesWithHits'),
+      v3('getHitCount', pr(33)),
+      v3('getHitCount', pr(99)),
+      v3('getHitCount'),
+      v3('listHits', {}),
+    ],
   },
   {
     name: 'a-failed-rerun-is-swallowed',
-    covers: 'A mutation rerun whose scan fails records the error through the session; the timer swallows the rejected refresh.',
+    covers:
+      'A mutation rerun whose scan fails records the error through the session; the timer swallows the rejected refresh.',
     plugins: search(),
-    engine: { documents: { a: doc([answer(Q, 'full', {}, slice([m(11, 0)], null, 3), 1), failAt(Q, 'full', {}, BOOM, 1)]) } },
+    engine: {
+      documents: {
+        a: doc([
+          answer(Q, 'full', {}, slice([m(11, 0)], null, 3), 1),
+          failAt(Q, 'full', {}, BOOM, 1),
+        ]),
+      },
+    },
     snapshot: SNAPSHOT,
-    steps: [start, open(), v3('onFailed', { $fn: 'failed' }), s('search', Q), emit({ type: 'annotations.created', page: pr(11) }), advance(250), s('status'), s('errorMessage')],
+    steps: [
+      start,
+      open(),
+      v3('onFailed', { $fn: 'failed' }),
+      s('search', Q),
+      emit({ type: 'annotations.created', page: pr(11) }),
+      advance(250),
+      s('status'),
+      s('errorMessage'),
+    ],
   },
 ];
 
@@ -1056,15 +1496,24 @@ const turnCases: ScenarioCase[] = [
     covers:
       'Closing with a session scan and a findAll both in flight settles both promises in one step: the order they settle in is fixed by how many turns each chain takes from the guarded rejection (the session resolves cancelled through the lane and its catch; findAll rejects instance-closed through collect alone).',
     plugins: search(),
-    engine: { documents: { a: doc([deferAt(Q, 'full', {}, 'session', 1), deferAt(Q2, 'full', {}, 'find', 1)]) } },
+    engine: {
+      documents: {
+        a: doc([deferAt(Q, 'full', {}, 'session', 1), deferAt(Q2, 'full', {}, 'find', 1)]),
+      },
+    },
     ...UNSNAPSHOTTED,
     steps: [start, open(), s('search', Q), s('findAll', Q2), close()],
   },
   {
     name: 'close-races-find-all-first',
-    covers: 'The same race with findAll started first: settlement order does not follow call order.',
+    covers:
+      'The same race with findAll started first: settlement order does not follow call order.',
     plugins: search(),
-    engine: { documents: { a: doc([deferAt(Q2, 'full', {}, 'find', 1), deferAt(Q, 'full', {}, 'session', 1)]) } },
+    engine: {
+      documents: {
+        a: doc([deferAt(Q2, 'full', {}, 'find', 1), deferAt(Q, 'full', {}, 'session', 1)]),
+      },
+    },
     ...UNSNAPSHOTTED,
     steps: [start, open(), s('findAll', Q2), s('search', Q), close()],
   },
@@ -1073,9 +1522,14 @@ const turnCases: ScenarioCase[] = [
 const revealActiveCases: ScenarioCase[] = [
   {
     name: 'reveal-active-hit',
-    covers: 'revealActiveHit reveals the active hit again without changing it (per-call options merge as navigation\'s do), and does nothing with no active hit.',
+    covers:
+      "revealActiveHit reveals the active hit again without changing it (per-call options merge as navigation's do), and does nothing with no active hit.",
     plugins: withStage(),
-    engine: { documents: { a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2)], null, 3))]) } },
+    engine: {
+      documents: {
+        a: doc([answer(Q, 'full', { startPage: 11 }, slice([m(11, 0), m(22, 2)], null, 3))]),
+      },
+    },
     snapshot: STAGE_SNAPSHOT,
     steps: [
       start,
@@ -1096,8 +1550,18 @@ export const suites: Suite[] = [
   {
     kind: 'scenario',
     file: 'plugins/search.json',
-    describes: 'packages/plugin/search: the session, degradation and errors, hit geometry, the permission twin, navigation and the rerun effect.',
-    cases: [...sessionCases, ...failureCases, ...geometryCases, ...twinCases, ...navigationCases, ...effectCases, ...v3Cases, ...turnCases],
+    describes:
+      'packages/plugin/search: the session, degradation and errors, hit geometry, the permission twin, navigation and the rerun effect.',
+    cases: [
+      ...sessionCases,
+      ...failureCases,
+      ...geometryCases,
+      ...twinCases,
+      ...navigationCases,
+      ...effectCases,
+      ...v3Cases,
+      ...turnCases,
+    ],
   },
   {
     kind: 'scenario',

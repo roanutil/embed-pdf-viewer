@@ -3,6 +3,14 @@
 //!
 //! A definition's closures are built only for the hooks Swift lists, so an
 //! unlisted hook keeps the plugin's default and never crosses the boundary.
+//!
+//! Migrated by hand to the Task 13.29 contract, compiled and tested since
+//! Task 13.33: reads that throw in the TypeScript answer
+//! `Result`, reads hand out `Rc`s (copied here), `panel` carries `focus`,
+//! and `match_stroke` answers the command with its refusal. Not exposed
+//! yet: the settings calls, `get_refusal`, the per-command
+//! turning-off calls, families, `requires`/`allowed`, a signal on
+//! `execute`, and the scoped view.
 
 use std::rc::Rc;
 use std::sync::Arc;
@@ -15,13 +23,14 @@ use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::store::Unsubscribe;
-use epdf_ui_core::shortcuts::{KeyStroke, ShortcutOptions};
+use epdf_ui_core::shortcuts::KeyStroke;
 use serde_json::Value;
 
 use crate::contract::{
-    CommandCtx, CommandDef, CommandExecutedEvent, CommandExecutionFailedEvent, Derivation,
-    ExecuteResult, IconAccent, MenuTarget, Panel, RegisterCommandOptions, RejectReason,
-    ResolvedCommand, Shortcut, ShortcutBinding,
+    CommandCtx, CommandDef, CommandExecutedEvent, CommandExecutionFailedEvent, CommandRefusal,
+    Derivation, ExecuteOptions, ExecuteResult, IconAccent, MatchStrokeOptions, MenuTarget, Panel,
+    RefusalReason, RegisterCommandOptions, RejectReason, ResolvedCommand, Shortcut,
+    ShortcutBinding, ShortcutMatch,
 };
 use crate::controller::CommandsCapability;
 
@@ -41,12 +50,15 @@ pub enum CommandHook {
     IconAccent,
 }
 
-/// A shell surface the command toggles, optionally exclusive within a tag.
+/// A shell surface the command toggles, optionally exclusive within a tag;
+/// with `focus`, opening it asks for the cursor.
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct CommandPanel {
     pub id: String,
     #[uniffi(default = None)]
     pub exclusive: Option<String>,
+    #[uniffi(default = None)]
+    pub focus: Option<bool>,
 }
 
 /// What a hook sees.
@@ -168,9 +180,9 @@ impl CommandDefinition {
         };
         def.categories = (!categories.is_empty()).then_some(categories);
         def.menu = menu;
-        def.panel = panel.map(|p| match p.exclusive {
-            None => Panel::Id(p.id),
-            Some(exclusive) => Panel::Target { id: p.id, exclusive: Some(exclusive) },
+        def.panel = panel.map(|p| match (p.exclusive, p.focus) {
+            (None, None) => Panel::Id(p.id),
+            (exclusive, focus) => Panel::Target { id: p.id, exclusive, focus },
         });
         def.modal = modal;
         let Some(runner) = runner else { return Ok(def) };
@@ -290,11 +302,53 @@ impl From<CommandKeyStroke> for KeyStroke {
     }
 }
 
+/// Why a command won't run whatever the moment.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, uniffi::Enum)]
+pub enum CommandRefusalReason {
+    TurnedOff,
+    NotAllowed,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct CommandRefusalInfo {
+    pub reason: CommandRefusalReason,
+    pub message: String,
+}
+
+impl From<CommandRefusal> for CommandRefusalInfo {
+    fn from(refusal: CommandRefusal) -> Self {
+        CommandRefusalInfo {
+            reason: match refusal.reason {
+                RefusalReason::TurnedOff => CommandRefusalReason::TurnedOff,
+                RefusalReason::NotAllowed => CommandRefusalReason::NotAllowed,
+            },
+            message: refusal.message,
+        }
+    }
+}
+
+/// The command a keystroke names, and why it won't run when it's refused.
+#[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
+pub struct CommandShortcutMatch {
+    pub command_id: String,
+    pub refusal: Option<CommandRefusalInfo>,
+}
+
+impl From<ShortcutMatch> for CommandShortcutMatch {
+    fn from(found: ShortcutMatch) -> Self {
+        CommandShortcutMatch {
+            command_id: found.command_id,
+            refusal: found.refusal.map(CommandRefusalInfo::from),
+        }
+    }
+}
+
 /// A registered definition, without its runner.
 #[derive(Clone, Debug, PartialEq, Eq, uniffi::Record)]
 pub struct CommandSummary {
     pub id: String,
-    pub label_key: String,
+    pub label: Option<String>,
+    pub label_key: Option<String>,
     pub icon: Option<String>,
     pub shortcuts: Vec<String>,
     pub categories: Vec<String>,
@@ -308,6 +362,7 @@ impl From<CommandDef> for CommandSummary {
     fn from(def: CommandDef) -> Self {
         CommandSummary {
             id: def.id,
+            label: def.label,
             label_key: def.label_key,
             icon: def.icon,
             shortcuts: match def.shortcut {
@@ -318,8 +373,8 @@ impl From<CommandDef> for CommandSummary {
             categories: def.categories.unwrap_or_default(),
             menu: def.menu,
             panel: def.panel.map(|panel| match panel {
-                Panel::Id(id) => CommandPanel { id, exclusive: None },
-                Panel::Target { id, exclusive } => CommandPanel { id, exclusive },
+                Panel::Id(id) => CommandPanel { id, exclusive: None, focus: None },
+                Panel::Target { id, exclusive, focus } => CommandPanel { id, exclusive, focus },
             }),
             modal: def.modal,
             has_runner: def.run.is_some()
@@ -372,6 +427,11 @@ impl TryFrom<&CommandExecutionFailedEvent> for CommandExecutionFailure {
                 code: field("code")?,
                 message: field("message")?,
                 capability: field("capability")?,
+                permission: event
+                    .error
+                    .get("permission")
+                    .and_then(Value::as_str)
+                    .map(str::to_string),
             },
         })
     }
@@ -428,7 +488,7 @@ impl CommandsHandle {
         let post = self.post.clone();
         self.cap
             .call(move |c| {
-                let def = definition.into_def(post.clone())?;
+                let def = Rc::new(definition.into_def(post.clone())?);
                 let remove = c.register_command(def, RegisterCommandOptions { replace })?;
                 Ok(RegistrationHandle::new(post, move || remove()))
             })
@@ -446,7 +506,7 @@ impl CommandsHandle {
             .call(move |c| {
                 let defs = definitions
                     .into_iter()
-                    .map(|d| d.into_def(post.clone()))
+                    .map(|d| d.into_def(post.clone()).map(Rc::new))
                     .collect::<Result<Vec<_>, _>>()?;
                 let remove = c.register_commands(defs, RegisterCommandOptions { replace })?;
                 Ok(RegistrationHandle::new(post, move || remove()))
@@ -455,15 +515,17 @@ impl CommandsHandle {
     }
 
     pub async fn has_command(&self, id: String) -> Result<bool, ViewerError> {
-        self.cap.call(move |c| Ok(c.has_command(&id))).await
+        self.cap.call(move |c| c.has_command(&id)).await
     }
 
     pub async fn command(&self, id: String) -> Result<Option<CommandSummary>, ViewerError> {
-        self.cap.call(move |c| Ok(c.get_command(&id).map(CommandSummary::from))).await
+        self.cap
+            .call(move |c| Ok(c.get_command(&id)?.map(|def| CommandSummary::from((*def).clone()))))
+            .await
     }
 
     pub async fn command_ids(&self) -> Result<Vec<String>, ViewerError> {
-        self.cap.call(|c| Ok(c.list_command_ids())).await
+        self.cap.call(|c| Ok((*c.list_command_ids()?).clone())).await
     }
 
     /// Every derivation runs on every call.
@@ -472,14 +534,22 @@ impl CommandsHandle {
         id: String,
         document_id: Option<String>,
     ) -> Result<Option<ResolvedCommand>, ViewerError> {
-        self.cap.call(move |c| Ok(c.resolve_command(&id, document_id.as_deref()))).await
+        self.cap
+            .call(move |c| {
+                Ok(c.resolve_command(&id, document_id.as_deref())?.map(|r| (*r).clone()))
+            })
+            .await
     }
 
     pub async fn commands(
         &self,
         document_id: Option<String>,
     ) -> Result<Vec<ResolvedCommand>, ViewerError> {
-        self.cap.call(move |c| Ok(c.list_commands(document_id.as_deref()))).await
+        self.cap
+            .call(move |c| {
+                Ok(c.list_commands(document_id.as_deref())?.iter().map(|r| (**r).clone()).collect())
+            })
+            .await
     }
 
     /// Visible commands whose label or id contains the trimmed, lowercased
@@ -489,13 +559,20 @@ impl CommandsHandle {
         query: String,
         document_id: Option<String>,
     ) -> Result<Vec<ResolvedCommand>, ViewerError> {
-        self.cap.call(move |c| Ok(c.search_commands(&query, document_id.as_deref()))).await
+        self.cap
+            .call(move |c| {
+                Ok(c.search_commands(&query, document_id.as_deref())?
+                    .iter()
+                    .map(|r| (**r).clone())
+                    .collect())
+            })
+            .await
     }
 
     pub async fn shortcuts(&self) -> Result<Vec<CommandShortcutBinding>, ViewerError> {
         self.cap
             .call(|c| {
-                Ok(c.list_shortcuts().into_iter().map(CommandShortcutBinding::from).collect())
+                Ok(c.list_shortcuts()?.iter().cloned().map(CommandShortcutBinding::from).collect())
             })
             .await
     }
@@ -510,7 +587,11 @@ impl CommandsHandle {
     ) -> Result<CommandExecuteResult, ViewerError> {
         self.cap
             .call_promise(
-                move |c| Ok(c.execute(&id, document_id.as_deref(), args(args_json)?)),
+                move |c| {
+                    let options =
+                        ExecuteOptions { document_id, args: args(args_json)?, signal: None };
+                    Ok(c.execute(&id, options))
+                },
                 CommandExecuteResult::from,
             )
             .await
@@ -521,11 +602,11 @@ impl CommandsHandle {
         id: String,
         document_id: Option<String>,
     ) -> Result<bool, ViewerError> {
-        self.cap.call(move |c| Ok(c.can_execute(&id, document_id.as_deref()))).await
+        self.cap.call(move |c| c.can_execute(&id, document_id.as_deref())).await
     }
 
     pub async fn disabled_categories(&self) -> Result<Vec<String>, ViewerError> {
-        self.cap.call(|c| Ok(c.get_disabled_categories())).await
+        self.cap.call(|c| Ok((*c.get_disabled_categories()).clone())).await
     }
 
     pub async fn is_category_disabled(&self, category: String) -> Result<bool, ViewerError> {
@@ -562,17 +643,25 @@ impl CommandsHandle {
             .await
     }
 
-    /// The first command with a matching shortcut, enabled or not.
+    /// The command whose shortcut the stroke matches, for the active
+    /// document: one that may run wins; a refused one counts only while it
+    /// would show, and comes with its refusal.
     pub async fn match_stroke(
         &self,
         stroke: CommandKeyStroke,
         is_mac: bool,
-    ) -> Result<Option<String>, ViewerError> {
-        self.cap.call(move |c| Ok(c.match_stroke(&stroke.into(), ShortcutOptions { is_mac }))).await
+        in_text_field: bool,
+    ) -> Result<Option<CommandShortcutMatch>, ViewerError> {
+        self.cap
+            .call(move |c| {
+                let options = MatchStrokeOptions { is_mac, in_text_field };
+                Ok(c.match_stroke(&stroke.into(), options)?.map(CommandShortcutMatch::from))
+            })
+            .await
     }
 
     pub async fn menu_target(&self, id: String) -> Result<Option<CommandMenuTarget>, ViewerError> {
-        self.cap.call(move |c| Ok(c.get_menu_target(&id).map(CommandMenuTarget::from))).await
+        self.cap.call(move |c| Ok(c.get_menu_target(&id)?.map(CommandMenuTarget::from))).await
     }
 
     /// The listener is registered on the kernel thread after this returns;

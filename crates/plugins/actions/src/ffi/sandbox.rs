@@ -71,8 +71,9 @@ impl From<ActionsScriptBudget> for ScriptBudget {
     }
 }
 
-/// `ActionsConfig.javascript`. `enabled` with no `engine` runs as the
-/// TypeScript does with scripting disabled.
+/// `ActionsConfig.javascript`. `enabled` with no `engine` gives the
+/// document a realm, as the TypeScript's default VM does, but Rust has no
+/// default engine: every script run fails with `NO_DEFAULT_SANDBOX`.
 ///
 /// Equality and hashing are exported (`Eq`, `Hash`) because a record that
 /// holds a foreign object loses Swift's synthesized `Equatable`, and
@@ -127,7 +128,7 @@ impl Hash for ActionsJavaScriptConfig {
 impl From<ActionsJavaScriptConfig> for crate::JavaScriptConfig {
     fn from(js: ActionsJavaScriptConfig) -> Self {
         crate::JavaScriptConfig {
-            enabled: js.enabled,
+            enabled: Some(js.enabled),
             sandbox_factory: js.engine.map(sandbox_factory),
             budget: js.budget.map(Into::into),
             max_script_nodes_per_dispatch: js.max_script_nodes_per_dispatch.map(f64::from),
@@ -342,13 +343,19 @@ fn failed_output(
     }
 }
 
+/// `QuickJsSandbox.ts` `failedOutput`'s target match: object numbers by
+/// `objectNumber` (`===`, absent being `undefined`), names by `name`.
 fn same_field(a: &Value, b: &Value) -> bool {
     let kind = |v: &Value| v.get("kind").and_then(Value::as_str).map(str::to_string);
+    let strict = |x: Option<&Value>, y: Option<&Value>| match (x, y) {
+        (Some(Value::Number(x)), Some(Value::Number(y))) => x.as_f64() == y.as_f64(),
+        (x, y) => x == y,
+    };
     match (kind(a).as_deref(), kind(b).as_deref()) {
         (Some("objectNumber"), Some("objectNumber")) => {
-            a.get("fieldObjectNumber") == b.get("fieldObjectNumber")
+            strict(a.get("objectNumber"), b.get("objectNumber"))
         }
-        (Some("fqn"), Some("fqn")) => a.get("name") == b.get("name"),
+        (Some("fqn"), Some("fqn")) => strict(a.get("name"), b.get("name")),
         _ => false,
     }
 }

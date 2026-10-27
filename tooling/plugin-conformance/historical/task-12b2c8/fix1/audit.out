@@ -1,0 +1,10 @@
+{
+  "preservedCount": 50,
+  "serializedCurrentInputsChanged": 0,
+  "serializedCurrentOutcomesChanged": 0,
+  "currentCases": 19,
+  "originalOccurrences": 19,
+  "exactRejections": 42,
+  "exactScopeThrows": 3,
+  "priorCompleteReplays": 293
+}

@@ -1,5 +1,4 @@
-//! `sync/`: the engine's records into the model.
+//! `sync/`: the records mirror and what follows a confirmed change.
 
-pub mod document_events;
-pub mod hydration;
-pub mod remote;
+pub mod confirmed;
+pub mod records;

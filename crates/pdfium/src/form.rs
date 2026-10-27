@@ -471,6 +471,53 @@ impl FormField<'_> {
                 != 0
         }
     }
+
+    /// `/TI`, the option a list box shows in its top row, as the file holds
+    /// it: possibly past the end of the options, or negative.
+    pub fn top_index(&self) -> i32 {
+        // SAFETY: as above.
+        unsafe { pdfium_sys::EPDFForm_GetFieldTopIndex(self.model.handle, self.index) }
+    }
+
+    /// Whether the field dictionary carries an `/EMBD_Metadata` dictionary.
+    pub fn has_embed_metadata(&self) -> bool {
+        // SAFETY: as above.
+        unsafe { pdfium_sys::EPDFForm_HasFieldEmbedMetadata(self.model.handle, self.index) != 0 }
+    }
+
+    /// One `/EMBD_Metadata` string entry of the field: `None` when absent,
+    /// `Some("")` when present and empty.
+    pub fn embed_metadata_string(&self, key: &str) -> Result<Option<String>, PdfiumError> {
+        let key = std::ffi::CString::new(key)
+            .map_err(|_| PdfiumError::InvalidArgument("metadata key contains NUL"))?;
+        // SAFETY: a null buffer with zero length is the measure call; the
+        // model handle and key are live.
+        let bytes = unsafe {
+            pdfium_sys::EPDFForm_GetFieldEmbedMetadataString(
+                self.model.handle,
+                self.index,
+                key.as_ptr(),
+                std::ptr::null_mut(),
+                0,
+            )
+        };
+        if bytes == 0 {
+            return Ok(None);
+        }
+        let text = read_utf16(|buffer, len| {
+            // SAFETY: as above, and `len` describes `buffer` in bytes.
+            unsafe {
+                pdfium_sys::EPDFForm_GetFieldEmbedMetadataString(
+                    self.model.handle,
+                    self.index,
+                    key.as_ptr(),
+                    buffer,
+                    len,
+                )
+            }
+        })?;
+        Ok(Some(text.unwrap_or_default()))
+    }
 }
 
 /// Measure then fill, for a UTF-16 accessor whose length is in bytes and

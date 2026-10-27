@@ -28,7 +28,11 @@ import { resolve } from 'node:path';
 
 import type { PageGeometrySnapshot } from '@embedpdf/engine-core/runtime';
 import { createPdfRuntime } from '@embedpdf/engine-runtime';
-import { InlineTransport, LocalEngine } from '@embedpdf/engine';
+import { LocalEngine } from '@embedpdf/engine';
+// Upstream no longer exports `InlineTransport` from the package root; the
+// in-thread transport ships as this subpath (`package.json` `exports`). Its
+// types are declared in `inline-transport.d.mts`, since the build emits none.
+import { InlineTransport } from '@embedpdf/engine/workers/inline-transport.node.js';
 
 import {
   consume,
@@ -89,10 +93,14 @@ async function openReader(arm: Arm, fixture: (typeof FIXTURES)[number]): Promise
   const { pages } = await doc.pages.list();
   const page = pages.find((candidate) => candidate.index === fixture.page);
   if (!page) throw new Error(`${fixture.label}: no page at index ${fixture.page}`);
-  const handle = doc.page(page.pageObjectNumber);
+  const handle = doc.page(page.ref);
 
   return {
-    read: () => handle.geometry.read(),
+    // Upstream removed `page.geometry.read()` (a10ed2659, "page.geometry is
+    // gone"). `text.layout()` is the same `pages.geometry` wire request, and
+    // its `runs` are the raw geometry, now converted to page space on the
+    // client. That conversion is inside the measurement, as the decode was.
+    read: async () => ({ runs: (await handle.text.layout()).runs }) as PageGeometrySnapshot,
     close: async () => {
       await doc.close();
       await engine.destroy();

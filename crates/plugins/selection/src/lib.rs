@@ -8,18 +8,21 @@
 //! The file split follows the TypeScript package: [`contract`] (with
 //! `token.ts`), [`model`], [`controller`] (whose [`SelectionCapability`] is
 //! the public lens and `host-contract.ts`'s host lens in one type),
-//! [`handler`], [`handles`], the coordinate seam in [`geometry`], and the
-//! wiring in [`selection_plugin`]. `/internal` exports the controller, the
-//! handler, the model and the seam; here they are public modules.
+//! `connect`, [`handler`], [`handles`], [`geometry`], [`state`], and the
+//! wiring in [`selection_plugin`].
 //!
-//! [`text_layout`] is the engine-core text layer the plugin is built on.
+//! [`text_layout`] is the engine-core text layer the plugin is built on: a
+//! pure copy of `crates/epdf-engine`'s, since that crate links PDFium and
+//! this one also builds for wasm32 (Ruling13.15).
 
+mod connect;
 pub mod contract;
 pub mod controller;
 pub mod geometry;
 pub mod handler;
 pub mod handles;
 pub mod model;
+pub mod state;
 pub mod text_layout;
 
 #[cfg(feature = "harness")]
@@ -31,61 +34,47 @@ pub mod ffi;
 #[cfg(feature = "uniffi")]
 uniffi::setup_scaffolding!();
 
-use std::rc::Rc;
-
+use epdf_kernel::settings::SettingsDeclaration;
 use epdf_kernel::{AnyPlugin, define};
-use epdf_plugin_interaction::{FEEDBACK, INTERACTION, RegisterHandlerOptions};
+use epdf_plugin_interaction::{FEEDBACK, INTERACTION};
+use serde_json::Value;
 
 pub use contract::*;
-pub use controller::{
-    OPEN_END, OperationOptions, SelectionCapability, create_selection_controller,
-};
-pub use geometry::{
-    SelectionPageGeometry, build_selection_page_geometry, content_point_to_pdf, to_content_segment,
-    to_content_text_quad,
-};
+pub use controller::{OPEN_END, OperationOptions, SelectionCapability};
 pub use handler::{TextSelectHandler, TextSelectHandlerOptions, create_text_select_handler};
 pub use handles::{
-    HANDLE_BAR, HANDLE_HEAD, HANDLE_PAD, HandleRole, SelectionHandleDragSession,
-    SelectionHandleEndpoint, SelectionHandleGeom, SelectionHandleTarget, SelectionHandleView,
-    create_selection_handle_drag, selection_handle_geom,
+    ArmedSelectionHandle, HANDLE_BAR, HANDLE_HEAD, HANDLE_PAD, HandleRole,
+    SelectionHandleDragSession, SelectionHandleEndpoint, SelectionHandleEndpoints,
+    SelectionHandleGeom, SelectionHandleStage, SelectionHandleTarget, SelectionHandleView,
+    arm_selection_handle, create_selection_handle_drag, selection_handle_endpoints_of,
+    selection_handle_geom, selection_handle_view_of,
 };
 pub use model::{
-    GlyphPointer, PageObjectNumber, SelectionAction, SelectionRange, SelectionState,
-    initial_selection_state, reduce_selection,
+    GlyphPosition, PageObjectNumber, SegmentsByPage, SelectionRange, SelectionState,
+    initial_selection_state,
 };
+pub use state::{SelectionStateView, selection_state};
 
 /// `SelectionHostCapability`: the same object as the public capability.
 pub type SelectionHostCapability = SelectionCapability;
 
-/// `selectionPlugin(config)`: document-scoped, requires the interaction hub,
-/// and uses platform feedback when a provider is registered. Its `connect`
-/// registers the pointer handler with the hub.
+/// `selectionPlugin(config)`: document-scoped, requires the interaction hub
+/// (whose pointer stream drives the selection's own handler) and uses
+/// platform feedback when a provider is registered. `config` is the
+/// settings the app registers, over [`selection_defaults`].
 pub fn selection_plugin(config: SelectionConfig) -> AnyPlugin {
-    define::<SelectionState, SelectionAction>("selection")
+    define::<SelectionState, Value>("selection")
         .document_scoped()
         .requires(INTERACTION.any())
         .optional(FEEDBACK.any())
         .initial_state(initial_selection_state)
-        .reduce(reduce_selection)
-        .create(&SELECTION, move |cx| {
-            let (api, connect) = create_selection_controller(cx.clone());
-            let selection = api.clone();
-            let connect: epdf_kernel::plugin::ConnectFn = Rc::new(move || {
-                connect()?;
-                let interaction = cx.get(&INTERACTION)?;
-                let feedback = cx.try_get(&FEEDBACK)?;
-                interaction.register_handler(
-                    Rc::new(create_text_select_handler(
-                        selection.clone(),
-                        interaction.clone(),
-                        feedback,
-                        TextSelectHandlerOptions { drag_threshold: config.drag_threshold },
-                    )),
-                    RegisterHandlerOptions::default(),
-                );
-                Ok(())
-            });
+        .settings(SettingsDeclaration {
+            defaults: serde_json::to_value(selection_defaults()).expect("plain data"),
+            registered: Some(config.to_json()),
+            whole: Vec::new(),
+        })
+        .create(&SELECTION, |cx| {
+            let (api, connect) = controller::create_selection_controller(cx)?;
             Ok((api, Some(connect)))
         })
         .build()

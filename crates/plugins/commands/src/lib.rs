@@ -1,21 +1,29 @@
-//! `packages/plugin/commands` in Rust: the command registry, the single
-//! vocabulary of verbs. Definitions are app content; a command's label,
-//! accent, enablement, active state and visibility derive at call time from
-//! i18n, the shell and the definition's own derivations.
+//! `packages/plugin/commands` in Rust: the commands that toolbars, menus,
+//! shortcuts and a command palette all show and run. A command's state is
+//! read from live state: `resolve_command` asks the other capabilities when
+//! it's called. Definitions hold functions, so they live in the settings
+//! and the plugin's registry, never in state; the plugin has no slice.
 //!
-//! The file split follows the TypeScript package: [`contract`], [`model`],
-//! [`registry`], [`controller`], and the wiring in [`commands_plugin`].
+//! The file split follows the TypeScript package: [`contract`],
+//! [`registry`], [`controller`], [`availability`]
+//! (`services/availability.ts`), [`turning_off`] (`write/turning-off.ts`),
+//! and the wiring in [`commands_plugin`]. [`settings`] keeps the settings in
+//! the kernel's JSON settings store.
 
 use std::rc::Rc;
 
-use epdf_kernel::{AnyPlugin, define};
+use epdf_kernel::settings::SettingsDeclaration;
+use epdf_kernel::{AnyPlugin, define, undefined};
 use epdf_plugin_i18n::I18N;
 use epdf_plugin_shell::SHELL;
+use serde_json::Value;
 
+pub mod availability;
 pub mod contract;
 pub mod controller;
-pub mod model;
 pub mod registry;
+pub mod settings;
+pub mod turning_off;
 
 #[cfg(feature = "uniffi")]
 pub mod ffi;
@@ -28,28 +36,55 @@ pub mod harness;
 
 pub use contract::{
     AccentDerivation, COMMANDS, CommandCtx, CommandDef, CommandExecutedEvent,
-    CommandExecutionFailedEvent, CommandsConfig, Derivation, ExecuteResult, IconAccent, MenuTarget,
-    Panel, RegisterCommandOptions, RejectReason, ResolvedCommand, RunFn, Shortcut, ShortcutBinding,
-    resolved_commands_equal,
+    CommandExecutionFailedEvent, CommandFamily, CommandId, CommandItem, CommandRefusal,
+    CommandsConfig, CommandsSettings, CommandsSettingsChanged, Derivation, ExecuteOptions,
+    ExecuteResult, FamilyCommandFn, IconAccent, MatchStrokeOptions, MenuTarget, NamesFn,
+    NotAllowedMode, Panel, RefusalReason, RegisterCommandOptions, RejectReason, ResolvedCommand,
+    RunFn, Shortcut, ShortcutBinding, ShortcutMatch, resolved_commands_equal, unregistered_command,
 };
-pub use controller::{CommandsCapability, WeakCommandsCapability, create_commands_controller};
-pub use model::{CommandsAction, CommandsState, commands_reducer, initial_commands_state};
-pub use registry::{CommandRegistry, RegisteredCommand, register_command};
+pub use controller::{
+    CommandsCapability, CommandsContext, WeakCommandsCapability, create_commands_controller,
+};
+pub use registry::{
+    CommandRegistry, ConfiguredCommands, RegisteredCommand, configured_commands, registered_command,
+};
+pub use settings::CommandTable;
 
-/// `commandsPlugin(config)`: workspace-scoped, one vocabulary for the whole
-/// workspace, with resolution and execution bound to a target document per
-/// call. Each controller registers the configured definitions in its own
-/// registry, so a bad definition fails the kernel, not this call. i18n and
-/// the shell are optional: without them labels stay keys and surface targets
-/// route nowhere.
-pub fn commands_plugin(config: CommandsConfig) -> AnyPlugin {
-    let config = Rc::new(config);
-    let disabled = config.disabled_categories.clone();
-    define::<CommandsState, CommandsAction>("commands")
+/// The plugin and its registration's table of definitions.
+pub(crate) fn plugin_parts(config: Option<CommandsConfig>) -> (AnyPlugin, Rc<CommandTable>) {
+    let table = Rc::new(CommandTable::default());
+    let registered = config.as_ref().map(|config| table.encode(config));
+    let plugin = define::<Value, Value>("commands")
+        // No `state`: the plugin has no slice of its own.
+        .initial_state(undefined)
+        // Labels come from i18n, and commands that open a panel, menu or
+        // dialog go through shell; without them a label is the command's
+        // own, and those commands open nothing.
         .optional(I18N.any())
         .optional(SHELL.any())
-        .initial_state(move || initial_commands_state(&disabled))
-        .reduce(commands_reducer)
-        .create(&COMMANDS, move |cx| Ok((create_commands_controller(cx, &config)?, None)))
-        .build()
+        // Command definitions come from the app and may use any capability.
+        .resolves_any_capability()
+        .settings(SettingsDeclaration {
+            defaults: settings::defaults_json(),
+            registered,
+            whole: Vec::new(),
+        })
+        .create(&COMMANDS, {
+            let table = table.clone();
+            move |cx| Ok((create_commands_controller(cx, table.clone())?, None))
+        })
+        // Inside a document's scope, a call that leaves out the document is
+        // for that one.
+        .in_scope(|commands: &CommandsCapability, document_id| commands.in_scope(document_id))
+        .build();
+    (plugin, table)
+}
+
+/// `commandsPlugin(config)`: one set of commands for the whole workspace,
+/// each resolved and run for a document (the one named, else the document
+/// in scope, else the active one). `config` is the settings the app
+/// registers, over the defaults; `None` registers none. i18n and the shell
+/// are optional.
+pub fn commands_plugin(config: impl Into<Option<CommandsConfig>>) -> AnyPlugin {
+    plugin_parts(config.into()).0
 }

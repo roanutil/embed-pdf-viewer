@@ -77,7 +77,7 @@ fn host_call(
 ) -> serde_json::Value {
     let mut request = request;
     request["jobId"] = json!(9);
-    let response = host.call(&request.to_string(), payloads);
+    let response = host.call_filled(&request.to_string(), payloads);
     serde_json::from_str(&response.json).unwrap()
 }
 

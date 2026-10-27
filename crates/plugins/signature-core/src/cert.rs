@@ -184,10 +184,11 @@ impl Certificate {
                         Some(v) => (false, v),
                         None => return None,
                     };
-                    if !value.is_octet_string() {
+                    // pkijs's schema names a primitive OCTET STRING.
+                    if !value.is_octet_string() || value.constructed {
                         return None;
                     }
-                    out.push(Extension { oid, critical, value: value.octets() });
+                    out.push(Extension { oid, critical, value: value.content.clone() });
                 }
                 extensions = Some(out);
             }
@@ -209,12 +210,18 @@ impl Certificate {
 
     /// `pkijs.Certificate.fromBER(der)`, errors and all.
     pub fn from_ber(bytes: &[u8]) -> Result<Certificate, Error> {
-        let node = der::from_ber(bytes).ok_or_else(|| {
+        let not_ber = || {
             Error::named(
                 "AsnError",
                 "Error during parsing of ASN.1 data. Data is not correct for 'Certificate'.",
             )
-        })?;
+        };
+        match crate::asn1js::from_ber(bytes) {
+            crate::asn1js::Verdict::Accepted => {}
+            crate::asn1js::Verdict::Refused => return Err(not_ber()),
+            crate::asn1js::Verdict::Throws(error) => return Err(error),
+        }
+        let node = der::from_ber(bytes).ok_or_else(not_ber)?;
         Certificate::read(&node).ok_or_else(|| {
             Error::named("AsnError", "Cannot create 'Certificate' from ASN.1 object")
         })

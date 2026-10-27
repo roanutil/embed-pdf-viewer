@@ -1,19 +1,18 @@
 //! G11. Annotation writes.
 //!
 //! Replaces `services/src/features/annotations/AnnotationMutator.ts`,
-//! `internal/write/*`, `internal/mutations/computeMutationImpact.ts` and the
-//! appearance, normalize, patch and draft bases. Operations:
+//! `internal/write/*`, `internal/stackingOrder.ts` and the appearance,
+//! normalize, patch and draft bases. Operations:
 //! `annotations.create`, `annotations.update`, `annotations.delete`,
-//! `annotations.move`.
+//! `annotations.reorder`.
 //!
 //! # What is here
 //!
-//! The two PURE decisions, which are the pieces where a mistake is silent and
-//! expensive: [`appearance`], which decides whether an update may keep the
-//! `/AP` stream a foreign producer wrote, and [`impact`], which decides
-//! whether a mutation just invalidated every index-addressed reference a
-//! client is holding. Both are transcriptions with vectors; neither touches
-//! PDFium.
+//! The PURE decision, the piece where a mistake is silent and expensive:
+//! [`appearance`], which decides whether an update may keep the
+//! `/AP` stream a foreign producer wrote. It is a transcription with
+//! vectors and touches no PDFium. Upstream's weak-reference impact went
+//! with weak references (bc0057f3a): no write renames an annotation.
 //!
 //! The mutators themselves are not ported.
 
@@ -22,10 +21,14 @@ pub mod context;
 pub mod create;
 pub mod delete;
 pub mod draft;
-pub mod impact;
-pub mod move_;
+pub mod measurement;
 pub mod mutator;
 pub mod patch;
+pub mod prepare;
+pub mod primitives;
+pub mod reorder;
 pub mod resolve;
-pub mod transform;
+pub mod shape_for_rect;
+pub mod stamp;
 pub mod update;
+pub mod widget;

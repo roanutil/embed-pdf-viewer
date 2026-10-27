@@ -1,9 +1,10 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, test } from 'vitest';
-import type { PageGeometrySnapshot } from '@embedpdf/engine-core/runtime';
+import { afterEach, describe, expect, test, vi } from 'vitest';
+import type { TextLayout } from '@embedpdf/engine-core/runtime';
 import { createPdfRuntime } from '@embedpdf/engine-runtime';
+import { RustPageGeometryReader } from '@embedpdf/engine-services';
 import { LocalEngine } from '../src/index';
 import { InlineTransport } from '../src/transport/InlineTransport';
 
@@ -17,6 +18,11 @@ import { InlineTransport } from '../src/transport/InlineTransport';
  * the same. This one runs both readers against a live session through
  * `doc.page().geometry.read()`, so everything between the glyph loop and the
  * caller is in scope: the borrow, the envelope, the worker wire, the decode.
+ *
+ * Upstream removed `page.geometry.read()`. `page.text.layout()` is now the
+ * lowest public call that sends `pages.geometry`, so both readers are compared
+ * through it: the runs it carries are the snapshot the reader returned, moved
+ * into page space.
  *
  * Both engines open their own document from identical bytes, which is the
  * differential-replay rule from `multiplatform-plan.md` Section 9: never two
@@ -53,18 +59,26 @@ async function makeEngine(rustReads: boolean) {
   };
 }
 
-async function readAllPages(rustReads: boolean, path: string): Promise<PageGeometrySnapshot[]> {
+/** What a layout is built from: everything else it answers is computed from these. */
+function geometryOf(layout: TextLayout): Pick<TextLayout, 'charCount' | 'runs'> {
+  return { charCount: layout.charCount, runs: layout.runs };
+}
+
+async function readAllPages(
+  rustReads: boolean,
+  path: string,
+): Promise<Pick<TextLayout, 'charCount' | 'runs'>[]> {
   const made = await makeEngine(rustReads);
   if (!made) throw new Error('no Rust core');
   const bytes = new Uint8Array(await readFile(path));
   const doc = await made.engine.open({ kind: 'bytes', id: `parity-${rustReads}`, bytes });
   try {
     const { pages } = await doc.pages.list();
-    const snapshots: PageGeometrySnapshot[] = [];
+    const layouts: Pick<TextLayout, 'charCount' | 'runs'>[] = [];
     for (const page of pages) {
-      snapshots.push(await doc.page(page.ref).geometry.read());
+      layouts.push(geometryOf(await doc.page(page.ref).text.layout()));
     }
-    return snapshots;
+    return layouts;
   } finally {
     await doc.close();
     await made.engine.destroy();
@@ -79,13 +93,22 @@ const hasRustCore = await (async () => {
 })();
 
 describe.skipIf(!hasRustCore)('pages.geometry: Rust and TypeScript readers agree', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   for (const fixture of fixtures) {
     test(`${fixture.name}, every page, through the service boundary`, async () => {
+      // Counted, so a routing change that quietly sends both engines through
+      // the TypeScript reader fails here instead of comparing it with itself.
+      const rustReads = vi.spyOn(RustPageGeometryReader.prototype, 'read');
       const [typescript, rust] = await Promise.all([
         readAllPages(false, fixture.path),
         readAllPages(true, fixture.path),
       ]);
 
+      expect(rustReads).toHaveBeenCalledTimes(rust.length);
+      expect(typescript.some((page) => page.runs.length > 0)).toBe(true);
       expect(rust.length).toBe(typescript.length);
       for (let i = 0; i < typescript.length; i++) {
         // Exact, not tolerant: both readers are reading the same PDFium in the
@@ -106,7 +129,7 @@ describe.skipIf(!hasRustCore)('pages.geometry: Rust and TypeScript readers agree
       // Object number 999999 is not in any of these documents. The Rust path
       // must surface the same EngineErrorCode the TypeScript path does, since
       // the plan makes one error vocabulary a requirement rather than a goal.
-      await expect(doc.page(999999 as never).geometry.read()).rejects.toMatchObject({
+      await expect(doc.page(999999 as never).text.layout()).rejects.toMatchObject({
         code: 'NotFound',
       });
     } finally {

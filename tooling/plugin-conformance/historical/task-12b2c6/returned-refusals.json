@@ -1,0 +1,211 @@
+[
+  {
+    "name": "link-nav-behavior",
+    "step": 7,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "link-nav-behavior",
+    "step": 11,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "activate-without-a-stage",
+    "step": 5,
+    "channel": "returned absence/refusal",
+    "value": {
+      "outcome": "reported",
+      "target": {
+        "kind": "javascript"
+      }
+    }
+  },
+  {
+    "name": "activate-without-a-stage",
+    "step": 6,
+    "channel": "returned absence/refusal",
+    "value": {
+      "outcome": "reported",
+      "target": {
+        "kind": "goto-remote",
+        "file": "other.pdf"
+      }
+    }
+  },
+  {
+    "name": "activate-without-a-stage",
+    "step": 7,
+    "channel": "returned absence/refusal",
+    "value": {
+      "outcome": "reported",
+      "target": {
+        "kind": "launch",
+        "path": "calc.exe"
+      }
+    }
+  },
+  {
+    "name": "activate-without-a-stage",
+    "step": 8,
+    "channel": "returned absence/refusal",
+    "value": {
+      "outcome": "reported",
+      "target": {
+        "kind": "unsupported"
+      }
+    }
+  },
+  {
+    "name": "activate-reveals-through-the-stage",
+    "step": 14,
+    "channel": "returned absence/refusal",
+    "value": {
+      "outcome": "reported",
+      "target": {
+        "kind": "goto",
+        "destination": {
+          "kind": "xyz",
+          "page": {
+            "kind": "objectNumber",
+            "objectNumber": 77
+          },
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "hit-testing-and-lookup",
+    "step": 6,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "hit-testing-and-lookup",
+    "step": 7,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "hit-testing-and-lookup",
+    "step": 9,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "hit-testing-and-lookup",
+    "step": 12,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "hit-testing-by-area",
+    "step": 5,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "hit-testing-by-area",
+    "step": 6,
+    "channel": "returned absence/refusal",
+    "value": null
+  },
+  {
+    "name": "labels-and-resolution",
+    "step": 9,
+    "channel": "returned absence/refusal",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "goto",
+        "destination": {
+          "kind": "xyz",
+          "page": {
+            "kind": "objectNumber",
+            "objectNumber": 77
+          },
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "labels-and-resolution",
+    "step": 12,
+    "channel": "returned absence/refusal",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "javascript"
+      }
+    }
+  },
+  {
+    "name": "resolve-target-1",
+    "channel": "pure.returned",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "goto",
+        "destination": {
+          "kind": "xyz",
+          "page": {
+            "kind": "objectNumber",
+            "objectNumber": 77
+          },
+          "x": 0,
+          "y": 0,
+          "zoom": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "resolve-target-4",
+    "channel": "pure.returned",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "javascript"
+      }
+    }
+  },
+  {
+    "name": "resolve-target-5",
+    "channel": "pure.returned",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "goto-remote",
+        "file": "other.pdf"
+      }
+    }
+  },
+  {
+    "name": "resolve-target-6",
+    "channel": "pure.returned",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "launch",
+        "path": "calc.exe"
+      }
+    }
+  },
+  {
+    "name": "resolve-target-7",
+    "channel": "pure.returned",
+    "value": {
+      "kind": "reported",
+      "target": {
+        "kind": "unsupported"
+      }
+    }
+  }
+]

@@ -1,167 +1,200 @@
-//! `read/annotations.ts`: the page-space read model. Every annotation is
-//! projected from its model entry (the model already lives in page space).
+//! `read/annotations.ts`: the public reads, the engine's records as the user
+//! sees them. Each is the annotation a record in the view holds, so a read
+//! is the same until its annotation changes, and a new annotation reads
+//! before the engine confirms it. A lent record reads by its ref and in the
+//! selection, and lists with its owner's.
 
-use epdf_annotation_core::{
-    Annot, AnnotationRef, Geom, Id, Model, geom_visual_bounds, props_for, read_prop,
-};
+use std::cell::RefCell;
+use std::collections::HashMap;
+use std::rc::Rc;
+
+use epdf_annotation_core::editable::is_editable_by_hand;
+use epdf_annotation_core::types::{Model, ModelAnnotation};
 use epdf_kernel::Error;
 use epdf_kernel::error::{code, plugin_error};
-use serde_json::{Map, Value};
+use serde_json::Value;
 
-use crate::contract::*;
-use crate::controller::AnnotationCapability;
-use crate::repository::annotation_key;
-use crate::value::get;
+use crate::controller::{CAPABILITY, Core};
+use crate::js::{key_or_none, page_object_number};
+use crate::sync::records::{by_key, same_record};
 
-fn geometry_of(g: &Geom) -> AnnotationGeometry {
-    match g {
-        Geom::Rect { rect, rot, .. } => {
-            AnnotationGeometry::Rect { bounds: *rect, rotation: rot.unwrap_or(0.0) }
-        }
-        Geom::Line { a, b, .. } => AnnotationGeometry::Line { from: *a, to: *b },
-        Geom::Poly { points, closed: true, .. } => {
-            AnnotationGeometry::Polygon { vertices: points.clone() }
-        }
-        Geom::Poly { points, .. } => AnnotationGeometry::Polyline { vertices: points.clone() },
-        Geom::Ink { strokes, .. } => AnnotationGeometry::Ink { strokes: strokes.clone() },
-        Geom::Quads { quads } => AnnotationGeometry::Markup { quads: quads.clone() },
-        Geom::Caret { rect, .. } => AnnotationGeometry::Caret { bounds: *rect },
-        Geom::Text { rect, rot, callout } => AnnotationGeometry::Text {
-            bounds: *rect,
-            rotation: rot.unwrap_or(0.0),
-            callout: *callout,
-        },
-    }
+#[derive(Default)]
+pub struct ReadsState {
+    list: RefCell<Option<(Rc<Model>, Rc<Vec<Value>>)>>,
+    page_lists: RefCell<HashMap<String, (Rc<Model>, Rc<Vec<Value>>)>>,
+    selected: RefCell<Option<(Rc<Model>, Rc<Vec<Value>>)>>,
 }
 
-fn props_of(a: &Annot) -> Map<String, Value> {
-    let mut out = Map::new();
-    for spec in props_for(&a.subtype) {
-        if let Some(value) = read_prop(a, spec.key) {
-            out.insert(spec.key.as_str().into(), serde_json::to_value(value).unwrap_or_default());
+/// `AnnotationFilter`: pages (refs or indexes) and a subtype.
+#[derive(Clone, Debug, Default)]
+pub struct AnnotationFilter {
+    pub pages: Option<Vec<Value>>,
+    pub subtype: Option<String>,
+}
+
+impl AnnotationFilter {
+    pub fn read(value: &Value) -> AnnotationFilter {
+        let present = |k: &str| value.get(k).filter(|v| !epdf_kernel::is_undefined(v));
+        AnnotationFilter {
+            pages: present("pages").and_then(Value::as_array).cloned(),
+            subtype: present("subtype").and_then(Value::as_str).map(str::to_string),
         }
     }
-    out
 }
 
-fn member(d: Option<&Value>, key: &str) -> Value {
-    d.and_then(|d| get(d, key)).cloned().unwrap_or(Value::Null)
+fn annotation_value(record: &ModelAnnotation) -> Value {
+    Value::Object((*record.annotation).clone())
 }
 
-/// `projectAnnot(a)`: `None` for an entry the engine has not confirmed.
-pub(crate) fn project_annot(m: &Model, a: &Annot) -> Option<Annotation> {
-    let ref_ = a.ref_.clone()?;
-    let d = a.data.as_ref();
-    let contents = d.and_then(|d| get(d, "contents")).filter(|c| !c.is_null());
-    Some(Annotation {
-        ref_,
-        page: a.page,
-        subtype: a.subtype.clone(),
-        bounds: geom_visual_bounds(&a.geom, a.style.stroke_width, Some(&a.style.border)),
-        geometry: geometry_of(&a.geom),
-        props: props_of(a),
-        flags: a.flags,
-        contents: contents.cloned().unwrap_or_else(|| Value::String(String::new())),
-        author: member(d, "author"),
-        created_at: member(d, "created"),
-        modified_at: member(d, "modified"),
-        group: a.group.as_ref().and_then(|g| m.by_id.get(g)).and_then(|p| p.ref_.clone()),
-        in_reply_to: member(d, "inReplyTo"),
-        authority: a.authority.map_or(RecordAuthority { update: true, delete: true }, |x| {
-            RecordAuthority { update: x.update, delete: x.delete }
-        }),
-        raw: d.cloned(),
-    })
-}
-
-impl AnnotationCapability {
-    /// `projectRef(ref)`.
-    pub(crate) fn project_ref(&self, r: &AnnotationRef) -> Option<Annotation> {
-        let m = self.model();
-        let a = m.by_id.get(&annotation_key(r))?;
-        project_annot(&m, a)
+impl Core {
+    /// `get(ref)`.
+    pub fn get(&self, reference: &Value) -> Option<Value> {
+        self.model().by_id.get(&key_or_none(reference)).map(|r| annotation_value(r))
     }
 
-    /// `listAnnots(filter)`: model entries in z-order, every field narrowing.
-    pub(crate) fn list_annots(&self, filter: Option<&AnnotationFilter>) -> Vec<Annot> {
-        let m = self.model();
-        let group = filter.and_then(|f| f.group.as_ref()).map(annotation_key);
-        m.order
+    /// `isPending(ref)`: it shows other than the engine has it.
+    pub fn is_pending(&self, reference: &Value) -> bool {
+        let key = key_or_none(reference);
+        let shown = self.records.view();
+        let truths = self.records.get();
+        !same_record(by_key(&shown).get(&key), by_key(&truths).get(&key))
+    }
+
+    /// The page numbers a filter names; `None` without a page filter.
+    fn pages_of(&self, filter: &AnnotationFilter) -> Option<Vec<f64>> {
+        let pages = filter.pages.as_ref()?;
+        Some(
+            pages
+                .iter()
+                .filter_map(|p| self.get_page(p))
+                .filter_map(|info| info.get("ref").map(page_object_number))
+                .collect(),
+        )
+    }
+
+    /// `listAnnots(filter)`: the records in drawing order, lent ones aside.
+    pub(crate) fn list_annots(&self, filter: &AnnotationFilter) -> Vec<Rc<ModelAnnotation>> {
+        let model = self.model();
+        let pages = self.pages_of(filter);
+        model
+            .order
             .iter()
-            .filter_map(|id| m.by_id.get(id))
-            .filter(|a| {
-                let Some(f) = filter else { return true };
-                f.page.is_none_or(|p| a.page.same_page(&p))
-                    && f.subtype.as_ref().is_none_or(|s| a.subtype == *s)
-                    && f.author.as_ref().is_none_or(|author| {
-                        a.data.as_ref().and_then(|d| get(d, "author")).and_then(Value::as_str)
-                            == Some(author.as_str())
-                    })
-                    && group.as_ref().is_none_or(|g| a.group.as_ref() == Some(g) || a.id == *g)
+            .filter_map(|id| model.by_id.get(id))
+            .filter(|record| {
+                !self.lending.owns(&record.id)
+                    && pages
+                        .as_ref()
+                        .is_none_or(|p| record.page_number().is_some_and(|n| p.contains(&n)))
+                    && filter.subtype.as_ref().is_none_or(|s| record.subtype() == s)
             })
             .cloned()
             .collect()
     }
 
-    /// `loadedOrThrow(ref)`: the committed entry, or `not-found`.
-    pub(crate) fn loaded_or_throw(&self, r: &AnnotationRef) -> Result<Annot, Error> {
-        match self.model().by_id.get(&annotation_key(r)) {
-            Some(a) if a.ref_.is_some() => Ok(a.clone()),
-            _ => Err(plugin_error(
+    /// `list(filter)`: unfiltered and one-page lists are memoized per model.
+    pub fn list(&self, filter: Option<&AnnotationFilter>) -> Rc<Vec<Value>> {
+        let model = self.model();
+        let values = |records: Vec<Rc<ModelAnnotation>>| -> Rc<Vec<Value>> {
+            Rc::new(records.iter().map(|r| annotation_value(r)).collect())
+        };
+        let unfiltered = filter.is_none_or(|f| f.pages.is_none() && f.subtype.is_none());
+        if unfiltered {
+            if let Some((m, v)) = &*self.reads.list.borrow()
+                && Rc::ptr_eq(m, &model)
+            {
+                return v.clone();
+            }
+            let list = values(self.list_annots(&AnnotationFilter::default()));
+            *self.reads.list.borrow_mut() = Some((model, list.clone()));
+            return list;
+        }
+        let filter = filter.expect("a filter");
+        let one_page =
+            filter.pages.as_ref().filter(|p| p.len() == 1).and_then(|p| self.get_page(&p[0]));
+        if let Some(page) = one_page
+            && filter.subtype.is_none()
+        {
+            let key = crate::js::stringify(page.get("ref").and_then(|r| r.get("objectNumber")));
+            if let Some((m, v)) = self.reads.page_lists.borrow().get(&key)
+                && Rc::ptr_eq(m, &model)
+            {
+                return v.clone();
+            }
+            let list = values(self.list_annots(filter));
+            self.reads.page_lists.borrow_mut().insert(key, (model, list.clone()));
+            return list;
+        }
+        values(self.list_annots(filter))
+    }
+
+    /// `listSelected()`: the selected annotations, memoized per model.
+    pub fn list_selected(&self) -> Rc<Vec<Value>> {
+        let model = self.model();
+        if let Some((m, v)) = &*self.reads.selected.borrow()
+            && Rc::ptr_eq(m, &model)
+        {
+            return v.clone();
+        }
+        let list: Rc<Vec<Value>> = Rc::new(
+            model
+                .selected
+                .iter()
+                .filter_map(|id| model.by_id.get(id))
+                .map(|r| annotation_value(r))
+                .collect(),
+        );
+        *self.reads.selected.borrow_mut() = Some((model, list.clone()));
+        list
+    }
+
+    /// `pageOf(ref)` (reads): where the record was read, else the ref's own page.
+    pub(crate) fn annotation_page_of(&self, reference: &Value) -> Value {
+        self.model()
+            .by_id
+            .get(&key_or_none(reference))
+            .and_then(|r| r.annotation.get("page").cloned())
+            .or_else(|| reference.get("page").cloned())
+            .unwrap_or(Value::Null)
+    }
+
+    /// `loadedOrThrow(ref)`.
+    #[allow(dead_code)]
+    pub(crate) fn loaded_or_throw(&self, reference: &Value) -> Result<Rc<ModelAnnotation>, Error> {
+        self.model().by_id.get(&key_or_none(reference)).cloned().ok_or_else(|| {
+            plugin_error(
                 code::NOT_FOUND,
-                "annotation",
+                CAPABILITY,
                 "annotation is not loaded in this document",
                 None,
                 None,
-            )),
-        }
+            )
+        })
     }
 
-    /// `selectedCommitted()`: committed, data-backed members of the selection.
-    pub(crate) fn selected_committed(&self) -> Vec<Annot> {
-        let m = self.model();
-        m.selected
-            .iter()
-            .filter_map(|id| m.by_id.get(id))
-            .filter(|a| a.ref_.is_some() && a.data.is_some())
-            .cloned()
-            .collect()
+    /// The records in the current selection.
+    pub(crate) fn selected_records(&self) -> Vec<Rc<ModelAnnotation>> {
+        let model = self.model();
+        model.selected.iter().filter_map(|id| model.by_id.get(id).cloned()).collect()
     }
 
-    /// `get(ref)`: the page-space record, or `None`.
-    pub fn get(&self, r: &AnnotationRef) -> Option<Annotation> {
-        self.project_ref(r)
+    /// `getHovered()`.
+    pub fn get_hovered(&self) -> Option<Value> {
+        let model = self.model();
+        model.hovered.as_ref().and_then(|id| model.by_id.get(id)).map(|r| annotation_value(r))
     }
 
-    /// `list(filter)`: records in z-order.
-    pub fn list(&self, filter: Option<&AnnotationFilter>) -> Vec<Annotation> {
-        let m = self.model();
-        self.list_annots(filter).iter().filter_map(|a| project_annot(&m, a)).collect()
+    /// `text.getEditing()`.
+    pub fn get_editing(&self) -> Option<Value> {
+        let model = self.model();
+        model.editing.as_ref().and_then(|id| model.by_id.get(id)).map(|r| annotation_value(r))
     }
 
-    /// `listRaw(filter)`: the engine records.
-    pub fn list_raw(&self, filter: Option<&AnnotationFilter>) -> Vec<Value> {
-        self.list_annots(filter).into_iter().filter_map(|a| a.data).collect()
-    }
-
-    /// `getRaw(ref)`: the engine record, or `None`.
-    pub fn get_raw(&self, r: &AnnotationRef) -> Option<Value> {
-        self.model().by_id.get(&annotation_key(r))?.data.clone()
-    }
-
-    /// `listSelected()`.
-    pub fn list_selected(&self) -> Vec<Annotation> {
-        let m = self.model();
-        m.selected
-            .iter()
-            .filter_map(|id| m.by_id.get(id))
-            .filter_map(|a| project_annot(&m, a))
-            .collect()
-    }
-
-    /// `getSelection()`: the selection as durable refs.
-    pub fn get_selection(&self) -> Vec<AnnotationRef> {
-        let m = self.model();
-        m.selected.iter().filter_map(|id: &Id| m.by_id.get(id)?.ref_.clone()).collect()
+    /// `isEditable(ref)`: whether the `editable` setting lets people change it by hand.
+    pub fn is_editable(&self, reference: &Value) -> bool {
+        let model = self.model();
+        model
+            .by_id
+            .get(&key_or_none(reference))
+            .is_some_and(|r| is_editable_by_hand(&model.editable, &r.annotation))
     }
 }

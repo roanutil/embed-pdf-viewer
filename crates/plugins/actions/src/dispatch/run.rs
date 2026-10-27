@@ -1,7 +1,8 @@
 //! `dispatch/run.ts`: the tree walker. Policy per node, document-lifetime
 //! work in walk order (Hide through the owner sinks, executors for the
 //! rest), navigation and external effects deferred until every document node
-//! succeeded.
+//! succeeded. A caller's signal that fires stops the walk before its next
+//! node, and nothing deferred fires.
 //!
 //! Every TypeScript `async` function is an `async fn` here, and an `await` of
 //! one is `rt::returned(...)`, which spends the turn a JavaScript caller
@@ -15,6 +16,7 @@ use std::rc::Rc;
 use epdf_acrojs::js::number_to_string as num;
 use epdf_kernel::Error;
 use epdf_kernel::rt::{self, Promise};
+use epdf_kernel::signal::AbortSignal;
 use serde_json::{Value, json};
 
 use crate::ActionsCapability;
@@ -24,10 +26,12 @@ use crate::contract::{
     ActionResultStatus, UriOptions,
 };
 use crate::external_uri::{DEFAULT_ALLOWED_URI_SCHEMES, sanitize_external_uri};
-use crate::host_contract::{AnnotCommitEntry, AnnotCommitResultEntry, AnnotCommitStatus};
+use crate::host_contract::{
+    AnnotCommitEntry, AnnotCommitResultEntry, AnnotCommitStatus, FormCommitStatus,
+};
 use crate::services::policy::{DOCUMENT_TYPES, Decision, is_print_verb};
 use crate::services::ports::ExecutorKind;
-use crate::services::{Diagnose, get, node_type, same_number, str_of, truthy};
+use crate::services::{Diagnose, DiagnosticPlace, get, node_type, same_number, str_of, truthy};
 use crate::submit::intent::intent_of_payload;
 
 pub(crate) type LocalFuture<T> = Pin<Box<dyn Future<Output = T>>>;
@@ -41,7 +45,6 @@ impl ActionsCapability {
         node: Value,
         diagnose: Diagnose,
     ) -> Result<(ActionNodeStatus, Option<String>), Error> {
-        let doc = self.doc();
         let hide = get(&node, "hide").and_then(Value::as_bool).unwrap_or(false);
         let display = if truthy(get(&node, "hide")) { "hidden" } else { "visible" };
         let mut field_refs: Vec<Value> = Vec::new();
@@ -56,18 +59,11 @@ impl ActionsCapability {
                 names.push(get(&target, "name").cloned().unwrap_or(Value::Null));
             }
         }
-        if (!names.is_empty() || !bare_object_numbers.is_empty())
-            && let Ok(doc) = doc
-        {
-            let snapshot = doc.call("forms.list", None, Vec::new()).await?;
+        if !names.is_empty() || !bare_object_numbers.is_empty() {
+            let snapshot = self.read_form(None).await?;
             let fields =
                 get(&snapshot, "fields").and_then(Value::as_array).cloned().unwrap_or_default();
-            let field_ref = |field: &Value| {
-                json!({
-                    "kind": "objectNumber",
-                    "fieldObjectNumber": get(field, "fieldObjectNumber").cloned().unwrap_or(Value::Null),
-                })
-            };
+            let field_ref = |field: &Value| get(field, "ref").cloned().unwrap_or(Value::Null);
             for name in &names {
                 match fields.iter().find(|candidate| get(candidate, "name") == Some(name)) {
                     None => diagnose(ActionDiagnostic::new(
@@ -79,12 +75,12 @@ impl ActionsCapability {
             }
             for object_number in &bare_object_numbers {
                 // A bare object number may be a widget (its field's display)
-                // or a plain annotation (its own flags).
+                // or a plain annotation (its own flags): the form decides.
                 let owner = fields.iter().find(|field| {
                     get(field, "widgets").and_then(Value::as_array).is_some_and(|widgets| {
                         widgets
                             .iter()
-                            .any(|w| same_number(get(w, "annotObjectNumber"), Some(object_number)))
+                            .any(|w| same_number(get(w, "objectNumber"), Some(object_number)))
                     })
                 });
                 match owner {
@@ -112,14 +108,8 @@ impl ActionsCapability {
                 .map(|r| json!({ "kind": "setDisplay", "ref": r, "display": display }))
                 .collect();
             let result = sink(effects)?.await?;
-            if let Some(bad) =
-                result.results.iter().find(|e| e.status == "failed" || e.status == "rejected")
-            {
-                let detail = bad
-                    .error
-                    .as_ref()
-                    .and_then(|e| e.message.clone())
-                    .unwrap_or_else(|| bad.status.clone());
+            if result.status == FormCommitStatus::Failed {
+                let detail = result.error.unwrap_or_else(|| "failed".into());
                 diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::ExecutorFailed,
                     format!("hide: {detail}"),
@@ -179,18 +169,32 @@ impl ActionsCapability {
         }
     }
 
-    /// `run(tree, ctx)`.
+    /// `run(tree, ctx, signal)`.
     pub(crate) async fn run(
         self,
         tree: Value,
         action_ctx: ActionContext,
+        signal: Option<AbortSignal>,
     ) -> Result<ActionDispatchResult, Error> {
         let diagnostics: Rc<RefCell<Vec<ActionDiagnostic>>> = Rc::default();
-        let diagnose = self.collector(&diagnostics);
+        // Record a diagnostic in the result and report it, with the action
+        // it concerns.
+        let diagnose_for = {
+            let (this, diagnostics, source) =
+                (self.clone(), diagnostics.clone(), action_ctx.source.clone());
+            Rc::new(move |action: Option<String>| -> Diagnose {
+                this.collector(&diagnostics, DiagnosticPlace::of(action, source.clone()))
+            })
+        };
 
         // The law: never execute an incomplete tree, not even its root.
         if truthy(get(&tree, "incomplete")) {
-            diagnose(ActionDiagnostic::new(
+            let root_type = get(&tree, "root")
+                .filter(|root| truthy(Some(root)))
+                .and_then(|root| get(root, "type"))
+                .and_then(Value::as_str)
+                .map(str::to_string);
+            diagnose_for(root_type)(ActionDiagnostic::new(
                 ActionDiagnosticCode::IncompleteTree,
                 "refused: the action tree is incomplete",
             ));
@@ -213,19 +217,29 @@ impl ActionsCapability {
         let walk = Rc::new(Walk {
             this: self.clone(),
             ctx: action_ctx,
-            diagnose,
+            diagnose_for,
+            signal,
             nodes: RefCell::new(Vec::new()),
             deferred: RefCell::new(Vec::new()),
             document_failed: Cell::new(false),
+            cancelled: Cell::new(false),
         });
         rt::returned(walk.clone().walk(root, Vec::new())).await?;
-        if !walk.document_failed.get() {
+        if !walk.document_failed.get() && !walk.cancelled.get() {
             let deferred = std::mem::take(&mut *walk.deferred.borrow_mut());
             for entry in deferred {
                 rt::returned(walk.clone().fire(entry)).await?;
             }
         }
         let nodes = walk.nodes.borrow().clone();
+        if walk.cancelled.get() {
+            let diagnostics = diagnostics.borrow().clone();
+            return Ok(ActionDispatchResult {
+                status: ActionResultStatus::Cancelled,
+                nodes,
+                diagnostics,
+            });
+        }
         let any_executed = nodes.iter().any(|n| n.status == ActionNodeStatus::Executed);
         let any_failed_or_skipped = nodes
             .iter()
@@ -257,10 +271,13 @@ enum Deferred {
 struct Walk {
     this: ActionsCapability,
     ctx: ActionContext,
-    diagnose: Diagnose,
+    /// A `diagnose` for the action a diagnostic concerns.
+    diagnose_for: Rc<dyn Fn(Option<String>) -> Diagnose>,
+    signal: Option<AbortSignal>,
     nodes: RefCell<Vec<ActionNodeResult>>,
     deferred: RefCell<Vec<(usize, Deferred)>>,
     document_failed: Cell<bool>,
+    cancelled: Cell<bool>,
 }
 
 impl Walk {
@@ -272,8 +289,15 @@ impl Walk {
         }
     }
 
+    /// `diagnoseNode`: a diagnostic about the node at `index`.
+    fn diagnose_node(&self, index: usize) -> Diagnose {
+        let node_type = self.nodes.borrow()[index].node_type.clone();
+        (self.diagnose_for)(Some(node_type))
+    }
+
     fn settle(&self, index: usize, outcome: ActionExecutorResult) {
         let node_type = self.nodes.borrow()[index].node_type.clone();
+        let diagnose = self.diagnose_node(index);
         match outcome {
             ActionExecutorResult::Executed => {
                 self.nodes.borrow_mut()[index].status = ActionNodeStatus::Executed
@@ -284,7 +308,7 @@ impl Walk {
                     nodes[index].status = ActionNodeStatus::Inert;
                     nodes[index].detail = Some(reason.clone());
                 }
-                (self.diagnose)(ActionDiagnostic::new(
+                diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::ExecutorInert,
                     format!("{node_type}: {reason}"),
                 ));
@@ -295,7 +319,7 @@ impl Walk {
                     nodes[index].status = ActionNodeStatus::Failed;
                     nodes[index].detail = Some(error.clone());
                 }
-                (self.diagnose)(ActionDiagnostic::new(
+                diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::ExecutorFailed,
                     format!("{node_type}: {error}"),
                 ));
@@ -332,24 +356,22 @@ impl Walk {
             nodes.len() - 1
         };
         let origin = self.ctx.origin;
+        let diagnose = self.diagnose_node(index);
         match self.this.decision_for(&node, origin) {
             Decision::Never => {
-                (self.diagnose)(ActionDiagnostic::new(
+                diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::Blocked,
                     format!("{kind}: never executable"),
                 ));
                 return Ok(());
             }
-            Decision::Policy(
-                decision @ (ActionPolicyDecision::Block | ActionPolicyDecision::Report),
-            ) => {
-                (self.diagnose)(ActionDiagnostic::new(
+            // `block` refuses quietly; `report`, and a type that never runs,
+            // say so.
+            Decision::Policy(ActionPolicyDecision::Block) => return Ok(()),
+            Decision::Policy(ActionPolicyDecision::Report) => {
+                diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::Blocked,
-                    format!(
-                        "{kind}: policy '{}' for origin '{}'",
-                        decision.as_str(),
-                        origin.as_str()
-                    ),
+                    format!("{kind}: policy 'report' for origin '{}'", origin.as_str()),
                 ));
                 return Ok(());
             }
@@ -368,7 +390,7 @@ impl Walk {
                 return Ok(());
             }
             let (status, detail) =
-                rt::returned(self.this.clone().interpret_hide(node, self.diagnose.clone())).await?;
+                rt::returned(self.this.clone().interpret_hide(node, diagnose.clone())).await?;
             self.set(index, status, detail);
             if status == ActionNodeStatus::Failed {
                 self.document_failed.set(true);
@@ -388,7 +410,7 @@ impl Walk {
                     if javascript { ActionNodeStatus::Inert } else { ActionNodeStatus::NoExecutor },
                     None,
                 );
-                (self.diagnose)(ActionDiagnostic::new(
+                diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::NoExecutor,
                     format!(
                         "{kind}: no executor registered{}",
@@ -412,7 +434,7 @@ impl Walk {
                     ActionNodeStatus::Inert,
                     Some("submit payload unavailable (older runtime extraction)".into()),
                 );
-                (self.diagnose)(ActionDiagnostic::new(
+                diagnose(ActionDiagnostic::new(
                     ActionDiagnosticCode::SubmitPayloadUnavailable,
                     "submit-form: payload unavailable (older runtime extraction) — node inert",
                 ));
@@ -438,10 +460,17 @@ impl Walk {
 
     fn walk(self: Rc<Self>, node: Value, path: Vec<usize>) -> LocalFuture<Result<(), Error>> {
         Box::pin(async move {
+            if self.signal.as_ref().is_some_and(AbortSignal::aborted) {
+                self.cancelled.set(true);
+                return Ok(());
+            }
             rt::returned(self.clone().interpret(node.clone(), path.clone())).await?;
             let children =
                 get(&node, "next").and_then(Value::as_array).cloned().unwrap_or_default();
             for (index, child) in children.into_iter().enumerate() {
+                if self.cancelled.get() {
+                    break;
+                }
                 let mut child_path = path.clone();
                 child_path.push(index);
                 rt::returned(self.clone().walk(child, child_path)).await?;
@@ -451,13 +480,14 @@ impl Walk {
     }
 
     async fn fire(self: Rc<Self>, (index, entry): (usize, Deferred)) -> Result<(), Error> {
+        let diagnose = self.diagnose_node(index);
         match entry {
             Deferred::Submit(payload) => {
                 let intent = intent_of_payload(&payload);
                 let (status, detail) = rt::returned(self.this.clone().perform_submit(
                     intent,
                     self.ctx.clone(),
-                    self.diagnose.clone(),
+                    diagnose.clone(),
                 ))
                 .await;
                 self.set(index, status, detail);
@@ -466,7 +496,7 @@ impl Walk {
                 let adapter = self.this.0.ports.ui_adapter.borrow().clone();
                 let Some(adapter) = adapter else {
                     self.set(index, ActionNodeStatus::NoExecutor, None);
-                    (self.diagnose)(ActionDiagnostic::new(
+                    diagnose(ActionDiagnostic::new(
                         ActionDiagnosticCode::NoAdapter,
                         "uri: no UI adapter installed",
                     ));
@@ -478,7 +508,7 @@ impl Walk {
                     sanitize_external_uri(str_of(&node, "uri"), &DEFAULT_ALLOWED_URI_SCHEMES)
                 else {
                     self.set(index, ActionNodeStatus::Blocked, Some("scheme not allowed".into()));
-                    (self.diagnose)(ActionDiagnostic::new(
+                    diagnose(ActionDiagnostic::new(
                         ActionDiagnosticCode::Blocked,
                         "uri: scheme not allowed",
                     ));
@@ -496,7 +526,7 @@ impl Walk {
             Deferred::External(_) => {
                 // The Print verb: will-print, the adapter once, did-print.
                 let (status, detail) = rt::returned(
-                    self.this.clone().fire_print_through_adapter(None, self.diagnose.clone()),
+                    self.this.clone().fire_print_through_adapter(None, diagnose.clone()),
                 )
                 .await?;
                 self.set(index, status, detail);
@@ -505,7 +535,7 @@ impl Walk {
                 let kind = node_type(&node);
                 let Some(executor) = self.this.executor(&kind) else {
                     self.set(index, ActionNodeStatus::NoExecutor, None);
-                    (self.diagnose)(ActionDiagnostic::new(
+                    diagnose(ActionDiagnostic::new(
                         ActionDiagnosticCode::NoExecutor,
                         format!("{kind}: no executor registered"),
                     ));

@@ -1,0 +1,36 @@
+(node:26977) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ page triggers preserve O/PO, PC/C and visibility fan-out order (618.202417ms)
+✖ all 42 cases assert complete current results, exact callback order and named negative channels (33.557ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1512.410333
+
+✖ failing tests:
+
+test at test/actions-lifecycle-current.test.ts:1:12447
+✖ all 42 cases assert complete current results, exact callback order and named negative channels (33.557ms)
+  AssertionError [ERR_ASSERTION]: open-sequence-read-fails callback order
+  + actual - expected
+
+    [
+      'onDiagnosticReported',
+  +   'exec.named:O-1',
+      'exec.named:O-3'
+    ]
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/actions-lifecycle-current.test.ts:177:10)
+      at async Test.run (node:internal/test_runner/test:1409:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: [ 'onDiagnosticReported', 'exec.named:O-1', 'exec.named:O-3' ],
+    expected: [ 'onDiagnosticReported', 'exec.named:O-3' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }

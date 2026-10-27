@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "kind": "function",
   "describes": "packages/plugin/i18n: the CLDR category `translate` selects for each count, per locale tag (Intl.PluralRules under Node's ICU; the default locale is en-US; an invalid tag takes the catch arm).",
   "cases": [
@@ -55458,7 +55458,7 @@
       }
     },
     {
-      "name": "plural \"cnr\"",
+      "name": "plural \"cnr\" explicit-tag occurrence",
       "fn": "plurals",
       "args": [
         "cnr",
@@ -55577,7 +55577,7 @@
       }
     },
     {
-      "name": "plural \"drw\"",
+      "name": "plural \"drw\" explicit-tag occurrence",
       "fn": "plurals",
       "args": [
         "drw",
@@ -55696,7 +55696,7 @@
       }
     },
     {
-      "name": "plural \"swc\"",
+      "name": "plural \"swc\" explicit-tag occurrence",
       "fn": "plurals",
       "args": [
         "swc",
@@ -55815,7 +55815,7 @@
       }
     },
     {
-      "name": "plural \"hbs\"",
+      "name": "plural \"hbs\" explicit-tag occurrence",
       "fn": "plurals",
       "args": [
         "hbs",

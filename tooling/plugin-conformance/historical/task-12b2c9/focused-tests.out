@@ -1,0 +1,31 @@
+(node:72963) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ every i18n occurrence has a unique name including repeated plural tag sources (0.458458ms)
+✔ all pure cases invoke current source arguments without accidental throws (227.661833ms)
+✔ Arabic direction uses the current Locale direction field (583.655583ms)
+✔ translation lookup independently resolves app, bundled, fallback key, fallback language and plural branches (0.331084ms)
+✔ interpolation keeps unknown placeholders, grammar and replacement dollars literal (0.042458ms)
+✔ merge and dotted nesting preserve siblings and insertion precedence without modifying their inputs (0.096875ms)
+✔ transitions preserve identity for ignored calls and expose exact waiting, seeded and removal state (0.098ms)
+✔ plural rows preserve all counts and independently known Arabic, Russian, English and invalid-tag results (215.928417ms)
+✔ capability translation, bundle precedence, warn-once and runtime removal use actual results (7.082792ms)
+✔ lazy dedup replaces only the waiter and applies the loaded pack at the exact settle turn (1.949959ms)
+✔ startup fallback, immediate loads, mismatch codes and unregister replacements have successful witnesses (7.0275ms)
+✔ locale change and failure events have exact payloads, loader order and unsubscribe silence (1.871666ms)
+wrote crates/plugins/acrojs/prelude.js
+✔ every intentional negative channel is exact and all other diagnostics are absent (15.962958ms)
+✔ immutable settings follow locale, fallback, loader replacement and reset while memoized reads track only their inputs (0.642709ms)
+✔ cancellation stops the waiter, preserves late registration, and an already aborted signal never calls the loader (0.319ms)
+✔ prior actions160 commands79 link37 metadata17 and page-edit19 retain all inputs and every output channel (678.358959ms)
+✔ all current i18n inputs and complete outcomes remain independently replayable (248.849083ms)
+✔ locale negotiation preserves preference passes, casing and available ordering (0.120041ms)
+✔ all 635 immutable original occurrences retain full definitions and outcomes with exact unique mappings (49.302041ms)
+✔ only explicitly adversarial synchronous-throw and empty-code switches remain unsettled (16.146125ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2490.296417

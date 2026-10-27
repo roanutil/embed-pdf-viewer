@@ -1,0 +1,25 @@
+(node:63124) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✔ relative rotation uses current refs and stages an actual apply transaction (574.267958ms)
+✔ permission selectors keep assemble/download independent and wildcard grants both (1.7485ms)
+✔ relative turns see confirmed rotations and remote layouts (2.713458ms)
+✔ absolute rotate, reorder and delete expose actual successful order/count and void results (1.203375ms)
+✔ deferred changes send in staging order and deliver confirmed document event before promise settlement (0.967667ms)
+✔ blank defaults use actual neighbour size, preserve explicit count/size and return new refs (1.556208ms)
+✔ bytes stay byte-exact; insert positions name current refs and public result names pages (1.081708ms)
+✔ empty registry inserts Letter; missing refs never become implicit zero rotation (0.813167ms)
+✔ mixed rotations group in first-seen order within one transaction and return void (1.453333ms)
+✔ reorder retains neighbour positions and final order (0.923542ms)
+✔ subset insertion uses scratch full scope, selected order, extraction bytes and guaranteed close (1.769916ms)
+✔ clock-named scratch sources close for each malformed source index (2.164041ms)
+✔ cross-document refs resolve in source registry, bytes insert in destination and only source extracts (1.312792ms)
+✔ duplicate copies selected order after last page and extraction returns original bytes (1.141084ms)
+✔ scope absence and captured authority after close are distinct; selection resolves indexes and deduplicates (1.472875ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 942.458125

@@ -1,0 +1,15 @@
+"""Bounded fix audit: C8 immutable evidence + four active C8 dependencies, not a global future-source guard."""
+import pathlib,subprocess,hashlib,json
+ROOT=pathlib.Path(__file__).resolve().parents[5];H=pathlib.Path(__file__).resolve().parent
+BASE='ccc6ea5601560ffcdf611fedd1d4220c190315f7'
+def sha(v):return hashlib.sha256(v).hexdigest()
+def blob(p):return subprocess.check_output(['git','show',BASE+':'+p],cwd=ROOT)
+paths=subprocess.check_output(['git','ls-tree','-r','--name-only',BASE,'tooling/plugin-conformance/historical/task-12b2c8'],cwd=ROOT,text=True).splitlines()
+paths+=['tooling/plugin-conformance/src/suites/page-edit.ts','tooling/plugin-conformance/src/suites/page-edit-current-fixtures.ts','tooling/plugin-conformance/test/page-edit-evidence.ts','tooling/plugin-conformance/test/commands-current.test.ts']
+for p in paths:assert (ROOT/p).read_bytes()==blob(p),p
+original=blob('tooling/plugin-conformance/test/page-edit-current.test.ts');(H/'original-page-edit-current.test.ts.txt').write_bytes(original)
+source=json.loads((ROOT/'tooling/plugin-conformance/historical/task-12b2c8/source-evidence.json').read_text())
+for p in source['currentOwners']:assert sha((ROOT/p['path']).read_bytes())==p['sha256']
+owners=['packages/core/main/src/changes.ts','packages/engine/core/src/events/EventHub.ts','tooling/plugin-conformance/test/page-edit-current.test.ts']
+evidence={'base':BASE,'preservedPaths':[{'path':p,'sha256':sha(blob(p))}for p in paths],'preservedCount':len(paths),'originalTestSha256':sha(original),'currentOwners':[{'path':p,'sha256':sha((ROOT/p).read_bytes())}for p in owners],'serializedCurrentInputsChanged':0,'serializedCurrentOutcomesChanged':0,'focusedTestCount':32,'targetedTestCount':93,'newPrivateTests':4,'currentCases':19,'originalOccurrences':19,'exactRejections':42,'exactScopeThrows':3,'priorCompleteReplays':293,'newTests':['All blank/byte/empty/reorder/duplicate placements: literal full objectNumber/index/rotation/width/height arrays + count before and after each success','Subset [2,0] after10 and valid-index [1] at end: full destination before/after plus unchanged state after refusals','Cross-document end/start: full destination before/after each placement and unchanged complete source throughout','Immediate two-item + deferred one-item confirmations: staged IDs equal actual request IDs, all delivered result/item/fact identities and local tx ordering'],'strengthenedDirectWitnesses':'Every existing direct harness now binds actual staged UUID before send; verifies actual decoded delivery IDs against apply log at teardown. No entropy/API/shared fake changes. Deferred settlement goes through bound private wrapper. Result-only adversarial witness emits no facts.'}
+(H/'audit.json').write_text(json.dumps(evidence,indent=2)+'\n');print(json.dumps({k:evidence[k]for k in ['preservedCount','serializedCurrentInputsChanged','serializedCurrentOutcomesChanged','currentCases','originalOccurrences','exactRejections','exactScopeThrows','priorCompleteReplays']},indent=2))

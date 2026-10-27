@@ -12,9 +12,7 @@ use epdf_engine::host::Host;
 use serde_json::{Value, json};
 
 mod common;
-use common::{
-    sig_call, sig_call_bytes, sig_call_bytes_with, sig_call_with_payload, sig_open_fixture,
-};
+use common::{sig_call_bytes, sig_call_with_payload, sig_list, sig_open_fixture, sig_prepare};
 
 const FIX: &str = "packages/engine/main/test/fixtures";
 const FAKE_CMS: [u8; 5] = [0x30, 3, 2, 1, 1];
@@ -31,10 +29,10 @@ struct Sealed {
 fn seal() -> Sealed {
     let mut host = Host::new();
     let (doc, _) = sig_open_fixture(&mut host, &format!("{FIX}/unsigned_sigfield.pdf"));
-    let listed = sig_call(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
+    let listed = sig_list(&mut host, json!({ "kind": "signatures.list", "docId": doc }));
     let field = listed["signatures"][0]["field"].clone();
-    let field_object_number = field["fieldObjectNumber"].as_u64().expect("an object-number field");
-    let (prepared, _) = sig_call_bytes_with(
+    let field_object_number = field["objectNumber"].as_u64().expect("an object-number field");
+    let (prepared, _) = sig_prepare(
         &mut host,
         json!({ "kind": "signatures.prepare", "docId": doc,
                 "input": { "field": field, "certify": { "permission": 2 }, "contentsSize": 512 } }),
@@ -85,7 +83,7 @@ fn request(sealed: &Sealed, path: &str) -> Value {
 
 fn finalize(request: &Value, cms: &[u8]) -> Value {
     let mut host = Host::new();
-    let response = host.call(&request.to_string(), vec![cms.to_vec()]);
+    let response = host.call_filled(&request.to_string(), vec![cms.to_vec()]);
     serde_json::from_str(&response.json).unwrap()
 }
 
@@ -105,6 +103,24 @@ fn a_rebuilt_candidate_finalizes_to_the_sealed_file() {
     // completion sealed.
     assert_eq!(std::fs::read(&path).unwrap(), sealed.bytes);
     assert_eq!(finalized["version"], sealed.version);
+
+    // Every object the sealed file has is at or below its last object
+    // number: the one a layer over the file opens with.
+    let mut reader = Host::new();
+    let opened: Value = serde_json::from_str(
+        &reader
+            .call_filled(
+                &json!({ "kind": "open.layerMemBase", "jobId": 2, "docId": "sealed",
+                    "baseKey": "sealed", "layer": { "kind": "fresh" }, "password": null })
+                .to_string(),
+                vec![sealed.bytes.clone()],
+            )
+            .json,
+    )
+    .unwrap();
+    let last = opened["result"]["lastObjectNumber"].as_u64().expect("a layer's last number");
+    assert!(last > 0, "{opened}");
+    assert_eq!(finalized["lastObjectNumber"], json!(last), "{finalized}");
 
     // Finalizing the same file with the same CMS again writes the same bytes.
     let again = finalize(&request(&sealed, &path), &FAKE_CMS);

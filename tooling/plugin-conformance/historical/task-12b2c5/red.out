@@ -1,0 +1,244 @@
+(node:40223) [DEP0205] DeprecationWarning: `module.register()` is deprecated. Use `module.registerHooks()` instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+✖ all 76 original command occurrences call surviving shipping owners (3.428542ms)
+✔ command registry preserves insertion order and conflict refusal (595.516292ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2722.173041
+
+✖ failing tests:
+
+test at test/commands-current.test.ts:1:186
+✖ all 76 original command occurrences call surviving shipping owners (3.428542ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /removedUpstream|ctx\.core\(/. Input:
+
+  '/**\n' +
+    ' * `packages/plugin/commands`. Replayed by\n' +
+    ' * `crates/plugins/commands/tests/conformance.rs`.\n' +
+    ' *\n' +
+    ' * Two files: the pure parts (the reducer, `resolvedCommandsEqual`,\n' +
+    ' * `registerCommand`, and what `commandsPlugin(config)` builds) as function\n' +
+    ' * cases, and the workspace capability as scenarios, alone and next to the\n' +
+    ' * i18n and shell plugins it reads.\n' +
+    ' *\n' +
+    ' * A command carries functions (`run`, `enabled`, `active`, `visible`,\n' +
+    ' * `iconAccent`), so a vector writes each as a `$fn` spec. Commands in a\n' +
+    " * `register` step's arguments are decoded by the runner, as every `$fn` is.\n" +
+    ' * Commands in `config.commands` are decoded by this factory, which the\n' +
+    " * runner leaves config to, and the factory's functions take one extra\n" +
+    ' * member: `uses`, a list of things to do with the `CommandCtx` they are\n' +
+    ' * handed before they answer. That is how a vector reaches `ctx.get`,\n' +
+    ' * `ctx.tryGet` and `ctx.core`:\n' +
+    ' *\n' +
+    ' *   {"get": token, "call"?: method, "args"?: [...]}     ctx.get(token)[method](...args)\n' +
+    ' *   {"tryGet": token, "call"?: method, "args"?: [...]}  the same through ctx.tryGet\n' +
+    ' *   {"core": member}                                    ctx.core()[member]\n' +
+    ' *\n' +
+    ' * Each use answers `{returned}`, `{returnedPromise: true}` or `{threw}` (a\n' +
+    ' * `get` without `call` answers `{returned: "resolved"}`), and the list is logged as the callback\n' +
+    " * `<name>:uses` after the function's own call. A use's `args` are decoded\n" +
+    ' * the same way, so a use can register a command.\n' +
+    ' */\n' +
+    "import '../probe';\n" +
+    "import { commandsPlugin, resolvedCommandsEqual } from '../../../../packages/plugin/commands/src/index';\n" +
+    "import { CommandsToken } from '../../../../packages/plugin/commands/src/host-contract';\n" +
+    'import type {\n' +
+    '  CommandContext as CommandCtx,\n' +
+    '  CommandDef,\n' +
+    '  CommandsConfig,\n' +
+    '  ResolvedCommand,\n' +
+    "} from '../../../../packages/plugin/commands/src/host-contract';\n" +
+    '\n' +
+    "import { makeError, type FakeDocumentSpec } from '../fake-engine';\n" +
+    "import { registerPlugin, tokenNamed, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from '../scenario';\n" +
+    "import { removedUpstream } from '../removed';\n" +
+    "import type { FunctionCase, Suite } from '../vectors';\n" +
+    '\n' +
+    '// 4fc1a32af and cdf4586c7 removed the commands state (`model.ts`: its\n' +
+    '// reducer and initial state; disabled categories are a setting now) and the\n' +
+    '// mutable registry `registerCommand` filled. The cases keep their inputs.\n' +
+    'type CommandsState = { disabledCategories: string[] };\n' +
+    'type CommandsAction = { type: string; [field: string]: unknown };\n' +
+    'type CommandRegistry = Map<string, { shortcuts: unknown; parsed: unknown }>;\n' +
+    "const commandsReducer = removedUpstream('commandsReducer', '4fc1a32af') as (state: CommandsState, action: CommandsAction) => CommandsState;\n" +
+    "const initialCommandsState = removedUpstream('initialCommandsState', 'cdf4586c7');\n" +
+    "const registerCommand = removedUpstream('registerCommand', '4fc1a32af');\n" +
+    '\n' +
+    '// ── the factory ───────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    'interface Use {\n' +
+    '  readonly get?: string;\n' +
+    '  readonly tryGet?: string;\n' +
+    '  readonly core?: string;\n' +
+    '  readonly call?: string;\n' +
+    '  readonly args?: readonly unknown[];\n' +
+    "  /** Keep the call's returned function (a command remover) under this name. */\n" +
+    '  readonly remember?: string;\n' +
+    '  /** Call the function kept under this name. */\n' +
+    '  readonly forget?: string;\n' +
+    '}\n' +
+    '\n' +
+    '/** Removers kept by `remember` uses, per case (the factory resets it). */\n' +
+    'let remembered = new Map<string, () => void>();\n' +
+    '\n' +
+    'interface CommandFnSpec extends FnSpec {\n' +
+    '  readonly uses?: readonly Use[];\n' +
+    '}\n' +
+    '\n' +
+    'function decodeCommandValue(value: unknown, env: PluginEnv): unknown {\n' +
+    '  if (Array.isArray(value)) return value.map((v) => decodeCommandValue(v, env));\n' +
+    "  if (value === null || typeof value !== 'object') return value;\n" +
+    '  const object = value as Record<string, unknown>;\n' +
+    "  if ('$undefined' in object) return undefined;\n" +
+    "  if ('$fn' in object) return commandFn(object as unknown as CommandFnSpec, env);\n" +
+    '  const out: Record<string, unknown> = {};\n' +
+    '  for (const [key, member] of Object.entries(object)) out[key] = decodeCommandValue(member, env);\n' +
+    '  return out;\n' +
+    '}\n' +
+    '\n' +
+    'function runUse(use: Use, ctx: CommandCtx, env: PluginEnv): unknown {\n' +
+    '  if (use.forget !== undefined) {\n' +
+    '    const remove = remembered.get(use.forget);\n' +
+    '    if (!remove) return { threw: new Error(`nothing remembered as ${use.forget}`) };\n' +
+    '    return { returned: remove() };\n' +
+    '  }\n' +
+    '  if (use.core !== undefined) return { returned: (ctx.core() as unknown as Record<string, unknown>)[use.core] };\n' +
+    '  let capability: Record<string, (...args: unknown[]) => unknown> | null;\n' +
+    '  try {\n' +
+    '    capability =\n' +
+    '      use.get !== undefined\n' +
+    '        ? (ctx.get(tokenNamed(use.get)) as typeof capability)\n' +
+    '        : (ctx.tryGet(tokenNamed(use.tryGet!)) as typeof capability);\n' +
+    '  } catch (error) {\n' +
+    '    return { threw: error };\n' +
+    '  }\n' +
+    '  if (capability === null) return { returned: null };\n' +
+    "  if (use.call === undefined) return { returned: 'resolved' };\n" +
+    '  try {\n' +
+    '    const args = (use.args ?? []).map((arg) => decodeCommandValue(arg, env));\n' +
+    '    const returned = capability[use.call](...args);\n' +
+    '    if (use.remember !== undefined) remembered.set(use.remember, returned as () => void);\n' +
+    '    // A promise (an `execute` a run starts) has no canonical form in callback\n' +
+    '    // arguments, so the use records that one came back.\n' +
+    '    if (returned instanceof Promise) return { returnedPromise: true };\n' +
+    '    return { returned };\n' +
+    '  } catch (error) {\n' +
+    '    return { threw: error };\n' +
+    '  }\n' +
+    '}\n' +
+    '\n' +
+    'function commandFn(spec: CommandFnSpec, env: PluginEnv): (ctx: CommandCtx) => unknown {\n' +
+    '  let calls = 0;\n' +
+    '  return (ctx: CommandCtx) => {\n' +
+    '    env.log(spec.$fn, [ctx]);\n' +
+    '    if (spec.uses) env.log(`${spec.$fn}:uses`, spec.uses.map((use) => runUse(use, ctx, env)));\n' +
+    '    const answer = spec.seq ? spec.seq[Math.min(calls, spec.seq.length - 1)] : spec;\n' +
+    '    calls += 1;\n' +
+    '    if (answer.throws) throw makeError(answer.throws);\n' +
+    '    if (answer.defer !== undefined) {\n' +
+    '      const label = answer.defer;\n' +
+    '      return new Promise((resolve, reject) => env.defer(label, resolve, reject));\n' +
+    '    }\n' +
+    '    if (answer.rejects) return Promise.reject(makeError(answer.rejects));\n' +
+    "    if ('resolves' in answer) return Promise.resolve(decodeCommandValue(answer.resolves, env));\n" +
+    '    return decodeCommandValue(answer.returns, env);\n' +
+    '  };\n' +
+    '}\n' +
+    '\n' +
+    "registerPlugin('commands', {\n" +
+    '  factory: (raw, env) => {\n' +
+    '    remembered = new Map();\n' +
+    '    if (raw === undefined) return commandsPlugin();\n' +
+    '    return commandsPlugin(decodeCommandValue(raw, env) as CommandsConfig);\n' +
+    '  },\n' +
+    '  tokens: [CommandsToken],\n' +
+    '});\n' +
+    '\n' +
+    '// ── function cases ────────────────────────────────────────────────────────────\n' +
+    '\n' +
+    'const reduce = (state: CommandsState, action: CommandsAction) => {\n' +
+    '  const next = commandsReducer(state, action);\n' +
+    '  return { same: next === state, next };\n' +
+    '};\n' +
+    '\n' +
+    '/** Register each definition into a fresh registry, in order; the registry\n' +
+    ' *  as it stands, and the error that stopped it, if one did. */\n' +
+    'const register = (defs: CommandDef[]) => {\n' +
+    '  const registry: CommandRegistry = new Map();\n' +
+    '  let error: unknown;\n' +
+    '  try {\n' +
+    '    for (const def of defs) registerCommand(registry, def);\n' +
+    '  } catch (e) {\n' +
+    '    error = e;\n' +
+    '  }\n' +
+    '  const entries = [...registry].map(([id, entry]) => ({ id, shortcuts: entry.shortcuts, parsed: entry.parsed }));\n' +
+    '  return error === undefined ? { entries } : { entries, error };\n' +
+    '};\n' +
+    '\n' +
+    '/** What `commandsPlugin(config)` builds: its identity and initial state.\n' +
+    ' *  The definitions are registered when the controller is created, not here. */\n' +
+    'const plugin = (config?: CommandsConfig) => {\n' +
+    '  const def = commandsPlugin(config);\n' +
+    "  // A plugin's initial state is its definition's `state` since 4fc1a32af.\n" +
+    '  const initial = (def as { state?: unknown }).state;\n' +
+    "  return { id: def.id, scope: def.scope, initialState: typeof initial === 'function' ? initial() : initial };\n" +
+    '};\n' +
+    '\n' +
+    '/** `resolvedCommandsEqual(a, a)`: one object on both sides. */\n' +
+    'const equalSelf = (a: ResolvedCommand) => resolvedCommandsEqual(a, a);\n' +
+    '\n' +
+    'const cats = (...disabledCategories: string[]): CommandsState => ({ disabledCategories });\n' +
+    '\n' +
+    'const reducerCases: FunctionCase[] = [\n' +
+    "  { name: 'initial-state', fn: 'initialCommandsState', args: [] },\n" +
+    "  { name: 'disable-new', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/DISABLE_CATEGORY', category: 'b' }] },\n" +
+    "  { name: 'disable-into-empty', fn: 'commandsReducer', args: [cats(), { type: 'COMMANDS/DISABLE_CATEGORY', category: 'a' }] },\n" +
+    "  { name: 'disable-existing-is-ignored', fn: 'commandsReducer', args: [cats('a', 'b'), { type: 'COMMANDS/DISABLE_CATEGORY', category: 'b' }] },\n" +
+    "  { name: 'enable-removes-every-copy', fn: 'commandsReducer', args: [cats('a', 'b', 'a'), { type: 'COMMANDS/ENABLE_CATEGORY', category: 'a' }] },\n" +
+    "  { name: 'enable-missing-is-ignored', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/ENABLE_CATEGORY', category: 'z' }] },\n" +
+    "  { name: 'enable-last', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/ENABLE_CATEGORY', category: 'a' }] },\n" +
+    "  { name: 'set-replaces', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/SET_DISABLED_CATEGORIES', categories: ['b', 'b', 'c'] }] },\n" +
+    "  { name: 'set-equal-is-a-new-state', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/SET_DISABLED_CATEGORIES', categories: ['a'] }] },\n" +
+    "  { name: 'set-empty', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/SET_DISABLED_CATEGORIES', categories: [] }] },\n" +
+    "  { name: 'unknown-action-is-ignored', fn: 'commandsReducer', args: [cats('a'), { type: 'COMMANDS/NOPE', category: 'a' }] },\n" +
+    '];\n' +
+    '\n' +
+    'const rc = (over: Partial<ResolvedCommand> = {}): ResolvedCommand => ({\n' +
+    "  id: 'zoom:in',\n" +
+    "  label: 'Zoom In',\n" +
+    "  icon: 'zoomIn',\n" +
+    "  iconAccent: { primary: '#000', secondary: '#fff' },\n" +
+    "  shortcuts: ['Mod+=', 'Mod+Plus'],\n" +
+    "  menu: 'zoom',\n" +
+    '  enabled: true,\n' +
+    '  active: false,\n' +
+    '  visible: true,\n' +
+    "  categories: ['zoom'],\n" +
+    '  ...over,\n' +
+    '});\n' +
+    "const eq = (name: string, a: unknown, b: unknown): FunctionCase => ({ name, fn: 'resolvedCommandsEqual', args: [a, b] });\n" +
+    '\n' +
+    'const equalCases: FunctionCase[] = [\n' +
+    "  eq('both-null', null, null),\n" +
+    "  eq('null-left', null, rc()),\n" +
+    "  eq('null-right', rc(), null),\n" +
+    "  eq('equal-values', rc(), rc()),\n" +
+    "  { name: 'same-object', fn: 'res"... 36451 more characters
+
+      at TestContext.<anonymous> (/Users/andrew/repos/embed-pdf-viewer/.claude/worktrees/catchup-plugins/tooling/plugin-conformance/test/commands-current.test.ts:8:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '/**\n * `packages/plugin/commands`. Replayed by\n * `crates/plugins/commands/tests/conformance.rs`.\n *\n * Two files: the pure parts (the reducer, `resolvedCommandsEqual`,\n * `registerCommand`, and what `commandsPlugin(config)` builds) as function\n * cases, and the workspace capability as scenarios, alone and next to the\n * i18n and shell plugins it reads.\n *\n * A command carries functions (`run`, `enabled`, `active`, `visible`,\n * `iconAccent`), so a vector writes each as a `$fn` spec. Commands in a\n * `register` step\'s arguments are decoded by the runner, as every `$fn` is.\n * Commands in `config.commands` are decoded by this factory, which the\n * runner leaves config to, and the factory\'s functions take one extra\n * member: `uses`, a list of things to do with the `CommandCtx` they are\n * handed before they answer. That is how a vector reaches `ctx.get`,\n * `ctx.tryGet` and `ctx.core`:\n *\n *   {"get": token, "call"?: method, "args"?: [...]}     ctx.get(token)[method](...args)\n *   {"tryGet": token, "call"?: method, "args"?: [...]}  the same through ctx.tryGet\n *   {"core": member}                                    ctx.core()[member]\n *\n * Each use answers `{returned}`, `{returnedPromise: true}` or `{threw}` (a\n * `get` without `call` answers `{returned: "resolved"}`), and the list is logged as the callback\n * `<name>:uses` after the function\'s own call. A use\'s `args` are decoded\n * the same way, so a use can register a command.\n */\nimport \'../probe\';\nimport { commandsPlugin, resolvedCommandsEqual } from \'../../../../packages/plugin/commands/src/index\';\nimport { CommandsToken } from \'../../../../packages/plugin/commands/src/host-contract\';\nimport type {\n  CommandContext as CommandCtx,\n  CommandDef,\n  CommandsConfig,\n  ResolvedCommand,\n} from \'../../../../packages/plugin/commands/src/host-contract\';\n\nimport { makeError, type FakeDocumentSpec } from \'../fake-engine\';\nimport { registerPlugin, tokenNamed, type FnSpec, type PluginEnv, type ScenarioCase, type Step } from \'../scenario\';\nimport { removedUpstream } from \'../removed\';\nimport type { FunctionCase, Suite } from \'../vectors\';\n\n// 4fc1a32af and cdf4586c7 removed the commands state (`model.ts`: its\n// reducer and initial state; disabled categories are a setting now) and the\n// mutable registry `registerCommand` filled. The cases keep their inputs.\ntype CommandsState = { disabledCategories: string[] };\ntype CommandsAction = { type: string; [field: string]: unknown };\ntype CommandRegistry = Map<string, { shortcuts: unknown; parsed: unknown }>;\nconst commandsReducer = removedUpstream(\'commandsReducer\', \'4fc1a32af\') as (state: CommandsState, action: CommandsAction) => CommandsState;\nconst initialCommandsState = removedUpstream(\'initialCommandsState\', \'cdf4586c7\');\nconst registerCommand = removedUpstream(\'registerCommand\', \'4fc1a32af\');\n\n// ── the factory ───────────────────────────────────────────────────────────────\n\ninterface Use {\n  readonly get?: string;\n  readonly tryGet?: string;\n  readonly core?: string;\n  readonly call?: string;\n  readonly args?: readonly unknown[];\n  /** Keep the call\'s returned function (a command remover) under this name. */\n  readonly remember?: string;\n  /** Call the function kept under this name. */\n  readonly forget?: string;\n}\n\n/** Removers kept by `remember` uses, per case (the factory resets it). */\nlet remembered = new Map<string, () => void>();\n\ninterface CommandFnSpec extends FnSpec {\n  readonly uses?: readonly Use[];\n}\n\nfunction decodeCommandValue(value: unknown, env: PluginEnv): unknown {\n  if (Array.isArray(value)) return value.map((v) => decodeCommandValue(v, env));\n  if (value === null || typeof value !== \'object\') return value;\n  const object = value as Record<string, unknown>;\n  if (\'$undefined\' in object) return undefined;\n  if (\'$fn\' in object) return commandFn(object as unknown as CommandFnSpec, env);\n  const out: Record<string, unknown> = {};\n  for (const [key, member] of Object.entries(object)) out[key] = decodeCommandValue(member, env);\n  return out;\n}\n\nfunction runUse(use: Use, ctx: CommandCtx, env: PluginEnv): unknown {\n  if (use.forget !== undefined) {\n    const remove = remembered.get(use.forget);\n    if (!remove) return { threw: new Error(`nothing remembered as ${use.forget}`) };\n    return { returned: remove() };\n  }\n  if (use.core !== undefined) return { returned: (ctx.core() as unknown as Record<string, unknown>)[use.core] };\n  let capability: Record<string, (...args: unknown[]) => unknown> | null;\n  try {\n    capability =\n      use.get !== undefined\n        ? (ctx.get(tokenNamed(use.get)) as typeof capability)\n        : (ctx.tryGet(tokenNamed(use.tryGet!)) as typeof capability);\n  } catch (error) {\n    return { threw: error };\n  }\n  if (capability === null) return { returned: null };\n  if (use.call === undefined) return { returned: \'resolved\' };\n  try {\n    const args = (use.args ?? []).map((arg) => decodeCommandValue(arg, env));\n    const returned = capability[use.call](...args);\n    if (use.remember !== undefined) remembered.set(use.remember, returned as () => void);\n    // A promise (an `execute` a run starts) has no canonical form in callback\n    // arguments, so the use records that one came back.\n    if (returned instanceof Promise) return { returnedPromise: true };\n    return { returned };\n  } catch (error) {\n    return { threw: error };\n  }\n}\n\nfunction commandFn(spec: CommandFnSpec, env: PluginEnv): (ctx: CommandCtx) => unknown {\n  let calls = 0;\n  return (ctx: CommandCtx) => {\n    env.log(spec.$fn, [ctx]);\n    if (spec.uses) env.log(`${spec.$fn}:uses`, spec.uses.map((use) => runUse(use, ctx, env)));\n    const answer = spec.seq ? spec.seq[Math.min(calls, spec.seq.length - 1)] : spec;\n    calls += 1;\n    if (answer.throws) throw makeError(answer.throws);\n    if (answer.defer !== undefined) {\n      const label = answer.defer;\n      return new Promise((resolve, reject) => env.defer(label, resolve, reject));\n    }\n    if (answer.rejects) return Promise.reject(makeError(answer.rejects));\n    if (\'resolves\' in answer) return Promise.resolve(decodeCommandValue(answer.resolves, env));\n    return decodeCommandValue(answer.returns, env);\n  };\n}\n\nregisterPlugin(\'commands\', {\n  factory: (raw, env) => {\n    remembered = new Map();\n    if (raw === undefined) return commandsPlugin();\n    return commandsPlugin(decodeCommandValue(raw, env) as CommandsConfig);\n  },\n  tokens: [CommandsToken],\n});\n\n// ── function cases ────────────────────────────────────────────────────────────\n\nconst reduce = (state: CommandsState, action: CommandsAction) => {\n  const next = commandsReducer(state, action);\n  return { same: next === state, next };\n};\n\n/** Register each definition into a fresh registry, in order; the registry\n *  as it stands, and the error that stopped it, if one did. */\nconst register = (defs: CommandDef[]) => {\n  const registry: CommandRegistry = new Map();\n  let error: unknown;\n  try {\n    for (const def of defs) registerCommand(registry, def);\n  } catch (e) {\n    error = e;\n  }\n  const entries = [...registry].map(([id, entry]) => ({ id, shortcuts: entry.shortcuts, parsed: entry.parsed }));\n  return error === undefined ? { entries } : { entries, error };\n};\n\n/** What `commandsPlugin(config)` builds: its identity and initial state.\n *  The definitions are registered when the controller is created, not here. */\nconst plugin = (config?: CommandsConfig) => {\n  const def = commandsPlugin(config);\n  // A plugin\'s initial state is its definition\'s `state` since 4fc1a32af.\n  const initial = (def as { state?: unknown }).state;\n  return { id: def.id, scope: def.scope, initialState: typeof initial === \'function\' ? initial() : initial };\n};\n\n/** `resolvedCommandsEqual(a, a)`: one object on both sides. */\nconst equalSelf = (a: ResolvedCommand) => resolvedCommandsEqual(a, a);\n\nconst cats = (...disabledCategories: string[]): CommandsState => ({ disabledCategories });\n\nconst reducerCases: FunctionCase[] = [\n  { name: \'initial-state\', fn: \'initialCommandsState\', args: [] },\n  { name: \'disable-new\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/DISABLE_CATEGORY\', category: \'b\' }] },\n  { name: \'disable-into-empty\', fn: \'commandsReducer\', args: [cats(), { type: \'COMMANDS/DISABLE_CATEGORY\', category: \'a\' }] },\n  { name: \'disable-existing-is-ignored\', fn: \'commandsReducer\', args: [cats(\'a\', \'b\'), { type: \'COMMANDS/DISABLE_CATEGORY\', category: \'b\' }] },\n  { name: \'enable-removes-every-copy\', fn: \'commandsReducer\', args: [cats(\'a\', \'b\', \'a\'), { type: \'COMMANDS/ENABLE_CATEGORY\', category: \'a\' }] },\n  { name: \'enable-missing-is-ignored\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/ENABLE_CATEGORY\', category: \'z\' }] },\n  { name: \'enable-last\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/ENABLE_CATEGORY\', category: \'a\' }] },\n  { name: \'set-replaces\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/SET_DISABLED_CATEGORIES\', categories: [\'b\', \'b\', \'c\'] }] },\n  { name: \'set-equal-is-a-new-state\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/SET_DISABLED_CATEGORIES\', categories: [\'a\'] }] },\n  { name: \'set-empty\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/SET_DISABLED_CATEGORIES\', categories: [] }] },\n  { name: \'unknown-action-is-ignored\', fn: \'commandsReducer\', args: [cats(\'a\'), { type: \'COMMANDS/NOPE\', category: \'a\' }] },\n];\n\nconst rc = (over: Partial<ResolvedCommand> = {}): ResolvedCommand => ({\n  id: \'zoom:in\',\n  label: \'Zoom In\',\n  icon: \'zoomIn\',\n  iconAccent: { primary: \'#000\', secondary: \'#fff\' },\n  shortcuts: [\'Mod+=\', \'Mod+Plus\'],\n  menu: \'zoom\',\n  enabled: true,\n  active: false,\n  visible: true,\n  categories: [\'zoom\'],\n  ...over,\n});\nconst eq = (name: string, a: unknown, b: unknown): FunctionCase => ({ name, fn: \'resolvedCommandsEqual\', args: [a, b] });\n\nconst equalCases: FunctionCase[] = [\n  eq(\'both-null\', null, null),\n  eq(\'null-left\', null, rc()),\n  eq(\'null-right\', rc(), null),\n  eq(\'equal-values\', rc(), rc()),\n  { name: \'same-object\', fn: \'res'... 36451 more characters,
+    expected: /removedUpstream|ctx\.core\(/,
+    operator: 'doesNotMatch',
+    diff: 'simple'
+  }

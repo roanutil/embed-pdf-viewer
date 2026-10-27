@@ -1,5 +1,6 @@
 import CustomDump
 import EmbedPDF
+import Foundation
 import Testing
 
 extension BaseSuite {
@@ -25,42 +26,56 @@ extension BaseSuite {
       expectNoDifference(document.status, .locked)
     }
 
+    // Bytes that are not a PDF fail the open; a wrong password parks the
+    // document as a locked tab instead (`LocalEngine.openResult`).
+    let notAPDF = Data("not a pdf".utf8)
+
     @Test func aFailedOpenListsItsTabAsFailed() async throws {
       let viewer = try await started()
-      _ = try? await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
+      _ = try? await viewer.open(notAPDF)
       let documents = try await viewer.documents()
       expectNoDifference(documents.map(\.status), [DocumentStatus.failed])
-      expectNoDifference(documents.first?.error?.message.hasPrefix("DocPasswordIncorrect"), true)
+      // The engine's words, with no code in front (`toPluginError`).
+      expectNoDifference(documents.first?.error?.message, "failed to open base document")
+      expectNoDifference(documents.first?.error?.capability, "documents")
     }
 
     @Test func aFailedOpenAnnouncesTheTabsErrorWithItsCode() async throws {
       let viewer = try await started()
       let events = viewer.documentEvents
-      _ = try? await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
+      _ = try? await viewer.open(notAPDF)
       let tab = try #require(try await viewer.documents().first)
       for await event in events {
         guard case let .openFailed(documentId, error) = event else { continue }
         expectNoDifference(documentId, tab.id)
         expectNoDifference(error, tab.error)
-        expectNoDifference(error.code, "permission-denied")
+        expectNoDifference(error.code, "operation-failed")
         break
       }
     }
 
-    @Test func aWrongPasswordIsPermissionDenied() async throws {
+    @Test func aWrongPasswordParksTheTabAndAWrongUnlockIsPermissionDenied() async throws {
       let viewer = try await started()
-      await #expect {
-        _ = try await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
-      } throws: { error in
-        let error = error as? PDFError
-        return error?.code == "permission-denied" && error?.detail.hasPrefix("DocPasswordIncorrect") == true
+      let events = viewer.documentEvents
+      // At open, a wrong password parks the document as a locked tab whose
+      // prompt says a password was given.
+      let parked = try await viewer.open(Fixture.data("encrypted-hello"), password: "nope")
+      expectNoDifference(parked.status, .locked)
+      for await event in events {
+        guard case let .locked(documentId, passwordProvided) = event else { continue }
+        expectNoDifference(documentId, parked.id)
+        expectNoDifference(passwordProvided, true)
+        break
       }
       let locked = try await viewer.open(Fixture.data("encrypted-hello"))
       await #expect {
         try await viewer.unlock(locked, password: "nope")
       } throws: { error in
-        (error as? PDFError)?.code == "permission-denied"
+        let error = error as? PDFError
+        return error?.code == "permission-denied" && error?.detail == "incorrect document password"
       }
+      let tab = try #require(try await viewer.documents().first { $0.id == locked.id })
+      expectNoDifference(tab.status, .locked)
     }
 
     @Test func pagesOfAClosedDocumentAreNotFound() async throws {

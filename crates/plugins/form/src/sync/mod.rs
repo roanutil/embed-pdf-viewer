@@ -1,4 +1,4 @@
-//! `sync/`: the engine's field tree into the model.
+//! `sync/`: the fields mirror and what this session's changes show on top.
 
-pub mod document_events;
-pub mod hydration;
+pub mod fields;
+pub mod predict;

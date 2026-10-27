@@ -29,19 +29,48 @@ impl PageRef {
         if value.get("kind").and_then(Value::as_str) != Some("objectNumber") {
             return None;
         }
-        let pon = value.get("pageObjectNumber")?.as_f64()?;
-        (pon >= 0.0 && pon.fract() == 0.0 && pon <= u32::MAX as f64)
+        let pon = value.get("objectNumber")?.as_f64()?;
+        (pon > 0.0 && pon.fract() == 0.0 && pon <= u32::MAX as f64)
             .then(|| PageRef::new(pon as u32))
     }
 
     pub fn to_json(self) -> Value {
-        serde_json::json!({ "kind": "objectNumber", "pageObjectNumber": self.page_object_number })
+        serde_json::json!({ "kind": "objectNumber", "objectNumber": self.page_object_number })
     }
 
     /// `pageRefsEqual(page.ref, self)` for a `PageLayout` value.
     pub fn names(self, page: &Value) -> bool {
         page.get("ref").and_then(PageRef::from_json) == Some(self)
     }
+}
+
+impl Serialize for PageRef {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.to_json().serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for PageRef {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = Value::deserialize(deserializer)?;
+        Self::from_json(&value).ok_or_else(|| serde::de::Error::custom("invalid page ref"))
+    }
+}
+/// Inline annotations retain the index assigned by the uploaded base PDF.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind")]
+pub enum AnnotationRef {
+    #[serde(rename = "objectNumber")]
+    ObjectNumber {
+        page: PageRef,
+        #[serde(rename = "objectNumber")]
+        object_number: u32,
+    },
+    #[serde(rename = "baseIndex")]
+    BaseIndex {
+        page: PageRef,
+        #[serde(rename = "baseIndex")]
+        base_index: u32,
+    },
 }
 
 /// `PdfEdges`: a rectangle in PDF user space by its edges.

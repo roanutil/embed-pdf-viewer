@@ -3,7 +3,7 @@ name = "epdf-ui-core"
 version.workspace = true
 edition.workspace = true
 publish.workspace = true
-description = "packages/core/ui in Rust: the chrome schema vocabulary, the toolbar fit solver, the overflow projection, the schema transforms and the shortcut parser."
+description = "packages/core/ui in Rust: the bar schema, the toolbar fit solver, the overflow projection, the viewer layout with its edits and validation, and the shortcut parser."
 
 [lib]
 crate-type = ["rlib"]
@@ -22,3 +22,6 @@ serde = { version = "1", features = ["derive"] }
 # whatever else is linked (the harness turned it on only in its builds).
 serde_json = { version = "1", features = ["float_roundtrip", "preserve_order"] }
 plugin-conformance = { path = "../../plugin-conformance", optional = true }
+
+[build-dependencies]
+build-support = { path = "../../build-support" }
