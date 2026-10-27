@@ -53,10 +53,9 @@ pub trait Engine {
     /// `isLocalEngine(engine)`: the engine carries the local brand
     /// (`LOCAL_ENGINE_BRAND`), so a plugin may open scratch documents on it
     /// (stamp's library imports, `services/asset-engine.ts:56`). A cloud or
-    /// fake engine is unbranded. Of the local engines, only the native host
-    /// (`epdf-viewer-host`'s `NativeEngine`) answers true so far: epdf-web's
-    /// `JsEngine` keeps this default until the `packages/core-wasm` bridge
-    /// reports the brand (Task 14), so stamp's library imports refuse there.
+    /// fake engine is unbranded. The native host (`epdf-viewer-host`'s
+    /// `NativeEngine`) answers true, and epdf-web's `JsEngine` forwards the
+    /// bridge's `isLocal` (Task 14.1).
     fn is_local(&self) -> bool {
         false
     }
