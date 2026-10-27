@@ -359,3 +359,26 @@ fn reads_share_the_form_and_keep_their_answers() {
         assert_eq!(first_round, 9);
     });
 }
+
+/// M36: `validate` keeps its answer while the document's record is the
+/// same object, and builds a new one when the record changes, as
+/// `memo(() => [fields.view(), ctx.document(), rights.key()])` does; the
+/// record is compared by identity, not by its pages.
+#[test]
+fn validate_follows_the_documents_identity() {
+    use epdf_plugin_form::read::fields::read_computes;
+    let mut form_json = snapshot(3);
+    form_json["fields"][1]["required"] = json!(true);
+    let (kernel, _fake) = kernel_over(form_json);
+    let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+    let first = form.validate();
+    let before = read_computes();
+    assert!(Rc::ptr_eq(&first, &form.validate()), "the same record, the same answer");
+    assert_eq!(read_computes(), before);
+    kernel.documents().rename("a", "renamed.pdf");
+    let renamed = form.validate();
+    assert!(!Rc::ptr_eq(&first, &renamed), "a new record, a new answer");
+    assert_eq!(*renamed, *first, "with the same contents");
+    assert_eq!(read_computes(), before + 1);
+    assert!(Rc::ptr_eq(&renamed, &form.validate()));
+}

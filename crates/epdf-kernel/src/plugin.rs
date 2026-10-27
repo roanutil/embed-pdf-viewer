@@ -109,7 +109,7 @@ pub(crate) trait SessionView {
     /// Unique per open; a reopened id gets a new one.
     fn instance_id(&self) -> String;
     fn handle(&self) -> Option<Rc<dyn DocumentHandle>>;
-    fn staged_meta(&self) -> Option<DocumentMeta>;
+    fn staged_meta(&self) -> Option<Rc<DocumentMeta>>;
     fn scope(&self) -> Scope;
     fn lease(&self, plugin: &PluginDef) -> Option<SliceLease>;
 }
@@ -298,6 +298,13 @@ impl PluginContext {
     /// `ctx.document()`: the bound document's meta (staged during bring-up),
     /// or for a workspace plugin the active document's.
     pub fn document(&self) -> Option<DocumentMeta> {
+        self.document_rc().map(|meta| (*meta).clone())
+    }
+
+    /// [`document`](Self::document) as the core holds it: the same `Rc`
+    /// while the document's record is unchanged, so a memo can compare it
+    /// by identity as the TypeScript compares `ctx.document()`.
+    pub fn document_rc(&self) -> Option<Rc<DocumentMeta>> {
         let core = self.core();
         match &self.session {
             Some(session) => {
@@ -944,7 +951,7 @@ impl ControllerContext {
         })
     }
 
-    fn meta(&self) -> Option<DocumentMeta> {
+    fn meta(&self) -> Option<Rc<DocumentMeta>> {
         let session = self.0.session.as_ref()?;
         let core = self.0.ctx.core();
         core.documents.get(&session.id()).cloned().or_else(|| session.staged_meta())

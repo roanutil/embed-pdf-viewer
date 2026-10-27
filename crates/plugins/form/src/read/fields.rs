@@ -292,16 +292,16 @@ impl crate::controller::Core {
     }
 
     /// `validate()`: the required fields you may fill in that are empty, in
-    /// page order. The same answer while the form, the document and the
-    /// session's rights stay the same (`memo`); the document is compared by
-    /// value, as Rust holds no identity for it.
+    /// page order. The same answer while the form, the document's record
+    /// and the session's rights stay the same (`memo`), each compared by
+    /// identity as the TypeScript compares them.
     pub fn validate(&self) -> Rc<FormValidation> {
         let index = self.view();
-        let document = self.cx.document();
+        let document = self.cx.document_rc();
         let rights = self.rights_key();
         if let Some((kept, kept_document, kept_rights, answer)) = &*self.reads.validation.borrow()
             && Rc::ptr_eq(kept, &index)
-            && *kept_document == document
+            && same_document(kept_document, &document)
             && *kept_rights == rights
         {
             return answer.clone();
@@ -395,7 +395,7 @@ pub(crate) struct ReadMemos {
 }
 
 type WidgetsMemo = (Vec<Option<Rc<Value>>>, Rc<Vec<Rc<Value>>>);
-type ValidationMemo = (Rc<FieldIndex>, Option<DocumentMeta>, String, Rc<FormValidation>);
+type ValidationMemo = (Rc<FieldIndex>, Option<Rc<DocumentMeta>>, String, Rc<FormValidation>);
 type SelectedMemo = (Rc<FieldIndex>, Option<Rc<Vec<Value>>>, Option<Rc<Value>>);
 
 /// `memoByKey`'s `{ maxEntries: 1024 }`.
@@ -408,6 +408,15 @@ fn remember<V>(cache: &mut IndexMap<String, V>, key: String, entry: V) {
         cache.shift_remove_index(0);
     }
     cache.insert(key, entry);
+}
+
+/// `===` over the document's record or its absence.
+fn same_document(a: &Option<Rc<DocumentMeta>>, b: &Option<Rc<DocumentMeta>>) -> bool {
+    match (a, b) {
+        (Some(a), Some(b)) => Rc::ptr_eq(a, b),
+        (None, None) => true,
+        _ => false,
+    }
 }
 
 /// `===` over a widget row or its absence.

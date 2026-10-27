@@ -210,7 +210,7 @@ struct Session {
     held: RefCell<Option<Rc<HostHold>>>,
     phase: Cell<Phase>,
     handle: RefCell<Option<Rc<dyn DocumentHandle>>>,
-    staged_meta: RefCell<Option<DocumentMeta>>,
+    staged_meta: RefCell<Option<Rc<DocumentMeta>>>,
     scope: Scope,
     operation: RefCell<Option<Promise<Value>>>,
     engine_op: RefCell<Option<Rc<dyn Fn(Option<Value>)>>>,
@@ -259,7 +259,7 @@ impl SessionView for Session {
     fn handle(&self) -> Option<Rc<dyn DocumentHandle>> {
         self.handle.borrow().clone()
     }
-    fn staged_meta(&self) -> Option<DocumentMeta> {
+    fn staged_meta(&self) -> Option<Rc<DocumentMeta>> {
         self.staged_meta.borrow().clone()
     }
     fn scope(&self) -> Scope {
@@ -861,7 +861,7 @@ impl Inner {
         let published = self.store.core().documents.get(&id).cloned();
         let Some(meta) = published else {
             if let Some(meta) = session.staged_meta.borrow_mut().as_mut() {
-                meta.has_unsaved_changes = dirty;
+                Rc::make_mut(meta).has_unsaved_changes = dirty;
             }
             return;
         };
@@ -871,7 +871,7 @@ impl Inner {
         self.set_core(
             |core| {
                 if let Some(meta) = core.documents.get_mut(&id) {
-                    meta.has_unsaved_changes = dirty;
+                    Rc::make_mut(meta).has_unsaved_changes = dirty;
                 }
             },
             &core_action("@@core/document-changed"),
@@ -1519,7 +1519,7 @@ impl Inner {
         }
         Self::checkpoint(&session)?;
         let page_count = snapshot.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32;
-        *session.staged_meta.borrow_mut() = Some(DocumentMeta {
+        *session.staged_meta.borrow_mut() = Some(Rc::new(DocumentMeta {
             id: session.id(),
             instance_id: session.instance_id.clone(),
             name: session.name.borrow().clone(),
@@ -1529,7 +1529,7 @@ impl Inner {
             pages: Rc::new(snapshot.get("pages").cloned().unwrap_or_else(crate::undefined)),
             revision: 0,
             render_policy,
-        });
+        }));
 
         let burst = Rc::downgrade(&session);
         session.scope.defer_fn(move || {
@@ -1589,12 +1589,12 @@ impl Inner {
                 page_count: layout.get("pageCount").and_then(Value::as_u64).unwrap_or(0) as u32,
                 pages: Rc::new(layout.get("pages").cloned().unwrap_or_else(crate::undefined)),
                 revision: existing.revision + 1,
-                ..existing
+                ..(*existing).clone()
             };
             let (revision, pages) = (updated.revision, updated.pages.clone());
             this.set_core(
                 |core| {
-                    core.documents.insert(id.clone(), updated);
+                    core.documents.insert(id.clone(), Rc::new(updated));
                 },
                 &core_action(CORE_DOCUMENT_PAGES_UPDATED),
             );
@@ -1763,7 +1763,7 @@ impl Inner {
                     let document = core
                         .documents
                         .get(&id)
-                        .map(DocInfo::from_meta)
+                        .map(|meta| DocInfo::from_meta(meta))
                         .or_else(|| core.pending.get(&id).map(DocInfo::from_pending))
                         .ok_or_else(|| {
                             crate::error::plugin_error(
@@ -2712,7 +2712,7 @@ impl Documents {
             inner.set_core(
                 move |core| {
                     if let Some(meta) = core.documents.get_mut(&i) {
-                        meta.name = Some(n);
+                        Rc::make_mut(meta).name = Some(n);
                     }
                 },
                 &core_action(CORE_DOCUMENT_RENAMED),
@@ -2920,7 +2920,7 @@ impl Documents {
             Some(id) => id.to_string(),
             None => core.active_id.clone()?,
         };
-        core.documents.get(&id).cloned()
+        core.documents.get(&id).map(|meta| (**meta).clone())
     }
 
     fn pages_of(&self, id: Option<&str>) -> Option<Vec<Value>> {

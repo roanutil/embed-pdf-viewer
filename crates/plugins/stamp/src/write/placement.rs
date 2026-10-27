@@ -156,7 +156,7 @@ impl StampCapability {
             // page count and pages, as they were when the arm began.
             let target_document = Rc::new(DocumentMeta {
                 pages: Rc::new(Value::Array(documents.list_pages(Some(&document_id)))),
-                ..meta
+                ..(*meta).clone()
             });
 
             // A page extraction does not retain catalog-owned AcroForm and

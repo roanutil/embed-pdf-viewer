@@ -85,7 +85,9 @@ fn canonical_error<S: Serializer>(error: &Option<Error>, s: S) -> Result<S::Ok, 
 #[derive(Clone, Debug, Default, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CoreState {
-    pub documents: IndexMap<String, DocumentMeta>,
+    /// Each behind an `Rc`, so an unchanged document keeps its identity
+    /// across core updates, as `{ ...documents, [id]: next }` keeps it.
+    pub documents: IndexMap<String, Rc<DocumentMeta>>,
     pub pending: IndexMap<String, PendingMeta>,
     pub order: Vec<String>,
     pub active_id: Option<String>,

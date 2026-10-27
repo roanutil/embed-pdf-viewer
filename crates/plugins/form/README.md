@@ -75,8 +75,9 @@ scripted fill still puts the form together once per new view, for the realm.
 `fillable`. Since Task 14.5 (M36) the other identity memos are too: `getValue` and `getWidgets` per
 field key with `maxEntries: 1024`, `exportValues` on the view, `validate` on the view, the document
 and the rights key, and `getSelectedField` on the view and the annotation plugin's selection list.
-Each holds its inputs' `Rc`s and compares them with `Rc::ptr_eq`, except the document, which Rust
-holds as a value and compares by value. The reads hand out the fields and rows the form holds
+Each holds its inputs' `Rc`s and compares them with `Rc::ptr_eq`, the document's record included
+(`ControllerContext::document_rc`). `list(None)` returns a new `Vec` of the shared fields where the
+TypeScript returns the snapshot's array itself. The reads hand out the fields and rows the form holds
 (`Rc<Value>`), as the TypeScript's do; `tests/sharing.rs` pins the identity and counts the memos'
 computations (`reads_share_the_form_and_keep_their_answers`).
 
