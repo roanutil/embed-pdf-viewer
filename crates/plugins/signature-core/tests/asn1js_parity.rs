@@ -367,10 +367,43 @@ fn the_walk_answers_as_asn1js_from_ber_does() {
         ("2c8041420000", asn1js::Verdict::Accepted), // indefinite constructed string
         ("30800500", asn1js::Verdict::Refused), // no end-of-contents
         ("3080", asn1js::Verdict::Accepted),    // indefinite, nothing after
+        ("1f810100", asn1js::Verdict::Refused), // UNIVERSAL 129, primitive, long form
+        ("0488000000000000000100", asn1js::Verdict::Accepted), // eight length octets
+        ("000100", asn1js::Verdict::Accepted),  // primitive EOC with content
+        ("2000", asn1js::Verdict::Accepted),    // constructed EOC, no content
+        ("28020f00", asn1js::Verdict::Refused), // constructed EXTERNAL, member refused
+        ("300405020000", asn1js::Verdict::Accepted), // NULL with content, in a SEQUENCE
+        ("03020700", asn1js::Verdict::Accepted), // 7 unused bits
+        ("06032a8001", asn1js::Verdict::Accepted), // an arc with 0x80 inside it
     ];
     for (hex, expected) in rows {
         assert_eq!(asn1js::from_ber(&unhex(hex)), expected, "{hex}");
     }
+}
+
+/// asn1js 3.0.10's limits at their edges, `asn1js.fromBER` under node for
+/// each: 16 MiB is the most content an element may hold, 100 levels below
+/// the top the deepest an element may sit, and 10,000 the most elements a
+/// read may count, those of a BIT STRING's speculative decode (`30 01`
+/// after its unused-bits octet, one element) among them.
+#[test]
+fn the_walk_stops_at_the_asn1js_limits() {
+    use asn1js::Verdict::{Accepted, Refused};
+    let octets = |n: usize| der::tlv(0x04, &vec![0; n]);
+    for (n, expected) in [(2 << 20, Accepted), (16 << 20, Accepted), ((16 << 20) + 1, Refused)] {
+        assert_eq!(asn1js::from_ber(&octets(n)), expected, "{n} octets");
+    }
+    let nested =
+        |levels: usize| (1..levels).fold(unhex("0500"), |inner, _| der::sequence(&[inner]));
+    assert_eq!(asn1js::from_ber(&nested(101)), Accepted);
+    assert_eq!(asn1js::from_ber(&nested(102)), Refused);
+    let counted = |nulls: usize| {
+        let mut members = vec![unhex("0303003001")];
+        members.extend(std::iter::repeat_n(unhex("0500"), nulls));
+        der::sequence(&members)
+    };
+    assert_eq!(asn1js::from_ber(&counted(9_997)), Accepted, "10,000 elements");
+    assert_eq!(asn1js::from_ber(&counted(9_998)), Refused, "10,001 elements");
 }
 
 /// `skiSid` with each carried certificate's subject key identifier replaced:
