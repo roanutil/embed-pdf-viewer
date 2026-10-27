@@ -19,7 +19,8 @@ have a Rust crate that replays vectors generated from that TypeScript. P6, the a
 restructure is in `multiplatform-plugins-rebase.md`.
 
 Task 13 (`63f1219c7` to `4a0b9c126`) then re-ported the kernel and every plugin crate to the
-upstream catch-up, and Task 14 (`4a0b9c126` to `172f5369d`, sub-tasks 14.1 to 14.7) closed its
+upstream catch-up, and Task 14 (`4a0b9c126` to `eefa3e3e0`, sub-tasks 14.1 to 14.8: carries, checks, docs, and the in-diff
+mutation run, 853 tested, 639 caught, 13 missed, 3 timeouts after triage) closed its
 carries. "Catch-up to upstream" below says what that changed and what is left for you.
 
 ## What is ported
@@ -147,13 +148,7 @@ exercises because none configures a printer. Covering it needs a generator chang
 here. The coverage gate was not lowered. A further 784 lines are reached only by cases that take no
 snapshot, and 30 ported files are loaded by no generator.
 
-Mutation testing for the catch-up is not complete. A run restricted to Task 14's changed lines
-(`--in-diff 4a0b9c126..172f5369d`, 875 mutants over 82 files) was started from a detached worktree at
-`172f5369d`, with a 10-hour limit; its results are not in this file. Files changed only in Task 13, and
-the uniffi-gated ffi files, have no mutation evidence. Every crate README marks the counts it still
-carries as not re-run since `172f5369d`, and the unreached-line lists some READMEs carry are stale in
-the same way.
-Task 14.8b finished that run (`task-14.8b-report.md` in the plan directory): of 853 mutants tested (198 unviable), 639 are caught and 3 time out (infinite loops, counted caught); the 13 still missed are 12 equivalent and 1 accepted, and `epdf-web`'s 22 never ran because its baseline build fails.
+Mutation testing for the catch-up ran in-diff over Task 14's changed lines (`--in-diff 4a0b9c126..172f5369d`, 875 mutants over 82 files, from a detached worktree at `172f5369d`). Task 14.8b finished it (`task-14.8b-report.md` in the plan directory): of 853 mutants tested (198 unviable), 639 are caught and 3 time out (infinite loops, counted caught); the 13 still missed are 12 equivalent and 1 accepted, and `epdf-web`'s 22 never ran because its baseline build fails. The crate READMEs carry the results. Files changed only in Task 13, and the uniffi-gated ffi files, have no mutation evidence.
 
 Left for you, none of it a code failure:
 
