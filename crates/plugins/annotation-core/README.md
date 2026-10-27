@@ -127,11 +127,15 @@ These inputs answer differently on purpose, each pinned by a test in `tests/`:
   forgotten throws the TypeScript's own `TypeError`.
 - A `setSnap` patch the typed `SnapSettings` can't hold (`alignment: "yes"`): the TypeScript
   spreads it in; the port returns the model unchanged (`tests/behavior.rs`).
-- A malformed `/Measure` (`src/engine/measure.rs`): a format list entry that isn't an object is
-  skipped where `validNumberFormat(null)` throws; a missing `x` or `area` list reads as empty
-  (no scale, or a `NaN` area) where the TypeScript throws a `TypeError`; a missing `unit` prints
-  `""` where the TypeScript prints `"undefined"`; a `fraction` that isn't a string reads as
-  `decimal`. No vector holds one.
+- A malformed `/Measure` (`src/engine/measure.rs`), read as `epdf-engine`'s copy reads it since
+  Task 14.3 (`tests/engine_cross_check.rs` runs both on the same inputs). A number or string in a
+  format list is a format with no members, as the TypeScript reads it; a falsy measure is none and
+  a falsy `y` is no `y`. Kept: a `null` entry is the same empty format where
+  `validNumberFormat(null)` throws; a missing `x`, `distance` or `area` list reads as empty (no
+  scale, or no format) where the TypeScript throws a `TypeError`; a missing `unit` prints `""`
+  where the TypeScript prints `"undefined"`; a member of the wrong type (`conversion: "2"`) reads
+  as absent where `Math.fround` coerces it; a `fraction` that isn't a string reads as `decimal`.
+  No vector holds one.
 - `setRichText` on a free-text annotation with no `richText`: the TypeScript reads
   `richText.body` and throws a `TypeError`; the port takes the body as empty. No vector holds one.
 - A rich-text cut inside a surrogate pair. `slice` keeps the lone surrogate; a Rust string cannot,

@@ -3,13 +3,18 @@
 //! number-format cascade (`format.ts`), the readout a dimension's points
 //! give (`derive.ts`) and the checks a written scale passes (`validate.ts`).
 //!
-//! Measures are read straight off the annotation's JSON. A missing number
-//! reads as `NaN`, as in the TypeScript. Other malformed members don't throw
-//! where the TypeScript does: a format list entry that isn't an object is
-//! skipped, a missing `x` or `area` list reads as empty (no scale, or `NaN`),
-//! a missing `unit` prints as `""` where the TypeScript prints
-//! `"undefined"`, and a `fraction` that isn't a string reads as `decimal`.
-//! The README lists these as kept differences.
+//! Measures are read straight off the annotation's JSON, as `epdf-engine`'s
+//! copy reads them (`crates/epdf-engine/src/features/measure/derive.rs`).
+//! A missing number reads as `NaN`, as in the TypeScript; a format list
+//! entry that isn't an object is a format with no members, which sets no
+//! scale and fails `validNumberFormat`, as the TypeScript's reads of a
+//! number or a string do; a falsy measure is none, and a falsy `y` is no
+//! `y`. Other malformed members don't throw where the TypeScript does: a
+//! missing `x`, `distance` or `area` list (or a `null` entry) reads as
+//! empty (no scale, or no format), a missing `unit` prints as `""` where
+//! the TypeScript prints `"undefined"`, a member of the wrong type reads as
+//! absent, and a `fraction` that isn't a string reads as `decimal`. The
+//! README lists these as kept differences.
 
 use epdf_geometry::{Point, js};
 use serde_json::Value;
@@ -59,10 +64,16 @@ impl<'a> NumberFormat<'a> {
     }
 }
 
+/// A format with no members: what an entry that isn't an object reads as.
+static NO_MEMBERS: std::sync::LazyLock<Object> = std::sync::LazyLock::new(Object::new);
+
 /// A measure's format list (`measure.x`, `.distance`…), empty when absent.
 fn formats<'a>(measure: &'a Object, name: &str) -> Vec<NumberFormat<'a>> {
     match measure.get(name).and_then(Value::as_array) {
-        Some(list) => list.iter().filter_map(Value::as_object).map(NumberFormat).collect(),
+        Some(list) => list
+            .iter()
+            .map(|entry| NumberFormat(entry.as_object().unwrap_or(&NO_MEMBERS)))
+            .collect(),
         None => Vec::new(),
     }
 }
@@ -83,7 +94,7 @@ pub fn scale_of(measure: &Object) -> Option<MeasuredScale> {
     if !positive(sx) {
         return None;
     }
-    if json::nullish(measure.get("y")) {
+    if !json::truthy(measure.get("y")) {
         return Some(MeasuredScale { sx, sy: sx });
     }
     let cy = fround(first("y"));
@@ -417,12 +428,15 @@ pub fn measurement_readout(dto: &DimensionInput) -> Readout {
     if !is_dimension(dto.subtype, dto.intent) {
         return Readout::Unavailable("not-dimension");
     }
-    let Some(m) = dto.measure.and_then(Value::as_object) else {
+    let Some(measure) = dto.measure.filter(|m| json::truthy(Some(m))) else {
         return Readout::Unavailable("no-measure");
     };
-    if json::get_str(m, "subtype") != Some("rectilinear") {
+    // Only an object has a `rectilinear` subtype.
+    let Some(m) =
+        measure.as_object().filter(|m| json::get_str(m, "subtype") == Some("rectilinear"))
+    else {
         return Readout::Unavailable("foreign-measure");
-    }
+    };
     let Some(scale) = scale_of(m) else { return Readout::Unavailable("no-scale") };
     let points: Vec<Point> = if dto.subtype == "line" {
         dto.line_points.map_or_else(Vec::new, |(a, b)| vec![a, b])

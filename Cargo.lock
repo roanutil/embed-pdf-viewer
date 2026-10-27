@@ -435,6 +435,7 @@ name = "epdf-annotation-core"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-engine",
  "epdf-geometry",
  "epdf-kernel",
  "indexmap",
@@ -448,6 +449,7 @@ name = "epdf-engine"
 version = "0.0.0"
 dependencies = [
  "build-support",
+ "epdf-geometry",
  "epdf-signature-core",
  "getrandom 0.3.4",
  "pdfium",

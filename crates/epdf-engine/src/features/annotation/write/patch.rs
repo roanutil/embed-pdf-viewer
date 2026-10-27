@@ -491,20 +491,30 @@ fn measurement_follows(
         // The marker a read returned, sent back: the measure stays as it is.
         patch.remove("measure");
     }
-    let current_of = |name: &str| current.get(name).cloned().unwrap_or(Value::Null);
+    // A member the current annotation doesn't have is `undefined` in the
+    // TypeScript's spread, which the wire leaves out: it is dropped, not
+    // written as `null` (which would clear it).
+    let current_of = |name: &str| current.get(name).cloned();
+    let set_or_drop = |patch: &mut Map<String, Value>, name: &str, value: Option<Value>| {
+        match value {
+            Some(value) => patch.insert(name.into(), value),
+            None => patch.remove(name),
+        };
+    };
     if subtype == S::Line {
         if touches_caption(patch) {
             let enabled =
-                patch.get("captionEnabled").cloned().unwrap_or(current_of("captionEnabled"));
+                patch.get("captionEnabled").cloned().or_else(|| current_of("captionEnabled"));
             let position = patch
                 .get("captionPosition")
                 .filter(|p| !p.is_null())
                 .cloned()
-                .unwrap_or(current_of("captionPosition"));
-            let offset = patch.get("captionOffset").cloned().unwrap_or(current_of("captionOffset"));
-            patch.insert("captionEnabled".into(), enabled);
-            patch.insert("captionPosition".into(), position);
-            patch.insert("captionOffset".into(), offset);
+                .or_else(|| current_of("captionPosition"));
+            let offset =
+                patch.get("captionOffset").cloned().or_else(|| current_of("captionOffset"));
+            set_or_drop(patch, "captionEnabled", enabled);
+            set_or_drop(patch, "captionPosition", position);
+            set_or_drop(patch, "captionOffset", offset);
         }
     } else {
         if let (Some(after), Some(before), Some(center)) = (
@@ -529,9 +539,9 @@ fn measurement_follows(
                     .cloned()
                     .unwrap_or(Value::Bool(false));
                 let center =
-                    patch.get("captionCenter").cloned().unwrap_or(current_of("captionCenter"));
+                    patch.get("captionCenter").cloned().or_else(|| current_of("captionCenter"));
                 patch.insert("captionEnabled".into(), enabled);
-                patch.insert("captionCenter".into(), center);
+                set_or_drop(patch, "captionCenter", center);
             }
         }
     }
@@ -718,5 +728,34 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(foreign.code, EngineErrorCode::InvalidArg, "{foreign}");
+    }
+
+    #[test]
+    fn a_caption_member_the_annotation_lacks_is_left_out_not_cleared() {
+        // `measurementFollows` spreads `current.captionPosition` and the
+        // rest, `undefined` when the annotation has none, and the wire
+        // drops an `undefined` member: `{"captionEnabled":true,
+        // "subtype":"line"}` in the TypeScript. A `null` would clear it.
+        let follows = |subtype, current: Value, patch: Value| {
+            let mut patch = map(patch);
+            measurement_follows(subtype, &map(current), &mut patch).unwrap();
+            patch
+        };
+        let line = json!({ "subtype": "line", "intent": "line-dimension",
+            "linePoints": { "start": { "x": 0, "y": 0 }, "end": { "x": 3, "y": 4 } } });
+        assert_eq!(
+            follows(AnnotationSubtype::Line, line.clone(), json!({ "captionEnabled": true })),
+            map(json!({ "captionEnabled": true }))
+        );
+        assert_eq!(
+            follows(AnnotationSubtype::Line, line, json!({ "captionPosition": null })),
+            map(json!({}))
+        );
+        let polygon = json!({ "subtype": "polygon", "intent": "polygon-dimension",
+            "vertices": [{ "x": 0, "y": 0 }, { "x": 4, "y": 0 }, { "x": 4, "y": 3 }] });
+        assert_eq!(
+            follows(AnnotationSubtype::Polygon, polygon, json!({ "captionEnabled": true })),
+            map(json!({ "captionEnabled": true }))
+        );
     }
 }

@@ -39,3 +39,7 @@ test-support = { path = "../test-support" }
 pdfium-sys = { path = "../pdfium-sys" }
 # Signing tests build their CMS with the plugin's own builder.
 epdf-signature-core = { path = "../plugins/signature-core" }
+# `derive.rs` keeps its own `toFixed`: a normal dependency on `epdf-geometry`
+# is a cycle (`epdf-geometry`'s harness needs `plugin-conformance`, which
+# needs this crate). Its tests hold the two copies together.
+epdf-geometry = { path = "../plugins/geometry", default-features = false }

@@ -14,44 +14,120 @@ use crate::geom::PdfPoint;
 
 /// `PdfNumberFormat`, as the readout reads it. Every member is optional:
 /// an imported format can lack any of them.
-#[derive(Debug, Clone, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
+///
+/// Read loosely, member by member, as `annotation-core`'s copy reads it
+/// (`crates/plugins/annotation-core/src/engine/measure.rs`): a member of
+/// the wrong type reads as absent, and `fixed` as JavaScript's truthiness.
+/// Where the TypeScript would print `"undefined"` for a missing `unit`, or
+/// take a `fraction` that isn't a string past the decimal check, the two
+/// Rust copies print `""` and read `decimal` (the README's kept
+/// differences).
+#[derive(Debug, Clone, Default)]
 pub struct NumberFormat {
-    #[serde(default)]
     pub unit: String,
-    #[serde(default)]
     pub conversion: Option<f64>,
-    #[serde(default)]
     pub fraction: Option<String>,
-    #[serde(default)]
     pub precision: Option<f64>,
-    #[serde(default)]
     pub fixed: Option<bool>,
-    #[serde(default)]
     pub thousands: Option<String>,
-    #[serde(default)]
     pub decimal: Option<String>,
-    #[serde(default)]
     pub prefix_spacing: Option<String>,
-    #[serde(default)]
     pub suffix_spacing: Option<String>,
-    #[serde(default)]
     pub label_position: Option<String>,
 }
 
+impl NumberFormat {
+    /// A format's members off its JSON object.
+    pub fn read(format: &serde_json::Map<String, Value>) -> Self {
+        let number = |name: &str| format.get(name).and_then(Value::as_f64);
+        let text = |name: &str| format.get(name).and_then(Value::as_str).map(str::to_owned);
+        Self {
+            unit: text("unit").unwrap_or_default(),
+            conversion: number("conversion"),
+            fraction: text("fraction"),
+            precision: number("precision"),
+            fixed: format.get("fixed").filter(|v| !v.is_null()).map(truthy),
+            thousands: text("thousands"),
+            decimal: text("decimal"),
+            prefix_spacing: text("prefixSpacing"),
+            suffix_spacing: text("suffixSpacing"),
+            label_position: text("labelPosition"),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for NumberFormat {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        match Value::deserialize(deserializer)? {
+            Value::Object(format) => Ok(Self::read(&format)),
+            other => {
+                Err(serde::de::Error::custom(format!("a number format is an object: {other}")))
+            }
+        }
+    }
+}
+
+/// JavaScript's `!!value` for a JSON value.
+fn truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(b) => *b,
+        Value::Number(n) => n.as_f64().is_some_and(|x| x != 0.0 && !x.is_nan()),
+        Value::String(s) => !s.is_empty(),
+        Value::Array(_) | Value::Object(_) => true,
+    }
+}
+
 /// A rectilinear `PdfMeasure`, as the readout reads it.
-#[derive(Debug, Clone, Default, Deserialize)]
+///
+/// Read loosely, as [`NumberFormat`] is, and as `annotation-core`'s copy
+/// reads it. An entry that isn't an object is a format with no members, so
+/// it fails `validNumberFormat` and sets no scale, as the TypeScript's
+/// `x[0]?.conversion` and `nf.conversion` read a number or a string. A `y`
+/// that is falsy is no `y` (`!measure.y`). Where the TypeScript throws a
+/// `TypeError` instead (a missing `x`, `distance` or `area` list, a `null`
+/// format), the list reads as empty: no scale, or no format.
+#[derive(Debug, Clone, Default)]
 pub struct Measure {
-    #[serde(default)]
     pub x: Vec<NumberFormat>,
-    #[serde(default)]
+    /// `None` when the measure has no `y` (absent, or falsy).
     pub y: Option<Vec<NumberFormat>>,
-    #[serde(default)]
     pub distance: Vec<NumberFormat>,
-    #[serde(default)]
     pub area: Vec<NumberFormat>,
-    #[serde(default)]
     pub cyx: Option<f64>,
+}
+
+impl Measure {
+    /// A measure's members off its JSON object.
+    pub fn read(measure: &serde_json::Map<String, Value>) -> Self {
+        let formats = |name: &str| -> Vec<NumberFormat> {
+            measure
+                .get(name)
+                .and_then(Value::as_array)
+                .map(|list| {
+                    list.iter()
+                        .map(|entry| entry.as_object().map(NumberFormat::read).unwrap_or_default())
+                        .collect()
+                })
+                .unwrap_or_default()
+        };
+        Self {
+            x: formats("x"),
+            y: measure.get("y").filter(|y| truthy(y)).map(|_| formats("y")),
+            distance: formats("distance"),
+            area: formats("area"),
+            cyx: measure.get("cyx").and_then(Value::as_f64),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for Measure {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        match Value::deserialize(deserializer)? {
+            Value::Object(measure) => Ok(Self::read(&measure)),
+            other => Err(serde::de::Error::custom(format!("a measure is an object: {other}"))),
+        }
+    }
 }
 
 // ── JavaScript's numbers ────────────────────────────────────────────────────
@@ -525,13 +601,12 @@ pub fn measurement_readout(dto: &DimensionInput<'_>) -> Readout {
     if !is_dimension(dto.subtype, dto.intent) {
         return Err("not-dimension");
     }
-    let Some(measure) = dto.measure.filter(|m| !m.is_null()) else { return Err("no-measure") };
+    let Some(measure) = dto.measure.filter(|m| truthy(m)) else { return Err("no-measure") };
     if measure.get("subtype").and_then(Value::as_str) != Some("rectilinear") {
         return Err("foreign-measure");
     }
-    let Ok(m) = serde_json::from_value::<Measure>(measure.clone()) else {
-        return Err("invalid-format");
-    };
+    // Only an object has a `rectilinear` subtype.
+    let m = measure.as_object().map(Measure::read).unwrap_or_default();
     let Some(scale) = scale_of(&m) else { return Err("no-scale") };
     let points: Vec<PdfPoint> = if dto.subtype == "line" {
         dto.line_points.map_or_else(Vec::new, |(a, b)| vec![a, b])
@@ -806,5 +881,65 @@ mod tests {
         assert_eq!(js_round(-2.5), -2.0);
         assert_eq!(group("1234567", ","), "1,234,567");
         assert_eq!(group("1e+21", ","), "1e+21");
+    }
+
+    #[test]
+    fn to_fixed_is_the_one_annotation_core_and_the_renderer_use() {
+        // Ruling13.5(c): one `toFixed` across the crates. This one can't be
+        // `epdf_geometry::js::to_fixed` (a normal dependency is a cycle), so
+        // the two are held together here over every digit count a decimal
+        // format reaches (`log10` of an integer precision up to 2^31 - 1)
+        // and the values where they could part: exact ties, carries, the
+        // `1e21` switch, subnormals, signs and NaN.
+        let mut seed: u64 = 0x9e37_79b9_7f4a_7c15;
+        let mut next = || {
+            seed = seed
+                .wrapping_mul(6_364_136_223_846_793_005)
+                .wrapping_add(1_442_695_040_888_963_407);
+            seed
+        };
+        let mut values = vec![
+            0.0,
+            -0.0,
+            0.5,
+            1.5,
+            2.5,
+            1.005,
+            0.125,
+            9.95,
+            99.995,
+            0.000_05,
+            -0.000_1,
+            1e20,
+            9.999e20,
+            1e21,
+            -1e21,
+            5e-324,
+            2.225e-308,
+            f64::MAX,
+            f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+        ];
+        for k in 0..20_000u64 {
+            // Halves, quarters and eighths up to 2^-9: every exact tie a
+            // short decimal can land on.
+            values.push(k as f64 / f64::from(1u32 << (k % 10)));
+            values.push(-(k as f64) / 1024.0);
+            values.push(f64::from_bits(next() >> 2) % 1e6);
+            values.push(f64::from_bits(next()));
+        }
+        let mut compared = 0;
+        for value in values {
+            for digits in 0..=9 {
+                assert_eq!(
+                    js_to_fixed(value, digits),
+                    epdf_geometry::js::to_fixed(value, digits),
+                    "{value:e}.toFixed({digits})"
+                );
+                compared += 1;
+            }
+        }
+        assert!(compared > 800_000, "{compared}");
     }
 }
