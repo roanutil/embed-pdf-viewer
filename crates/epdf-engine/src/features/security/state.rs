@@ -409,5 +409,16 @@ mod prompt_tests {
             prompt(&state(Encrypted, Some(false), true, Some(User), false), false),
             json!({ "state": "none" })
         );
+        // The user rule needs both a required password and no unlock: opened
+        // as the user, the owner upgrade decides; with no password required,
+        // an anonymous open prompts for nothing.
+        assert_eq!(
+            prompt(&state(Encrypted, Some(true), true, Some(User), true), false),
+            json!({ "state": "optional", "hint": "owner" })
+        );
+        assert_eq!(
+            prompt(&state(Encrypted, Some(false), true, Some(Anonymous), false), false),
+            json!({ "state": "none" })
+        );
     }
 }

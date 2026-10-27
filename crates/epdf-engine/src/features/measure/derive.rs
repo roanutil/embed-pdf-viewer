@@ -686,6 +686,36 @@ mod tests {
         })
     }
 
+    /// `!!measure.y` and `!!nf.fixed` read JSON as JavaScript does: zero
+    /// and the empty string are false, any other number or string true.
+    #[test]
+    fn a_measure_reads_its_members_and_a_falsy_y_is_no_y() {
+        let measure = |y: Value| -> Measure {
+            serde_json::from_value(json!({
+                "x": [{ "unit": "m", "conversion": 2 }],
+                "y": y,
+                "distance": [{ "unit": "m", "conversion": 1 }],
+                "area": [],
+                "cyx": 0.5,
+            }))
+            .unwrap()
+        };
+        let read = measure(json!([{ "unit": "ft", "conversion": 3 }]));
+        assert_eq!((read.x.len(), read.distance.len(), read.area.len()), (1, 1, 0));
+        assert_eq!(read.x[0].conversion, Some(2.0));
+        assert_eq!(read.y.as_ref().map(|y| y[0].conversion), Some(Some(3.0)));
+        assert_eq!(read.cyx, Some(0.5));
+        for falsy in [json!(0), json!(0.0), json!(""), json!(false), Value::Null] {
+            assert!(measure(falsy.clone()).y.is_none(), "{falsy}");
+        }
+        // A truthy `y` that is not a list reads as an empty one.
+        for truthy in [json!(1), json!(-0.5), json!("a"), json!(true), json!({})] {
+            assert_eq!(measure(truthy.clone()).y.map(|y| y.len()), Some(0), "{truthy}");
+        }
+        assert_eq!(nf(json!({ "unit": "m", "fixed": 0 })).fixed, Some(false));
+        assert_eq!(nf(json!({ "unit": "m", "fixed": 2 })).fixed, Some(true));
+    }
+
     #[test]
     fn iso_multi_unit_example_and_exact_stop() {
         let formats = [
