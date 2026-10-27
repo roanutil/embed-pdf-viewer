@@ -845,3 +845,19 @@ fn a_replaced_definition_is_released_from_the_command_table() {
     assert_eq!(rig.commands.retained_commands(), 1, "only the registered one");
     assert!(rig.commands.get_command("open").is_ok_and(|c| c.is_some()));
 }
+
+/// M37's count covers both of the table's kinds: a family the settings
+/// name is held beside the definitions.
+#[test]
+fn the_command_table_counts_its_families_beside_its_definitions() {
+    let family = CommandFamily {
+        prefix: "tool:".into(),
+        names: Rc::new(|_| Ok(Rc::new(strings(&["pen"])))),
+        command: Rc::new(|_| CommandDef::default()),
+    };
+    let rig = rig(CommandsConfig {
+        commands: Some(vec![CommandItem::from(def("open")), CommandItem::from(family)]),
+        ..CommandsConfig::default()
+    });
+    assert_eq!(rig.commands.retained_commands(), 2, "one definition and one family");
+}
