@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use epdf_kernel::kernel::OpenSource;
 use epdf_kernel::{Kernel, KernelOptions, OpenOptions, rt};
+use epdf_plugin_annotation::annotation_plugin;
 use epdf_plugin_form::model::{
     FieldIndex, Folded, Snapshot, field_by_key, fold_form_event, index_fields, snapshot_copies,
 };
@@ -146,9 +147,14 @@ fn a_large_form_folds_and_predicts_without_a_copy() {
 }
 
 fn page_row() -> Value {
+    page_at(0, 1)
+}
+
+/// The page at `index` whose ref is object `n`.
+fn page_at(index: usize, n: usize) -> Value {
     let size = json!({ "x": 0, "y": 0, "width": 600, "height": 800 });
     json!({
-        "index": 0, "ref": object_ref(1), "label": null,
+        "index": index, "ref": object_ref(n), "label": null,
         "size": { "width": 600, "height": 800 }, "rotation": 0, "userUnit": 1, "tabOrder": null,
         "pdfCropBox": { "left": 0, "bottom": 0, "right": 600, "top": 800 },
         "boxes": { "media": size, "crop": size, "bleed": size, "trim": size, "art": size }
@@ -162,20 +168,35 @@ fn kernel_with(fields: usize) -> (Kernel, Rc<FakeEngine>) {
 
 /// A kernel whose document has this form and holds every write.
 fn kernel_over(form: Value) -> (Kernel, Rc<FakeEngine>) {
+    kernel_on(form, vec![page_row()], false)
+}
+
+/// A kernel whose document has these pages and this form, holds every
+/// write, and has the annotation plugin when `annotation` is set.
+fn kernel_on(form: Value, pages: Vec<Value>, annotation: bool) -> (Kernel, Rc<FakeEngine>) {
     rt::reset();
     let fake = FakeEngine::new(json!({
         "documents": { "a": {
-            "pages": [page_row()],
+            "pages": pages,
             "security": { "allows": "*" },
             "responses": [
                 { "path": "forms.list", "value": form },
+                { "path": "annotations.list", "value": { "annotations": [] } },
                 { "path": "apply", "defer": "applied" }
             ]
         } }
     }));
     let kernel = Kernel::new(
         Rc::new(AsEngine(fake.clone())),
-        vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)],
+        if annotation {
+            vec![
+                interaction_plugin(InteractionConfig::default()),
+                annotation_plugin(None),
+                form_plugin(None),
+            ]
+        } else {
+            vec![interaction_plugin(InteractionConfig::default()), form_plugin(None)]
+        },
         KernelOptions {
             report: None,
             on_dispatch: None,
@@ -381,4 +402,67 @@ fn validate_follows_the_documents_identity() {
     assert_eq!(*renamed, *first, "with the same contents");
     assert_eq!(read_computes(), before + 1);
     assert!(Rc::ptr_eq(&renamed, &form.validate()));
+}
+
+/// `validate()`'s order (`read/fields.ts:168-192`): the missing fields by
+/// their first widget's page index, then its `rect.y`, then its `rect.x`,
+/// whatever order the form lists them in.
+#[test]
+fn validate_lists_the_missing_fields_by_page_then_y_then_x() {
+    let mut form_json = snapshot(4);
+    let places = [(2, 0.0, 0.0), (1, 50.0, 10.0), (1, 10.0, 80.0), (1, 10.0, 20.0)];
+    for (i, (page, y, x)) in places.into_iter().enumerate() {
+        form_json["fields"][i]["required"] = json!(true);
+        form_json["fields"][i]["widgets"][0]["page"] = object_ref(page);
+        form_json["widgets"][i]["page"] = object_ref(page);
+        form_json["widgets"][i]["rect"]["y"] = json!(y);
+        form_json["widgets"][i]["rect"]["x"] = json!(x);
+    }
+    let (kernel, _fake) = kernel_on(form_json, vec![page_at(0, 1), page_at(1, 2)], false);
+    let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+    let validation = form.validate();
+    let names: Vec<&str> = validation.missing.iter().map(|f| f["name"].as_str().unwrap()).collect();
+    assert_eq!(names, ["f4", "f3", "f2", "f1"]);
+}
+
+/// `widgetsByKey` (`read/fields.ts`) compares each row by identity: a row
+/// the engine replaced makes a new list, and a widget with no row (`null`)
+/// is the same as `null` again, so its list is kept.
+#[test]
+fn get_widgets_follows_each_rows_identity() {
+    use epdf_plugin_form::read::fields::read_computes;
+    let mut form_json = snapshot(2);
+    // Field 2 also names a widget the form holds no row for.
+    form_json["fields"][1]["widgets"].as_array_mut().unwrap().push(json!({
+        "ref": widget_ref(99), "objectNumber": 10_099, "page": object_ref(1)
+    }));
+    let (kernel, fake) = kernel_over(form_json);
+    let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+    let before = read_computes();
+    let rowless = form.get_widgets(&object_ref(2));
+    assert_eq!(rowless.len(), 1, "a widget with no row lists nothing");
+    assert!(Rc::ptr_eq(&rowless, &form.get_widgets(&object_ref(2))), "kept");
+    assert_eq!(read_computes(), before + 1);
+    let first = form.get_widgets(&object_ref(1));
+    let mut moved = row(1);
+    moved["rect"]["x"] = json!(300);
+    fake.emit("a", &json!({ "type": "forms.widgetUpdated", "widget": moved })).unwrap();
+    rt::run_until_stalled();
+    let after = form.get_widgets(&object_ref(1));
+    assert!(!Rc::ptr_eq(&first, &after), "a replaced row, a new list");
+    assert_eq!(after[0]["rect"]["x"], 300);
+}
+
+/// `getSelectedField` is memoized on the form and the annotation plugin's
+/// selection list, each by identity: with the annotation plugin there, the
+/// same list answers again without computing.
+#[test]
+fn get_selected_field_keeps_its_answer_while_the_selection_list_is_the_same() {
+    use epdf_plugin_form::read::fields::read_computes;
+    let (kernel, _fake) = kernel_on(snapshot(2), vec![page_row()], true);
+    let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+    assert!(form.get_selected_field().is_none());
+    let before = read_computes();
+    assert!(form.get_selected_field().is_none());
+    assert_eq!(read_computes(), before, "the same selection list, no new answer");
 }

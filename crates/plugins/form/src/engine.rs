@@ -1339,6 +1339,21 @@ mod tests {
         assert_eq!(first_characters("abc", None), "abc");
     }
 
+    /// `widgetNamedBy` (`forms/predict.ts:402-406`): the widget whose
+    /// on-state is the state; failing that, a state of digits is an index
+    /// when it is in range.
+    #[test]
+    fn a_state_names_its_widget_by_on_state_then_by_index() {
+        let widgets =
+            [json!({ "onState": "a" }), json!({ "onState": "b" }), json!({ "onState": "c" })];
+        assert_eq!(widget_named_by(&widgets, "a"), 0);
+        assert_eq!(widget_named_by(&widgets, "c"), 2);
+        assert_eq!(widget_named_by(&widgets, "x"), -1);
+        assert_eq!(widget_named_by(&widgets, "2"), 2);
+        assert_eq!(widget_named_by(&widgets, "3"), -1);
+        assert_eq!(widget_named_by(&widgets, ""), -1);
+    }
+
     #[test]
     fn a_reorder_moves_rows_together() {
         let key = |v: &Value| string_of(Some(v));
