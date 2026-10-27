@@ -41,7 +41,8 @@ pub struct PageMirrorSpec {
 }
 #[derive(Clone)]
 pub(crate) struct Entry {
-    page: Value,
+    /// Shared, so copying the entries on write copies a pointer.
+    page: Rc<Value>,
     value: Option<Rc<Value>>,
     status: ResourceStatus,
 }
@@ -49,9 +50,11 @@ struct Inner {
     spec: PageMirrorSpec,
     env: MirrorEnvironment,
     cell: SliceLease,
-    /// Shared with the store cell's [`PageMirrorCell`]: a write copies the
-    /// map (its pointers) only while a cell still holds it, as
-    /// `page-mirror.ts` spreads `{ ...entries, [key]: entry }`.
+    /// Shared with the store cell's [`PageMirrorCell`], which the store
+    /// keeps until the next write, so every write copies the map: each
+    /// entry's key, its page and read by pointer, and its status. That is
+    /// the O(n) of `page-mirror.ts`'s `{ ...rest, [key]: entry }`, and no
+    /// read or page JSON is copied.
     entries: RefCell<Rc<indexmap::IndexMap<String, Entry>>>,
     epochs: RefCell<HashMap<String, u64>>,
     running: RefCell<HashMap<String, Promise<()>>>,
@@ -86,7 +89,7 @@ impl PageMirrorCell {
             .0
             .iter()
             .map(|(k, e)| {
-                let mut value = json!({"page":e.page,"status":e.status.as_str()});
+                let mut value = json!({"page":*e.page,"status":e.status.as_str()});
                 if let Some(v) = &e.value {
                     count_value_copy();
                     value["value"] = (**v).clone();
@@ -176,7 +179,7 @@ impl PageMirror {
             .borrow()
             .values()
             .filter(|e| e.status != ResourceStatus::Idle)
-            .map(|e| e.page.clone())
+            .map(|e| (*e.page).clone())
             .collect()
     }
     pub fn view(&self, page: &Value) -> Option<Rc<Value>> {
@@ -229,7 +232,7 @@ impl PageMirror {
             self.write(
                 k.clone(),
                 Some(Entry {
-                    page: page.clone(),
+                    page: Rc::new(page.clone()),
                     status: ResourceStatus::Loading,
                     value: before.and_then(|e| e.value),
                 }),
@@ -254,7 +257,7 @@ impl PageMirror {
                         this.write(
                             k.clone(),
                             Some(Entry {
-                                page: page.clone(),
+                                page: Rc::new(page.clone()),
                                 status: ResourceStatus::Ready,
                                 value: Some(next.clone()),
                             }),
@@ -289,7 +292,7 @@ impl PageMirror {
                             this.write(
                                 k.clone(),
                                 Some(Entry {
-                                    page: page.clone(),
+                                    page: Rc::new(page.clone()),
                                     status: status_of_failure(&error),
                                     value: this.get(&page),
                                 }),
@@ -418,7 +421,7 @@ impl PageMirror {
                     self.write(
                         k,
                         Some(Entry {
-                            page: page.clone(),
+                            page: Rc::new(page.clone()),
                             status: ResourceStatus::Ready,
                             value: Some(next.clone()),
                         }),
