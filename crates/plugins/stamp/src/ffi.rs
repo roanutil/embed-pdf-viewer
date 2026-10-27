@@ -717,9 +717,9 @@ impl StampHandle {
             .await
     }
 
-    /// Annotations on a page of `document_id` become one stamp. Needs
-    /// `page.annotations.exportAppearance`, which the native engine has
-    /// not mapped: answers `unsupported` there.
+    /// Annotations on a page of `document_id` become one stamp, through
+    /// the engine's `page.annotations.exportAppearance`. An empty list is
+    /// `invalid-input`.
     pub async fn create_asset_from_annotations(
         &self,
         document_id: String,
