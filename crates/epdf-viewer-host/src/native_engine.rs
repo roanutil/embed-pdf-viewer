@@ -369,12 +369,25 @@ struct ObjectNumberPool {
 }
 
 impl ObjectNumberPool {
-    /// `add(range)`: `objectNumbersIn([range])`.
-    fn add(&self, range: Option<&Value>) {
-        let Some(range) = range else { return };
-        let first = range.get("first").and_then(Value::as_u64).unwrap_or(0) as u32;
-        let count = range.get("count").and_then(Value::as_u64).unwrap_or(0) as u32;
+    /// `add(range)`: `objectNumbersIn([range])`. A range whose `first` or
+    /// `count` is not a whole number, or that runs past `u32::MAX`, is
+    /// refused and the pool is left as it was: the host only hands out
+    /// whole ranges, so reading a malformed one as object 0 would hand a
+    /// write a number it does not hold.
+    fn add(&self, range: Option<&Value>) -> bool {
+        let Some(range) = range else { return false };
+        let whole = |key: &str| range.get(key).and_then(Value::as_u64);
+        let (Some(first), Some(count)) = (whole("first"), whole("count")) else {
+            return false;
+        };
+        let (Ok(first), Ok(count)) = (u32::try_from(first), u32::try_from(count)) else {
+            return false;
+        };
+        if count > 0 && first.checked_add(count - 1).is_none() {
+            return false;
+        }
         self.numbers.borrow_mut().extend((0..count).map(|i| first + i));
+        true
     }
 
     /// `topUp()`: fill the pool to its size in the background, once at a
@@ -746,7 +759,10 @@ impl DocumentHandle for NativeDocument {
     }
 
     /// `setWorkingSet(view, pages)`: what `view` shows of the document, a
-    /// scheduling hint the host takes on arrival and never answers.
+    /// scheduling hint the host never answers. It goes on the engine worker
+    /// like any other request, so the host takes it in submission order
+    /// (the worker is FIFO): after every request submitted before it and
+    /// before every one submitted after.
     fn set_working_set(&self, view: &str, pages: Value) {
         if !STATES.with(|s| s.borrow().contains_key(&self.id)) {
             return; // closed
@@ -893,5 +909,164 @@ impl DocumentSecurity for NativeSecurity {
             }
         });
         promise
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    use std::sync::{Arc, Mutex};
+
+    use epdf_ffi::KernelThread;
+    use epdf_kernel::engine::{DocumentHandle, Engine, ObjectNumbersLost, ObjectNumbersLostReason};
+    use futures::channel::oneshot;
+    use serde_json::{Value, json};
+
+    use super::{NativeEngine, ObjectNumberPool, publish};
+    use crate::engine_worker::EngineWorker;
+    use crate::host_table::HostTable;
+    use crate::translate;
+
+    #[test]
+    fn a_malformed_range_leaves_the_pool_as_it_was() {
+        let pool = ObjectNumberPool::default();
+        assert!(pool.add(Some(&json!({ "first": 5, "count": 3 }))));
+        for malformed in [
+            json!({ "first": 1.5, "count": 2 }),
+            json!({ "first": -1, "count": 2 }),
+            json!({ "first": 9 }),
+            json!({ "count": 2 }),
+            json!({ "first": "9", "count": 2 }),
+            json!({ "first": u64::from(u32::MAX) + 1, "count": 1 }),
+            json!({ "first": u32::MAX, "count": 2 }),
+        ] {
+            assert!(!pool.add(Some(&malformed)), "{malformed}");
+        }
+        assert!(!pool.add(None));
+        assert_eq!(*pool.numbers.borrow(), vec![5, 6, 7]);
+        // The last number a `u32` holds is still a number.
+        assert!(pool.add(Some(&json!({ "first": u32::MAX, "count": 1 }))));
+        assert_eq!(*pool.numbers.borrow(), vec![5, 6, 7, u32::MAX]);
+    }
+
+    struct Versioned {
+        held_before: usize,
+        held_numbers: Vec<u32>,
+        held_after_event: usize,
+        lost: Vec<ObjectNumbersLost>,
+        events: Vec<Value>,
+        held_after_refill: usize,
+    }
+
+    /// `LocalObjectNumberPool` on `document.versioned`, which a completed
+    /// signing raises (`LocalDocumentSignaturesService.complete`): the pool
+    /// drops every number it held, tells `onLost` they are gone as
+    /// `versioned`, and fills up again.
+    #[test]
+    fn a_completed_signing_drops_the_pool_tells_on_lost_and_refills() {
+        let worker = EngineWorker::spawn();
+        let thread = KernelThread::spawn(|post| Ok(NativeEngine::new(worker, post, None))).unwrap();
+        let answer = futures::executor::block_on(thread.call(|engine: &mut NativeEngine| {
+            let (tx, rx) = oneshot::channel::<Versioned>();
+            let input =
+                json!({ "$host": HostTable::put(test_support::fixture(test_support::REPORT)) });
+            engine.open(input, None).on_settle(move |doc| {
+                let doc: Rc<dyn DocumentHandle> = doc.as_ref().ok().cloned().expect("opened");
+                // Take a few so the pool is not where the open left it.
+                for _ in 0..5 {
+                    doc.take_object_number().unwrap();
+                }
+                let held_before = doc.held_object_numbers();
+                let lost = Rc::new(RefCell::new(Vec::new()));
+                let seen = lost.clone();
+                let _off_lost =
+                    doc.on_lost_object_numbers(Rc::new(move |l: &ObjectNumbersLost| {
+                        seen.borrow_mut().push(l.clone())
+                    }));
+                let events = Rc::new(RefCell::new(Vec::new()));
+                let seen = events.clone();
+                let _off = doc
+                    .subscribe(Rc::new(move |e: &Value| seen.borrow_mut().push(e["type"].clone())));
+                let state = super::STATES
+                    .with(|s| s.borrow().get(&doc.id()).and_then(std::rc::Weak::upgrade))
+                    .unwrap();
+                let held_numbers = state.pool.numbers.borrow().clone();
+                publish(
+                    &doc.id(),
+                    &json!({
+                        "type": "signatures.completed",
+                        "version": 2,
+                        "origin": { "tx": { "index": 0, "count": 2 } },
+                    }),
+                );
+                let held_after_event = doc.held_object_numbers();
+                let doc2 = doc.clone();
+                // The refill went to the worker first, so it is answered first.
+                doc.call("pages.list", None, vec![]).on_settle(move |_| {
+                    let _keep = (_off_lost, _off);
+                    let _ = tx.send(Versioned {
+                        held_before,
+                        held_numbers,
+                        held_after_event,
+                        lost: lost.borrow().clone(),
+                        events: events.borrow().clone(),
+                        held_after_refill: doc2.held_object_numbers(),
+                    });
+                });
+            });
+            rx
+        }))
+        .unwrap();
+        let v = futures::executor::block_on(answer).unwrap();
+        assert_eq!(v.held_before, 59);
+        assert_eq!(v.held_after_event, 0, "the pool drops what it held at once");
+        assert_eq!(
+            v.lost,
+            vec![ObjectNumbersLost {
+                numbers: v.held_numbers.clone(),
+                reason: ObjectNumbersLostReason::Versioned
+            }]
+        );
+        assert_eq!(v.events, vec![json!("signatures.completed"), json!("document.versioned")]);
+        assert_eq!(v.held_after_refill, 64, "and fills up again");
+    }
+
+    /// `set_working_set` claims submission order: the worker answers its
+    /// requests first in, first out, the hint among them.
+    #[test]
+    fn the_worker_takes_a_working_set_in_submission_order() {
+        let worker = EngineWorker::spawn();
+        let order = Arc::new(Mutex::new(Vec::new()));
+        let (tx, rx) = std::sync::mpsc::channel();
+        let requests = [
+            ("before", json!({ "kind": "documents.list", "jobId": 1 })),
+            (
+                "working set",
+                translate::working_set_request(
+                    "nothing-open",
+                    2,
+                    "main",
+                    json!([{ "page": { "kind": "objectNumber", "objectNumber": 3 }, "distance": 0 }]),
+                ),
+            ),
+            ("after", json!({ "kind": "documents.list", "jobId": 3 })),
+        ];
+        for (name, request) in requests {
+            let order = order.clone();
+            let tx = tx.clone();
+            worker.submit(
+                request.to_string(),
+                Vec::new(),
+                Box::new(move |_| {
+                    order.lock().unwrap().push(name);
+                    let _ = tx.send(());
+                }),
+            );
+        }
+        for _ in 0..3 {
+            rx.recv().unwrap();
+        }
+        assert_eq!(*order.lock().unwrap(), vec!["before", "working set", "after"]);
     }
 }

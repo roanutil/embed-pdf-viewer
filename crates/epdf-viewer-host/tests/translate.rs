@@ -333,6 +333,32 @@ fn a_write_answers_its_result_and_hands_back_its_events() {
 }
 
 #[test]
+fn a_notice_beside_a_result_that_is_not_a_write_is_handed_back() {
+    // `signatures.cancel` answers `{result}` and the host's
+    // `signatures.cancelled` notice beside it, not inside a write's result.
+    let json = r#"{"result":{"result":{"status":"cancelled"}},"event":{"type":"signatures.cancelled","signingId":"s"}}"#;
+    let decoded = decode(&Decode::Inner, answer(json)).unwrap();
+    assert_eq!(decoded.value, json!({ "status": "cancelled" }));
+    assert_eq!(decoded.events, vec![json!({ "type": "signatures.cancelled", "signingId": "s" })]);
+}
+
+#[test]
+fn prepare_answers_its_digest_from_its_payload_beside_the_notice() {
+    // `signatures.prepare` (`host.rs`, `answer_with_notice`): the digest is
+    // payload 0, and `signatures.prepared` rides beside the result.
+    let response = HostResponse {
+        json: r#"{"result":{"result":{"signingId":"s","digest":{"payload":0},"digestAlgorithm":"sha256"}},"event":{"type":"signatures.prepared","signingId":"s"}}"#.into(),
+        payloads: vec![vec![1, 2, 3]],
+    };
+    let decoded = decode(&Decode::Inner, response).unwrap();
+    assert_eq!(decoded.value["signingId"], "s");
+    assert_eq!(decoded.value["digestAlgorithm"], "sha256");
+    assert_eq!(decoded.value["digest"], epdf_kernel::bytes::Bytes(vec![1, 2, 3]).to_json());
+    assert_eq!(decoded.events.len(), 1);
+    assert_eq!(decoded.events[0]["type"], "signatures.prepared");
+}
+
+#[test]
 fn a_read_answers_its_member_and_a_missing_one_is_an_error() {
     let decoded =
         decode(&Decode::Field("metadata"), answer(r#"{"result":{"metadata":{"title":"T"}}}"#))

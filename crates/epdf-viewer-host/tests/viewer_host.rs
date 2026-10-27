@@ -84,6 +84,11 @@ fn a_failed_open_lists_its_tab_as_failed_with_the_reason() {
     assert_eq!(tab.status, DocumentStatus::Failed, "{tab:?}");
     let error = tab.error.as_ref().expect("a failed tab without its error");
     assert_eq!(error.capability, "documents", "{error:?}");
+    // The kernel's `toPluginError` keeps the engine code in the message.
+    assert_eq!(
+        error.message, "DocOpenFailed: the bytes are not a document PDFium can open",
+        "{error:?}"
+    );
 }
 
 /// A wrong password parks the document as a locked tab whose prompt says
@@ -159,7 +164,9 @@ fn a_failed_open_announces_the_tabs_error_with_its_code() {
     let (document_id, error) = failed.expect("no OpenFailed event");
     assert_eq!(document_id, tab.id);
     assert_eq!(Some(&error), tab.error.as_ref());
+    assert_eq!(error.code, "operation-failed", "{error:?}");
     assert_eq!(error.capability, "documents");
+    assert!(error.message.starts_with("DocOpenFailed"), "{error:?}");
 }
 
 #[test]
@@ -1344,6 +1351,8 @@ fn a_checkbox_is_checked_by_its_on_state() {
     ))
     .unwrap();
     assert_eq!(cleared.status, epdf_plugin_form::ffi::FormSetValueStatus::Applied);
+    let off = block_on(form.field(field.field_ref.clone())).unwrap().unwrap();
+    assert_eq!(off.widgets[0].toggle.as_ref().map(|t| t.checked), Some(false), "{off:?}");
     let checked = block_on(form.set_value(
         field.field_ref.clone(),
         FormValueInput::Checked { checked: true },
@@ -1351,10 +1360,11 @@ fn a_checkbox_is_checked_by_its_on_state() {
     ))
     .unwrap();
     assert_eq!(checked.status, epdf_plugin_form::ffi::FormSetValueStatus::Applied);
-    assert!(!on_state.is_empty());
     let read = block_on(form.field(field.field_ref)).unwrap().unwrap();
     assert!(matches!(read.detail, FormFieldDetail::Checkbox { checked: true, .. }), "{read:?}");
-    assert_eq!(read.widgets[0].toggle.as_ref().map(|t| t.checked), Some(true));
+    // Checked means the widget shows its own on state, the one it had.
+    let toggle = read.widgets[0].toggle.as_ref().expect("a checkbox widget without its toggle");
+    assert_eq!((toggle.on_state.as_str(), toggle.checked), (on_state.as_str(), true));
 }
 
 #[test]
@@ -2584,14 +2594,36 @@ fn can_sign_and_can_fill_follow_the_fields_permissions() {
 
 #[test]
 fn a_narrow_scope_cannot_sign_or_fill() {
-    let host = signature_host_with(Some(vec!["doc.open".into(), "doc.render".into()]));
+    let host = signature_host_with(Some(vec![
+        "doc.open".into(),
+        "doc.render".into(),
+        "doc.forms.read".into(),
+    ]));
     host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
     let doc = open_signing(&host, "unsigned_sigfield.pdf");
     let s = block_on(host.signature(doc)).unwrap();
-    // The scope reads no form, so no field: neither may be signed or filled.
-    let field = epdf_ffi::FormFieldRef::Fqn { name: "sig".into() };
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    // The scope reads the form, so the field is there: only the field
+    // gate (`NativeSecurity::allows_field`) can refuse it.
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
     assert!(!block_on(s.can_sign(field.clone())).unwrap());
     assert!(!block_on(s.can_fill(field)).unwrap());
+
+    // The same scope with the write permissions may do both.
+    let host = signature_host_with(Some(vec![
+        "doc.open".into(),
+        "doc.render".into(),
+        "doc.forms.read".into(),
+        "doc.forms.fill".into(),
+        "doc.sign".into(),
+    ]));
+    host.set_signature_signer(Some(Arc::new(common::TestSigner::load(false))));
+    let doc = open_signing(&host, "unsigned_sigfield.pdf");
+    let s = block_on(host.signature(doc)).unwrap();
+    block_on(s.refresh(CancelToken::new())).unwrap();
+    let field = block_on(s.unsigned_fields()).unwrap()[0].field.clone();
+    assert!(block_on(s.can_sign(field.clone())).unwrap());
+    assert!(block_on(s.can_fill(field)).unwrap());
 }
 
 #[test]
