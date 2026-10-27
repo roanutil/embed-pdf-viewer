@@ -1462,6 +1462,19 @@ mod tests {
     }
 
     #[test]
+    fn a_line_that_reads_backwards_has_no_characters() {
+        // The run before the anchor says it starts at 10 and shares the
+        // line, so the line runs from 10 back to 1: the TypeScript's
+        // `rangeOf` answers `{start: 10, count: -8}`, and a `u32` count
+        // can't go below 0.
+        let layout = layout_of(vec![
+            upright_run(10, vec![glyph(20.0)], None),
+            upright_run(0, vec![glyph(0.0), glyph(10.0)], None),
+        ]);
+        assert_eq!(layout.line_at(0), Some(range(10, 0)));
+    }
+
+    #[test]
     fn a_rotated_run_past_the_glyphs_answers_without_panicking() {
         // The selection vectors' `rotated-all-empty`: one empty rotated
         // glyph in a run that says it starts at character 14.
