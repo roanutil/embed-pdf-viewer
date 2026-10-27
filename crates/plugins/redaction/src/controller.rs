@@ -5,6 +5,7 @@
 use std::rc::Rc;
 
 use epdf_kernel::plugin::ConnectFn;
+use epdf_kernel::serial_queue::SerialQueue;
 use epdf_kernel::settings::InstanceSettings;
 use epdf_kernel::{Controller, Error, Unsubscribe};
 use serde_json::Value;
@@ -15,7 +16,7 @@ use crate::read::pending::PendingMemo;
 use crate::services::{
     RedactionEvents, RedactionSiblings, RedactionStore, create_events, resolve_siblings,
 };
-use crate::write::apply::ApplyQueue;
+use crate::write::apply::create_apply_queue;
 
 /// `RedactionContext`: the kernel's controller context, typed to this
 /// plugin's state.
@@ -28,7 +29,7 @@ pub(crate) struct Core {
     pub(crate) siblings: RedactionSiblings,
     pub(crate) settings: InstanceSettings,
     pub(crate) pending: PendingMemo,
-    pub(crate) queue: ApplyQueue,
+    pub(crate) queue: SerialQueue,
 }
 
 /// `RedactionCapability`, which is also the host lens. Cheap to clone;
@@ -46,7 +47,7 @@ pub fn create_redaction_controller(
     let store = RedactionStore::new(cx.cx.clone());
     let siblings = resolve_siblings(&cx)?;
     let settings = cx.settings()?;
-    let queue = ApplyQueue::new(&cx)?;
+    let queue = create_apply_queue(&cx)?;
     let api = RedactionCapability(Rc::new(Core {
         cx,
         events,

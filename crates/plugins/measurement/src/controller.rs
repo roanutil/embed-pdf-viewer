@@ -9,7 +9,6 @@ use std::rc::Rc;
 
 use epdf_kernel::page_mirror::PageMirror;
 use epdf_kernel::plugin::ConnectFn;
-use epdf_kernel::rt::Promise;
 use epdf_kernel::settings::InstanceSettings;
 use epdf_kernel::{Controller, Error, Unsubscribe};
 use epdf_plugin_annotation::AnnotationCapability;
@@ -36,9 +35,9 @@ pub(crate) struct Core {
     /// the public scale memoized per page.
     pub(crate) viewports: PageMirror,
     pub(crate) scales: RefCell<HashMap<u32, ScaleMemo>>,
-    /// `write/scale.ts`: each page's write queue tail, which a download
-    /// waits for (`queue.idle()`).
-    pub(crate) tails: Rc<RefCell<HashMap<u32, Promise<()>>>>,
+    /// `write/scale.ts` `pageQueues`: each page's write queue, whose
+    /// `idle()` a download waits for.
+    pub(crate) queues: crate::write::scale::PageQueues,
 }
 
 /// `MeasurementHostCapability`, which is the public `MeasurementCapability`.
@@ -61,7 +60,7 @@ pub fn create_measurement_controller(
         &settings,
         &siblings.annotation,
     )?;
-    let tails = crate::write::scale::wire_settle(&cx)?;
+    let queues = crate::write::scale::wire_settle(&cx)?;
     let api = MeasurementCapability(Rc::new(Core {
         cx,
         events,
@@ -71,7 +70,7 @@ pub fn create_measurement_controller(
         settings,
         viewports,
         scales: RefCell::default(),
-        tails,
+        queues,
     }));
     let connected = api.clone();
     let connect: ConnectFn = Rc::new(move || {

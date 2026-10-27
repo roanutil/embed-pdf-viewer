@@ -96,5 +96,5 @@ names a page status the engine no longer writes (`failed`, `skipped`), every `la
 no current engine writes those statuses, so only a malformed event reaches the branch, and a refusal
 says so where decoding once or dropping the result would hide it.
 
-The kernel's serial queue has no `signal` option and no `idle()`. `write/apply.rs` keeps both over
-it, as the form and measurement plugins do; Task 14 carries moving them into the kernel.
+Applies ride the kernel's `SerialQueue`: `run_with` is `serial-queue.ts`'s `{ signal }` option and
+`idle()` is the settle flush a download waits on (`write/apply.rs`).

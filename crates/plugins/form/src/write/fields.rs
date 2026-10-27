@@ -380,7 +380,7 @@ impl crate::controller::Core {
                     Ok(me.cancellable(signal, doc.call("forms.repair", None, args)))
                 }
             };
-            let queued = me.enqueue.run(run, signal);
+            let queued = me.enqueue.run_with(run, signal);
             crate::promise::adopt(queued).await
         })
     }

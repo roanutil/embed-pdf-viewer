@@ -880,7 +880,12 @@ impl ControllerContext {
 
     /// `ctx.serialQueue(key)`: one queue per key, per instance.
     pub fn serial_queue(&self, key: &str) -> SerialQueue {
-        self.0.queues.borrow_mut().entry(key.to_string()).or_default().clone()
+        self.0
+            .queues
+            .borrow_mut()
+            .entry(key.to_string())
+            .or_insert_with(|| SerialQueue::for_capability(&self.0.capability))
+            .clone()
     }
 
     /// `ctx.latest(key)`: one lane per key, per instance.

@@ -5,7 +5,6 @@
 //! engine publishes before the apply resolves; this area only brackets the
 //! call with the `applying` flag.
 
-use std::cell::RefCell;
 use std::collections::HashSet;
 use std::rc::Rc;
 
@@ -16,7 +15,6 @@ use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::serial_queue::SerialQueue;
-use epdf_kernel::signal::AbortSignal;
 use serde_json::{Value, json};
 
 use crate::contract::{OperationOptions, PageTarget, RedactionApplyResult};
@@ -24,55 +22,14 @@ use crate::controller::{RedactionCapability, RedactionContext};
 use crate::model::{finish_apply, start_apply};
 use crate::services::store::CAPABILITY;
 
-/// `ctx.serialQueue('apply')` with the two members of the TypeScript
-/// `SerialQueue` the kernel's does not carry (`serial-queue.ts`): an
-/// operation whose signal fired while it waited never starts
-/// (`operation-cancelled`), and `idle()`, which resolves once everything
-/// queued so far has finished. The form and measurement plugins keep the
-/// same wrapper (a Task 14 kernel carry).
-pub(crate) struct ApplyQueue {
-    queue: SerialQueue,
-    tail: Rc<RefCell<Promise<()>>>,
-}
-
-impl ApplyQueue {
-    /// The queue, and `ctx.onSettle(() => queue.idle())`: a download waits
-    /// for a redaction being applied, whose content must not be in the file.
-    pub(crate) fn new(cx: &RedactionContext) -> Result<ApplyQueue, Error> {
-        let tail: Rc<RefCell<Promise<()>>> = Rc::new(RefCell::new(Promise::resolved(())));
-        // `queue.idle()`: the tail, which settles once every apply queued so
-        // far has finished, however it ended.
-        let idle = tail.clone();
-        cx.on_settle(Rc::new(move |_signal| Ok(Some(idle.borrow().clone()))))?;
-        Ok(ApplyQueue { queue: cx.serial_queue("apply"), tail })
-    }
-
-    /// `queue(operation, { signal })`.
-    fn run<T: Clone + 'static>(
-        &self,
-        operation: impl FnOnce() -> Result<Promise<T>, Error> + 'static,
-        signal: Option<AbortSignal>,
-    ) -> Promise<T> {
-        let start = move || match signal.filter(AbortSignal::aborted) {
-            // A rejected promise, not a throw: `tail.then(start, start)`
-            // adopts what `start` returns.
-            Some(signal) => Ok(Promise::rejected(plugin_error(
-                code::OPERATION_CANCELLED,
-                CAPABILITY,
-                "cancelled before it started",
-                signal.reason_value(),
-                None,
-            ))),
-            None => operation(),
-        };
-        let result = self.queue.run(start);
-        let done = result.clone();
-        *self.tail.borrow_mut() = Promise::spawn(async move {
-            let _ = done.await;
-            Ok(())
-        });
-        result
-    }
+/// `ctx.serialQueue('apply')`, and `ctx.onSettle(() => queue.idle())`: a
+/// download waits for a redaction being applied, whose content must not be
+/// in the file.
+pub(crate) fn create_apply_queue(cx: &RedactionContext) -> Result<SerialQueue, Error> {
+    let queue = cx.serial_queue("apply");
+    let idle = queue.clone();
+    cx.on_settle(Rc::new(move |_signal| Ok(Some(idle.idle()))))?;
+    Ok(queue)
 }
 
 /// `return promise` from an `async` function: the resolve-thenable job,
@@ -95,7 +52,7 @@ impl RedactionCapability {
     ) -> Promise<RedactionApplyResult> {
         let this = self.clone();
         let signal = options.signal.clone();
-        self.core().queue.run(
+        self.core().queue.run_with(
             move || {
                 Ok(Promise::spawn(async move {
                     let core = this.core();

@@ -26,8 +26,8 @@ use crate::services::events::Events;
 use crate::services::formatted::FormattedTexts;
 use crate::services::index_cache::IndexCache;
 use crate::services::object_numbers::ObjectNumbers;
-use crate::services::queue::FormQueue;
 use crate::services::scripting::ScriptingSeam;
+use epdf_kernel::serial_queue::SerialQueue;
 
 /// The capability name errors carry.
 pub const CAPABILITY: &str = "form";
@@ -47,7 +47,7 @@ pub struct Core {
     pub(crate) numbers: ObjectNumbers,
     /// Fills take turns on one serial queue until they are sent, and a
     /// repair until the engine answers.
-    pub(crate) enqueue: FormQueue,
+    pub(crate) enqueue: SerialQueue,
     pub(crate) scripting: ScriptingSeam,
     /// A recalculation after a refused fill is on its way.
     pub(crate) recalculating: Cell<bool>,
@@ -198,7 +198,7 @@ pub fn create_form_controller(
     let indexes = Rc::new(IndexCache::default());
     let fields = crate::sync::fields::create_fields_mirror(&cx, &events, &indexes)?;
     let formatted = Rc::new(FormattedTexts::default());
-    let queue = FormQueue::new(cx.serial_queue("writes"));
+    let queue = cx.serial_queue("writes");
     let core = Rc::new_cyclic(|me| Core {
         me: me.clone(),
         cx: cx.clone(),

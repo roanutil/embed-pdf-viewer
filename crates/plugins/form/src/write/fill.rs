@@ -418,7 +418,7 @@ impl crate::controller::Core {
             let begun = me.begin(request)?;
             let finishing = {
                 let (me, begun) = (me.clone(), begun.clone());
-                me.clone().enqueue.run(move || Ok(me.finish(begun)), signal.clone())
+                me.clone().enqueue.run_with(move || Ok(me.finish(begun)), signal.clone())
             };
             let sent = match finishing.await {
                 Ok(sent) => sent,
@@ -444,7 +444,7 @@ impl crate::controller::Core {
         let me = self.rc();
         let run = {
             let (me, begun) = (me.clone(), begun.clone());
-            me.clone().enqueue.run(move || Ok(me.finish(begun)), None)
+            me.clone().enqueue.run_with(move || Ok(me.finish(begun)), None)
         };
         rt::spawn(async move {
             if let Err(error) = run.reaction().await {
@@ -518,7 +518,7 @@ impl crate::controller::Core {
     /// `recalculate()`: the calculations, on the queue, outside the history.
     fn recalculate_after_refusal(&self) -> Promise<()> {
         let me = self.rc();
-        self.enqueue.run(
+        self.enqueue.run_with(
             move || {
                 Ok(Promise::spawn(async move {
                     me.recalculating.set(false);

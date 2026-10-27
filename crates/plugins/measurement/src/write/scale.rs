@@ -12,6 +12,7 @@ use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::rt::Promise;
+use epdf_kernel::serial_queue::SerialQueue;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Error, js};
 use epdf_plugin_annotation::promise::all;
@@ -32,23 +33,23 @@ use crate::units::{
 /// The scale a change writes to a page: `null` is back to the default.
 type MeasureOf = Rc<dyn Fn(&MeasurementCapability, PageRef) -> Result<Value, Error>>;
 
-/// Each page queue's tail, shared with the settle flush.
-pub(crate) type Tails = Rc<RefCell<HashMap<u32, Promise<()>>>>;
+/// `pageQueues`: one write queue per page, shared with the settle flush.
+pub(crate) type PageQueues = Rc<RefCell<HashMap<u32, SerialQueue>>>;
 
 /// `ctx.onSettle(...)`: a download waits for the scale changes on their
-/// way.
-pub(crate) fn wire_settle(cx: &MeasurementContext) -> Result<Tails, Error> {
-    let tails: Tails = Rc::default();
-    let pending = tails.clone();
+/// way (`Promise.all` over every page queue's `idle()`).
+pub(crate) fn wire_settle(cx: &MeasurementContext) -> Result<PageQueues, Error> {
+    let queues: PageQueues = Rc::default();
+    let pending = queues.clone();
     cx.on_settle(Rc::new(move |_signal| {
-        let idle: Vec<Promise<()>> = pending.borrow().values().cloned().collect();
+        let idle: Vec<Promise<()>> = pending.borrow().values().map(SerialQueue::idle).collect();
         let flush = all(idle);
         Ok(Some(Promise::spawn(async move {
             flush.await?;
             Ok(())
         })))
     }))?;
-    Ok(tails)
+    Ok(queues)
 }
 
 fn cancelled(signal: &AbortSignal, message: &str) -> Error {
@@ -67,20 +68,13 @@ impl MeasurementCapability {
     ) -> Promise<ScaleChangeReport> {
         let core = self.core();
         let pon = page.page_object_number;
-        let queue = core.cx.serial_queue(&format!("scale:{pon}"));
-        let result = queue.run(move || {
-            if let Some(signal) = signal.filter(AbortSignal::aborted) {
-                return Ok(Promise::rejected(cancelled(&signal, "cancelled before it started")));
-            }
-            Ok(operation())
-        });
-        let done = result.clone();
-        let tail = Promise::spawn(async move {
-            let _ = done.await;
-            Ok(())
-        });
-        core.tails.borrow_mut().insert(pon, tail);
-        result
+        let queue = core
+            .queues
+            .borrow_mut()
+            .entry(pon)
+            .or_insert_with(|| core.cx.serial_queue(&format!("scale:{pon}")))
+            .clone();
+        queue.run_with(move || Ok(operation()), signal)
     }
 
     /// `save(page, scale, options)`: write one page's scale (`null` = back to

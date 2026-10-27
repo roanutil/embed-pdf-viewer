@@ -74,9 +74,8 @@ The settings live in the kernel's JSON store. The asset engine is stored as a ha
 identity. `get_settings()` decodes it; `settings_json()` shows the handle where the TypeScript shows
 the engine.
 
-The kernel's `SerialQueue` has no `signal` option. `mutate_library` (`services/binaries.rs`) adds
-it over the kernel queue as `serial-queue.ts` defines it, as the form, measurement and redaction
-plugins do: a fourth plugin waiting on the Task 14 kernel carry.
+`mutate_library` (`services/binaries.rs`) rides the kernel's `SerialQueue::run_with`, which is
+`serial-queue.ts`'s `{ signal }` option: a mutation whose signal fired while it waited never starts.
 
 A render's bytes the host holds (`$hostBytes`) are read out and the render released
 (`release_host`), as before this port. A page ref with no object number is the TypeScript's

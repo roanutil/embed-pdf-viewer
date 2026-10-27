@@ -50,7 +50,7 @@ impl crate::controller::Core {
                     ))
                 }
             };
-            crate::promise::adopt(me.enqueue.run(run, signal)).await
+            crate::promise::adopt(me.enqueue.run_with(run, signal)).await
         })
     }
 
@@ -91,7 +91,7 @@ impl crate::controller::Core {
                     }))
                 }
             };
-            crate::promise::adopt(me.enqueue.run(run, signal)).await
+            crate::promise::adopt(me.enqueue.run_with(run, signal)).await
         })
     }
 }

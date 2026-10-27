@@ -33,7 +33,7 @@ holds `engine.rs` to `epdf-engine` on native hosts: `field_after_value`, `field_
 The modules follow `packages/plugin/form/src` file for file. `controller.rs` builds the one `Core`
 behind `FormCapability`, which is the public lens and the host lens. `connect.rs` wires the hub, the
 annotation plugin and the actions plugin. `sync/` is the fields mirror and the prediction,
-`services/` the events, fill rights, the scripting seam, the write queue, object numbers, formatted
+`services/` the events, fill rights, the scripting seam, object numbers, formatted
 texts, pictures and looks, `read/` the reads, `write/` the verbs, `tools/` the palette and its
 handler, `scripting/` the K/V/C/F pipeline. `engine.rs` is a pure copy of the engine-core rules the
 plugin calls (`forms/predict.ts`, `forms/write.ts`, `forms/widgets.ts`, list positions, ref keys),
@@ -90,12 +90,8 @@ not serialise rejects the lend's `renderAppearances` (`write/lending.rs`). A wid
 the TypeScript passes `undefined` on as the action source's page; `epdf-plugin-actions` types that
 page as a `PageRef`, so it can't carry one. Valid refs always name a page.
 
-The kernel's `SerialQueue` has no `signal` option and no `idle()`. `services/queue.rs` adds both over
-it as `serial-queue.ts` defines them: an operation whose signal fired while it waited rejects
-`operation-cancelled` without starting, and `idle()` settles a turn after the last operation queued.
-The kernel's own queue keeps the order and timing. The actions plugin carries the same `{signal}`
-wrapper (`crates/plugins/actions/src/dispatch/dispatcher.rs:87-105`), so two plugins now wait on
-the Task 14 kernel `SerialQueue` carry.
+The write queue is the kernel's `SerialQueue` (`ctx.serial_queue("writes")`), whose `run_with` and
+`idle()` are `serial-queue.ts`'s `{ signal }` option and `idle()`.
 
 The palette's form-only early return is kept as the TypeScript has it. With no annotation plugin a
 field the view already shows ends the placement before `created` is awaited, so an engine refusal of

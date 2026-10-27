@@ -7,14 +7,11 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use epdf_kernel::Error;
-use epdf_kernel::error::{code, plugin_error};
 use epdf_kernel::rt::Promise;
 use epdf_kernel::signal::AbortSignal;
 
 use crate::contract::StampAssetPreview;
 use crate::controller::StampCapability;
-use crate::services::errors::CAPABILITY;
 
 /// One asset's placement bytes (a one-page PDF) and its cached preview.
 /// `bytes` is `None` when the engine's extraction answered no bytes.
@@ -65,9 +62,6 @@ impl StampCapability {
     /// concurrent appends could both start from the same bytes and lose one
     /// page. A mutation whose signal fired while it waited never starts.
     ///
-    /// The kernel's `SerialQueue` has no `signal` option; this keeps the one
-    /// `serial-queue.ts` defines over it, as the form, measurement and
-    /// redaction plugins do (a Task 14 kernel carry).
     pub(crate) fn mutate_library<T: Clone + 'static>(
         &self,
         library_id: &str,
@@ -75,17 +69,6 @@ impl StampCapability {
         signal: Option<AbortSignal>,
     ) -> Promise<T> {
         let queue = self.0.cx.serial_queue(&format!("library:{library_id}"));
-        queue.run(move || match signal.filter(AbortSignal::aborted) {
-            // A rejected promise, not a throw: `tail.then(start, start)`
-            // adopts what `start` returns.
-            Some(signal) => Ok(Promise::rejected(plugin_error(
-                code::OPERATION_CANCELLED,
-                CAPABILITY,
-                "cancelled before it started",
-                signal.reason_value(),
-                None,
-            ))),
-            None => Ok::<_, Error>(mutation()),
-        })
+        queue.run_with(move || Ok(mutation()), signal)
     }
 }

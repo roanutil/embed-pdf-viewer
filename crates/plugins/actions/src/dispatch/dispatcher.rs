@@ -85,23 +85,14 @@ fn named_context(context: Option<PartialActionContext>) -> ActionContext {
 }
 
 impl ActionsCapability {
-    /// The serial queue with `{signal}`: an operation whose signal fired
-    /// while it waited never starts.
+    /// `enqueue(operation, { signal })`: an operation whose signal fired
+    /// while it waited never starts (the kernel queue's `run_with`).
     pub(crate) fn enqueue<T: Clone + 'static>(
         &self,
         operation: impl FnOnce() -> Result<Promise<T>, Error> + 'static,
         signal: Option<AbortSignal>,
     ) -> Promise<T> {
-        self.0.queue.run(move || match &signal {
-            Some(signal) if signal.aborted() => Ok(Promise::rejected(plugin_error(
-                code::OPERATION_CANCELLED,
-                "actions",
-                "cancelled before it started",
-                signal.reason().map(|reason| reason.to_canonical()),
-                None,
-            ))),
-            _ => operation(),
-        })
+        self.0.queue.run_with(operation, signal)
     }
 
     /// Run one tree and announce it: the shared per-tree unit.
