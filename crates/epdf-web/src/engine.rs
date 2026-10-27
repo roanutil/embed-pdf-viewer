@@ -18,7 +18,9 @@
 
 use std::rc::Rc;
 
-use epdf_kernel::engine::{Answer, DocumentHandle, DocumentSecurity, Engine, EngineCall};
+use epdf_kernel::engine::{
+    Answer, CallFacts, DocumentHandle, DocumentSecurity, Engine, EngineCall, ObjectNumbersLost,
+};
 use epdf_kernel::store::Unsubscribe;
 use epdf_kernel::{Error, Promise};
 use plugin_conformance::fake_engine::engine_error;
@@ -69,6 +71,29 @@ extern "C" {
         doc: &str,
         listener: &Closure<dyn FnMut(String)>,
     ) -> Result<js_sys::Function, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = isLocal)]
+    fn is_local(this: &EngineBridge) -> Result<bool, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = isLocalDocument)]
+    fn is_local_document(this: &EngineBridge, doc: &str) -> Result<bool, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = heldObjectNumbers)]
+    fn held_object_numbers(this: &EngineBridge, doc: &str) -> Result<f64, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = takeObjectNumber)]
+    fn take_object_number(this: &EngineBridge, doc: &str) -> Result<Option<f64>, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = onLostObjectNumbers)]
+    fn on_lost_object_numbers(
+        this: &EngineBridge,
+        doc: &str,
+        listener: &Closure<dyn FnMut(String)>,
+    ) -> Result<js_sys::Function, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = callWith)]
+    fn call_with(
+        this: &EngineBridge,
+        doc: &str,
+        facts: &str,
+        path: &str,
+        pon: Option<u32>,
+        args: &str,
+    ) -> Result<js_sys::Promise, JsValue>;
     #[wasm_bindgen(method, catch)]
     fn destroy(this: &EngineBridge) -> Result<js_sys::Promise, JsValue>;
 }
@@ -190,9 +215,8 @@ impl JsEngine {
     }
 }
 
-/// `is_local` is the trait default (false) until Task 14: the
-/// `packages/core-wasm` bridge does not report `LOCAL_ENGINE_BRAND` yet
-/// (`.superpowers/sdd/multiplatform-upstream-catchup/task-13.33-web-bridge-proposal.md`).
+/// `is_local` is the bridge's `isLocalEngine(engine)`; a bridge that throws
+/// answers `false`, as a cloud engine would.
 impl Engine for JsEngine {
     fn open(&self, input: Value, options: Option<Value>) -> EngineCall<Rc<dyn DocumentHandle>> {
         // An open the abort beat by a microtask (the bridge's promise had
@@ -230,6 +254,10 @@ impl Engine for JsEngine {
     fn destroy(&self) -> EngineCall<()> {
         engine_call(self.bridge.destroy()).map(|_| Ok(()))
     }
+
+    fn is_local(&self) -> bool {
+        self.bridge.is_local().unwrap_or(false)
+    }
 }
 
 /// One opened document, by the id the bridge keys it under.
@@ -238,8 +266,9 @@ pub struct JsDocumentHandle {
     id: String,
 }
 
-/// A live `events.subscribe` registration. Dropping it unsubscribes, so the
-/// closure is never called after it is freed.
+/// A live `events.subscribe` or `objectNumbers.onLost` registration.
+/// Dropping it unsubscribes, so the closure is never called after it is
+/// freed.
 struct Subscription {
     off: js_sys::Function,
     _listener: Closure<dyn FnMut(String)>,
@@ -251,11 +280,13 @@ impl Drop for Subscription {
     }
 }
 
-/// `is_local`, `call_with` (call options such as priority and view) and the
-/// object-number pool (`held_object_numbers`, `take_object_number`,
-/// `reserve_object_numbers`, `on_lost_object_numbers`) answer the trait
-/// defaults until Task 14 adds the bridge members they need
-/// (`.superpowers/sdd/multiplatform-upstream-catchup/task-13.33-web-bridge-proposal.md`).
+/// The document-level members the bridge forwards one for one: `is_local`
+/// (`isLocalDocument`), the object-number pool (`held_object_numbers`,
+/// `take_object_number`, `on_lost_object_numbers`) and `call_with`
+/// (`doc.with(facts)` then the call). `reserve_object_numbers` stays the
+/// trait default, a `call` of `objectNumbers.reserve`. A bridge member that
+/// throws answers what the trait default would, or a rejection, never a
+/// panic.
 impl DocumentHandle for JsDocumentHandle {
     fn id(&self) -> String {
         self.id.clone()
@@ -281,10 +312,85 @@ impl DocumentHandle for JsDocumentHandle {
         engine_call(self.bridge.call(&self.id, path, pon, &args_json(&args)))
     }
 
+    fn call_with(
+        &self,
+        facts: &CallFacts,
+        path: &str,
+        pon: Option<u32>,
+        args: Vec<Value>,
+    ) -> EngineCall<Value> {
+        let facts = match serde_json::to_string(facts) {
+            Ok(facts) => facts,
+            Err(error) => {
+                return Promise::rejected(Error::new(format!(
+                    "[engine-bridge] call facts do not encode: {error}"
+                )));
+            }
+        };
+        engine_call(self.bridge.call_with(&self.id, &facts, path, pon, &args_json(&args)))
+    }
+
     fn call_answer(&self, path: &str, pon: Option<u32>, args: Vec<Value>) -> EngineCall<Answer> {
         engine_call_with(self.bridge.call(&self.id, path, pon, &args_json(&args)), |text| {
             Ok(Answer::Text(text.into()))
         })
+    }
+
+    fn is_local(&self) -> bool {
+        self.bridge.is_local_document(&self.id).unwrap_or(false)
+    }
+
+    fn held_object_numbers(&self) -> usize {
+        match self.bridge.held_object_numbers(&self.id) {
+            Ok(held) if held.is_finite() && held >= 0.0 => held as usize,
+            _ => 0,
+        }
+    }
+
+    /// `objectNumbers.take()`: a held number, or `None` when the pool is
+    /// empty. A throw is the call's error, as `take` throws in TypeScript.
+    fn take_object_number(&self) -> Result<Option<u32>, Error> {
+        let taken = self
+            .bridge
+            .take_object_number(&self.id)
+            .map_err(|thrown| refused(js_to_error(&thrown)))?;
+        match taken {
+            None => Ok(None),
+            Some(number)
+                if number.fract() == 0.0 && (0.0..=f64::from(u32::MAX)).contains(&number) =>
+            {
+                Ok(Some(number as u32))
+            }
+            Some(other) => {
+                Err(Error::new(format!("[engine-bridge] object number {other} is not a u32")))
+            }
+        }
+    }
+
+    fn on_lost_object_numbers(&self, listener: Rc<dyn Fn(&ObjectNumbersLost)>) -> Unsubscribe {
+        // A loss is a JavaScript entry into the kernel, so it runs as an
+        // `entry` like an event does.
+        let closure = Closure::<dyn FnMut(String)>::new(move |text: String| {
+            runtime::entry(|| match serde_json::from_str::<ObjectNumbersLost>(&text) {
+                Ok(lost) => listener(&lost),
+                Err(error) => console_error(&format!(
+                    "[engine-bridge] malformed lost object numbers {text:?}: {error}"
+                )),
+            })
+        });
+        match self.bridge.on_lost_object_numbers(&self.id, &closure) {
+            Ok(off) => {
+                let subscription = Subscription { off, _listener: closure };
+                Unsubscribe::new(move || drop(subscription))
+            }
+            Err(thrown) => {
+                console_error(&format!(
+                    "[engine-bridge] onLostObjectNumbers failed: {}",
+                    js_to_error(&thrown)
+                ));
+                Unsubscribe::noop()
+            }
+        }
     }
 
     fn page_index(&self, pon: u32) -> Result<u32, Error> {
