@@ -179,7 +179,10 @@ struct Inner {
     again: Cell<bool>,
     queued: RefCell<Option<Vec<Value>>>,
     loads: Cell<u64>,
-    pages: RefCell<Vec<Promise<()>>>,
+    /// `pageReloads`: each page read still on its way, until its
+    /// `.finally` deletes it.
+    pages: RefCell<Vec<(u64, Promise<()>)>>,
+    reloads: Cell<u64>,
     kept: RefCell<HashMap<String, (PendingChange, u64)>>,
     folded: RefCell<HashSet<String>>,
     version: Cell<u64>,
@@ -207,6 +210,7 @@ impl Mirror {
             queued: RefCell::new(None),
             loads: Cell::new(0),
             pages: RefCell::new(vec![]),
+            reloads: Cell::new(0),
             kept: RefCell::new(HashMap::new()),
             folded: RefCell::new(HashSet::new()),
             version: Cell::new(0),
@@ -352,7 +356,11 @@ impl Mirror {
                     let call =
                         load(self.0.env.doc.clone(), pages.clone(), self.0.env.lifetime.clone());
                     let this = self.clone();
-                    let task = Promise::spawn(async move {
+                    let id = self.0.reloads.get() + 1;
+                    self.0.reloads.set(id);
+                    // `reloadPages(pages, keptFor).finally(() =>
+                    // pageReloads.delete(reloading))` (mirror.ts:367).
+                    let reloading = Promise::spawn(async move {
                         match call.await {
                             Ok(merge) => {
                                 if this.live() {
@@ -378,9 +386,16 @@ impl Mirror {
                                 }
                             }
                         }
+                        // The `.finally` reaction deletes it a turn after the
+                        // read settles, and the promise it returns is adopted
+                        // in two more.
+                        rt::tick().await;
+                        this.0.pages.borrow_mut().retain(|(reload, _)| *reload != id);
+                        rt::tick().await;
+                        rt::tick().await;
                         Ok(())
                     });
-                    self.0.pages.borrow_mut().push(task);
+                    self.0.pages.borrow_mut().push((id, reloading));
                 } else {
                     self.refresh();
                 }
@@ -495,21 +510,23 @@ impl Mirror {
             self.refresh();
         }
     }
+    /// `settled()`: `while (running || pageReloads.size > 0) await
+    /// Promise.allSettled([running, ...pageReloads])` (mirror.ts:460-464).
     pub fn settled(&self) -> Promise<()> {
         let this = self.clone();
         Promise::spawn(async move {
             loop {
                 let running = this.0.running.borrow().clone();
-                let pages = std::mem::take(&mut *this.0.pages.borrow_mut());
+                let pages: Vec<Promise<()>> =
+                    this.0.pages.borrow().iter().map(|(_, page)| page.clone()).collect();
                 if running.is_none() && pages.is_empty() {
                     break;
                 }
-                if let Some(r) = running {
-                    let _ = r.await;
-                }
-                for p in pages {
-                    let _ = p.await;
-                }
+                // `running` is `null` once it finished: `allSettled` reads it
+                // as a value settled already.
+                let mut waiting = vec![running.unwrap_or_else(|| Promise::resolved(()))];
+                waiting.extend(pages);
+                crate::kernel::all_settled(waiting).await;
             }
             Ok(())
         })

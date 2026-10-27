@@ -271,10 +271,117 @@ fn a_page_load_settles_after_its_finally_as_typescript_chains_it() {
         let _ = watched.await;
         r.set(at.get());
     });
+    // The turn `ensure_loaded` stops answering the load in flight: the
+    // `.finally` deleted it.
+    let forgot = Rc::new(Cell::new(u32::MAX));
+    let (f, at, polled, own, key) =
+        (forgot.clone(), turn.clone(), mirror.clone(), load.clone(), page.clone());
+    rt::spawn(async move {
+        for _ in 0..16 {
+            rt::tick().await;
+            if f.get() == u32::MAX && !polled.ensure_loaded(key.clone()).same(&own) {
+                f.set(at.get());
+            }
+        }
+    });
     rt::run_until_stalled();
     assert!(load.peek().unwrap().is_ok());
+    assert_eq!(forgot.get(), stored.get() + 1, "the finally runs a turn after the store");
     assert_eq!(reacted.get(), stored.get() + 4);
     assert!(!mirror.ensure_loaded(page).same(&load), "the finally forgot the load");
+}
+
+/// The same chain for a load that rejects (`page-mirror.ts:186-194`): the
+/// failure is written on turn T, the `.finally` forgets the load on T+1, and
+/// a caller's reaction to the rejection runs on T+4. Measured in Node:
+/// `Promise.reject(e).then(ok, fail).finally(clean).then(null, react)` gives
+/// fail 1, clean 2, react 5. A load a later one superseded settles without
+/// writing, and its `.finally` leaves the later load in flight.
+#[test]
+fn a_rejected_or_stale_page_load_settles_on_the_typescripts_turns() {
+    use epdf_kernel::mirror::ResourceStatus;
+    use epdf_kernel::page_mirror::{Affected, PageMirror, PageMirrorSpec};
+    use std::cell::{Cell, RefCell};
+    rt::reset();
+    let turn = Rc::new(Cell::new(0u32));
+    let count = turn.clone();
+    rt::spawn(async move {
+        for _ in 0..32 {
+            rt::tick().await;
+            count.set(count.get() + 1);
+        }
+    });
+    let q = DocumentChanges::new(
+        Rc::new(|_, _| Promise::resolved(json!({}))),
+        Rc::new(|| {}),
+        Rc::new(|e| panic!("{e}")),
+    );
+    let page = json!({"kind":"objectNumber","objectNumber":3});
+    let loads: Rc<RefCell<Vec<Promise<Value>>>> =
+        Rc::new(RefCell::new(vec![Promise::rejected(Error::new("unreadable"))]));
+    let source = loads.clone();
+    let mirror = PageMirror::new(
+        PageMirrorSpec {
+            name: "page".into(),
+            load: Rc::new(move |_, _, _| source.borrow_mut().remove(0)),
+            affected: Rc::new(|_| Affected::All),
+            fold: None,
+            predict: None,
+            changed: None,
+        },
+        MirrorEnvironment::detached(EventHookSource::new(None), AbortSignal::new(), q),
+    );
+    let load = mirror.ensure_loaded(page.clone());
+    let (failed, forgot, reacted) =
+        (Rc::new(Cell::new(u32::MAX)), Rc::new(Cell::new(u32::MAX)), Rc::new(Cell::new(u32::MAX)));
+    let (r, at, watched) = (reacted.clone(), turn.clone(), load.clone());
+    rt::spawn(async move {
+        assert_eq!(watched.await.unwrap_err().message, "unreadable");
+        r.set(at.get());
+    });
+    let (fa, fo, at, polled, key) =
+        (failed.clone(), forgot.clone(), turn.clone(), mirror.clone(), page.clone());
+    let own = load.clone();
+    rt::spawn(async move {
+        for _ in 0..16 {
+            rt::tick().await;
+            if fa.get() == u32::MAX && polled.get_status(&key) == ResourceStatus::Error {
+                fa.set(at.get());
+            }
+            // Once the failure is written, ensure_loaded answers the read in
+            // flight until the `.finally` forgets it, then starts another.
+            if fa.get() != u32::MAX && fo.get() == u32::MAX {
+                let now = polled.ensure_loaded(key.clone());
+                if !now.same(&own) {
+                    fo.set(at.get());
+                }
+            }
+        }
+    });
+    // What the poll's ensure_loaded reads once the failed read is forgotten.
+    *loads.borrow_mut() = vec![Promise::resolved(json!("again"))];
+    rt::run_until_stalled();
+    assert_ne!(failed.get(), u32::MAX);
+    assert_eq!(forgot.get(), failed.get() + 1, "the finally runs a turn after the failure");
+    assert_eq!(reacted.get(), failed.get() + 4);
+
+    // Stale: a refresh while a read is in flight bumps the epoch; the first
+    // read lands without writing and its `.finally` leaves the second.
+    rt::reset();
+    let (first, a) = Promise::pending();
+    let (second, b) = Promise::pending();
+    *loads.borrow_mut() = vec![first, second];
+    let stale = mirror.refresh(Some(page.clone()));
+    let current = mirror.refresh(Some(page.clone()));
+    assert!(!stale.same(&current));
+    a.resolve(json!("stale"));
+    rt::run_until_stalled();
+    assert!(stale.peek().unwrap().is_ok(), "a superseded read settles quietly");
+    assert!(mirror.get(&page).is_none_or(|v| *v != json!("stale")), "and writes nothing");
+    assert!(mirror.ensure_loaded(page.clone()).same(&current), "the later read is still in flight");
+    b.resolve(json!("fresh"));
+    rt::run_until_stalled();
+    assert_eq!(*mirror.get(&page).unwrap(), json!("fresh"));
 }
 
 /// `mirror.ts:425-446`: `refresh` returns `(async () => { ... })().finally(()
@@ -809,4 +916,204 @@ fn a_mirror_cell_shows_its_value_through_to_json_only_when_dumped() {
         json!({"value":{"shown":2},"status":"ready"})
     );
     assert_eq!(shown.get(), writes + 1);
+}
+
+/// `mirror.ts:367` and `settled()` (`mirror.ts:460-464`): a fold that asks
+/// for some pages again starts `reloadPages(...).finally(() =>
+/// pageReloads.delete(reloading))`, and `settled()` waits with
+/// `Promise.allSettled([running, ...pageReloads])` until neither is left.
+/// Measured with tsx on the TypeScript mirror and the same counter: a read
+/// answering at once is announced on turn 1 and `settled()`'s reaction runs
+/// on turn 7; a read answered on turn 3 is announced on turn 4 and
+/// `settled()` reacts on turn 10; on an idle mirror `settled()` reacts one
+/// turn later.
+#[test]
+fn page_reloads_and_settled_take_the_typescripts_turns() {
+    use std::cell::{Cell, RefCell};
+    for gated in [false, true] {
+        rt::reset();
+        let q = DocumentChanges::new(
+            Rc::new(|_, _| Promise::resolved(json!({}))),
+            Rc::new(|| {}),
+            Rc::new(|e| panic!("{e}")),
+        );
+        let turn = Rc::new(Cell::new(0u32));
+        let log: Rc<RefCell<Vec<String>>> = Rc::default();
+        let gate: Rc<RefCell<Option<epdf_kernel::rt::Resolver<epdf_kernel::mirror::Merge>>>> =
+            Rc::default();
+        let events = EventHookSource::new(None);
+        let mut spec = MirrorSpec::new(
+            "n",
+            json!(0),
+            Rc::new(|_, _| Promise::resolved(Loaded { value: json!(1), cursor: None })),
+            Rc::new(|value, event: &Value| {
+                Ok(if event["type"] == "reload" {
+                    Fold::Pages(vec![event["page"].clone()])
+                } else {
+                    Fold::Value(value)
+                })
+            }),
+        );
+        let opener = gate.clone();
+        spec.load_pages = Some(Rc::new(move |_, _, _| {
+            let merge: epdf_kernel::mirror::Merge =
+                Rc::new(|v: Rc<Value>| Rc::new(json!(v.as_i64().unwrap() + 10)));
+            if gated {
+                let (promise, resolver) = Promise::pending();
+                *opener.borrow_mut() = Some(resolver);
+                promise
+            } else {
+                Promise::resolved(merge)
+            }
+        }));
+        let (seen, at) = (log.clone(), turn.clone());
+        spec.changed = Some(Rc::new(move |change| {
+            seen.borrow_mut().push(format!("announce:{}@{}", change.cause, at.get()));
+            Ok(())
+        }));
+        let mirror =
+            Mirror::new(spec, MirrorEnvironment::detached(events.clone(), AbortSignal::new(), q));
+        let _ = mirror.refresh();
+        rt::run_until_stalled();
+        log.borrow_mut().clear();
+
+        let count = turn.clone();
+        rt::spawn(async move {
+            for _ in 0..40 {
+                rt::tick().await;
+                count.set(count.get() + 1);
+            }
+        });
+        events.emit(&json!({"type":"reload","page":{"kind":"objectNumber","objectNumber":3}}));
+        let settled = mirror.settled();
+        let (seen, at) = (log.clone(), turn.clone());
+        rt::spawn(async move {
+            let _ = settled.await;
+            seen.borrow_mut().push(format!("settled@{}", at.get()));
+        });
+        if gated {
+            let (gate, seen, at) = (gate.clone(), log.clone(), turn.clone());
+            rt::spawn(async move {
+                for _ in 0..3 {
+                    rt::tick().await;
+                }
+                let merge: epdf_kernel::mirror::Merge =
+                    Rc::new(|v: Rc<Value>| Rc::new(json!(v.as_i64().unwrap() + 10)));
+                gate.borrow_mut().take().expect("the page read started").resolve(merge);
+                seen.borrow_mut().push(format!("opened@{}", at.get()));
+            });
+        }
+        rt::run_until_stalled();
+        let expected: &[&str] = if gated {
+            &["opened@3", "announce:load@4", "settled@10"]
+        } else {
+            &["announce:load@1", "settled@7"]
+        };
+        assert_eq!(*log.borrow(), expected, "gated {gated}");
+        assert_eq!(*mirror.get(), json!(11));
+
+        // Idle: `settled()` reacts on the next turn.
+        let idle_turn = Rc::new(Cell::new(0u32));
+        let count = idle_turn.clone();
+        rt::spawn(async move {
+            for _ in 0..10 {
+                rt::tick().await;
+                count.set(count.get() + 1);
+            }
+        });
+        let settled = mirror.settled();
+        let reacted = Rc::new(Cell::new(u32::MAX));
+        let (r, at) = (reacted.clone(), idle_turn.clone());
+        rt::spawn(async move {
+            let _ = settled.await;
+            r.set(at.get());
+        });
+        rt::run_until_stalled();
+        assert_eq!(reacted.get(), 1, "idle settled() reacts on the next turn");
+    }
+}
+
+/// `whenSettled` (`changes.ts:548-550`): `await Promise.allSettled(...)` over
+/// the results of the changes not held. Measured in Node with the same
+/// counter, a reaction to `whenSettled()` runs on turn 2 with nothing
+/// pending (the promise settles on turn 1), and two turns after a reaction to
+/// the one pending result (a result settled on turn 3: its reaction on 4,
+/// `whenSettled`'s on 6). A held change is not waited for.
+#[test]
+fn when_settled_takes_the_typescripts_turns_and_skips_held_changes() {
+    use std::cell::{Cell, RefCell};
+    for (pending, held) in [(false, false), (false, true), (true, false), (true, true)] {
+        rt::reset();
+        let gate: Rc<RefCell<Option<epdf_kernel::rt::Resolver<Value>>>> = Rc::default();
+        let opener = gate.clone();
+        let q = DocumentChanges::new(
+            Rc::new(move |_, _| {
+                let (answer, resolver) = Promise::pending();
+                *opener.borrow_mut() = Some(resolver);
+                answer
+            }),
+            Rc::new(|| {}),
+            Rc::new(|e| panic!("{e}")),
+        );
+        let turn = Rc::new(Cell::new(0u32));
+        let log: Rc<RefCell<Vec<String>>> = Rc::default();
+        let count = turn.clone();
+        rt::spawn(async move {
+            for _ in 0..12 {
+                rt::tick().await;
+                count.set(count.get() + 1);
+            }
+        });
+        let plugin = q.for_plugin("test");
+        if pending {
+            let change = plugin
+                .stage(StagedChange::ops(json!({"key":"edit"}), vec![json!({"value":2})]))
+                .unwrap();
+            let (seen, at, result) = (log.clone(), turn.clone(), change.result());
+            rt::spawn(async move {
+                let _ = result.await;
+                seen.borrow_mut().push(format!("result@{}", at.get()));
+            });
+        }
+        // Held after the staged change, so staging didn't send it.
+        let _hold = if held {
+            let hold = plugin.hold(json!({"key":"typing"}), None).unwrap();
+            hold.set(vec![json!({"type":"metadata.set","value":1})], vec![]);
+            Some(hold)
+        } else {
+            None
+        };
+        assert_eq!(q.shown().iter().any(|e| e.held()), held, "a held change is shown");
+        let settled = q.when_settled();
+        let (seen, at) = (log.clone(), turn.clone());
+        rt::spawn(async move {
+            let _ = settled.await;
+            seen.borrow_mut().push(format!("settled@{}", at.get()));
+        });
+        if pending {
+            let (gate, seen, at) = (gate.clone(), log.clone(), turn.clone());
+            rt::spawn(async move {
+                for _ in 0..3 {
+                    rt::tick().await;
+                }
+                gate.borrow_mut().take().expect("the change was sent").resolve(json!({}));
+                seen.borrow_mut().push(format!("opened@{}", at.get()));
+            });
+        }
+        rt::run_until_stalled();
+        let log = log.borrow();
+        if pending {
+            // When the result itself settles after the engine's answer is
+            // the change queue's chain (`attachment.json` pins it); here
+            // only `whenSettled`'s two turns after it are measured.
+            let at = |name: &str| -> u32 {
+                let entry = log.iter().find(|l| l.starts_with(name)).expect(name);
+                entry.split('@').nth(1).unwrap().parse().unwrap()
+            };
+            assert_eq!(log.len(), 3, "{log:?}");
+            assert_eq!(at("settled@"), at("result@") + 2, "held {held}: {log:?}");
+        } else {
+            assert_eq!(*log, ["settled@2"], "held {held}");
+        }
+    }
 }
