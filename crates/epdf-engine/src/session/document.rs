@@ -245,10 +245,12 @@ pub fn object_number_unavailable(number: u32, reason: &str) -> EngineError {
 fn open_bytes_as_layer(bytes: &[u8], password: Option<&str>) -> Result<Document, EngineError> {
     let base =
         BaseDocument::from_bytes(Library::acquire(), bytes, password).map_err(|e| match e {
-            PdfiumError::Password if password.is_some() => EngineError::with_message(
-                EngineErrorCode::DocPasswordIncorrect,
-                "incorrect document password",
-            ),
+            PdfiumError::Password if super::base_registry::password_given(password) => {
+                EngineError::with_message(
+                    EngineErrorCode::DocPasswordIncorrect,
+                    "incorrect document password",
+                )
+            }
             PdfiumError::Password => EngineError::with_message(
                 EngineErrorCode::DocPasswordRequired,
                 "document requires a password",
@@ -1251,4 +1253,22 @@ fn document_protection(
     crate::features::signature::reader::read_protection(document)
         .ok()
         .filter(|p| p.judged.is_some())
+}
+
+#[cfg(test)]
+mod open_tests {
+    use super::*;
+
+    #[test]
+    fn an_empty_password_is_no_password() {
+        // `loadFailure` asks `password ?`: `''` is no password, so the
+        // document needs one rather than having been given a wrong one.
+        let path = test_support::workspace_root()
+            .join("tooling/engine-conformance/fixtures/encrypted-r4-aes-128.pdf");
+        let bytes = std::fs::read(path).expect("read");
+        let code = |password| open_bytes_as_layer(&bytes, password).err().map(|e| e.code);
+        assert_eq!(code(Some("")), Some(EngineErrorCode::DocPasswordRequired));
+        assert_eq!(code(None), Some(EngineErrorCode::DocPasswordRequired));
+        assert_eq!(code(Some("wrong")), Some(EngineErrorCode::DocPasswordIncorrect));
+    }
 }
