@@ -52,6 +52,14 @@ public final class TiledPageModel {
   @ObservationIgnored private var painted: Set<String> = []
   @ObservationIgnored private var lastStamp: String?
   @ObservationIgnored private var pollTask: Task<Void, Never>?
+  /// Bumped for each background poll so a finished one can't clear a newer one.
+  @ObservationIgnored private var pollGeneration = 0
+  /// Updates currently polling. Background polling waits while any is live, so
+  /// only one loop reconciles against the plan at a time.
+  @ObservationIgnored private var updatePolls = 0
+  @ObservationIgnored private var livePolls = 0
+  /// The most poll loops ever live at once. Tests check it stays at one.
+  @ObservationIgnored private(set) var peakPolls = 0
 
   /// Between polls while tiles are in flight. The controller re-plans an
   /// arrival on its own about 16 ms later.
@@ -110,6 +118,7 @@ public final class TiledPageModel {
         page,
         RenderPageViewDemand(desiredDeviceWidth: deviceScale * unrotatedWidth, visibleRect: visibleRect),
         includeAnnotations: includeAnnotations)
+      guard !Task.isCancelled else { return }
       let key = try await render.sourceKey(page, scale: deviceScale, includeAnnotations: includeAnnotations)
       if key != baseKey {
         let rendered = try await render.renderSource(
@@ -121,6 +130,10 @@ public final class TiledPageModel {
     } catch {
       return
     }
+    pollTask?.cancel()
+    pollTask = nil
+    updatePolls += 1
+    defer { updatePolls -= 1 }
     await pollUntilSettled(onPainted: onPainted)
   }
 
@@ -159,14 +172,21 @@ public final class TiledPageModel {
   // MARK: - Polling
 
   private func startPolling() {
-    guard pollTask == nil else { return }
+    guard pollTask == nil, updatePolls == 0 else { return }
+    pollGeneration += 1
+    let generation = pollGeneration
     pollTask = Task { [weak self] in
       await self?.pollUntilSettled()
-      self?.pollTask = nil
+      if self?.pollGeneration == generation {
+        self?.pollTask = nil
+      }
     }
   }
 
   private func pollUntilSettled(onPainted: (@MainActor () -> Void)? = nil) async {
+    livePolls += 1
+    peakPolls = max(peakPolls, livePolls)
+    defer { livePolls -= 1 }
     var onPainted = onPainted
     let clock = ContinuousClock()
     let deadline = clock.now + Self.pollLimit

@@ -1,6 +1,6 @@
 import CustomDump
 import EmbedPDF
-import EmbedPDFUI
+@testable import EmbedPDFUI
 import Foundation
 import Testing
 
@@ -37,6 +37,31 @@ struct TiledPageModelTests {
       #expect(tile.rect.x < visible.width + 1)
       #expect(tile.rect.y < visible.height + 1)
     }
+    try await demand.dispose()
+  }
+
+  @Test func acknowledgingTilesDuringAnUpdateKeepsThemPainted() async throws {
+    let (model, page, demand) = try await model()
+    let update = Task {
+      await model.update(
+        deviceScale: 8, unrotatedWidth: page.width,
+        visibleRect: Rect(x: 0, y: 0, width: page.width / 2, height: page.height / 4))
+    }
+    while model.tiles.isEmpty {
+      try await Task.sleep(for: .milliseconds(5))
+    }
+    for tile in model.tiles {
+      await model.tileDisplayed(tile.id)
+    }
+    await update.value
+    #expect(model.peakPolls == 1)
+    let settled = model.tiles
+    #expect(!settled.isEmpty)
+    #expect(Set(settled.map(\.id)).count == settled.count)
+    await model.update(
+      deviceScale: 8, unrotatedWidth: page.width,
+      visibleRect: Rect(x: 0, y: 0, width: page.width / 2, height: page.height / 4))
+    expectNoDifference(model.tiles.map(\.id), settled.map(\.id))
     try await demand.dispose()
   }
 
