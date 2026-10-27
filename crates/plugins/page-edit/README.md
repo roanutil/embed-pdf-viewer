@@ -43,8 +43,8 @@ is not an array reads as `[]`, where the TypeScript resolves whatever the engine
 `extract` rejects `[page-edit] extract answered no bytes` when the engine's answer is not a bytes
 value, where the TypeScript resolves whatever the engine sent. `Bytes` can't hold anything else.
 
-A `$number` in a vector reads as JavaScript's `Number(text)` (`contract.rs` `string_to_number`), a
-copy of the kernel's private one in `crates/epdf-kernel/src/mirror.rs:630`.
+A `$number` in a vector reads as JavaScript's `Number(text)` through the kernel's
+`epdf_kernel::mirror::string_to_number` (`contract.rs` `js_number`).
 
 `can_edit` and `can_extract` read through the kernel's `allows`, which answers `false` when the
 session has no handle. The TypeScript's `ctx.allows` throws there.

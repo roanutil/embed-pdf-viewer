@@ -89,63 +89,13 @@ impl From<usize> for PageArg {
 }
 
 /// A canonical JSON number: plain, or `{"$number": text}`, which the
-/// TypeScript runner reads as `Number(text)` (`scenario.ts:589`).
+/// TypeScript runner reads as `Number(text)` (`scenario.ts:589`), the
+/// kernel's `string_to_number`.
 pub(crate) fn js_number(value: &Value) -> Option<f64> {
     if let Some(n) = value.as_f64() {
         return Some(n);
     }
-    Some(string_to_number(value.get("$number")?.as_str()?))
-}
-
-/// JavaScript's WhiteSpace and LineTerminator code points, which
-/// `StringToNumber` trims (U+0085 is not one).
-fn is_js_white_space(c: char) -> bool {
-    matches!(
-        c,
-        '\u{9}'..='\u{d}'
-            | ' '
-            | '\u{a0}'
-            | '\u{1680}'
-            | '\u{2000}'..='\u{200a}'
-            | '\u{2028}'
-            | '\u{2029}'
-            | '\u{202f}'
-            | '\u{205f}'
-            | '\u{3000}'
-            | '\u{feff}'
-    )
-}
-
-/// `Number(text)`: surrounding white space ignored, empty is 0, a signed
-/// decimal literal or `Infinity`, or an unsigned `0x`/`0o`/`0b` integer;
-/// anything else is NaN. The same rules as the kernel's private
-/// `string_to_number` (`crates/epdf-kernel/src/mirror.rs:630`).
-pub(crate) fn string_to_number(text: &str) -> f64 {
-    let t = text.trim_matches(is_js_white_space);
-    if t.is_empty() {
-        return 0.0;
-    }
-    for (prefix, radix) in [("0x", 16), ("0X", 16), ("0o", 8), ("0O", 8), ("0b", 2), ("0B", 2)] {
-        if let Some(digits) = t.strip_prefix(prefix) {
-            if digits.is_empty() || !digits.chars().all(|c| c.is_digit(radix)) {
-                return f64::NAN;
-            }
-            return digits.chars().fold(0.0, |n, c| {
-                n * f64::from(radix) + f64::from(c.to_digit(radix).unwrap_or(0))
-            });
-        }
-    }
-    let unsigned = t.strip_prefix(['+', '-']).unwrap_or(t);
-    if unsigned == "Infinity" {
-        return if t.starts_with('-') { f64::NEG_INFINITY } else { f64::INFINITY };
-    }
-    let decimal =
-        unsigned.chars().all(|c| c.is_ascii_digit() || matches!(c, '.' | 'e' | 'E' | '+' | '-'))
-            && unsigned.chars().next().is_some_and(|c| c.is_ascii_digit() || c == '.');
-    if !decimal {
-        return f64::NAN;
-    }
-    t.parse::<f64>().unwrap_or(f64::NAN)
+    Some(epdf_kernel::mirror::string_to_number(value.get("$number")?.as_str()?))
 }
 
 /// `PagePosition`: where pages go, the engine's. Right after or before a
@@ -238,27 +188,19 @@ impl PageEditInsertResult {
 
 #[cfg(test)]
 mod tests {
-    use super::string_to_number;
+    use serde_json::json;
 
+    use super::js_number;
+
+    /// The table itself is the kernel's (`string_to_number` in
+    /// `crates/epdf-kernel/src/mirror.rs`); this pins that the marker reaches it.
     #[test]
     fn a_number_marker_reads_as_javascript_number_does() {
-        for (text, expected) in [
-            ("1.5", 1.5),
-            ("Infinity", f64::INFINITY),
-            ("-Infinity", f64::NEG_INFINITY),
-            ("+Infinity", f64::INFINITY),
-            (" 12 ", 12.0),
-            ("", 0.0),
-            ("0x1f", 31.0),
-            ("1e3", 1000.0),
-            (".5", 0.5),
-        ] {
-            assert_eq!(string_to_number(text), expected, "{text:?}");
-        }
-        let zero = string_to_number("-0");
-        assert!(zero == 0.0 && zero.is_sign_negative());
-        for text in ["NaN", "inf", "infinity", "1_0", "0x", "-0x1", "abc", "\u{85}1"] {
-            assert!(string_to_number(text).is_nan(), "{text:?}");
-        }
+        assert_eq!(js_number(&json!(1.5)), Some(1.5));
+        assert_eq!(js_number(&json!({ "$number": "-Infinity" })), Some(f64::NEG_INFINITY));
+        assert_eq!(js_number(&json!({ "$number": " 0x1f " })), Some(31.0));
+        assert!(js_number(&json!({ "$number": "\u{85}1" })).unwrap().is_nan());
+        assert_eq!(js_number(&json!({ "$number": 1 })), None);
+        assert_eq!(js_number(&json!("1")), None);
     }
 }

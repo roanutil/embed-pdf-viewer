@@ -22,6 +22,7 @@ use epdf_kernel::changes::{PendingChange, StagedChange};
 use epdf_kernel::engine::DocumentHandle;
 use epdf_kernel::error::{code, plugin_error, to_plugin_error};
 use epdf_kernel::geometry::PageRef;
+use epdf_kernel::js::json_number;
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::{Controller, DOCUMENTS, Error, Promise, rt};
 use serde_json::{Value, json};
@@ -61,20 +62,6 @@ impl PageVerb {
             PageVerb::Insert => "pages.insert",
             PageVerb::Duplicate => "pages.duplicate",
         }
-    }
-}
-
-/// A JavaScript number as canonical JSON: an integer as one, the
-/// non-finite spelled out.
-pub(crate) fn js_number(n: f64) -> Value {
-    if n.is_nan() {
-        json!({ "$number": "NaN" })
-    } else if n.is_infinite() {
-        json!({ "$number": if n > 0.0 { "Infinity" } else { "-Infinity" } })
-    } else if n.fract() == 0.0 && n.abs() < 9_007_199_254_740_992.0 {
-        json!(n as i64)
-    } else {
-        json!(n)
     }
 }
 
@@ -326,7 +313,7 @@ impl PageEditCapability {
     ) -> Result<PendingChange, Error> {
         let label = match count {
             None => json!({ "key": verb.key() }),
-            Some(count) => json!({ "key": verb.key(), "count": js_number(count) }),
+            Some(count) => json!({ "key": verb.key(), "count": json_number(count) }),
         };
         let mut change = StagedChange::ops(label, ops);
         if let Some(undo) = undo {
@@ -444,7 +431,7 @@ impl PageEditCapability {
             groups
                 .into_iter()
                 .map(|(rotation, pages)| {
-                    json!({ "type": "pages.rotate", "pages": refs_json(&pages), "rotation": js_number(rotation) })
+                    json!({ "type": "pages.rotate", "pages": refs_json(&pages), "rotation": json_number(rotation) })
                 })
                 .collect()
         };
@@ -655,7 +642,7 @@ impl PageEditCapability {
             if let Some(size) = size {
                 spec.insert("size".into(), size);
             }
-            spec.insert("count".into(), js_number(count));
+            spec.insert("count".into(), json_number(count));
             let op = json!({ "type": "pages.insertBlank", "spec": spec, "position": position.to_json() });
             let change = this.stage_change(PageVerb::InsertBlank, Some(count), vec![op], None)?;
             adopt(Self::inserted(change, options.signal)).await

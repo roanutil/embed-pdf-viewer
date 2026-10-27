@@ -634,7 +634,7 @@ pub fn is_js_white_space(c: char) -> bool {
 /// `StringToNumber`: surrounding white space ignored, empty is 0, a signed
 /// decimal literal or `Infinity`, or an unsigned `0x`/`0o`/`0b` integer;
 /// anything else is NaN.
-fn string_to_number(s: &str) -> f64 {
+pub fn string_to_number(s: &str) -> f64 {
     let t = s.trim_matches(is_js_white_space);
     if t.is_empty() {
         return 0.0;
@@ -703,6 +703,29 @@ mod tests {
         assert!(le(json!(""), json!(0)));
         assert!(le(json!("0x10"), json!(16)));
         assert!(le(json!([5]), json!(5)));
+    }
+
+    #[test]
+    fn string_to_number_reads_as_javascript_number_does() {
+        use super::string_to_number;
+        for (text, expected) in [
+            ("1.5", 1.5),
+            ("Infinity", f64::INFINITY),
+            ("-Infinity", f64::NEG_INFINITY),
+            ("+Infinity", f64::INFINITY),
+            (" 12 ", 12.0),
+            ("", 0.0),
+            ("0x1f", 31.0),
+            ("1e3", 1000.0),
+            (".5", 0.5),
+        ] {
+            assert_eq!(string_to_number(text), expected, "{text:?}");
+        }
+        let zero = string_to_number("-0");
+        assert!(zero == 0.0 && zero.is_sign_negative());
+        for text in ["NaN", "inf", "infinity", "1_0", "0x", "-0x1", "abc", "\u{85}1"] {
+            assert!(string_to_number(text).is_nan(), "{text:?}");
+        }
     }
 
     #[test]

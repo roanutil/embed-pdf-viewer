@@ -22,7 +22,7 @@ use std::rc::Rc;
 use epdf_geometry::bounds_of_rects;
 use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::{CallFacts, CallPriority, decode};
-use epdf_kernel::error::{code, plugin_error, to_plugin_error};
+use epdf_kernel::error::{code, plugin_error, to_plugin_error, to_plugin_error_info};
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::js::number_to_string;
@@ -52,18 +52,6 @@ const RERUN_DELAY_MS: f64 = 250.0;
 async fn adopt<T: Clone + 'static>(promise: Promise<T>) -> Result<T, Error> {
     rt::tick().await;
     promise.reaction().await
-}
-
-/// `toPluginErrorInfo(error)`.
-fn error_info(error: &Error) -> PluginErrorInfo {
-    let text =
-        |key: &str| error.member(key).and_then(Value::as_str).unwrap_or_default().to_string();
-    PluginErrorInfo {
-        code: text("code"),
-        message: error.message.clone(),
-        capability: text("capability"),
-        permission: error.member("permission").and_then(Value::as_str).map(str::to_string),
-    }
 }
 
 struct Events {
@@ -631,7 +619,7 @@ impl SearchCapability {
                         hit_count: core.state().hits.len(),
                     });
                 }
-                let info = error_info(&to_plugin_error(CAPABILITY, &error));
+                let info = to_plugin_error_info(&to_plugin_error(CAPABILITY, &error));
                 if owns(&core) {
                     core.update(|state| fail_session(state, &info));
                 }

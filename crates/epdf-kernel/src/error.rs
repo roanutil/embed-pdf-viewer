@@ -253,6 +253,20 @@ impl Error {
     }
 }
 
+/// `toPluginErrorInfo(error)` as the typed `PluginErrorInfo`, for a
+/// `PluginError` (`to_plugin_error`'s answer): its `code`, `message`,
+/// `capability` and `permission`.
+pub fn to_plugin_error_info(error: &Error) -> crate::types::PluginErrorInfo {
+    let text =
+        |key: &str| error.member(key).and_then(Value::as_str).unwrap_or_default().to_string();
+    crate::types::PluginErrorInfo {
+        code: text("code"),
+        message: error.message.clone(),
+        capability: text("capability"),
+        permission: error.member("permission").and_then(Value::as_str).map(str::to_string),
+    }
+}
+
 /// The engine codes `toPluginError` maps; anything else is `operation-failed`.
 fn engine_code(code: &str) -> Option<&'static str> {
     Some(match code {

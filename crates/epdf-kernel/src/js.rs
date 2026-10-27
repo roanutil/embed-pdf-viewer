@@ -40,6 +40,18 @@ pub fn number(value: f64) -> Value {
     }
 }
 
+/// A number as `JSON.stringify` writes it, in canonical JSON: a whole
+/// number in the safe-integer range without a fraction (`1`, not `1.0`),
+/// `-0` as `0`, and the non-finite spelled as [`number`] spells them.
+pub fn json_number(value: f64) -> Value {
+    const SAFE: f64 = 9_007_199_254_740_991.0;
+    if value.fract() == 0.0 && value.abs() <= SAFE {
+        Value::from(value as i64)
+    } else {
+        number(value)
+    }
+}
+
 /// `Number.prototype.toString()` (ECMAScript `Number::toString`, radix 10):
 /// the shortest round-trip digits, laid out in plain notation for exponents
 /// from -7 to 20 and scientific (`1e+21`, `1.5e-7`) outside it. Rust's `{}`
@@ -544,6 +556,17 @@ mod tests {
     use serde_json::json;
 
     use super::*;
+
+    #[test]
+    fn json_number_writes_as_json_stringify_does() {
+        assert_eq!(json_number(1.0).to_string(), "1");
+        assert_eq!(json_number(-0.0).to_string(), "0");
+        assert_eq!(json_number(1.5).to_string(), "1.5");
+        assert_eq!(json_number(9_007_199_254_740_991.0).to_string(), "9007199254740991");
+        assert_eq!(json_number(9_007_199_254_740_992.0).to_string(), "9007199254740992.0");
+        assert_eq!(json_number(f64::NAN), json!({ "$number": "NaN" }));
+        assert_eq!(json_number(f64::NEG_INFINITY), json!({ "$number": "-Infinity" }));
+    }
 
     #[derive(Serialize, Deserialize, Debug, PartialEq)]
     struct P {

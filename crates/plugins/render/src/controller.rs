@@ -22,7 +22,7 @@ use std::rc::{Rc, Weak};
 use epdf_geometry::Rect;
 use epdf_kernel::cancellable::cancellable;
 use epdf_kernel::engine::{CallFacts, CallPriority, DocumentHandle};
-use epdf_kernel::error::{code, plugin_error, to_plugin_error};
+use epdf_kernel::error::{code, plugin_error, to_plugin_error, to_plugin_error_info};
 use epdf_kernel::event_hook::EventHookSource;
 use epdf_kernel::geometry::PageRef;
 use epdf_kernel::plugin::ConnectFn;
@@ -30,7 +30,7 @@ use epdf_kernel::rt::{self, Promise};
 use epdf_kernel::settings::{InstanceSettings, SettingsChanged};
 use epdf_kernel::signal::AbortSignal;
 use epdf_kernel::store::Unsubscribe;
-use epdf_kernel::types::{DocumentMeta, PluginErrorInfo};
+use epdf_kernel::types::DocumentMeta;
 use epdf_kernel::{Controller, Error};
 use indexmap::{IndexMap, IndexSet};
 use serde_json::{Map, Value, json};
@@ -66,18 +66,6 @@ const FORMS_SCOPE: &str = "doc.forms.read";
 const ANNOTATIONS_SCOPE: &str = "doc.annotate.read";
 const DEFAULT_BATCH_CONCURRENCY: f64 = 4.0;
 const CAPABILITY: &str = "render";
-
-/// `toPluginErrorInfo(error)`.
-fn error_info(error: &Error) -> PluginErrorInfo {
-    let text =
-        |key: &str| error.member(key).and_then(Value::as_str).unwrap_or_default().to_string();
-    PluginErrorInfo {
-        code: text("code"),
-        message: error.message.clone(),
-        capability: text("capability"),
-        permission: error.member("permission").and_then(Value::as_str).map(str::to_string),
-    }
-}
 
 /// `annotationKey(ref)`: `obj:<n>` or `base:<page>:<index>`, and
 /// `undefined` (as a template literal prints it) for a ref of another kind.
@@ -490,7 +478,7 @@ impl Core {
                         this.render_failed.emit(&RenderFailedEvent {
                             page,
                             key,
-                            error: error_info(&mapped),
+                            error: to_plugin_error_info(&mapped),
                         });
                     }
                     Err(mapped)
@@ -601,7 +589,10 @@ impl Core {
                                         // rendered: `ctx.pageOf` threw.
                                         failed.borrow_mut().push((
                                             index,
-                                            PageRenderFailure { page, error: error_info(&error) },
+                                            PageRenderFailure {
+                                                page,
+                                                error: to_plugin_error_info(&error),
+                                            },
                                         ));
                                         continue;
                                     }
@@ -614,7 +605,9 @@ impl Core {
                                 index,
                                 PageRenderFailure {
                                     page,
-                                    error: error_info(&to_plugin_error(CAPABILITY, &error)),
+                                    error: to_plugin_error_info(&to_plugin_error(
+                                        CAPABILITY, &error,
+                                    )),
                                 },
                             )),
                         }

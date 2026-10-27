@@ -122,17 +122,6 @@ impl<'de> Deserialize<'de> for RawRecord {
     }
 }
 
-/// A number as `JSON.stringify` writes it: a whole number without a
-/// fraction (`1`, not `1.0`), `-0` as `0`.
-fn js_number(value: f64) -> serde_json::Value {
-    const SAFE: f64 = 9_007_199_254_740_991.0;
-    if value.fract() == 0.0 && value.abs() <= SAFE {
-        serde_json::Value::from(value as i64)
-    } else {
-        epdf_kernel::js::number(value)
-    }
-}
-
 /// Write `members` in order, each one that has a value.
 fn serialize_members<S: SerializeMap>(
     map: &mut S,
@@ -157,7 +146,10 @@ fn serialize_members<S: SerializeMap>(
             }
             Member::FocusRequest => {
                 if let Some(focus_request) = focus_request {
-                    map.serialize_entry("focusRequest", &js_number(focus_request))?;
+                    map.serialize_entry(
+                        "focusRequest",
+                        &epdf_kernel::js::json_number(focus_request),
+                    )?;
                 }
             }
         }
