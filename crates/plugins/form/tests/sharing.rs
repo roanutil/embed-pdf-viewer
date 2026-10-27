@@ -157,13 +157,18 @@ fn page_row() -> Value {
 
 /// A kernel whose document has `fields` text fields and holds every write.
 fn kernel_with(fields: usize) -> (Kernel, Rc<FakeEngine>) {
+    kernel_over(snapshot(fields))
+}
+
+/// A kernel whose document has this form and holds every write.
+fn kernel_over(form: Value) -> (Kernel, Rc<FakeEngine>) {
     rt::reset();
     let fake = FakeEngine::new(json!({
         "documents": { "a": {
             "pages": [page_row()],
             "security": { "allows": "*" },
             "responses": [
-                { "path": "forms.list", "value": snapshot(fields) },
+                { "path": "forms.list", "value": form },
                 { "path": "apply", "defer": "applied" }
             ]
         } }
@@ -207,11 +212,17 @@ fn fills_folds_and_reads_share_the_live_form() {
             let n = i * 25 + 1;
             pending.push(form.set_value(object_ref(n), json!({ "value": "typed" }), None));
             rt::run_until_stalled();
-            assert_eq!(form.get_value(&object_ref(n)), Some(json!({ "value": "typed" })));
+            assert_eq!(
+                form.get_value(&object_ref(n)).as_deref(),
+                Some(&json!({ "value": "typed" }))
+            );
             assert_eq!(form.list_widgets(&page).len(), FIELDS);
             fake.emit("a", &value_set(n + 1, "elsewhere")).expect("the event");
             rt::run_until_stalled();
-            assert_eq!(form.get_value(&object_ref(n + 1)), Some(json!({ "value": "elsewhere" })));
+            assert_eq!(
+                form.get_value(&object_ref(n + 1)).as_deref(),
+                Some(&json!({ "value": "elsewhere" }))
+            );
         }
         assert_eq!(snapshot_copies(), before, "a fill, fold or read copied the snapshot");
         // A copy the counter doesn't see would still leave new pointers.
@@ -287,5 +298,64 @@ fn a_host_refetching_the_store_serialises_each_confirmed_form_once() {
         assert_ne!(text, first);
         assert_eq!(&*text, kernel.state_json().to_string().as_str(), "the text is the JSON's");
         drop(pending);
+    });
+}
+
+/// M36: the reads hand out the fields and widget rows the form holds, as
+/// the TypeScript's do, and copy none of them (a port that copied made
+/// 3,045 copies over these three rounds); the TypeScript's memoized reads
+/// (`getValue`, `getWidgets`, `exportValues`, `validate`,
+/// `getSelectedField`) answer the same object while their inputs stay the
+/// same, so the second and third rounds compute nothing.
+#[test]
+fn reads_share_the_form_and_keep_their_answers() {
+    use epdf_plugin_form::read::fields::read_computes;
+    within_ceiling(|| {
+        const FIELDS: usize = 500;
+        let mut form_json = snapshot(FIELDS);
+        for n in [3, 40, 400] {
+            form_json["fields"][n - 1]["required"] = json!(true);
+        }
+        let (kernel, _fake) = kernel_over(form_json);
+        let form = kernel.capability(&FORM, Some("a")).expect("the form capability");
+        let view = form.view();
+        let (fields, rows) = (view.fields(), view.widgets());
+        let mut first_round = 0;
+        for round in 0..3 {
+            let before = read_computes();
+            let all = form.list(None);
+            assert_eq!(all.len(), FIELDS);
+            assert!(all.iter().zip(fields).all(|(a, b)| Rc::ptr_eq(a, b)), "list shares");
+            let text = form.list(Some(&json!({ "family": "text" })));
+            assert!(text.iter().zip(fields).all(|(a, b)| Rc::ptr_eq(a, b)), "a filter shares");
+            for n in [1, 250, 500] {
+                let (field, row) = (&fields[n - 1], &rows[n - 1]);
+                assert!(Rc::ptr_eq(&form.get(&object_ref(n)).unwrap(), field));
+                assert!(Rc::ptr_eq(&form.get_field_for_widget(&widget_ref(n)).unwrap(), field));
+                assert!(Rc::ptr_eq(&form.get_widget(&widget_ref(n)).unwrap(), row));
+                let widgets = form.get_widgets(&object_ref(n));
+                assert!(Rc::ptr_eq(&widgets[0], row));
+                assert!(Rc::ptr_eq(&widgets, &form.get_widgets(&object_ref(n))));
+                let value = form.get_value(&object_ref(n)).expect("a value");
+                assert!(Rc::ptr_eq(&value, &form.get_value(&object_ref(n)).unwrap()));
+            }
+            let validation = form.validate();
+            assert_eq!(validation.missing.len(), 3);
+            assert!(Rc::ptr_eq(&validation.missing[0], &fields[2]));
+            assert!(Rc::ptr_eq(&validation, &form.validate()));
+            let exported = form.export_values();
+            assert_eq!(exported.as_object().map(|o| o.len()), Some(FIELDS));
+            assert!(Rc::ptr_eq(&exported, &form.export_values()));
+            assert!(form.get_selected_field().is_none());
+            let computed = read_computes() - before;
+            if round == 0 {
+                first_round = computed;
+                assert!(computed > 0);
+            } else {
+                assert_eq!(computed, 0, "round {round} computed an answer again");
+            }
+        }
+        // 3 values, 3 widget lists, the export, the validation, the selection.
+        assert_eq!(first_round, 9);
     });
 }

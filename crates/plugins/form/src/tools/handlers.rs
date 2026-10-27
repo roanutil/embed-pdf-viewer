@@ -142,7 +142,7 @@ fn place(
         let created = form.create(tool_draft(tool, &name, Value::Object(widget)), None);
         let field = match form.get(&json!({ "kind": "fqn", "name": name })) {
             Some(field) => field,
-            None => get(&created.clone().await?, "field").cloned().unwrap_or(Value::Null),
+            None => Rc::new(get(&created.clone().await?, "field").cloned().unwrap_or(Value::Null)),
         };
         // Skip the follow-up when the tool changed meanwhile.
         let Some(annotation) = annotation else { return Ok(()) };

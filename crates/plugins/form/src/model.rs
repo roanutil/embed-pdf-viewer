@@ -306,11 +306,15 @@ fn positions_of(value: Option<&Value>) -> Positions {
 
 /// `position === undefined ? null : list[position] ?? null`.
 fn at<'a>(list: &'a [Rc<Value>], position: Option<&f64>) -> Option<&'a Value> {
+    shared_at(list, position).map(|v| &**v)
+}
+
+fn shared_at<'a>(list: &'a [Rc<Value>], position: Option<&f64>) -> Option<&'a Rc<Value>> {
     let position = *position?;
     if position < 0.0 || position.fract() != 0.0 {
         return None;
     }
-    list.get(position as usize).map(|v| &**v)
+    list.get(position as usize)
 }
 
 impl FieldIndex {
@@ -771,12 +775,32 @@ pub fn field_by_key<'a>(index: &'a FieldIndex, key: &str) -> Option<&'a Value> {
 
 /// `fieldByRef(index, ref)`: by object number, or by full name.
 pub fn field_by_ref<'a>(index: &'a FieldIndex, reference: &Value) -> Option<&'a Value> {
+    shared_field_by_ref(index, reference).map(|v| &**v)
+}
+
+/// [`field_by_ref`], the field as the index shares it.
+pub fn shared_field_by_ref<'a>(index: &'a FieldIndex, reference: &Value) -> Option<&'a Rc<Value>> {
     let position = if str_of(reference, "kind") == Some("fqn") {
         index.by_name.get(&crate::value::string_of(get(reference, "name")))
     } else {
         index.by_key.get(&field_key_of_ref(reference))
     };
-    at(index.fields(), position)
+    shared_at(index.fields(), position)
+}
+
+/// [`field_by_key`], the field as the index shares it.
+pub fn shared_field_by_key<'a>(index: &'a FieldIndex, key: &str) -> Option<&'a Rc<Value>> {
+    shared_at(index.fields(), index.by_key.get(key))
+}
+
+/// [`field_for_widget`], the field as the index shares it.
+pub fn shared_field_for_widget(index: &FieldIndex, number: f64) -> Option<&Rc<Value>> {
+    shared_at(index.fields(), index.by_widget.get(&number_key(number)))
+}
+
+/// [`widget_row_of`], the row as the index shares it.
+pub fn shared_widget_row_of(index: &FieldIndex, number: f64) -> Option<&Rc<Value>> {
+    shared_at(index.widgets(), index.row_by_widget.get(&number_key(number)))
 }
 
 /// `canonicalKey(index, ref)`.

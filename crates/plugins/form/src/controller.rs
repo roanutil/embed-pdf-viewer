@@ -55,6 +55,8 @@ pub struct Core {
     pub(crate) drafts: RefCell<IndexMap<String, (Value, String)>>,
     /// `rights.key()`'s group list and the view it was read from.
     pub(crate) rights_groups: RefCell<Option<(Rc<FieldIndex>, Rc<Vec<Value>>)>>,
+    /// The field reads' identity memos.
+    pub(crate) reads: crate::read::fields::ReadMemos,
     /// `listWidgets`' memo, by page: the items it made, and from what.
     pub(crate) widget_items: RefCell<HashMap<String, crate::read::widgets::WidgetItems>>,
     /// The widget hover pump, made on first use.
@@ -213,6 +215,7 @@ pub fn create_form_controller(
         recalculating: Cell::new(false),
         drafts: RefCell::new(IndexMap::new()),
         rights_groups: RefCell::new(None),
+        reads: Default::default(),
         widget_items: RefCell::new(HashMap::new()),
         widget_pump: RefCell::new(None),
     });

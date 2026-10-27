@@ -125,6 +125,11 @@ fn or_null(value: Option<Value>) -> Value {
     value.unwrap_or(Value::Null)
 }
 
+/// A shared value as the trace prints it.
+fn owned(value: Rc<Value>) -> Value {
+    Rc::unwrap_or_clone(value)
+}
+
 fn number(args: &[Value], i: usize) -> f64 {
     arg(args, i).and_then(Value::as_f64).unwrap_or(f64::NAN)
 }
@@ -190,17 +195,21 @@ fn call_form(
         "getStatus" => Outcome::Returned(json!(cap.get_status().as_str())),
         "getFormKind" => Outcome::Returned(cap.get_form_kind()),
         "refresh" => Outcome::promise_unit(cap.refresh(None)),
-        "get" => Outcome::Returned(or_null(cap.get(&value(args, 0)))),
+        "get" => Outcome::Returned(or_null(cap.get(&value(args, 0)).map(owned))),
         "getFieldForWidget" => {
-            Outcome::Returned(or_null(cap.get_field_for_widget(&value(args, 0))))
+            Outcome::Returned(or_null(cap.get_field_for_widget(&value(args, 0)).map(owned)))
         }
-        "getWidget" => Outcome::Returned(or_null(cap.get_widget(&value(args, 0)))),
-        "getWidgets" => Outcome::Returned(Value::Array(cap.get_widgets(&value(args, 0)))),
-        "list" => Outcome::Returned(Value::Array(cap.list(arg(args, 0)))),
-        "getValue" => Outcome::Returned(or_null(cap.get_value(&value(args, 0)))),
-        "getSelectedField" => Outcome::Returned(or_null(cap.get_selected_field())),
-        "validate" => Outcome::Returned(cap.validate()),
-        "exportValues" => Outcome::Returned(cap.export_values()),
+        "getWidget" => Outcome::Returned(or_null(cap.get_widget(&value(args, 0)).map(owned))),
+        "getWidgets" => Outcome::Returned(Value::Array(
+            cap.get_widgets(&value(args, 0)).iter().cloned().map(owned).collect(),
+        )),
+        "list" => {
+            Outcome::Returned(Value::Array(cap.list(arg(args, 0)).into_iter().map(owned).collect()))
+        }
+        "getValue" => Outcome::Returned(or_null(cap.get_value(&value(args, 0)).map(owned))),
+        "getSelectedField" => Outcome::Returned(or_null(cap.get_selected_field().map(owned))),
+        "validate" => Outcome::Returned(cap.validate().to_json()),
+        "exportValues" => Outcome::Returned(owned(cap.export_values())),
         "listWidgets" => {
             Outcome::Returned(Value::Array((*cap.list_widgets(&value(args, 0))).clone()))
         }

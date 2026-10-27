@@ -72,10 +72,13 @@ copies with `model::snapshot_copies` and holds them at none across 50 folds and 
 scripted fill still puts the form together once per new view, for the realm.
 
 `listWidgets` is memoized as `memoByKey` does, by page, on the view, the fill rights key and
-`fillable`. The other identity memos are not: `getValue`, `getWidgets`, `exportValues`, `validate`
-and `getSelectedField` build a new value per call where the TypeScript returns the same object while
-its inputs stay the same. That divergence is named in the register and carried to Task 14. A reader
-comparing by reference re-renders more often; no value differs.
+`fillable`. Since Task 14.5 (M36) the other identity memos are too: `getValue` and `getWidgets` per
+field key with `maxEntries: 1024`, `exportValues` on the view, `validate` on the view, the document
+and the rights key, and `getSelectedField` on the view and the annotation plugin's selection list.
+Each holds its inputs' `Rc`s and compares them with `Rc::ptr_eq`, except the document, which Rust
+holds as a value and compares by value. The reads hand out the fields and rows the form holds
+(`Rc<Value>`), as the TypeScript's do; `tests/sharing.rs` pins the identity and counts the memos'
+computations (`reads_share_the_form_and_keep_their_answers`).
 
 Five Rust-only console lines and errors have no TypeScript counterpart. A token the cache no longer
 holds, which the confirmed value's pin and the view's recency should make impossible, is logged as

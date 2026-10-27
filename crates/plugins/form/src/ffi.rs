@@ -958,7 +958,7 @@ impl FormHandle {
 
     pub async fn field(&self, field_ref: FormFieldRef) -> Result<Option<FormField>, ViewerError> {
         self.cap
-            .call(move |c| optional_field(open(c)?.get(&field_ref_json(&field_ref)).as_ref()))
+            .call(move |c| optional_field(open(c)?.get(&field_ref_json(&field_ref)).as_deref()))
             .await
     }
 
@@ -969,7 +969,7 @@ impl FormHandle {
         self.cap
             .call(move |c| {
                 optional_field(
-                    open(c)?.get_field_for_widget(&annotation_ref_json(&widget)).as_ref(),
+                    open(c)?.get_field_for_widget(&annotation_ref_json(&widget)).as_deref(),
                 )
             })
             .await
@@ -979,7 +979,7 @@ impl FormHandle {
         self.cap
             .call(move |c| {
                 let filter = filter.map(|f| f.to_json());
-                fields_out(&open(c)?.list(filter.as_ref()))
+                open(c)?.list(filter.as_ref()).iter().map(|f| FormField::from_json(f)).collect()
             })
             .await
     }
@@ -992,7 +992,7 @@ impl FormHandle {
             .call(move |c| {
                 open(c)?
                     .get_value(&field_ref_json(&field_ref))
-                    .as_ref()
+                    .as_deref()
                     .map(FormValueInput::from_json)
                     .transpose()
             })
@@ -1009,10 +1009,12 @@ impl FormHandle {
             .call(|c| {
                 let result = open(c)?.validate();
                 Ok(FormValidationResult {
-                    valid: result.get("valid").and_then(Value::as_bool).unwrap_or(false),
-                    missing: fields_out(
-                        result.get("missing").and_then(Value::as_array).map_or(&[], Vec::as_slice),
-                    )?,
+                    valid: result.valid,
+                    missing: result
+                        .missing
+                        .iter()
+                        .map(|f| FormField::from_json(f))
+                        .collect::<Result<_, Error>>()?,
                 })
             })
             .await
