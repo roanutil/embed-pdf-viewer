@@ -560,3 +560,42 @@ fn an_unconfigured_plugin_imports_on_a_local_kernel_engine() {
     assert_eq!(rig.calls_to("open"), 0, "refused before open");
     assert!(!rig.stamp.can_import());
 }
+
+/// M37: the registration's engine table keeps only the engines the stored
+/// settings name and the one an instance resolved from, as the TypeScript
+/// store and `resolved.from` keep them; a replaced engine is released. The
+/// resolved one is kept, so setting it again re-resolves nothing: the
+/// function is not called a second time.
+#[test]
+fn a_replaced_asset_engine_is_released_and_the_resolved_one_kept() {
+    let rig = Rig::with(library(Vec::new()), Vec::new(), false);
+    let made = Rc::new(std::cell::Cell::new(0));
+    let (calls, fake) = (made.clone(), rig.fake.clone());
+    let factory: epdf_plugin_stamp::AssetEngineFactory = Rc::new(move || {
+        calls.set(calls.get() + 1);
+        let engine: Rc<dyn epdf_kernel::engine::Engine> = Rc::new(AsEngine(fake.clone()));
+        Ok(epdf_plugin_stamp::MadeAssetEngine::Ready(LocalEngine::new(engine)))
+    });
+    let set = |engine: StampAssetEngine| {
+        rig.stamp.update_settings(&StampConfig {
+            asset_engine: Some(Some(engine)),
+            ..StampConfig::default()
+        })
+    };
+    set(StampAssetEngine::Factory(factory.clone()));
+    success(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    assert_eq!(made.get(), 1);
+    for _ in 0..30 {
+        let engine: Rc<dyn epdf_kernel::engine::Engine> = Rc::new(AsEngine(rig.fake.clone()));
+        set(StampAssetEngine::Engine(LocalEngine::new(engine)));
+    }
+    assert_eq!(rig.stamp.retained_engines(), 2, "the current engine and the resolved one");
+    set(StampAssetEngine::Factory(factory));
+    assert_eq!(rig.stamp.retained_engines(), 1);
+    success(&rig.stamp.import_library(pdf(), ImportLibraryOptions::default()));
+    assert_eq!(made.get(), 1, "`resolved.from === configured`: no new engine");
+    rig.stamp.reset_settings();
+    let engine: Rc<dyn epdf_kernel::engine::Engine> = Rc::new(AsEngine(rig.fake.clone()));
+    set(StampAssetEngine::Engine(LocalEngine::new(engine)));
+    assert_eq!(rig.stamp.retained_engines(), 2, "the new engine and the still-resolved function");
+}

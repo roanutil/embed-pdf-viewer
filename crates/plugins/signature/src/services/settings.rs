@@ -12,6 +12,7 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
+use epdf_kernel::settings::Settings;
 use epdf_signature_core::TrustPort;
 use serde_json::{Map, Value, json};
 
@@ -60,6 +61,24 @@ impl PortTable {
             n
         });
         json!({ TRUST_HANDLE: n })
+    }
+
+    /// Drop the ports neither the registered settings nor the current ones
+    /// name. The TypeScript store holds the port objects themselves, so a
+    /// port a change replaced is garbage once nothing else holds it; here
+    /// the table would keep every port for the registration's life.
+    /// Handles are never reused, so a port set again gets a new one.
+    pub fn release_unnamed(&self, settings: &Settings) {
+        let keys = settings.named_handles(KEY_HANDLE);
+        let trusts = settings.named_handles(TRUST_HANDLE);
+        self.keys.borrow_mut().retain(|(n, _)| keys.contains(n));
+        self.trusts.borrow_mut().retain(|(n, _)| trusts.contains(n));
+    }
+
+    /// How many ports the table holds (the retention guard's count).
+    #[doc(hidden)]
+    pub fn retained(&self) -> usize {
+        self.keys.borrow().len() + self.trusts.borrow().len()
     }
 
     fn key_of(&self, value: &Value) -> Option<SignatureKey> {

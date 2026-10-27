@@ -437,3 +437,28 @@ fn signer_rows_split_each_signatures_library_by_role() {
     assert_eq!(rows[0].initials.as_ref().map(|a| a.name.as_str()), Some("initials"));
     assert!(rows[1].signatures.is_empty() && rows[1].initials.is_none());
 }
+
+/// M37: the registration's port table keeps only the ports the registered
+/// and current settings name, as the TypeScript store holds them; a key a
+/// change replaced is released.
+#[test]
+fn a_replaced_key_is_released_from_the_port_table() {
+    let rig = Rig::open(SignatureConfig::default(), engine_of("nothing-signed-reads"));
+    let signature = &rig.signature;
+    for _ in 0..50 {
+        let key = cms_key(|| {});
+        signature.update_settings(&SignatureConfig { key: Some(Some(key)), ..Default::default() });
+    }
+    assert_eq!(signature.retained_ports(), 1, "only the current key");
+    let kept = signature.get_settings().key.expect("a key");
+    signature.update_settings(&SignatureConfig { key: Some(None), ..Default::default() });
+    assert_eq!(signature.retained_ports(), 0);
+    signature
+        .update_settings(&SignatureConfig { key: Some(Some(kept.clone())), ..Default::default() });
+    assert!(
+        signature.get_settings().key.is_some_and(|k| k.same(&kept)),
+        "set again, it reads back"
+    );
+    signature.reset_settings();
+    assert!(signature.get_settings().key.is_none());
+}

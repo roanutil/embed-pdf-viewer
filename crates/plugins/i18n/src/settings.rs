@@ -14,6 +14,7 @@ use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
 use epdf_kernel::Error;
+use epdf_kernel::settings::Settings;
 use serde_json::{Map, Value, json};
 
 use crate::contract::{I18nConfig, I18nSettings, Locale, LocaleLoader};
@@ -39,6 +40,22 @@ impl LoaderTable {
             n
         });
         json!({ LOADER_HANDLE: n })
+    }
+
+    /// Drop the loaders neither the registered settings nor the current
+    /// ones name. The TypeScript store holds the functions themselves, so a
+    /// loader a change replaced is garbage once nothing else holds it; here
+    /// the table would keep every loader for the registration's life.
+    /// Handles are never reused, so a loader set again gets a new one.
+    pub fn release_unnamed(&self, settings: &Settings) {
+        let named = settings.named_handles(LOADER_HANDLE);
+        self.loaders.borrow_mut().retain(|(n, _)| named.contains(n));
+    }
+
+    /// How many loaders the table holds (the retention guard's count).
+    #[doc(hidden)]
+    pub fn retained(&self) -> usize {
+        self.loaders.borrow().len()
     }
 
     fn loader_of(&self, value: &Value) -> Option<LocaleLoader> {

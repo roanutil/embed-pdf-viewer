@@ -16,7 +16,7 @@ use serde_json::{Value, json};
 use crate::contract::{LocalEngine, MadeAssetEngine, StampAssetEngine, StampAssetPreview};
 use crate::controller::StampCapability;
 use crate::services::errors::stamp_error;
-use crate::services::settings::EngineTable;
+use crate::services::settings::{EngineHold, EngineTable};
 
 thread_local! {
     /// The TypeScript's module-level `idCounter`. A kernel and its plugins
@@ -88,6 +88,9 @@ pub(crate) struct Resolved {
     /// The setting it was resolved from, by its stored handle.
     from: Option<u64>,
     engine: ResolvedEngine,
+    /// Keeps `from`'s engine in the table while this is the resolved one,
+    /// as `resolved.from` keeps the object alive in the TypeScript.
+    _hold: Option<EngineHold>,
 }
 
 /// The asset engine service's state.
@@ -197,7 +200,8 @@ impl StampCapability {
                     }
                 }
             };
-            *state.resolved.borrow_mut() = Some(Resolved { from, engine });
+            let _hold = from.map(|n| self.0.table.hold(n));
+            *state.resolved.borrow_mut() = Some(Resolved { from, engine, _hold });
             state.import_supported.set(None);
         }
         Ok(state

@@ -741,3 +741,23 @@ fn a_remover_called_after_close_is_dropped_and_reported_once() {
         "{reports:?}"
     );
 }
+
+/// M37: the registration's loader table keeps only the loaders the
+/// registered and current settings name, as the TypeScript store holds the
+/// functions; a loader a change replaced is released, and the registered
+/// ones stay for `resetSettings`.
+#[test]
+fn a_replaced_loader_is_released_from_the_loader_table() {
+    let rig = Rig::with(loaders(vec![("he", ready(he()))]));
+    assert_eq!(rig.i18n.retained_loaders(), 1);
+    for _ in 0..50 {
+        rig.i18n.update_settings(&I18nConfig {
+            loaders: Some(loaders(vec![("fr", ready(pack("fr", "Français", json!({}))))])),
+            ..I18nConfig::default()
+        });
+    }
+    assert_eq!(rig.i18n.retained_loaders(), 2, "the registered loader and the current one");
+    rig.i18n.reset_settings();
+    rt::run_until_stalled();
+    assert!(rig.i18n.get_settings().loaders.contains_key("he"), "the registered loader reads back");
+}

@@ -129,6 +129,13 @@ impl StampCapability {
     /// `updateSettings(changes)`: change the settings for the workspace.
     pub fn update_settings(&self, changes: &StampConfig) {
         self.0.settings.store.update_settings(&self.0.table.encode(changes));
+        self.0.table.release_unnamed(&self.0.settings.store);
+    }
+
+    /// How many engines the registration's table holds (M37's guard).
+    #[doc(hidden)]
+    pub fn retained_engines(&self) -> usize {
+        self.0.table.retained()
     }
 
     /// `resetSettings()`: back to the registered settings.

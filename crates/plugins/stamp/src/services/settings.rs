@@ -11,7 +11,10 @@
 //! `whole`, as `stamp.plugin.ts` declares it: a change replaces it.
 
 use std::cell::{Cell, RefCell};
-use std::rc::Rc;
+use std::collections::HashMap;
+use std::rc::{Rc, Weak};
+
+use epdf_kernel::settings::Settings;
 
 use serde_json::{Map, Value, json};
 
@@ -24,6 +27,28 @@ const ENGINE_KEY: &str = "$assetEngine";
 pub struct EngineTable {
     engines: RefCell<Vec<(u64, StampAssetEngine)>>,
     next: Cell<u64>,
+    /// Holds by handle, from [`EngineTable::hold`].
+    held: RefCell<HashMap<u64, usize>>,
+}
+
+/// An instance's hold on a handle's engine; dropping it lets
+/// [`EngineTable::release_unnamed`] drop the engine.
+pub(crate) struct EngineHold {
+    table: Weak<EngineTable>,
+    handle: u64,
+}
+
+impl Drop for EngineHold {
+    fn drop(&mut self) {
+        let Some(table) = self.table.upgrade() else { return };
+        let mut held = table.held.borrow_mut();
+        if let Some(count) = held.get_mut(&self.handle) {
+            *count -= 1;
+            if *count == 0 {
+                held.remove(&self.handle);
+            }
+        }
+    }
 }
 
 impl EngineTable {
@@ -42,6 +67,31 @@ impl EngineTable {
             None => Value::Null,
             Some(engine) => json!({ ENGINE_KEY: self.handle(engine) }),
         }
+    }
+
+    /// Drop the engines neither the registered settings nor the current
+    /// ones name, and that no instance still resolves from. The TypeScript
+    /// store holds the engine or function itself, and the asset engine
+    /// service holds the one it resolved (`resolved.from`), so a replaced
+    /// one is garbage once both let go; here the table would keep every
+    /// engine for the registration's life. Handles are never reused.
+    pub fn release_unnamed(&self, settings: &Settings) {
+        let named = settings.named_handles(ENGINE_KEY);
+        let held = self.held.borrow();
+        self.engines.borrow_mut().retain(|(n, _)| named.contains(n) || held.contains_key(n));
+    }
+
+    /// Keep the engine behind `handle` while the hold lives: an instance's
+    /// resolved engine, which compares its handle with the setting's.
+    pub(crate) fn hold(self: &Rc<Self>, handle: u64) -> EngineHold {
+        *self.held.borrow_mut().entry(handle).or_default() += 1;
+        EngineHold { table: Rc::downgrade(self), handle }
+    }
+
+    /// How many engines the table holds (the retention guard's count).
+    #[doc(hidden)]
+    pub fn retained(&self) -> usize {
+        self.engines.borrow().len()
     }
 
     /// The stored setting's handle: `None` for `null`.

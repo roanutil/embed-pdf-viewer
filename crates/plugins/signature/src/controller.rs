@@ -154,6 +154,13 @@ impl SignatureCapability {
     /// `updateSettings(changes)`: change the settings for every document.
     pub fn update_settings(&self, changes: &SignatureConfig) {
         self.0.settings.store.update_settings(&self.0.table.encode(changes));
+        self.0.table.release_unnamed(&self.0.settings.store);
+    }
+
+    /// How many ports the registration's table holds (M37's guard).
+    #[doc(hidden)]
+    pub fn retained_ports(&self) -> usize {
+        self.0.table.retained()
     }
 
     /// `resetSettings()`: back to the registered settings.

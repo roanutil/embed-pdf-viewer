@@ -180,6 +180,13 @@ impl I18nCapability {
     /// switch. Fires `on_settings_changed` once when a setting changed.
     pub fn update_settings(&self, changes: &I18nConfig) {
         self.0.settings.store.update_settings(&self.0.table.encode(changes));
+        self.0.table.release_unnamed(&self.0.settings.store);
+    }
+
+    /// How many loaders the registration's table holds (M37's guard).
+    #[doc(hidden)]
+    pub fn retained_loaders(&self) -> usize {
+        self.0.table.retained()
     }
 
     /// `resetSettings()`: back to what the app registered.

@@ -45,6 +45,20 @@ impl Settings {
     pub fn get_settings(&self) -> Rc<Value> {
         self.get()
     }
+    /// The registered settings, which `reset_settings` goes back to.
+    pub fn initial(&self) -> Rc<Value> {
+        self.0.initial.clone()
+    }
+    /// Every handle `{ [member]: n }` the settings name, in the registered
+    /// value or the current one: the stand-ins a plugin's table must keep,
+    /// as the TypeScript store keeps the objects those two values hold and
+    /// no others.
+    pub fn named_handles(&self, member: &str) -> std::collections::HashSet<u64> {
+        let mut out = std::collections::HashSet::new();
+        handles_in(&self.0.initial, member, &mut out);
+        handles_in(&self.get(), member, &mut out);
+        out
+    }
     fn commit(&self, next: Rc<Value>) {
         let current = self.get();
         let mut keys = Vec::new();
@@ -99,6 +113,24 @@ pub struct InstanceSettings {
 impl InstanceSettings {
     pub fn get(&self) -> Rc<Value> {
         self.store.get()
+    }
+}
+fn handles_in(value: &Value, member: &str, out: &mut std::collections::HashSet<u64>) {
+    match value {
+        Value::Object(object) => {
+            if let Some(n) = object.get(member).and_then(Value::as_u64) {
+                out.insert(n);
+            }
+            for value in object.values() {
+                handles_in(value, member, out);
+            }
+        }
+        Value::Array(items) => {
+            for value in items {
+                handles_in(value, member, out);
+            }
+        }
+        _ => {}
     }
 }
 pub fn merge_settings(base: &Value, change: Option<&Value>, whole: &[String]) -> Value {
