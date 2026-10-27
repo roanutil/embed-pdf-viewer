@@ -21,13 +21,20 @@ function sh(cmd, cwd, env = {}) {
 
 function ensureEmsdk(version) {
   const root = path.join(workDir(), 'emsdk');
-  if (!existsSync(root)) sh(`git clone --depth 1 https://github.com/emscripten-core/emsdk.git ${root}`, workDir());
+  if (!existsSync(root))
+    sh(`git clone --depth 1 https://github.com/emscripten-core/emsdk.git ${root}`, workDir());
   sh(`./emsdk install ${version} && ./emsdk activate ${version}`, root);
   return path.join(root, 'emsdk_env.sh');
 }
 
 const RUNTIME_SRC = 'packages/engine/runtime/runtime-src';
-const FORK_TARGETS = ['wasm32-eh', 'ios-arm64', 'ios-sim-arm64', 'darwin-static-arm64', 'darwin-static-x64'];
+const FORK_TARGETS = [
+  'wasm32-eh',
+  'ios-arm64',
+  'ios-sim-arm64',
+  'darwin-static-arm64',
+  'darwin-static-x64',
+];
 // One list for every target, so the fork's deps-sync.stamp (which records it)
 // stays valid when one checkout builds wasm and iOS in turn.
 const FORK_TARGET_OS_LIST = 'emscripten ios mac';
@@ -64,13 +71,17 @@ function seedDeps(src) {
   if (!existsSync(path.join(host, 'third_party/llvm-build'))) return false;
   const depsSha = (dir) => git(['hash-object', path.join(dir, 'DEPS')], dir);
   const stamp = path.join(host, '.embedpdf-runtime/deps-sync.stamp');
-  if (!existsSync(stamp) || !readFileSync(stamp, 'utf8').includes(`deps_sha=${depsSha(src)}\n`)) return false;
+  if (!existsSync(stamp) || !readFileSync(stamp, 'utf8').includes(`deps_sha=${depsSha(src)}\n`))
+    return false;
   console.log(`  seeding fork dependencies from ${host}`);
   for (const dep of syncedDeps(host)) {
     const to = path.join(src, dep);
     rmSync(to, { recursive: true, force: true });
     mkdirSync(path.dirname(to), { recursive: true });
-    sh(`cp -cR ${JSON.stringify(path.join(host, dep))} ${JSON.stringify(to)} 2>/dev/null || cp -R ${JSON.stringify(path.join(host, dep))} ${JSON.stringify(to)}`, src);
+    sh(
+      `cp -cR ${JSON.stringify(path.join(host, dep))} ${JSON.stringify(to)} 2>/dev/null || cp -R ${JSON.stringify(path.join(host, dep))} ${JSON.stringify(to)}`,
+      src,
+    );
   }
   return true;
 }
@@ -87,7 +98,10 @@ function hostClangWorks(src) {
 
 function depsSupportTargets(src) {
   const stamp = path.join(src, '.embedpdf-runtime/deps-sync.stamp');
-  return existsSync(stamp) && readFileSync(stamp, 'utf8').includes(`target_os_list=${FORK_TARGET_OS_LIST}\n`);
+  return (
+    existsSync(stamp) &&
+    readFileSync(stamp, 'utf8').includes(`target_os_list=${FORK_TARGET_OS_LIST}\n`)
+  );
 }
 
 // Builds the PDFium fork at the worktree's recorded runtime-src commit, for
@@ -106,7 +120,12 @@ export function buildFork(dir, target = FORK_TARGET) {
   if (existsSync(stampFile)) {
     const stamp = JSON.parse(readFileSync(stampFile, 'utf8'));
     const lib = path.join(stamp.staging, 'lib/libembedpdf.a');
-    if (stamp.recipe === FORK_RECIPE && existsSync(lib) && sha256(readFileSync(lib)) === stamp.libSha256) return stamp;
+    if (
+      stamp.recipe === FORK_RECIPE &&
+      existsSync(lib) &&
+      sha256(readFileSync(lib)) === stamp.libSha256
+    )
+      return stamp;
   }
   console.log(`  building fork ${sha.slice(0, 9)} for ${target}`);
   const seededMarker = path.join(root, 'seeded');
@@ -125,7 +144,10 @@ export function buildFork(dir, target = FORK_TARGET) {
   const depotTools = path.join(workDir(), 'depot_tools');
   if (!existsSync(path.join(depotTools, 'python3_bin_reldir.txt'))) {
     if (!existsSync(depotTools)) {
-      sh(`git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git ${depotTools}`, workDir());
+      sh(
+        `git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git ${depotTools}`,
+        workDir(),
+      );
     }
     sh('./ensure_bootstrap', depotTools);
   }
@@ -138,7 +160,8 @@ export function buildFork(dir, target = FORK_TARGET) {
   let source = '';
   if (!native) {
     const forkEmsdk = path.join(src, 'third_party/emsdk');
-    if (!existsSync(forkEmsdk)) sh(`git clone https://github.com/emscripten-core/emsdk.git ${forkEmsdk}`, src);
+    if (!existsSync(forkEmsdk))
+      sh(`git clone https://github.com/emscripten-core/emsdk.git ${forkEmsdk}`, src);
     sh(`./emsdk install ${EH_EMSDK_VERSION} && ./emsdk activate ${EH_EMSDK_VERSION}`, forkEmsdk);
     source = `source ${path.join(forkEmsdk, 'emsdk_env.sh')} && `;
   }
@@ -157,7 +180,13 @@ export function buildFork(dir, target = FORK_TARGET) {
       // target_os, which would otherwise force a full gclient resync. iOS
       // resyncs ('always', which also replaces llvm-build) only when the
       // clang there can't run on this host.
-      PDF_RUNTIME_SYNC: native ? (hostClangWorks(src) && depsSupportTargets(src) ? 'skip' : 'always') : seeded && depsSupportTargets(src) ? 'skip' : 'auto',
+      PDF_RUNTIME_SYNC: native
+        ? hostClangWorks(src) && depsSupportTargets(src)
+          ? 'skip'
+          : 'always'
+        : seeded && depsSupportTargets(src)
+          ? 'skip'
+          : 'auto',
       PDF_RUNTIME_ARTIFACT_DIR: artifacts,
     },
   );
@@ -202,7 +231,10 @@ function payload(dir, { allowLocal }) {
     console.log('  no published payload for this tree; building it locally');
     const fork = buildFork(dir);
     linkRustCore(dir, fork);
-    return { source: 'built', fork: { sha: fork.sha, target: FORK_TARGET, libSha256: fork.libSha256 } };
+    return {
+      source: 'built',
+      fork: { sha: fork.sha, target: FORK_TARGET, libSha256: fork.libSha256 },
+    };
   }
 }
 
@@ -238,13 +270,26 @@ export function buildWorktree(id, config) {
     // applies. `cargo rustc --crate-type` overrides the set for this build
     // without editing the branch.
     const kernel = 'target/wasm32-unknown-unknown/release/epdf_web.wasm';
-    sh('cargo rustc -p epdf-web --release --target wasm32-unknown-unknown -j 4 --crate-type cdylib', dir);
+    sh(
+      'cargo rustc -p epdf-web --release --target wasm32-unknown-unknown -j 4 --crate-type cdylib',
+      dir,
+    );
     sh(`wasm-bindgen --target web --out-dir packages/core-wasm/wasm ${kernel}`, dir);
-    sh(`wasm-bindgen --target experimental-nodejs-module --out-dir packages/core-wasm/wasm-node ${kernel}`, dir);
+    sh(
+      `wasm-bindgen --target experimental-nodejs-module --out-dir packages/core-wasm/wasm-node ${kernel}`,
+      dir,
+    );
     sh('pnpm bootstrap', path.join(dir, 'examples/rust-kernel-eval'));
   }
   const engineWasm = wasmPath(dir);
-  const stamp = { key, source, fork, rustCore, engineWasm, engineWasmSha256: sha256(readFileSync(engineWasm)) };
+  const stamp = {
+    key,
+    source,
+    fork,
+    rustCore,
+    engineWasm,
+    engineWasmSha256: sha256(readFileSync(engineWasm)),
+  };
   mkdirSync(path.dirname(stampFile), { recursive: true });
   writeFileSync(stampFile, JSON.stringify(stamp, null, 2));
   return stamp;
