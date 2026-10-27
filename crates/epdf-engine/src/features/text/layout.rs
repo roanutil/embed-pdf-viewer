@@ -130,7 +130,8 @@ impl PdfTextLayout {
     /// none.
     pub fn word_at(&self, at: impl Into<TextAt<PdfPoint>>) -> Option<TextRange> {
         let index = self.index_of(at.into())?;
-        Some(range_of(expand_text_range_to_word(&self.layout, index)))
+        let (from, to) = expand_text_range_to_word(&self.layout, index);
+        Some(range_of((i64::from(from), i64::from(to))))
     }
 
     /// The visual line at a point or around a character, or `None` when there
@@ -158,9 +159,52 @@ impl PdfTextLayout {
     }
 }
 
-/// An inclusive `[from, to]` pair as a [`TextRange`].
-fn range_of((from, to): (u32, u32)) -> TextRange {
-    TextRange { start: from, count: to - from + 1 }
+/// An inclusive `[from, to]` pair as a [`TextRange`] (`rangeOf`).
+///
+/// Runs whose starts don't tile the glyphs can make a line run backwards,
+/// `to` below `from`, where the TypeScript's count is zero or less; a `u32`
+/// count has no value below zero, so it reads as zero.
+fn range_of((from, to): (i64, i64)) -> TextRange {
+    let count = (to - from + 1).clamp(0, i64::from(u32::MAX));
+    TextRange {
+        start: u32::try_from(from).unwrap_or(u32::MAX),
+        count: u32::try_from(count).unwrap_or(u32::MAX),
+    }
+}
+
+/// A run's characters as `i64`s: `[start, end)`. A run's `start` comes from
+/// the wire, and the sum is what the TypeScript compares, so it must not
+/// wrap.
+fn run_span(run: &TextLayoutRun) -> (i64, i64) {
+    let start = i64::from(run.char_start);
+    (start, start + i64::from(run.count))
+}
+
+/// Whether a run claims `glyph` (`glyph >= r.start && glyph < r.start +
+/// r.count`).
+fn run_holds(run: &TextLayoutRun, glyph: u32) -> bool {
+    let (start, end) = run_span(run);
+    (start..end).contains(&i64::from(glyph))
+}
+
+/// A run's glyphs with their flat indices: the ones it claims that the
+/// layout holds. A PDFium snapshot's runs tile the glyphs, so this is all of
+/// them; a run whose `start` claims past the end reads only those there,
+/// where the TypeScript reads `undefined` and throws a `TypeError`.
+fn run_glyphs<'a>(
+    layout: &'a PageTextLayout,
+    run: &TextLayoutRun,
+) -> impl Iterator<Item = (u32, &'a TextLayoutGlyph)> {
+    let len = layout.glyphs.len();
+    let start = (run.char_start as usize).min(len);
+    let end = (run.char_start as usize).saturating_add(run.count as usize).min(len);
+    layout.glyphs[start..end].iter().enumerate().map(move |(i, g)| ((start + i) as u32, g))
+}
+
+/// A run's last character as the TypeScript computes it, `start + count -
+/// 1`: one before its start when it has no glyphs.
+fn run_last(run: &TextLayoutRun) -> i64 {
+    run_span(run).1 - 1
 }
 
 const ZERO_RECT: PdfRect = PdfRect { left: 0.0, bottom: 0.0, right: 0.0, top: 0.0 };
@@ -397,10 +441,9 @@ pub fn text_glyph_at(
         if !in_rect(run.rect, q) {
             continue;
         }
-        for i in 0..run.count {
-            let g = &layout.glyphs[(run.char_start + i) as usize];
+        for (index, g) in run_glyphs(layout, run) {
             if in_rect(g.tight.unwrap_or(g.loose), q) {
-                return Some(run.char_start + i);
+                return Some(index);
             }
         }
     }
@@ -421,8 +464,7 @@ pub fn text_glyph_at(
         {
             continue;
         }
-        for i in 0..run.count {
-            let g = &layout.glyphs[(run.char_start + i) as usize];
+        for (index, g) in run_glyphs(layout, run) {
             if is_empty_glyph(g.flags) {
                 continue;
             }
@@ -441,7 +483,7 @@ pub fn text_glyph_at(
             // says.
             if dx + dy < best_dist - EDGE_EPSILON {
                 best_dist = dx + dy;
-                best = Some(run.char_start + i);
+                best = Some(index);
             }
         }
     }
@@ -472,16 +514,17 @@ pub fn expand_text_range_to_word(layout: &PageTextLayout, glyph: u32) -> (u32, u
 /// anchor run's. A differently oriented run is a line boundary.
 ///
 /// INCLUSIVE, as [`expand_text_range_to_word`] is.
-pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph: u32) -> (u32, u32) {
-    let Some(ri) =
-        layout.runs.iter().position(|r| glyph >= r.char_start && glyph < r.char_start + r.count)
-    else {
-        return (glyph, glyph);
+///
+/// `i64`, because runs whose starts don't tile the glyphs can put either end
+/// where a character number can't be, as the TypeScript's numbers can.
+pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph: u32) -> (i64, i64) {
+    let Some(ri) = layout.runs.iter().position(|r| run_holds(r, glyph)) else {
+        return (i64::from(glyph), i64::from(glyph));
     };
     let anchor = layout.runs[ri];
     let (bottom, top) = (anchor.rect.bottom, anchor.rect.top);
-    let mut from = anchor.char_start;
-    let mut to = anchor.char_start + anchor.count - 1;
+    let mut from = i64::from(anchor.char_start);
+    let mut to = run_last(&anchor);
 
     for run in layout.runs[..ri].iter().rev() {
         if is_zero(run.rect) {
@@ -490,7 +533,7 @@ pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph: u32) -> (u32, u
         if run.frame != anchor.frame || !overlap_v(run.rect.bottom, run.rect.top, bottom, top) {
             break;
         }
-        from = run.char_start;
+        from = i64::from(run.char_start);
     }
     for run in &layout.runs[ri + 1..] {
         if is_zero(run.rect) {
@@ -499,7 +542,7 @@ pub fn expand_text_range_to_line(layout: &PageTextLayout, glyph: u32) -> (u32, u
         if run.frame != anchor.frame || !overlap_v(run.rect.bottom, run.rect.top, bottom, top) {
             break;
         }
-        to = run.char_start + run.count - 1;
+        to = run_last(run);
     }
     (from, to)
 }
@@ -519,11 +562,7 @@ pub fn text_glyph_quad(layout: &PageTextLayout, glyph: u32) -> Option<PdfQuad> {
     if b.right <= b.left || b.top <= b.bottom {
         return None;
     }
-    let frame_index = layout
-        .runs
-        .iter()
-        .find(|r| glyph >= r.char_start && glyph < r.char_start + r.count)
-        .map_or(0, |r| r.frame);
+    let frame_index = layout.runs.iter().find(|r| run_holds(r, glyph)).map_or(0, |r| r.frame);
     Some(quad_of_frame_rect(&layout.frames[frame_index], frame_index, b))
 }
 
@@ -568,12 +607,17 @@ pub fn text_segments_for_range(
 
     let mut sub_runs: Vec<SubRun> = Vec::new();
     for run in &layout.runs {
-        let run_end = run.char_start + run.count - 1;
-        if run_end < lo || run.char_start > hi {
+        // `start + count - 1` in the TypeScript's arithmetic: a run with no
+        // glyphs ends before it starts, and a run near the top of the range
+        // must not wrap.
+        let (start, end) = run_span(run);
+        let run_end = end - 1;
+        if run_end < i64::from(lo) || start > i64::from(hi) {
             continue;
         }
         let s = lo.max(run.char_start);
-        let e = hi.min(run_end);
+        // `e < s` (no glyphs) walks nothing, as the TypeScript's loop does.
+        let Ok(e) = u32::try_from(i64::from(hi).min(run_end)) else { continue };
 
         let mut acc = Accumulator::new();
         for ci in s..=e {
@@ -1359,5 +1403,96 @@ mod tests {
             rects_of(vec![line(0, 0.0, 100.0, None), line(5, 0.0, 80.0, None)], 4, 3),
             [rect(40.0, 100.0, 50.0, 110.0), rect(0.0, 80.0, 20.0, 90.0)]
         );
+    }
+
+    // ── runs whose starts don't tile the glyphs (no PDFium snapshot has one) ──
+
+    /// The selection vectors' `char-start-past-the-glyphs` shape: one run of
+    /// two glyphs that says it starts at character 1, so it claims 1 and 2
+    /// and the layout holds 0 and 1.
+    fn overhanging() -> PdfTextLayout {
+        layout_of(vec![upright_run(1, vec![glyph(0.0), glyph(10.0)], None)])
+    }
+
+    #[test]
+    fn a_run_that_claims_past_the_glyphs_answers_what_the_typescript_does() {
+        let layout = overhanging();
+        assert_eq!(layout.char_count(), 2);
+        // `glyphs[run.start + 0]` is the second cell, which holds the point.
+        assert_eq!(layout.char_at(PdfPoint { x: 15.0, y: 105.0 }), Some(1));
+        // The vector's answer: only character 1 is both asked for and in
+        // the run, and it is the second cell.
+        assert_eq!(rects_of(overhanging().runs().to_vec(), 0, 5), [rect(10.0, 100.0, 20.0, 110.0)]);
+        // Character 0 is in no run, so its line is itself; character 1 is
+        // the run's first, and its line runs to the run's claimed end.
+        assert_eq!(layout.line_at(0), Some(range(0, 1)));
+        assert_eq!(layout.line_at(1), Some(range(1, 2)));
+        assert_eq!(layout.word_at(0), Some(range(0, 2)));
+        assert!(layout.char_quad(1).is_some());
+    }
+
+    #[test]
+    fn a_point_on_a_glyph_the_run_claims_past_the_end_reads_no_further() {
+        // The TypeScript reads `glyphs[2]`, `undefined`, and throws a
+        // `TypeError`; there is no error to answer here, so the claimed
+        // glyph that isn't there is passed over and the near miss decides.
+        let layout = overhanging();
+        assert_eq!(layout.char_at(PdfPoint { x: 5.0, y: 105.0 }), Some(1));
+        assert_eq!(layout.char_at(PdfPoint { x: 500.0, y: 105.0 }), None);
+    }
+
+    #[test]
+    fn a_run_with_no_glyphs_at_character_zero_ends_before_it_starts() {
+        // `start + count - 1` is -1: no segment, and the line beside it
+        // still reaches back to its start.
+        let empty = PageGeometryRun::Upright {
+            rect: rect(0.0, 100.0, 20.0, 110.0),
+            start: 0,
+            glyphs: Vec::new(),
+            font_size: None,
+        };
+        let layout =
+            layout_of(vec![empty.clone(), upright_run(0, vec![glyph(0.0), glyph(10.0)], None)]);
+        assert_eq!(layout.segments(range(0, 2)).len(), 1);
+        assert_eq!(layout.line_at(1), Some(range(0, 2)));
+        // After the anchor instead, it ends the line at -1: the
+        // TypeScript's count is 0.
+        let layout = layout_of(vec![upright_run(0, vec![glyph(0.0), glyph(10.0)], None), empty]);
+        assert_eq!(layout.line_at(1), Some(range(0, 0)));
+    }
+
+    #[test]
+    fn a_rotated_run_past_the_glyphs_answers_without_panicking() {
+        // The selection vectors' `rotated-all-empty`: one empty rotated
+        // glyph in a run that says it starts at character 14.
+        let mut run = oriented_run(
+            14,
+            PdfPoint { x: 0.0, y: 0.0 },
+            PdfPoint { x: 0.0, y: 1.0 },
+            PdfPoint { x: -1.0, y: 0.0 },
+            Oriented { count: 1, ..Oriented::turned(90.0) },
+        );
+        if let PageGeometryRun::Rotated { glyphs, .. } = &mut run {
+            glyphs[0].empty = true;
+        }
+        let layout = layout_of(vec![run]);
+        assert_eq!(layout.char_count(), 1);
+        assert_eq!(layout.char_at(PdfPoint { x: 0.0, y: 0.0 }), None);
+        assert_eq!(layout.word_at(0), Some(range(0, 1)));
+        assert_eq!(layout.line_at(0), Some(range(0, 1)));
+        assert_eq!(layout.char_quad(0), None);
+        assert!(layout.segments(range(0, 3)).is_empty());
+    }
+
+    #[test]
+    fn a_run_starting_near_the_top_of_the_numbers_does_not_wrap() {
+        // `start + count` passes `u32::MAX`; the TypeScript's sum is exact.
+        // Its point reads throw (the run claims no glyph that is there), so
+        // the near miss finds nothing.
+        let layout = layout_of(vec![upright_run(u32::MAX, vec![glyph(0.0), glyph(10.0)], None)]);
+        assert_eq!(layout.char_at(PdfPoint { x: 5.0, y: 105.0 }), None);
+        assert!(layout.segments(range(0, 2)).is_empty());
+        assert_eq!(layout.line_at(0), Some(range(0, 1)));
+        assert!(layout.char_quad(0).is_some());
     }
 }

@@ -11,12 +11,12 @@
 //! engine side is built with `fake_engine::hydrate_text_layout`, the
 //! harness's one door to the engine's layout.
 //!
-//! Two vector layouts have runs whose `start`s don't tile the glyphs. The
-//! engine's copy indexes past the glyphs there and panics (it reads only
-//! PDFium snapshots, which always tile); this crate's skips what a run
-//! claims past the end (S2). Those two are compared only through this
-//! crate's own vector replay, and `a_layout_that_does_not_tile_is_skipped`
-//! pins which they are.
+//! Two vector layouts have runs whose `start`s don't tile the glyphs (no
+//! PDFium snapshot has one). Both copies read only the glyphs a run claims
+//! that are there (S2 here; the engine's since Task 14.3, where it panicked
+//! before), so they are compared like the rest, and
+//! `a_layout_that_does_not_tile_answers_as_the_engines_does` pins which they
+//! are.
 
 #![cfg(not(target_arch = "wasm32"))]
 
@@ -168,29 +168,25 @@ fn vector_layouts() -> Vec<(String, Value)> {
 fn every_vector_layout_answers_as_the_engines_does() {
     let layouts = vector_layouts();
     assert!(layouts.len() >= 20, "the vectors still carry their layouts ({})", layouts.len());
-    let compared: usize = layouts
-        .iter()
-        .filter(|(_, snapshot)| tiles(snapshot))
-        .map(|(name, snapshot)| agree(name, snapshot))
-        .sum();
+    let compared: usize = layouts.iter().map(|(name, snapshot)| agree(name, snapshot)).sum();
     eprintln!("compared {compared} answers over {} layouts", layouts.len());
     assert!(compared > 10_000, "compared {compared} answers");
 }
 
 #[test]
-fn a_layout_that_does_not_tile_is_skipped() {
-    let skipped: Vec<String> = vector_layouts()
-        .into_iter()
-        .filter(|(_, snapshot)| !tiles(snapshot))
-        .map(|(name, _)| name)
-        .collect();
+fn a_layout_that_does_not_tile_answers_as_the_engines_does() {
+    let untiled: Vec<(String, Value)> =
+        vector_layouts().into_iter().filter(|(_, snapshot)| !tiles(snapshot)).collect();
     assert_eq!(
-        skipped,
+        untiled.iter().map(|(name, _)| name.as_str()).collect::<Vec<_>>(),
         [
             "buildPageTextLayout/rotated-all-empty",
             "textSegmentsForRange/char-start-past-the-glyphs"
         ]
     );
+    for (name, snapshot) in &untiled {
+        agree(name, snapshot);
+    }
 }
 
 fn cell(x: f64, y: f64, w: f64) -> Value {

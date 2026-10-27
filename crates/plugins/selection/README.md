@@ -90,12 +90,13 @@ dev-dependency gated to non-wasm32 targets, so
 `cargo tree -p epdf-web --target wasm32-unknown-unknown -e normal -i pdfium-sys` still prints
 nothing.
 
-The copies differ in two places, both on input PDFium never produces. Glyph indices and range
-bounds are `i64` here, because `selectAll` parks its open end at `Number.MAX_SAFE_INTEGER` and a
-caller can start a range before the page. And runs whose `start`s don't tile the glyphs are read
-without indexing past them (S2): the engine's copy panics on the vector layouts
-`rotated-all-empty` and `char-start-past-the-glyphs`, so the cross-check skips those two and pins
-that it does.
+The copies differ in one place, on input PDFium never produces. Glyph indices and range bounds
+are `i64` here, because `selectAll` parks its open end at `Number.MAX_SAFE_INTEGER` and a caller
+can start a range before the page. Runs whose `start`s don't tile the glyphs are read without
+indexing past them in both copies (S2 here, the engine's since Task 14.3), where the TypeScript
+reads `undefined` and throws a `TypeError`. The cross-check compares the vector layouts
+`rotated-all-empty` and `char-start-past-the-glyphs` like the rest and pins that they are the two
+that don't tile.
 
 `read_text_in_range` slices UTF-16 code units, as `String.prototype.slice` does, so a
 supplementary-plane character behind a char map comes out whole. Its page reads mirror the
